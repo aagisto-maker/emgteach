@@ -24,12 +24,11 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-🚧 **Pre-release**. This repository currently contains the package
-skeleton only (build configuration, license, citation file, CI). The
-full source code is being progressively migrated from a working but
-unstructured local prototype. The first feature-complete release will
-coincide with submission to the [Journal of Open Source Software
-(JOSS)](https://joss.theoj.org/).
+`emgteach` v0.1.0 is the first public release. The package ships a
+Qt-free analytic core (io, dsp, fatigue, mvc, devices), a Qt layer
+(workers + three-tab PySide6 GUI), and a test suite of 73 tests
+passing on Linux and Windows across Python 3.10-3.12. Submitted to
+the [Journal of Open Source Software (JOSS)](https://joss.theoj.org/).
 
 ## Highlights
 
@@ -93,18 +92,23 @@ pip install "emgteach[bitalino]"
 emgteach          # launch the GUI
 ```
 
-Or programmatically:
+Or programmatically (without the GUI):
 
 ```python
-from emgteach.acquisition import ArduinoSerialDevice
-from emgteach.io import write_edf_buffered
+import numpy as np
+from emgteach import ArduinoDevice, BufferedEdfWriter, ChannelInfo
 
-device = ArduinoSerialDevice(port="COM4", fs=1000)
+device = ArduinoDevice(port="COM4", fs=1000)
 device.open()
-samples = device.read(seconds=10)
-device.close()
+try:
+    blocks = [device.read(100) for _ in range(100)]   # 100 x 100 ms = 10 s
+finally:
+    device.close()
 
-write_edf_buffered("session.edf", samples, fs=1000)
+samples = np.concatenate(blocks)
+ch = ChannelInfo("EMG", sample_frequency=1000)
+with BufferedEdfWriter("session.edf", channels=[ch]) as writer:
+    writer.add_samples(samples)
 ```
 
 ## Documentation
@@ -119,7 +123,7 @@ If you use this software, please cite both the article and the package:
 
 - Agis-Torres, Á. (2026). *Silent corruption of EDF recordings during
   real-time biopotential streaming: a buffered-write solution.*
-  Biomedical Signal Processing and Control, in press.
+  Biomedical Signal Processing and Control, submitted.
 - Agis-Torres, Á. (2026). *emgteach: an open-source teaching platform
   for surface electromyography.* Journal of Open Source Software, in
   preparation.
@@ -133,25 +137,4 @@ A `CITATION.cff` file is provided for automatic citation export.
 - [BITalino](https://www.bitalino.com/) — commercial Bluetooth
   biopotential acquisition device
 - [SparkFun MyoWare 2.0](https://www.sparkfun.com/products/21265) —
-  open-hardware sEMG sensor
-- [pyEDFlib](https://pyedflib.readthedocs.io/) — Python EDF library
-
-## License
-
-GPL-3.0-or-later. See [`LICENSE`](LICENSE).
-
-## Acknowledgements
-
-Developed in the Departmental Section of Physiology, Faculty of
-Pharmacy, Universidad Complutense de Madrid. Thanks to the colleagues
-of the section for ongoing feedback during teaching trials.
-
-## Generative AI disclosure
-
-The Python source code and documentation in this repository were
-developed with the assistance of Claude (Anthropic, model Opus 4.7),
-and were reviewed and tested by the author.
-
-[bspc]: https://doi.org/10.5281/zenodo.20042878
-[bspc-doi]: https://doi.org/10.5281/zenodo.20042878
-[repo-bspc]: https://github.com/aagisto-maker/edf-buffered-write
+  open-hardware sEMG 
