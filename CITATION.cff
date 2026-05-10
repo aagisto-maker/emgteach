@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the article and the package."
+title: "emgteach: an open-source teaching platform for surface electromyography"
+abstract: >-
+  emgteach is a Python package that provides a unified PySide6 desktop
+  application for real-time acquisition, offline analysis and MVC
+  normalisation of surface EMG signals. Two interchangeable hardware
+  backends are supported: BITalino over Bluetooth and Arduino RedBoard
+  Plus + MyoWare 2.0 over USB serial. Output files follow the EDF+
+  standard with reliable buffered writing.
+type: software
+version: 0.1.0
+date-released: "2026-05-10"
+authors:
+  - family-names: "Agis-Torres"
+    given-names: "Ángel"
+    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+    email: "aagisto@ucm.es"
+    orcid: "https://orcid.org/0000-0002-3548-7264"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/aagisto-maker/emgteach"
+url: "https://github.com/aagisto-maker/emgteach"
+keywords:
+  - electromyography
+  - EMG
+  - EDF
+  - EDF+
+  - biopotential
+  - Arduino
+  - BITalino
+  - MyoWare
+  - physiology
+  - teaching
+  - open-source-hardware
+preferred-citation:
+  type: article
+  title: "emgteach: an open-source teaching platform for surface electromyography"
+  authors:
+    - family-names: "Agis-Torres"
+      given-names: "Ángel"
+  journal: "Journal of Open Source Software"
+  year: 2026
+references:
+  - type: article
+    title: "Silent corruption of EDF recordings during real-time biopotential streaming: a buffered-write solution"
+    authors:
+      - family-names: "Agis-Torres"
+        given-names: "Ángel"
+    journal: "Biomedical Signal Processing and Control"
+    year: 2026
+    doi: 10.5281/zenodo.20042878

@@ -1,0 +1,175 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "emgteach"
+version = "0.1.0"
+description = "Open-source teaching platform for surface electromyography acquisition and analysis with Arduino-based hardware"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+requires-python = ">=3.10,<3.13"
+keywords = [
+    "electromyography",
+    "EMG",
+    "EDF",
+    "EDF+",
+    "biopotential",
+    "Arduino",
+    "BITalino",
+    "MyoWare",
+    "physiology",
+    "teaching",
+    "open-source-hardware",
+]
+authors = [
+    { name = "Ángel Agis-Torres", email = "aagisto@ucm.es" },
+]
+maintainers = [
+    { name = "Ángel Agis-Torres", email = "aagisto@ucm.es" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+# Pinned versions match the BSPC reproducibility package and the bioinstrumentation
+# venv that has been verified to run on Windows 11 with Python 3.12.
+#
+# Note on `bitalino`: it is *not* a hard dependency. Its PyBluez backend
+# requires Microsoft C++ Build Tools to install on Windows + Python 3.12,
+# which is impractical for the typical teaching-lab user. Users who own
+# a BITalino install it via the `bitalino` extra:
+#     pip install "emgteach[bitalino]"
+# Users who only have an Arduino+MyoWare do not need it and the package
+# works without it.
+dependencies = [
+    "PySide6>=6.6,<7.0",
+    "pyqtgraph>=0.13",
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "matplotlib==3.9.2",
+    "pyedflib==0.1.42",
+    "mne>=1.6,<2.0",
+    "pyserial>=3.5",
+]
+
+[project.optional-dependencies]
+bitalino = [
+    "bitalino>=1.2",
+]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "pytest-qt>=4.4",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.8",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+]
+build = [
+    "PyInstaller>=6.0",
+]
+all = [
+    "emgteach[bitalino,dev,docs,build]",
+]
+
+[project.scripts]
+emgteach = "emgteach.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/aagisto-maker/emgteach"
+Documentation = "https://aagisto-maker.github.io/emgteach"
+Repository = "https://github.com/aagisto-maker/emgteach"
+Issues = "https://github.com/aagisto-maker/emgteach/issues"
+"Related publication (BSPC)" = "https://doi.org/10.5281/zenodo.20042878"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/emgteach"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/",
+    "tests/",
+    "docs/",
+    "paper/",
+    "README.md",
+    "LICENSE",
+    "CITATION.cff",
+    "pyproject.toml",
+]
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "hardware: requires physical EMG device (BITalino or Arduino+MyoWare)",
+    "gui: requires a QApplication (uses pytest-qt)",
+]
+
+[tool.coverage.run]
+source = ["src/emgteach"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "RUF",
+]
+ignore = [
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+"src/emgteach/gui/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007"]
+"src/emgteach/gui/widgets/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007", "N802"]
+"src/emgteach/gui/tabs/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007", "N802"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+warn_unused_configs = true
+ignore_missing_imports = true

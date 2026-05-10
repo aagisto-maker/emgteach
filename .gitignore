@@ -1,0 +1,73 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+build/
+dist/
+wheels/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.cache/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- PyInstaller ---
+*.spec.bak
+*.exe
+
+# --- EDF recordings — never versioned ---
+*.edf
+*.bdf
+
+# --- Local data files ---
+data/
+local/
+salida/
+output/
+*.csv
+*.npy
+*.npz
+!tests/**/*.npy
+!tests/**/*.npz
+
+# --- Documentation builds ---
+site/
+docs/_build/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- Secrets / personal config ---
+.env
+.env.*
+!.env.example
+secrets.toml
