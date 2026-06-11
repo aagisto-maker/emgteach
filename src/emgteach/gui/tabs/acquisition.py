@@ -30,7 +30,7 @@ from collections import deque
 
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtCore import QSettings, QTimer, Slot
+from PySide6.QtCore import QSettings, Qt, QTimer, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -66,6 +66,10 @@ FS = EMG_PROFILE.sample_frequency  # Hz nominal (tomado del perfil de señal)
 # Número máximo de canales simultáneos que ofrece la interfaz. La capa de
 # datos admite N, pero la UI se limita por ahora a 2 (agonista/antagonista).
 MAX_CHANNELS = 2
+
+# Número máximo de marcas de evento dibujadas simultáneamente en vivo
+# (pool reutilizable de líneas por gráfica; sobran para una ventana de 30 s).
+MAX_MARKER_LINES = 40
 
 # Color por canal, consistente en las tres gráficas: así un color identifica
 # siempre al mismo sensor (azul = canal 1, rojo = canal 2).
@@ -122,6 +126,10 @@ class AcquisitionTab(QWidget):
         self._new_data = False  # flag: hay datos nuevos que pintar
 
         self._marcas_recientes: list[str] = []
+        # Eventos para dibujar líneas en vivo: (tiempo_s, etiqueta). El total
+        # de muestras adquiridas sitúa cada marca en la ventana deslizante.
+        self._marker_events: list[tuple[float, str]] = []
+        self._total_samples = 0
 
         # ---- Estado de escala vertical (por gráfica: 0=raw, 1=filt, 2=env) ----
         # Rangos Y iniciales tomados del perfil de señal (se restauran en
@@ -518,6 +526,20 @@ class AcquisitionTab(QWidget):
             )
         plots_col_vbox.addWidget(self._plot_env)
 
+        # Pool reutilizable de líneas verticales para las marcas de evento,
+        # una colección por gráfica (se reposicionan en cada refresco según la
+        # ventana deslizante; color naranja, igual que en la pestaña Análisis).
+        marker_pen = pg.mkPen(color=(230, 126, 34), width=1, style=Qt.PenStyle.DashLine)
+        self._marker_lines: list[list] = []
+        for pw in (self._plot_raw, self._plot_filt, self._plot_env):
+            pool = []
+            for _ in range(MAX_MARKER_LINES):
+                line = pg.InfiniteLine(angle=90, movable=False, pen=marker_pen)
+                line.hide()
+                pw.addItem(line, ignoreBounds=True)
+                pool.append(line)
+            self._marker_lines.append(pool)
+
         # Construir botones ▲▼ en el sidebar (uno por gráfica)
         self._plots_widgets = [self._plot_raw, self._plot_filt, self._plot_env]
         labels = ["B", "F", "E"]   # Bruta / Filtrada / Envolvente
@@ -743,6 +765,11 @@ class AcquisitionTab(QWidget):
         self._reset_buffers()
         self._marcas_recientes.clear()
         self._lbl_marcas_recientes.setText("(sin marcas en esta sesión)")
+        self._marker_events.clear()
+        self._total_samples = 0
+        for pool in self._marker_lines:
+            for line in pool:
+                line.hide()
         self._reset_y_scales()
 
         n = self._n_channels
@@ -824,6 +851,8 @@ class AcquisitionTab(QWidget):
             self._buf_raw[c].extend(raw[c].tolist())
             self._buf_filt[c].extend(filt[c].tolist())
             self._buf_env[c].extend(env[c].tolist())
+        if raw:
+            self._total_samples += len(raw[0])
         self._new_data = True
         # LED verde: hay tráfico. El timer lo devolverá a amarillo si no llega
         # ningún bloque nuevo en LED_IDLE_MS ms.
@@ -848,6 +877,23 @@ class AcquisitionTab(QWidget):
             self._curves_raw[c].setData(t, arr_raw)
             self._curves_filt[c].setData(t, arr_filt)
             self._curves_env[c].setData(t, arr_env)
+
+        # Reposicionar las líneas de marca: cada evento se sitúa según cuántas
+        # muestras hace que ocurrió, dentro de la ventana visible.
+        win_s = n / FS
+        visible = [
+            win_s - (self._total_samples - tiempo * FS) / FS
+            for tiempo, _label in self._marker_events
+            if 0 <= self._total_samples - tiempo * FS <= n
+        ]
+        visible = visible[-MAX_MARKER_LINES:]
+        for pool in self._marker_lines:
+            for i, line in enumerate(pool):
+                if i < len(visible):
+                    line.setPos(visible[i])
+                    line.show()
+                elif line.isVisible():
+                    line.hide()
 
     # ------------------------------------------------------------------
     # Marcadores
@@ -881,6 +927,8 @@ class AcquisitionTab(QWidget):
         self._log(f"Marca añadida: t={tiempo:.1f} s — {etiqueta}")
         self._marcas_recientes.append(f"t={tiempo:.1f} s: {etiqueta}")
         self._lbl_marcas_recientes.setText("\n".join(self._marcas_recientes[-5:]))
+        # Registrar el evento para dibujarlo en vivo sobre las gráficas.
+        self._marker_events.append((tiempo, etiqueta))
 
     @Slot(str)
     def _on_error(self, msg: str) -> None:
