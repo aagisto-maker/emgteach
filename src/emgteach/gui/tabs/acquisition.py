@@ -33,7 +33,9 @@ import pyqtgraph as pg
 from PySide6.QtCore import QSettings, QTimer, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
@@ -341,6 +343,39 @@ class AcquisitionTab(QWidget):
         row_m.addWidget(self._btn_marcar)
         markers_layout.addLayout(row_m)
 
+        # Detección automática de inicio de contracción
+        row_auto = QHBoxLayout()
+        self._chk_auto = QCheckBox("Detección automática de inicio")
+        self._chk_auto.setToolTip(
+            "Marca automáticamente el inicio de contracción cuando la "
+            "envolvente supera el umbral (línea base + k·DE del reposo)."
+        )
+        self._chk_auto.setChecked(
+            self._settings.value("adquisicion/auto_detect", False, type=bool)
+        )
+        self._chk_auto.toggled.connect(self._on_auto_toggled)
+        row_auto.addWidget(self._chk_auto)
+        row_auto.addWidget(QLabel("Sensib. (k):"))
+        self._spin_k = QDoubleSpinBox()
+        self._spin_k.setRange(1.0, 10.0)
+        self._spin_k.setSingleStep(0.5)
+        self._spin_k.setValue(
+            self._settings.value(
+                "adquisicion/onset_k", self._profile.onset_k, type=float
+            )
+        )
+        self._spin_k.setFixedWidth(60)
+        self._spin_k.setToolTip(
+            "Umbral en desviaciones típicas sobre el reposo (menor = más sensible)."
+        )
+        self._spin_k.valueChanged.connect(
+            lambda v: self._settings.setValue("adquisicion/onset_k", v)
+        )
+        self._spin_k.setEnabled(self._chk_auto.isChecked())
+        row_auto.addWidget(self._spin_k)
+        row_auto.addStretch()
+        markers_layout.addLayout(row_auto)
+
         self._lbl_marcas_recientes = QLabel("(sin marcas en esta sesión)")
         self._lbl_marcas_recientes.setStyleSheet("font-size: 8px; color: #555555;")
         self._lbl_marcas_recientes.setWordWrap(True)
@@ -612,6 +647,15 @@ class AcquisitionTab(QWidget):
                 buf.clear()
                 buf.extend([0.0] * MAX_POINTS)
 
+    @Slot(bool)
+    def _on_auto_toggled(self, checked: bool) -> None:
+        self._spin_k.setEnabled(checked)
+        self._settings.setValue("adquisicion/auto_detect", checked)
+
+    def _set_auto_controls_enabled(self, enabled: bool) -> None:
+        self._chk_auto.setEnabled(enabled)
+        self._spin_k.setEnabled(enabled and self._chk_auto.isChecked())
+
     @Slot()
     def _refresh_ports(self) -> None:
         """Repopula el combo de puertos COM con los disponibles en el sistema."""
@@ -720,8 +764,14 @@ class AcquisitionTab(QWidget):
                 fs=FS,
                 n_channels=n,
             )
+        self._settings.setValue("adquisicion/auto_detect", self._chk_auto.isChecked())
+        self._settings.setValue("adquisicion/onset_k", self._spin_k.value())
         self._worker = AcquisitionWorker(
-            device=device, save_dir=save_dir, sensor_labels=labels
+            device=device,
+            save_dir=save_dir,
+            sensor_labels=labels,
+            auto_detect=self._chk_auto.isChecked(),
+            onset_k=self._spin_k.value(),
         )
         self._worker.data_ready.connect(self._on_data_ready)
         self._worker.log.connect(self._log)
@@ -739,6 +789,7 @@ class AcquisitionTab(QWidget):
         self._combo_etiqueta.setEnabled(True)
         self._btn_marcar.setEnabled(True)
         self._shortcut_m.setEnabled(True)
+        self._set_auto_controls_enabled(False)
         self._log("Pulsa M para marcar rápidamente con la etiqueta seleccionada.")
 
     def _detener_grabacion(self) -> None:
@@ -753,6 +804,7 @@ class AcquisitionTab(QWidget):
         self._combo_etiqueta.setEnabled(False)
         self._btn_marcar.setEnabled(False)
         self._shortcut_m.setEnabled(False)
+        self._set_auto_controls_enabled(True)
 
     # ------------------------------------------------------------------
     # Slots del worker
@@ -849,6 +901,7 @@ class AcquisitionTab(QWidget):
         self._combo_etiqueta.setEnabled(False)
         self._btn_marcar.setEnabled(False)
         self._shortcut_m.setEnabled(False)
+        self._set_auto_controls_enabled(True)
 
     # ------------------------------------------------------------------
     # Escala vertical (▲▼ por gráfica)
