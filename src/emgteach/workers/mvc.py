@@ -16,6 +16,7 @@ from PySide6.QtCore import QThread, Signal
 from emgteach.dsp import detect_acquisition_problems, process_offline
 from emgteach.io import read_edf_pyedflib
 from emgteach.mvc import adaptive_ylim, compute_mvc, normalise_to_mvc
+from emgteach.profiles import EMG_PROFILE, SignalProfile
 
 
 class MvcWorker(QThread):
@@ -40,23 +41,27 @@ class MvcWorker(QThread):
         self,
         edf_path: str,
         mvc_path: str = "",
-        f_low: float = 20.0,
-        f_high: float = 450.0,
-        f_notch: float = 50.0,
-        f_env: float = 5.0,
+        f_low: float | None = None,
+        f_high: float | None = None,
+        f_notch: float | None = None,
+        f_env: float | None = None,
         plot_duration_s: float = 10.0,
-        mvc_percentile: float = 95.0,
+        mvc_percentile: float | None = None,
+        profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
         super().__init__(parent)
+        self._profile = profile
         self._edf_path = edf_path
         self._mvc_path = mvc_path.strip()
-        self._f_low = float(f_low)
-        self._f_high = float(f_high)
-        self._f_notch = float(f_notch)
-        self._f_env = float(f_env)
+        self._f_low = float(f_low) if f_low is not None else profile.f_low
+        self._f_high = float(f_high) if f_high is not None else profile.f_high
+        self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
+        self._f_env = float(f_env) if f_env is not None else profile.f_env
         self._plot_duration_s = float(plot_duration_s)
-        self._percentile = float(mvc_percentile)
+        self._percentile = (
+            float(mvc_percentile) if mvc_percentile is not None else profile.mvc_percentile
+        )
         self._cancelled = False
 
     def stop(self) -> None:

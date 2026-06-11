@@ -23,7 +23,8 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QMutex, QThread, Signal, Slot
 
 from emgteach.dsp import RealtimeFilterState
-from emgteach.io import BufferedEdfWriter, ChannelInfo, build_timestamped_path
+from emgteach.io import BufferedEdfWriter, build_timestamped_path
+from emgteach.profiles import EMG_PROFILE, SignalProfile
 
 if TYPE_CHECKING:
     from emgteach.devices import AcquisitionDevice
@@ -58,7 +59,11 @@ class AcquisitionWorker(QThread):
         Number of samples to request per ``device.read`` call (default
         100, i.e. 100 ms at 1 kHz).
     f_low, f_high, f_notch, f_env : float, optional
-        DSP cut-offs forwarded to :class:`RealtimeFilterState`.
+        DSP cut-offs forwarded to :class:`RealtimeFilterState`. When left
+        as ``None`` they default to the corresponding values of ``profile``.
+    profile : SignalProfile, optional
+        Biopotential profile providing the default filter cut-offs and
+        the derived EDF channel schema (default :data:`EMG_PROFILE`).
     parent : QObject, optional
         Parent in the Qt object tree.
     """
@@ -74,20 +79,22 @@ class AcquisitionWorker(QThread):
         device: AcquisitionDevice,
         save_dir: str = ".",
         n_per_read: int = 100,
-        f_low: float = 20.0,
-        f_high: float = 450.0,
-        f_notch: float = 50.0,
-        f_env: float = 5.0,
+        f_low: float | None = None,
+        f_high: float | None = None,
+        f_notch: float | None = None,
+        f_env: float | None = None,
+        profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self._device = device
         self._save_dir = save_dir
         self._n_per_read = int(n_per_read)
-        self._f_low = float(f_low)
-        self._f_high = float(f_high)
-        self._f_notch = float(f_notch)
-        self._f_env = float(f_env)
+        self._profile = profile
+        self._f_low = float(f_low) if f_low is not None else profile.f_low
+        self._f_high = float(f_high) if f_high is not None else profile.f_high
+        self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
+        self._f_env = float(f_env) if f_env is not None else profile.f_env
 
         self._running = False
         self._opening = False
@@ -177,11 +184,7 @@ class AcquisitionWorker(QThread):
             )
 
             edf_path = build_timestamped_path(self._save_dir)
-            channels = [
-                ChannelInfo("EMG", sample_frequency=fs),
-                ChannelInfo("EMG_Filtered", sample_frequency=fs),
-                ChannelInfo("EMG_Envelope", physical_min=0.0, sample_frequency=fs),
-            ]
+            channels = self._profile.build_channels(fs)
             writer = BufferedEdfWriter(edf_path, channels=channels)
             self.log.emit(f"Recording to: {edf_path}")
 

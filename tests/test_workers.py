@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 from PySide6.QtCore import QCoreApplication, QEventLoop, QTimer
 
+from emgteach import SignalProfile
 from emgteach.devices import AcquisitionDevice
 from emgteach.io import read_edf_pyedflib
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
@@ -203,6 +204,41 @@ class TestAcquisitionWorker:
         first = blocks[0]
         assert set(first.keys()) == {"raw_mv", "filtered", "envelope"}
         assert first["raw_mv"].shape == first["filtered"].shape == first["envelope"].shape
+
+    def test_custom_profile_sets_edf_channel_labels(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """A non-EMG profile must flow through to the EDF channel schema.
+
+        This is the end-to-end check that ``SignalProfile`` is a real
+        extension point: swapping the profile changes the recorded channel
+        labels with no other code change in the worker.
+        """
+        from pyedflib import highlevel
+
+        ecg = SignalProfile(
+            name="ECG",
+            f_low=0.5,
+            f_high=100.0,
+            raw_label="ECG",
+            filtered_label="ECG_Filtered",
+            envelope_label="ECG_Envelope",
+        )
+        device = _FakeDevice(fs=1000)
+        worker = AcquisitionWorker(
+            device=device, save_dir=str(tmp_path), n_per_read=100, profile=ecg
+        )
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        QTimer.singleShot(150, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        assert edf_paths, "Worker did not emit finished_ok"
+        _signals, headers, _ = highlevel.read_edf(edf_paths[0])
+        labels = [h["label"] for h in headers]
+        assert labels == ["ECG", "ECG_Filtered", "ECG_Envelope"]
 
 
 # ---------------------------------------------------------------------------

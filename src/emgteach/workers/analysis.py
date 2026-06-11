@@ -20,6 +20,7 @@ from emgteach.dsp import (
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
 from emgteach.io import read_edf_mne
+from emgteach.profiles import EMG_PROFILE, SignalProfile
 
 
 class AnalysisWorker(QThread):
@@ -45,27 +46,33 @@ class AnalysisWorker(QThread):
     def __init__(
         self,
         edf_path: str,
-        channel_name: str = "EMG",
-        f_low: float = 20.0,
-        f_high: float = 450.0,
-        f_notch: float = 50.0,
-        f_env: float = 5.0,
-        rms_window_ms: float = 50.0,
-        seg_len_s: float = 1.0,
-        overlap: float = 0.5,
+        channel_name: str | None = None,
+        f_low: float | None = None,
+        f_high: float | None = None,
+        f_notch: float | None = None,
+        f_env: float | None = None,
+        rms_window_ms: float | None = None,
+        seg_len_s: float | None = None,
+        overlap: float | None = None,
         plot_duration_s: float = 10.0,
+        profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
         super().__init__(parent)
+        self._profile = profile
         self._edf_path = edf_path
-        self._channel_name = channel_name
-        self._f_low = float(f_low)
-        self._f_high = float(f_high)
-        self._f_notch = float(f_notch)
-        self._f_env = float(f_env)
-        self._rms_window_ms = float(rms_window_ms)
-        self._seg_len_s = float(seg_len_s)
-        self._overlap = float(overlap)
+        self._channel_name = (
+            channel_name if channel_name is not None else profile.raw_label
+        )
+        self._f_low = float(f_low) if f_low is not None else profile.f_low
+        self._f_high = float(f_high) if f_high is not None else profile.f_high
+        self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
+        self._f_env = float(f_env) if f_env is not None else profile.f_env
+        self._rms_window_ms = (
+            float(rms_window_ms) if rms_window_ms is not None else profile.rms_window_ms
+        )
+        self._seg_len_s = float(seg_len_s) if seg_len_s is not None else profile.seg_len_s
+        self._overlap = float(overlap) if overlap is not None else profile.overlap
         self._plot_duration_s = float(plot_duration_s)
         self._cancelled = False
 
