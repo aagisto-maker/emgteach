@@ -40,6 +40,12 @@ def test_gui_module_is_importable() -> None:
     try:
         importlib.import_module("emgteach.gui")
     except ImportError as exc:
-        if "libEGL" in str(exc) or "libGL" in str(exc):
-            pytest.skip(f"Qt platform libraries not available: {exc}")
+        # Headless CI: either the Qt platform plugin libraries are missing,
+        # or matplotlib cannot switch to the interactive QtAgg backend. Both
+        # mean the GUI cannot be imported here, which is fine — it is
+        # exercised on machines with a display.
+        msg = str(exc)
+        headless = ("libEGL", "libGL", "QtAgg", "headless", "interactive framework")
+        if any(marker in msg for marker in headless):
+            pytest.skip(f"GUI not importable in this headless environment: {exc}")
         raise

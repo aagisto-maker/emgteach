@@ -22,7 +22,12 @@ from pathlib import Path
 
 import matplotlib
 
-matplotlib.use("QtAgg")
+try:
+    matplotlib.use("QtAgg")
+except Exception:
+    # Headless environment (e.g. CI without a display): the GUI is never
+    # rendered there, and the tabs create FigureCanvasQTAgg explicitly.
+    pass
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings, Qt, QTimer, Slot
