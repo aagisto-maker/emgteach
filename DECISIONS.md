@@ -12,6 +12,93 @@ used.
 
 ---
 
+## 2026-06-11 — Dual-channel acquisition (agonist/antagonist)
+
+Requested before Hito 2: record two EMG channels simultaneously so that
+agonist/antagonist muscle pairs can be studied. Built on top of the
+Hito 1 branch (it reuses `SignalProfile` and the device factory).
+Strategic note: the Arduino + MyoWare backend is the priority for the
+student lab (cheaper, more boards per budget) even though it is
+single-channel today, so the architecture is generic over N channels
+rather than BITalino-specific.
+
+### Decision 1 — Device contract: `read()` returns `(n_samples, n_channels)`
+
+**Context.** Every layer assumed a single channel: `read()` returned a
+1-D array; the worker ran one filter chain and wrote three EDF channels.
+
+**Options evaluated.**
+
+- **A — `read()` always returns 2-D `(n_samples, n_channels)` (chosen)**,
+  with an `n_channels` property (default 1) on the ABC.
+- **B — Keep 1-D for one channel, 2-D for many.** Branchy worker code.
+
+**Chosen: A.** A single, uniform shape keeps the worker loop simple
+(iterate columns) and the contract honest. All implementers and tests
+are in-tree, so the breakage was contained. `BitalinoDevice` returns its
+requested analogue columns; `ArduinoDevice` gained an `n_channels`
+argument and de-interleaves frame-interleaved samples.
+
+### Decision 2 — EDF schema: store only the raw signal per sensor
+
+**Context.** EDF+ channel labels are limited to **16 ASCII characters**.
+The previous schema stored three channels per signal
+(`<label>`, `<label>_Filtered`, `<label>_Envelope`); with descriptive
+multi-sensor labels (e.g. `Antagonista_Filtered` = 20 chars) the derived
+labels overflow and are silently truncated. Separately, the app never
+reads the stored filtered/envelope channels back — analysis recomputes
+them from the raw channel via `process_offline`.
+
+**Options evaluated.**
+
+- **A — One raw channel per sensor (chosen).** Derived signals are
+  recomputed on analysis.
+- **B — Three channels per sensor** with compact suffixes and truncation
+  of long labels.
+- **C — Hybrid:** three channels for the single-sensor case, raw-only for
+  extra sensors.
+
+**Chosen: A (raw-only).** The raw signal is the scientifically
+meaningful datum; the filtered signal and envelope are deterministic
+functions of it. Storing only raw sidesteps the label-length limit,
+halves-or-better the file size, and loses nothing the application uses.
+This does change the single-channel EDF (previously three channels), a
+trade-off the maintainer accepted explicitly.
+
+### Decision 3 — Live view layout: overlaid channels (option A)
+
+The three real-time plots (raw, filtered, envelope) overlay one curve
+per channel in a consistent per-channel colour (blue = channel 1,
+red = channel 2) with a colour legend, rather than one column of plots
+per channel. Chosen for compactness and because direct superposition is
+the most didactic way to compare agonist/antagonist activation.
+
+### Decision 4 — Arduino firmware: write it now, versioned, 1–2 channels
+
+The repository previously tracked **no** Arduino firmware. A new
+`firmware/emgteach_arduino/` sketch (configurable `N_CHANNELS`, matching
+the existing wire protocol, frame-interleaved samples) is committed and
+shipped in the sdist, so the MyoWare 2-channel path is ready to flash
+once a second sensor is wired to `A1`. It is **not** validated by CI (no
+hardware in the loop) and must be verified on a real board before use.
+
+### Out of scope (unchanged here)
+
+- Side-by-side dual analysis and the dual-view polish remain for Phase 2.
+- The Arduino EDF physical-range correction (5 V vs ±3.3 V) is still a
+  separate, behaviour-changing decision (see the Hito 1 entry).
+
+### Outcome
+
+Delivered as five commits on branch `feature/dual-channel` (off the
+Hito 1 branch): N-channel data layer; Arduino firmware + sdist;
+dual live acquisition view; Analysis/MVC channel selection. The suite
+grew from 97 to 105 tests, all passing; `ruff` clean; the GUI boots
+offscreen and a simulated two-channel feed renders both channels. The
+buffer-then-flush writer in `io.py` was not modified.
+
+---
+
 ## 2026-06-11 — Hito 1: architectural refactor
 
 Phase 1 of the planned work. The goal is a more mature architecture
