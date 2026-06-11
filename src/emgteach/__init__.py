@@ -24,11 +24,13 @@ from emgteach.io import (
     write_edf_block,
 )
 from emgteach.mvc import adaptive_ylim, compute_mvc, normalise_to_mvc
+from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
 __version__ = "0.1.0"
 
 __all__ = [
+    "EMG_PROFILE",
     "AcquisitionDevice",
     "AcquisitionWorker",
     "AnalysisWorker",
@@ -38,6 +40,7 @@ __all__ = [
     "ChannelInfo",
     "MvcWorker",
     "RealtimeFilterState",
+    "SignalProfile",
     "__version__",
     "adaptive_ylim",
     "build_timestamped_path",
