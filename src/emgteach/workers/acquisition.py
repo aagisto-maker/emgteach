@@ -37,7 +37,8 @@ class AcquisitionWorker(QThread):
     -------
     data_ready : dict
         Emitted on every acquired block with keys ``raw_mv``,
-        ``filtered`` and ``envelope`` (each a 1-D NumPy array).
+        ``filtered`` and ``envelope``; each value is a list holding one
+        1-D NumPy array per channel (length ``device.n_channels``).
     log : str
         Human-readable status updates for the log widget.
     finished_ok : str
@@ -64,6 +65,11 @@ class AcquisitionWorker(QThread):
     profile : SignalProfile, optional
         Biopotential profile providing the default filter cut-offs and
         the derived EDF channel schema (default :data:`EMG_PROFILE`).
+    sensor_labels : sequence of str, optional
+        One base label per hardware channel (e.g. ``["Agonista",
+        "Antagonista"]``). Length must equal ``device.n_channels``. When
+        omitted, a single-channel device uses the profile's ``raw_label``
+        and a multi-channel device gets auto-generated labels.
     parent : QObject, optional
         Parent in the Qt object tree.
     """
@@ -84,6 +90,7 @@ class AcquisitionWorker(QThread):
         f_notch: float | None = None,
         f_env: float | None = None,
         profile: SignalProfile = EMG_PROFILE,
+        sensor_labels: list[str] | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -91,6 +98,7 @@ class AcquisitionWorker(QThread):
         self._save_dir = save_dir
         self._n_per_read = int(n_per_read)
         self._profile = profile
+        self._sensor_labels = list(sensor_labels) if sensor_labels else None
         self._f_low = float(f_low) if f_low is not None else profile.f_low
         self._f_high = float(f_high) if f_high is not None else profile.f_high
         self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
@@ -159,11 +167,38 @@ class AcquisitionWorker(QThread):
             self._markers_mutex.unlock()
         self.marker_added.emit(time_s, label)
 
+    def _resolve_sensor_labels(self, n_channels: int) -> list[str] | None:
+        """Return one base label per channel, or ``None`` on a mismatch.
+
+        On mismatch the :attr:`error` signal is emitted so the caller can
+        abort the run cleanly.
+        """
+        if self._sensor_labels is not None:
+            labels = list(self._sensor_labels)
+        elif n_channels == 1:
+            labels = [self._profile.raw_label]
+        else:
+            labels = [
+                f"{self._profile.raw_label}{i + 1}" for i in range(n_channels)
+            ]
+        if len(labels) != n_channels:
+            self.error.emit(
+                f"sensor_labels has {len(labels)} entries but the device "
+                f"reports {n_channels} channel(s)."
+            )
+            return None
+        return labels
+
     # -- thread body ---------------------------------------------------------
 
     def run(self) -> None:
         device = self._device
         fs = int(device.fs)
+        n_ch = int(device.n_channels)
+        labels = self._resolve_sensor_labels(n_ch)
+        if labels is None:
+            self.finished_ok.emit("")
+            return
         edf_path = ""
         writer: BufferedEdfWriter | None = None
 
@@ -175,16 +210,20 @@ class AcquisitionWorker(QThread):
             self._opening = False
             self.log.emit("Connection established. Starting acquisition.")
 
-            filter_state = RealtimeFilterState(
-                fs=fs,
-                f_low=self._f_low,
-                f_high=self._f_high,
-                f_notch=self._f_notch,
-                f_env=self._f_env,
-            )
+            # One independent filter chain per channel.
+            filter_states = [
+                RealtimeFilterState(
+                    fs=fs,
+                    f_low=self._f_low,
+                    f_high=self._f_high,
+                    f_notch=self._f_notch,
+                    f_env=self._f_env,
+                )
+                for _ in range(n_ch)
+            ]
 
             edf_path = build_timestamped_path(self._save_dir)
-            channels = self._profile.build_channels(fs)
+            channels = self._profile.build_channels(labels, fs)
             writer = BufferedEdfWriter(edf_path, channels=channels)
             self.log.emit(f"Recording to: {edf_path}")
 
@@ -193,7 +232,7 @@ class AcquisitionWorker(QThread):
 
             while self._running:
                 try:
-                    emg_mv = device.read(self._n_per_read)
+                    block = device.read(self._n_per_read)
                     self._last_sample_time = time.monotonic()
                     if not self._streaming:
                         self._streaming = True
@@ -204,21 +243,37 @@ class AcquisitionWorker(QThread):
                     self.error.emit(f"Connection to {device.name} lost: {exc}")
                     break
 
-                self._n_samples_total += len(emg_mv)
-                emg_filtered, emg_envelope = filter_state.process_block(emg_mv)
+                if block.ndim == 1:
+                    block = block.reshape(-1, 1)
+                self._n_samples_total += len(block)
 
-                # The buffered writer handles record alignment internally,
-                # so we just feed it the same blocks the device produces.
+                # Process each channel through its own filter chain. Only
+                # the raw signal is written to the EDF (one channel per
+                # sensor); the filtered signal and envelope are computed
+                # here for the live display and recomputed on analysis.
+                raw_list = []
+                filt_list = []
+                env_list = []
+                for c in range(n_ch):
+                    raw_c = block[:, c]
+                    filt_c, env_c = filter_states[c].process_block(raw_c)
+                    raw_list.append(raw_c.copy())
+                    filt_list.append(filt_c.copy())
+                    env_list.append(env_c.copy())
+
+                # One raw block per sensor, in the same order as the EDF
+                # channels built from the profile. The buffered writer
+                # handles record alignment internally.
                 try:
-                    writer.add_samples(emg_mv, emg_filtered, emg_envelope)
+                    writer.add_samples(*raw_list)
                 except Exception as exc:
                     self.log.emit(f"Warning - EDF write error: {exc}")
 
                 self.data_ready.emit(
                     {
-                        "raw_mv": emg_mv.copy(),
-                        "filtered": emg_filtered.copy(),
-                        "envelope": emg_envelope.copy(),
+                        "raw_mv": raw_list,
+                        "filtered": filt_list,
+                        "envelope": env_list,
                     }
                 )
 

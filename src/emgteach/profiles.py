@@ -19,6 +19,7 @@ package to it is behaviour-preserving by construction.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from emgteach.io import ChannelInfo
@@ -54,8 +55,9 @@ class SignalProfile:
         Fractional overlap between consecutive analysis segments.
     mvc_percentile : float
         Percentile of the envelope used as the MVC reference amplitude.
-    raw_label, filtered_label, envelope_label : str
-        EDF channel labels for the three derived signals.
+    raw_label : str
+        EDF label of the single, default sensor (used when no explicit
+        per-sensor labels are supplied).
     dimension : str
         Physical unit written to the EDF header, e.g. ``"mV"``.
     ylim_raw, ylim_filtered, ylim_envelope : tuple of float
@@ -83,10 +85,8 @@ class SignalProfile:
     overlap: float = 0.5
     mvc_percentile: float = 95.0
 
-    # -- derived EDF channel schema --
+    # -- EDF channel schema (one raw channel per sensor) --
     raw_label: str = "EMG"
-    filtered_label: str = "EMG_Filtered"
-    envelope_label: str = "EMG_Envelope"
     dimension: str = "mV"
 
     # -- realtime display ranges (dimension units) --
@@ -129,15 +129,24 @@ class SignalProfile:
             "f_env": self.f_env,
         }
 
-    def build_channels(self, fs: int | None = None) -> list[ChannelInfo]:
-        """Build the three derived EDF channels (raw, filtered, envelope).
+    def build_channels(
+        self, sensor_labels: Sequence[str] | None = None, fs: int | None = None
+    ) -> list[ChannelInfo]:
+        """Build one raw EDF channel per sensor.
 
-        Reproduces the channel schema used by the acquisition worker: the
-        envelope channel is non-negative (``physical_min=0``) while the raw
-        and filtered channels keep the symmetric default physical range.
+        Only the raw signal is stored. The filtered signal and the
+        envelope are deterministic functions of the raw channel and are
+        recomputed on analysis (see :func:`emgteach.dsp.process_offline`),
+        so persisting them would be redundant and would overflow the
+        16-character EDF label limit once descriptive multi-sensor labels
+        are used.
 
         Parameters
         ----------
+        sensor_labels : sequence of str, optional
+            One EDF label per hardware channel (e.g. ``["Agonista",
+            "Antagonista"]``). Defaults to a single sensor named
+            :attr:`raw_label`.
         fs : int, optional
             Samples-per-record for every channel. Defaults to the
             profile's :attr:`sample_frequency`; pass the device's actual
@@ -146,20 +155,13 @@ class SignalProfile:
         Returns
         -------
         list of ChannelInfo
-            One entry per derived channel, in raw/filtered/envelope order.
+            One entry per sensor, in the given order.
         """
+        labels = list(sensor_labels) if sensor_labels else [self.raw_label]
         sf = int(fs) if fs is not None else self.sample_frequency
         return [
-            ChannelInfo(self.raw_label, dimension=self.dimension, sample_frequency=sf),
-            ChannelInfo(
-                self.filtered_label, dimension=self.dimension, sample_frequency=sf
-            ),
-            ChannelInfo(
-                self.envelope_label,
-                dimension=self.dimension,
-                physical_min=0.0,
-                sample_frequency=sf,
-            ),
+            ChannelInfo(label, dimension=self.dimension, sample_frequency=sf)
+            for label in labels
         ]
 
 

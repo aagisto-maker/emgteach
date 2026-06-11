@@ -50,10 +50,11 @@ class _FakeDevice(AcquisitionDevice):
     that the worker writes a continuous EDF.
     """
 
-    def __init__(self, fs: int = 1000) -> None:
+    def __init__(self, fs: int = 1000, n_channels: int = 1) -> None:
         self._fs = int(fs)
         self._cursor = 0
         self._opened = False
+        self._n_channels = int(n_channels)
 
     @property
     def fs(self) -> float:
@@ -63,6 +64,10 @@ class _FakeDevice(AcquisitionDevice):
     def name(self) -> str:
         return "FakeDevice"
 
+    @property
+    def n_channels(self) -> int:
+        return self._n_channels
+
     def open(self) -> None:
         self._opened = True
 
@@ -71,7 +76,9 @@ class _FakeDevice(AcquisitionDevice):
         t = (self._cursor + np.arange(n)) / self._fs
         sig = 0.3 * np.sin(2 * np.pi * 80.0 * t)
         self._cursor += n
-        return sig.astype(np.float64)
+        # One column per channel (shape (n, n_channels)), per the new
+        # AcquisitionDevice contract.
+        return np.column_stack([sig] * self._n_channels).astype(np.float64)
 
     def close(self) -> None:
         self._opened = False
@@ -203,7 +210,13 @@ class TestAcquisitionWorker:
         assert len(blocks) >= 1, "data_ready was never emitted"
         first = blocks[0]
         assert set(first.keys()) == {"raw_mv", "filtered", "envelope"}
-        assert first["raw_mv"].shape == first["filtered"].shape == first["envelope"].shape
+        # Each value is a list with one 1-D array per channel.
+        assert len(first["raw_mv"]) == device.n_channels == 1
+        assert (
+            first["raw_mv"][0].shape
+            == first["filtered"][0].shape
+            == first["envelope"][0].shape
+        )
 
     def test_custom_profile_sets_edf_channel_labels(
         self, qapp: QCoreApplication, tmp_path: Path
@@ -221,8 +234,6 @@ class TestAcquisitionWorker:
             f_low=0.5,
             f_high=100.0,
             raw_label="ECG",
-            filtered_label="ECG_Filtered",
-            envelope_label="ECG_Envelope",
         )
         device = _FakeDevice(fs=1000)
         worker = AcquisitionWorker(
@@ -238,7 +249,33 @@ class TestAcquisitionWorker:
         assert edf_paths, "Worker did not emit finished_ok"
         _signals, headers, _ = highlevel.read_edf(edf_paths[0])
         labels = [h["label"] for h in headers]
-        assert labels == ["ECG", "ECG_Filtered", "ECG_Envelope"]
+        assert labels == ["ECG"]
+
+    def test_two_channel_acquisition_writes_one_raw_channel_per_sensor(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """Two sensors produce two raw EDF channels, labelled per sensor."""
+        from pyedflib import highlevel
+
+        device = _FakeDevice(fs=1000, n_channels=2)
+        worker = AcquisitionWorker(
+            device=device,
+            save_dir=str(tmp_path),
+            n_per_read=100,
+            sensor_labels=["Agonista", "Antagonista"],
+        )
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        QTimer.singleShot(200, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        assert edf_paths and edf_paths[0], "Worker did not emit finished_ok"
+        signals, headers, _ = highlevel.read_edf(edf_paths[0])
+        labels = [h["label"] for h in headers]
+        assert labels == ["Agonista", "Antagonista"]
+        assert len(signals) == 2
 
 
 # ---------------------------------------------------------------------------

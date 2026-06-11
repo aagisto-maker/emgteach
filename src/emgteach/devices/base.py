@@ -43,13 +43,27 @@ class AcquisitionDevice(ABC):
     def name(self) -> str:
         """Human-readable name for log output (e.g. ``'Arduino MyoWare (COM4)'``)."""
 
+    @property
+    def n_channels(self) -> int:
+        """Number of channels returned by :meth:`read` (default 1).
+
+        Single-channel backends keep the default. Multi-channel backends
+        override this — e.g. a BITalino configured with several analogue
+        channels, or an Arduino whose firmware streams several sensors
+        (agonist/antagonist montages).
+        """
+        return 1
+
     @abstractmethod
     def open(self) -> None:
         """Establish the connection. Raises on failure."""
 
     @abstractmethod
     def read(self, n_samples: int) -> FloatArray:
-        """Read *n_samples* and return them as float64 in millivolts.
+        """Read *n_samples* and return them as float64 millivolts.
+
+        Returns a 2-D array of shape ``(n_samples, n_channels)``; a
+        single-channel device returns shape ``(n_samples, 1)``.
 
         This call blocks until the requested samples are available, or
         raises if the connection is lost. Implementations must release

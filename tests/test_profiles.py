@@ -29,8 +29,6 @@ class TestEmgProfileValues:
     def test_channel_labels_and_dimension(self) -> None:
         p = EMG_PROFILE
         assert p.raw_label == "EMG"
-        assert p.filtered_label == "EMG_Filtered"
-        assert p.envelope_label == "EMG_Envelope"
         assert p.dimension == "mV"
 
     def test_display_ranges(self) -> None:
@@ -61,31 +59,33 @@ class TestFilterKwargs:
 
 
 class TestBuildChannels:
-    """build_channels() must reproduce the acquisition worker's schema."""
+    """build_channels() emits exactly one raw channel per sensor."""
 
-    def test_reproduces_legacy_channel_list(self) -> None:
-        # This is exactly the list the acquisition worker built by hand
-        # before the refactor.
-        expected = [
-            ChannelInfo("EMG", sample_frequency=1000),
-            ChannelInfo("EMG_Filtered", sample_frequency=1000),
-            ChannelInfo("EMG_Envelope", physical_min=0.0, sample_frequency=1000),
+    def test_single_sensor_default(self) -> None:
+        # The default single-sensor case: one raw "EMG" channel.
+        assert EMG_PROFILE.build_channels(fs=1000) == [
+            ChannelInfo("EMG", sample_frequency=1000)
         ]
-        assert EMG_PROFILE.build_channels(fs=1000) == expected
 
     def test_defaults_to_profile_sample_frequency(self) -> None:
         channels = EMG_PROFILE.build_channels()
-        assert [c.sample_frequency for c in channels] == [1000, 1000, 1000]
+        assert [c.sample_frequency for c in channels] == [1000]
 
     def test_fs_override_propagates_to_every_channel(self) -> None:
-        channels = EMG_PROFILE.build_channels(fs=500)
-        assert [c.sample_frequency for c in channels] == [500, 500, 500]
+        channels = EMG_PROFILE.build_channels(sensor_labels=["A", "B"], fs=500)
+        assert [c.sample_frequency for c in channels] == [500, 500]
 
-    def test_only_envelope_channel_is_non_negative(self) -> None:
-        raw, filtered, envelope = EMG_PROFILE.build_channels()
+    def test_raw_channel_keeps_symmetric_range(self) -> None:
+        (raw,) = EMG_PROFILE.build_channels()
         assert raw.physical_min == -3.3
-        assert filtered.physical_min == -3.3
-        assert envelope.physical_min == 0.0
+        assert raw.physical_max == 3.3
+
+    def test_multi_sensor_one_raw_channel_each(self) -> None:
+        channels = EMG_PROFILE.build_channels(
+            sensor_labels=["Agonista", "Antagonista"], fs=1000
+        )
+        assert [c.label for c in channels] == ["Agonista", "Antagonista"]
+        assert len(channels) == 2
 
 
 class TestImmutabilityAndValidation:
@@ -119,8 +119,6 @@ class TestImmutabilityAndValidation:
             f_notch=50.0,
             f_env=10.0,
             raw_label="ECG",
-            filtered_label="ECG_Filtered",
-            envelope_label="ECG_Envelope",
         )
         assert ecg.name == "ECG"
         assert ecg.build_channels()[0].label == "ECG"

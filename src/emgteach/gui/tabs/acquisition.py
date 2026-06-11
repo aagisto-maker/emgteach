@@ -619,9 +619,11 @@ class AcquisitionTab(QWidget):
         # disparar durante device.open() que puede tardar hasta 3 s en Arduino).
         if not self._watchdog_timer.isActive():
             self._watchdog_timer.start()
-        self._buf_raw.extend(data["raw_mv"].tolist())
-        self._buf_filt.extend(data["filtered"].tolist())
-        self._buf_env.extend(data["envelope"].tolist())
+        # data_ready now carries one array per channel; the dual-channel
+        # live view is wired in a later stage, so for now show channel 0.
+        self._buf_raw.extend(data["raw_mv"][0].tolist())
+        self._buf_filt.extend(data["filtered"][0].tolist())
+        self._buf_env.extend(data["envelope"][0].tolist())
         self._new_data = True
         # LED verde: hay tráfico. El timer lo devolverá a amarillo si no llega
         # ningún bloque nuevo en LED_IDLE_MS ms.

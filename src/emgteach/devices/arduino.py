@@ -54,6 +54,12 @@ class ArduinoDevice(AcquisitionDevice):
     fs : int, optional
         Sampling frequency in Hz (default 1000). Must match the value
         configured in the Arduino firmware.
+    n_channels : int, optional
+        Number of analogue channels streamed by the firmware (default 1).
+        Must match the firmware's ``N_CHANNELS``. When greater than 1 the
+        firmware sends the channels frame-interleaved (all channels of one
+        sample, then the next sample), and :meth:`read` de-interleaves
+        them into the trailing axis.
 
     Examples
     --------
@@ -74,9 +80,10 @@ class ArduinoDevice(AcquisitionDevice):
     _V_REF = 5.0  # V_ref of the Arduino board (5 V via shield jumper)
     _GAIN = 200.0  # MyoWare 2.0 nominal gain in RAW mode
 
-    def __init__(self, port: str, fs: int = 1000) -> None:
+    def __init__(self, port: str, fs: int = 1000, n_channels: int = 1) -> None:
         self._port = port
         self._fs = int(fs)
+        self._n_channels = int(n_channels)
         self._serial = None  # type: ignore[var-annotated]
         self._lock = threading.Lock()
 
@@ -89,6 +96,10 @@ class ArduinoDevice(AcquisitionDevice):
     @property
     def name(self) -> str:
         return f"Arduino MyoWare ({self._port})"
+
+    @property
+    def n_channels(self) -> int:
+        return self._n_channels
 
     # -- AcquisitionDevice interface -----------------------------------------
 
@@ -131,18 +142,18 @@ class ArduinoDevice(AcquisitionDevice):
             self._serial = ser
 
     def read(self, n_samples: int) -> FloatArray:
-        """Read *n_samples* binary samples and convert to mV.
+        """Read *n_samples* binary samples per channel and convert to mV.
 
         Parameters
         ----------
         n_samples : int
-            Number of ADC samples to read.
+            Number of ADC samples to read per channel.
 
         Returns
         -------
         numpy.ndarray
-            float64 array of length *n_samples* in millivolts referred
-            to the MyoWare 2.0 input.
+            float64 array of shape ``(n_samples, n_channels)`` in
+            millivolts referred to the MyoWare 2.0 input.
 
         Raises
         ------
@@ -154,7 +165,8 @@ class ArduinoDevice(AcquisitionDevice):
         if ser is None:
             raise RuntimeError("ArduinoDevice is not open.")
 
-        n_bytes = int(n_samples) * 2
+        n = int(n_samples)
+        n_bytes = n * 2 * self._n_channels
         buf = bytearray()
         while len(buf) < n_bytes:
             chunk = ser.read(n_bytes - len(buf))
@@ -165,7 +177,10 @@ class ArduinoDevice(AcquisitionDevice):
             buf.extend(chunk)
 
         adc = np.frombuffer(bytes(buf), dtype="<u2").astype(np.float64)
-        return (adc * self._V_REF / self._ADC_MAX - self._V_REF / 2.0) * 1000.0 / self._GAIN
+        mv = (adc * self._V_REF / self._ADC_MAX - self._V_REF / 2.0) * 1000.0 / self._GAIN
+        # The firmware streams channels frame-interleaved, so a C-order
+        # reshape recovers (sample, channel).
+        return mv.reshape(n, self._n_channels)
 
     def close(self) -> None:
         """Send ``STOP``, wait briefly for ``STOPPED``, then close the port.

@@ -97,6 +97,10 @@ class BitalinoDevice(AcquisitionDevice):
         return f"BITalino {self._mac}" if self._mac else "BITalino"
 
     @property
+    def n_channels(self) -> int:
+        return len(self._channels)
+
+    @property
     def is_connected(self) -> bool:
         """``True`` while the underlying handle is open."""
         with self._conn_lock:
@@ -133,7 +137,12 @@ class BitalinoDevice(AcquisitionDevice):
             self._device = device
 
     def read(self, n_samples: int) -> FloatArray:
-        """Read *n_samples* and return the active channel as float64 mV.
+        """Read *n_samples* and return the active channels as float64 mV.
+
+        Returns shape ``(n_samples, n_channels)``. The BITalino frame
+        places the requested analogue channels in its trailing columns,
+        so the last :attr:`n_channels` columns are extracted in the order
+        given to the constructor.
 
         The connection lock is released **before** the blocking call to
         the underlying device, allowing :meth:`force_close` to release
@@ -145,7 +154,7 @@ class BitalinoDevice(AcquisitionDevice):
             raise RuntimeError("BitalinoDevice is not open.")
 
         raw = device.read(n_samples)  # blocking; lock NOT held here
-        return self._raw_to_mv(raw[:, -1])
+        return self._raw_to_mv(raw[:, -self.n_channels :])
 
     def close(self) -> None:
         """Stop streaming and close the Bluetooth connection.

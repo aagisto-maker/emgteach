@@ -74,6 +74,7 @@ class TestAcquisitionDeviceABC:
         assert d.fs == 1000.0
         assert d.name == "dummy"
         assert d.read(5).shape == (5,)
+        assert d.n_channels == 1  # default from the ABC
 
 
 # ---------------------------------------------------------------------------
@@ -178,11 +179,35 @@ class TestArduinoDevice:
         ser.binary_queue = bytearray(np.array([511, 1023], dtype="<u2").tobytes())
 
         out = device.read(2)
-        assert out.shape == (2,)
+        assert out.shape == (2, 1)
         # ADC=1023 → V_in ≈ 5 V → (5 - 2.5)*1000/200 = 12.5 mV
-        np.testing.assert_allclose(out[1], 12.5, atol=0.05)
+        np.testing.assert_allclose(out[1, 0], 12.5, atol=0.05)
         # ADC=511 ≈ midscale → output close to 0
-        assert abs(out[0]) < 0.05
+        assert abs(out[0, 0]) < 0.05
+
+    def test_read_two_channels_deinterleaves(
+        self, fake_serial_factory: list[_FakeSerial]
+    ) -> None:
+        device = ArduinoDevice("COM4", n_channels=2)
+        with patch.object(_FakeSerial, "readline", side_effect=[b"READY\n"]):
+            device.open()
+
+        ser = fake_serial_factory[0]
+        # Frame-interleaved: sample0=[ch0=1023, ch1=511], sample1=[ch0=511, ch1=1023]
+        ser.binary_queue = bytearray(
+            np.array([1023, 511, 511, 1023], dtype="<u2").tobytes()
+        )
+
+        out = device.read(2)
+        assert out.shape == (2, 2)
+        np.testing.assert_allclose(out[0, 0], 12.5, atol=0.05)  # ch0, sample0
+        assert abs(out[0, 1]) < 0.05  # ch1, sample0
+        assert abs(out[1, 0]) < 0.05  # ch0, sample1
+        np.testing.assert_allclose(out[1, 1], 12.5, atol=0.05)  # ch1, sample1
+
+    def test_n_channels_default_and_custom(self) -> None:
+        assert ArduinoDevice("COM4").n_channels == 1
+        assert ArduinoDevice("COM4", n_channels=2).n_channels == 2
 
     def test_read_timeout_raises(self, fake_serial_factory: list[_FakeSerial]) -> None:
         device = ArduinoDevice("COM4")
@@ -336,6 +361,21 @@ class TestBitalinoDeviceBasics:
     def test_close_without_open_is_noop(self) -> None:
         device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
         device.close()  # must not raise
+
+    def test_n_channels_matches_channels(self) -> None:
+        assert BitalinoDevice("AA:BB:CC:DD:EE:FF").n_channels == 1
+        assert BitalinoDevice("AA:BB:CC:DD:EE:FF", channels=[0, 1]).n_channels == 2
+
+    def test_read_two_channels_returns_two_columns(
+        self, fake_bitalino_module: MagicMock
+    ) -> None:
+        device = BitalinoDevice("AA:BB:CC:DD:EE:FF", channels=[0, 1])
+        device.open()
+        # Let the fake's blocking read return immediately.
+        device._device.read_event.set()
+        out = device.read(10)
+        assert out.shape == (10, 2)
+        device.close()
 
 
 class TestBitalinoConversion:
