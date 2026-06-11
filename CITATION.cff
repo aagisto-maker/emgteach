@@ -48,6 +48,6 @@ references:
     authors:
       - family-names: "Agis-Torres"
         given-names: "Ángel"
-    journal: "Biomedical Signal Processing and Control"
     year: 2026
+    notes: "Manuscript under review; the DOI resolves to the reproducibility package."
     doi: 10.5281/zenodo.20042878

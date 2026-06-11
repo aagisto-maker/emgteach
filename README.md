@@ -15,7 +15,7 @@ supports two interchangeable hardware backends: **BITalino (revolution)**
 over Bluetooth and an **Arduino RedBoard Plus + MyoWare 2.0** over USB
 serial. Output files follow the **EDF+** standard with reliable
 buffered writing, free of the silent corruption pitfall described in
-[Agis-Torres (2026), *Biomedical Signal Processing and Control*][bspc].
+[Agis-Torres (2026)](https://doi.org/10.5281/zenodo.20042878).
 
 The package is intended for use in the practical teaching laboratory of
 the Section of Physiology, Faculty of Pharmacy, Universidad
@@ -47,7 +47,7 @@ suite of 119 tests passing on Linux and Windows across Python
 - **EDF+ output with event annotations**, suitable for downstream
   analysis in MNE-Python, EDFbrowser and similar tools
 - **Buffered-write pattern** for EDF that avoids the silent corruption
-  artefact characterised in [Agis-Torres (2026)][bspc]
+  artefact characterised in [Agis-Torres (2026)](https://doi.org/10.5281/zenodo.20042878)
 - **Robust connectivity**: BITalino watchdog releases blocked
   Bluetooth reads in ~50 ms after disconnection
 - **Reproducible synthetic signals** for class assignments and CI
@@ -137,7 +137,8 @@ methodological article on the buffered-write pattern it implements:
   https://doi.org/10.5281/zenodo.20110845
 - Agis-Torres, Á. (2026). *Silent corruption of EDF recordings during
   real-time biopotential streaming: a buffered-write solution.*
-  Biomedical Signal Processing and Control.
+  Manuscript; reproducibility package:
+  https://doi.org/10.5281/zenodo.20042878
 
 A dedicated software paper is in preparation.
 
@@ -150,8 +151,8 @@ responsible for the released code.
 
 ## Related work
 
-- [edf-buffered-write][repo-bspc] — minimal reproducibility package
-  for the buffered-write pattern (BSPC paper, [DOI][bspc-doi])
+- [edf-buffered-write](https://doi.org/10.5281/zenodo.20042878) —
+  minimal reproducibility package for the buffered-write pattern
 - [BITalino](https://www.bitalino.com/) — commercial Bluetooth
   biopotential acquisition device
 - [SparkFun MyoWare 2.0](https://www.sparkfun.com/products/21265) —

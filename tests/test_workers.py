@@ -1,8 +1,9 @@
 """Tests for the QThread workers using a synthetic AcquisitionDevice.
 
 The acquisition worker is the most important one to test because it
-hosts the buffered-write integration -- the central claim of the BSPC
-short communication, now wired through :class:`BufferedEdfWriter`. A
+hosts the buffered-write integration -- the central claim of the
+buffered-write short communication, now wired through
+:class:`BufferedEdfWriter`. A
 round-trip test (synthetic device -> worker -> EDF -> read back -> check
 duration and markers) verifies that the integration is correct end to
 end.

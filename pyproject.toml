@@ -44,7 +44,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 
-# Pinned versions match the BSPC reproducibility package and the bioinstrumentation
+# Pinned versions match the buffered-write reproducibility package and the bioinstrumentation
 # venv that has been verified to run on Windows 11 with Python 3.12.
 #
 # Note on `bitalino`: it is *not* a hard dependency. Its PyBluez backend
@@ -98,7 +98,7 @@ Homepage = "https://github.com/aagisto-maker/emgteach"
 Documentation = "https://aagisto-maker.github.io/emgteach"
 Repository = "https://github.com/aagisto-maker/emgteach"
 Issues = "https://github.com/aagisto-maker/emgteach/issues"
-"Related publication (BSPC)" = "https://doi.org/10.5281/zenodo.20042878"
+"Related publication" = "https://doi.org/10.5281/zenodo.20042878"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/emgteach"]

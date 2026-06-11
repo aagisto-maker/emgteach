@@ -289,7 +289,7 @@ today, so the refactor is behaviour-preserving by construction.
 the public API (`__init__.py`) since v0.1.0, but are not used anywhere in
 the package or the test suite — only the original prototype used them.
 They implement the *unsafe* per-block write that the buffer-then-flush
-pattern (Agis-Torres, 2026, BSPC) was designed to replace.
+pattern (Agis-Torres, 2026) was designed to replace.
 
 **Options evaluated.**
 
@@ -304,8 +304,8 @@ pattern (Agis-Torres, 2026, BSPC) was designed to replace.
 published, citable release. Leaving them silent (B) keeps an unsafe path
 discoverable without any warning. Deprecation (A) preserves backward
 compatibility while actively steering users towards the safe writer,
-which is consistent with the methodological contribution of the BSPC
-paper.
+which is consistent with the methodological contribution of the
+buffered-write paper.
 
 ### Out of scope for Hito 1 (flagged, not changed)
 
@@ -340,5 +340,5 @@ Verification: the full suite grew from 74 to 97 tests, all passing
 (``pytest -m "not hardware"``), ``ruff check`` clean, and the GUI boots
 offscreen with the profile-driven values live. The buffer-then-flush
 writer in ``io.py`` was not modified and its round-trip tests still pass,
-confirming the central BSPC pattern is intact. ``mypy`` reports only the
+confirming the central buffered-write pattern is intact. ``mypy`` reports only the
 same pre-existing QSettings/Qt typing notes present before the refactor.

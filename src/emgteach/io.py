@@ -17,7 +17,6 @@ References
 ----------
 .. [1] Agis-Torres Á. (2026). Silent corruption of EDF recordings during
    real-time biopotential streaming: a buffered-write solution.
-   *Biomedical Signal Processing and Control* (in press).
    Reproducibility package: https://doi.org/10.5281/zenodo.20042878
 """
 
@@ -159,7 +158,8 @@ class BufferedEdfWriter:
     ----------
     .. [1] Agis-Torres Á. (2026). Silent corruption of EDF recordings
        during real-time biopotential streaming: a buffered-write
-       solution. *Biomedical Signal Processing and Control* (in press).
+       solution. Reproducibility package:
+       https://doi.org/10.5281/zenodo.20042878
     """
 
     path: PathLike

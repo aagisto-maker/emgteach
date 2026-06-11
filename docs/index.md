@@ -21,4 +21,4 @@ modules are migrated from the prototype.
 
 - Source code: <https://github.com/aagisto-maker/emgteach>
 - Issue tracker: <https://github.com/aagisto-maker/emgteach/issues>
-- Companion paper (BSPC): <https://doi.org/10.5281/zenodo.20042878>
+- Companion paper (reproducibility package): <https://doi.org/10.5281/zenodo.20042878>

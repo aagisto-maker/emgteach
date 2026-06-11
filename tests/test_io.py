@@ -38,7 +38,7 @@ BLOCK = 100  # ms = 100 samples at 1 kHz — same as BITalino / Arduino loops
 def synthetic_signal() -> np.ndarray:
     """10 s, 80 Hz carrier (0.3 mV) + Gaussian noise (sigma 0.05 mV).
 
-    Same parameters as the BSPC reproducibility package, modulo the
+    Same parameters as the buffered-write reproducibility package, modulo the
     seed so results are byte-stable across runs in tests.
     """
     rng = np.random.default_rng(seed=42)
