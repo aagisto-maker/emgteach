@@ -108,7 +108,6 @@ include = [
     "src/",
     "tests/",
     "docs/",
-    "paper/",
     "firmware/",
     "README.md",
     "LICENSE",
