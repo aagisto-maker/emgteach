@@ -42,7 +42,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emgteach.devices import ArduinoDevice, BitalinoDevice
+from emgteach.devices import (
+    BACKEND_ARDUINO,
+    BACKEND_BITALINO,
+    ArduinoDevice,
+    create_device,
+)
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.workers import AcquisitionWorker
 
@@ -562,10 +567,12 @@ class AcquisitionTab(QWidget):
         self._reset_y_scales()
 
         if self._combo_device_type.currentIndex() == 0:
-            device = BitalinoDevice(mac=self._edit_mac.text().strip(), fs=FS)
+            device = create_device(
+                BACKEND_BITALINO, mac=self._edit_mac.text().strip(), fs=FS
+            )
         else:
-            device = ArduinoDevice(
-                port=self._combo_port.currentText().strip(), fs=FS
+            device = create_device(
+                BACKEND_ARDUINO, port=self._combo_port.currentText().strip(), fs=FS
             )
         self._worker = AcquisitionWorker(device=device, save_dir=save_dir)
         self._worker.data_ready.connect(self._on_data_ready)

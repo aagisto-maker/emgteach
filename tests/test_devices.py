@@ -23,7 +23,16 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from emgteach.devices import AcquisitionDevice, ArduinoDevice, BitalinoDevice
+from emgteach.devices import (
+    BACKEND_ARDUINO,
+    BACKEND_BITALINO,
+    AcquisitionDevice,
+    ArduinoDevice,
+    BitalinoDevice,
+    available_backends,
+    create_device,
+    register_device,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -390,3 +399,76 @@ class TestBitalinoWatchdog:
             "under the 3-second GUI watchdog threshold."
         )
         assert exceptions, "Reader did not see the close-induced exception."
+
+
+# ---------------------------------------------------------------------------
+# Device factory / registry
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def clean_registry() -> Iterator[None]:
+    """Snapshot and restore the factory registry around a test."""
+    from emgteach.devices import factory
+
+    snapshot = dict(factory._REGISTRY)
+    try:
+        yield
+    finally:
+        factory._REGISTRY.clear()
+        factory._REGISTRY.update(snapshot)
+
+
+class TestDeviceFactory:
+    def test_builtin_backends_are_registered(self) -> None:
+        backends = available_backends()
+        assert BACKEND_BITALINO in backends
+        assert BACKEND_ARDUINO in backends
+
+    def test_create_arduino_returns_arduino_device(self) -> None:
+        device = create_device(BACKEND_ARDUINO, port="COM9", fs=1000)
+        assert isinstance(device, ArduinoDevice)
+        assert device.fs == 1000.0
+        assert "COM9" in device.name
+
+    def test_create_bitalino_returns_bitalino_device(self) -> None:
+        # Construction must not require the optional `bitalino` package;
+        # it is imported lazily inside open(), not here.
+        device = create_device(BACKEND_BITALINO, mac="AA:BB:CC:DD:EE:FF", fs=1000)
+        assert isinstance(device, BitalinoDevice)
+        assert device.fs == 1000.0
+
+    def test_unknown_backend_raises_keyerror(self) -> None:
+        with pytest.raises(KeyError, match="Unknown device backend"):
+            create_device("not-a-backend")
+
+    def test_register_new_backend(self, clean_registry: None) -> None:
+        class _DummyDevice(AcquisitionDevice):
+            def __init__(self, label: str = "x") -> None:
+                self._label = label
+
+            @property
+            def fs(self) -> float:
+                return 500.0
+
+            @property
+            def name(self) -> str:
+                return f"dummy:{self._label}"
+
+            def open(self) -> None:
+                pass
+
+            def read(self, n_samples: int) -> np.ndarray:
+                return np.zeros(n_samples, dtype=np.float64)
+
+            def close(self) -> None:
+                pass
+
+            def force_close(self) -> None:
+                pass
+
+        register_device("dummy", _DummyDevice)
+        assert "dummy" in available_backends()
+        device = create_device("dummy", label="abc")
+        assert isinstance(device, _DummyDevice)
+        assert device.name == "dummy:abc"

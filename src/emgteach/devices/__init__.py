@@ -15,9 +15,21 @@ from __future__ import annotations
 from emgteach.devices.arduino import ArduinoDevice
 from emgteach.devices.base import AcquisitionDevice
 from emgteach.devices.bitalino import BitalinoDevice
+from emgteach.devices.factory import (
+    BACKEND_ARDUINO,
+    BACKEND_BITALINO,
+    available_backends,
+    create_device,
+    register_device,
+)
 
 __all__ = [
+    "BACKEND_ARDUINO",
+    "BACKEND_BITALINO",
     "AcquisitionDevice",
     "ArduinoDevice",
     "BitalinoDevice",
+    "available_backends",
+    "create_device",
+    "register_device",
 ]
