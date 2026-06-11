@@ -61,6 +61,7 @@ _PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
 
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
+from emgteach.io import list_edf_channels
 from emgteach.workers import AnalysisWorker
 
 
@@ -123,9 +124,15 @@ class AnalysisTab(QWidget):
         # Línea 2: canal + f_env
         row_params = QHBoxLayout()
         row_params.addWidget(QLabel("Canal EMG:"))
-        self._edit_canal = QLineEdit("EMG")
-        self._edit_canal.setFixedWidth(90)
-        row_params.addWidget(self._edit_canal)
+        self._combo_canal = QComboBox()
+        self._combo_canal.setEditable(True)  # permite teclear si hace falta
+        self._combo_canal.addItem("EMG")
+        self._combo_canal.setFixedWidth(150)
+        self._combo_canal.setToolTip(
+            "Canal del EDF a analizar. Se rellena con los canales del archivo "
+            "al seleccionarlo (p. ej. agonista/antagonista)."
+        )
+        row_params.addWidget(self._combo_canal)
         row_params.addWidget(QLabel("Frec. corte envolvente (Hz):"))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
@@ -376,15 +383,29 @@ class AnalysisTab(QWidget):
             self._edit_path.setText(path)
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("analisis/last_dir", self._last_edf_dir)
+            self._populate_channels(path)
             self._btn_analizar.setEnabled(True)
             self._btn_guardar.setEnabled(False)
             self._progress.setValue(0)
             self._progress.setFormat("Listo")
 
+    def _populate_channels(self, path: str) -> None:
+        """Fill the channel picker from the EDF header, keeping the choice."""
+        labels = list_edf_channels(path)
+        if not labels:
+            return
+        current = self._combo_canal.currentText().strip()
+        self._combo_canal.blockSignals(True)
+        self._combo_canal.clear()
+        self._combo_canal.addItems(labels)
+        idx = self._combo_canal.findText(current)
+        self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
+        self._combo_canal.blockSignals(False)
+
     @Slot()
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
-        canal = self._edit_canal.text().strip() or "EMG"
+        canal = self._combo_canal.currentText().strip() or "EMG"
         f_env = self._spin_fenv.value()
 
         self._set_controles_habilitados(False)
@@ -874,7 +895,7 @@ class AnalysisTab(QWidget):
     def _set_controles_habilitados(self, habilitado: bool) -> None:
         self._btn_abrir.setEnabled(habilitado)
         self._btn_analizar.setEnabled(habilitado and bool(self._edit_path.text()))
-        self._edit_canal.setEnabled(habilitado)
+        self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
         has_data = habilitado and self._last_result is not None
         self._time_range.setEnabled(has_data)

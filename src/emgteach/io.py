@@ -46,6 +46,7 @@ __all__ = [
     "ChannelInfo",
     "build_timestamped_path",
     "create_edf_writer",
+    "list_edf_channels",
     "read_edf_mne",
     "read_edf_pyedflib",
     "write_edf_block",
@@ -426,6 +427,35 @@ def read_edf_pyedflib(path: PathLike, channel_index: int = 0) -> dict[str, Any]:
         "tiempo": tiempo,
         "markers": markers,
     }
+
+
+def list_edf_channels(path: PathLike) -> list[str]:
+    """Return the channel labels of an EDF file (reads the header only).
+
+    Fast: it opens the file just long enough to read the signal headers,
+    so it is suitable for populating a channel picker in the GUI.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Path to the EDF+ file.
+
+    Returns
+    -------
+    list of str
+        The channel labels in file order, or an empty list if the file
+        cannot be read.
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return []
+    try:
+        return [str(label) for label in reader.getSignalLabels()]
+    finally:
+        reader.close()
 
 
 # ---------------------------------------------------------------------------

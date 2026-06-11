@@ -19,6 +19,7 @@ from emgteach import (
     ChannelInfo,
     build_timestamped_path,
     create_edf_writer,
+    list_edf_channels,
     read_edf_pyedflib,
     write_edf_block,
 )
@@ -281,3 +282,22 @@ class TestDeprecatedHelpers:
                 write_edf_block(writer, block, block, block)
         finally:
             writer.close()
+
+
+# ---------------------------------------------------------------------------
+# Channel listing (header-only)
+# ---------------------------------------------------------------------------
+
+
+class TestListEdfChannels:
+    def test_lists_channel_labels_in_order(self, out_path: str) -> None:
+        chs = [
+            ChannelInfo("Agonista", sample_frequency=FS),
+            ChannelInfo("Antagonista", sample_frequency=FS),
+        ]
+        with BufferedEdfWriter(out_path, channels=chs) as writer:
+            writer.add_samples(np.zeros(FS), np.zeros(FS))
+        assert list_edf_channels(out_path) == ["Agonista", "Antagonista"]
+
+    def test_missing_file_returns_empty_list(self, tmp_path: Path) -> None:
+        assert list_edf_channels(str(tmp_path / "does_not_exist.edf")) == []

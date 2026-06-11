@@ -52,6 +52,7 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.io import list_edf_channels
 from emgteach.workers import MvcWorker
 
 # Factores de zoom temporal disponibles (mismos que tab_analisis)
@@ -134,9 +135,15 @@ class MvcTab(QWidget):
 
         row_params = QHBoxLayout()
         row_params.addWidget(QLabel("Canal EMG:"))
-        self._edit_canal = QLineEdit("EMG")
-        self._edit_canal.setFixedWidth(100)
-        row_params.addWidget(self._edit_canal)
+        self._combo_canal = QComboBox()
+        self._combo_canal.setEditable(False)
+        self._combo_canal.addItem("EMG")
+        self._combo_canal.setFixedWidth(150)
+        self._combo_canal.setToolTip(
+            "Canal del EDF a normalizar. Se rellena con los canales del "
+            "archivo de prueba al seleccionarlo."
+        )
+        row_params.addWidget(self._combo_canal)
 
         row_params.addWidget(QLabel("Frec. corte envolvente (Hz):"))
         self._spin_fenv = QDoubleSpinBox()
@@ -287,8 +294,22 @@ class MvcTab(QWidget):
             self._edit_path.setText(path)
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("cvm/last_edf_dir", self._last_edf_dir)
+            self._populate_channels(path)
             self._btn_calcular.setEnabled(True)
             self._btn_guardar.setEnabled(False)
+
+    def _populate_channels(self, path: str) -> None:
+        """Fill the channel picker from the test EDF header."""
+        labels = list_edf_channels(path)
+        if not labels:
+            return
+        current = self._combo_canal.currentText().strip()
+        self._combo_canal.blockSignals(True)
+        self._combo_canal.clear()
+        self._combo_canal.addItems(labels)
+        idx = self._combo_canal.findText(current)
+        self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
+        self._combo_canal.blockSignals(False)
 
     @Slot()
     def _seleccionar_edf_cvm(self) -> None:
@@ -322,7 +343,12 @@ class MvcTab(QWidget):
         self._lbl_mean_norm.setText("Activación media: —")
         self._lbl_fuente.setText("Fuente CVM: —")
 
-        self._worker = MvcWorker(edf_path=path, mvc_path=cvm_path, f_env=f_env)
+        self._worker = MvcWorker(
+            edf_path=path,
+            mvc_path=cvm_path,
+            f_env=f_env,
+            channel_index=self._combo_canal.currentIndex(),
+        )
         self._worker.result_ready.connect(self._on_result)
         self._worker.log.connect(self._logger.append_log)
         self._worker.error.connect(self._on_error)
@@ -622,7 +648,7 @@ class MvcTab(QWidget):
         self._btn_abrir_cvm.setEnabled(habilitado)
         self._btn_limpiar_cvm.setEnabled(habilitado)
         self._btn_calcular.setEnabled(habilitado and bool(self._edit_path.text()))
-        self._edit_canal.setEnabled(habilitado)
+        self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
 
     def cleanup(self) -> None:

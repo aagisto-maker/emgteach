@@ -47,6 +47,7 @@ class MvcWorker(QThread):
         f_env: float | None = None,
         plot_duration_s: float = 10.0,
         mvc_percentile: float | None = None,
+        channel_index: int = 0,
         profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
@@ -54,6 +55,7 @@ class MvcWorker(QThread):
         self._profile = profile
         self._edf_path = edf_path
         self._mvc_path = mvc_path.strip()
+        self._channel_index = int(channel_index)
         self._f_low = float(f_low) if f_low is not None else profile.f_low
         self._f_high = float(f_high) if f_high is not None else profile.f_high
         self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
@@ -71,7 +73,7 @@ class MvcWorker(QThread):
         try:
             # 1) Load test EDF
             self.log.emit(f"Loading EMG signal: {self._edf_path}")
-            edf = read_edf_pyedflib(self._edf_path)
+            edf = read_edf_pyedflib(self._edf_path, self._channel_index)
             emg_raw = edf["emg_raw"]
             fs = edf["sfreq"]
             dimension = edf["dimension"]
@@ -115,7 +117,7 @@ class MvcWorker(QThread):
             if self._mvc_path:
                 try:
                     self.log.emit(f"Loading MVC file: {self._mvc_path}")
-                    mvc_edf = read_edf_pyedflib(self._mvc_path)
+                    mvc_edf = read_edf_pyedflib(self._mvc_path, self._channel_index)
                     mvc_fs = mvc_edf["sfreq"]
 
                     diag_mvc = detect_acquisition_problems(mvc_edf["emg_raw"], mvc_fs)
