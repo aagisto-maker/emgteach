@@ -17,6 +17,7 @@ Panel de resumen: MNF, MDF, indicador de fatiga.
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib
@@ -62,6 +63,7 @@ _PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.io import list_edf_channels
+from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
 
 
@@ -119,6 +121,10 @@ class AnalysisTab(QWidget):
         self._btn_guardar.setEnabled(False)
         self._btn_guardar.clicked.connect(self._guardar_figura)
         row_file.addWidget(self._btn_guardar)
+        self._btn_informe = QPushButton("Generar informe PDF")
+        self._btn_informe.setEnabled(False)
+        self._btn_informe.clicked.connect(self._generar_informe)
+        row_file.addWidget(self._btn_informe)
         ctrl.addLayout(row_file)
 
         # Línea 2: canal + f_env
@@ -140,6 +146,24 @@ class AnalysisTab(QWidget):
         self._spin_fenv.setValue(5.0)
         self._spin_fenv.setFixedWidth(72)
         row_params.addWidget(self._spin_fenv)
+        row_params.addWidget(QLabel("Alumno/a:"))
+        self._edit_student = QLineEdit()
+        self._edit_student.setFixedWidth(150)
+        self._edit_student.setText(self._settings.value("analisis/student", ""))
+        self._edit_student.textChanged.connect(
+            lambda v: self._settings.setValue("analisis/student", v)
+        )
+        row_params.addWidget(self._edit_student)
+        row_params.addWidget(QLabel("Código:"))
+        self._edit_student_code = QLineEdit()
+        self._edit_student_code.setFixedWidth(90)
+        self._edit_student_code.setText(
+            self._settings.value("analisis/student_code", "")
+        )
+        self._edit_student_code.textChanged.connect(
+            lambda v: self._settings.setValue("analisis/student_code", v)
+        )
+        row_params.addWidget(self._edit_student_code)
         row_params.addStretch()
         ctrl.addLayout(row_params)
 
@@ -388,6 +412,7 @@ class AnalysisTab(QWidget):
             self._populate_channels(path)
             self._btn_analizar.setEnabled(True)
             self._btn_guardar.setEnabled(False)
+            self._btn_informe.setEnabled(False)
             self._progress.setValue(0)
             self._progress.setFormat("Listo")
 
@@ -415,6 +440,7 @@ class AnalysisTab(QWidget):
         self._progress.setValue(0)
         self._progress.setFormat("Analizando…  %p%")
         self._btn_guardar.setEnabled(False)
+        self._btn_informe.setEnabled(False)
         self._lbl_mnf.setText("Frecuencia Media (MNF): —")
         self._lbl_mdf.setText("Frecuencia Mediana (MDF): —")
         self._lbl_fatiga.setText("Fatiga: —")
@@ -445,6 +471,7 @@ class AnalysisTab(QWidget):
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)
+        self._btn_informe.setEnabled(True)
         self._btn_redibujar.setEnabled(True)
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
@@ -714,6 +741,24 @@ class AnalysisTab(QWidget):
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
             self._logger.append_log(f"Figura guardada en: {ruta}")
+
+    @Slot()
+    def _generar_informe(self) -> None:
+        """Generate the PDF session report next to the source EDF (one click)."""
+        if self._last_result is None:
+            return
+        edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        out = edf_path.with_name(f"{edf_path.stem}_informe_{ts}.pdf")
+        meta = {
+            "student": self._edit_student.text().strip(),
+            "student_code": self._edit_student_code.text().strip(),
+        }
+        try:
+            build_session_report(out, self._last_result, meta)
+            self._logger.append_log(f"Informe PDF generado: {out}")
+        except Exception as exc:
+            self._logger.append_error(f"Error al generar el informe PDF: {exc}")
 
     # ------------------------------------------------------------------
     # Marcadores
