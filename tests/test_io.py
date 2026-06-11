@@ -301,3 +301,35 @@ class TestListEdfChannels:
 
     def test_missing_file_returns_empty_list(self, tmp_path: Path) -> None:
         assert list_edf_channels(str(tmp_path / "does_not_exist.edf")) == []
+
+
+# ---------------------------------------------------------------------------
+# Annotation round-trip
+# ---------------------------------------------------------------------------
+
+
+class TestAnnotationRoundTrip:
+    """Annotations written to an EDF must be readable again on reload."""
+
+    def test_mne_reader_recovers_annotation(self, out_path: str) -> None:
+        pytest.importorskip("mne")
+        from emgteach import read_edf_mne
+
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(np.zeros(2 * FS, dtype=np.float64))
+            writer.add_annotation(0.5, "inicio contracción")
+
+        edf = read_edf_mne(out_path, "EMG")
+        labels = [desc for _onset, desc in edf["markers"]]
+        assert "inicio contracción" in labels
+
+    def test_pyedflib_reader_recovers_annotation(self, out_path: str) -> None:
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(np.zeros(2 * FS, dtype=np.float64))
+            writer.add_annotation(0.5, "inicio contracción")
+
+        result = read_edf_pyedflib(out_path)
+        labels = [desc for _onset, desc in result["markers"]]
+        assert "inicio contracción" in labels

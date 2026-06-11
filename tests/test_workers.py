@@ -342,6 +342,43 @@ class TestAcquisitionWorker:
             f"No automatic onset marker found; got {result['markers']}"
         )
 
+    def test_manual_and_auto_markers_coexist_in_edf(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """Acceptance criterion: a session with both a manual marker and an
+        automatic onset persists both to the EDF.
+        """
+        device = _RestThenBurstDevice(fs=1000, rest_s=1.5)
+        worker = AcquisitionWorker(
+            device=device,
+            save_dir=str(tmp_path),
+            n_per_read=100,
+            auto_detect=True,
+        )
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+
+        added = {"done": False}
+
+        def add_manual(_block: dict) -> None:
+            if not added["done"]:
+                added["done"] = True
+                worker.add_marker("fatiga aparente")
+
+        worker.data_ready.connect(add_manual)
+        worker.start()
+        QTimer.singleShot(2500, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=12000)
+        worker.wait(12000)
+
+        assert edf_paths and edf_paths[0], "Worker did not emit finished_ok"
+        result = read_edf_pyedflib(edf_paths[0])
+        labels = [label for _t, label in result["markers"]]
+        assert "fatiga aparente" in labels, f"manual marker missing; got {labels}"
+        assert any("auto" in label.lower() for label in labels), (
+            f"automatic marker missing; got {labels}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # AnalysisWorker

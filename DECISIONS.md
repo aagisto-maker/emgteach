@@ -12,6 +12,69 @@ used.
 
 ---
 
+## 2026-06-11 — Hito 2: annotation system
+
+Most of the annotation system was already in place before this work
+(manual markers with a labelled button + ``M`` shortcut, EDF+ annotation
+persistence, reader extraction of markers, and marker display/navigation
+in the analysis tab). The remaining piece was **automatic
+contraction-onset detection**, plus closing the end-to-end acceptance
+criterion.
+
+### Decision 1 — Onset threshold: baseline mean + k·SD
+
+**Context.** Surface-EMG onset detection needs a threshold on the
+amplitude (envelope). The threshold definition must be robust across
+subjects and hardware (BITalino ±3.3 V vs Arduino+MyoWare 5 V).
+
+**Options evaluated.**
+
+- **A — Baseline + k·SD (chosen).** Threshold = mean + ``k``·SD of the
+  initial resting window. ``k`` configurable (default 3).
+- **B — Fraction of the maximum** envelope (e.g. 15 % of peak).
+- **C — Absolute threshold in mV.**
+
+**Chosen: A.** It is the classical single-threshold EMG onset rule, it
+auto-adapts to each recording and hardware (no gain dependence), and it
+matches the teaching protocol of "rest, then contract" (the rest window
+calibrates the baseline). The sensitivity ``k`` is the single
+user-facing knob.
+
+### Decision 2 — Detection runs in real time during acquisition
+
+Chosen over an offline-only detector. The acceptance criterion requires
+that auto-detected onsets are *saved in the EDF* and visible on reload,
+so detection runs live in the acquisition worker (one detector per
+channel on the envelope) and records onsets as automatic markers
+("Inicio (auto)") through the same path as manual markers. An offline
+"detect onsets on a loaded EDF" button was deferred to Phase 2.
+
+### Decision 3 — Minimum-duration debounce (found during testing)
+
+The first implementation fired on single-sample noise excursions above
+threshold. Real onset detectors require the signal to *stay* above the
+threshold for a minimum duration. A ``min_duration_s`` parameter
+(default 50 ms) was added: an onset is declared only after the envelope
+has been continuously above threshold for that long, timed at the
+crossing, with a refractory period before the next onset. This removed
+the false positives. The four onset parameters (``onset_k``,
+``onset_baseline_s``, ``onset_refractory_s``, ``onset_min_duration_s``)
+live in ``SignalProfile``, following the single-source pattern of the
+filter parameters.
+
+### Outcome
+
+Delivered as four commits on branch `feature/annotations` (off `main`):
+the onset detector core + profile fields; worker integration (automatic
+markers); acquisition-tab controls (enable + sensitivity ``k``); and
+end-to-end verification. The suite grew from 105 to 115 tests, all
+passing; ``ruff`` clean. The acceptance criterion is covered by tests:
+a session with a manual marker *and* an automatic onset round-trips to
+the EDF, and both MNE and pyedflib recover the annotations on reload.
+The buffer-then-flush writer in ``io.py`` was not modified.
+
+---
+
 ## 2026-06-11 — Dual-channel acquisition (agonist/antagonist)
 
 Requested before Hito 2: record two EMG channels simultaneously so that
