@@ -7,6 +7,10 @@ Controles:
   - Botón Conectar / Desconectar
   - Botón Iniciar / Detener grabación
 
+Canales:
+  - 1 o 2 canales simultáneos (p. ej. agonista/antagonista), con etiqueta
+    editable por canal. Cada canal se dibuja superpuesto en su propio color.
+
 Visualización (pyqtgraph):
   - Señal EMG en bruto
   - Señal filtrada (notch + paso-banda)
@@ -57,6 +61,16 @@ from emgteach.workers import AcquisitionWorker
 MAX_POINTS = 30_000
 FS = EMG_PROFILE.sample_frequency  # Hz nominal (tomado del perfil de señal)
 
+# Número máximo de canales simultáneos que ofrece la interfaz. La capa de
+# datos admite N, pero la UI se limita por ahora a 2 (agonista/antagonista).
+MAX_CHANNELS = 2
+
+# Color por canal, consistente en las tres gráficas: así un color identifica
+# siempre al mismo sensor (azul = canal 1, rojo = canal 2).
+_CHANNEL_COLORS = [(65, 105, 225), (214, 39, 40)]
+_CHANNEL_COLOR_HEX = ["#4169E1", "#D62728"]
+_CHANNEL_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
+
 # MAC por defecto del BITalino del laboratorio UCM (editable en el campo).
 DEFAULT_MAC = "98:D3:91:FE:44:E4"
 
@@ -88,10 +102,21 @@ class AcquisitionTab(QWidget):
         self._worker: AcquisitionWorker | None = None
         self._profile = EMG_PROFILE
 
-        # Buffers circulares para las tres señales (30 s a 1000 Hz)
-        self._buf_raw  = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
-        self._buf_filt = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
-        self._buf_env  = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
+        # Número de canales activos (1 o 2), persistido en QSettings.
+        saved_n = int(self._settings.value("adquisicion/n_channels", 1))
+        self._n_channels = min(max(saved_n, 1), MAX_CHANNELS)
+
+        # Buffers circulares por canal para las tres señales (30 s a 1000 Hz).
+        # Se reservan siempre MAX_CHANNELS; solo se rellenan los canales activos.
+        self._buf_raw = [
+            deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
+        ]
+        self._buf_filt = [
+            deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
+        ]
+        self._buf_env = [
+            deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
+        ]
         self._new_data = False  # flag: hay datos nuevos que pintar
 
         self._marcas_recientes: list[str] = []
@@ -152,8 +177,10 @@ class AcquisitionTab(QWidget):
 
         # ── Panel de configuración — una sola fila ──────────────────────
         grp_config = QGroupBox("Configuración del dispositivo")
-        cfg_row = QHBoxLayout(grp_config)
-        cfg_row.setContentsMargins(6, 4, 6, 4)
+        cfg_outer = QVBoxLayout(grp_config)
+        cfg_outer.setContentsMargins(6, 4, 6, 4)
+        cfg_outer.setSpacing(4)
+        cfg_row = QHBoxLayout()
         cfg_row.setSpacing(6)
 
         # Combo tipo de dispositivo (stretch 25)
@@ -217,6 +244,39 @@ class AcquisitionTab(QWidget):
         self._widget_mac.setVisible(saved_type == 0)
         self._widget_arduino.setVisible(saved_type == 1)
         self._refresh_ports()
+
+        cfg_outer.addLayout(cfg_row)
+
+        # ── Segunda fila: número de canales y etiquetas por canal ──────
+        ch_row = QHBoxLayout()
+        ch_row.setSpacing(6)
+        ch_row.addWidget(QLabel("Canales:"))
+        self._combo_n_channels = QComboBox()
+        self._combo_n_channels.addItem("1 (un sensor)")
+        self._combo_n_channels.addItem("2 (agonista / antagonista)")
+        self._combo_n_channels.setCurrentIndex(self._n_channels - 1)
+        self._combo_n_channels.currentIndexChanged.connect(self._on_n_channels_changed)
+        ch_row.addWidget(self._combo_n_channels)
+
+        ch_row.addWidget(QLabel("Etiquetas:"))
+        self._edit_labels: list[QLineEdit] = []
+        for i in range(MAX_CHANNELS):
+            edit = QLineEdit()
+            edit.setMaxLength(16)  # límite de etiqueta de canal EDF
+            edit.setToolTip(
+                "Nombre del músculo/sensor de este canal (máx. 16 caracteres; "
+                "se usa como etiqueta del canal en el archivo EDF)."
+            )
+            edit.setText(
+                self._settings.value(
+                    f"adquisicion/label_{i}", _CHANNEL_DEFAULT_LABELS[i]
+                )
+            )
+            edit.textChanged.connect(self._on_label_changed)
+            self._edit_labels.append(edit)
+            ch_row.addWidget(edit)
+        ch_row.addStretch()
+        cfg_outer.addLayout(ch_row)
 
         root.addWidget(grp_config)
 
@@ -339,6 +399,12 @@ class AcquisitionTab(QWidget):
         self._lbl_ventana_info.setStyleSheet("font-size: 8px; color: #444;")
         row_tiempo.addWidget(self._lbl_ventana_info)
 
+        row_tiempo.addSpacing(12)
+        self._lbl_legend = QLabel()
+        self._lbl_legend.setStyleSheet("font-size: 9px; font-weight: bold;")
+        self._lbl_legend.setToolTip("Color de cada canal en las gráficas")
+        row_tiempo.addWidget(self._lbl_legend)
+
         row_tiempo.addStretch()
 
         btn_reset_escala = QPushButton("Reset escalas")
@@ -374,14 +440,21 @@ class AcquisitionTab(QWidget):
         canvas_hbox.addWidget(plots_col)
         plots_root.addLayout(canvas_hbox)
 
+        # Una curva por canal en cada gráfica (color = canal). Se reservan
+        # MAX_CHANNELS curvas; las de canales inactivos quedan ocultas.
+        self._curves_raw: list = []
+        self._curves_filt: list = []
+        self._curves_env: list = []
+
         # Señal bruta
         self._plot_raw = pg.PlotWidget(title="Señal EMG en bruto (mV)")
         self._plot_raw.setYRange(*self._y_ranges_init[0])
         self._plot_raw.setLabel("left", "mV")
         self._plot_raw.showGrid(x=True, y=True, alpha=0.3)
-        self._curve_raw = self._plot_raw.plot(
-            pen=pg.mkPen(color=(120, 120, 120), width=1),
-        )
+        for c in range(MAX_CHANNELS):
+            self._curves_raw.append(
+                self._plot_raw.plot(pen=pg.mkPen(color=_CHANNEL_COLORS[c], width=1))
+            )
         plots_col_vbox.addWidget(self._plot_raw)
 
         # Señal filtrada
@@ -391,9 +464,10 @@ class AcquisitionTab(QWidget):
         self._plot_filt.setYRange(*self._y_ranges_init[1])
         self._plot_filt.setLabel("left", "mV")
         self._plot_filt.showGrid(x=True, y=True, alpha=0.3)
-        self._curve_filt = self._plot_filt.plot(
-            pen=pg.mkPen(color=(65, 105, 225), width=1),
-        )
+        for c in range(MAX_CHANNELS):
+            self._curves_filt.append(
+                self._plot_filt.plot(pen=pg.mkPen(color=_CHANNEL_COLORS[c], width=1))
+            )
         plots_col_vbox.addWidget(self._plot_filt)
 
         # Envolvente
@@ -403,9 +477,10 @@ class AcquisitionTab(QWidget):
         self._plot_env.setYRange(*self._y_ranges_init[2])
         self._plot_env.setLabel("left", "mV")
         self._plot_env.showGrid(x=True, y=True, alpha=0.3)
-        self._curve_env = self._plot_env.plot(
-            pen=pg.mkPen(color=(220, 120, 0), width=2),
-        )
+        for c in range(MAX_CHANNELS):
+            self._curves_env.append(
+                self._plot_env.plot(pen=pg.mkPen(color=_CHANNEL_COLORS[c], width=2))
+            )
         plots_col_vbox.addWidget(self._plot_env)
 
         # Construir botones ▲▼ en el sidebar (uno por gráfica)
@@ -453,6 +528,10 @@ class AcquisitionTab(QWidget):
         # Actualizar combo para que refleje n_visible inicial
         self._sync_combo_zoom()
 
+        # Mostrar solo los canales activos y pintar la leyenda
+        self._apply_channel_visibility()
+        self._update_legend()
+
     # ------------------------------------------------------------------
     # Slots de control de dispositivo
     # ------------------------------------------------------------------
@@ -478,6 +557,60 @@ class AcquisitionTab(QWidget):
         """Muestra el campo MAC (BITalino) o el selector de puerto COM (Arduino)."""
         self._widget_mac.setVisible(index == 0)
         self._widget_arduino.setVisible(index == 1)
+
+    # ------------------------------------------------------------------
+    # Canales (1 o 2: agonista/antagonista)
+    # ------------------------------------------------------------------
+
+    @Slot(int)
+    def _on_n_channels_changed(self, index: int) -> None:
+        self._n_channels = index + 1
+        self._settings.setValue("adquisicion/n_channels", self._n_channels)
+        self._apply_channel_visibility()
+        self._update_legend()
+
+    @Slot()
+    def _on_label_changed(self) -> None:
+        for i, edit in enumerate(self._edit_labels):
+            self._settings.setValue(f"adquisicion/label_{i}", edit.text())
+        self._update_legend()
+
+    def _active_labels(self) -> list[str]:
+        """Labels of the active channels, falling back to the defaults."""
+        labels = []
+        for i in range(self._n_channels):
+            text = self._edit_labels[i].text().strip()
+            labels.append(text or _CHANNEL_DEFAULT_LABELS[i])
+        return labels
+
+    def _apply_channel_visibility(self) -> None:
+        """Show only the widgets and curves of the active channels."""
+        for i, edit in enumerate(self._edit_labels):
+            edit.setVisible(i < self._n_channels)
+        for c in range(MAX_CHANNELS):
+            visible = c < self._n_channels
+            self._curves_raw[c].setVisible(visible)
+            self._curves_filt[c].setVisible(visible)
+            self._curves_env[c].setVisible(visible)
+
+    def _update_legend(self) -> None:
+        parts = [
+            f'<span style="color:{_CHANNEL_COLOR_HEX[i]}">&#9679; {lbl}</span>'
+            for i, lbl in enumerate(self._active_labels())
+        ]
+        self._lbl_legend.setText("&nbsp;&nbsp;&nbsp;".join(parts))
+
+    def _set_channel_controls_enabled(self, enabled: bool) -> None:
+        self._combo_n_channels.setEnabled(enabled)
+        for edit in self._edit_labels:
+            edit.setEnabled(enabled)
+
+    def _reset_buffers(self) -> None:
+        """Clear every per-channel ring buffer back to silence."""
+        for bufs in (self._buf_raw, self._buf_filt, self._buf_env):
+            for buf in bufs:
+                buf.clear()
+                buf.extend([0.0] * MAX_POINTS)
 
     @Slot()
     def _refresh_ports(self) -> None:
@@ -529,6 +662,7 @@ class AcquisitionTab(QWidget):
         self._widget_mac.setEnabled(False)
         self._widget_arduino.setEnabled(False)
         self._edit_dir.setEnabled(False)
+        self._set_channel_controls_enabled(False)
         self._lbl_estado.setText("Estado: conectado (listo para grabar)")
         self._set_led("idle")
         self._log(f"Dispositivo configurado: {desc}. Pulsa 'Iniciar grabación'.")
@@ -546,6 +680,7 @@ class AcquisitionTab(QWidget):
         self._widget_mac.setEnabled(True)
         self._widget_arduino.setEnabled(True)
         self._edit_dir.setEnabled(True)
+        self._set_channel_controls_enabled(True)
         self._lbl_estado.setText("Estado: desconectado")
         self._set_led("off")
         self._led_idle_timer.stop()
@@ -561,23 +696,33 @@ class AcquisitionTab(QWidget):
     def _iniciar_grabacion(self) -> None:
         save_dir = self._edit_dir.text().strip() or "."
 
-        for buf in (self._buf_raw, self._buf_filt, self._buf_env):
-            buf.clear()
-            buf.extend([0.0] * MAX_POINTS)
-
+        self._reset_buffers()
         self._marcas_recientes.clear()
         self._lbl_marcas_recientes.setText("(sin marcas en esta sesión)")
         self._reset_y_scales()
 
+        n = self._n_channels
+        labels = self._active_labels()
+        for i, lbl in enumerate(labels):
+            self._settings.setValue(f"adquisicion/label_{i}", lbl)
+
         if self._combo_device_type.currentIndex() == 0:
             device = create_device(
-                BACKEND_BITALINO, mac=self._edit_mac.text().strip(), fs=FS
+                BACKEND_BITALINO,
+                mac=self._edit_mac.text().strip(),
+                fs=FS,
+                channels=list(range(n)),
             )
         else:
             device = create_device(
-                BACKEND_ARDUINO, port=self._combo_port.currentText().strip(), fs=FS
+                BACKEND_ARDUINO,
+                port=self._combo_port.currentText().strip(),
+                fs=FS,
+                n_channels=n,
             )
-        self._worker = AcquisitionWorker(device=device, save_dir=save_dir)
+        self._worker = AcquisitionWorker(
+            device=device, save_dir=save_dir, sensor_labels=labels
+        )
         self._worker.data_ready.connect(self._on_data_ready)
         self._worker.log.connect(self._log)
         self._worker.error.connect(self._on_error)
@@ -619,11 +764,14 @@ class AcquisitionTab(QWidget):
         # disparar durante device.open() que puede tardar hasta 3 s en Arduino).
         if not self._watchdog_timer.isActive():
             self._watchdog_timer.start()
-        # data_ready now carries one array per channel; the dual-channel
-        # live view is wired in a later stage, so for now show channel 0.
-        self._buf_raw.extend(data["raw_mv"][0].tolist())
-        self._buf_filt.extend(data["filtered"][0].tolist())
-        self._buf_env.extend(data["envelope"][0].tolist())
+        # data_ready carries one array per channel; append each to its buffer.
+        raw = data["raw_mv"]
+        filt = data["filtered"]
+        env = data["envelope"]
+        for c in range(min(len(raw), MAX_CHANNELS)):
+            self._buf_raw[c].extend(raw[c].tolist())
+            self._buf_filt[c].extend(filt[c].tolist())
+            self._buf_env[c].extend(env[c].tolist())
         self._new_data = True
         # LED verde: hay tráfico. El timer lo devolverá a amarillo si no llega
         # ningún bloque nuevo en LED_IDLE_MS ms.
@@ -637,17 +785,17 @@ class AcquisitionTab(QWidget):
         self._new_data = False
 
         n = min(self._n_visible, MAX_POINTS)
-        # Extraer las últimas n muestras del buffer circular
-        arr_raw  = np.array(list(self._buf_raw))[-n:]
-        arr_filt = np.array(list(self._buf_filt))[-n:]
-        arr_env  = np.array(list(self._buf_env))[-n:]
+        # Eje X en segundos relativo al inicio de la ventana visible (todos los
+        # buffers tienen la misma longitud, así que se calcula una sola vez).
+        t = np.arange(n) / FS
 
-        # Eje X en segundos relativos al inicio de la ventana visible
-        t = np.arange(len(arr_raw)) / FS
-
-        self._curve_raw.setData(t, arr_raw)
-        self._curve_filt.setData(t, arr_filt)
-        self._curve_env.setData(t, arr_env)
+        for c in range(self._n_channels):
+            arr_raw = np.array(list(self._buf_raw[c]))[-n:]
+            arr_filt = np.array(list(self._buf_filt[c]))[-n:]
+            arr_env = np.array(list(self._buf_env[c]))[-n:]
+            self._curves_raw[c].setData(t, arr_raw)
+            self._curves_filt[c].setData(t, arr_filt)
+            self._curves_env[c].setData(t, arr_env)
 
     # ------------------------------------------------------------------
     # Marcadores
