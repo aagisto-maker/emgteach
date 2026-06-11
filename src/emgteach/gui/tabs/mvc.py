@@ -260,6 +260,8 @@ class MvcTab(QWidget):
         self._canvas.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
+        # Zoom con la rueda del ratón sobre el panel bajo el cursor.
+        self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
 
         # Sidebar ▲▼ (se reconstruye tras cada dibujo, igual que en tab_analisis)
         self._y_scale_sidebar = QWidget()
@@ -548,6 +550,20 @@ class MvcTab(QWidget):
             half = (ymax - ymin) / 2 * factor
             ax.set_ylim(centro - half, centro + half)
         self._y_accum[panel_idx] = new_accum
+        self._canvas.draw_idle()
+
+    def _on_scroll_zoom(self, event) -> None:
+        """Mouse-wheel zoom on the panel under the cursor (X and Y), centred
+        on the cursor position."""
+        ax = event.inaxes
+        if ax is None or event.xdata is None or event.ydata is None:
+            return
+        scale = 1.0 / 1.2 if event.button == "up" else 1.2
+        x, y = event.xdata, event.ydata
+        x0, x1 = ax.get_xlim()
+        y0, y1 = ax.get_ylim()
+        ax.set_xlim(x - (x - x0) * scale, x + (x1 - x) * scale)
+        ax.set_ylim(y - (y - y0) * scale, y + (y1 - y) * scale)
         self._canvas.draw_idle()
 
     # ------------------------------------------------------------------
