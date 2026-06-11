@@ -7,10 +7,12 @@ abstract: >-
   normalisation of surface EMG signals. Two interchangeable hardware
   backends are supported: BITalino over Bluetooth and Arduino RedBoard
   Plus + MyoWare 2.0 over USB serial. Output files follow the EDF+
-  standard with reliable buffered writing.
+  standard with reliable buffered writing. Version 0.2.0 adds two-channel
+  acquisition (e.g. agonist/antagonist), automatic contraction-onset
+  annotation and one-click PDF session reports.
 type: software
-version: 0.1.0
-date-released: "2026-05-10"
+version: 0.2.0
+date-released: "2026-06-11"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
@@ -40,14 +42,6 @@ keywords:
   - physiology
   - teaching
   - open-source-hardware
-preferred-citation:
-  type: article
-  title: "emgteach: an open-source teaching platform for surface electromyography"
-  authors:
-    - family-names: "Agis-Torres"
-      given-names: "Ángel"
-  journal: "Journal of Open Source Software"
-  year: 2026
 references:
   - type: article
     title: "Silent corruption of EDF recordings during real-time biopotential streaming: a buffered-write solution"

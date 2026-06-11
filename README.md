@@ -24,11 +24,13 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v0.1.0 is the first public release. The package ships a
-Qt-free analytic core (io, dsp, fatigue, mvc, devices), a Qt layer
-(workers + three-tab PySide6 GUI), and a test suite of 73 tests
-passing on Linux and Windows across Python 3.10-3.12. Submitted to
-the [Journal of Open Source Software (JOSS)](https://joss.theoj.org/).
+`emgteach` v0.2.0 extends the first public release with **two-channel
+acquisition** (e.g. agonist/antagonist), **automatic contraction-onset
+annotation** and **one-click PDF session reports**. The package ships a
+Qt-free analytic core (io, dsp, fatigue, mvc, devices, profiles,
+reports), a Qt layer (workers + three-tab PySide6 GUI), and a test
+suite of 119 tests passing on Linux and Windows across Python
+3.10-3.12.
 
 ## Highlights
 
@@ -36,6 +38,12 @@ the [Journal of Open Source Software (JOSS)](https://joss.theoj.org/).
   reusable acquisition library
 - **Hardware-agnostic core** through the `AcquisitionDevice` interface;
   swap BITalino for Arduino+MyoWare with a single setting
+- **Two-channel acquisition** for agonist/antagonist studies, with an
+  editable label per channel; the data layer is generic over N channels
+- **Automatic onset detection** (baseline + k·SD threshold) that flags
+  contraction onsets in real time and stores them as EDF+ annotations
+- **One-click PDF session reports**: signal plot with annotations,
+  metrics table, configuration used and a reproducible footer
 - **EDF+ output with event annotations**, suitable for downstream
   analysis in MNE-Python, EDFbrowser and similar tools
 - **Buffered-write pattern** for EDF that avoids the silent corruption
@@ -79,12 +87,13 @@ need to install the optional extra:
 pip install "emgteach[bitalino]"
 ```
 
-> ⚠️ **Windows users**: the `bitalino` package on Windows + Python 3.12
-> depends on `PyBluez-bitalino`, which has no precompiled wheel and
-> needs Microsoft C++ Build Tools to compile from source. If you do
-> not have those tools and cannot install them, you can still use
-> `emgteach` with the Arduino backend; the BITalino backend simply
-> will not be available.
+> ⚠️ **BITalino needs Python ≤ 3.11.** The `bitalino` package depends on
+> `PyBluez-bitalino`, whose C extension does **not** work on Python 3.12
+> (it raises at connection time). Use **Python 3.11** for the BITalino
+> backend. On Windows it also has no precompiled wheel, so it needs
+> Microsoft C++ Build Tools to build from source. The Arduino + MyoWare
+> backend uses `pyserial` (pure Python) and is unaffected — it works on
+> every supported version.
 
 ## Quickstart
 
@@ -119,16 +128,25 @@ docstrings of `src/emgteach/` are the authoritative reference.
 
 ## Citation
 
-If you use this software, please cite both the article and the package:
+If you use this software, please cite the package (a `CITATION.cff` file
+is provided for automatic citation export) and, where relevant, the
+methodological article on the buffered-write pattern it implements:
 
+- Agis-Torres, Á. (2026). *emgteach: an open-source teaching platform
+  for surface electromyography* (software). Zenodo.
+  https://doi.org/10.5281/zenodo.20110845
 - Agis-Torres, Á. (2026). *Silent corruption of EDF recordings during
   real-time biopotential streaming: a buffered-write solution.*
-  Biomedical Signal Processing and Control, submitted.
-- Agis-Torres, Á. (2026). *emgteach: an open-source teaching platform
-  for surface electromyography.* Journal of Open Source Software, in
-  preparation.
+  Biomedical Signal Processing and Control.
 
-A `CITATION.cff` file is provided for automatic citation export.
+A dedicated software paper is in preparation.
+
+## Development
+
+Parts of this software were developed with the assistance of an AI
+coding assistant (Anthropic's Claude) under the direction and review of
+the author, who set all requirements, took the design decisions and is
+responsible for the released code.
 
 ## Related work
 
