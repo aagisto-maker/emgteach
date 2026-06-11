@@ -23,6 +23,7 @@ References
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -469,6 +470,14 @@ def create_edf_writer(path: PathLike, fs: int) -> Any:
 
     The caller is responsible for closing the writer.
 
+    .. deprecated::
+        Use :class:`BufferedEdfWriter` instead. This helper returns a
+        raw ``pyedflib.EdfWriter`` whose per-block ``writeSamples`` use
+        is the very stream-and-write antipattern that silently corrupts
+        recordings (Agis-Torres 2026); :class:`BufferedEdfWriter`
+        implements the safe buffer-then-flush pattern. Kept only for
+        backward compatibility with the original prototype.
+
     Parameters
     ----------
     path : str or pathlib.Path
@@ -481,6 +490,12 @@ def create_edf_writer(path: PathLike, fs: int) -> Any:
     pyedflib.EdfWriter
         Configured writer ready for ``writeSamples`` calls.
     """
+    warnings.warn(
+        "create_edf_writer() is deprecated; use BufferedEdfWriter, which "
+        "implements the safe buffer-then-flush pattern (Agis-Torres 2026).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     import pyedflib
 
     writer = pyedflib.EdfWriter(str(path), 3, file_type=pyedflib.FILETYPE_EDFPLUS)
@@ -505,8 +520,20 @@ def write_edf_block(
 
     Caller must guarantee that ``len(emg_mv) == len(emg_filtered) ==
     len(emg_envelope)`` and is a multiple of the writer's
-    samples-per-record. Prefer :class:`BufferedEdfWriter` for new code.
+    samples-per-record.
+
+    .. deprecated::
+        Use :class:`BufferedEdfWriter` instead. Calling ``writeSamples``
+        with blocks shorter than one data record is the stream-and-write
+        antipattern that silently corrupts EDF recordings (Agis-Torres
+        2026). Kept only for backward compatibility with the prototype.
     """
+    warnings.warn(
+        "write_edf_block() is deprecated; use BufferedEdfWriter, which "
+        "implements the safe buffer-then-flush pattern (Agis-Torres 2026).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     writer.writeSamples(
         [
             np.asarray(emg_mv, dtype=np.float64),

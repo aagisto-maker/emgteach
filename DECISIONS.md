@@ -111,3 +111,25 @@ into the refactor:
   (5 V) versus the BITalino default (±3.3 V). This changes the
   digital↔physical mapping of saved files and should be a conscious,
   separately verified change.
+
+### Outcome
+
+Delivered as five commits on branch ``refactor/hito-1-arquitectura``:
+
+1. ``src/emgteach/profiles.py`` — ``SignalProfile`` + ``EMG_PROFILE``,
+   the biopotential extension point.
+2. The three workers source their DSP/analysis/channel defaults from a
+   profile; the triple-duplicated filter literals are gone.
+3. ``src/emgteach/devices/factory.py`` — ``create_device`` /
+   ``register_device`` registry; the acquisition tab builds devices
+   through it instead of importing concrete classes.
+4. The acquisition tab sources its display ranges, marker vocabulary and
+   nominal sampling rate from ``EMG_PROFILE``; the legacy EDF helpers now
+   emit ``DeprecationWarning``.
+
+Verification: the full suite grew from 74 to 97 tests, all passing
+(``pytest -m "not hardware"``), ``ruff check`` clean, and the GUI boots
+offscreen with the profile-driven values live. The buffer-then-flush
+writer in ``io.py`` was not modified and its round-trip tests still pass,
+confirming the central BSPC pattern is intact. ``mypy`` reports only the
+same pre-existing QSettings/Qt typing notes present before the refactor.

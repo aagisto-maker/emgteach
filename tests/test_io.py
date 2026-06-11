@@ -18,7 +18,9 @@ from emgteach import (
     BufferedEdfWriter,
     ChannelInfo,
     build_timestamped_path,
+    create_edf_writer,
     read_edf_pyedflib,
+    write_edf_block,
 )
 
 # ---------------------------------------------------------------------------
@@ -255,3 +257,27 @@ class TestBuildTimestampedPath:
         assert Path(p).parent == tmp_path
         assert Path(p).name.startswith("bitalino_")
         assert p.endswith(".bdf")
+
+
+# ---------------------------------------------------------------------------
+# Deprecated legacy helpers
+# ---------------------------------------------------------------------------
+
+
+class TestDeprecatedHelpers:
+    """The unsafe per-block writers are kept but must warn (Agis-Torres 2026)."""
+
+    def test_create_edf_writer_warns(self, out_path: str) -> None:
+        with pytest.warns(DeprecationWarning, match="create_edf_writer"):
+            writer = create_edf_writer(out_path, fs=FS)
+        writer.close()
+
+    def test_write_edf_block_warns(self, out_path: str) -> None:
+        with pytest.warns(DeprecationWarning, match="create_edf_writer"):
+            writer = create_edf_writer(out_path, fs=FS)
+        block = np.zeros(FS, dtype=np.float64)
+        try:
+            with pytest.warns(DeprecationWarning, match="write_edf_block"):
+                write_edf_block(writer, block, block, block)
+        finally:
+            writer.close()

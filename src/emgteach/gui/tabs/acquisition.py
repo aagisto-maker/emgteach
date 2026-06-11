@@ -49,12 +49,13 @@ from emgteach.devices import (
     create_device,
 )
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
 
 # Número de muestras en el buffer circular (= 30 s a 1000 Hz)
 # La ventana visible puede ser menor gracias al control de zoom temporal.
 MAX_POINTS = 30_000
-FS = 1000  # Hz nominal del BITalino
+FS = EMG_PROFILE.sample_frequency  # Hz nominal (tomado del perfil de señal)
 
 # MAC por defecto del BITalino del laboratorio UCM (editable en el campo).
 DEFAULT_MAC = "98:D3:91:FE:44:E4"
@@ -85,6 +86,7 @@ class AcquisitionTab(QWidget):
         self._logger = logger
         self._settings = settings
         self._worker: AcquisitionWorker | None = None
+        self._profile = EMG_PROFILE
 
         # Buffers circulares para las tres señales (30 s a 1000 Hz)
         self._buf_raw  = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
@@ -95,11 +97,12 @@ class AcquisitionTab(QWidget):
         self._marcas_recientes: list[str] = []
 
         # ---- Estado de escala vertical (por gráfica: 0=raw, 1=filt, 2=env) ----
-        # Rangos Y iniciales fijos (se restauran en _reset_y_scales)
+        # Rangos Y iniciales tomados del perfil de señal (se restauran en
+        # _reset_y_scales). Cambiar de modalidad = cambiar de perfil.
         self._y_ranges_init: list[tuple[float, float]] = [
-            (-3.3, 3.3),   # raw
-            (-0.8, 0.8),   # filtrada
-            (0.0,  0.5),   # envolvente
+            self._profile.ylim_raw,       # raw
+            self._profile.ylim_filtered,  # filtrada
+            self._profile.ylim_envelope,  # envolvente
         ]
         self._y_accum: list[float] = [1.0, 1.0, 1.0]  # factor acumulado por gráfica
 
@@ -265,7 +268,7 @@ class AcquisitionTab(QWidget):
 
         row_m = QHBoxLayout()
         self._combo_etiqueta = QComboBox()
-        for etiq in ["Inicio contracción", "Fin contracción", "Fatiga", "Reposo", "Otro…"]:
+        for etiq in self._profile.marker_presets:
             self._combo_etiqueta.addItem(etiq)
         self._combo_etiqueta.setEnabled(False)
         row_m.addWidget(self._combo_etiqueta)
