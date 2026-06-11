@@ -63,6 +63,7 @@ dependencies = [
     "pyedflib==0.1.42",
     "mne>=1.6,<2.0",
     "pyserial>=3.5",
+    "reportlab>=4.0",
 ]
 
 [project.optional-dependencies]

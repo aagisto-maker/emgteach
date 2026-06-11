@@ -212,6 +212,17 @@ class AnalysisWorker(QThread):
                 "edf_path": self._edf_path,
                 "channel_name": self._channel_name,
                 "markers": markers,
+                # DSP/analysis parameters actually used, so a report can show
+                # the "configuration used" without re-deriving it.
+                "config": {
+                    "f_low": self._f_low,
+                    "f_high": self._f_high,
+                    "f_notch": self._f_notch,
+                    "f_env": self._f_env,
+                    "rms_window_ms": self._rms_window_ms,
+                    "seg_len_s": self._seg_len_s,
+                    "overlap": self._overlap,
+                },
             }
 
             self.progress.emit(100)
