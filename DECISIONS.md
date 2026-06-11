@@ -12,6 +12,65 @@ used.
 
 ---
 
+## 2026-06-11 — Hito 3: PDF session reports (+ visual polish)
+
+### Decision 1 — PDF engine: reportlab
+
+**Options evaluated.** reportlab (a document-layout engine) versus
+matplotlib's `backend_pdf`.
+
+**Chosen: reportlab.** It produces a genuinely document-like report
+(header, metrics/config tables, per-page footer) with the matplotlib
+signal figure embedded as an in-memory PNG. It is **pure Python** (no C
+extension, installs cleanly on any interpreter — a welcome contrast to
+the PyBluez build saga), so adding it as a dependency is low-risk.
+`backend_pdf` would have avoided a new dependency but makes headers and
+tables awkward.
+
+### Decision 2 — Simple textual header, no institutional logo
+
+Per the maintainer's preference, the report header is just a title
+("Informe de registro y análisis de EMG") plus the generation date and
+the relevant session data (optional student name/code, source file). No
+UCM logo image is embedded; a logo can be added later if wanted.
+
+### Decision 3 — One-click auto-save next to the EDF
+
+The "Generar informe PDF" button (Analysis tab, enabled after an
+analysis) writes the PDF **without a save dialog**, next to the source
+EDF as `<stem>_informe_<timestamp>.pdf`, matching the acceptance
+criterion ("con un click ... se guarda ... con nombre informativo"). The
+full path is logged.
+
+### Known limitation — device not stored in the EDF
+
+The report's configuration section lists the filters, sampling rate and
+channel (the `AnalysisWorker` now returns its `config`), but the
+**acquisition device is not recorded in the EDF**, so it shows as "no
+almacenado en el EDF". Writing the device into the EDF header (and the
+buffer-then-flush writer) is deferred so as not to touch the verified
+`io.py` write path; it is a clean follow-up.
+
+### Visual polish delivered alongside (same day)
+
+- Mouse-wheel zoom on the Analysis and MVC matplotlib plots (the
+  acquisition pyqtgraph plots already had it).
+- Event markers are now drawn **live** as vertical lines on the
+  acquisition plots (manual and automatic), not only as text — this was
+  the missing visual feedback; the marker data path itself was correct.
+- The single-channel default label reverted from "Canal 1" to **"EMG"**
+  (with a one-time settings migration), restoring the classic channel
+  name; two channels default to "EMG"/"EMG 2".
+
+### Outcome
+
+The report core (`src/emgteach/reports.py`, Qt-free, reportlab +
+matplotlib-Agg) and its Analysis-tab button are covered by tests
+(valid non-empty PDF, with/without markers/config, no-fatigue case) and
+an end-to-end GUI smoke. Suite at 119 tests, all passing; `ruff` clean.
+
+---
+
 ## 2026-06-11 — Hito 2: annotation system
 
 Most of the annotation system was already in place before this work
