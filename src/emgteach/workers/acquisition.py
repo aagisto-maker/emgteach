@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QMutex, QThread, Signal, Slot
 
-from emgteach.dsp import RealtimeFilterState
+from emgteach.dsp import OnsetDetector, RealtimeFilterState
 from emgteach.io import BufferedEdfWriter, build_timestamped_path
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 
@@ -70,6 +70,13 @@ class AcquisitionWorker(QThread):
         "Antagonista"]``). Length must equal ``device.n_channels``. When
         omitted, a single-channel device uses the profile's ``raw_label``
         and a multi-channel device gets auto-generated labels.
+    auto_detect : bool, optional
+        When ``True``, run per-channel automatic contraction-onset
+        detection on the envelope and record each onset as an automatic
+        marker (``"Inicio (auto)"``) written to the EDF (default ``False``).
+    onset_k : float, optional
+        Onset-detection sensitivity in baseline standard deviations.
+        Defaults to the profile's ``onset_k`` when ``None``.
     parent : QObject, optional
         Parent in the Qt object tree.
     """
@@ -91,6 +98,8 @@ class AcquisitionWorker(QThread):
         f_env: float | None = None,
         profile: SignalProfile = EMG_PROFILE,
         sensor_labels: list[str] | None = None,
+        auto_detect: bool = False,
+        onset_k: float | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -103,6 +112,8 @@ class AcquisitionWorker(QThread):
         self._f_high = float(f_high) if f_high is not None else profile.f_high
         self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
         self._f_env = float(f_env) if f_env is not None else profile.f_env
+        self._auto_detect = bool(auto_detect)
+        self._onset_k = float(onset_k) if onset_k is not None else profile.onset_k
 
         self._running = False
         self._opening = False
@@ -158,8 +169,17 @@ class AcquisitionWorker(QThread):
         to the EDF file in real time via
         :meth:`BufferedEdfWriter.add_annotation`.
         """
-        fs = self._device.fs
-        time_s = self._n_samples_total / fs
+        time_s = self._n_samples_total / self._device.fs
+        self._record_marker(time_s, label)
+
+    def _record_marker(self, time_s: float, label: str) -> None:
+        """Append a marker and emit it (shared by manual and automatic).
+
+        Thread-safe: the internal list is guarded by a mutex so the Qt
+        main thread (manual :meth:`add_marker`) and the worker thread
+        (automatic onset detection) can record markers concurrently.
+        """
+        time_s = float(time_s)
         self._markers_mutex.lock()
         try:
             self._markers.append((time_s, label))
@@ -222,6 +242,18 @@ class AcquisitionWorker(QThread):
                 for _ in range(n_ch)
             ]
 
+            # Optional per-channel automatic onset detection on the envelope.
+            onset_detectors: list[OnsetDetector] | None = None
+            if self._auto_detect:
+                onset_kwargs = dict(self._profile.onset_kwargs())
+                onset_kwargs["k"] = self._onset_k
+                onset_detectors = [
+                    OnsetDetector(fs, **onset_kwargs) for _ in range(n_ch)
+                ]
+                self.log.emit(
+                    f"Automatic onset detection enabled (k={self._onset_k:.1f})."
+                )
+
             edf_path = build_timestamped_path(self._save_dir)
             channels = self._profile.build_channels(labels, fs)
             writer = BufferedEdfWriter(edf_path, channels=channels)
@@ -260,6 +292,14 @@ class AcquisitionWorker(QThread):
                     raw_list.append(raw_c.copy())
                     filt_list.append(filt_c.copy())
                     env_list.append(env_c.copy())
+                    if onset_detectors is not None:
+                        auto_label = (
+                            "Inicio (auto)"
+                            if n_ch == 1
+                            else f"Inicio (auto) — {labels[c]}"
+                        )
+                        for t_onset in onset_detectors[c].process(env_c):
+                            self._record_marker(t_onset, auto_label)
 
                 # One raw block per sensor, in the same order as the EDF
                 # channels built from the profile. The buffered writer

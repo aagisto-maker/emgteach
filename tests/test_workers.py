@@ -87,6 +87,45 @@ class _FakeDevice(AcquisitionDevice):
         self._opened = False
 
 
+class _RestThenBurstDevice(AcquisitionDevice):
+    """Low-amplitude rest, then a sustained high-amplitude 80 Hz burst.
+
+    Drives the automatic onset detector: the envelope stays low during
+    the rest baseline and then crosses the threshold when the burst
+    starts.
+    """
+
+    def __init__(self, fs: int = 1000, rest_s: float = 1.5) -> None:
+        self._fs = int(fs)
+        self._cursor = 0
+        self._rest_n = int(rest_s * fs)
+
+    @property
+    def fs(self) -> float:
+        return float(self._fs)
+
+    @property
+    def name(self) -> str:
+        return "RestThenBurstDevice"
+
+    def open(self) -> None:
+        pass
+
+    def read(self, n_samples: int) -> np.ndarray:
+        n = int(n_samples)
+        idx = self._cursor + np.arange(n)
+        amp = np.where(idx < self._rest_n, 0.02, 0.5)
+        sig = amp * np.sin(2 * np.pi * 80.0 * (idx / self._fs))
+        self._cursor += n
+        return sig.astype(np.float64).reshape(n, 1)
+
+    def close(self) -> None:
+        pass
+
+    def force_close(self) -> None:
+        pass
+
+
 def _wait_for_signal(qapp: QCoreApplication, signal, timeout_ms: int = 5000) -> None:
     """Spin a Qt event loop until *signal* fires or the timeout expires."""
     loop = QEventLoop()
@@ -276,6 +315,32 @@ class TestAcquisitionWorker:
         labels = [h["label"] for h in headers]
         assert labels == ["Agonista", "Antagonista"]
         assert len(signals) == 2
+
+    def test_auto_detection_writes_an_automatic_marker(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """With auto_detect on, a contraction onset is written to the EDF."""
+        device = _RestThenBurstDevice(fs=1000, rest_s=1.5)
+        worker = AcquisitionWorker(
+            device=device,
+            save_dir=str(tmp_path),
+            n_per_read=100,
+            auto_detect=True,
+        )
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        # Acquire well past the 1.5 s rest so the burst onset is detected.
+        QTimer.singleShot(2500, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=12000)
+        worker.wait(12000)
+
+        assert edf_paths and edf_paths[0], "Worker did not emit finished_ok"
+        result = read_edf_pyedflib(edf_paths[0])
+        labels = [label for _t, label in result["markers"]]
+        assert any("auto" in label.lower() for label in labels), (
+            f"No automatic onset marker found; got {result['markers']}"
+        )
 
 
 # ---------------------------------------------------------------------------
