@@ -47,6 +47,7 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "OnsetDetector",
     "RealtimeFilterState",
     "compute_psd_mnf_mdf",
     "compute_segments",
@@ -54,6 +55,7 @@ __all__ = [
     "design_lowpass",
     "design_notch",
     "detect_acquisition_problems",
+    "detect_onsets",
     "process_offline",
 ]
 
@@ -449,3 +451,149 @@ def detect_acquisition_problems(
         "flat_baseline": flat_baseline,
         "warnings": warnings,
     }
+
+
+# ---------------------------------------------------------------------------
+# Contraction-onset detection
+# ---------------------------------------------------------------------------
+
+
+class OnsetDetector:
+    """Stateful, real-time detector of contraction onsets on the envelope.
+
+    The detector implements the classical single-threshold surface-EMG
+    onset rule: it estimates a resting baseline from the first
+    ``baseline_s`` seconds of signal, sets the threshold to
+    ``mean + k * std`` of that baseline, and flags an **onset** on each
+    rising crossing of the threshold. A refractory period suppresses
+    repeated detections within the same contraction.
+
+    It is fed the same envelope blocks the acquisition worker produces,
+    so detection runs live; :meth:`process` returns the onset times found
+    in each block. The sample counter is global, so onset times are
+    expressed in seconds from the start of the stream and line up with
+    the EDF time base.
+
+    Parameters
+    ----------
+    fs : float
+        Sampling frequency (Hz).
+    k : float, optional
+        Threshold sensitivity in baseline standard deviations (default 3).
+        Lower ``k`` detects weaker contractions.
+    baseline_s : float, optional
+        Length of the initial resting window used to estimate the
+        baseline mean and standard deviation (default 1.0 s). The subject
+        must be at rest during this window.
+    refractory_s : float, optional
+        Minimum time between consecutive onsets (default 0.5 s).
+    min_duration_s : float, optional
+        The envelope must stay above the threshold for at least this long
+        before an onset is declared, which debounces brief noise spikes
+        (default 0.05 s).
+    """
+
+    def __init__(
+        self,
+        fs: float,
+        k: float = 3.0,
+        baseline_s: float = 1.0,
+        refractory_s: float = 0.5,
+        min_duration_s: float = 0.05,
+    ) -> None:
+        self.fs = float(fs)
+        self.k = float(k)
+        self._baseline_n = max(1, int(baseline_s * fs))
+        self._refractory_n = max(1, int(refractory_s * fs))
+        self._min_duration_n = max(1, int(min_duration_s * fs))
+        self._n = 0
+        self._sum = 0.0
+        self._sumsq = 0.0
+        self._count = 0
+        self._threshold: float | None = None
+        self._above_run = 0
+        self._last_onset_n = -(10**12)
+
+    @property
+    def threshold(self) -> float | None:
+        """The calibrated threshold, or ``None`` while still in baseline."""
+        return self._threshold
+
+    def process(self, envelope_block: FloatArray | np.ndarray) -> list[float]:
+        """Feed one envelope block; return onset times (s) found in it.
+
+        Parameters
+        ----------
+        envelope_block : array-like
+            A block of envelope samples, contiguous with previous blocks.
+
+        Returns
+        -------
+        list of float
+            Onset times in seconds from the start of the stream.
+        """
+        block = np.asarray(envelope_block, dtype=np.float64).ravel()
+        onsets: list[float] = []
+        for x in block:
+            if self._threshold is None:
+                # Baseline calibration phase.
+                self._sum += x
+                self._sumsq += x * x
+                self._count += 1
+                if self._count >= self._baseline_n:
+                    mean = self._sum / self._count
+                    var = max(self._sumsq / self._count - mean * mean, 0.0)
+                    self._threshold = mean + self.k * (var**0.5)
+            elif x > self._threshold:
+                self._above_run += 1
+                # Declare an onset once the signal has stayed above the
+                # threshold for the minimum duration (debounces noise spikes),
+                # timed at the crossing that started the run.
+                if self._above_run == self._min_duration_n:
+                    onset_n = self._n - (self._min_duration_n - 1)
+                    if (onset_n - self._last_onset_n) >= self._refractory_n:
+                        onsets.append(onset_n / self.fs)
+                        self._last_onset_n = onset_n
+            else:
+                self._above_run = 0
+            self._n += 1
+        return onsets
+
+
+def detect_onsets(
+    envelope: FloatArray | np.ndarray,
+    fs: float,
+    k: float = 3.0,
+    baseline_s: float = 1.0,
+    refractory_s: float = 0.5,
+    min_duration_s: float = 0.05,
+) -> list[float]:
+    """Detect contraction onsets in a complete envelope (offline helper).
+
+    Convenience wrapper that runs :class:`OnsetDetector` over the whole
+    signal in one call. Because the detector is stateful, feeding the
+    signal in blocks via :meth:`OnsetDetector.process` yields identical
+    results.
+
+    Parameters
+    ----------
+    envelope : array-like
+        Envelope (rectified, low-pass filtered EMG).
+    fs : float
+        Sampling frequency (Hz).
+    k, baseline_s, refractory_s, min_duration_s : float, optional
+        Forwarded to :class:`OnsetDetector`.
+
+    Returns
+    -------
+    list of float
+        Onset times in seconds.
+    """
+    detector = OnsetDetector(
+        fs,
+        k=k,
+        baseline_s=baseline_s,
+        refractory_s=refractory_s,
+        min_duration_s=min_duration_s,
+    )
+    return detector.process(envelope)

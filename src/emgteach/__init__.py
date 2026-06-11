@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from emgteach.devices import AcquisitionDevice, ArduinoDevice, BitalinoDevice
 from emgteach.dsp import (
+    OnsetDetector,
     RealtimeFilterState,
     compute_psd_mnf_mdf,
     compute_segments,
@@ -11,6 +12,7 @@ from emgteach.dsp import (
     design_lowpass,
     design_notch,
     detect_acquisition_problems,
+    detect_onsets,
     process_offline,
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
@@ -40,6 +42,7 @@ __all__ = [
     "BufferedEdfWriter",
     "ChannelInfo",
     "MvcWorker",
+    "OnsetDetector",
     "RealtimeFilterState",
     "SignalProfile",
     "__version__",
@@ -53,6 +56,7 @@ __all__ = [
     "design_lowpass",
     "design_notch",
     "detect_acquisition_problems",
+    "detect_onsets",
     "fit_mdf_vs_time",
     "fit_rms_vs_mdf",
     "list_edf_channels",

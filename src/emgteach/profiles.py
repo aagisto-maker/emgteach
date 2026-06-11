@@ -55,6 +55,16 @@ class SignalProfile:
         Fractional overlap between consecutive analysis segments.
     mvc_percentile : float
         Percentile of the envelope used as the MVC reference amplitude.
+    onset_k : float
+        Threshold sensitivity for automatic onset detection, in baseline
+        standard deviations (threshold = baseline mean + ``onset_k``*SD).
+    onset_baseline_s : float
+        Resting window (s) used to estimate the onset-detection baseline.
+    onset_refractory_s : float
+        Minimum time (s) between consecutive automatic onsets.
+    onset_min_duration_s : float
+        Minimum time (s) the signal must stay above threshold before an
+        onset is declared (debounces noise spikes).
     raw_label : str
         EDF label of the single, default sensor (used when no explicit
         per-sensor labels are supplied).
@@ -84,6 +94,12 @@ class SignalProfile:
     seg_len_s: float = 1.0
     overlap: float = 0.5
     mvc_percentile: float = 95.0
+
+    # -- automatic onset detection (baseline + k*SD threshold) --
+    onset_k: float = 3.0
+    onset_baseline_s: float = 1.0
+    onset_refractory_s: float = 0.5
+    onset_min_duration_s: float = 0.05
 
     # -- EDF channel schema (one raw channel per sensor) --
     raw_label: str = "EMG"
@@ -127,6 +143,15 @@ class SignalProfile:
             "f_high": self.f_high,
             "f_notch": self.f_notch,
             "f_env": self.f_env,
+        }
+
+    def onset_kwargs(self) -> dict[str, float]:
+        """Onset-detection parameters as kwargs for :class:`OnsetDetector`."""
+        return {
+            "k": self.onset_k,
+            "baseline_s": self.onset_baseline_s,
+            "refractory_s": self.onset_refractory_s,
+            "min_duration_s": self.onset_min_duration_s,
         }
 
     def build_channels(

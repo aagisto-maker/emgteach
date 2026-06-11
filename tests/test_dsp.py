@@ -16,6 +16,7 @@ import pytest
 from scipy.signal import sosfilt, sosfilt_zi
 
 from emgteach.dsp import (
+    OnsetDetector,
     RealtimeFilterState,
     compute_psd_mnf_mdf,
     compute_segments,
@@ -23,6 +24,7 @@ from emgteach.dsp import (
     design_lowpass,
     design_notch,
     detect_acquisition_problems,
+    detect_onsets,
     process_offline,
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
@@ -256,6 +258,64 @@ class TestDetectAcquisitionProblems:
 # ---------------------------------------------------------------------------
 # Fatigue analysis
 # ---------------------------------------------------------------------------
+
+
+class TestOnsetDetection:
+    """Baseline + k*SD onset detection on a rest/burst envelope."""
+
+    @staticmethod
+    def _rest_burst_envelope() -> np.ndarray:
+        """1.5 s rest, 0.5 s burst, 0.5 s rest, 0.5 s burst (envelope-like)."""
+        rng = np.random.default_rng(0)
+
+        def rest(n: int) -> np.ndarray:
+            return 0.02 + 0.005 * np.abs(rng.standard_normal(n))
+
+        return np.concatenate(
+            [
+                rest(int(1.5 * FS)),
+                np.full(int(0.5 * FS), 0.5),
+                rest(int(0.5 * FS)),
+                np.full(int(0.5 * FS), 0.5),
+            ]
+        )
+
+    def test_detects_the_two_burst_onsets(self) -> None:
+        env = self._rest_burst_envelope()
+        onsets = detect_onsets(env, FS, k=3.0, baseline_s=1.0, refractory_s=0.3)
+        assert len(onsets) == 2
+        assert onsets[0] == pytest.approx(1.5, abs=0.05)
+        assert onsets[1] == pytest.approx(2.5, abs=0.05)
+
+    def test_blockwise_matches_oneshot(self) -> None:
+        env = self._rest_burst_envelope()
+        oneshot = detect_onsets(env, FS, k=3.0, baseline_s=1.0, refractory_s=0.3)
+
+        detector = OnsetDetector(FS, k=3.0, baseline_s=1.0, refractory_s=0.3)
+        blockwise: list[float] = []
+        for i in range(0, len(env), 100):  # 100-sample blocks, as the device
+            blockwise.extend(detector.process(env[i : i + 100]))
+        assert blockwise == oneshot
+
+    def test_sustained_burst_is_a_single_onset(self) -> None:
+        rng = np.random.default_rng(1)
+        env = np.concatenate(
+            [0.02 + 0.005 * np.abs(rng.standard_normal(FS)), np.full(3 * FS, 0.6)]
+        )
+        onsets = detect_onsets(env, FS, k=3.0, baseline_s=1.0)
+        assert len(onsets) == 1
+
+    def test_rest_only_has_no_onset(self) -> None:
+        rng = np.random.default_rng(2)
+        env = 0.02 + 0.005 * np.abs(rng.standard_normal(3 * FS))
+        assert detect_onsets(env, FS, k=3.0, baseline_s=1.0) == []
+
+    def test_threshold_calibrates_above_baseline(self) -> None:
+        detector = OnsetDetector(FS, k=3.0, baseline_s=1.0)
+        assert detector.threshold is None
+        detector.process(0.1 + np.zeros(FS))  # 1 s of constant baseline
+        assert detector.threshold is not None
+        assert detector.threshold >= 0.1
 
 
 class TestFatigue:

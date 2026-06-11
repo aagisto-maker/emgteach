@@ -25,6 +25,12 @@ class TestEmgProfileValues:
         assert p.seg_len_s == 1.0
         assert p.overlap == 0.5
         assert p.mvc_percentile == 95.0
+        assert (
+            p.onset_k,
+            p.onset_baseline_s,
+            p.onset_refractory_s,
+            p.onset_min_duration_s,
+        ) == (3.0, 1.0, 0.5, 0.05)
 
     def test_channel_labels_and_dimension(self) -> None:
         p = EMG_PROFILE
@@ -55,6 +61,14 @@ class TestFilterKwargs:
             "f_high": 450.0,
             "f_notch": 50.0,
             "f_env": 5.0,
+        }
+
+    def test_onset_kwargs_matches_fields(self) -> None:
+        assert EMG_PROFILE.onset_kwargs() == {
+            "k": 3.0,
+            "baseline_s": 1.0,
+            "refractory_s": 0.5,
+            "min_duration_s": 0.05,
         }
 
 
