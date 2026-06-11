@@ -75,7 +75,11 @@ MAX_MARKER_LINES = 40
 # siempre al mismo sensor (azul = canal 1, rojo = canal 2).
 _CHANNEL_COLORS = [(65, 105, 225), (214, 39, 40)]
 _CHANNEL_COLOR_HEX = ["#4169E1", "#D62728"]
-_CHANNEL_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
+_CHANNEL_DEFAULT_LABELS = ["EMG", "EMG 2"]
+# Defaults usados brevemente en una versión anterior; se migran a los de
+# arriba si siguen guardados en QSettings (no pisa nombres elegidos por el
+# usuario, solo los antiguos por defecto).
+_OLD_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
 
 # MAC por defecto del BITalino del laboratorio UCM (editable en el campo).
 DEFAULT_MAC = "98:D3:91:FE:44:E4"
@@ -277,11 +281,12 @@ class AcquisitionTab(QWidget):
                 "Nombre del músculo/sensor de este canal (máx. 16 caracteres; "
                 "se usa como etiqueta del canal en el archivo EDF)."
             )
-            edit.setText(
-                self._settings.value(
-                    f"adquisicion/label_{i}", _CHANNEL_DEFAULT_LABELS[i]
-                )
+            stored = self._settings.value(
+                f"adquisicion/label_{i}", _CHANNEL_DEFAULT_LABELS[i]
             )
+            if stored == _OLD_DEFAULT_LABELS[i]:
+                stored = _CHANNEL_DEFAULT_LABELS[i]  # migrate old default
+            edit.setText(stored)
             edit.textChanged.connect(self._on_label_changed)
             self._edit_labels.append(edit)
             ch_row.addWidget(edit)
