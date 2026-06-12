@@ -163,7 +163,7 @@ class TestArduinoDevice:
         device = ArduinoDevice("COM4")
         with patch.object(_FakeSerial, "readline", side_effect=[b"READY\n"]):
             device.open()
-        with pytest.raises(RuntimeError, match="already open"):
+        with pytest.raises(RuntimeError, match="ya está abierto"):
             device.open()
 
     def test_read_converts_adc_to_mv(
@@ -215,12 +215,12 @@ class TestArduinoDevice:
             device.open()
 
         # Empty binary_queue → ser.read returns b"" → timeout path
-        with pytest.raises(RuntimeError, match="Timeout"):
+        with pytest.raises(RuntimeError, match="Tiempo de espera"):
             device.read(1)
 
     def test_read_without_open_raises(self) -> None:
         device = ArduinoDevice("COM4")
-        with pytest.raises(RuntimeError, match="not open"):
+        with pytest.raises(RuntimeError, match="no está abierto"):
             device.read(10)
 
     def test_close_sends_stop_and_closes_port(
@@ -349,13 +349,13 @@ class TestBitalinoDeviceBasics:
     def test_open_twice_raises(self, fake_bitalino_module: MagicMock) -> None:
         device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
         device.open()
-        with pytest.raises(RuntimeError, match="already active"):
+        with pytest.raises(RuntimeError, match="activa"):
             device.open()
         device.close()
 
     def test_read_without_open_raises(self) -> None:
         device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
-        with pytest.raises(RuntimeError, match="not open"):
+        with pytest.raises(RuntimeError, match="no está abierto"):
             device.read(100)
 
     def test_close_without_open_is_noop(self) -> None:

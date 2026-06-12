@@ -116,7 +116,7 @@ class ArduinoDevice(AcquisitionDevice):
 
         with self._lock:
             if self._serial is not None:
-                raise RuntimeError("Serial port is already open.")
+                raise RuntimeError("El puerto serie ya está abierto.")
 
             ser = serial.Serial(
                 port=self._port,
@@ -132,7 +132,7 @@ class ArduinoDevice(AcquisitionDevice):
             else:
                 ser.close()
                 raise RuntimeError(
-                    f"Arduino on {self._port} did not reply READY within "
+                    f"El Arduino en {self._port} no respondió READY en "
                     f"{self._TIMEOUT_OPEN_S:.0f} s."
                 )
 
@@ -163,7 +163,7 @@ class ArduinoDevice(AcquisitionDevice):
         with self._lock:
             ser = self._serial
         if ser is None:
-            raise RuntimeError("ArduinoDevice is not open.")
+            raise RuntimeError("El dispositivo Arduino no está abierto.")
 
         n = int(n_samples)
         n_bytes = n * 2 * self._n_channels
@@ -172,7 +172,7 @@ class ArduinoDevice(AcquisitionDevice):
             chunk = ser.read(n_bytes - len(buf))
             if not chunk:
                 raise RuntimeError(
-                    "Timeout while reading from Arduino — connection lost."
+                    "Tiempo de espera agotado al leer del Arduino — conexión perdida."
                 )
             buf.extend(chunk)
 

@@ -613,7 +613,7 @@ class AcquisitionTab(QWidget):
             btn_up.setText("▲")
             btn_up.setFixedSize(32, 18)
             btn_up.setStyleSheet(_BTN_ST)
-            btn_up.setToolTip(f"Zoom-in vertical — {lbl_txt}")
+            btn_up.setToolTip(f"Ampliar (vertical) — {lbl_txt}")
             btn_up.clicked.connect(
                 lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=True)
             )
@@ -627,7 +627,7 @@ class AcquisitionTab(QWidget):
             btn_dn.setText("▼")
             btn_dn.setFixedSize(32, 18)
             btn_dn.setStyleSheet(_BTN_ST)
-            btn_dn.setToolTip(f"Zoom-out vertical — {lbl_txt}")
+            btn_dn.setToolTip(f"Reducir (vertical) — {lbl_txt}")
             btn_dn.clicked.connect(
                 lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=False)
             )

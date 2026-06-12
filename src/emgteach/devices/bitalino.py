@@ -122,15 +122,15 @@ class BitalinoDevice(AcquisitionDevice):
             import bitalino  # lazy — only required when actually opening
         except ImportError as exc:
             raise ImportError(
-                "BitalinoDevice requires the optional 'bitalino' extra. "
-                'Install with: pip install "emgteach[bitalino]"'
+                "BitalinoDevice requiere el extra opcional 'bitalino'. "
+                'Instálalo con: pip install "emgteach[bitalino]"'
             ) from exc
 
         with self._conn_lock:
             if self._device is not None:
                 raise RuntimeError(
-                    "A BITalino connection is already active. "
-                    "Close it before opening another."
+                    "Ya hay una conexión BITalino activa. "
+                    "Ciérrala antes de abrir otra."
                 )
             device = bitalino.BITalino(self._mac)
             device.start(self._fs, self._channels)
@@ -151,7 +151,7 @@ class BitalinoDevice(AcquisitionDevice):
         with self._conn_lock:
             device = self._device
         if device is None:
-            raise RuntimeError("BitalinoDevice is not open.")
+            raise RuntimeError("El dispositivo BITalino no está abierto.")
 
         raw = device.read(n_samples)  # blocking; lock NOT held here
         return self._raw_to_mv(raw[:, -self.n_channels :])
