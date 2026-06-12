@@ -793,17 +793,43 @@ class AnalysisTab(QWidget):
         """
         dlg = QDialog(self)
         dlg.setWindowTitle("Gráficos del informe")
+        dlg.setMinimumWidth(340)
+        # Estética coherente con la app: fondo gris, encabezado en azul y cada
+        # gráfico en un recuadro blanco (chip), como en "Paneles a mostrar".
+        dlg.setStyleSheet(
+            "QDialog { background-color: #E1E6EB; }"
+            "QLabel#dlgHeader { color: #1F4E79; font-weight: bold; font-size: 12px; }"
+            "QCheckBox {"
+            "  background-color: #FFFFFF;"
+            "  border: 1px solid #A7C2DF;"
+            "  border-radius: 4px;"
+            "  padding: 4px 8px;"
+            "  font-size: 11px;"
+            "}"
+            "QPushButton {"
+            "  background-color: #DCE7F4;"
+            "  border: 1px solid #A7C2DF;"
+            "  border-radius: 4px;"
+            "  padding: 4px 14px;"
+            "}"
+            "QPushButton:hover { background-color: #cfe0f2; }"
+            "QPushButton:pressed { background-color: #b9d2ee; }"
+        )
         lay = QVBoxLayout(dlg)
-        lay.addWidget(QLabel("Marca los gráficos que se añadirán al informe:"))
+        lay.setContentsMargins(12, 12, 12, 12)
+        lay.setSpacing(6)
+        encabezado = QLabel("Marca los gráficos que se añadirán al informe:")
+        encabezado.setObjectName("dlgHeader")
+        lay.addWidget(encabezado)
 
         checks: list[QCheckBox] = []
         for i, nombre in enumerate(_PANEL_NOMBRES):
             cb = QCheckBox(nombre)
-            visible = i < len(self._chk_paneles) and self._chk_paneles[i].isChecked()
-            cb.setChecked(visible)
+            cb.setChecked(i < len(self._chk_paneles) and self._chk_paneles[i].isChecked())
             lay.addWidget(cb)
             checks.append(cb)
 
+        lay.addSpacing(6)
         botones = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
