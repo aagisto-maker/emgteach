@@ -136,7 +136,6 @@ class AcquisitionTab(QWidget):
         ]
         self._new_data = False  # flag: hay datos nuevos que pintar
 
-        self._marcas_recientes: list[str] = []
         # Eventos para dibujar líneas en vivo: (tiempo_s, etiqueta). El total
         # de muestras adquiridas sitúa cada marca en la ventana deslizante.
         self._marker_events: list[tuple[float, str]] = []
@@ -198,28 +197,54 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
+        # Estética: cajas con relleno azul hielo y bordes suaves; la zona de
+        # gráficas se mantiene siempre en blanco (objectName "plotsBox").
+        self.setStyleSheet(
+            "QGroupBox {"
+            "  background-color: #EDF3FB;"
+            "  border: 1px solid #C2D6EC;"
+            "  border-radius: 6px;"
+            "  margin-top: 8px;"
+            "  font-weight: bold;"
+            "}"
+            "QGroupBox::title {"
+            "  subcontrol-origin: margin;"
+            "  subcontrol-position: top left;"
+            "  left: 8px;"
+            "  padding: 0 4px;"
+            "  color: #2E5C8A;"
+            "}"
+            "QGroupBox#plotsBox { background-color: #FFFFFF; }"
+        )
+
         root = QVBoxLayout(self)
         root.setContentsMargins(4, 4, 4, 4)
         root.setSpacing(4)
 
-        # ── Panel de configuración — una sola fila ──────────────────────
+        # ══ Fila superior: Configuración (izq.) | Registro de eventos (der.) ══
+        row_top = QHBoxLayout()
+        row_top.setSpacing(4)
+
+        # — Configuración del dispositivo (media anchura) —
         grp_config = QGroupBox("Configuración del dispositivo")
         cfg_outer = QVBoxLayout(grp_config)
         cfg_outer.setContentsMargins(6, 3, 6, 3)
         cfg_outer.setSpacing(3)
-        cfg_row = QHBoxLayout()
-        cfg_row.setSpacing(6)
 
-        # Combo tipo de dispositivo (stretch 25)
+        # Fila 1: tipo de dispositivo + conexión (MAC o COM)
+        cfg_row1 = QHBoxLayout()
+        cfg_row1.setSpacing(6)
+
+        # Combo tipo de dispositivo
         self._combo_device_type = QComboBox()
         self._combo_device_type.addItem("BITalino (Bluetooth)")
         self._combo_device_type.addItem("Arduino + MyoWare 2.0 (USB)")
         saved_type = int(self._settings.value("adquisicion/device_type", 0))
         self._combo_device_type.setCurrentIndex(saved_type)
         self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
-        cfg_row.addWidget(self._combo_device_type, stretch=25)
+        cfg_row1.addWidget(self._combo_device_type, stretch=1)
 
-        # Zona central condicional: MAC (BITalino) o COM (Arduino) — stretch 30
+        # Zona central condicional: MAC (BITalino) o COM (Arduino)
         # Envuelta en un QWidget para poder cambiar contenido sin rehacer el layout
         self._widget_mac = QWidget()
         mac_inner = QHBoxLayout(self._widget_mac)
@@ -253,28 +278,28 @@ class AcquisitionTab(QWidget):
         stack_layout.setContentsMargins(0, 0, 0, 0)
         stack_layout.addWidget(self._widget_mac)
         stack_layout.addWidget(self._widget_arduino)
-        cfg_row.addWidget(self._stack_conn, stretch=30)
+        cfg_row1.addWidget(self._stack_conn, stretch=2)
+        cfg_outer.addLayout(cfg_row1)
 
-        # Campo carpeta destino (stretch 40)
+        # Fila 2: carpeta de destino + Explorar
+        cfg_row2 = QHBoxLayout()
+        cfg_row2.setSpacing(6)
         self._edit_dir = QLineEdit()
         self._edit_dir.setPlaceholderText("Carpeta de destino EDF")
         self._edit_dir.setText(self._settings.value("adquisicion/save_dir", "."))
-        cfg_row.addWidget(self._edit_dir, stretch=40)
-
-        # Botón Explorar (ancho fijo)
+        cfg_row2.addWidget(self._edit_dir, stretch=1)
         btn_dir = QPushButton("Explorar…")
         btn_dir.setFixedWidth(84)
         btn_dir.clicked.connect(self._seleccionar_directorio)
-        cfg_row.addWidget(btn_dir)
+        cfg_row2.addWidget(btn_dir)
+        cfg_outer.addLayout(cfg_row2)
 
-        # Visibilidad inicial
+        # Visibilidad inicial de la zona de conexión
         self._widget_mac.setVisible(saved_type == 0)
         self._widget_arduino.setVisible(saved_type == 1)
         self._refresh_ports()
 
-        cfg_outer.addLayout(cfg_row)
-
-        # ── Segunda fila: número de canales y etiquetas por canal ──────
+        # Fila 3: número de canales y etiquetas por canal
         ch_row = QHBoxLayout()
         ch_row.setSpacing(6)
         ch_row.addWidget(QLabel("Canales:"))
@@ -302,46 +327,53 @@ class AcquisitionTab(QWidget):
             edit.setText(stored)
             edit.textChanged.connect(self._on_label_changed)
             self._edit_labels.append(edit)
-            ch_row.addWidget(edit)
-        ch_row.addStretch()
+            ch_row.addWidget(edit, stretch=1)
         cfg_outer.addLayout(ch_row)
 
-        root.addWidget(grp_config)
+        row_top.addWidget(grp_config, stretch=1)
 
-        # ── Fila tripartita: Control | Marcadores | Log ─────────────────
-        row_triptych = QHBoxLayout()
-        row_triptych.setSpacing(4)
+        # — Registro de eventos (comparte la fila con la configuración) —
+        grp_log = QGroupBox("Registro de eventos")
+        log_layout = QVBoxLayout(grp_log)
+        log_layout.setContentsMargins(4, 4, 4, 4)
+        # En esta posición el log llena su caja (deja de estar limitado a 3
+        # líneas como el log compartido de las otras pestañas).
+        self._local_log.setMaximumHeight(16_777_215)
+        log_layout.addWidget(self._local_log)
+        row_top.addWidget(grp_log, stretch=1)
 
-        # — Control de adquisición (stretch 2) —
+        root.addLayout(row_top)
+
+        # ══ Fila de acciones: Control | Marcadores (una línea cada una) ══
+        row_actions = QHBoxLayout()
+        row_actions.setSpacing(4)
+
+        # — Control de adquisición (una sola línea) —
         grp_control = QGroupBox("Control de adquisición")
-        ctrl_layout = QVBoxLayout(grp_control)
+        ctrl_layout = QHBoxLayout(grp_control)
         ctrl_layout.setContentsMargins(6, 3, 6, 3)
-        ctrl_layout.setSpacing(3)
+        ctrl_layout.setSpacing(6)
 
-        row_btns = QHBoxLayout()
         self._btn_conectar = QPushButton("Conectar")
         self._btn_conectar.setCheckable(True)
         self._btn_conectar.clicked.connect(self._toggle_conexion)
-        row_btns.addWidget(self._btn_conectar)
+        ctrl_layout.addWidget(self._btn_conectar)
 
         self._btn_grabar = QPushButton("Iniciar grabación")
         self._btn_grabar.setCheckable(True)
         self._btn_grabar.setEnabled(False)
         self._btn_grabar.clicked.connect(self._toggle_grabacion)
-        row_btns.addWidget(self._btn_grabar)
-        ctrl_layout.addLayout(row_btns)
+        ctrl_layout.addWidget(self._btn_grabar)
 
-        row_led = QHBoxLayout()
         self._led = QLabel()
         self._led.setFixedSize(16, 16)
         self._led.setToolTip("Estado de comunicación con el dispositivo")
-        row_led.addWidget(self._led)
+        ctrl_layout.addWidget(self._led)
         self._lbl_estado = QLabel("Estado: desconectado")
-        row_led.addWidget(self._lbl_estado)
-        row_led.addStretch()
-        ctrl_layout.addLayout(row_led)
+        ctrl_layout.addWidget(self._lbl_estado)
+        ctrl_layout.addStretch()
 
-        row_triptych.addWidget(grp_control, stretch=2)
+        row_actions.addWidget(grp_control, stretch=1)
 
         # Timer LED idle
         self._led_idle_timer = QTimer(self)
@@ -350,30 +382,28 @@ class AcquisitionTab(QWidget):
         self._led_idle_timer.timeout.connect(lambda: self._set_led("idle"))
         self._set_led("off")
 
-        # — Marcadores de eventos (stretch 3) —
+        # — Marcadores de eventos (una sola línea) —
         grp_markers = QGroupBox("Marcadores de eventos")
-        markers_layout = QVBoxLayout(grp_markers)
+        markers_layout = QHBoxLayout(grp_markers)
         markers_layout.setContentsMargins(6, 3, 6, 3)
-        markers_layout.setSpacing(3)
+        markers_layout.setSpacing(6)
 
-        row_m = QHBoxLayout()
         self._combo_etiqueta = QComboBox()
         for etiq in self._profile.marker_presets:
             self._combo_etiqueta.addItem(etiq)
         self._combo_etiqueta.setEnabled(False)
-        row_m.addWidget(self._combo_etiqueta)
+        markers_layout.addWidget(self._combo_etiqueta, stretch=1)
 
         self._btn_marcar = QPushButton("MARCAR")
         self._btn_marcar.setMinimumHeight(30)
         self._btn_marcar.setStyleSheet("font-size: 12px; font-weight: bold;")
         self._btn_marcar.setEnabled(False)
         self._btn_marcar.clicked.connect(self._on_marcar)
-        row_m.addWidget(self._btn_marcar)
-        markers_layout.addLayout(row_m)
+        markers_layout.addWidget(self._btn_marcar)
 
-        # Detección automática de inicio de contracción
-        row_auto = QHBoxLayout()
-        self._chk_auto = QCheckBox("Detección automática de inicio")
+        # Detección automática de inicio de contracción (compacta, en línea).
+        # Las marcas añadidas quedan reflejadas en el "Registro de eventos".
+        self._chk_auto = QCheckBox("Auto-inicio")
         self._chk_auto.setToolTip(
             "Marca automáticamente el inicio de contracción cuando la "
             "envolvente supera el umbral (línea base + k·DE del reposo)."
@@ -382,8 +412,8 @@ class AcquisitionTab(QWidget):
             self._settings.value("adquisicion/auto_detect", False, type=bool)
         )
         self._chk_auto.toggled.connect(self._on_auto_toggled)
-        row_auto.addWidget(self._chk_auto)
-        row_auto.addWidget(QLabel("Sensib. (k):"))
+        markers_layout.addWidget(self._chk_auto)
+        markers_layout.addWidget(QLabel("k:"))
         self._spin_k = QDoubleSpinBox()
         self._spin_k.setRange(1.0, 10.0)
         self._spin_k.setSingleStep(0.5)
@@ -400,25 +430,11 @@ class AcquisitionTab(QWidget):
             lambda v: self._settings.setValue("adquisicion/onset_k", v)
         )
         self._spin_k.setEnabled(self._chk_auto.isChecked())
-        row_auto.addWidget(self._spin_k)
-        row_auto.addStretch()
-        markers_layout.addLayout(row_auto)
+        markers_layout.addWidget(self._spin_k)
 
-        self._lbl_marcas_recientes = QLabel("(sin marcas en esta sesión)")
-        self._lbl_marcas_recientes.setStyleSheet("font-size: 8px; color: #555555;")
-        self._lbl_marcas_recientes.setWordWrap(True)
-        markers_layout.addWidget(self._lbl_marcas_recientes)
+        row_actions.addWidget(grp_markers, stretch=1)
 
-        row_triptych.addWidget(grp_markers, stretch=3)
-
-        # — Registro de eventos (stretch 5) —
-        grp_log = QGroupBox("Registro de eventos")
-        log_layout = QVBoxLayout(grp_log)
-        log_layout.setContentsMargins(4, 4, 4, 4)
-        log_layout.addWidget(self._local_log)
-        row_triptych.addWidget(grp_log, stretch=5)
-
-        root.addLayout(row_triptych)
+        root.addLayout(row_actions)
 
         # Atajo de teclado M
         self._shortcut_m = QShortcut(QKeySequence("M"), self)
@@ -427,6 +443,7 @@ class AcquisitionTab(QWidget):
 
         # ── Gráficas + controles de escala ──────────────────────────────
         grp_plots = QGroupBox("Señal EMG en tiempo real")
+        grp_plots.setObjectName("plotsBox")  # se mantiene en blanco (ver setStyleSheet)
         plots_root = QVBoxLayout(grp_plots)
         plots_root.setContentsMargins(6, 3, 6, 3)
         plots_root.setSpacing(3)
@@ -898,8 +915,6 @@ class AcquisitionTab(QWidget):
         save_dir = self._edit_dir.text().strip() or "."
 
         self._reset_buffers()
-        self._marcas_recientes.clear()
-        self._lbl_marcas_recientes.setText("(sin marcas en esta sesión)")
         self._marker_events.clear()
         self._total_samples = 0
         for pool in self._marker_lines:
@@ -1069,9 +1084,8 @@ class AcquisitionTab(QWidget):
 
     @Slot(float, str)
     def _on_marker_added(self, tiempo: float, etiqueta: str) -> None:
+        # La marca queda reflejada en el "Registro de eventos" (log).
         self._log(f"Marca añadida: t={tiempo:.1f} s — {etiqueta}")
-        self._marcas_recientes.append(f"t={tiempo:.1f} s: {etiqueta}")
-        self._lbl_marcas_recientes.setText("\n".join(self._marcas_recientes[-5:]))
         # Registrar el evento para dibujarlo en vivo sobre las gráficas.
         self._marker_events.append((tiempo, etiqueta))
 
