@@ -69,8 +69,16 @@ _BTN_ST = (
     "QToolButton:hover { background: #dde8ff; }"
     "QToolButton:pressed { background: #b0c8ff; }"
 )
+# Variante de mayor tipografía para los controles de ventana temporal, igual
+# que en la pestaña de adquisición (_BTN_ST se reserva para los botones ▲▼).
+_TBTN_ST = (
+    "QToolButton { font-size: 11px; padding: 0px 2px; border: 1px solid #aaa; "
+    "border-radius: 2px; background: #f5f5f5; }"
+    "QToolButton:hover { background: #dde8ff; }"
+    "QToolButton:pressed { background: #b0c8ff; }"
+)
 _COMBO_ST = (
-    "QComboBox { font-size: 9px; padding: 1px 2px; min-width: 54px; max-width: 66px; }"
+    "QComboBox { font-size: 11px; padding: 1px 3px; min-width: 60px; max-width: 76px; }"
 )
 
 
@@ -189,7 +197,9 @@ class MvcTab(QWidget):
         self._lbl_cvm_ref = QLabel("CVM referencia: —")
         self._lbl_mean_norm = QLabel("Activación media: —")
         for lbl in (self._lbl_cvm_ref, self._lbl_mean_norm):
-            lbl.setStyleSheet("font-size: 13px; font-weight: bold; padding: 2px 8px;")
+            # Sin negrita y a 11 px para mantener la uniformidad tipográfica con
+            # el resto de etiquetas del resumen.
+            lbl.setStyleSheet("font-size: 11px; padding: 2px 8px;")
             resumen_layout.addWidget(lbl)
 
         self._lbl_fuente = QLabel("Fuente CVM: —")
@@ -215,15 +225,15 @@ class MvcTab(QWidget):
         self._btn_tiempo_ampliar = QToolButton()
         self._btn_tiempo_ampliar.setText("◀▶")
         self._btn_tiempo_ampliar.setToolTip("Ampliar ventana (ver más tiempo)")
-        self._btn_tiempo_ampliar.setStyleSheet(_BTN_ST)
-        self._btn_tiempo_ampliar.setFixedSize(28, 22)
+        self._btn_tiempo_ampliar.setStyleSheet(_TBTN_ST)
+        self._btn_tiempo_ampliar.setFixedSize(32, 26)
         self._btn_tiempo_ampliar.setEnabled(False)
         self._btn_tiempo_ampliar.clicked.connect(self._on_tiempo_ampliar)
         ventana_layout.addWidget(self._btn_tiempo_ampliar)
 
         self._combo_zoom = QComboBox()
         self._combo_zoom.setStyleSheet(_COMBO_ST)
-        self._combo_zoom.setFixedSize(66, 22)
+        self._combo_zoom.setFixedSize(76, 26)
         self._combo_zoom.setEnabled(False)
         for f in _ZOOM_FACTORS:
             self._combo_zoom.addItem(f"×{f}")
@@ -233,26 +243,26 @@ class MvcTab(QWidget):
         self._btn_tiempo_reducir = QToolButton()
         self._btn_tiempo_reducir.setText("▶◀")
         self._btn_tiempo_reducir.setToolTip("Reducir ventana (más detalle)")
-        self._btn_tiempo_reducir.setStyleSheet(_BTN_ST)
-        self._btn_tiempo_reducir.setFixedSize(28, 22)
+        self._btn_tiempo_reducir.setStyleSheet(_TBTN_ST)
+        self._btn_tiempo_reducir.setFixedSize(32, 26)
         self._btn_tiempo_reducir.setEnabled(False)
         self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
         ventana_layout.addWidget(self._btn_tiempo_reducir)
 
         ventana_layout.addSpacing(12)
         self._lbl_inicio_info = QLabel("Inicio: — s")
-        self._lbl_inicio_info.setStyleSheet("font-size: 9px;")
+        self._lbl_inicio_info.setStyleSheet("font-size: 10px;")
         ventana_layout.addWidget(self._lbl_inicio_info)
 
         self._lbl_duracion_info = QLabel("Duración: — s")
-        self._lbl_duracion_info.setStyleSheet("font-size: 9px;")
+        self._lbl_duracion_info.setStyleSheet("font-size: 10px;")
         ventana_layout.addWidget(self._lbl_duracion_info)
 
         ventana_layout.addStretch()
 
         self._btn_reset_ventana = QPushButton("Reset ventana")
-        self._btn_reset_ventana.setFixedHeight(22)
-        self._btn_reset_ventana.setStyleSheet("font-size: 9px;")
+        self._btn_reset_ventana.setFixedHeight(26)
+        self._btn_reset_ventana.setStyleSheet("font-size: 10px;")
         self._btn_reset_ventana.setEnabled(False)
         self._btn_reset_ventana.clicked.connect(self._reset_ventana)
         ventana_layout.addWidget(self._btn_reset_ventana)

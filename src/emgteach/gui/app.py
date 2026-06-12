@@ -73,7 +73,7 @@ def _make_splash() -> QSplashScreen:
 # lienzos matplotlib de Análisis/CVM ya son blancos). El margen superior del
 # título evita que la primera fila de controles se solape con el título.
 _APP_STYLESHEET = (
-    "AcquisitionTab, AnalysisTab, MvcTab { background-color: #D6DCE2; }"
+    "AcquisitionTab, AnalysisTab, MvcTab { background-color: #E1E6EB; }"
     "QGroupBox {"
     "  background-color: #DCE7F4;"
     "  border: 1px solid #A7C2DF;"

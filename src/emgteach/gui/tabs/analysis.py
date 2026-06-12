@@ -220,7 +220,39 @@ class AnalysisTab(QWidget):
         paneles_outer.setContentsMargins(4, 2, 4, 2)
         paneles_outer.addWidget(paneles_scroll)
 
-        # --- Ventana de visualización (minimapa) ---
+        # --- Segunda fila: Marcadores (stretch=2) + Paneles a mostrar (stretch=5),
+        #     justo debajo de Parámetros y Registro de eventos ---
+        bottom_row = QHBoxLayout()
+        bottom_row.setSpacing(4)
+
+        grp_markers_bar = QGroupBox("Marcadores")
+        markers_inner = QHBoxLayout(grp_markers_bar)
+        markers_inner.setContentsMargins(6, 2, 6, 2)
+        markers_inner.setSpacing(6)
+        self._lbl_markers_bar = QLabel("Marcadores (0):")
+        self._lbl_markers_bar.setStyleSheet("font-size: 9px;")
+        markers_inner.addWidget(self._lbl_markers_bar)
+        self._combo_markers = QComboBox()
+        self._combo_markers.setStyleSheet("font-size: 9px;")
+        self._combo_markers.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
+        self._combo_markers.setEnabled(False)
+        self._combo_markers.addItem("Sin marcadores")
+        markers_inner.addWidget(self._combo_markers, stretch=1)
+        self._btn_ir_marcador = QPushButton("Ir")
+        self._btn_ir_marcador.setFixedWidth(36)
+        self._btn_ir_marcador.setFixedHeight(22)
+        self._btn_ir_marcador.setStyleSheet("font-size: 9px;")
+        self._btn_ir_marcador.setEnabled(False)
+        self._btn_ir_marcador.clicked.connect(self._on_ir_marcador)
+        markers_inner.addWidget(self._btn_ir_marcador)
+        bottom_row.addWidget(grp_markers_bar, stretch=2)
+
+        bottom_row.addWidget(grp_paneles, stretch=5)
+        root.addLayout(bottom_row)
+
+        # --- Ventana de visualización (minimapa) — oculta (ver más abajo) ---
         grp_ventana = QGroupBox("Ventana de visualización")
         ventana_vbox = QVBoxLayout(grp_ventana)
         ventana_vbox.setContentsMargins(6, 4, 6, 4)
@@ -294,8 +326,8 @@ class AnalysisTab(QWidget):
         resumen_row.setContentsMargins(4, 0, 4, 0)
         resumen_row.setSpacing(0)
 
-        _st = "font-size: 9px; padding: 0 4px;"
-        _sep_st = "font-size: 9px; color: #999999; padding: 0 2px;"
+        _st = "font-size: 11px; padding: 0 6px;"
+        _sep_st = "font-size: 11px; color: #999999; padding: 0 2px;"
 
         def _sep():
             s = QLabel("|")
@@ -327,7 +359,7 @@ class AnalysisTab(QWidget):
         resumen_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         resumen_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         resumen_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        resumen_scroll.setFixedHeight(28)
+        resumen_scroll.setFixedHeight(36)
 
         resumen_vbox = QVBoxLayout(grp_resumen)
         resumen_vbox.setContentsMargins(0, 0, 0, 0)
@@ -364,40 +396,14 @@ class AnalysisTab(QWidget):
 
         root.addWidget(scroll, stretch=1)
 
-        # --- Ventana de visualización (ancho completo, bajo el canvas) ---
-        root.addWidget(grp_ventana)
-
-        # --- Fila inferior: Marcadores (stretch=2) + Paneles a mostrar (stretch=5) ---
-        bottom_row = QHBoxLayout()
-        bottom_row.setSpacing(4)
-
-        # Grupo marcadores
-        grp_markers_bar = QGroupBox("Marcadores")
-        markers_inner = QHBoxLayout(grp_markers_bar)
-        markers_inner.setContentsMargins(6, 2, 6, 2)
-        markers_inner.setSpacing(6)
-        self._lbl_markers_bar = QLabel("Marcadores (0):")
-        self._lbl_markers_bar.setStyleSheet("font-size: 9px;")
-        markers_inner.addWidget(self._lbl_markers_bar)
-        self._combo_markers = QComboBox()
-        self._combo_markers.setStyleSheet("font-size: 9px;")
-        self._combo_markers.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        self._combo_markers.setEnabled(False)
-        self._combo_markers.addItem("Sin marcadores")
-        markers_inner.addWidget(self._combo_markers, stretch=1)
-        self._btn_ir_marcador = QPushButton("Ir")
-        self._btn_ir_marcador.setFixedWidth(36)
-        self._btn_ir_marcador.setFixedHeight(22)
-        self._btn_ir_marcador.setStyleSheet("font-size: 9px;")
-        self._btn_ir_marcador.setEnabled(False)
-        self._btn_ir_marcador.clicked.connect(self._on_ir_marcador)
-        markers_inner.addWidget(self._btn_ir_marcador)
-        bottom_row.addWidget(grp_markers_bar, stretch=2)
-
-        bottom_row.addWidget(grp_paneles, stretch=5)
-        root.addLayout(bottom_row)
+        # La caja "Ventana de visualización" se ha retirado de la interfaz: el
+        # desplazamiento/zoom temporal se hace ahora con la rueda del ratón
+        # sobre los paneles. Se conserva grp_ventana (con _time_range y sus
+        # controles) como estado oculto para no romper los slots existentes;
+        # _time_range define el segmento dibujado y por defecto muestra todo el
+        # registro (ver _on_result). Así el canvas gana todo ese alto.
+        self._grp_ventana = grp_ventana
+        grp_ventana.hide()
 
     # ------------------------------------------------------------------
     # Slots de control
@@ -481,7 +487,9 @@ class AnalysisTab(QWidget):
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
         self._time_range.set_total_duration(duracion_total)
-        _dur_ini = duracion_total / 3.0
+        # Sin selector visible de ventana: se dibuja todo el registro por
+        # defecto y se navega/zooma con la rueda del ratón sobre los paneles.
+        _dur_ini = duracion_total
         self._time_range.set_range(0.0, _dur_ini)
         self._lbl_inicio_info.setText("Inicio: 0.0 s")
         self._lbl_duracion_info.setText(f"Duración: {_dur_ini:.1f} s")
@@ -511,7 +519,7 @@ class AnalysisTab(QWidget):
 
     @Slot()
     def _reset_ventana(self) -> None:
-        dur = self._duracion_total / 3.0
+        dur = self._duracion_total
         self._time_range.set_range(0.0, dur)
         self._lbl_inicio_info.setText("Inicio: 0.0 s")
         self._lbl_duracion_info.setText(f"Duración: {dur:.1f} s")
