@@ -205,31 +205,10 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
-        # Estética: fondo de la pestaña gris claro; cajas en azul acero con
-        # bordes suaves; la zona de gráficas siempre en blanco (objectName
-        # "plotsBox"). El margen superior del título evita que la primera fila
-        # de controles se solape con el título de la caja.
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(
-            "AcquisitionTab { background-color: #C8CFD7; }"
-            "QGroupBox {"
-            "  background-color: #DCE7F4;"
-            "  border: 1px solid #A7C2DF;"
-            "  border-radius: 6px;"
-            "  margin-top: 16px;"
-            "  padding-top: 4px;"
-            "  font-weight: bold;"
-            "}"
-            "QGroupBox::title {"
-            "  subcontrol-origin: margin;"
-            "  subcontrol-position: top left;"
-            "  left: 8px;"
-            "  padding: 0 4px;"
-            "  color: #1F4E79;"
-            "}"
-            "QGroupBox#plotsBox { background-color: #FFFFFF; }"
-        )
-
+        # La estética (fondo gris, cajas azul acero, márgenes del título) está
+        # centralizada en gui/app.py y se aplica a todas las pestañas. Aquí solo
+        # se marca el marco de gráficas con objectName "plotsBox" para que quede
+        # en blanco (más abajo).
         root = QVBoxLayout(self)
         root.setContentsMargins(4, 4, 4, 4)
         root.setSpacing(4)

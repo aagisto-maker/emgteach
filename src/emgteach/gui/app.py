@@ -66,6 +66,35 @@ def _make_splash() -> QSplashScreen:
 
 
 # ---------------------------------------------------------------------------
+# Estética compartida por todas las pestañas
+# ---------------------------------------------------------------------------
+# Fondo de ventana gris claro, cajas (QGroupBox) en azul acero y zona de
+# gráficas en blanco (los marcos de gráficas usan objectName "plotsBox"; los
+# lienzos matplotlib de Análisis/CVM ya son blancos). El margen superior del
+# título evita que la primera fila de controles se solape con el título.
+_APP_STYLESHEET = (
+    "AcquisitionTab, AnalysisTab, MvcTab { background-color: #D6DCE2; }"
+    "QGroupBox {"
+    "  background-color: #DCE7F4;"
+    "  border: 1px solid #A7C2DF;"
+    "  border-radius: 6px;"
+    "  margin-top: 16px;"
+    "  padding-top: 4px;"
+    "  font-weight: bold;"
+    "}"
+    "QGroupBox::title {"
+    "  subcontrol-origin: margin;"
+    "  subcontrol-position: top left;"
+    "  left: 8px;"
+    "  padding: 0 4px;"
+    "  color: #1F4E79;"
+    "}"
+    "QGroupBox#plotsBox { background-color: #FFFFFF; }"
+    "QScrollArea { border: none; background: transparent; }"
+)
+
+
+# ---------------------------------------------------------------------------
 # Ventana principal
 # ---------------------------------------------------------------------------
 
@@ -84,6 +113,12 @@ class MainWindow(QMainWindow):
         self._tab_adq = AcquisitionTab(self._logger, settings)
         self._tab_ana = AnalysisTab(self._logger, settings)
         self._tab_cvm = MvcTab(self._logger, settings)
+
+        # Estética compartida: el fondo gris de cada pestaña (selector por clase)
+        # solo se pinta si el widget tiene WA_StyledBackground.
+        for tab in (self._tab_adq, self._tab_ana, self._tab_cvm):
+            tab.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet(_APP_STYLESHEET)
 
         tabs = QTabWidget()
         tabs.addTab(self._tab_adq, "Adquisición")
