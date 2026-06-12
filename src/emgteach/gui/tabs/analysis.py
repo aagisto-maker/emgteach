@@ -35,6 +35,8 @@ from PySide6.QtGui import QFontMetrics
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QDoubleSpinBox,
     QFileDialog,
     QGroupBox,
@@ -191,6 +193,32 @@ class AnalysisTab(QWidget):
             "6. MDF/tiempo", "7. RMS vs MDF",
         ]
         grp_paneles = QGroupBox("Paneles a mostrar")
+        # La caja se funde con el fondo gris de la ventana; cada descripción de
+        # panel queda en un pequeño recuadro blanco (chip) con borde suave.
+        grp_paneles.setStyleSheet(
+            "QGroupBox {"
+            "  background-color: #E1E6EB;"
+            "  border: 1px solid #C2D6EC;"
+            "  border-radius: 6px;"
+            "  margin-top: 16px;"
+            "  padding-top: 4px;"
+            "  font-weight: bold;"
+            "}"
+            "QGroupBox::title {"
+            "  subcontrol-origin: margin;"
+            "  subcontrol-position: top left;"
+            "  left: 8px;"
+            "  padding: 0 4px;"
+            "  color: #1F4E79;"
+            "}"
+            "QCheckBox {"
+            "  background-color: #FFFFFF;"
+            "  border: 1px solid #A7C2DF;"
+            "  border-radius: 4px;"
+            "  padding: 3px 8px;"
+            "  font-size: 11px;"
+            "}"
+        )
         paneles_inner = QWidget()
         paneles_layout = QHBoxLayout(paneles_inner)
         paneles_layout.setContentsMargins(2, 0, 2, 0)
@@ -230,10 +258,10 @@ class AnalysisTab(QWidget):
         markers_inner.setContentsMargins(6, 2, 6, 2)
         markers_inner.setSpacing(6)
         self._lbl_markers_bar = QLabel("Marcadores (0):")
-        self._lbl_markers_bar.setStyleSheet("font-size: 9px;")
+        self._lbl_markers_bar.setStyleSheet("font-size: 11px;")
         markers_inner.addWidget(self._lbl_markers_bar)
         self._combo_markers = QComboBox()
-        self._combo_markers.setStyleSheet("font-size: 9px;")
+        self._combo_markers.setStyleSheet("font-size: 11px;")
         self._combo_markers.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
@@ -241,9 +269,9 @@ class AnalysisTab(QWidget):
         self._combo_markers.addItem("Sin marcadores")
         markers_inner.addWidget(self._combo_markers, stretch=1)
         self._btn_ir_marcador = QPushButton("Ir")
-        self._btn_ir_marcador.setFixedWidth(36)
-        self._btn_ir_marcador.setFixedHeight(22)
-        self._btn_ir_marcador.setStyleSheet("font-size: 9px;")
+        self._btn_ir_marcador.setFixedWidth(40)
+        self._btn_ir_marcador.setFixedHeight(26)
+        self._btn_ir_marcador.setStyleSheet("font-size: 11px;")
         self._btn_ir_marcador.setEnabled(False)
         self._btn_ir_marcador.clicked.connect(self._on_ir_marcador)
         markers_inner.addWidget(self._btn_ir_marcador)
@@ -756,10 +784,47 @@ class AnalysisTab(QWidget):
             self._logger.append_log(f"Figura guardada en: {ruta}")
 
     @Slot()
+    def _pedir_paneles_informe(self) -> list[int] | None:
+        """Diálogo modal para elegir qué gráficos se incluyen en el informe.
+
+        Devuelve la lista de índices de panel (0-7) marcados, o ``None`` si el
+        usuario cancela. Por defecto vienen marcados los paneles que están
+        visibles en pantalla.
+        """
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Gráficos del informe")
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(QLabel("Marca los gráficos que se añadirán al informe:"))
+
+        checks: list[QCheckBox] = []
+        for i, nombre in enumerate(_PANEL_NOMBRES):
+            cb = QCheckBox(nombre)
+            visible = i < len(self._chk_paneles) and self._chk_paneles[i].isChecked()
+            cb.setChecked(visible)
+            lay.addWidget(cb)
+            checks.append(cb)
+
+        botones = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        botones.accepted.connect(dlg.accept)
+        botones.rejected.connect(dlg.reject)
+        lay.addWidget(botones)
+
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return None
+        return [i for i, cb in enumerate(checks) if cb.isChecked()]
+
     def _generar_informe(self) -> None:
-        """Generate the PDF session report next to the source EDF (one click)."""
+        """Generate the PDF session report next to the source EDF.
+
+        Antes de elaborarlo pregunta qué gráficos incluir (diálogo con tics).
+        """
         if self._last_result is None:
             return
+        paneles = self._pedir_paneles_informe()
+        if paneles is None:
+            return  # cancelado por el usuario
         edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         out = edf_path.with_name(f"{edf_path.stem}_informe_{ts}.pdf")
@@ -768,7 +833,7 @@ class AnalysisTab(QWidget):
             "student_code": self._edit_student_code.text().strip(),
         }
         try:
-            build_session_report(out, self._last_result, meta)
+            build_session_report(out, self._last_result, meta, panels=paneles)
             self._logger.append_log(f"Informe PDF generado: {out}")
         except Exception as exc:
             self._logger.append_error(f"Error al generar el informe PDF: {exc}")

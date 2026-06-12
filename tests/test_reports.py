@@ -47,6 +47,34 @@ def analysis_result() -> dict:
     }
 
 
+@pytest.fixture
+def full_analysis_result(analysis_result: dict) -> dict:
+    """``analysis_result`` plus every array the 8 report panels need."""
+    r = dict(analysis_result)
+    t = r["times"]
+    filt = r["emg_filtered"]
+    k = 20
+    t_seg = np.linspace(0.5, float(t[-1]) - 0.5, k)
+    r.update(
+        {
+            "emg_raw": filt + 0.02,
+            "emg_rectified": np.abs(filt),
+            "rms_sliding": np.abs(filt) * 0.7,
+            "emg_envelope_normalised": np.abs(filt) / (np.abs(filt).max() or 1.0),
+            "frequencies": np.linspace(0, 500, 256),
+            "psd": np.exp(-((np.linspace(0, 500, 256) - 90) ** 2) / 2000),
+            "f_high": 450.0,
+            "t_seg": t_seg,
+            "rms_seg": 0.2 - 0.03 * t_seg,
+            "mdf_seg": 90 - 2 * t_seg,
+            "fat_fitted": 90 - 2 * t_seg,
+            "rms_mdf_range": np.linspace(80, 92, k),
+            "rms_mdf_fitted": np.linspace(0.1, 0.2, k),
+        }
+    )
+    return r
+
+
 class TestBuildSessionReport:
     def test_produces_a_valid_pdf(self, analysis_result: dict, tmp_path: Path) -> None:
         out = tmp_path / "informe.pdf"
@@ -77,6 +105,22 @@ class TestBuildSessionReport:
         out = tmp_path / "informe_nofat.pdf"
         build_session_report(out, result)
         assert out.exists()
+
+    def test_panels_selection_produces_pdf(
+        self, full_analysis_result: dict, tmp_path: Path
+    ) -> None:
+        """Selecting analysis panels renders each as a graph in the report."""
+        out = tmp_path / "informe_paneles.pdf"
+        build_session_report(out, full_analysis_result, panels=[0, 1, 4, 6, 7])
+        assert out.read_bytes()[:4] == b"%PDF"
+
+    def test_empty_panels_still_valid(
+        self, full_analysis_result: dict, tmp_path: Path
+    ) -> None:
+        """An empty panel selection yields a graph-less but valid report."""
+        out = tmp_path / "informe_sin_graficos.pdf"
+        build_session_report(out, full_analysis_result, panels=[])
+        assert out.read_bytes()[:4] == b"%PDF"
 
 
 class TestGitCommitHash:
