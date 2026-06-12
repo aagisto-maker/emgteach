@@ -106,8 +106,16 @@ _BTN_ST = (
     "QToolButton:hover { background: #dde8ff; }"
     "QToolButton:pressed { background: #b0c8ff; }"
 )
+# Variante de mayor tipografía para los controles de ventana temporal (1-2 pt
+# más que _BTN_ST, que se reserva para los pequeños botones ▲▼ del sidebar).
+_TBTN_ST = (
+    "QToolButton { font-size: 11px; padding: 0px 2px; border: 1px solid #aaa; "
+    "border-radius: 2px; background: #f5f5f5; }"
+    "QToolButton:hover { background: #dde8ff; }"
+    "QToolButton:pressed { background: #b0c8ff; }"
+)
 _COMBO_ST = (
-    "QComboBox { font-size: 9px; padding: 1px 2px; min-width: 54px; max-width: 66px; }"
+    "QComboBox { font-size: 11px; padding: 1px 3px; min-width: 60px; max-width: 76px; }"
 )
 
 
@@ -197,14 +205,19 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
-        # Estética: cajas con relleno azul hielo y bordes suaves; la zona de
-        # gráficas se mantiene siempre en blanco (objectName "plotsBox").
+        # Estética: fondo de la pestaña gris claro; cajas en azul acero con
+        # bordes suaves; la zona de gráficas siempre en blanco (objectName
+        # "plotsBox"). El margen superior del título evita que la primera fila
+        # de controles se solape con el título de la caja.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(
+            "AcquisitionTab { background-color: #C8CFD7; }"
             "QGroupBox {"
-            "  background-color: #EDF3FB;"
-            "  border: 1px solid #C2D6EC;"
+            "  background-color: #DCE7F4;"
+            "  border: 1px solid #A7C2DF;"
             "  border-radius: 6px;"
-            "  margin-top: 8px;"
+            "  margin-top: 16px;"
+            "  padding-top: 4px;"
             "  font-weight: bold;"
             "}"
             "QGroupBox::title {"
@@ -212,7 +225,7 @@ class AcquisitionTab(QWidget):
             "  subcontrol-position: top left;"
             "  left: 8px;"
             "  padding: 0 4px;"
-            "  color: #2E5C8A;"
+            "  color: #1F4E79;"
             "}"
             "QGroupBox#plotsBox { background-color: #FFFFFF; }"
         )
@@ -336,9 +349,10 @@ class AcquisitionTab(QWidget):
         grp_log = QGroupBox("Registro de eventos")
         log_layout = QVBoxLayout(grp_log)
         log_layout.setContentsMargins(4, 4, 4, 4)
-        # En esta posición el log llena su caja (deja de estar limitado a 3
-        # líneas como el log compartido de las otras pestañas).
-        self._local_log.setMaximumHeight(16_777_215)
+        # La fila superior (Configuración + Registro) ocupa ~3 filas de alto;
+        # el log llena esa caja y el espacio restante de la ventana va a las
+        # gráficas en tiempo real.
+        self._local_log.setMaximumHeight(90)
         log_layout.addWidget(self._local_log)
         row_top.addWidget(grp_log, stretch=1)
 
@@ -445,7 +459,7 @@ class AcquisitionTab(QWidget):
         grp_plots = QGroupBox("Señal EMG en tiempo real")
         grp_plots.setObjectName("plotsBox")  # se mantiene en blanco (ver setStyleSheet)
         plots_root = QVBoxLayout(grp_plots)
-        plots_root.setContentsMargins(6, 3, 6, 3)
+        plots_root.setContentsMargins(6, 8, 6, 3)
         plots_root.setSpacing(3)
 
         # -- Barra de escala temporal (arriba de las gráficas) -----------
@@ -455,14 +469,14 @@ class AcquisitionTab(QWidget):
         self._btn_tiempo_ampliar = QToolButton()
         self._btn_tiempo_ampliar.setText("◀▶")
         self._btn_tiempo_ampliar.setToolTip("Ampliar ventana (ver más tiempo)")
-        self._btn_tiempo_ampliar.setStyleSheet(_BTN_ST)
-        self._btn_tiempo_ampliar.setFixedSize(28, 22)
+        self._btn_tiempo_ampliar.setStyleSheet(_TBTN_ST)
+        self._btn_tiempo_ampliar.setFixedSize(32, 26)
         self._btn_tiempo_ampliar.clicked.connect(self._on_tiempo_ampliar)
         row_tiempo.addWidget(self._btn_tiempo_ampliar)
 
         self._combo_zoom = QComboBox()
         self._combo_zoom.setStyleSheet(_COMBO_ST)
-        self._combo_zoom.setFixedSize(66, 22)
+        self._combo_zoom.setFixedSize(76, 26)
         for f in _ZOOM_FACTORS:
             self._combo_zoom.addItem(f"×{f}")
         self._combo_zoom.setCurrentIndex(0)   # ×1 = todo el buffer
@@ -472,8 +486,8 @@ class AcquisitionTab(QWidget):
         self._btn_tiempo_reducir = QToolButton()
         self._btn_tiempo_reducir.setText("▶◀")
         self._btn_tiempo_reducir.setToolTip("Reducir ventana (ver menos tiempo, más detalle)")
-        self._btn_tiempo_reducir.setStyleSheet(_BTN_ST)
-        self._btn_tiempo_reducir.setFixedSize(28, 22)
+        self._btn_tiempo_reducir.setStyleSheet(_TBTN_ST)
+        self._btn_tiempo_reducir.setFixedSize(32, 26)
         self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
         row_tiempo.addWidget(self._btn_tiempo_reducir)
 
@@ -490,8 +504,8 @@ class AcquisitionTab(QWidget):
         row_tiempo.addStretch()
 
         btn_reset_escala = QPushButton("Reset escalas")
-        btn_reset_escala.setFixedHeight(22)
-        btn_reset_escala.setStyleSheet("font-size: 9px;")
+        btn_reset_escala.setFixedHeight(26)
+        btn_reset_escala.setStyleSheet("font-size: 10px;")
         btn_reset_escala.setToolTip("Restaurar rangos Y y ventana temporal a valores iniciales")
         btn_reset_escala.clicked.connect(self._reset_all_scales)
         row_tiempo.addWidget(btn_reset_escala)
