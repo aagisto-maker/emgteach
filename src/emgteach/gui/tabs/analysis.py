@@ -193,13 +193,13 @@ class AnalysisTab(QWidget):
             "6. MDF/tiempo", "7. RMS vs MDF",
         ]
         grp_paneles = QGroupBox("Paneles a mostrar")
-        # Caja del mismo color de acero que las demás (sin recuadro). Cada
-        # descripción de panel va en un chip blanco; su cuadrito de selección
-        # es blanco y se rellena de azul al marcarlo (para que destaque).
+        # Caja idéntica a las demás (mismo fondo de acero y mismo borde), como
+        # "Marcadores". Cada descripción de panel va en un chip blanco; su
+        # cuadrito de selección es blanco y se rellena de azul al marcarlo.
         grp_paneles.setStyleSheet(
             "QGroupBox {"
             "  background-color: #DCE7F4;"
-            "  border: none;"
+            "  border: 1px solid #A7C2DF;"
             "  border-radius: 6px;"
             "  margin-top: 16px;"
             "  padding-top: 4px;"
@@ -252,6 +252,9 @@ class AnalysisTab(QWidget):
         paneles_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         paneles_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         paneles_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        # Viewport transparente: que se vea el fondo de acero de la caja en los
+        # huecos entre chips (si no, queda un recuadro gris claro interior).
+        paneles_scroll.viewport().setStyleSheet("background: transparent;")
         _fm = QFontMetrics(self.font())
         paneles_scroll.setFixedHeight(_fm.lineSpacing() * 2 + 10)
 
