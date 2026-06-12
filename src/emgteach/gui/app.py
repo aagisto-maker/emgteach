@@ -5,6 +5,9 @@ Crea la QApplication, muestra una splash screen breve, construye el
 QMainWindow con tres pestañas (Adquisición, Análisis, CVM) y arranca el
 event loop. Al cerrar, llama cleanup() en cada pestaña para garantizar
 que todos los workers terminan antes de salir.
+
+El idioma de la interfaz (inglés/español) se fija al arrancar y el selector
+lo cambia para el próximo reinicio (ver emgteach.i18n).
 """
 
 from __future__ import annotations
@@ -15,6 +18,8 @@ from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
+    QHBoxLayout,
     QMainWindow,
     QMessageBox,
     QSplashScreen,
@@ -29,6 +34,7 @@ from emgteach.gui.tabs.acquisition import AcquisitionTab
 from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.i18n import get_language, resolve_startup_language, set_language, tr
 
 # ---------------------------------------------------------------------------
 # Splash screen
@@ -43,14 +49,14 @@ def _make_splash() -> QSplashScreen:
     title_font = QFont("Arial", 22, QFont.Weight.Bold)
     p.setFont(title_font)
     p.setPen(QColor("#ffffff"))
-    p.drawText(px.rect(), Qt.AlignmentFlag.AlignCenter, "EMG Bioinstrumentación")
+    p.drawText(px.rect(), Qt.AlignmentFlag.AlignCenter, tr("EMG Bioinstrumentation"))
 
     sub_font = QFont("Arial", 11)
     p.setFont(sub_font)
     p.setPen(QColor("#aaccee"))
     sub_rect = px.rect().adjusted(0, 80, 0, 0)
     p.drawText(sub_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-               "Plataformas Arduino (BITalino y MyoWare)")
+               tr("Arduino platforms (BITalino and MyoWare)"))
 
     author_font = QFont("Arial", 9)
     p.setFont(author_font)
@@ -101,7 +107,7 @@ _APP_STYLESHEET = (
 class MainWindow(QMainWindow):
     def __init__(self, settings: QSettings):
         super().__init__()
-        self.setWindowTitle("EMG Bioinstrumentación")
+        self.setWindowTitle(tr("EMG Bioinstrumentation"))
         self.resize(1100, 780)
 
         self._settings = settings
@@ -121,18 +127,32 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(_APP_STYLESHEET)
 
         tabs = QTabWidget()
-        tabs.addTab(self._tab_adq, "Adquisición")
-        tabs.addTab(self._tab_ana, "Análisis")
-        tabs.addTab(self._tab_cvm, "Normalización CVM")
+        tabs.addTab(self._tab_adq, tr("Acquisition"))
+        tabs.addTab(self._tab_ana, tr("Analysis"))
+        tabs.addTab(self._tab_cvm, tr("MVC normalisation"))
 
-        # Botón "Acerca de" en la esquina de la barra de pestañas: muestra la
-        # autoría y la versión sin ocupar espacio vertical (sin barra de estado).
+        # Esquina de la barra de pestañas: selector de idioma + botón "Acerca de"
+        # (sin barra de estado, coste vertical cero).
+        self._combo_lang = QComboBox()
+        self._combo_lang.addItem("English", "en")
+        self._combo_lang.addItem("Español", "es")
+        self._combo_lang.setCurrentIndex(0 if get_language() == "en" else 1)
+        self._combo_lang.setToolTip(tr("Interface language"))
+        self._combo_lang.currentIndexChanged.connect(self._on_language_changed)
+
         btn_about = QToolButton()
         btn_about.setText("?")
         btn_about.setAutoRaise(True)
-        btn_about.setToolTip("Acerca de EMG Bioinstrumentación")
+        btn_about.setToolTip(tr("About EMG Bioinstrumentation"))
         btn_about.clicked.connect(self._show_about)
-        tabs.setCornerWidget(btn_about, Qt.Corner.TopRightCorner)
+
+        corner = QWidget()
+        corner_lay = QHBoxLayout(corner)
+        corner_lay.setContentsMargins(0, 0, 4, 0)
+        corner_lay.setSpacing(2)
+        corner_lay.addWidget(self._combo_lang)
+        corner_lay.addWidget(btn_about)
+        tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
 
         central = QWidget()
         root = QVBoxLayout(central)
@@ -140,14 +160,23 @@ class MainWindow(QMainWindow):
         root.addWidget(tabs, stretch=1)
         self.setCentralWidget(central)
 
+    def _on_language_changed(self, index: int) -> None:
+        code = self._combo_lang.itemData(index)
+        self._settings.setValue("app/language", code)
+        QMessageBox.information(
+            self,
+            tr("Language"),
+            tr("The language change will take effect when you restart the application."),
+        )
+
     def _show_about(self) -> None:
         QMessageBox.about(
             self,
-            "Acerca de EMG Bioinstrumentación",
-            f"<b>EMG Bioinstrumentación</b><br>"
-            f"Versión {__version__}<br><br>"
+            tr("About EMG Bioinstrumentation"),
+            f"<b>{tr('EMG Bioinstrumentation')}</b><br>"
+            f"{tr('Version')} {__version__}<br><br>"
             "Dr. Agis-Torres — UCM<br>"
-            "Facultad de Farmacia, Universidad Complutense de Madrid",
+            f"{tr('Faculty of Pharmacy, Complutense University of Madrid')}",
         )
 
     def closeEvent(self, event) -> None:
@@ -167,6 +196,8 @@ def main() -> None:
     app.setOrganizationName("Bioinstrumentacion")
 
     settings = QSettings("Bioinstrumentacion", "EMGApp")
+    # Fija el idioma (guardado o autodetectado) antes de construir la interfaz.
+    set_language(resolve_startup_language(settings))
 
     splash = _make_splash()
     splash.show()

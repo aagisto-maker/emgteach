@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QMutex, QThread, Signal, Slot
 
 from emgteach.dsp import OnsetDetector, RealtimeFilterState
+from emgteach.i18n import tr
 from emgteach.io import BufferedEdfWriter, build_timestamped_path
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 
@@ -203,8 +204,10 @@ class AcquisitionWorker(QThread):
             ]
         if len(labels) != n_channels:
             self.error.emit(
-                f"Las etiquetas de sensor tienen {len(labels)} entradas pero el "
-                f"dispositivo informa de {n_channels} canal(es)."
+                tr(
+                    "sensor_labels has {n} entries but the device reports "
+                    "{m} channel(s)."
+                ).format(n=len(labels), m=n_channels)
             )
             return None
         return labels
@@ -225,10 +228,10 @@ class AcquisitionWorker(QThread):
         try:
             self._opening = True
             self._streaming = False
-            self.log.emit(f"Conectando con {device.name}…")
+            self.log.emit(tr("Connecting to {name}…").format(name=device.name))
             device.open()
             self._opening = False
-            self.log.emit("Conexión establecida. Iniciando adquisición.")
+            self.log.emit(tr("Connection established. Starting acquisition."))
 
             # One independent filter chain per channel.
             filter_states = [
@@ -251,13 +254,15 @@ class AcquisitionWorker(QThread):
                     OnsetDetector(fs, **onset_kwargs) for _ in range(n_ch)
                 ]
                 self.log.emit(
-                    f"Detección automática de inicio activada (k={self._onset_k:.1f})."
+                    tr("Automatic onset detection enabled (k={k:.1f}).").format(
+                        k=self._onset_k
+                    )
                 )
 
             edf_path = build_timestamped_path(self._save_dir)
             channels = self._profile.build_channels(labels, fs)
             writer = BufferedEdfWriter(edf_path, channels=channels)
-            self.log.emit(f"Grabando en: {edf_path}")
+            self.log.emit(tr("Recording to: {path}").format(path=edf_path))
 
             sleep_ms = max(1, int(self._n_per_read / fs * 500))
             self._running = True
@@ -272,7 +277,11 @@ class AcquisitionWorker(QThread):
                     if not self._running:
                         # force_close() was called from another thread
                         break
-                    self.error.emit(f"Conexión con {device.name} perdida: {exc}")
+                    self.error.emit(
+                        tr("Connection to {name} lost: {error}").format(
+                            name=device.name, error=exc
+                        )
+                    )
                     break
 
                 if block.ndim == 1:
@@ -294,9 +303,9 @@ class AcquisitionWorker(QThread):
                     env_list.append(env_c.copy())
                     if onset_detectors is not None:
                         auto_label = (
-                            "Inicio (auto)"
+                            tr("Onset (auto)")
                             if n_ch == 1
-                            else f"Inicio (auto) — {labels[c]}"
+                            else tr("Onset (auto) — {label}").format(label=labels[c])
                         )
                         for t_onset in onset_detectors[c].process(env_c):
                             self._record_marker(t_onset, auto_label)
@@ -307,7 +316,7 @@ class AcquisitionWorker(QThread):
                 try:
                     writer.add_samples(*raw_list)
                 except Exception as exc:
-                    self.log.emit(f"Aviso — error de escritura EDF: {exc}")
+                    self.log.emit(tr("Warning — EDF write error: {error}").format(error=exc))
 
                 self.data_ready.emit(
                     {
@@ -328,7 +337,7 @@ class AcquisitionWorker(QThread):
                 device.close()
             except Exception:
                 pass
-            self.log.emit(f"{device.name} desconectado.")
+            self.log.emit(tr("{name} disconnected.").format(name=device.name))
 
             if writer is not None:
                 # Write annotations before close so the EDF file holds
@@ -343,12 +352,12 @@ class AcquisitionWorker(QThread):
                     try:
                         writer.add_annotation(t_marker, label)
                     except Exception as exc:
-                        self.log.emit(f"Aviso — error de anotación: {exc}")
+                        self.log.emit(tr("Warning — annotation error: {error}").format(error=exc))
 
                 try:
                     writer.close()
-                    self.log.emit(f"Archivo EDF guardado: {edf_path}")
+                    self.log.emit(tr("EDF file saved: {path}").format(path=edf_path))
                 except Exception as exc:
-                    self.log.emit(f"Aviso — error al cerrar el EDF: {exc}")
+                    self.log.emit(tr("Warning — EDF close error: {error}").format(error=exc))
 
             self.finished_ok.emit(edf_path)

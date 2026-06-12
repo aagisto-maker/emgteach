@@ -55,13 +55,13 @@ from PySide6.QtWidgets import (
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
 _PANEL_NOMBRES = [
-    "1A. Señal bruta",
-    "1B. Filtrada + rectificada",
-    "2. Envolvente vs RMS",
-    "3. Envolvente normalizada",
-    "4. PSD con MNF/MDF",
-    "5. RMS por ventana",
-    "6. MDF vs tiempo (fatiga)",
+    "1A. Raw signal",
+    "1B. Filtered + rectified",
+    "2. Envelope vs RMS",
+    "3. Normalised envelope",
+    "4. PSD with MNF/MDF",
+    "5. RMS per window",
+    "6. MDF vs time (fatigue)",
     "7. RMS vs MDF",
 ]
 
@@ -69,6 +69,7 @@ _PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
 
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
+from emgteach.i18n import tr
 from emgteach.io import list_edf_channels
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
@@ -104,31 +105,31 @@ class AnalysisTab(QWidget):
         root = QVBoxLayout(self)
 
         # --- Fila superior: Parámetros (stretch 3) + Log (stretch 2) ---
-        grp_ctrl = QGroupBox("Parámetros de análisis")
+        grp_ctrl = QGroupBox(tr("Analysis parameters"))
         ctrl = QVBoxLayout(grp_ctrl)
         ctrl.setSpacing(4)
         ctrl.setContentsMargins(6, 4, 6, 4)
 
         # Línea 1: archivo EDF + Analizar + Guardar
         row_file = QHBoxLayout()
-        row_file.addWidget(QLabel("Archivo EDF:"))
+        row_file.addWidget(QLabel(tr("EDF file:")))
         self._edit_path = QLineEdit()
-        self._edit_path.setPlaceholderText("Selecciona un archivo EDF…")
+        self._edit_path.setPlaceholderText(tr("Select an EDF file…"))
         self._edit_path.setReadOnly(True)
         row_file.addWidget(self._edit_path, stretch=1)
-        self._btn_abrir = QPushButton("Explorar…")
+        self._btn_abrir = QPushButton(tr("Browse…"))
         self._btn_abrir.setFixedWidth(84)
         self._btn_abrir.clicked.connect(self._seleccionar_archivo)
         row_file.addWidget(self._btn_abrir)
-        self._btn_analizar = QPushButton("Analizar")
+        self._btn_analizar = QPushButton(tr("Analyse"))
         self._btn_analizar.setEnabled(False)
         self._btn_analizar.clicked.connect(self._iniciar_analisis)
         row_file.addWidget(self._btn_analizar)
-        self._btn_guardar = QPushButton("Guardar figura (PNG)")
+        self._btn_guardar = QPushButton(tr("Save figure (PNG)"))
         self._btn_guardar.setEnabled(False)
         self._btn_guardar.clicked.connect(self._guardar_figura)
         row_file.addWidget(self._btn_guardar)
-        self._btn_informe = QPushButton("Generar informe PDF")
+        self._btn_informe = QPushButton(tr("Generate PDF report"))
         self._btn_informe.setEnabled(False)
         self._btn_informe.clicked.connect(self._generar_informe)
         row_file.addWidget(self._btn_informe)
@@ -136,24 +137,26 @@ class AnalysisTab(QWidget):
 
         # Línea 2: canal + f_env
         row_params = QHBoxLayout()
-        row_params.addWidget(QLabel("Canal EMG:"))
+        row_params.addWidget(QLabel(tr("EMG channel:")))
         self._combo_canal = QComboBox()
         self._combo_canal.setEditable(True)  # permite teclear si hace falta
         self._combo_canal.addItem("EMG")
         self._combo_canal.setFixedWidth(150)
         self._combo_canal.setToolTip(
-            "Canal del EDF a analizar. Se rellena con los canales del archivo "
-            "al seleccionarlo (p. ej. agonista/antagonista)."
+            tr(
+                "EMG channel of the EDF to analyse. Filled with the channels of "
+                "the file when you select it (e.g. agonist/antagonist)."
+            )
         )
         row_params.addWidget(self._combo_canal)
-        row_params.addWidget(QLabel("Frec. corte envolvente (Hz):"))
+        row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
         self._spin_fenv.setSingleStep(0.5)
         self._spin_fenv.setValue(5.0)
         self._spin_fenv.setFixedWidth(72)
         row_params.addWidget(self._spin_fenv)
-        row_params.addWidget(QLabel("Alumno/a:"))
+        row_params.addWidget(QLabel(tr("Student:")))
         self._edit_student = QLineEdit()
         self._edit_student.setFixedWidth(150)
         self._edit_student.setText(self._settings.value("analisis/student", ""))
@@ -161,7 +164,7 @@ class AnalysisTab(QWidget):
             lambda v: self._settings.setValue("analisis/student", v)
         )
         row_params.addWidget(self._edit_student)
-        row_params.addWidget(QLabel("Código:"))
+        row_params.addWidget(QLabel(tr("Code:")))
         self._edit_student_code = QLineEdit()
         self._edit_student_code.setFixedWidth(90)
         self._edit_student_code.setText(
@@ -175,7 +178,7 @@ class AnalysisTab(QWidget):
         ctrl.addLayout(row_params)
 
         # Log a la derecha de los parámetros
-        grp_log_top = QGroupBox("Registro de eventos")
+        grp_log_top = QGroupBox(tr("Event log"))
         log_top_layout = QVBoxLayout(grp_log_top)
         log_top_layout.setContentsMargins(4, 4, 4, 4)
         log_top_layout.addWidget(self._logger)
@@ -188,11 +191,11 @@ class AnalysisTab(QWidget):
 
         # --- Selección de paneles — una línea compacta con scroll horizontal ---
         _PANEL_SHORT_LABELS = [
-            "1A. Bruta", "1B. Filtr.+rect.", "2. Env. vs RMS",
-            "3. Env. norm.", "4. PSD", "5. RMS/ventana",
-            "6. MDF/tiempo", "7. RMS vs MDF",
+            "1A. Raw", "1B. Filt.+rect.", "2. Env. vs RMS",
+            "3. Env. norm.", "4. PSD", "5. RMS/window",
+            "6. MDF/time", "7. RMS vs MDF",
         ]
-        grp_paneles = QGroupBox("Paneles a mostrar")
+        grp_paneles = QGroupBox(tr("Panels to show"))
         # Caja idéntica a las demás (mismo fondo de acero y mismo borde), como
         # "Marcadores". Cada descripción de panel va en un chip blanco; su
         # cuadrito de selección es blanco y se rellena de azul al marcarlo.
@@ -236,12 +239,12 @@ class AnalysisTab(QWidget):
         paneles_layout.setSpacing(6)
         self._chk_paneles: list[QCheckBox] = []
         for label in _PANEL_SHORT_LABELS:
-            chk = QCheckBox(label)
+            chk = QCheckBox(tr(label))
             chk.setChecked(True)
             paneles_layout.addWidget(chk)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
-        self._btn_redibujar = QPushButton("Redibujar")
+        self._btn_redibujar = QPushButton(tr("Redraw"))
         self._btn_redibujar.setEnabled(False)
         self._btn_redibujar.clicked.connect(self._redibujar)
         paneles_layout.addWidget(self._btn_redibujar)
@@ -267,11 +270,11 @@ class AnalysisTab(QWidget):
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(4)
 
-        grp_markers_bar = QGroupBox("Marcadores")
+        grp_markers_bar = QGroupBox(tr("Markers"))
         markers_inner = QHBoxLayout(grp_markers_bar)
         markers_inner.setContentsMargins(6, 2, 6, 2)
         markers_inner.setSpacing(6)
-        self._lbl_markers_bar = QLabel("Marcadores (0):")
+        self._lbl_markers_bar = QLabel(tr("Markers ({n}):").format(n=0))
         self._lbl_markers_bar.setStyleSheet("font-size: 11px;")
         markers_inner.addWidget(self._lbl_markers_bar)
         self._combo_markers = QComboBox()
@@ -280,9 +283,9 @@ class AnalysisTab(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
         self._combo_markers.setEnabled(False)
-        self._combo_markers.addItem("Sin marcadores")
+        self._combo_markers.addItem(tr("No markers"))
         markers_inner.addWidget(self._combo_markers, stretch=1)
-        self._btn_ir_marcador = QPushButton("Ir")
+        self._btn_ir_marcador = QPushButton(tr("Go"))
         self._btn_ir_marcador.setFixedWidth(40)
         self._btn_ir_marcador.setFixedHeight(26)
         self._btn_ir_marcador.setStyleSheet("font-size: 11px;")
@@ -295,7 +298,7 @@ class AnalysisTab(QWidget):
         root.addLayout(bottom_row)
 
         # --- Ventana de visualización (minimapa) — oculta (ver más abajo) ---
-        grp_ventana = QGroupBox("Ventana de visualización")
+        grp_ventana = QGroupBox(tr("Display window"))
         ventana_vbox = QVBoxLayout(grp_ventana)
         ventana_vbox.setContentsMargins(6, 4, 6, 4)
         ventana_vbox.setSpacing(2)
@@ -307,12 +310,12 @@ class AnalysisTab(QWidget):
         ventana_vbox.addWidget(self._time_range)
 
         row_info = QHBoxLayout()
-        self._lbl_inicio_info   = QLabel("Inicio: 0.0 s")
-        self._lbl_duracion_info = QLabel("Duración: 10.0 s")
+        self._lbl_inicio_info   = QLabel(f"{tr('Start:')} 0.0 s")
+        self._lbl_duracion_info = QLabel(f"{tr('Duration:')} 10.0 s")
         _info_sep = QLabel("|")
         for lbl in (self._lbl_inicio_info, _info_sep, self._lbl_duracion_info):
             lbl.setStyleSheet("font-size: 9px; padding: 0 4px; color: #333333;")
-        self._btn_reset_ventana = QPushButton("Reset ventana")
+        self._btn_reset_ventana = QPushButton(tr("Reset window"))
         self._btn_reset_ventana.setEnabled(False)
         self._btn_reset_ventana.setFixedHeight(22)
         self._btn_reset_ventana.setStyleSheet("font-size: 9px;")
@@ -320,7 +323,7 @@ class AnalysisTab(QWidget):
 
         _btn_st = "font-size: 9px;"
         self._btn_tiempo_ampliar = QPushButton("◀▶")
-        self._btn_tiempo_ampliar.setToolTip("Ampliar ventana temporal (×2)")
+        self._btn_tiempo_ampliar.setToolTip(tr("Widen the time window (×2)"))
         self._btn_tiempo_ampliar.setFixedSize(30, 22)
         self._btn_tiempo_ampliar.setStyleSheet(_btn_st)
         self._btn_tiempo_ampliar.setEnabled(False)
@@ -335,7 +338,7 @@ class AnalysisTab(QWidget):
         self._combo_zoom.activated.connect(self._on_combo_zoom_changed)
 
         self._btn_tiempo_reducir = QPushButton("▶◀")
-        self._btn_tiempo_reducir.setToolTip("Reducir ventana temporal (÷2)")
+        self._btn_tiempo_reducir.setToolTip(tr("Narrow the time window (÷2)"))
         self._btn_tiempo_reducir.setFixedSize(30, 22)
         self._btn_tiempo_reducir.setStyleSheet(_btn_st)
         self._btn_tiempo_reducir.setEnabled(False)
@@ -361,7 +364,7 @@ class AnalysisTab(QWidget):
         root.addWidget(self._progress)
 
         # --- Panel de resumen numérico (una fila) ---
-        grp_resumen = QGroupBox("Resumen del análisis")
+        grp_resumen = QGroupBox(tr("Analysis summary"))
         grp_resumen.setContentsMargins(4, 2, 4, 2)
         resumen_inner = QWidget()
         resumen_row = QHBoxLayout(resumen_inner)
@@ -376,13 +379,13 @@ class AnalysisTab(QWidget):
             s.setStyleSheet(_sep_st)
             return s
 
-        self._lbl_mnf = QLabel("Frecuencia Media (MNF): —")
-        self._lbl_mdf = QLabel("Frecuencia Mediana (MDF): —")
-        self._lbl_fatiga = QLabel("Fatiga: —")
-        self._lbl_pendiente = QLabel("Pendiente MDF: —")
-        self._lbl_rms_global = QLabel("RMS global: —")
+        self._lbl_mnf = QLabel(f"{tr('Mean frequency (MNF):')} —")
+        self._lbl_mdf = QLabel(f"{tr('Median frequency (MDF):')} —")
+        self._lbl_fatiga = QLabel(f"{tr('Fatigue:')} —")
+        self._lbl_pendiente = QLabel(f"{tr('MDF slope:')} —")
+        self._lbl_rms_global = QLabel(f"{tr('Global RMS:')} —")
         self._lbl_iemg = QLabel("iEMG: —")
-        self._lbl_duracion = QLabel("Duración: —")
+        self._lbl_duracion = QLabel(f"{tr('Duration:')} —")
         self._lbl_archivo = QLabel("")
 
         for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga, self._lbl_pendiente,
@@ -454,9 +457,9 @@ class AnalysisTab(QWidget):
     @Slot()
     def _seleccionar_archivo(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, "Seleccionar archivo EDF",
+            self, tr("Select EDF file"),
             self._last_edf_dir,
-            "Archivos EDF (*.edf *.EDF)",
+            tr("EDF files (*.edf *.EDF)"),
         )
         if path:
             self._edit_path.setText(path)
@@ -494,9 +497,9 @@ class AnalysisTab(QWidget):
         self._progress.setFormat("Analizando…  %p%")
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
-        self._lbl_mnf.setText("Frecuencia Media (MNF): —")
-        self._lbl_mdf.setText("Frecuencia Mediana (MDF): —")
-        self._lbl_fatiga.setText("Fatiga: —")
+        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
+        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
+        self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
 
         self._worker = AnalysisWorker(
             edf_path=path,
@@ -533,8 +536,8 @@ class AnalysisTab(QWidget):
         # defecto y se navega/zooma con la rueda del ratón sobre los paneles.
         _dur_ini = duracion_total
         self._time_range.set_range(0.0, _dur_ini)
-        self._lbl_inicio_info.setText("Inicio: 0.0 s")
-        self._lbl_duracion_info.setText(f"Duración: {_dur_ini:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{_dur_ini:.1f} s")
         self._markers = result.get("markers", [])
         self._actualizar_lista_marcadores()
         self._update_combo_items()
@@ -544,15 +547,15 @@ class AnalysisTab(QWidget):
 
     @Slot(float, float)
     def _on_range_changed(self, inicio: float, duracion: float) -> None:
-        self._lbl_inicio_info.setText(f"Inicio: {inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"Duración: {duracion:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')}{inicio:.1f} s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{duracion:.1f} s")
         self._sync_combo_zoom()
         self._redraw_timer.start()
 
     @Slot(float, float)
     def _on_range_preview(self, inicio: float, duracion: float) -> None:
-        self._lbl_inicio_info.setText(f"Inicio: {inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"Duración: {duracion:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')}{inicio:.1f} s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{duracion:.1f} s")
 
     @Slot()
     def _redibujar_con_ventana_actual(self) -> None:
@@ -563,8 +566,8 @@ class AnalysisTab(QWidget):
     def _reset_ventana(self) -> None:
         dur = self._duracion_total
         self._time_range.set_range(0.0, dur)
-        self._lbl_inicio_info.setText("Inicio: 0.0 s")
-        self._lbl_duracion_info.setText(f"Duración: {dur:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{dur:.1f} s")
         self._sync_combo_zoom()
         if self._last_result is not None:
             self._dibujar_paneles(self._last_result)
@@ -585,15 +588,15 @@ class AnalysisTab(QWidget):
     # ------------------------------------------------------------------
 
     def _actualizar_resumen(self, r: dict) -> None:
-        self._lbl_archivo.setText(f"Archivo: {Path(r['edf_path']).name}")
-        self._lbl_mnf.setText(f"Frecuencia Media (MNF): {r['mnf']:.1f} Hz")
-        self._lbl_mdf.setText(f"Frecuencia Mediana (MDF): {r['mdf']:.1f} Hz")
+        self._lbl_archivo.setText(f"{tr('File:')} {Path(r['edf_path']).name}")
+        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')}{r['mnf']:.1f} Hz")
+        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')}{r['mdf']:.1f} Hz")
         pendiente = r.get("mdf_slope", 0.0)
         signo = "+" if pendiente >= 0 else ""
-        self._lbl_pendiente.setText(f"Pendiente MDF: {signo}{pendiente:.2f} Hz/s")
-        self._lbl_rms_global.setText(f"RMS global: {r.get('rms_global', 0.0):.2f} mV")
+        self._lbl_pendiente.setText(f"{tr('MDF slope:')}{signo}{pendiente:.2f} Hz/s")
+        self._lbl_rms_global.setText(f"{tr('Global RMS:')}{r.get('rms_global', 0.0):.2f} mV")
         self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
-        self._lbl_duracion.setText(f"Duración: {r.get('duration', 0.0):.1f} s")
+        self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
 
         sign = r["fat_slope_sign"]
         if sign < 0:
@@ -638,9 +641,9 @@ class AnalysisTab(QWidget):
             ax = ax_map[0]
             ax.plot(times, r["emg_raw"],
                     color="#333333", lw=0.8, alpha=0.7)
-            ax.set_title("1A. Señal EMG bruta", fontsize=9)
-            ax.set_ylabel("Amplitud (mV)", fontsize=8)
-            ax.set_xlabel("Tiempo (s)", fontsize=8)
+            ax.set_title(tr("1A. Raw EMG signal"), fontsize=9)
+            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.grid(True, **_grid)
@@ -650,12 +653,12 @@ class AnalysisTab(QWidget):
         if 1 in ax_map:
             ax = ax_map[1]
             ax.plot(times, r["emg_filtered"],
-                    color="#1f77b4", lw=1.2, label="EMG filtrado (20-450 Hz)")
+                    color="#1f77b4", lw=1.2, label=tr("Filtered EMG (20-450 Hz)"))
             ax.plot(times, r["emg_rectified"],
-                    color="#d62728", lw=1.2, alpha=0.9, label="EMG rectificado")
-            ax.set_title("1B. Señal EMG filtrada + rectificada", fontsize=9)
-            ax.set_ylabel("Amplitud (mV)", fontsize=8)
-            ax.set_xlabel("Tiempo (s)", fontsize=8)
+                    color="#d62728", lw=1.2, alpha=0.9, label=tr("Rectified EMG"))
+            ax.set_title(tr("1B. Filtered + rectified EMG signal"), fontsize=9)
+            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.legend(loc="upper right", fontsize=7)
@@ -666,14 +669,14 @@ class AnalysisTab(QWidget):
         if 2 in ax_map:
             ax = ax_map[2]
             ax.plot(times, r["emg_rectified"],
-                    color="#E74C3C", lw=1.2, alpha=0.6, label="EMG rectificado")
+                    color="#E74C3C", lw=1.2, alpha=0.6, label=tr("Rectified EMG"))
             ax.plot(times, r["emg_envelope"],
-                    color="#9467bd", lw=2.0, label="Envolvente LP (fase cero)")
+                    color="#9467bd", lw=2.0, label=tr("LP envelope (zero-phase)"))
             ax.plot(times, r["rms_sliding"],
-                    color="#2ca02c", lw=1.5, ls="--", label="Envolvente RMS")
-            ax.set_title("2. Envolvente de la señal EMG", fontsize=9)
-            ax.set_ylabel("Amplitud (mV)", fontsize=8)
-            ax.set_xlabel("Tiempo (s)", fontsize=8)
+                    color="#2ca02c", lw=1.5, ls="--", label=tr("RMS envelope"))
+            ax.set_title(tr("2. EMG signal envelope"), fontsize=9)
+            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.legend(loc="upper right", fontsize=7)
@@ -684,11 +687,11 @@ class AnalysisTab(QWidget):
         if 3 in ax_map:
             ax = ax_map[3]
             ax.plot(times, r["emg_envelope_normalised"],
-                    color="#9467bd", lw=1.8, label="Envolvente normalizada (max=1)")
+                    color="#9467bd", lw=1.8, label=tr("Normalised envelope (max=1)"))
             ax.axhline(1.0, color="#E74C3C", ls=":", lw=1.5, alpha=0.8)
-            ax.set_title("3. Envolvente normalizada al máximo", fontsize=9)
-            ax.set_ylabel("Amplitud normalizada (0–1)", fontsize=8)
-            ax.set_xlabel("Tiempo (s)", fontsize=8)
+            ax.set_title(tr("3. Envelope normalised to maximum"), fontsize=9)
+            ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.set_ylim(0, 1.15)
             ax.tick_params(labelsize=7)
@@ -704,8 +707,8 @@ class AnalysisTab(QWidget):
                        label=f"MNF: {r['mnf']:.1f} Hz")
             ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
                        label=f"MDF: {r['mdf']:.1f} Hz")
-            ax.set_title("4. Densidad Espectral de Potencia (PSD)", fontsize=9)
-            ax.set_xlabel("Frecuencia (Hz)", fontsize=8)
+            ax.set_title(tr("4. Power spectral density (PSD)"), fontsize=9)
+            ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
             ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
             ax.set_xlim(0, f_high + 50)
             ax.tick_params(labelsize=7)
@@ -717,9 +720,9 @@ class AnalysisTab(QWidget):
             ax = ax_map[5]
             ax.plot(r["t_seg"], r["rms_seg"],
                     color="#2ca02c", lw=1.5, marker="o", ms=4,
-                    label="RMS por ventana de 1 s")
-            ax.set_title("5. Evolución temporal de la Amplitud RMS", fontsize=9)
-            ax.set_xlabel("Tiempo (s)", fontsize=8)
+                    label=tr("RMS per 1 s window"))
+            ax.set_title(tr("5. RMS amplitude over time"), fontsize=9)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_ylabel("RMS (mV)", fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
@@ -732,17 +735,19 @@ class AnalysisTab(QWidget):
             ax = ax_map[6]
             ax.scatter(r["t_seg"], r["mdf_seg"],
                        s=20, alpha=0.7, color="#666666",
-                       label="Frecuencia Mediana por ventana")
+                       label=tr("Median frequency per window"))
             if len(r["t_seg"]) >= 2:
                 ax.plot(r["t_seg"], r["fat_fitted"],
                         color="#E74C3C", lw=2.5,
-                        label="Tendencia (polinomio grado 2)")
+                        label=tr("Trend (degree-2 polynomial)"))
             ax.set_title(
-                "6. Tendencia de Fatiga: Frecuencia Mediana vs. Tiempo\n"
-                "   (descenso = indicador de fatiga muscular)",
+                tr(
+                    "6. Fatigue trend: median frequency vs. time\n"
+                    "   (a decrease indicates muscle fatigue)"
+                ),
                 fontsize=9, pad=8,
             )
-            ax.set_xlabel("Tiempo (s)", fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_ylabel("MDF (Hz)", fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
@@ -757,11 +762,11 @@ class AnalysisTab(QWidget):
             sc = ax.scatter(r["mdf_seg"], r["rms_seg"],
                             c=t_seg, cmap="viridis", s=60, alpha=0.8, zorder=3)
             ax.plot(r["rms_mdf_range"], r["rms_mdf_fitted"],
-                    color="#E74C3C", lw=2.5, label="Ajuste polinómico grado 2")
+                    color="#E74C3C", lw=2.5, label=tr("Degree-2 polynomial fit"))
             cbar = self._fig.colorbar(sc, ax=ax, orientation="vertical", pad=0.02)
-            cbar.set_label("Tiempo (s)", fontsize=8)
+            cbar.set_label(tr("Time (s)"), fontsize=8)
             cbar.ax.tick_params(labelsize=7)
-            ax.set_title("7. Relación Amplitud (Fuerza) vs. Frecuencia Mediana (Fatiga)", fontsize=9)
+            ax.set_title(tr("7. Amplitude (force) vs median frequency (fatigue)"), fontsize=9)
             ax.set_xlabel("MDF (Hz)", fontsize=8)
             ax.set_ylabel("RMS (mV)", fontsize=8)
             ax.tick_params(labelsize=7)
@@ -789,13 +794,13 @@ class AnalysisTab(QWidget):
         ruta_default = str(Path(carpeta) / nombre)
 
         ruta, _ = QFileDialog.getSaveFileName(
-            self, "Guardar figura",
+            self, tr("Save figure"),
             ruta_default,
-            "Imágenes PNG (*.png)",
+            tr("PNG images (*.png)"),
         )
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
-            self._logger.append_log(f"Figura guardada en: {ruta}")
+            self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
 
     @Slot()
     def _pedir_paneles_informe(self) -> list[int] | None:
@@ -806,7 +811,7 @@ class AnalysisTab(QWidget):
         visibles en pantalla.
         """
         dlg = QDialog(self)
-        dlg.setWindowTitle("Gráficos del informe")
+        dlg.setWindowTitle(tr("Report graphs"))
         dlg.setMinimumWidth(340)
         # Estética coherente con la app: fondo gris, encabezado en azul y cada
         # gráfico en un recuadro blanco (chip), como en "Paneles a mostrar".
@@ -842,13 +847,13 @@ class AnalysisTab(QWidget):
         lay = QVBoxLayout(dlg)
         lay.setContentsMargins(12, 12, 12, 12)
         lay.setSpacing(6)
-        encabezado = QLabel("Marca los gráficos que se añadirán al informe:")
+        encabezado = QLabel(tr("Tick the graphs to add to the report:"))
         encabezado.setObjectName("dlgHeader")
         lay.addWidget(encabezado)
 
         checks: list[QCheckBox] = []
         for i, nombre in enumerate(_PANEL_NOMBRES):
-            cb = QCheckBox(nombre)
+            cb = QCheckBox(tr(nombre))
             cb.setChecked(i < len(self._chk_paneles) and self._chk_paneles[i].isChecked())
             lay.addWidget(cb)
             checks.append(cb)
@@ -884,9 +889,11 @@ class AnalysisTab(QWidget):
         }
         try:
             build_session_report(out, self._last_result, meta, panels=paneles)
-            self._logger.append_log(f"Informe PDF generado: {out}")
+            self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
         except Exception as exc:
-            self._logger.append_error(f"Error al generar el informe PDF: {exc}")
+            self._logger.append_error(
+                tr("Error generating the PDF report: {error}").format(error=exc)
+            )
 
     # ------------------------------------------------------------------
     # Marcadores
@@ -920,7 +927,7 @@ class AnalysisTab(QWidget):
     def _actualizar_lista_marcadores(self) -> None:
         sorted_m = sorted(self._markers, key=lambda x: x[0])
         n = len(sorted_m)
-        self._lbl_markers_bar.setText(f"Marcadores ({n}):")
+        self._lbl_markers_bar.setText(tr("Markers ({n}):").format(n=n))
         self._combo_markers.blockSignals(True)
         self._combo_markers.clear()
         if sorted_m:
@@ -929,7 +936,7 @@ class AnalysisTab(QWidget):
             self._combo_markers.setEnabled(True)
             self._btn_ir_marcador.setEnabled(True)
         else:
-            self._combo_markers.addItem("Sin marcadores")
+            self._combo_markers.addItem(tr("No markers"))
             self._combo_markers.setEnabled(False)
             self._btn_ir_marcador.setEnabled(False)
         self._combo_markers.blockSignals(False)
@@ -943,8 +950,8 @@ class AnalysisTab(QWidget):
         _, dur = self._time_range.get_range()
         nuevo_inicio = max(0.0, min(tiempo - dur / 2, self._duracion_total - dur))
         self._time_range.set_range(nuevo_inicio, dur)
-        self._lbl_inicio_info.setText(f"Inicio: {nuevo_inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"Duración: {dur:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')}{nuevo_inicio:.1f} s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{dur:.1f} s")
         self._sync_combo_zoom()
         if self._last_result is not None:
             self._dibujar_paneles(self._last_result)
@@ -1022,8 +1029,8 @@ class AnalysisTab(QWidget):
         nueva_dur = max(nueva_dur, 0.5)
         nuevo_inicio = min(inicio, self._duracion_total - nueva_dur)
         self._time_range.set_range(nuevo_inicio, nueva_dur)
-        self._lbl_inicio_info.setText(f"Inicio: {nuevo_inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"Duración: {nueva_dur:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')}{nuevo_inicio:.1f} s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{nueva_dur:.1f} s")
         self._sync_combo_zoom()
         self._redraw_timer.start()
 
@@ -1033,8 +1040,8 @@ class AnalysisTab(QWidget):
         nueva_dur = max(dur / 2.0, 0.5)
         nuevo_inicio = min(inicio, self._duracion_total - nueva_dur)
         self._time_range.set_range(nuevo_inicio, nueva_dur)
-        self._lbl_inicio_info.setText(f"Inicio: {nuevo_inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"Duración: {nueva_dur:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')}{nuevo_inicio:.1f} s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{nueva_dur:.1f} s")
         self._sync_combo_zoom()
         self._redraw_timer.start()
 
@@ -1047,8 +1054,8 @@ class AnalysisTab(QWidget):
         inicio, _ = self._time_range.get_range()
         nuevo_inicio = min(inicio, self._duracion_total - nueva_dur)
         self._time_range.set_range(nuevo_inicio, nueva_dur)
-        self._lbl_inicio_info.setText(f"Inicio: {nuevo_inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"Duración: {nueva_dur:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')}{nuevo_inicio:.1f} s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')}{nueva_dur:.1f} s")
         self._redraw_timer.start()
 
     def _sync_combo_zoom(self) -> None:

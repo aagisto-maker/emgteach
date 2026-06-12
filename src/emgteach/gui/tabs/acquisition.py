@@ -55,6 +55,7 @@ from emgteach.devices import (
     create_device,
 )
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.i18n import tr
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
 
@@ -218,7 +219,7 @@ class AcquisitionTab(QWidget):
         row_top.setSpacing(4)
 
         # — Configuración del dispositivo (media anchura) —
-        grp_config = QGroupBox("Configuración del dispositivo")
+        grp_config = QGroupBox(tr("Device configuration"))
         cfg_outer = QVBoxLayout(grp_config)
         cfg_outer.setContentsMargins(6, 3, 6, 3)
         cfg_outer.setSpacing(3)
@@ -246,9 +247,9 @@ class AcquisitionTab(QWidget):
         self._edit_mac.setPlaceholderText("98:D3:91:FE:44:E4")
         self._edit_mac.setText(self._settings.value("adquisicion/mac", DEFAULT_MAC))
         mac_inner.addWidget(self._edit_mac)
-        btn_reset_mac = QPushButton("Por defecto")
+        btn_reset_mac = QPushButton(tr("Default"))
         btn_reset_mac.setFixedWidth(84)
-        btn_reset_mac.setToolTip(f"Restaurar MAC por defecto ({DEFAULT_MAC})")
+        btn_reset_mac.setToolTip(tr("Restore default MAC ({mac})").format(mac=DEFAULT_MAC))
         btn_reset_mac.clicked.connect(self._reset_mac)
         mac_inner.addWidget(btn_reset_mac)
 
@@ -258,9 +259,9 @@ class AcquisitionTab(QWidget):
         ard_inner.setSpacing(4)
         self._combo_port = QComboBox()
         ard_inner.addWidget(self._combo_port)
-        btn_refresh_ports = QPushButton("Refrescar")
+        btn_refresh_ports = QPushButton(tr("Refresh"))
         btn_refresh_ports.setFixedWidth(84)
-        btn_refresh_ports.setToolTip("Refrescar lista de puertos serie disponibles")
+        btn_refresh_ports.setToolTip(tr("Refresh the list of available serial ports"))
         btn_refresh_ports.clicked.connect(self._refresh_ports)
         ard_inner.addWidget(btn_refresh_ports)
 
@@ -277,10 +278,10 @@ class AcquisitionTab(QWidget):
         cfg_row2 = QHBoxLayout()
         cfg_row2.setSpacing(6)
         self._edit_dir = QLineEdit()
-        self._edit_dir.setPlaceholderText("Carpeta de destino EDF")
+        self._edit_dir.setPlaceholderText(tr("EDF destination folder"))
         self._edit_dir.setText(self._settings.value("adquisicion/save_dir", "."))
         cfg_row2.addWidget(self._edit_dir, stretch=1)
-        btn_dir = QPushButton("Explorar…")
+        btn_dir = QPushButton(tr("Browse…"))
         btn_dir.setFixedWidth(84)
         btn_dir.clicked.connect(self._seleccionar_directorio)
         cfg_row2.addWidget(btn_dir)
@@ -294,22 +295,24 @@ class AcquisitionTab(QWidget):
         # Fila 3: número de canales y etiquetas por canal
         ch_row = QHBoxLayout()
         ch_row.setSpacing(6)
-        ch_row.addWidget(QLabel("Canales:"))
+        ch_row.addWidget(QLabel(tr("Channels:")))
         self._combo_n_channels = QComboBox()
-        self._combo_n_channels.addItem("1 (un sensor)")
-        self._combo_n_channels.addItem("2 (agonista / antagonista)")
+        self._combo_n_channels.addItem(tr("1 (single sensor)"))
+        self._combo_n_channels.addItem(tr("2 (agonist / antagonist)"))
         self._combo_n_channels.setCurrentIndex(self._n_channels - 1)
         self._combo_n_channels.currentIndexChanged.connect(self._on_n_channels_changed)
         ch_row.addWidget(self._combo_n_channels)
 
-        ch_row.addWidget(QLabel("Etiquetas:"))
+        ch_row.addWidget(QLabel(tr("Labels:")))
         self._edit_labels: list[QLineEdit] = []
         for i in range(MAX_CHANNELS):
             edit = QLineEdit()
             edit.setMaxLength(16)  # límite de etiqueta de canal EDF
             edit.setToolTip(
-                "Nombre del músculo/sensor de este canal (máx. 16 caracteres; "
-                "se usa como etiqueta del canal en el archivo EDF)."
+                tr(
+                    "Name of this channel's muscle/sensor (max. 16 characters; "
+                    "used as the channel label in the EDF file)."
+                )
             )
             stored = self._settings.value(
                 f"adquisicion/label_{i}", _CHANNEL_DEFAULT_LABELS[i]
@@ -325,7 +328,7 @@ class AcquisitionTab(QWidget):
         row_top.addWidget(grp_config, stretch=1)
 
         # — Registro de eventos (comparte la fila con la configuración) —
-        grp_log = QGroupBox("Registro de eventos")
+        grp_log = QGroupBox(tr("Event log"))
         log_layout = QVBoxLayout(grp_log)
         log_layout.setContentsMargins(4, 4, 4, 4)
         # La fila superior (Configuración + Registro) ocupa ~3 filas de alto;
@@ -342,17 +345,17 @@ class AcquisitionTab(QWidget):
         row_actions.setSpacing(4)
 
         # — Control de adquisición (una sola línea) —
-        grp_control = QGroupBox("Control de adquisición")
+        grp_control = QGroupBox(tr("Acquisition control"))
         ctrl_layout = QHBoxLayout(grp_control)
         ctrl_layout.setContentsMargins(6, 3, 6, 3)
         ctrl_layout.setSpacing(6)
 
-        self._btn_conectar = QPushButton("Conectar")
+        self._btn_conectar = QPushButton(tr("Connect"))
         self._btn_conectar.setCheckable(True)
         self._btn_conectar.clicked.connect(self._toggle_conexion)
         ctrl_layout.addWidget(self._btn_conectar)
 
-        self._btn_grabar = QPushButton("Iniciar grabación")
+        self._btn_grabar = QPushButton(tr("Start recording"))
         self._btn_grabar.setCheckable(True)
         self._btn_grabar.setEnabled(False)
         self._btn_grabar.clicked.connect(self._toggle_grabacion)
@@ -360,9 +363,9 @@ class AcquisitionTab(QWidget):
 
         self._led = QLabel()
         self._led.setFixedSize(16, 16)
-        self._led.setToolTip("Estado de comunicación con el dispositivo")
+        self._led.setToolTip(tr("Device communication status"))
         ctrl_layout.addWidget(self._led)
-        self._lbl_estado = QLabel("Estado: desconectado")
+        self._lbl_estado = QLabel(tr("Status: disconnected"))
         ctrl_layout.addWidget(self._lbl_estado)
         ctrl_layout.addStretch()
 
@@ -376,18 +379,18 @@ class AcquisitionTab(QWidget):
         self._set_led("off")
 
         # — Marcadores de eventos (una sola línea) —
-        grp_markers = QGroupBox("Marcadores de eventos")
+        grp_markers = QGroupBox(tr("Event markers"))
         markers_layout = QHBoxLayout(grp_markers)
         markers_layout.setContentsMargins(6, 3, 6, 3)
         markers_layout.setSpacing(6)
 
         self._combo_etiqueta = QComboBox()
         for etiq in self._profile.marker_presets:
-            self._combo_etiqueta.addItem(etiq)
+            self._combo_etiqueta.addItem(tr(etiq))
         self._combo_etiqueta.setEnabled(False)
         markers_layout.addWidget(self._combo_etiqueta, stretch=1)
 
-        self._btn_marcar = QPushButton("MARCAR")
+        self._btn_marcar = QPushButton(tr("MARK"))
         self._btn_marcar.setMinimumHeight(30)
         self._btn_marcar.setStyleSheet("font-size: 12px; font-weight: bold;")
         self._btn_marcar.setEnabled(False)
@@ -396,10 +399,12 @@ class AcquisitionTab(QWidget):
 
         # Detección automática de inicio de contracción (compacta, en línea).
         # Las marcas añadidas quedan reflejadas en el "Registro de eventos".
-        self._chk_auto = QCheckBox("Auto-inicio")
+        self._chk_auto = QCheckBox(tr("Auto-onset"))
         self._chk_auto.setToolTip(
-            "Marca automáticamente el inicio de contracción cuando la "
-            "envolvente supera el umbral (línea base + k·DE del reposo)."
+            tr(
+                "Automatically marks the contraction onset when the envelope "
+                "exceeds the threshold (baseline + k·SD of the resting period)."
+            )
         )
         self._chk_auto.setChecked(
             self._settings.value("adquisicion/auto_detect", False, type=bool)
@@ -417,7 +422,10 @@ class AcquisitionTab(QWidget):
         )
         self._spin_k.setFixedWidth(60)
         self._spin_k.setToolTip(
-            "Umbral en desviaciones típicas sobre el reposo (menor = más sensible)."
+            tr(
+                "Threshold in standard deviations above the resting period "
+                "(lower = more sensitive)."
+            )
         )
         self._spin_k.valueChanged.connect(
             lambda v: self._settings.setValue("adquisicion/onset_k", v)
@@ -435,7 +443,7 @@ class AcquisitionTab(QWidget):
         self._shortcut_m.activated.connect(self._on_marcar_rapido)
 
         # ── Gráficas + controles de escala ──────────────────────────────
-        grp_plots = QGroupBox("Señal EMG en tiempo real")
+        grp_plots = QGroupBox(tr("Real-time EMG signal"))
         grp_plots.setObjectName("plotsBox")  # se mantiene en blanco (ver setStyleSheet)
         plots_root = QVBoxLayout(grp_plots)
         plots_root.setContentsMargins(6, 8, 6, 3)
@@ -443,11 +451,11 @@ class AcquisitionTab(QWidget):
 
         # -- Barra de escala temporal (arriba de las gráficas) -----------
         row_tiempo = QHBoxLayout()
-        row_tiempo.addWidget(QLabel("Ventana temporal:"))
+        row_tiempo.addWidget(QLabel(tr("Time window:")))
 
         self._btn_tiempo_ampliar = QToolButton()
         self._btn_tiempo_ampliar.setText("◀▶")
-        self._btn_tiempo_ampliar.setToolTip("Ampliar ventana (ver más tiempo)")
+        self._btn_tiempo_ampliar.setToolTip(tr("Widen the window (see more time)"))
         self._btn_tiempo_ampliar.setStyleSheet(_TBTN_ST)
         self._btn_tiempo_ampliar.setFixedSize(32, 26)
         self._btn_tiempo_ampliar.clicked.connect(self._on_tiempo_ampliar)
@@ -464,28 +472,28 @@ class AcquisitionTab(QWidget):
 
         self._btn_tiempo_reducir = QToolButton()
         self._btn_tiempo_reducir.setText("▶◀")
-        self._btn_tiempo_reducir.setToolTip("Reducir ventana (ver menos tiempo, más detalle)")
+        self._btn_tiempo_reducir.setToolTip(tr("Narrow the window (see less time, more detail)"))
         self._btn_tiempo_reducir.setStyleSheet(_TBTN_ST)
         self._btn_tiempo_reducir.setFixedSize(32, 26)
         self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
         row_tiempo.addWidget(self._btn_tiempo_reducir)
 
-        self._lbl_ventana_info = QLabel(f"{MAX_POINTS // FS} s visibles")
+        self._lbl_ventana_info = QLabel(f"{MAX_POINTS // FS} {tr('s visible')}")
         self._lbl_ventana_info.setStyleSheet("font-size: 8px; color: #444;")
         row_tiempo.addWidget(self._lbl_ventana_info)
 
         row_tiempo.addSpacing(12)
         self._lbl_legend = QLabel()
         self._lbl_legend.setStyleSheet("font-size: 9px; font-weight: bold;")
-        self._lbl_legend.setToolTip("Color de cada canal en las gráficas")
+        self._lbl_legend.setToolTip(tr("Colour of each channel in the plots"))
         row_tiempo.addWidget(self._lbl_legend)
 
         row_tiempo.addStretch()
 
-        btn_reset_escala = QPushButton("Reset escalas")
+        btn_reset_escala = QPushButton(tr("Reset scales"))
         btn_reset_escala.setFixedHeight(26)
         btn_reset_escala.setStyleSheet("font-size: 10px;")
-        btn_reset_escala.setToolTip("Restaurar rangos Y y ventana temporal a valores iniciales")
+        btn_reset_escala.setToolTip(tr("Restore Y ranges and time window to initial values"))
         btn_reset_escala.clicked.connect(self._reset_all_scales)
         row_tiempo.addWidget(btn_reset_escala)
 
@@ -522,7 +530,7 @@ class AcquisitionTab(QWidget):
         self._curves_env: list = []
 
         # Señal bruta
-        self._plot_raw = pg.PlotWidget(title="Señal EMG en bruto (mV)")
+        self._plot_raw = pg.PlotWidget(title=tr("Raw EMG signal (mV)"))
         self._plot_raw.setYRange(*self._y_ranges_init[0])
         self._plot_raw.setLabel("left", "mV")
         self._plot_raw.showGrid(x=True, y=True, alpha=0.3)
@@ -534,7 +542,7 @@ class AcquisitionTab(QWidget):
 
         # Señal filtrada
         self._plot_filt = pg.PlotWidget(
-            title="EMG filtrado (notch 50 Hz + paso-banda 20-450 Hz)"
+            title=tr("Filtered EMG (notch 50 Hz + band-pass 20-450 Hz)")
         )
         self._plot_filt.setYRange(*self._y_ranges_init[1])
         self._plot_filt.setLabel("left", "mV")
@@ -547,7 +555,7 @@ class AcquisitionTab(QWidget):
 
         # Envolvente
         self._plot_env = pg.PlotWidget(
-            title="Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)"
+            title=tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
         )
         self._plot_env.setYRange(*self._y_ranges_init[2])
         self._plot_env.setLabel("left", "mV")
@@ -613,7 +621,7 @@ class AcquisitionTab(QWidget):
             btn_up.setText("▲")
             btn_up.setFixedSize(32, 18)
             btn_up.setStyleSheet(_BTN_ST)
-            btn_up.setToolTip(f"Ampliar (vertical) — {lbl_txt}")
+            btn_up.setToolTip(tr("Zoom in (vertical) — {label}").format(label=lbl_txt))
             btn_up.clicked.connect(
                 lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=True)
             )
@@ -627,7 +635,7 @@ class AcquisitionTab(QWidget):
             btn_dn.setText("▼")
             btn_dn.setFixedSize(32, 18)
             btn_dn.setStyleSheet(_BTN_ST)
-            btn_dn.setToolTip(f"Reducir (vertical) — {lbl_txt}")
+            btn_dn.setToolTip(tr("Zoom out (vertical) — {label}").format(label=lbl_txt))
             btn_dn.clicked.connect(
                 lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=False)
             )
@@ -659,7 +667,7 @@ class AcquisitionTab(QWidget):
     @Slot()
     def _seleccionar_directorio(self) -> None:
         directorio = QFileDialog.getExistingDirectory(
-            self, "Seleccionar carpeta de destino",
+            self, tr("Select destination folder"),
             self._edit_dir.text() or ".",
         )
         if directorio:
@@ -851,7 +859,7 @@ class AcquisitionTab(QWidget):
             desc = self._edit_mac.text().strip()
             if not desc:
                 self._err(
-                    "Introduce la dirección MAC del BITalino antes de conectar."
+                    tr("Enter the BITalino MAC address before connecting.")
                 )
                 self._btn_conectar.setChecked(False)
                 return
@@ -860,42 +868,42 @@ class AcquisitionTab(QWidget):
             desc = self._combo_port.currentText().strip()
             if not desc:
                 self._err(
-                    "Selecciona un puerto COM para el Arduino antes de conectar."
+                    tr("Select a COM port for the Arduino before connecting.")
                 )
                 self._btn_conectar.setChecked(False)
                 return
             self._settings.setValue("adquisicion/port", desc)
         self._settings.setValue("adquisicion/device_type", device_idx)
 
-        self._btn_conectar.setText("Desconectar")
+        self._btn_conectar.setText(tr("Disconnect"))
         self._btn_grabar.setEnabled(True)
         self._combo_device_type.setEnabled(False)
         self._widget_mac.setEnabled(False)
         self._widget_arduino.setEnabled(False)
         self._edit_dir.setEnabled(False)
         self._set_channel_controls_enabled(False)
-        self._lbl_estado.setText("Estado: conectado (listo para grabar)")
+        self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._set_led("idle")
-        self._log(f"Dispositivo configurado: {desc}. Pulsa 'Iniciar grabación'.")
+        self._log(tr("Device configured: {desc}. Press 'Start recording'.").format(desc=desc))
 
     def _desconectar(self) -> None:
         self._watchdog_timer.stop()
         if self._worker and self._worker.isRunning():
             self._detener_grabacion()
-        self._btn_conectar.setText("Conectar")
+        self._btn_conectar.setText(tr("Connect"))
         self._btn_conectar.setChecked(False)
         self._btn_grabar.setEnabled(False)
         self._btn_grabar.setChecked(False)
-        self._btn_grabar.setText("Iniciar grabación")
+        self._btn_grabar.setText(tr("Start recording"))
         self._combo_device_type.setEnabled(True)
         self._widget_mac.setEnabled(True)
         self._widget_arduino.setEnabled(True)
         self._edit_dir.setEnabled(True)
         self._set_channel_controls_enabled(True)
-        self._lbl_estado.setText("Estado: desconectado")
+        self._lbl_estado.setText(tr("Status: disconnected"))
         self._set_led("off")
         self._led_idle_timer.stop()
-        self._log("Dispositivo desconectado.")
+        self._log(tr("Device disconnected."))
 
     @Slot()
     def _toggle_grabacion(self) -> None:
@@ -953,24 +961,24 @@ class AcquisitionTab(QWidget):
         # El watchdog arranca en _on_data_ready tras la primera muestra leída;
         # no aquí, para no disparar durante device.open() (puede tardar ~3 s).
 
-        self._btn_grabar.setText("Detener grabación")
+        self._btn_grabar.setText(tr("Stop recording"))
         self._btn_conectar.setEnabled(False)
-        self._lbl_estado.setText("Estado: grabando…")
+        self._lbl_estado.setText(tr("Status: recording…"))
         self._combo_etiqueta.setEnabled(True)
         self._btn_marcar.setEnabled(True)
         self._shortcut_m.setEnabled(True)
         self._set_auto_controls_enabled(False)
-        self._log("Pulsa M para marcar rápidamente con la etiqueta seleccionada.")
+        self._log(tr("Press M to quickly add a marker with the selected label."))
 
     def _detener_grabacion(self) -> None:
         self._watchdog_timer.stop()
         self._render_timer.stop()
         if self._worker:
             self._worker.stop()
-        self._btn_grabar.setText("Iniciar grabación")
+        self._btn_grabar.setText(tr("Start recording"))
         self._btn_grabar.setChecked(False)
         self._btn_conectar.setEnabled(True)
-        self._lbl_estado.setText("Estado: conectado (listo para grabar)")
+        self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._combo_etiqueta.setEnabled(False)
         self._btn_marcar.setEnabled(False)
         self._shortcut_m.setEnabled(False)
@@ -1055,10 +1063,10 @@ class AcquisitionTab(QWidget):
     @Slot()
     def _on_marcar(self) -> None:
         etiqueta = self._combo_etiqueta.currentText()
-        if etiqueta == "Otro…":
+        if etiqueta == tr("Other…"):
             text, ok = QInputDialog.getText(
-                self, "Marcador personalizado",
-                "Descripción (máx. 60 caracteres):",
+                self, tr("Custom marker"),
+                tr("Description (max. 60 characters):"),
             )
             if not ok or not text.strip():
                 return
@@ -1071,14 +1079,14 @@ class AcquisitionTab(QWidget):
         if not self._worker or not self._worker.isRunning():
             return
         etiqueta = self._combo_etiqueta.currentText()
-        if etiqueta == "Otro…":
-            etiqueta = "Otro"
+        if etiqueta == tr("Other…"):
+            etiqueta = tr("Other")
         self._worker.add_marker(etiqueta)
 
     @Slot(float, str)
     def _on_marker_added(self, tiempo: float, etiqueta: str) -> None:
         # La marca queda reflejada en el "Registro de eventos" (log).
-        self._log(f"Marca añadida: t={tiempo:.1f} s — {etiqueta}")
+        self._log(tr("Marker added: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta))
         # Registrar el evento para dibujarlo en vivo sobre las gráficas.
         self._marker_events.append((tiempo, etiqueta))
 
@@ -1091,13 +1099,13 @@ class AcquisitionTab(QWidget):
     def _on_finished(self, edf_path: str) -> None:
         self._restaurar_controles()
         if edf_path:
-            self._log(f"Grabación finalizada. Archivo: {edf_path}")
+            self._log(tr("Recording finished. File: {path}").format(path=edf_path))
 
     def _restaurar_controles(self) -> None:
         self._btn_grabar.setChecked(False)
-        self._btn_grabar.setText("Iniciar grabación")
+        self._btn_grabar.setText(tr("Start recording"))
         self._btn_conectar.setEnabled(True)
-        self._lbl_estado.setText("Estado: conectado (listo para grabar)")
+        self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._combo_etiqueta.setEnabled(False)
         self._btn_marcar.setEnabled(False)
         self._shortcut_m.setEnabled(False)
@@ -1213,9 +1221,9 @@ class AcquisitionTab(QWidget):
     def _update_ventana_label(self) -> None:
         segundos = self._n_visible / FS
         if segundos >= 1.0:
-            self._lbl_ventana_info.setText(f"{segundos:.1f} s visibles")
+            self._lbl_ventana_info.setText(f"{segundos:.1f} {tr('s visible')}")
         else:
-            self._lbl_ventana_info.setText(f"{segundos * 1000:.0f} ms visibles")
+            self._lbl_ventana_info.setText(f"{segundos * 1000:.0f} {tr('ms visible')}")
 
     def _reset_all_scales(self) -> None:
         """Reset completo: rangos Y + ventana temporal al estado inicial."""
@@ -1262,10 +1270,11 @@ class AcquisitionTab(QWidget):
         silencio = self._worker.time_since_last_sample()
         if silencio > self._watchdog_umbral_s:
             if silencio == float("inf") or silencio > 999:
-                msg = "Sin datos del dispositivo — conexion no establecida."
+                msg = tr("No data from the device — connection not established.")
             else:
-                msg = (f"Sin datos del dispositivo durante {silencio:.1f} s — "
-                       "forzando desconexion.")
+                msg = tr(
+                    "No data from the device for {s:.1f} s — forcing disconnection."
+                ).format(s=silencio)
             self._err(msg)
             self._watchdog_timer.stop()
             self._worker.stop_forced()

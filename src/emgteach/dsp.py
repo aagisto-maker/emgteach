@@ -40,6 +40,8 @@ import numpy as np
 from scipy.integrate import simpson
 from scipy.signal import iirfilter, sosfilt, sosfilt_zi, sosfiltfilt, welch
 
+from emgteach.i18n import tr
+
 if TYPE_CHECKING:
     import numpy.typing as npt
 
@@ -430,9 +432,10 @@ def detect_acquisition_problems(
 
     if saturation_pct > 1.0:
         warnings.append(
-            f"Posible saturación: el {saturation_pct:.1f}% de las muestras están en "
-            "los extremos del ADC durante tramos ≥ 10 ms. Revisa el contacto del "
-            "electrodo y la ganancia."
+            tr(
+                "Possible saturation: {pct:.1f}% of samples sit at ADC extremes "
+                "for runs ≥ 10 ms. Check electrode contact and gain."
+            ).format(pct=saturation_pct)
         )
 
     # 2) Flat baseline in the first 2 s (before any contraction)
@@ -443,8 +446,10 @@ def detect_acquisition_problems(
     flat_baseline = std_global > 0 and std_initial < 0.01 * std_global
     if flat_baseline:
         warnings.append(
-            "Línea base sospechosamente plana al inicio del registro. "
-            "Puede indicar un electrodo desconectado o una ganancia mal configurada."
+            tr(
+                "Suspiciously flat baseline at the start of the recording. "
+                "May indicate a disconnected electrode or misconfigured gain."
+            )
         )
 
     return {

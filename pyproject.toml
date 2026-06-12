@@ -165,6 +165,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"]
+# The i18n table holds UI strings with typographic characters (× ÷ — … « »).
+"src/emgteach/i18n.py" = ["RUF001", "RUF002", "RUF003"]
 "src/emgteach/gui/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007"]
 "src/emgteach/gui/widgets/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007", "N802"]
 "src/emgteach/gui/tabs/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007", "N802"]

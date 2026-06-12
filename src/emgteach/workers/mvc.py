@@ -14,6 +14,7 @@ import numpy as np
 from PySide6.QtCore import QThread, Signal
 
 from emgteach.dsp import detect_acquisition_problems, process_offline
+from emgteach.i18n import tr
 from emgteach.io import read_edf_pyedflib
 from emgteach.mvc import adaptive_ylim, compute_mvc, normalise_to_mvc
 from emgteach.profiles import EMG_PROFILE, SignalProfile
@@ -72,7 +73,7 @@ class MvcWorker(QThread):
     def run(self) -> None:
         try:
             # 1) Load test EDF
-            self.log.emit(f"Cargando señal EMG: {self._edf_path}")
+            self.log.emit(tr("Loading EMG signal: {path}").format(path=self._edf_path))
             edf = read_edf_pyedflib(self._edf_path, self._channel_index)
             emg_raw = edf["emg_raw"]
             fs = edf["sfreq"]
@@ -80,7 +81,9 @@ class MvcWorker(QThread):
             time_axis = edf["tiempo"]
 
             self.log.emit(
-                f"Señal cargada — {fs:.0f} Hz — {time_axis[-1]:.1f} s — unidades: {dimension}"
+                tr("Signal loaded — {fs:.0f} Hz — {dur:.1f} s — units: {units}").format(
+                    fs=fs, dur=time_axis[-1], units=dimension
+                )
             )
 
             n_plot = (
@@ -97,7 +100,7 @@ class MvcWorker(QThread):
                 self.log.emit(warning)
 
             # 3) Process test signal
-            self.log.emit("Procesando señal de prueba (notch → paso-banda → envolvente)…")
+            self.log.emit(tr("Processing test signal (notch → band-pass → envelope)…"))
             proc = process_offline(
                 emg_raw,
                 fs,
@@ -116,7 +119,7 @@ class MvcWorker(QThread):
 
             if self._mvc_path:
                 try:
-                    self.log.emit(f"Cargando archivo CVM: {self._mvc_path}")
+                    self.log.emit(tr("Loading MVC file: {path}").format(path=self._mvc_path))
                     mvc_edf = read_edf_pyedflib(self._mvc_path, self._channel_index)
                     mvc_fs = mvc_edf["sfreq"]
 
@@ -124,7 +127,7 @@ class MvcWorker(QThread):
                     for warning in diag_mvc["warnings"]:
                         self.log.emit(warning)
 
-                    self.log.emit("Procesando señal CVM…")
+                    self.log.emit(tr("Processing MVC signal…"))
                     mvc_proc = process_offline(
                         mvc_edf["emg_raw"],
                         mvc_fs,
@@ -136,13 +139,15 @@ class MvcWorker(QThread):
                     mvc_amplitude_ref = compute_mvc(
                         mvc_proc["emg_envelope"], self._percentile
                     )
-                    mvc_source = (
-                        f"archivo CVM externo (percentil {self._percentile:.0f})"
-                    )
+                    mvc_source = tr(
+                        "external MVC file (percentile {p:.0f})"
+                    ).format(p=self._percentile)
                 except Exception as exc:
                     self.log.emit(
-                        f"No se pudo cargar el archivo CVM ({exc}). "
-                        "Se usa auto-normalización."
+                        tr(
+                            "Could not load the MVC file ({error}). "
+                            "Falling back to auto-normalisation."
+                        ).format(error=exc)
                     )
                     mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
                     mvc_source = (
@@ -150,13 +155,14 @@ class MvcWorker(QThread):
                     )
             else:
                 mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
-                mvc_source = (
-                    f"automática (percentil {self._percentile:.0f} de la señal de prueba)"
-                )
+                mvc_source = tr(
+                    "auto (percentile {p:.0f} of the test signal)"
+                ).format(p=self._percentile)
 
             self.log.emit(
-                f"Amplitud CVM de referencia: {mvc_amplitude_ref:.4f} {dimension} "
-                f"({mvc_source})"
+                tr("MVC reference amplitude: {value:.4f} {units} ({source})").format(
+                    value=mvc_amplitude_ref, units=dimension, source=mvc_source
+                )
             )
             if self._cancelled:
                 return
@@ -166,7 +172,9 @@ class MvcWorker(QThread):
             ylim_max = adaptive_ylim(emg_norm, n_plot)
 
             mean_norm = float(np.mean(emg_norm))
-            self.log.emit(f"Activación media normalizada: {mean_norm:.1f} % CVM")
+            self.log.emit(
+                tr("Mean normalised activation: {value:.1f} % MVC").format(value=mean_norm)
+            )
 
             result = {
                 "emg_raw": emg_raw,

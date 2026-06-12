@@ -57,6 +57,7 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.i18n import tr
 from emgteach.io import list_edf_channels
 from emgteach.workers import MvcWorker
 
@@ -118,47 +119,49 @@ class MvcTab(QWidget):
         root = QVBoxLayout(self)
 
         # ── Panel de controles ──────────────────────────────────────────
-        grp_ctrl = QGroupBox("Parámetros de normalización CVM")
+        grp_ctrl = QGroupBox(tr("MVC normalisation parameters"))
         ctrl = QVBoxLayout(grp_ctrl)
 
         row_test = QHBoxLayout()
-        row_test.addWidget(QLabel("EDF de prueba:"))
+        row_test.addWidget(QLabel(tr("Test EDF:")))
         self._edit_path = QLineEdit()
-        self._edit_path.setPlaceholderText("Selecciona el archivo EDF a normalizar…")
+        self._edit_path.setPlaceholderText(tr("Select the EDF file to normalise…"))
         self._edit_path.setReadOnly(True)
         row_test.addWidget(self._edit_path)
-        self._btn_abrir = QPushButton("Explorar…")
+        self._btn_abrir = QPushButton(tr("Browse…"))
         self._btn_abrir.clicked.connect(self._seleccionar_edf_prueba)
         row_test.addWidget(self._btn_abrir)
         ctrl.addLayout(row_test)
 
         row_cvm = QHBoxLayout()
-        row_cvm.addWidget(QLabel("EDF de referencia CVM (opcional):"))
+        row_cvm.addWidget(QLabel(tr("MVC reference EDF (optional):")))
         self._edit_cvm_path = QLineEdit()
-        self._edit_cvm_path.setPlaceholderText("Dejar vacío para auto-normalización…")
+        self._edit_cvm_path.setPlaceholderText(tr("Leave empty for auto-normalisation…"))
         self._edit_cvm_path.setReadOnly(True)
         row_cvm.addWidget(self._edit_cvm_path)
-        self._btn_abrir_cvm = QPushButton("Explorar…")
+        self._btn_abrir_cvm = QPushButton(tr("Browse…"))
         self._btn_abrir_cvm.clicked.connect(self._seleccionar_edf_cvm)
         row_cvm.addWidget(self._btn_abrir_cvm)
-        self._btn_limpiar_cvm = QPushButton("Quitar")
+        self._btn_limpiar_cvm = QPushButton(tr("Remove"))
         self._btn_limpiar_cvm.clicked.connect(self._limpiar_cvm)
         row_cvm.addWidget(self._btn_limpiar_cvm)
         ctrl.addLayout(row_cvm)
 
         row_params = QHBoxLayout()
-        row_params.addWidget(QLabel("Canal EMG:"))
+        row_params.addWidget(QLabel(tr("EMG channel:")))
         self._combo_canal = QComboBox()
         self._combo_canal.setEditable(False)
         self._combo_canal.addItem("EMG")
         self._combo_canal.setFixedWidth(150)
         self._combo_canal.setToolTip(
-            "Canal del EDF a normalizar. Se rellena con los canales del "
-            "archivo de prueba al seleccionarlo."
+            tr(
+                "EMG channel of the EDF to normalise. Filled with the channels "
+                "of the test file when you select it."
+            )
         )
         row_params.addWidget(self._combo_canal)
 
-        row_params.addWidget(QLabel("Frec. corte envolvente (Hz):"))
+        row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
         self._spin_fenv.setSingleStep(0.5)
@@ -167,12 +170,12 @@ class MvcTab(QWidget):
         row_params.addWidget(self._spin_fenv)
 
         row_params.addStretch()
-        self._btn_calcular = QPushButton("Calcular CVM")
+        self._btn_calcular = QPushButton(tr("Compute MVC"))
         self._btn_calcular.setEnabled(False)
         self._btn_calcular.clicked.connect(self._iniciar_calculo)
         row_params.addWidget(self._btn_calcular)
 
-        self._btn_guardar = QPushButton("Guardar figura (PNG)")
+        self._btn_guardar = QPushButton(tr("Save figure (PNG)"))
         self._btn_guardar.setEnabled(False)
         self._btn_guardar.clicked.connect(self._guardar_figura)
         row_params.addWidget(self._btn_guardar)
@@ -189,20 +192,20 @@ class MvcTab(QWidget):
         root.addWidget(self._progress)
 
         # ── Panel de resumen numérico ───────────────────────────────────
-        grp_resumen = QGroupBox("Resumen de normalización")
+        grp_resumen = QGroupBox(tr("Normalisation summary"))
         grp_resumen.setContentsMargins(6, 4, 6, 4)
         resumen_layout = QHBoxLayout(grp_resumen)
         resumen_layout.setContentsMargins(6, 4, 6, 4)
 
-        self._lbl_cvm_ref = QLabel("CVM referencia: —")
-        self._lbl_mean_norm = QLabel("Activación media: —")
+        self._lbl_cvm_ref = QLabel(f"{tr('MVC reference:')} —")
+        self._lbl_mean_norm = QLabel(f"{tr('Mean activation:')} —")
         for lbl in (self._lbl_cvm_ref, self._lbl_mean_norm):
             # Sin negrita y a 11 px para mantener la uniformidad tipográfica con
             # el resto de etiquetas del resumen.
             lbl.setStyleSheet("font-size: 11px; padding: 2px 8px;")
             resumen_layout.addWidget(lbl)
 
-        self._lbl_fuente = QLabel("Fuente CVM: —")
+        self._lbl_fuente = QLabel(f"{tr('MVC source:')} —")
         self._lbl_fuente.setStyleSheet("font-size: 11px; color: #555555; padding: 2px 6px;")
         resumen_layout.addWidget(self._lbl_fuente)
 
@@ -218,13 +221,13 @@ class MvcTab(QWidget):
         root.addWidget(grp_resumen)
 
         # ── Controles de escala temporal ────────────────────────────────
-        grp_ventana = QGroupBox("Ventana de visualización")
+        grp_ventana = QGroupBox(tr("Display window"))
         ventana_layout = QHBoxLayout(grp_ventana)
         ventana_layout.setContentsMargins(6, 4, 6, 4)
 
         self._btn_tiempo_ampliar = QToolButton()
         self._btn_tiempo_ampliar.setText("◀▶")
-        self._btn_tiempo_ampliar.setToolTip("Ampliar ventana (ver más tiempo)")
+        self._btn_tiempo_ampliar.setToolTip(tr("Widen the window (see more time)"))
         self._btn_tiempo_ampliar.setStyleSheet(_TBTN_ST)
         self._btn_tiempo_ampliar.setFixedSize(32, 26)
         self._btn_tiempo_ampliar.setEnabled(False)
@@ -242,7 +245,7 @@ class MvcTab(QWidget):
 
         self._btn_tiempo_reducir = QToolButton()
         self._btn_tiempo_reducir.setText("▶◀")
-        self._btn_tiempo_reducir.setToolTip("Reducir ventana (más detalle)")
+        self._btn_tiempo_reducir.setToolTip(tr("Narrow the window (more detail)"))
         self._btn_tiempo_reducir.setStyleSheet(_TBTN_ST)
         self._btn_tiempo_reducir.setFixedSize(32, 26)
         self._btn_tiempo_reducir.setEnabled(False)
@@ -250,17 +253,17 @@ class MvcTab(QWidget):
         ventana_layout.addWidget(self._btn_tiempo_reducir)
 
         ventana_layout.addSpacing(12)
-        self._lbl_inicio_info = QLabel("Inicio: — s")
+        self._lbl_inicio_info = QLabel(f"{tr('Start:')} — s")
         self._lbl_inicio_info.setStyleSheet("font-size: 10px;")
         ventana_layout.addWidget(self._lbl_inicio_info)
 
-        self._lbl_duracion_info = QLabel("Duración: — s")
+        self._lbl_duracion_info = QLabel(f"{tr('Duration:')} — s")
         self._lbl_duracion_info.setStyleSheet("font-size: 10px;")
         ventana_layout.addWidget(self._lbl_duracion_info)
 
         ventana_layout.addStretch()
 
-        self._btn_reset_ventana = QPushButton("Reset ventana")
+        self._btn_reset_ventana = QPushButton(tr("Reset window"))
         self._btn_reset_ventana.setFixedHeight(26)
         self._btn_reset_ventana.setStyleSheet("font-size: 10px;")
         self._btn_reset_ventana.setEnabled(False)
@@ -304,8 +307,8 @@ class MvcTab(QWidget):
     @Slot()
     def _seleccionar_edf_prueba(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, "Seleccionar EDF de prueba",
-            self._last_edf_dir, "Archivos EDF (*.edf *.EDF)",
+            self, tr("Select test EDF"),
+            self._last_edf_dir, tr("EDF files (*.edf *.EDF)"),
         )
         if path:
             self._edit_path.setText(path)
@@ -331,8 +334,8 @@ class MvcTab(QWidget):
     @Slot()
     def _seleccionar_edf_cvm(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, "Seleccionar EDF de referencia CVM",
-            self._last_cvm_dir, "Archivos EDF (*.edf *.EDF)",
+            self, tr("Select MVC reference EDF"),
+            self._last_cvm_dir, tr("EDF files (*.edf *.EDF)"),
         )
         if path:
             self._edit_cvm_path.setText(path)
@@ -356,9 +359,9 @@ class MvcTab(QWidget):
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
         self._btn_guardar.setEnabled(False)
-        self._lbl_cvm_ref.setText("CVM referencia: —")
-        self._lbl_mean_norm.setText("Activación media: —")
-        self._lbl_fuente.setText("Fuente CVM: —")
+        self._lbl_cvm_ref.setText(f"{tr('MVC reference:')} —")
+        self._lbl_mean_norm.setText(f"{tr('Mean activation:')} —")
+        self._lbl_fuente.setText(f"{tr('MVC source:')} —")
 
         self._worker = MvcWorker(
             edf_path=path,
@@ -414,10 +417,10 @@ class MvcTab(QWidget):
     def _actualizar_resumen(self, r: dict) -> None:
         self._lbl_archivo.setText(Path(r["edf_path"]).name)
         dim = r.get("dimension", "")
-        self._lbl_cvm_ref.setText(f"CVM referencia: {r['mvc_amplitude_ref']:.4f} {dim}")
+        self._lbl_cvm_ref.setText(f"{tr('MVC reference:')} {r['mvc_amplitude_ref']:.4f} {dim}")
         mean_norm = float(np.mean(r["emg_norm"][:r["n_plot"]]))
-        self._lbl_mean_norm.setText(f"Activación media: {mean_norm:.1f} % CVM")
-        self._lbl_fuente.setText(f"Fuente CVM: {r['mvc_source']}")
+        self._lbl_mean_norm.setText(f"{tr('Mean activation:')} {mean_norm:.1f} % MVC")
+        self._lbl_fuente.setText(f"{tr('MVC source:')} {r['mvc_source']}")
 
     # ------------------------------------------------------------------
     # Dibujo de los 3 paneles
@@ -439,13 +442,13 @@ class MvcTab(QWidget):
         # Panel 1: señal filtrada + rectificada
         ax = axes[0]
         ax.plot(t_full, r["emg_filtered"][:n],
-                color="royalblue", lw=0.8, label="EMG filtrada (20-450 Hz)")
+                color="royalblue", lw=0.8, label=tr("Filtered EMG (20-450 Hz)"))
         ax.plot(t_full, r["emg_rectified"][:n],
-                color="tomato", lw=0.8, alpha=0.8, label="EMG rectificada")
+                color="tomato", lw=0.8, alpha=0.8, label=tr("Rectified EMG"))
         ax.set_xlim(inicio, fin)
-        ax.set_title("1. Señal EMG filtrada y rectificada", fontsize=9)
-        ax.set_ylabel(f"Amplitud ({r.get('dimension', '')})", fontsize=8)
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+        ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
+        ax.set_ylabel(tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.tick_params(labelsize=7)
         ax.legend(loc="upper right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
@@ -453,13 +456,14 @@ class MvcTab(QWidget):
         # Panel 2: envolvente + línea CVM
         ax = axes[1]
         ax.plot(t_full, r["emg_envelope"][:n],
-                color="purple", lw=2.0, label="Envolvente LP (fase cero)")
+                color="purple", lw=2.0, label=tr("LP envelope (zero-phase)"))
         ax.axhline(r["mvc_amplitude_ref"], color="red", ls="--", lw=1.5,
-                   label=f"CVM ref: {r['mvc_amplitude_ref']:.4f} {r.get('dimension', '')}")
+                   label=tr("MVC ref: {value:.4f} {units}").format(
+                       value=r["mvc_amplitude_ref"], units=r.get("dimension", "")))
         ax.set_xlim(inicio, fin)
-        ax.set_title("2. Envolvente y amplitud de referencia CVM", fontsize=9)
-        ax.set_ylabel(f"Amplitud ({r.get('dimension', '')})", fontsize=8)
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+        ax.set_title(tr("2. Envelope and MVC reference amplitude"), fontsize=9)
+        ax.set_ylabel(tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.tick_params(labelsize=7)
         ax.legend(loc="upper right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
@@ -468,12 +472,12 @@ class MvcTab(QWidget):
         ax = axes[2]
         ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25, color="darkorange")
         ax.plot(t_full, r["emg_norm"][:n],
-                color="darkorange", lw=1.8, label="Activación (% CVM)")
-        ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7, label="100 % CVM")
+                color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
+        ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7, label=tr("100 % MVC"))
         ax.set_xlim(inicio, fin)
-        ax.set_title("3. Señal EMG normalizada al CVM (% CVM)", fontsize=9)
-        ax.set_ylabel("% CVM", fontsize=8)
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+        ax.set_title(tr("3. EMG signal normalised to MVC (% MVC)"), fontsize=9)
+        ax.set_ylabel(tr("% MVC"), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_ylim(0, r["ylim_max"])
         ax.tick_params(labelsize=7)
         ax.legend(loc="upper right", fontsize=7)
@@ -639,8 +643,8 @@ class MvcTab(QWidget):
                 item.setEnabled((self._duracion_total / f) >= 0.5)
 
     def _update_info_labels(self) -> None:
-        self._lbl_inicio_info.setText(f"Inicio: {self._inicio_s:.1f} s")
-        self._lbl_duracion_info.setText(f"Duración: {self._duracion_s:.1f} s")
+        self._lbl_inicio_info.setText(f"{tr('Start:')} {self._inicio_s:.1f} s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')} {self._duracion_s:.1f} s")
 
     @Slot()
     def _reset_ventana(self) -> None:
@@ -664,11 +668,11 @@ class MvcTab(QWidget):
         nombre = Path(self._last_result["edf_path"]).stem + "_cvm_norm.png"
         ruta_default = str(Path(carpeta) / nombre)
         ruta, _ = QFileDialog.getSaveFileName(
-            self, "Guardar figura", ruta_default, "Imágenes PNG (*.png)",
+            self, tr("Save figure"), ruta_default, tr("PNG images (*.png)"),
         )
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
-            self._logger.append_log(f"Figura guardada en: {ruta}")
+            self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
 
     # ------------------------------------------------------------------
     # Helpers

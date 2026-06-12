@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from emgteach.devices.base import AcquisitionDevice
+from emgteach.i18n import tr
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -116,7 +117,7 @@ class ArduinoDevice(AcquisitionDevice):
 
         with self._lock:
             if self._serial is not None:
-                raise RuntimeError("El puerto serie ya está abierto.")
+                raise RuntimeError(tr("The serial port is already open."))
 
             ser = serial.Serial(
                 port=self._port,
@@ -132,8 +133,9 @@ class ArduinoDevice(AcquisitionDevice):
             else:
                 ser.close()
                 raise RuntimeError(
-                    f"El Arduino en {self._port} no respondió READY en "
-                    f"{self._TIMEOUT_OPEN_S:.0f} s."
+                    tr(
+                        "The Arduino on {port} did not reply READY within {timeout:.0f} s."
+                    ).format(port=self._port, timeout=self._TIMEOUT_OPEN_S)
                 )
 
             ser.timeout = self._TIMEOUT_READ_S
@@ -163,7 +165,7 @@ class ArduinoDevice(AcquisitionDevice):
         with self._lock:
             ser = self._serial
         if ser is None:
-            raise RuntimeError("El dispositivo Arduino no está abierto.")
+            raise RuntimeError(tr("The Arduino device is not open."))
 
         n = int(n_samples)
         n_bytes = n * 2 * self._n_channels
@@ -172,7 +174,7 @@ class ArduinoDevice(AcquisitionDevice):
             chunk = ser.read(n_bytes - len(buf))
             if not chunk:
                 raise RuntimeError(
-                    "Tiempo de espera agotado al leer del Arduino — conexión perdida."
+                    tr("Timeout while reading from the Arduino — connection lost.")
                 )
             buf.extend(chunk)
 

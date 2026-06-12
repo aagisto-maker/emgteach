@@ -12,6 +12,8 @@ from PySide6.QtCore import Slot
 from PySide6.QtGui import QFont, QFontMetrics, QTextCursor
 from PySide6.QtWidgets import QTextEdit
 
+from emgteach.i18n import tr
+
 
 class LoggerWidget(QTextEdit):
     def __init__(self, parent=None):
@@ -31,5 +33,7 @@ class LoggerWidget(QTextEdit):
 
     @Slot(str)
     def append_error(self, message: str) -> None:
-        self.append(f"<span style='color:#cc0000;'><b>Error:</b> {message}</span>")
+        self.append(
+            f"<span style='color:#cc0000;'><b>{tr('Error:')}</b> {message}</span>"
+        )
         self.moveCursor(QTextCursor.MoveOperation.End)

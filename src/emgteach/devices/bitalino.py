@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from emgteach.devices.base import AcquisitionDevice
+from emgteach.i18n import tr
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -122,15 +123,19 @@ class BitalinoDevice(AcquisitionDevice):
             import bitalino  # lazy — only required when actually opening
         except ImportError as exc:
             raise ImportError(
-                "BitalinoDevice requiere el extra opcional 'bitalino'. "
-                'Instálalo con: pip install "emgteach[bitalino]"'
+                tr(
+                    "BitalinoDevice requires the optional 'bitalino' extra. "
+                    'Install it with: pip install "emgteach[bitalino]"'
+                )
             ) from exc
 
         with self._conn_lock:
             if self._device is not None:
                 raise RuntimeError(
-                    "Ya hay una conexión BITalino activa. "
-                    "Ciérrala antes de abrir otra."
+                    tr(
+                        "A BITalino connection is already active. "
+                        "Close it before opening another."
+                    )
                 )
             device = bitalino.BITalino(self._mac)
             device.start(self._fs, self._channels)
@@ -151,7 +156,7 @@ class BitalinoDevice(AcquisitionDevice):
         with self._conn_lock:
             device = self._device
         if device is None:
-            raise RuntimeError("El dispositivo BITalino no está abierto.")
+            raise RuntimeError(tr("The BITalino device is not open."))
 
         raw = device.read(n_samples)  # blocking; lock NOT held here
         return self._raw_to_mv(raw[:, -self.n_channels :])

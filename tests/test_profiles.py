@@ -46,11 +46,11 @@ class TestEmgProfileValues:
     def test_marker_presets(self) -> None:
         # The acquisition tab historically offered exactly these labels.
         assert EMG_PROFILE.marker_presets == (
-            "Inicio contracción",
-            "Fin contracción",
-            "Fatiga",
-            "Reposo",
-            "Otro…",
+            "Contraction onset",
+            "Contraction end",
+            "Fatigue",
+            "Rest",
+            "Other…",
         )
 
 

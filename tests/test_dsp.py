@@ -243,7 +243,7 @@ class TestDetectAcquisitionProblems:
         sig[100:200] = -10.0  # also negative extremes
         result = detect_acquisition_problems(sig, FS)
         assert result["saturation_pct"] > 1.0
-        assert any("saturación" in w.lower() for w in result["warnings"])
+        assert any("saturation" in w.lower() for w in result["warnings"])
 
     def test_detects_flat_baseline(self) -> None:
         rng = np.random.default_rng(seed=2)
@@ -252,7 +252,7 @@ class TestDetectAcquisitionProblems:
         sig = np.concatenate([np.zeros(int(2 * FS)), rng.standard_normal(n - int(2 * FS))])
         result = detect_acquisition_problems(sig, FS)
         assert result["flat_baseline"] is True
-        assert any("línea base" in w.lower() for w in result["warnings"])
+        assert any("baseline" in w.lower() for w in result["warnings"])
 
 
 # ---------------------------------------------------------------------------

@@ -112,11 +112,11 @@ class SignalProfile:
 
     # -- UI marker vocabulary (user-facing, Spanish) --
     marker_presets: tuple[str, ...] = (
-        "Inicio contracción",
-        "Fin contracción",
-        "Fatiga",
-        "Reposo",
-        "Otro…",
+        "Contraction onset",
+        "Contraction end",
+        "Fatigue",
+        "Rest",
+        "Other…",
     )
 
     def __post_init__(self) -> None:

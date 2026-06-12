@@ -39,6 +39,8 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from emgteach.i18n import tr
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -91,10 +93,12 @@ def _fatigue_text(result: Mapping[str, Any]) -> str:
     sign = int(result.get("fat_slope_sign", 0))
     slope = float(result.get("mdf_slope", 0.0))
     if sign < 0:
-        return f"Sí — la MDF desciende con el tiempo ({slope:+.2f} Hz/s)"
+        return tr("Yes — MDF decreases over time ({slope:+.2f} Hz/s)").format(slope=slope)
     if sign > 0:
-        return f"No — la MDF se mantiene o aumenta ({slope:+.2f} Hz/s)"
-    return "Indeterminada (señal corta o constante)"
+        return tr("No — MDF stays stable or increases ({slope:+.2f} Hz/s)").format(
+            slope=slope
+        )
+    return tr("Undetermined (short or constant signal)")
 
 
 def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:
@@ -110,12 +114,14 @@ def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:
     markers = list(result.get("markers", []))
 
     ax1.plot(times, result["emg_filtered"], color="#4169E1", linewidth=0.6)
-    ax1.set_ylabel("Filtrada (mV)")
-    ax1.set_title(f"Señal EMG — canal «{result.get('channel_name', '')}»")
+    ax1.set_ylabel(tr("Filtered (mV)"))
+    ax1.set_title(
+        tr("EMG signal — channel «{name}»").format(name=result.get("channel_name", ""))
+    )
 
     ax2.plot(times, result["emg_envelope"], color="#D6620C", linewidth=0.9)
-    ax2.set_ylabel("Envolvente (mV)")
-    ax2.set_xlabel("Tiempo (s)")
+    ax2.set_ylabel(tr("Envelope (mV)"))
+    ax2.set_xlabel(tr("Time (s)"))
 
     for ax in (ax1, ax2):
         ax.grid(True, alpha=0.3)
@@ -138,14 +144,14 @@ def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:
 
 
 _PANEL_REPORT_TITLES = {
-    0: "1A. Señal EMG bruta",
-    1: "1B. Señal EMG filtrada + rectificada",
-    2: "2. Envolvente de la señal EMG",
-    3: "3. Envolvente normalizada al máximo",
-    4: "4. Densidad espectral de potencia (PSD)",
-    5: "5. Evolución temporal de la amplitud RMS",
-    6: "6. Fatiga: frecuencia mediana (MDF) vs tiempo",
-    7: "7. Amplitud (RMS) vs frecuencia mediana (MDF)",
+    0: "1A. Raw EMG signal",
+    1: "1B. Filtered + rectified EMG signal",
+    2: "2. EMG signal envelope",
+    3: "3. Envelope normalised to maximum",
+    4: "4. Power spectral density (PSD)",
+    5: "5. RMS amplitude over time",
+    6: "6. Fatigue: median frequency (MDF) vs time",
+    7: "7. Amplitude (RMS) vs median frequency (MDF)",
 }
 
 
@@ -166,38 +172,38 @@ def _draw_analysis_panel(fig: Any, ax: Any, idx: int, result: Mapping[str, Any])
 
     if idx == 0:
         ax.plot(times, r["emg_raw"], color="#333333", lw=0.8, alpha=0.7)
-        ax.set_ylabel("Amplitud (mV)", fontsize=8)
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+        ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 1:
         ax.plot(times, r["emg_filtered"], color="#1f77b4", lw=1.0,
-                label="Filtrado (20-450 Hz)")
+                label=tr("Filtered (20-450 Hz)"))
         ax.plot(times, r["emg_rectified"], color="#d62728", lw=1.0, alpha=0.9,
-                label="Rectificado")
-        ax.set_ylabel("Amplitud (mV)", fontsize=8)
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+                label=tr("Rectified"))
+        ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
         ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 2:
         ax.plot(times, r["emg_rectified"], color="#E74C3C", lw=1.0, alpha=0.6,
-                label="Rectificado")
+                label=tr("Rectified"))
         ax.plot(times, r["emg_envelope"], color="#9467bd", lw=1.8,
-                label="Envolvente LP")
+                label=tr("LP envelope"))
         ax.plot(times, r["rms_sliding"], color="#2ca02c", lw=1.3, ls="--",
-                label="Envolvente RMS")
-        ax.set_ylabel("Amplitud (mV)", fontsize=8)
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+                label=tr("RMS envelope"))
+        ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
         ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 3:
         ax.plot(times, r["emg_envelope_normalised"], color="#9467bd", lw=1.6,
-                label="Envolvente normalizada (max=1)")
+                label=tr("Normalised envelope (max=1)"))
         ax.axhline(1.0, color="#E74C3C", ls=":", lw=1.3, alpha=0.8)
-        ax.set_ylabel("Amplitud (0-1)", fontsize=8)
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+        ax.set_ylabel(tr("Amplitude (0-1)"), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
         ax.set_ylim(0, 1.15)
         ax.legend(loc="upper right", fontsize=7)
@@ -214,19 +220,19 @@ def _draw_analysis_panel(fig: Any, ax: Any, idx: int, result: Mapping[str, Any])
         ax.legend(fontsize=7)
     elif idx == 5:
         ax.plot(r["t_seg"], r["rms_seg"], color="#2ca02c", lw=1.3, marker="o", ms=3,
-                label="RMS por ventana de 1 s")
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+                label=tr("RMS per 1 s window"))
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_ylabel("RMS (mV)", fontsize=8)
         ax.set_xlim(x0, x1)
         ax.legend(fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 6:
         ax.scatter(r["t_seg"], r["mdf_seg"], s=18, alpha=0.7, color="#666666",
-                   label="MDF por ventana")
+                   label=tr("MDF per window"))
         if len(r["t_seg"]) >= 2:
             ax.plot(r["t_seg"], r["fat_fitted"], color="#E74C3C", lw=2.2,
-                    label="Tendencia (grado 2)")
-        ax.set_xlabel("Tiempo (s)", fontsize=8)
+                    label=tr("Trend (degree 2)"))
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_ylabel("MDF (Hz)", fontsize=8)
         ax.set_xlim(x0, x1)
         ax.legend(fontsize=7)
@@ -235,15 +241,15 @@ def _draw_analysis_panel(fig: Any, ax: Any, idx: int, result: Mapping[str, Any])
         sc = ax.scatter(r["mdf_seg"], r["rms_seg"], c=r["t_seg"], cmap="viridis",
                         s=45, alpha=0.8, zorder=3)
         ax.plot(r["rms_mdf_range"], r["rms_mdf_fitted"], color="#E74C3C", lw=2.2,
-                label="Ajuste grado 2")
+                label=tr("Degree-2 fit"))
         cbar = fig.colorbar(sc, ax=ax, orientation="vertical", pad=0.02)
-        cbar.set_label("Tiempo (s)", fontsize=8)
+        cbar.set_label(tr("Time (s)"), fontsize=8)
         cbar.ax.tick_params(labelsize=7)
         ax.set_xlabel("MDF (Hz)", fontsize=8)
         ax.set_ylabel("RMS (mV)", fontsize=8)
         ax.legend(fontsize=7)
 
-    ax.set_title(_PANEL_REPORT_TITLES.get(idx, ""), fontsize=9)
+    ax.set_title(tr(_PANEL_REPORT_TITLES.get(idx, "")), fontsize=9)
     ax.tick_params(labelsize=7)
     ax.grid(True, **grid)
 
@@ -334,19 +340,19 @@ def build_session_report(
     h2 = styles["Heading2"]
 
     story: list[Any] = []
-    story.append(Paragraph("Informe de registro y análisis de EMG", title_style))
+    story.append(Paragraph(tr("EMG recording and analysis report"), title_style))
 
     who = ""
     if student:
-        who = f"Alumno/a: {student}"
+        who = tr("Student: {name}").format(name=student)
         if student_code:
             who += f" ({student_code})"
-    header_lines = [f"Fecha de generación: {generated_at:%Y-%m-%d %H:%M}"]
+    header_lines = [tr("Generated on: {dt:%Y-%m-%d %H:%M}").format(dt=generated_at)]
     if who:
         header_lines.append(who)
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
-        header_lines.append(f"Archivo: {edf_name}")
+        header_lines.append(tr("File: {name}").format(name=edf_name))
     for line in header_lines:
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))
@@ -359,7 +365,7 @@ def build_session_report(
         )
         story.append(Spacer(1, 0.4 * cm))
     elif panels:
-        story.append(Paragraph("Gráficos", h2))
+        story.append(Paragraph(tr("Graphs"), h2))
         for idx in panels:
             if idx not in _PANEL_REPORT_TITLES:
                 continue
@@ -370,36 +376,36 @@ def build_session_report(
             story.append(Spacer(1, 0.3 * cm))
 
     # Metrics.
-    story.append(Paragraph("Métricas", h2))
+    story.append(Paragraph(tr("Metrics"), h2))
     metrics = [
-        ["Métrica", "Valor"],
-        ["Duración", f"{float(result.get('duration', 0.0)):.1f} s"],
-        ["RMS global", f"{float(result.get('rms_global', 0.0)):.4f} mV"],
-        ["Frecuencia media (MNF)", f"{float(result.get('mnf', 0.0)):.1f} Hz"],
-        ["Frecuencia mediana (MDF)", f"{float(result.get('mdf', 0.0)):.1f} Hz"],
+        [tr("Metric"), tr("Value")],
+        [tr("Duration"), f"{float(result.get('duration', 0.0)):.1f} s"],
+        [tr("Global RMS"), f"{float(result.get('rms_global', 0.0)):.4f} mV"],
+        [tr("Mean frequency (MNF)"), f"{float(result.get('mnf', 0.0)):.1f} Hz"],
+        [tr("Median frequency (MDF)"), f"{float(result.get('mdf', 0.0)):.1f} Hz"],
         ["iEMG", f"{float(result.get('iemg', 0.0)):.3f} mV·s"],
-        ["Evidencia de fatiga", _fatigue_text(result)],
+        [tr("Fatigue evidence"), _fatigue_text(result)],
     ]
     story.append(_styled_table(metrics))
     story.append(Spacer(1, 0.4 * cm))
 
     # Configuration used.
-    story.append(Paragraph("Configuración utilizada", h2))
+    story.append(Paragraph(tr("Configuration used"), h2))
     cfg = result.get("config", {})
     config_rows = [
-        ["Parámetro", "Valor"],
-        ["Frecuencia de muestreo", f"{float(result.get('fs', 0.0)):.0f} Hz"],
-        ["Canal", str(result.get("channel_name", ""))],
+        [tr("Parameter"), tr("Value")],
+        [tr("Sampling rate"), f"{float(result.get('fs', 0.0)):.0f} Hz"],
+        [tr("Channel"), str(result.get("channel_name", ""))],
     ]
     if cfg:
         config_rows += [
-            ["Paso-banda", f"{cfg.get('f_low')}-{cfg.get('f_high')} Hz"],
-            ["Notch (red)", f"{cfg.get('f_notch')} Hz"],
-            ["Envolvente (paso-bajo)", f"{cfg.get('f_env')} Hz"],
-            ["Ventana RMS", f"{cfg.get('rms_window_ms')} ms"],
+            [tr("Band-pass"), f"{cfg.get('f_low')}-{cfg.get('f_high')} Hz"],
+            [tr("Notch (mains)"), f"{cfg.get('f_notch')} Hz"],
+            [tr("Envelope (low-pass)"), f"{cfg.get('f_env')} Hz"],
+            [tr("RMS window"), f"{cfg.get('rms_window_ms')} ms"],
         ]
     config_rows.append(
-        ["Dispositivo", device or "no almacenado en el EDF"]
+        [tr("Device"), device or tr("not stored in the EDF")]
     )
     story.append(_styled_table(config_rows))
 
@@ -410,9 +416,11 @@ def build_session_report(
         parts = [f"emgteach v{version}"]
         if commit:
             parts.append(f"commit {commit}")
-        parts.append(f"generado {generated_at:%Y-%m-%d %H:%M}")
+        parts.append(tr("generated {dt:%Y-%m-%d %H:%M}").format(dt=generated_at))
         canvas.drawString(2 * cm, 1 * cm, "  ·  ".join(parts))
-        canvas.drawRightString(A4[0] - 2 * cm, 1 * cm, f"página {doc.page}")
+        canvas.drawRightString(
+            A4[0] - 2 * cm, 1 * cm, tr("page {n}").format(n=doc.page)
+        )
         canvas.restoreState()
 
     doc = SimpleDocTemplate(

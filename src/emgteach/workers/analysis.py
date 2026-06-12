@@ -19,6 +19,7 @@ from emgteach.dsp import (
     process_offline,
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
+from emgteach.i18n import tr
 from emgteach.io import read_edf_mne
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 
@@ -83,7 +84,7 @@ class AnalysisWorker(QThread):
     def run(self) -> None:
         try:
             # 1) Load EDF
-            self.log.emit(f"Cargando archivo: {self._edf_path}")
+            self.log.emit(tr("Loading file: {path}").format(path=self._edf_path))
             self.progress.emit(5)
             edf = read_edf_mne(self._edf_path, self._channel_name)
             emg_raw = edf["emg_raw"]
@@ -93,7 +94,9 @@ class AnalysisWorker(QThread):
 
             duration = float(times[-1])
             self.log.emit(
-                f"Canal «{self._channel_name}» — {fs:.0f} Hz — {duration:.1f} s"
+                tr("Channel «{name}» — {fs:.0f} Hz — {dur:.1f} s").format(
+                    name=self._channel_name, fs=fs, dur=duration
+                )
             )
             self.progress.emit(15)
 
@@ -111,7 +114,7 @@ class AnalysisWorker(QThread):
             t_plot = times[:n_plot]
 
             # 3) Full DSP pipeline
-            self.log.emit("Aplicando la cadena de procesado (DSP)…")
+            self.log.emit(tr("Applying the processing pipeline (DSP)…"))
             proc = process_offline(
                 emg_raw,
                 fs,
@@ -126,7 +129,7 @@ class AnalysisWorker(QThread):
                 return
 
             # 4) Spectral analysis
-            self.log.emit("Calculando PSD, MNF y MDF…")
+            self.log.emit(tr("Computing PSD, MNF and MDF…"))
             psd_result = compute_psd_mnf_mdf(
                 proc["emg_filtered"], fs, f_low=self._f_low, f_high=self._f_high
             )
@@ -139,7 +142,7 @@ class AnalysisWorker(QThread):
                 return
 
             # 5) Segment-wise RMS and MDF
-            self.log.emit("Calculando RMS y MDF por ventana…")
+            self.log.emit(tr("Computing segment-wise RMS and MDF…"))
             segs = compute_segments(
                 proc["emg_filtered"],
                 fs,
@@ -151,16 +154,16 @@ class AnalysisWorker(QThread):
                 return
 
             # 6) Fatigue polynomial fits
-            self.log.emit("Ajuste polinómico de fatiga (grado 2)…")
+            self.log.emit(tr("Polynomial fatigue fit (degree 2)…"))
             fat_time = fit_mdf_vs_time(segs["t_seg"], segs["mdf_seg"])
             fat_rms = fit_rms_vs_mdf(segs["mdf_seg"], segs["rms_seg"])
 
             if fat_time["slope_sign"] < 0:
-                self.log.emit("Tendencia de fatiga detectada (la MDF desciende con el tiempo).")
+                self.log.emit(tr("Fatigue trend detected (MDF decreases over time)."))
             elif fat_time["slope_sign"] > 0:
-                self.log.emit("Sin fatiga (la MDF aumenta o se mantiene estable).")
+                self.log.emit(tr("No fatigue (MDF increases or stays stable)."))
             else:
-                self.log.emit("Tendencia de MDF indeterminada (señal demasiado corta o constante).")
+                self.log.emit(tr("MDF trend undefined (signal too short or constant)."))
             self.progress.emit(90)
 
             # 7) Pack result
