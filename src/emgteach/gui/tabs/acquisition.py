@@ -81,6 +81,13 @@ _CHANNEL_DEFAULT_LABELS = ["EMG", "EMG 2"]
 # usuario, solo los antiguos por defecto).
 _OLD_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
 
+# Con 2 canales las gráficas de bruto y filtrada se apilan (un carril por
+# canal) en lugar de superponerse. El eje en mV deja de ser absoluto, así que
+# cada carril muestra ticks de referencia 0/±_CALIB_MV·ganancia (calibración
+# honesta que no tapa la señal). mV de señal real por gráfica (0=bruto,
+# 1=filtrada); la envolvente (2) nunca se apila.
+_CALIB_MV = {0: 1.0, 1: 0.2}
+
 # MAC por defecto del BITalino del laboratorio UCM (editable en el campo).
 DEFAULT_MAC = "98:D3:91:FE:44:E4"
 
@@ -144,6 +151,10 @@ class AcquisitionTab(QWidget):
             self._profile.ylim_envelope,  # envolvente
         ]
         self._y_accum: list[float] = [1.0, 1.0, 1.0]  # factor acumulado por gráfica
+        # Ganancia de datos por gráfica, usada SOLO en modo apilado (2 canales)
+        # en bruto/filtrada: el zoom ▲▼ multiplica la señal dejando los carriles
+        # fijos, en lugar de escalar el ViewBox. En modo 1 canal no se usa.
+        self._y_gain: list[float] = [1.0, 1.0, 1.0]
 
         # ---- Estado de escala temporal ----
         # Número de muestras visibles en cada gráfica. Empieza mostrando 5 s.
@@ -188,12 +199,14 @@ class AcquisitionTab(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
+        root.setContentsMargins(4, 4, 4, 4)
+        root.setSpacing(4)
 
         # ── Panel de configuración — una sola fila ──────────────────────
         grp_config = QGroupBox("Configuración del dispositivo")
         cfg_outer = QVBoxLayout(grp_config)
-        cfg_outer.setContentsMargins(6, 4, 6, 4)
-        cfg_outer.setSpacing(4)
+        cfg_outer.setContentsMargins(6, 3, 6, 3)
+        cfg_outer.setSpacing(3)
         cfg_row = QHBoxLayout()
         cfg_row.setSpacing(6)
 
@@ -302,7 +315,8 @@ class AcquisitionTab(QWidget):
         # — Control de adquisición (stretch 2) —
         grp_control = QGroupBox("Control de adquisición")
         ctrl_layout = QVBoxLayout(grp_control)
-        ctrl_layout.setSpacing(4)
+        ctrl_layout.setContentsMargins(6, 3, 6, 3)
+        ctrl_layout.setSpacing(3)
 
         row_btns = QHBoxLayout()
         self._btn_conectar = QPushButton("Conectar")
@@ -339,7 +353,8 @@ class AcquisitionTab(QWidget):
         # — Marcadores de eventos (stretch 3) —
         grp_markers = QGroupBox("Marcadores de eventos")
         markers_layout = QVBoxLayout(grp_markers)
-        markers_layout.setSpacing(4)
+        markers_layout.setContentsMargins(6, 3, 6, 3)
+        markers_layout.setSpacing(3)
 
         row_m = QHBoxLayout()
         self._combo_etiqueta = QComboBox()
@@ -349,7 +364,7 @@ class AcquisitionTab(QWidget):
         row_m.addWidget(self._combo_etiqueta)
 
         self._btn_marcar = QPushButton("MARCAR")
-        self._btn_marcar.setMinimumHeight(34)
+        self._btn_marcar.setMinimumHeight(30)
         self._btn_marcar.setStyleSheet("font-size: 12px; font-weight: bold;")
         self._btn_marcar.setEnabled(False)
         self._btn_marcar.clicked.connect(self._on_marcar)
@@ -413,6 +428,8 @@ class AcquisitionTab(QWidget):
         # ── Gráficas + controles de escala ──────────────────────────────
         grp_plots = QGroupBox("Señal EMG en tiempo real")
         plots_root = QVBoxLayout(grp_plots)
+        plots_root.setContentsMargins(6, 3, 6, 3)
+        plots_root.setSpacing(3)
 
         # -- Barra de escala temporal (arriba de las gráficas) -----------
         row_tiempo = QHBoxLayout()
@@ -545,6 +562,34 @@ class AcquisitionTab(QWidget):
                 pool.append(line)
             self._marker_lines.append(pool)
 
+        # Anotaciones del modo apilado (2 canales), solo en bruto y filtrada:
+        # una línea base horizontal por canal (su "cero") y la etiqueta del
+        # músculo junto a cada carril. La calibración se presenta como ticks de
+        # referencia en el eje (ver _set_calib_ticks). Ocultas en modo 1 canal.
+        self._baselines: dict[int, list] = {}
+        self._lane_labels: dict[int, list] = {}
+        for idx, pw in ((0, self._plot_raw), (1, self._plot_filt)):
+            base_lines = []
+            lane_labels = []
+            for c in range(MAX_CHANNELS):
+                bl = pg.InfiniteLine(
+                    angle=0,
+                    movable=False,
+                    pen=pg.mkPen(color=_CHANNEL_COLORS[c], width=1,
+                                 style=Qt.PenStyle.DotLine),
+                )
+                bl.hide()
+                pw.addItem(bl, ignoreBounds=True)
+                base_lines.append(bl)
+
+                txt = pg.TextItem(anchor=(0, 0.5), fill=(255, 255, 255, 200))
+                txt.setColor(_CHANNEL_COLORS[c])
+                txt.hide()
+                pw.addItem(txt, ignoreBounds=True)
+                lane_labels.append(txt)
+            self._baselines[idx] = base_lines
+            self._lane_labels[idx] = lane_labels
+
         # Construir botones ▲▼ en el sidebar (uno por gráfica)
         self._plots_widgets = [self._plot_raw, self._plot_filt, self._plot_env]
         labels = ["B", "F", "E"]   # Bruta / Filtrada / Envolvente
@@ -593,6 +638,9 @@ class AcquisitionTab(QWidget):
         # Mostrar solo los canales activos y pintar la leyenda
         self._apply_channel_visibility()
         self._update_legend()
+        # Configurar el modo de las gráficas (superpuesto o apilado) según el
+        # número de canales persistido.
+        self._apply_stacking_mode()
 
     # ------------------------------------------------------------------
     # Slots de control de dispositivo
@@ -630,6 +678,10 @@ class AcquisitionTab(QWidget):
         self._settings.setValue("adquisicion/n_channels", self._n_channels)
         self._apply_channel_visibility()
         self._update_legend()
+        # Cambiar de 1↔2 canales reconfigura las gráficas (apilado vs
+        # superpuesto) y reinicia la ganancia del apilado.
+        self._y_gain = [1.0, 1.0, 1.0]
+        self._apply_stacking_mode()
 
     @Slot()
     def _on_label_changed(self) -> None:
@@ -661,6 +713,84 @@ class AcquisitionTab(QWidget):
             for i, lbl in enumerate(self._active_labels())
         ]
         self._lbl_legend.setText("&nbsp;&nbsp;&nbsp;".join(parts))
+        # Mantener sincronizadas las etiquetas de carril del modo apilado.
+        if hasattr(self, "_lane_labels"):
+            self._refresh_lane_label_texts()
+
+    # ------------------------------------------------------------------
+    # Modo apilado (2 canales) en bruto / filtrada
+    # ------------------------------------------------------------------
+
+    def _is_stacked(self, idx: int) -> bool:
+        """True si la gráfica idx (0=bruto, 1=filtrada) apila 2 canales."""
+        return self._n_channels == 2 and idx in (0, 1)
+
+    def _lane_half(self, idx: int) -> float:
+        """Semialtura del rango inicial de la gráfica idx (= altura de un carril)."""
+        lo, hi = self._y_ranges_init[idx]
+        return (hi - lo) / 2.0
+
+    def _lane_baseline(self, idx: int, channel: int) -> float:
+        """Línea base (offset) del canal en la gráfica idx: canal 0 arriba (+A),
+        canal 1 abajo (-A)."""
+        a = self._lane_half(idx)
+        return a if channel == 0 else -a
+
+    def _set_calib_ticks(self, idx: int) -> None:
+        """Ticks de referencia 0 y ±_CALIB_MV·ganancia en cada carril. Sustituyen
+        al eje mV absoluto (engañoso al apilar) por una calibración honesta que
+        no tapa la señal."""
+        axis = self._plots_widgets[idx].getAxis("left")
+        calib = _CALIB_MV[idx]
+        g = self._y_gain[idx]
+        major = []
+        for c in range(self._n_channels):
+            base = self._lane_baseline(idx, c)
+            major.append((base, "0"))
+            major.append((base + g * calib, f"+{calib:g}"))
+            major.append((base - g * calib, f"−{calib:g}"))
+        axis.setTicks([major])
+
+    def _refresh_lane_label_texts(self) -> None:
+        """Actualiza texto, color, posición y visibilidad de las etiquetas de
+        carril según las etiquetas activas y el modo apilado."""
+        labels = self._active_labels()
+        for idx in (0, 1):
+            a = self._lane_half(idx)
+            for c in range(MAX_CHANNELS):
+                txt = self._lane_labels[idx][c]
+                if self._is_stacked(idx) and c < self._n_channels:
+                    txt.setText(f" {labels[c]}")
+                    txt.setColor(_CHANNEL_COLORS[c])
+                    txt.setPos(0.0, self._lane_baseline(idx, c) + a * 0.78)
+                    txt.show()
+                else:
+                    txt.hide()
+
+    def _apply_stacking_mode(self) -> None:
+        """Configura rango Y, ticks de calibración y líneas base de bruto y
+        filtrada según el número de canales (1 = superpuesto sobre cero,
+        2 = dos carriles apilados). La envolvente nunca se apila."""
+        for idx in (0, 1):
+            pw = self._plots_widgets[idx]
+            axis = pw.getAxis("left")
+            a = self._lane_half(idx)
+            if self._is_stacked(idx):
+                pw.setYRange(-2 * a, 2 * a, padding=0)
+                self._set_calib_ticks(idx)
+                for c in range(MAX_CHANNELS):
+                    bl = self._baselines[idx][c]
+                    if c < self._n_channels:
+                        bl.setPos(self._lane_baseline(idx, c))
+                        bl.show()
+                    else:
+                        bl.hide()
+            else:
+                pw.setYRange(*self._y_ranges_init[idx], padding=0)
+                axis.setTicks(None)  # restaura ticks automáticos (mV absolutos)
+                for c in range(MAX_CHANNELS):
+                    self._baselines[idx][c].hide()
+        self._refresh_lane_label_texts()
 
     def _set_channel_controls_enabled(self, enabled: bool) -> None:
         self._combo_n_channels.setEnabled(enabled)
@@ -864,9 +994,10 @@ class AcquisitionTab(QWidget):
         self._set_led("ok")
         self._led_idle_timer.start()
 
-    def _refresh_plots(self) -> None:
-        """Llamado cada 33 ms por _render_timer. Pinta solo si hay datos nuevos."""
-        if not self._new_data:
+    def _refresh_plots(self, force: bool = False) -> None:
+        """Llamado cada 33 ms por _render_timer. Pinta solo si hay datos nuevos
+        (o si `force`, p. ej. al cambiar la ganancia del apilado)."""
+        if not self._new_data and not force:
             return
         self._new_data = False
 
@@ -875,10 +1006,19 @@ class AcquisitionTab(QWidget):
         # buffers tienen la misma longitud, así que se calcula una sola vez).
         t = np.arange(n) / FS
 
+        # En modo apilado (2 canales) bruto/filtrada se dibujan desplazados a su
+        # carril y escalados por la ganancia: mostrado = base + ganancia·señal.
+        stacked_raw = self._is_stacked(0)
+        stacked_filt = self._is_stacked(1)
+
         for c in range(self._n_channels):
             arr_raw = np.array(list(self._buf_raw[c]))[-n:]
             arr_filt = np.array(list(self._buf_filt[c]))[-n:]
             arr_env = np.array(list(self._buf_env[c]))[-n:]
+            if stacked_raw:
+                arr_raw = self._lane_baseline(0, c) + self._y_gain[0] * arr_raw
+            if stacked_filt:
+                arr_filt = self._lane_baseline(1, c) + self._y_gain[1] * arr_filt
             self._curves_raw[c].setData(t, arr_raw)
             self._curves_filt[c].setData(t, arr_filt)
             self._curves_env[c].setData(t, arr_env)
@@ -961,9 +1101,24 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
 
     def _y_zoom(self, idx: int, zoom_in: bool) -> None:
-        """Ajusta el rango Y de la gráfica `idx` por factor 1.5."""
-        pw = self._plots_widgets[idx]
+        """Ajusta la escala vertical de la gráfica `idx` por factor 1.5.
+
+        En modo apilado (bruto/filtrada con 2 canales) escala la ganancia de
+        datos dejando los carriles fijos; en el resto escala el ViewBox.
+        """
         factor = 1.5
+
+        if self._is_stacked(idx):
+            gain = self._y_gain[idx]
+            new_gain = gain / factor if zoom_in else gain * factor
+            if new_gain < 0.01 or new_gain > 100.0:
+                return
+            self._y_gain[idx] = new_gain
+            self._set_calib_ticks(idx)
+            self._refresh_plots(force=True)
+            return
+
+        pw = self._plots_widgets[idx]
         accum = self._y_accum[idx]
 
         if zoom_in:
@@ -988,10 +1143,13 @@ class AcquisitionTab(QWidget):
         self._y_accum[idx] = new_accum
 
     def _reset_y_scales(self) -> None:
-        """Restaura los rangos Y de las tres gráficas a sus valores iniciales."""
-        for i, pw in enumerate(self._plots_widgets):
-            pw.setYRange(*self._y_ranges_init[i], padding=0)
+        """Restaura la escala vertical de las tres gráficas a su estado inicial."""
         self._y_accum = [1.0, 1.0, 1.0]
+        self._y_gain = [1.0, 1.0, 1.0]
+        # Envolvente: nunca apilada, rango inicial directo.
+        self._plot_env.setYRange(*self._y_ranges_init[2], padding=0)
+        # Bruto/filtrada: el modo (apilado o superpuesto) fija rango y anotaciones.
+        self._apply_stacking_mode()
 
     # ------------------------------------------------------------------
     # Escala temporal (ventana deslizante)

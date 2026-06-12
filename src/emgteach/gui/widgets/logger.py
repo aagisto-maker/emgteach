@@ -21,7 +21,7 @@ class LoggerWidget(QTextEdit):
         font.setPixelSize(11)
         self.setFont(font)
         fm = QFontMetrics(font)
-        self.setMaximumHeight(fm.lineSpacing() * 5 + 8)
+        self.setMaximumHeight(fm.lineSpacing() * 3 + 8)
         self.setStyleSheet("font-family: Consolas, monospace; font-size: 11px;")
 
     @Slot(str)

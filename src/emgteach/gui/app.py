@@ -15,14 +15,16 @@ from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
-    QLabel,
     QMainWindow,
+    QMessageBox,
     QSplashScreen,
     QTabWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
+from emgteach import __version__
 from emgteach.gui.tabs.acquisition import AcquisitionTab
 from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
@@ -88,16 +90,30 @@ class MainWindow(QMainWindow):
         tabs.addTab(self._tab_ana, "Análisis")
         tabs.addTab(self._tab_cvm, "Normalización CVM")
 
+        # Botón "Acerca de" en la esquina de la barra de pestañas: muestra la
+        # autoría y la versión sin ocupar espacio vertical (sin barra de estado).
+        btn_about = QToolButton()
+        btn_about.setText("?")
+        btn_about.setAutoRaise(True)
+        btn_about.setToolTip("Acerca de EMG Bioinstrumentación")
+        btn_about.clicked.connect(self._show_about)
+        tabs.setCornerWidget(btn_about, Qt.Corner.TopRightCorner)
+
         central = QWidget()
         root = QVBoxLayout(central)
+        root.setContentsMargins(4, 4, 4, 4)
         root.addWidget(tabs, stretch=1)
         self.setCentralWidget(central)
 
-        autor = QLabel("Dr. Agis-Torres — UCM")
-        autor_font = QFont("Arial", 8)
-        autor.setFont(autor_font)
-        autor.setStyleSheet("color: #888888; padding: 0 6px;")
-        self.statusBar().addPermanentWidget(autor)
+    def _show_about(self) -> None:
+        QMessageBox.about(
+            self,
+            "Acerca de EMG Bioinstrumentación",
+            f"<b>EMG Bioinstrumentación</b><br>"
+            f"Versión {__version__}<br><br>"
+            "Dr. Agis-Torres — UCM<br>"
+            "Facultad de Farmacia, Universidad Complutense de Madrid",
+        )
 
     def closeEvent(self, event) -> None:
         self._tab_adq.cleanup()
