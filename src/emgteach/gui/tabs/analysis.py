@@ -193,12 +193,13 @@ class AnalysisTab(QWidget):
             "6. MDF/tiempo", "7. RMS vs MDF",
         ]
         grp_paneles = QGroupBox("Paneles a mostrar")
-        # La caja se funde con el fondo gris de la ventana; cada descripción de
-        # panel queda en un pequeño recuadro blanco (chip) con borde suave.
+        # Caja del mismo color de acero que las demás (sin recuadro). Cada
+        # descripción de panel va en un chip blanco; su cuadrito de selección
+        # es blanco y se rellena de azul al marcarlo (para que destaque).
         grp_paneles.setStyleSheet(
             "QGroupBox {"
-            "  background-color: #E1E6EB;"
-            "  border: 1px solid #C2D6EC;"
+            "  background-color: #DCE7F4;"
+            "  border: none;"
             "  border-radius: 6px;"
             "  margin-top: 16px;"
             "  padding-top: 4px;"
@@ -217,6 +218,16 @@ class AnalysisTab(QWidget):
             "  border-radius: 4px;"
             "  padding: 3px 8px;"
             "  font-size: 11px;"
+            "}"
+            "QCheckBox::indicator {"
+            "  width: 14px; height: 14px;"
+            "  border: 1px solid #A7C2DF;"
+            "  border-radius: 3px;"
+            "  background-color: #FFFFFF;"
+            "}"
+            "QCheckBox::indicator:checked {"
+            "  background-color: #4169E1;"
+            "  border: 1px solid #2E50B0;"
             "}"
         )
         paneles_inner = QWidget()
@@ -805,6 +816,16 @@ class AnalysisTab(QWidget):
             "  border-radius: 4px;"
             "  padding: 4px 8px;"
             "  font-size: 11px;"
+            "}"
+            "QCheckBox::indicator {"
+            "  width: 14px; height: 14px;"
+            "  border: 1px solid #A7C2DF;"
+            "  border-radius: 3px;"
+            "  background-color: #FFFFFF;"
+            "}"
+            "QCheckBox::indicator:checked {"
+            "  background-color: #4169E1;"
+            "  border: 1px solid #2E50B0;"
             "}"
             "QPushButton {"
             "  background-color: #DCE7F4;"

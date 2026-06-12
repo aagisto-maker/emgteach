@@ -137,7 +137,7 @@ class MvcWorker(QThread):
                         mvc_proc["emg_envelope"], self._percentile
                     )
                     mvc_source = (
-                        f"external MVC file (percentile {self._percentile:.0f})"
+                        f"archivo CVM externo (percentil {self._percentile:.0f})"
                     )
                 except Exception as exc:
                     self.log.emit(
@@ -146,12 +146,12 @@ class MvcWorker(QThread):
                     )
                     mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
                     mvc_source = (
-                        f"auto - percentile {self._percentile:.0f} of the test signal"
+                        f"automática (percentil {self._percentile:.0f} de la señal de prueba)"
                     )
             else:
                 mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
                 mvc_source = (
-                    f"auto - percentile {self._percentile:.0f} of the test signal"
+                    f"automática (percentil {self._percentile:.0f} de la señal de prueba)"
                 )
 
             self.log.emit(
