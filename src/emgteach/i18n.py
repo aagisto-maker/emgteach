@@ -194,6 +194,24 @@ _ES = {
         "Sin datos del dispositivo — conexión no establecida.",
     "No data from the device for {s:.1f} s — forcing disconnection.":
         "Sin datos del dispositivo durante {s:.1f} s — forzando desconexión.",
+    # -- live muscle-load monitor --
+    "Muscle load (live MVC)": "Carga muscular (CVM en vivo)",
+    "Calibrate MVC": "Calibrar CVM",
+    "Record a few seconds of maximum contraction to set the MVC "
+    "reference for the live load monitor.":
+        "Graba unos segundos de contracción máxima para fijar la referencia "
+        "CVM del monitor de carga en vivo.",
+    "Calibrate the MVC to start monitoring.":
+        "Calibra el CVM para empezar a monitorizar.",
+    "Calibrating… contract at maximum for {s:.0f} s.":
+        "Calibrando… contrae al máximo durante {s:.0f} s.",
+    "MVC calibrated. Monitoring load.": "CVM calibrado. Monitorizando carga.",
+    "MVC calibrated for live load monitoring.":
+        "CVM calibrado para el monitor de carga en vivo.",
+    "Calibration failed (no signal).": "Calibración fallida (sin señal).",
+    "static {st:.0f} · median {md:.0f} · peak {pk:.0f} %":
+        "estático {st:.0f} · mediano {md:.0f} · pico {pk:.0f} %",
+    "not calibrated": "sin calibrar",
 
     # --- analysis worker / GUI ---
     "Loading file: {path}": "Cargando archivo: {path}",

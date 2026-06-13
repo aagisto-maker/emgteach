@@ -48,14 +48,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emgteach.apda import OnlineLoad
 from emgteach.devices import (
     BACKEND_ARDUINO,
     BACKEND_BITALINO,
     ArduinoDevice,
     create_device,
 )
+from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import tr
+from emgteach.mvc import compute_mvc
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
 
@@ -149,6 +152,22 @@ class AcquisitionTab(QWidget):
         # acquired samples places each marker within the sliding window.
         self._marker_events: list[tuple[float, str]] = []
         self._total_samples = 0
+
+        # ── Online muscle-load monitor (live MVC) ──
+        # Per-channel MVC reference (mV) from a quick calibration, an OnlineLoad
+        # accumulator and a calibration buffer; the live bars update per block
+        # and the static/median/peak readout on a slower timer.
+        self._mvc_ref: list[float | None] = [None] * MAX_CHANNELS
+        self._online: list[OnlineLoad] = [
+            OnlineLoad(self._profile.apda_warning_limit, self._profile.apda_danger_limit)
+            for _ in range(MAX_CHANNELS)
+        ]
+        self._calibrating = False
+        self._calib_buf: list[list[float]] = [[] for _ in range(MAX_CHANNELS)]
+        self._calib_target = int(self._profile.apda_calib_s * FS)
+        self._load_timer = QTimer(self)
+        self._load_timer.setInterval(400)
+        self._load_timer.timeout.connect(self._update_load_readout)
 
         # ---- Vertical-scale state (per plot: 0=raw, 1=filt, 2=env) ----
         # Initial Y ranges taken from the signal profile (restored in
@@ -436,6 +455,9 @@ class AcquisitionTab(QWidget):
 
         root.addLayout(row_actions)
 
+        # ── Muscle-load monitor (live MVC) ──
+        self._build_load_panel(root)
+
         # Keyboard shortcut M
         self._shortcut_m = QShortcut(QKeySequence("M"), self)
         self._shortcut_m.setEnabled(False)
@@ -705,6 +727,10 @@ class AcquisitionTab(QWidget):
         for i, edit in enumerate(self._edit_labels):
             self._settings.setValue(f"adquisicion/label_{i}", edit.text())
         self._update_legend()
+        if hasattr(self, "_load_name_labels"):
+            labels = self._active_labels()
+            for c in range(self._n_channels):
+                self._load_name_labels[c].setText(labels[c])
 
     def _active_labels(self) -> list[str]:
         """Labels of the active channels, falling back to the defaults."""
@@ -723,6 +749,12 @@ class AcquisitionTab(QWidget):
             self._curves_raw[c].setVisible(visible)
             self._curves_filt[c].setVisible(visible)
             self._curves_env[c].setVisible(visible)
+        if hasattr(self, "_load_rows"):
+            labels = self._active_labels()
+            for c in range(MAX_CHANNELS):
+                vis = c < self._n_channels
+                self._load_rows[c].setVisible(vis)
+                self._load_name_labels[c].setText(labels[c] if vis else "")
 
     def _update_legend(self) -> None:
         parts = [
@@ -967,11 +999,16 @@ class AcquisitionTab(QWidget):
         self._btn_marcar.setEnabled(True)
         self._shortcut_m.setEnabled(True)
         self._set_auto_controls_enabled(False)
+        # Live muscle-load monitor: ready to calibrate while recording.
+        self._reset_load_monitor()
+        self._btn_calibrar.setEnabled(True)
+        self._load_timer.start()
         self._log(tr("Press M to quickly add a marker with the selected label."))
 
     def _detener_grabacion(self) -> None:
         self._watchdog_timer.stop()
         self._render_timer.stop()
+        self._stop_load_monitor()
         if self._worker:
             self._worker.stop()
         self._btn_grabar.setText(tr("Start recording"))
@@ -1004,6 +1041,8 @@ class AcquisitionTab(QWidget):
         if raw:
             self._total_samples += len(raw[0])
         self._new_data = True
+        # Live muscle-load monitor (calibration or per-block load update).
+        self._process_load(env)
         # Green LED: there is traffic. The timer will set it back to yellow if
         # no new block arrives within LED_IDLE_MS ms.
         self._set_led("ok")
@@ -1054,6 +1093,148 @@ class AcquisitionTab(QWidget):
                     line.show()
                 elif line.isVisible():
                     line.hide()
+
+    # ------------------------------------------------------------------
+    # Muscle-load monitor (live MVC — Jonsson APDA)
+    # ------------------------------------------------------------------
+
+    def _build_load_panel(self, root) -> None:
+        """Compact live muscle-load panel: a Calibrate button and, per active
+        channel, a load bar (with tiredness/fatigue zones) and a level readout."""
+        grp = QGroupBox(tr("Muscle load (live MVC)"))
+        lay = QVBoxLayout(grp)
+        lay.setContentsMargins(6, 3, 6, 3)
+        lay.setSpacing(2)
+
+        top = QHBoxLayout()
+        top.setSpacing(6)
+        self._btn_calibrar = QPushButton(tr("Calibrate MVC"))
+        self._btn_calibrar.setEnabled(False)
+        self._btn_calibrar.setToolTip(
+            tr("Record a few seconds of maximum contraction to set the MVC "
+               "reference for the live load monitor.")
+        )
+        self._btn_calibrar.clicked.connect(self._on_calibrar)
+        top.addWidget(self._btn_calibrar)
+        self._lbl_load_info = QLabel(tr("Calibrate the MVC to start monitoring."))
+        self._lbl_load_info.setStyleSheet("font-size: 10px; color: #555555;")
+        top.addWidget(self._lbl_load_info)
+        top.addStretch()
+        lay.addLayout(top)
+
+        self._load_rows: list[QWidget] = []
+        self._load_name_labels: list[QLabel] = []
+        self._load_bars: list[LoadBar] = []
+        self._load_readouts: list[QLabel] = []
+        for c in range(MAX_CHANNELS):
+            roww = QWidget()
+            row = QHBoxLayout(roww)
+            row.setContentsMargins(0, 0, 0, 0)
+            row.setSpacing(6)
+            name = QLabel()
+            name.setMinimumWidth(72)
+            name.setStyleSheet(f"font-size: 10px; color: {_CHANNEL_COLOR_HEX[c]};")
+            bar = LoadBar()
+            bar.set_zones(self._profile.apda_warning_limit, self._profile.apda_danger_limit)
+            readout = QLabel("")
+            readout.setMinimumWidth(170)
+            readout.setStyleSheet("font-size: 10px;")
+            row.addWidget(name)
+            row.addWidget(bar, stretch=1)
+            row.addWidget(readout)
+            self._load_rows.append(roww)
+            self._load_name_labels.append(name)
+            self._load_bars.append(bar)
+            self._load_readouts.append(readout)
+            lay.addWidget(roww)
+
+        root.addWidget(grp)
+
+    @Slot()
+    def _on_calibrar(self) -> None:
+        if not (self._worker and self._worker.isRunning()):
+            return
+        self._calibrating = True
+        self._calib_buf = [[] for _ in range(MAX_CHANNELS)]
+        self._calib_target = int(self._profile.apda_calib_s * FS)
+        self._btn_calibrar.setEnabled(False)
+        self._lbl_load_info.setText(
+            tr("Calibrating… contract at maximum for {s:.0f} s.").format(
+                s=self._profile.apda_calib_s)
+        )
+        for bar in self._load_bars:
+            bar.reset()
+
+    def _process_load(self, env: list) -> None:
+        """Per-block hook from _on_data_ready: accumulate calibration samples or
+        feed the live load monitor."""
+        n_ch = min(len(env), self._n_channels)
+        if self._calibrating:
+            for c in range(n_ch):
+                self._calib_buf[c].extend(env[c].tolist())
+            if self._calib_buf[0] and len(self._calib_buf[0]) >= self._calib_target:
+                self._finish_calibration()
+            return
+        if self._mvc_ref[0] is None:
+            return
+        for c in range(n_ch):
+            ref = self._mvc_ref[c]
+            if not ref:
+                continue
+            self._online[c].add(env[c] / ref * 100.0)
+            self._load_bars[c].set_value(self._online[c].current, active=True)
+
+    def _finish_calibration(self) -> None:
+        self._calibrating = False
+        ok = []
+        for c in range(self._n_channels):
+            arr = np.asarray(self._calib_buf[c], dtype=float)
+            ref = compute_mvc(arr, self._profile.mvc_percentile) if arr.size else 0.0
+            self._mvc_ref[c] = ref if ref > 0 else None
+            self._online[c].reset()
+            self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
+            if self._mvc_ref[c]:
+                ok.append(self._active_labels()[c])
+        self._btn_calibrar.setEnabled(True)
+        if ok:
+            self._lbl_load_info.setText(tr("MVC calibrated. Monitoring load."))
+            self._log(tr("MVC calibrated for live load monitoring."))
+        else:
+            self._lbl_load_info.setText(tr("Calibration failed (no signal)."))
+
+    @Slot()
+    def _update_load_readout(self) -> None:
+        if self._mvc_ref[0] is None:
+            return
+        colours = {"normal": "#1a7a1a", "warning": "#E67E22", "danger": "#cc0000"}
+        for c in range(self._n_channels):
+            if not self._mvc_ref[c]:
+                continue
+            ol = self._online[c]
+            self._load_readouts[c].setText(
+                tr("static {st:.0f} · median {md:.0f} · peak {pk:.0f} %").format(
+                    st=ol.static, md=ol.median, pk=ol.peak)
+            )
+            self._load_readouts[c].setStyleSheet(
+                f"font-size: 10px; color: {colours[ol.status]};"
+            )
+
+    def _reset_load_monitor(self) -> None:
+        self._calibrating = False
+        self._mvc_ref = [None] * MAX_CHANNELS
+        self._calib_buf = [[] for _ in range(MAX_CHANNELS)]
+        for c in range(MAX_CHANNELS):
+            self._online[c].reset()
+            self._load_bars[c].reset()
+            self._load_readouts[c].setText("")
+        self._lbl_load_info.setText(tr("Calibrate the MVC to start monitoring."))
+
+    def _stop_load_monitor(self) -> None:
+        self._load_timer.stop()
+        self._calibrating = False
+        self._btn_calibrar.setEnabled(False)
+        for bar in self._load_bars:
+            bar.set_value(0.0, active=False)
 
     # ------------------------------------------------------------------
     # Markers
@@ -1109,6 +1290,7 @@ class AcquisitionTab(QWidget):
         self._btn_marcar.setEnabled(False)
         self._shortcut_m.setEnabled(False)
         self._set_auto_controls_enabled(True)
+        self._stop_load_monitor()
 
     # ------------------------------------------------------------------
     # Vertical scale (▲▼ per plot)
@@ -1292,6 +1474,7 @@ class AcquisitionTab(QWidget):
         """
         self._watchdog_timer.stop()
         self._render_timer.stop()
+        self._load_timer.stop()
         if self._worker and self._worker.isRunning():
             self._worker.stop_forced()
             self._worker.wait(5000)
