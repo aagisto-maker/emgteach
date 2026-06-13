@@ -38,8 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whole recording; metrics already covered the full file). Typography was
   unified across the MVC tab.
 
+### Fixed
+- A few user-facing strings (the analysis progress bar, the fatigue-summary
+  verdicts, the MVC-source fallback label and the vertical-zoom sidebar
+  letters) bypassed the translation layer and stayed in Spanish in English
+  mode; they now follow the selected language.
+
 ### Internal
 - Test suite grows to 126 passing tests on Python 3.10–3.12.
+- The developer layer (code comments and docstrings) is now fully English.
 
 ## [0.2.0] — 2026-06-11
 
