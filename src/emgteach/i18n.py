@@ -287,6 +287,7 @@ _ES = {
     "Figure saved to: {path}": "Figura guardada en: {path}",
     "Report graphs": "Gráficos del informe",
     "Tick the graphs to add to the report:": "Marca los gráficos que se añadirán al informe:",
+    "Time range to plot (s):": "Tramo temporal a dibujar (s):",
     "PDF report generated: {path}": "Informe PDF generado: {path}",
     "Error generating the PDF report: {error}": "Error al generar el informe PDF: {error}",
     "Amplitude (mV)": "Amplitud (mV)",

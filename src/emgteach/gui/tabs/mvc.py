@@ -814,7 +814,10 @@ class MvcTab(QWidget):
             "student_code": self._settings.value("analisis/student_code", ""),
         }
         try:
-            build_mvc_report(out, self._last_result, meta)
+            build_mvc_report(
+                out, self._last_result, meta,
+                time_range=(self._inicio_s, self._inicio_s + self._duracion_s),
+            )
             self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
         except Exception as exc:
             self._logger.append_error(

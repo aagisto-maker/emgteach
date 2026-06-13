@@ -48,11 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resizing, and the resize handles are capped and shown as edge grips. The
   drawn window defaults to the whole recording. Typography was unified across
   the MVC tab.
-- **MVC tab redesign.** The muscle-load APDF moved to its own square chart with
-  a structured data panel beside it (replacing the old summary box); the
+- **MVC tab redesign.** The muscle-load APDF moved to its own chart with a
+  structured data panel beside it (replacing the old summary box); the
   display-window navigator was made Analysis-style (bottom minimap bar +
   compact controls, no title, no reset button); the visualisation area now
   scrolls vertically.
+- **Report time range.** PDF reports now plot a chosen time range instead of
+  always the whole recording (unreadable for long sessions): the Analysis
+  graph-picker dialog gained editable start/duration fields pre-filled with the
+  on-screen window, and the MVC report uses the on-screen window.
 
 ### Fixed
 - A few user-facing strings (the analysis progress bar, the fatigue-summary

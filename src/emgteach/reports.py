@@ -162,12 +162,22 @@ def _draw_report_markers(ax: Any, markers: list, x0: float, x1: float) -> None:
             ax.axvline(float(t_mark), color="#E67E22", ls="--", lw=1.0, alpha=0.8)
 
 
-def _draw_analysis_panel(fig: Any, ax: Any, idx: int, result: Mapping[str, Any]) -> None:
+def _draw_analysis_panel(
+    fig: Any, ax: Any, idx: int, result: Mapping[str, Any],
+    x_range: tuple[float, float] | None = None,
+) -> None:
     """Draw one analysis panel (0-7) onto ``ax``, mirroring the on-screen
-    panels of the Analysis tab so the report shows the same graphs."""
+    panels of the Analysis tab so the report shows the same graphs.
+
+    ``x_range`` restricts the time axis of the time-domain panels (0-3, 5, 6)
+    to ``(start, end)`` seconds; ``None`` uses the whole recording. The PSD (4)
+    and RMS-vs-MDF (7) panels are not time-domain and ignore it.
+    """
     r = result
     times = r["times"]
     x0, x1 = float(times[0]), float(times[-1])
+    if x_range is not None:
+        x0, x1 = float(x_range[0]), float(x_range[1])
     markers = list(r.get("markers", []))
     grid = dict(ls="--", color="#DDDDDD", alpha=0.8)
 
@@ -255,7 +265,10 @@ def _draw_analysis_panel(fig: Any, ax: Any, idx: int, result: Mapping[str, Any])
     ax.grid(True, **grid)
 
 
-def _render_one_panel_figure(result: Mapping[str, Any], idx: int) -> BytesIO:
+def _render_one_panel_figure(
+    result: Mapping[str, Any], idx: int,
+    x_range: tuple[float, float] | None = None,
+) -> BytesIO:
     """Render a single analysis panel into a PNG buffer."""
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib.figure import Figure
@@ -263,7 +276,7 @@ def _render_one_panel_figure(result: Mapping[str, Any], idx: int) -> BytesIO:
     fig = Figure(figsize=(7.2, 2.9), dpi=150)
     FigureCanvasAgg(fig)
     ax = fig.subplots(1, 1)
-    _draw_analysis_panel(fig, ax, idx, result)
+    _draw_analysis_panel(fig, ax, idx, result, x_range)
     fig.tight_layout()
     buf = BytesIO()
     fig.savefig(buf, format="png")
@@ -297,6 +310,7 @@ def build_session_report(
     result: Mapping[str, Any],
     meta: Mapping[str, Any] | None = None,
     panels: list[int] | None = None,
+    time_range: tuple[float, float] | None = None,
 ) -> str:
     """Write a one-page PDF report of an analysed EMG session.
 
@@ -317,6 +331,9 @@ def build_session_report(
         Indices (0-7) of the analysis panels to include as graphs, in the
         order given. When ``None`` (default), the legacy single combined
         signal figure (filtered EMG + envelope) is used instead.
+    time_range : tuple of float, optional
+        ``(start, end)`` seconds to show on the time-domain panels; ``None``
+        (default) plots the whole recording.
 
     Returns
     -------
@@ -371,7 +388,7 @@ def build_session_report(
             if idx not in _PANEL_REPORT_TITLES:
                 continue
             story.append(
-                Image(_render_one_panel_figure(result, idx),
+                Image(_render_one_panel_figure(result, idx, time_range),
                       width=16 * cm, height=6.44 * cm)
             )
             story.append(Spacer(1, 0.3 * cm))
@@ -437,9 +454,12 @@ def build_session_report(
     return pdf_path
 
 
-def _render_mvc_figure(result: Mapping[str, Any]) -> BytesIO:
+def _render_mvc_figure(
+    result: Mapping[str, Any], x_range: tuple[float, float] | None = None,
+) -> BytesIO:
     """Render the MVC panels (filtered+rectified / envelope / normalised) and
-    the muscle-load APDF into a PNG buffer."""
+    the muscle-load APDF into a PNG buffer. ``x_range`` restricts the time axis
+    of the three time-series panels; the APDF (a distribution) ignores it."""
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib.figure import Figure
 
@@ -482,6 +502,10 @@ def _render_mvc_figure(result: Mapping[str, Any]) -> BytesIO:
     ax.grid(True, color="#DDDDDD", alpha=0.5)
     ax.tick_params(labelsize=7)
 
+    if x_range is not None:
+        for tax in (axes[0], axes[1], axes[2]):
+            tax.set_xlim(*x_range)
+
     ax = axes[3]
     apdf = result["apdf"]
     ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.5)
@@ -506,6 +530,7 @@ def build_mvc_report(
     pdf_path: str | Path,
     result: Mapping[str, Any],
     meta: Mapping[str, Any] | None = None,
+    time_range: tuple[float, float] | None = None,
 ) -> str:
     """Write a one-page PDF report of an MVC normalisation + muscle-load run.
 
@@ -548,7 +573,7 @@ def build_mvc_report(
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))
 
-    story.append(Image(_render_mvc_figure(result), width=15 * cm, height=20 * cm))
+    story.append(Image(_render_mvc_figure(result, time_range), width=15 * cm, height=20 * cm))
     story.append(Spacer(1, 0.3 * cm))
 
     dim = result.get("dimension", "")

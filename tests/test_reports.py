@@ -123,6 +123,16 @@ class TestBuildSessionReport:
         build_session_report(out, full_analysis_result, panels=[])
         assert out.read_bytes()[:4] == b"%PDF"
 
+    def test_time_range_restricts_panels(
+        self, full_analysis_result: dict, tmp_path: Path
+    ) -> None:
+        """A time range plots only that window on the time-domain panels."""
+        out = tmp_path / "informe_rango.pdf"
+        build_session_report(
+            out, full_analysis_result, panels=[0, 1, 5], time_range=(0.5, 1.5)
+        )
+        assert out.read_bytes()[:4] == b"%PDF"
+
 
 class TestGitCommitHash:
     def test_returns_str_or_none(self) -> None:
@@ -164,4 +174,9 @@ class TestMvcReport:
     def test_includes_student_meta(self, mvc_result: dict, tmp_path: Path) -> None:
         out = tmp_path / "informe_cvm_alumno.pdf"
         build_mvc_report(out, mvc_result, {"student": "Ada", "student_code": "X1"})
+        assert out.read_bytes()[:4] == b"%PDF"
+
+    def test_time_range(self, mvc_result: dict, tmp_path: Path) -> None:
+        out = tmp_path / "informe_cvm_rango.pdf"
+        build_mvc_report(out, mvc_result, time_range=(1.0, 4.0))
         assert out.read_bytes()[:4] == b"%PDF"

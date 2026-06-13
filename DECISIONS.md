@@ -67,6 +67,15 @@ cluster, no box title and no reset button); and the whole visualisation area
 in `reports.py`, mirroring `build_session_report`) renders the panels + APDF
 and a metrics table with the load levels against their limits.
 
+### Decision 5 — Reports plot the on-screen window by default
+
+A whole-recording report is unreadable for a long session, so both report
+builders take an optional ``time_range`` (passed to the panel renderers) that
+restricts the time-domain panels. It defaults to the **currently visible
+window**: the Analysis graph-picker dialog exposes editable start/duration
+fields pre-filled with that window, and the one-click MVC report uses the
+window directly.
+
 ---
 
 ## 2026-06-11 — Hito 3: PDF session reports (+ visual polish)

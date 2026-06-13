@@ -798,12 +798,13 @@ class AnalysisTab(QWidget):
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
 
     @Slot()
-    def _pedir_paneles_informe(self) -> list[int] | None:
-        """Modal dialog to choose which graphs are included in the report.
+    def _pedir_paneles_informe(self) -> tuple[list[int], tuple[float, float]] | None:
+        """Modal dialog to choose which graphs (and time range) go in the report.
 
-        Returns the list of checked panel indices (0-7), or ``None`` if the
-        user cancels. By default the panels currently visible on screen are
-        pre-checked.
+        Returns ``(panel_indices, (start, end))`` — the checked panels (0-7) and
+        the time range to plot — or ``None`` if the user cancels. The panels are
+        pre-checked from the on-screen selection and the range is pre-filled
+        with the currently visible window.
         """
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("Report graphs"))
@@ -854,6 +855,30 @@ class AnalysisTab(QWidget):
             checks.append(cb)
 
         lay.addSpacing(6)
+        rango_lbl = QLabel(tr("Time range to plot (s):"))
+        rango_lbl.setObjectName("dlgHeader")
+        lay.addWidget(rango_lbl)
+        ini0, dur0 = self._time_range.get_range()
+        total = max(self._duracion_total, ini0 + dur0)
+        rango_row = QHBoxLayout()
+        rango_row.addWidget(QLabel(tr("Start:")))
+        spin_ini = QDoubleSpinBox()
+        spin_ini.setRange(0.0, max(0.0, total))
+        spin_ini.setDecimals(1)
+        spin_ini.setSingleStep(0.5)
+        spin_ini.setValue(float(ini0))
+        rango_row.addWidget(spin_ini)
+        rango_row.addWidget(QLabel(tr("Duration:")))
+        spin_dur = QDoubleSpinBox()
+        spin_dur.setRange(0.5, max(0.5, total))
+        spin_dur.setDecimals(1)
+        spin_dur.setSingleStep(0.5)
+        spin_dur.setValue(float(dur0))
+        rango_row.addWidget(spin_dur)
+        rango_row.addStretch()
+        lay.addLayout(rango_row)
+
+        lay.addSpacing(6)
         botones = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
@@ -863,7 +888,10 @@ class AnalysisTab(QWidget):
 
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return None
-        return [i for i, cb in enumerate(checks) if cb.isChecked()]
+        paneles = [i for i, cb in enumerate(checks) if cb.isChecked()]
+        x0 = float(spin_ini.value())
+        x1 = min(x0 + float(spin_dur.value()), float(total))
+        return paneles, (x0, x1)
 
     def _generar_informe(self) -> None:
         """Generate the PDF session report next to the source EDF.
@@ -872,9 +900,10 @@ class AnalysisTab(QWidget):
         """
         if self._last_result is None:
             return
-        paneles = self._pedir_paneles_informe()
-        if paneles is None:
+        seleccion = self._pedir_paneles_informe()
+        if seleccion is None:
             return  # cancelled by the user
+        paneles, rango = seleccion
         edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         out = edf_path.with_name(f"{edf_path.stem}_informe_{ts}.pdf")
@@ -883,7 +912,8 @@ class AnalysisTab(QWidget):
             "student_code": self._edit_student_code.text().strip(),
         }
         try:
-            build_session_report(out, self._last_result, meta, panels=paneles)
+            build_session_report(out, self._last_result, meta, panels=paneles,
+                                 time_range=rango)
             self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
         except Exception as exc:
             self._logger.append_error(
