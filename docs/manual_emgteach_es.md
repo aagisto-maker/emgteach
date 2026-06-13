@@ -452,7 +452,64 @@ de generación, y se guardan automáticamente junto al EDF de origen.
 
 ---
 
-## 9. Glosario
+## 9. Resolución de problemas (FAQ)
+
+### Conexión y dispositivo
+
+**El dispositivo no conecta o el LED se queda en amarillo.**
+- *BITalino*: comprueba la dirección MAC y que el dispositivo esté emparejado por
+  Bluetooth. BITalino necesita **Python ≤ 3.11** (no funciona en 3.12).
+- *Arduino + MyoWare*: comprueba el **puerto COM** (usa *Refrescar* para listar los
+  puertos) y el cable USB.
+- El **watchdog** fuerza la desconexión si no llegan datos en ~3 s; reconecta e
+  inténtalo de nuevo.
+
+### Calidad de la señal
+
+**Línea plana / sin señal.** Comprueba el contacto de los electrodos y el de
+referencia, la ganancia, y que el canal mostrado sea el correcto.
+
+**Interferencia de red a 50 Hz / señal muy ruidosa.** Asegura un buen contacto de
+los electrodos (el filtro notch elimina 50 Hz, pero el mal contacto amplifica el
+ruido); aléjate de cargadores y cables de red.
+
+**Deriva de la línea base o picos.** Suele ser movimiento de electrodos/cable —
+fija los cables y vuelve a limpiar la piel.
+
+**Aviso de "posible saturación".** La señal llega a los límites del ADC; baja la
+ganancia o revisa los electrodos.
+
+**Aviso de "línea base plana".** Poca o ninguna señal — revisa el contacto.
+
+### Monitor de carga en vivo y calibración
+
+**"Calibración fallida (sin señal)".** Debes estar **grabando** y contraer **al
+máximo** durante la ventana de calibración.
+
+**Las barras dicen "sin calibrar".** Pulsa **Calibrar CVM** mientras grabas.
+
+**La carga en vivo parece incorrecta.** Recalibra — la referencia CVM es por sesión
+de grabación y se reinicia al empezar una grabación nueva.
+
+### Análisis e informes
+
+**El EDF no abre o se analiza el canal equivocado.** Comprueba el archivo y el
+**nombre del canal** (la lista se rellena desde la cabecera del EDF).
+
+**"Generar informe PDF" no hace nada.** Realiza primero un análisis (el botón se
+activa tras un análisis correcto).
+
+**El informe es ilegible con un registro largo.** Elige un **rango temporal más
+corto** en el diálogo del informe (por defecto, la ventana visible).
+
+### Software e instalación
+
+**La app no arranca.** Usa **Python 3.10–3.12** en el entorno virtual del proyecto.
+Python 3.13+ aún no está soportado (la pila científica no tiene *wheels*).
+
+---
+
+## 10. Glosario
 
 - **sEMG**: electromiografía de superficie.
 - **PAUM**: potencial de acción de unidad motora.
@@ -470,7 +527,7 @@ de generación, y se guardan automáticamente junto al EDF de origen.
 
 ---
 
-## 10. Referencias
+## 11. Referencias
 
 - Jonsson, B. (1978). *Kinesiology: with special reference to electromyographic
   kinesiology.* Electroencephalography and Clinical Neurophysiology, Suppl. 34,
@@ -482,7 +539,7 @@ de generación, y se guardan automáticamente junto al EDF de origen.
 
 ---
 
-## 11. Anexo — Lista de figuras/capturas sugeridas (checklist para el manual)
+## 12. Anexo — Lista de figuras/capturas sugeridas (checklist para el manual)
 
 1. Ventana principal con las tres pestañas.
 2. Esquema fisiológico: motoneurona → fibras → electrodo → señal sEMG.

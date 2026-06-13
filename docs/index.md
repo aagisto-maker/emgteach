@@ -20,11 +20,14 @@ modules are migrated from the prototype.
 ## User manual
 
 A detailed manual — what the app does and the physiological meaning of every
-metric — is available as a source document for an illustrated guide:
+metric — plus teaching materials, are available (English and Spanish):
 
-- English: [`manual_emgteach.md`](manual_emgteach.md)
-- Spanish: [`manual_emgteach_es.md`](manual_emgteach_es.md)
-- Lab practical guide (Spanish): [`guion_practicas_es.md`](guion_practicas_es.md)
+- **User manual** — English: [`manual_emgteach.md`](manual_emgteach.md) ·
+  Spanish: [`manual_emgteach_es.md`](manual_emgteach_es.md)
+- **Lab practical guide** — English: [`lab_practicals.md`](lab_practicals.md) ·
+  Spanish: [`guion_practicas_es.md`](guion_practicas_es.md)
+- **Assessment rubric** — English: [`evaluation_rubric.md`](evaluation_rubric.md) ·
+  Spanish: [`rubrica_evaluacion_es.md`](rubrica_evaluacion_es.md)
 
 ## Useful links
 

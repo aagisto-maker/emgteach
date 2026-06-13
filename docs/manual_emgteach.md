@@ -441,7 +441,65 @@ and are saved automatically next to the source EDF.
 
 ---
 
-## 9. Glossary
+## 9. Troubleshooting and FAQ
+
+### Connection and device
+
+**The device won't connect, or the LED stays yellow.**
+- *BITalino*: check the MAC address and that the device is paired over Bluetooth.
+  BITalino needs **Python ≤ 3.11** (it does not work on 3.12).
+- *Arduino + MyoWare*: check the **COM port** (use *Refresh* to list the available
+  ports) and the USB cable.
+- The **watchdog** forces a disconnection if no data arrives within ~3 s; reconnect
+  and try again.
+
+### Signal quality
+
+**Flat line / no signal.** Check electrode contact and the reference electrode, the
+gain, and that the channel being shown is the right one.
+
+**Strong 50 Hz mains interference / very noisy signal.** Ensure good electrode
+contact (the notch filter removes 50 Hz, but poor contact amplifies noise); move
+away from chargers and mains cables.
+
+**Baseline drift or spikes.** Usually electrode/cable movement — secure the cables
+and re‑clean the skin.
+
+**"Possible saturation" warning.** The signal is hitting the ADC limits; lower the
+gain or check the electrodes.
+
+**"Flat baseline" warning.** Little or no signal — check electrode contact.
+
+### Live load monitor and calibration
+
+**"Calibration failed (no signal)."** You must be **recording** and contract
+**maximally** during the calibration window.
+
+**The bars say "not calibrated".** Press **Calibrate MVC** while recording.
+
+**The live load looks wrong.** Recalibrate — the MVC reference is per recording
+session and is reset when you start a new recording.
+
+### Analysis and reports
+
+**The EDF won't open, or the wrong channel is analysed.** Check the file and the
+**channel name** (the channel list is filled from the EDF header).
+
+**"Generate PDF report" does nothing.** Run an analysis first (the button enables
+after a successful analysis).
+
+**The report is unreadable for a long recording.** Choose a **shorter time range**
+in the report dialog (it defaults to the on‑screen window).
+
+### Software and installation
+
+**The app won't start.** Use **Python 3.10–3.12** in the project's virtual
+environment. Python 3.13+ is not yet supported (the scientific stack has no wheels
+for it).
+
+---
+
+## 10. Glossary
 
 - **sEMG**: surface electromyography.
 - **MUAP**: motor‑unit action potential.
@@ -459,7 +517,7 @@ and are saved automatically next to the source EDF.
 
 ---
 
-## 10. References
+## 11. References
 
 - Jonsson, B. (1978). *Kinesiology: with special reference to electromyographic
   kinesiology.* Electroencephalography and Clinical Neurophysiology, Suppl. 34,
@@ -471,7 +529,7 @@ and are saved automatically next to the source EDF.
 
 ---
 
-## 11. Appendix — Suggested figures/screenshots (checklist for the manual)
+## 12. Appendix — Suggested figures/screenshots (checklist for the manual)
 
 1. Main window with the three tabs.
 2. Physiological diagram: motor neuron → fibres → electrode → sEMG signal.
