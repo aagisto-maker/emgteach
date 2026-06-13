@@ -1139,6 +1139,10 @@ class AcquisitionTab(QWidget):
         thr_l.addWidget(lbl_thr_w)
         self._spin_warning = QSpinBox()
         self._spin_warning.setRange(1, 99)
+        # Apply only when the edit is committed (Enter / focus-out / arrows),
+        # not on every keystroke — otherwise the warning<danger auto-correction
+        # makes the two boxes fight while you are still typing a number.
+        self._spin_warning.setKeyboardTracking(False)
         self._spin_warning.setSuffix(" %")
         self._spin_warning.setFixedWidth(58)
         self._spin_warning.setValue(round(self._load_warning))
@@ -1153,6 +1157,7 @@ class AcquisitionTab(QWidget):
         thr_l.addWidget(lbl_thr_d)
         self._spin_danger = QSpinBox()
         self._spin_danger.setRange(2, 100)
+        self._spin_danger.setKeyboardTracking(False)
         self._spin_danger.setSuffix(" %")
         self._spin_danger.setFixedWidth(58)
         self._spin_danger.setValue(round(self._load_danger))
