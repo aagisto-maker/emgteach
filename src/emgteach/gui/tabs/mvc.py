@@ -36,7 +36,7 @@ except Exception:
     pass
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import QSettings, Qt, QTimer, Slot
+from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Slot
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -247,6 +247,11 @@ class MvcTab(QWidget):
         scroll.setWidget(viz_container)
         scroll.setWidgetResizable(True)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._viz_scroll = scroll
+        # Re-size the APDF whenever the scroll viewport's width changes (window
+        # resize or scrollbar appearing), so it keeps filling the width left of
+        # the data panel.
+        scroll.viewport().installEventFilter(self)
         root.addWidget(scroll, stretch=1)
 
         # ══ Display-window navigator at the bottom (same style as Analysis) ══
@@ -352,6 +357,28 @@ class MvcTab(QWidget):
         grid.setRowStretch(9, 1)
         return box
 
+    def eventFilter(self, obj, event) -> bool:
+        if (event.type() == QEvent.Type.Resize
+                and hasattr(self, "_viz_scroll")
+                and obj is self._viz_scroll.viewport()):
+            self._update_apdf_layout()
+        return super().eventFilter(obj, event)
+
+    def _update_apdf_layout(self) -> None:
+        """Keep the muscle-load APDF square and filling the width left of the
+        data panel: the data panel takes at most ~1/3, the APDF the rest."""
+        if not hasattr(self, "_apdf_canvas") or not hasattr(self, "_viz_scroll"):
+            return
+        vp = self._viz_scroll.viewport().width()
+        if vp <= 0:
+            return
+        data_w = max(180, vp // 3)            # data panel: at most ~1/3
+        self._data_box.setMaximumWidth(data_w)
+        side = max(260, vp - data_w - 16)     # APDF: the rest, kept square
+        if (abs(side - self._apdf_canvas.width()) > 8
+                or abs(side - self._apdf_canvas.height()) > 8):
+            self._apdf_canvas.setFixedSize(side, side)
+
     # ------------------------------------------------------------------
     # File-selection slots
     # ------------------------------------------------------------------
@@ -411,9 +438,7 @@ class MvcTab(QWidget):
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
         self._btn_guardar.setEnabled(False)
-        self._lbl_cvm_ref.setText(f"{tr('MVC reference:')} —")
-        self._lbl_mean_norm.setText(f"{tr('Mean activation:')} —")
-        self._lbl_fuente.setText(f"{tr('MVC source:')} —")
+        self._btn_informe.setEnabled(False)
 
         self._worker = MvcWorker(
             edf_path=path,

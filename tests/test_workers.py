@@ -34,15 +34,6 @@ pytestmark = pytest.mark.gui
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="session")
-def qapp() -> QCoreApplication:
-    """Single QCoreApplication shared by every test in the session."""
-    app = QCoreApplication.instance()
-    if app is None:
-        app = QCoreApplication([])
-    return app
-
-
 class _FakeDevice(AcquisitionDevice):
     """In-memory device that produces a deterministic 80 Hz sinusoid.
 
