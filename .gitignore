@@ -61,6 +61,8 @@ output/
 # --- Documentation builds ---
 site/
 docs/_build/
+# generated PDFs (artifacts); the .md files are the versioned source
+docs/*.pdf
 
 # --- Jupyter ---
 .ipynb_checkpoints/
