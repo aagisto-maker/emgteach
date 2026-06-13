@@ -13,6 +13,7 @@ from __future__ import annotations
 import numpy as np
 from PySide6.QtCore import QThread, Signal
 
+from emgteach.apda import compute_apdf
 from emgteach.dsp import detect_acquisition_problems, process_offline
 from emgteach.i18n import tr
 from emgteach.io import read_edf_pyedflib
@@ -176,12 +177,24 @@ class MvcWorker(QThread):
                 tr("Mean normalised activation: {value:.1f} % MVC").format(value=mean_norm)
             )
 
+            # Muscle-load analysis (Jonsson APDF) over the whole recording.
+            apdf = compute_apdf(emg_norm, **self._profile.apda_kwargs())
+            self.log.emit(
+                tr(
+                    "Muscle load (Jonsson) — static {st:.1f} %, "
+                    "median {md:.1f} %, peak {pk:.1f} % MVC"
+                ).format(
+                    st=apdf.static.value, md=apdf.median.value, pk=apdf.peak.value
+                )
+            )
+
             result = {
                 "emg_raw": emg_raw,
                 "emg_filtered": proc["emg_filtered"],
                 "emg_rectified": proc["emg_rectified"],
                 "emg_envelope": emg_envelope,
                 "emg_norm": emg_norm,
+                "apdf": apdf,
                 "t_plot": t_plot,
                 "n_plot": n_plot,
                 "tiempo": time_axis,

@@ -92,8 +92,8 @@ class MvcTab(QWidget):
         self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
         self._last_cvm_dir: str = self._settings.value("cvm/last_cvm_dir", ".")
 
-        # ── Vertical-scale state (3 panels: 0=filtered, 1=envelope, 2=norm) ──
-        self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0}
+        # ── Vertical-scale state (4 panels: 0=filtered, 1=envelope, 2=norm, 3=APDF) ──
+        self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0}
         self._y_initial_lims: dict[int, tuple[float, float]] = {}
         self._axes_list: list = []   # active matplotlib axes
 
@@ -198,7 +198,8 @@ class MvcTab(QWidget):
 
         self._lbl_cvm_ref = QLabel(f"{tr('MVC reference:')} —")
         self._lbl_mean_norm = QLabel(f"{tr('Mean activation:')} —")
-        for lbl in (self._lbl_cvm_ref, self._lbl_mean_norm):
+        self._lbl_carga = QLabel(f"{tr('Muscle load:')} —")
+        for lbl in (self._lbl_cvm_ref, self._lbl_mean_norm, self._lbl_carga):
             # Not bold and at 11 px to keep typographic uniformity with the
             # rest of the summary labels.
             lbl.setStyleSheet("font-size: 11px; padding: 2px 8px;")
@@ -400,7 +401,7 @@ class MvcTab(QWidget):
         self._update_info_labels()
 
         # Reset the Y scales and draw
-        self._y_accum = {0: 1.0, 1: 1.0, 2: 1.0}
+        self._y_accum = {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0}
         self._dibujar_paneles(result)
 
     @Slot(str)
@@ -420,6 +421,16 @@ class MvcTab(QWidget):
         mean_norm = float(np.mean(r["emg_norm"][:r["n_plot"]]))
         self._lbl_mean_norm.setText(f"{tr('Mean activation:')} {mean_norm:.1f} % MVC")
         self._lbl_fuente.setText(f"{tr('MVC source:')} {r['mvc_source']}")
+        apdf = r["apdf"]
+        self._lbl_carga.setText(
+            f"{tr('Muscle load:')} {tr('Static')} {apdf.static.value:.0f} % · "
+            f"{tr('Median')} {apdf.median.value:.0f} % · "
+            f"{tr('Peak')} {apdf.peak.value:.0f} % MVC"
+        )
+        self._lbl_carga.setStyleSheet(
+            "font-size: 11px; padding: 2px 8px; "
+            f"color: {'#cc0000' if apdf.any_exceeds else '#1a7a1a'};"
+        )
 
     # ------------------------------------------------------------------
     # Drawing the 3 panels
@@ -435,7 +446,7 @@ class MvcTab(QWidget):
         inicio = self._inicio_s
         fin = inicio + self._duracion_s
 
-        axes = self._fig.subplots(3, 1, sharex=False)
+        axes = self._fig.subplots(4, 1, sharex=False)
         self._axes_list = list(axes)
 
         # Panel 1: filtered + rectified signal
@@ -482,13 +493,35 @@ class MvcTab(QWidget):
         ax.legend(loc="upper right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
 
+        # Panel 4: muscle-load distribution (Jonsson APDF) over the whole
+        # recording. It is a distribution, so the time window does not apply.
+        ax = axes[3]
+        apdf = r["apdf"]
+        ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.8)
+        for prob in (10, 50, 90):
+            ax.axhline(prob, color="#cccccc", ls=":", lw=0.7)
+        for lvl, prob, name in (
+            (apdf.static, 10, tr("Static")),
+            (apdf.median, 50, tr("Median")),
+            (apdf.peak, 90, tr("Peak")),
+        ):
+            color = "#cc0000" if lvl.exceeds else "#1a9850"
+            ax.plot([lvl.value], [prob], "o", color=color, ms=7, zorder=5,
+                    label=f"{name}: {lvl.value:.0f} % (≤{lvl.limit:.0f} %)")
+        ax.set_title(tr("4. Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
+        ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
+        ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
+        ax.set_ylim(0, 100)
+        ax.set_xlim(0, float(apdf.load[-1]))
+        ax.tick_params(labelsize=7)
+        ax.legend(loc="lower right", fontsize=7)
+        ax.grid(True, color="#DDDDDD", alpha=0.5)
+
         # Save the initial ylims and reset the accumulators
         self._y_initial_lims = {i: ax.get_ylim() for i, ax in enumerate(self._axes_list)}
-        self._y_accum = {i: 1.0 for i in range(3)}
+        self._y_accum = {i: 1.0 for i in range(len(self._axes_list))}
 
-        w, h = self._fig.get_size_inches()
-        dpi = self._fig.dpi
-        self._canvas.setMinimumSize(int(w * dpi), int(h * dpi))
+        self._canvas.setMinimumHeight(len(self._axes_list) * 165)
         self._canvas.updateGeometry()
         self._canvas.draw_idle()
 
@@ -512,7 +545,7 @@ class MvcTab(QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
-        labels_panel = ["P1", "P2", "P3"]
+        labels_panel = [f"P{i + 1}" for i in range(len(self._axes_list))]
         for panel_idx, ax in enumerate(self._axes_list):
             slot = QWidget()
             slot_vbox = QVBoxLayout(slot)

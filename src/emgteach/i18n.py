@@ -341,6 +341,18 @@ _ES = {
     "100 % MVC": "100 % CVM",
     "Select test EDF": "Seleccionar EDF de prueba",
     "Select MVC reference EDF": "Seleccionar EDF de referencia CVM",
+    # -- muscle-load analysis (Jonsson APDF) --
+    "Muscle load:": "Carga muscular:",
+    "Static": "Estático",
+    "Median": "Mediano",
+    "Peak": "Pico",
+    "4. Muscle-load distribution (APDF, Jonsson)":
+        "4. Distribución de carga muscular (APDF, Jonsson)",
+    "Load (% MVC)": "Carga (% CVM)",
+    "Cumulative % of time": "% del tiempo acumulado",
+    "Muscle load (Jonsson) — static {st:.1f} %, median {md:.1f} %, peak {pk:.1f} % MVC":
+        "Carga muscular (Jonsson) — estático {st:.1f} %, mediano {md:.1f} %, "
+        "pico {pk:.1f} % CVM",
 
     # --- DSP diagnostics ---
     "Possible saturation: {pct:.1f}% of samples sit at ADC extremes "
