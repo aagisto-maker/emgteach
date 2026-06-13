@@ -28,6 +28,8 @@ metric — plus teaching materials, are available (English and Spanish):
   Spanish: [`guion_practicas_es.md`](guion_practicas_es.md)
 - **Assessment rubric** — English: [`evaluation_rubric.md`](evaluation_rubric.md) ·
   Spanish: [`rubrica_evaluacion_es.md`](rubrica_evaluacion_es.md)
+- **One‑page cheat sheet** — English: [`cheatsheet.md`](cheatsheet.md) ·
+  Spanish: [`chuleta_es.md`](chuleta_es.md)
 
 ## Useful links
 
