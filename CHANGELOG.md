@@ -56,7 +56,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Report time range.** PDF reports now plot a chosen time range instead of
   always the whole recording (unreadable for long sessions): the Analysis
   graph-picker dialog gained editable start/duration fields pre-filled with the
-  on-screen window, and the MVC report uses the on-screen window.
+  on-screen window, and the MVC report gained the same range dialog.
+- **Muscle-load readout polish.** The APDF marks each level
+  (static / median / peak) in its own colour, with a red ring when out of
+  range; the data panel shows each value (red if out of range) with its normal
+  range and a short explanation (mean activation included). The MVC report no
+  longer overlaps panel titles and puts the metrics on a second page.
 
 ### Fixed
 - A few user-facing strings (the analysis progress bar, the fatigue-summary

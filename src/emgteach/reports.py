@@ -32,6 +32,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
     Image,
+    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -52,6 +53,11 @@ __all__ = [
 
 _HEADER_BG = colors.HexColor("#1a2a3a")
 _ROW_ALT = colors.HexColor("#eef3f8")
+
+# Distinct colour per Jonsson load level (matches the MVC tab); out-of-range
+# values get a red ring.
+_LEVEL_COLORS = {"static": "#2E86C1", "median": "#E67E22", "peak": "#8E44AD"}
+_OUT_COLOR = "#cc0000"
 
 
 def git_commit_hash(short: bool = True) -> str | None:
@@ -463,7 +469,7 @@ def _render_mvc_figure(
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib.figure import Figure
 
-    fig = Figure(figsize=(7.0, 9.4), dpi=150)
+    fig = Figure(figsize=(7.0, 10.5), dpi=150, constrained_layout=True)
     FigureCanvasAgg(fig)
     axes = fig.subplots(4, 1)
 
@@ -510,9 +516,12 @@ def _render_mvc_figure(
     apdf = result["apdf"]
     ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.5)
     for lvl, prob in ((apdf.static, 10), (apdf.median, 50), (apdf.peak, 90)):
+        base = _LEVEL_COLORS[lvl.name]
         ax.axhline(prob, color="#cccccc", ls=":", lw=0.6)
-        ax.plot([lvl.value], [prob], "o",
-                color="#cc0000" if lvl.exceeds else "#1a9850", ms=6)
+        ax.plot([lvl.value], [prob], "o", ms=8,
+                markerfacecolor=base,
+                markeredgecolor=(_OUT_COLOR if lvl.exceeds else base),
+                markeredgewidth=(2.2 if lvl.exceeds else 0.6))
     ax.set_title(tr("Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
     ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
     ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
@@ -521,7 +530,7 @@ def _render_mvc_figure(
     ax.tick_params(labelsize=7)
 
     buf = BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight")
+    fig.savefig(buf, format="png")
     buf.seek(0)
     return buf
 
@@ -573,8 +582,7 @@ def build_mvc_report(
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))
 
-    story.append(Image(_render_mvc_figure(result, time_range), width=15 * cm, height=20 * cm))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Image(_render_mvc_figure(result, time_range), width=14 * cm, height=21 * cm))
 
     dim = result.get("dimension", "")
     duration = float(result["tiempo"][-1]) if len(result.get("tiempo", [])) else 0.0
@@ -584,6 +592,7 @@ def build_mvc_report(
         status = tr("exceeds limit") if lvl.exceeds else tr("within limit")
         return f"{lvl.value:.0f} % MVC  (≤ {lvl.limit:.0f} %) — {status}"
 
+    story.append(PageBreak())
     story.append(Paragraph(tr("Metrics"), h2))
     metrics = [
         [tr("Metric"), tr("Value")],
