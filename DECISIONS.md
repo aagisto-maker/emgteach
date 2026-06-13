@@ -55,6 +55,18 @@ task-level statistic), independent of the display-window navigator. The
 real-time "warning / danger" zones of the Plux add-on belong to the deferred
 online phase.
 
+### Decision 4 — MVC-tab redesign + dedicated MVC PDF report
+
+After validation, the MVC tab was reorganised: the muscle-load APDF moved out
+of the time-series subplot stack onto its **own (roughly square) canvas** with
+a **structured data panel** beside it; the old horizontal summary box was
+dropped; the display-window navigator was made **Analysis-style** (at the
+bottom, a minimap bar that fills the width plus a compact two-row control
+cluster, no box title and no reset button); and the whole visualisation area
+**scrolls vertically**. A dedicated one-click PDF report (`build_mvc_report`
+in `reports.py`, mirroring `build_session_report`) renders the panels + APDF
+and a metrics table with the load levels against their limits.
+
 ---
 
 ## 2026-06-11 — Hito 3: PDF session reports (+ visual polish)

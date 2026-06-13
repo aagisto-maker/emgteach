@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configurable recommended limits, with a dedicated distribution panel and a
   colour-coded summary. New Qt-free `emgteach.apda` module
   (`compute_apdf`); limits live in `SignalProfile`.
+- **MVC / muscle-load PDF report.** A one-click "Generate PDF report" button
+  in the MVC tab writes a report (panels + APDF + a metrics table with the
+  load levels vs limits) next to the source EDF (`build_mvc_report`).
 
 ### Changed
 - **Compact, themed GUI.** The acquisition tab was reorganised into two compact
@@ -45,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resizing, and the resize handles are capped and shown as edge grips. The
   drawn window defaults to the whole recording. Typography was unified across
   the MVC tab.
+- **MVC tab redesign.** The muscle-load APDF moved to its own square chart with
+  a structured data panel beside it (replacing the old summary box); the
+  display-window navigator was made Analysis-style (bottom minimap bar +
+  compact controls, no title, no reset button); the visualisation area now
+  scrolls vertically.
 
 ### Fixed
 - A few user-facing strings (the analysis progress bar, the fatigue-summary
