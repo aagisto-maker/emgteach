@@ -170,8 +170,8 @@ _ES = {
     "Zoom out (vertical) — {label}": "Reducir (vertical) — {label}",
     # Vertical-zoom sidebar button letters (raw/filtered/envelope initials).
     # "F" and "E" are identical in both languages and fall through to the key.
-    "R": "C",
-    "Raw EMG signal (mV)": "Señal EMG cruda (mV)",
+    "R": "B",
+    "Raw EMG signal (mV)": "Señal EMG en bruto (mV)",
     "Filtered EMG (notch 50 Hz + band-pass 20-450 Hz)":
         "EMG filtrado (notch 50 Hz + paso-banda 20-450 Hz)",
     "Envelope (5 Hz low-pass filter, causal with continuous state)":
@@ -242,7 +242,7 @@ _ES = {
     "Student:": "Alumno/a:",
     "Code:": "Código:",
     "Panels to show": "Paneles a mostrar",
-    "1A. Raw": "1A. Cruda",
+    "1A. Raw": "1A. En bruto",
     "1B. Filt.+rect.": "1B. Filtr.+rect.",
     "2. Env. vs RMS": "2. Env. vs RMS",
     "3. Env. norm.": "3. Env. norm.",
@@ -268,14 +268,14 @@ _ES = {
     "Fatigue:": "Fatiga:",
     "MDF slope:": "Pendiente MDF:",
     "Global RMS:": "RMS global:",
-    "1A. Raw signal": "1A. Señal cruda",
+    "1A. Raw signal": "1A. Señal en bruto",
     "1B. Filtered + rectified": "1B. Filtrada + rectificada",
     "2. Envelope vs RMS": "2. Envolvente vs RMS",
     "3. Normalised envelope": "3. Envolvente normalizada",
     "4. PSD with MNF/MDF": "4. PSD con MNF/MDF",
     "5. RMS per window": "5. RMS por ventana",
     "6. MDF vs time (fatigue)": "6. MDF vs tiempo (fatiga)",
-    "1A. Raw EMG signal": "1A. Señal EMG cruda",
+    "1A. Raw EMG signal": "1A. Señal EMG en bruto",
     "Filtered EMG (20-450 Hz)": "EMG filtrado (20-450 Hz)",
     "1B. Filtered + rectified EMG signal": "1B. Señal EMG filtrada + rectificada",
     "Rectified EMG": "EMG rectificado",

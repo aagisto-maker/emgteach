@@ -17,7 +17,7 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 
 1. Registrar correctamente una señal EMG de superficie (colocación de electrodos,
    conexión, grabación).
-2. Distinguir señal **cruda**, **filtrada** y **envolvente**, y explicar el
+2. Distinguir señal **en bruto**, **filtrada** y **envolvente**, y explicar el
    sentido de cada paso de procesado.
 3. Relacionar la **amplitud** del EMG con el **nivel de activación** muscular.
 4. Observar la **coactivación** agonista/antagonista.
@@ -48,7 +48,7 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
    y el **número de canales**. Pulsar **Conectar** (el **LED** debe pasar a
    amarillo).
 3. **Prueba.** Pulsar **Iniciar grabación**; pedir una contracción breve y
-   comprobar que las tres gráficas (cruda, filtrada, envolvente) responden.
+   comprobar que las tres gráficas (en bruto, filtrada, envolvente) responden.
    **Detener** y descartar si hay mucho artefacto (recolocar electrodos).
 
 [Figura sugerida: foto de la colocación de electrodos y captura de la pestaña de
@@ -62,7 +62,7 @@ Adquisición con el LED en verde durante una contracción.]
 la señal.
 
 **Fundamento.** El EMG de superficie capta la suma de los potenciales de las
-unidades motoras activas. La señal cruda se **filtra** (notch 50 Hz + paso‑banda
+unidades motoras activas. La señal en bruto se **filtra** (notch 50 Hz + paso‑banda
 20–450 Hz), se **rectifica** y se calcula su **envolvente**, que sigue el nivel de
 activación.
 
@@ -77,7 +77,7 @@ activación.
 de amplitud entre contracción suave y fuerte.
 
 **Cuestiones.**
-- ¿Por qué la señal cruda es positiva y negativa, y la envolvente solo positiva?
+- ¿Por qué la señal en bruto es positiva y negativa, y la envolvente solo positiva?
 - ¿Qué efecto tiene el filtro de 50 Hz? ¿Y el paso‑banda?
 - ¿Coincide el inicio de la envolvente con tus marcas manuales?
 
@@ -131,7 +131,7 @@ estabilizar la articulación. Con dos canales se visualiza esta coordinación.
    con sus etiquetas. Iniciar grabación.
 2. Realizar **flexiones y extensiones** del codo de forma controlada (isométricas
    alternas o movimientos lentos). Marcar las fases.
-3. Observar en vivo las gráficas **apiladas** (cruda/filtrada) y la **envolvente
+3. Observar en vivo las gráficas **apiladas** (en bruto/filtrada) y la **envolvente
    superpuesta** (azul/rojo). Detener y revisar en **Análisis** cada canal.
 
 **Datos a recoger.** Para una flexión y una extensión, anotar qué canal domina y

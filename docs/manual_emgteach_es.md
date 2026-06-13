@@ -23,7 +23,7 @@ laboratorio docente de fisiología. Permite:
 - **Registrar** la actividad eléctrica muscular en tiempo real con hardware de
   bajo coste (BITalino o Arduino + MyoWare), en **uno o dos canales**
   (p. ej. músculo agonista y antagonista).
-- **Visualizar** en vivo la señal cruda, filtrada y su envolvente, marcar
+- **Visualizar** en vivo la señal en bruto, filtrada y su envolvente, marcar
   eventos (manual o automáticamente) y **monitorizar la carga muscular en
   tiempo real** con avisos de cansancio/fatiga.
 - **Analizar** un registro a posteriori: amplitud (RMS), contenido espectral
@@ -77,7 +77,7 @@ La señal EMG transmite dos tipos de información complementaria:
 
 ### 1.4 Artefactos y ruido (por qué se filtra)
 
-La señal cruda contiene componentes que no son actividad muscular útil:
+La señal en bruto contiene componentes que no son actividad muscular útil:
 
 - **Interferencia de red eléctrica** a 50 Hz (en Europa) y armónicos.
 - **Movimiento de electrodos** y deriva de la línea base (baja frecuencia).
@@ -86,7 +86,7 @@ La señal cruda contiene componentes que no son actividad muscular útil:
 Por eso la señal se **filtra** antes de interpretarla (ver §4).
 
 [Figura sugerida: esquema "motoneurona → fibras → electrodo de superficie →
-señal sEMG", con ejemplo de trazado crudo.]
+señal sEMG", con ejemplo de trazado en bruto.]
 
 ---
 
@@ -130,7 +130,7 @@ canal tiene una **etiqueta editable** (nombre del músculo) y un **color** fijo
 
 ## 3. Cadena de procesado de señal (DSP) y su significado
 
-A partir de la señal **cruda**, el programa calcula en tiempo real (y vuelve
+A partir de la señal **en bruto**, el programa calcula en tiempo real (y vuelve
 a calcular en el análisis) una cadena de procesado. Cada paso tiene un sentido
 fisiológico:
 
@@ -149,9 +149,9 @@ fisiológico:
    es el indicador clásico de **amplitud de la señal EMG** y se relaciona con la
    activación/fuerza.
 
-**Importante (diseño del archivo):** en el EDF solo se guarda la **señal cruda**
+**Importante (diseño del archivo):** en el EDF solo se guarda la **señal en bruto**
 (una por sensor). La señal filtrada y la envolvente son **funciones
-deterministas** de la señal cruda y se **recalculan** al analizar; así el archivo
+deterministas** de la señal en bruto y se **recalculan** al analizar; así el archivo
 es más pequeño y siempre reproducible.
 
 ### Parámetros de procesado por defecto
@@ -166,7 +166,7 @@ es más pequeño y siempre reproducible.
 | Segmento de análisis de fatiga | 1 s (solape 50 %) | Ventanas para RMS/MDF en el tiempo |
 | Percentil para la referencia CVM | 95 | Referencia robusta de máximo (ver §6.1) |
 
-[Figura sugerida: cuatro trazados apilados del mismo tramo —crudo, filtrado,
+[Figura sugerida: cuatro trazados apilados del mismo tramo —en bruto, filtrado,
 rectificado y envolvente— para ilustrar la cadena de procesado.]
 
 ---
@@ -190,11 +190,11 @@ Permite **registrar** una sesión y observarla en vivo.
   el dispositivo deja de enviar datos (p. ej. pérdida de Bluetooth).
 
 **Gráficas en tiempo real** (tres):
-- **Señal EMG cruda** (mV).
+- **Señal EMG en bruto** (mV).
 - **Señal filtrada** (notch + paso‑banda).
 - **Envolvente**.
 
-Con **dos canales**, las gráficas de la señal cruda y la filtrada se muestran **apiladas**
+Con **dos canales**, las gráficas de la señal en bruto y la filtrada se muestran **apiladas**
 (un "carril" por canal, con su color), mientras que la envolvente, al ser no
 negativa, se **superpone** para comparar directamente ambos músculos. La escala
 vertical de cada gráfica se ajusta con botones **▲▼**, y la **ventana temporal**
@@ -239,7 +239,7 @@ Analiza en profundidad un registro EDF ya guardado.
 
 | Panel | Qué muestra | Significado |
 |---|---|---|
-| **1A. Señal cruda** | EMG sin procesar | Punto de partida; permite ver artefactos |
+| **1A. Señal en bruto** | EMG sin procesar | Punto de partida; permite ver artefactos |
 | **1B. Filtrada + rectificada** | Señal limpia y su valor absoluto | Aísla la actividad muscular real |
 | **2. Envolvente vs RMS** | Dos medidas de amplitud superpuestas | Nivel de activación en el tiempo |
 | **3. Envolvente normalizada** | Envolvente escalada a su máximo (0–1) | Forma de la activación, comparable |
@@ -544,7 +544,7 @@ Python 3.13+ aún no está soportado (la pila científica no tiene *wheels*).
 1. Ventana principal con las tres pestañas.
 2. Esquema fisiológico: motoneurona → fibras → electrodo → señal sEMG.
 3. Colocación de electrodos en un músculo (activo / referencia).
-4. Cadena de procesado: cruda → filtrada → rectificada → envolvente.
+4. Cadena de procesado: en bruto → filtrada → rectificada → envolvente.
 5. Pestaña Adquisición (2 canales) anotada.
 6. Detalle del monitor de carga en vivo (barras con zonas de color).
 7. Pestaña Análisis con los 8 paneles + resumen + navegador.
