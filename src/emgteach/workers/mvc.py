@@ -194,6 +194,7 @@ class MvcWorker(QThread):
                 "emg_rectified": proc["emg_rectified"],
                 "emg_envelope": emg_envelope,
                 "emg_norm": emg_norm,
+                "mean_norm": mean_norm,
                 "apdf": apdf,
                 "t_plot": t_plot,
                 "n_plot": n_plot,

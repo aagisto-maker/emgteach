@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 __all__ = [
+    "build_mvc_report",
     "build_session_report",
     "git_commit_hash",
 ]
@@ -431,6 +432,168 @@ def build_session_report(
         topMargin=1.6 * cm,
         bottomMargin=1.6 * cm,
         title="Informe EMG",
+    )
+    doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
+    return pdf_path
+
+
+def _render_mvc_figure(result: Mapping[str, Any]) -> BytesIO:
+    """Render the MVC panels (filtered+rectified / envelope / normalised) and
+    the muscle-load APDF into a PNG buffer."""
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+
+    fig = Figure(figsize=(7.0, 9.4), dpi=150)
+    FigureCanvasAgg(fig)
+    axes = fig.subplots(4, 1)
+
+    n = int(result.get("n_plot", len(result["emg_norm"])))
+    t = result["t_plot"]
+    dim = result.get("dimension", "")
+
+    ax = axes[0]
+    ax.plot(t, result["emg_filtered"][:n], color="#4169E1", lw=0.6,
+            label=tr("Filtered EMG (20-450 Hz)"))
+    ax.plot(t, result["emg_rectified"][:n], color="#d62728", lw=0.6, alpha=0.8,
+            label=tr("Rectified EMG"))
+    ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
+    ax.set_ylabel(tr("Amplitude ({units})").format(units=dim), fontsize=8)
+    ax.legend(loc="upper right", fontsize=6)
+    ax.grid(True, color="#DDDDDD", alpha=0.5)
+    ax.tick_params(labelsize=7)
+
+    ax = axes[1]
+    ax.plot(t, result["emg_envelope"][:n], color="purple", lw=1.5,
+            label=tr("LP envelope (zero-phase)"))
+    ax.axhline(float(result["mvc_amplitude_ref"]), color="red", ls="--", lw=1.2)
+    ax.set_title(tr("2. Envelope and MVC reference amplitude"), fontsize=9)
+    ax.set_ylabel(tr("Amplitude ({units})").format(units=dim), fontsize=8)
+    ax.legend(loc="upper right", fontsize=6)
+    ax.grid(True, color="#DDDDDD", alpha=0.5)
+    ax.tick_params(labelsize=7)
+
+    ax = axes[2]
+    ax.fill_between(t, result["emg_norm"][:n], alpha=0.25, color="darkorange")
+    ax.plot(t, result["emg_norm"][:n], color="darkorange", lw=1.5)
+    ax.axhline(100.0, color="red", ls=":", lw=1.0)
+    ax.set_title(tr("3. EMG signal normalised to MVC (% MVC)"), fontsize=9)
+    ax.set_ylabel(tr("% MVC"), fontsize=8)
+    ax.set_xlabel(tr("Time (s)"), fontsize=8)
+    ax.grid(True, color="#DDDDDD", alpha=0.5)
+    ax.tick_params(labelsize=7)
+
+    ax = axes[3]
+    apdf = result["apdf"]
+    ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.5)
+    for lvl, prob in ((apdf.static, 10), (apdf.median, 50), (apdf.peak, 90)):
+        ax.axhline(prob, color="#cccccc", ls=":", lw=0.6)
+        ax.plot([lvl.value], [prob], "o",
+                color="#cc0000" if lvl.exceeds else "#1a9850", ms=6)
+    ax.set_title(tr("Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
+    ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
+    ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
+    ax.set_ylim(0, 100)
+    ax.grid(True, color="#DDDDDD", alpha=0.5)
+    ax.tick_params(labelsize=7)
+
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    return buf
+
+
+def build_mvc_report(
+    pdf_path: str | Path,
+    result: Mapping[str, Any],
+    meta: Mapping[str, Any] | None = None,
+) -> str:
+    """Write a one-page PDF report of an MVC normalisation + muscle-load run.
+
+    Mirrors :func:`build_session_report` (header, figure, metrics table,
+    reproducible footer) but for the MVC-tab result: the three normalisation
+    panels, the Jonsson muscle-load APDF, and a metrics table with the
+    static / median / peak load levels against their recommended limits.
+
+    Returns the path written.
+    """
+    meta = dict(meta or {})
+    pdf_path = str(pdf_path)
+
+    generated_at: datetime = meta.get("generated_at") or datetime.now()
+    version: str = meta.get("version") or _app_version()
+    commit = meta.get("commit", git_commit_hash())
+    student = str(meta.get("student", "")).strip()
+    student_code = str(meta.get("student_code", "")).strip()
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "ReportTitle", parent=styles["Title"], fontSize=16, spaceAfter=6
+    )
+    normal = styles["Normal"]
+    h2 = styles["Heading2"]
+
+    story: list[Any] = []
+    story.append(Paragraph(tr("MVC normalisation and muscle-load report"), title_style))
+
+    header_lines = [tr("Generated on: {dt:%Y-%m-%d %H:%M}").format(dt=generated_at)]
+    if student:
+        who = tr("Student: {name}").format(name=student)
+        if student_code:
+            who += f" ({student_code})"
+        header_lines.append(who)
+    edf_name = Path(str(result.get("edf_path", ""))).name
+    if edf_name:
+        header_lines.append(tr("File: {name}").format(name=edf_name))
+    for line in header_lines:
+        story.append(Paragraph(line, normal))
+    story.append(Spacer(1, 0.4 * cm))
+
+    story.append(Image(_render_mvc_figure(result), width=15 * cm, height=20 * cm))
+    story.append(Spacer(1, 0.3 * cm))
+
+    dim = result.get("dimension", "")
+    duration = float(result["tiempo"][-1]) if len(result.get("tiempo", [])) else 0.0
+    apdf = result["apdf"]
+
+    def _level_cell(lvl: Any) -> str:
+        status = tr("exceeds limit") if lvl.exceeds else tr("within limit")
+        return f"{lvl.value:.0f} % MVC  (≤ {lvl.limit:.0f} %) — {status}"
+
+    story.append(Paragraph(tr("Metrics"), h2))
+    metrics = [
+        [tr("Metric"), tr("Value")],
+        [tr("MVC reference:"), f"{float(result.get('mvc_amplitude_ref', 0.0)):.4f} {dim}"],
+        [tr("MVC source:"), str(result.get("mvc_source", ""))],
+        [tr("Mean activation:"), f"{float(result.get('mean_norm', 0.0)):.1f} % MVC"],
+        [tr("Duration"), f"{duration:.1f} s"],
+        [f"{tr('Static')} (P10)", _level_cell(apdf.static)],
+        [f"{tr('Median')} (P50)", _level_cell(apdf.median)],
+        [f"{tr('Peak')} (P90)", _level_cell(apdf.peak)],
+    ]
+    story.append(_styled_table(metrics))
+
+    def _footer(canvas: Any, doc: Any) -> None:
+        canvas.saveState()
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(colors.grey)
+        parts = [f"emgteach v{version}"]
+        if commit:
+            parts.append(f"commit {commit}")
+        parts.append(tr("generated {dt:%Y-%m-%d %H:%M}").format(dt=generated_at))
+        canvas.drawString(2 * cm, 1 * cm, "  ·  ".join(parts))
+        canvas.drawRightString(
+            A4[0] - 2 * cm, 1 * cm, tr("page {n}").format(n=doc.page)
+        )
+        canvas.restoreState()
+
+    doc = SimpleDocTemplate(
+        pdf_path,
+        pagesize=A4,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
+        topMargin=1.6 * cm,
+        bottomMargin=1.6 * cm,
+        title="Informe CVM",
     )
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     return pdf_path

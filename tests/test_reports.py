@@ -11,7 +11,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from emgteach.reports import build_session_report, git_commit_hash
+from emgteach.apda import compute_apdf
+from emgteach.reports import build_mvc_report, build_session_report, git_commit_hash
 
 
 @pytest.fixture
@@ -127,3 +128,40 @@ class TestGitCommitHash:
     def test_returns_str_or_none(self) -> None:
         h = git_commit_hash()
         assert h is None or isinstance(h, str)
+
+
+@pytest.fixture
+def mvc_result() -> dict:
+    fs = 1000
+    n = 4000
+    t = np.arange(n) / fs
+    base = 0.3 * np.sin(2 * np.pi * 80.0 * t)
+    env = np.abs(np.sin(2 * np.pi * 0.3 * t)) * 40.0 + 3.0  # % MVC envelope
+    return {
+        "emg_filtered": base,
+        "emg_rectified": np.abs(base),
+        "emg_envelope": env / 100.0 * 0.5,
+        "emg_norm": env,
+        "mean_norm": float(np.mean(env)),
+        "apdf": compute_apdf(env),
+        "t_plot": t,
+        "n_plot": n,
+        "tiempo": t,
+        "mvc_amplitude_ref": 0.5,
+        "mvc_source": "auto (percentile 95)",
+        "dimension": "mV",
+        "edf_path": "C:/data/cvm.edf",
+    }
+
+
+class TestMvcReport:
+    def test_writes_valid_pdf(self, mvc_result: dict, tmp_path: Path) -> None:
+        out = tmp_path / "informe_cvm.pdf"
+        returned = build_mvc_report(out, mvc_result)
+        assert Path(returned) == out
+        assert out.read_bytes()[:4] == b"%PDF"
+
+    def test_includes_student_meta(self, mvc_result: dict, tmp_path: Path) -> None:
+        out = tmp_path / "informe_cvm_alumno.pdf"
+        build_mvc_report(out, mvc_result, {"student": "Ada", "student_code": "X1"})
+        assert out.read_bytes()[:4] == b"%PDF"
