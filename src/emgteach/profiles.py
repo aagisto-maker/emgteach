@@ -115,8 +115,8 @@ class SignalProfile:
     # to flag the "mean activation" readout, not part of the APDF computation.
     apda_mean_limit: float = 10.0
     # Online (real-time) muscle-load monitoring during acquisition.
-    apda_warning_limit: float = 30.0   # % MVC — tiredness (warning) zone
-    apda_danger_limit: float = 50.0    # % MVC — fatigue (danger) zone
+    apda_warning_limit: float = 40.0   # % MVC — tiredness (warning) zone
+    apda_danger_limit: float = 70.0    # % MVC — fatigue (danger) zone
     apda_calib_s: float = 4.0          # s — quick MVC-calibration duration
 
     # -- automatic onset detection (baseline + k*SD threshold) --

@@ -49,15 +49,15 @@ def test_live_load_calibration_and_zones(qapp) -> None:
     assert not tab._calibrating
     assert tab._mvc_ref[0] == pytest.approx(0.5, abs=1e-6)
 
-    # Light load (0.15 mV -> 30 % MVC): bar reads ~30 %, warning zone.
+    # Moderate load (0.25 mV -> 50 % MVC): warning zone (>= 40 %).
     for _ in range(3):
-        tab._on_data_ready(_block(0.15))
-    assert 20.0 <= tab._load_bars[0]._value <= 40.0
+        tab._on_data_ready(_block(0.25))
+    assert 40.0 <= tab._load_bars[0]._value <= 60.0
     assert tab._online[0].status == "warning"
 
-    # Heavy load (0.30 mV -> 60 % MVC): danger zone.
+    # Heavy load (0.40 mV -> 80 % MVC): danger zone (>= 70 %).
     for _ in range(3):
-        tab._on_data_ready(_block(0.30))
+        tab._on_data_ready(_block(0.40))
     assert tab._online[0].status == "danger"
 
     # Stopping the monitor greys the bar out.
