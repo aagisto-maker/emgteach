@@ -33,10 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plot areas. The author attribution moved from a permanent status bar to an
   "About" (?) button in the tab-bar corner, freeing vertical space for the
   plots.
-- **Analysis / MVC polish.** The Analysis time-window box was removed in favour
-  of mouse-wheel zoom over the panels (the drawn window now defaults to the
-  whole recording; metrics already covered the full file). Typography was
-  unified across the MVC tab.
+- **Analysis / MVC polish.** The Analysis tab gained mouse-wheel zoom over the
+  panels, alongside a time-window minimap navigator with a smoother
+  move/resize drag — a narrow selection now always pans instead of accidentally
+  resizing, and the resize handles are capped and shown as edge grips. The
+  drawn window defaults to the whole recording. Typography was unified across
+  the MVC tab.
 
 ### Fixed
 - A few user-facing strings (the analysis progress bar, the fatigue-summary

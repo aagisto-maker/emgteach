@@ -15,10 +15,12 @@ class TimeRangeSelector(QWidget):
     range_changed = Signal(float, float)   # (start, duration) on mouse release
     range_preview = Signal(float, float)   # (start, duration) while dragging
 
-    _BAR_H   = 30   # px — height of the selection rectangle
-    _SCALE_H = 18   # px — height of the time scale
-    _EDGE    = 6    # px — sensitive zone at the left/right edges
-    _MIN_DUR = 0.5  # s  — minimum selectable duration
+    _BAR_H    = 30   # px — height of the selection rectangle
+    _SCALE_H  = 18   # px — height of the time scale
+    _EDGE     = 7    # px — max width of each resize handle (capped to w/3)
+    _MIN_GRAB = 18   # px — below this width the whole selection moves (no edge resize)
+    _GRAB_PAD = 3    # px — extra catch margin around a thin selection, for moving
+    _MIN_DUR  = 0.5  # s  — minimum selectable duration
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -72,14 +74,34 @@ class TimeRangeSelector(QWidget):
         return x1, max(x1 + 2, x2)
 
     def _hit_mode(self, x: int) -> str:
+        """Classify a cursor x over the selection: resize_left/right, move, outside.
+
+        Resize handles sit at the outer edges but never swallow the whole
+        rectangle: each is capped to a third of the width and is only offered
+        when the selection is wide enough (>= _MIN_GRAB) to keep a central move
+        zone. A narrow selection is therefore always "move" (resize it with the
+        ◀▶ / zoom controls) — this fixes the old behaviour where moving a thin
+        window accidentally grabbed an edge and resized it. A small pad around
+        the rectangle still counts as "move" so a thin bar is easy to catch.
+        """
         x1, x2 = self._rect_x1x2()
-        if abs(x - x1) <= self._EDGE:
-            return "resize_left"
-        if abs(x - x2) <= self._EDGE:
-            return "resize_right"
-        if x1 < x < x2:
+        if (x2 - x1) >= self._MIN_GRAB:
+            edge = min(self._EDGE, (x2 - x1) // 3)
+            if x1 <= x < x1 + edge:
+                return "resize_left"
+            if x2 - edge < x <= x2:
+                return "resize_right"
+        if x1 - self._GRAB_PAD <= x <= x2 + self._GRAB_PAD:
             return "move"
         return "outside"
+
+    def _cursor_for(self, mode: str, pressed: bool = False):
+        if mode in ("resize_left", "resize_right"):
+            return Qt.CursorShape.SizeHorCursor
+        if mode == "move":
+            return (Qt.CursorShape.ClosedHandCursor if pressed
+                    else Qt.CursorShape.OpenHandCursor)
+        return Qt.CursorShape.ArrowCursor
 
     # ------------------------------------------------------------------ painting
 
@@ -101,6 +123,14 @@ class TimeRangeSelector(QWidget):
         p.setBrush(fill)
         p.setPen(QPen(QColor("#1f77b4"), 2))
         p.drawRect(x1, 1, x2 - x1, bh - 3)
+
+        # Resize-handle grips at the edges (only when the selection is wide
+        # enough to offer edge-resize; a thin selection is move-only).
+        if (x2 - x1) >= self._MIN_GRAB:
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor("#1f77b4"))
+            p.drawRect(x1, 1, 3, bh - 3)
+            p.drawRect(x2 - 3, 1, 3, bh - 3)
 
         # Time scale — ticks every 10%, with overlap suppression
         font = QFont("Arial", 7)
@@ -130,28 +160,29 @@ class TimeRangeSelector(QWidget):
             return
         x    = int(event.position().x())
         mode = self._hit_mode(x)
-        self._drag_mode           = mode
-        self._drag_start_x        = x
-        self._drag_start_inicio   = self._inicio
-        self._drag_start_duracion = self._duracion
 
         if mode == "outside":
+            # Click on the empty track: centre the window on the click, then
+            # continue as a move so the same drag can pan it.
             t = self._to_time(x)
             self._inicio = max(0.0, min(self._total - self._duracion,
                                         t - self._duracion / 2))
             self._clamp()
             self.update()
             self.range_preview.emit(self._inicio, self._duracion)
+            mode = "move"
+
+        self._drag_mode           = mode
+        self._drag_start_x        = x
+        self._drag_start_inicio   = self._inicio
+        self._drag_start_duracion = self._duracion
+        self.setCursor(self._cursor_for(mode, pressed=True))
 
     def mouseMoveEvent(self, event) -> None:
         x = int(event.position().x())
 
         if self._drag_mode is None:
-            mode = self._hit_mode(x)
-            cur  = (Qt.CursorShape.SizeHorCursor
-                    if mode in ("resize_left", "resize_right", "move")
-                    else Qt.CursorShape.ArrowCursor)
-            self.setCursor(cur)
+            self.setCursor(self._cursor_for(self._hit_mode(x)))
             return
 
         dx_t = (x - self._drag_start_x) / self._usable_w() * self._total
@@ -191,3 +222,4 @@ class TimeRangeSelector(QWidget):
             self._clamp()
             self.range_changed.emit(self._inicio, self._duracion)
         self._drag_mode = None
+        self.setCursor(self._cursor_for(self._hit_mode(int(event.position().x()))))

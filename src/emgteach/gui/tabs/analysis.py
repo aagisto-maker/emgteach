@@ -297,7 +297,7 @@ class AnalysisTab(QWidget):
         bottom_row.addWidget(grp_paneles, stretch=5)
         root.addLayout(bottom_row)
 
-        # --- Display window (minimap) — hidden (see below) ---
+        # --- Display window (minimap navigator, added to the layout below) ---
         grp_ventana = QGroupBox(tr("Display window"))
         ventana_vbox = QVBoxLayout(grp_ventana)
         ventana_vbox.setContentsMargins(6, 4, 6, 4)
@@ -439,16 +439,14 @@ class AnalysisTab(QWidget):
         scroll.setWidget(canvas_container)
         scroll.setWidgetResizable(True)
 
-        root.addWidget(scroll, stretch=1)
-
-        # The "Display window" box has been removed from the interface: time
-        # panning/zooming is now done with the mouse wheel over the panels.
-        # grp_ventana (with _time_range and its controls) is kept as hidden
-        # state so the existing slots do not break; _time_range defines the
-        # drawn segment and by default shows the whole recording (see
-        # _on_result). This way the canvas gains all that height.
+        # Display-window navigator (minimap): sits directly above the plots and
+        # controls which time segment of the recording the panels show. The
+        # mouse wheel over the panels still zooms too; _time_range defines the
+        # drawn segment (see _on_result / _dibujar_paneles).
         self._grp_ventana = grp_ventana
-        grp_ventana.hide()
+        root.addWidget(grp_ventana)
+
+        root.addWidget(scroll, stretch=1)
 
     # ------------------------------------------------------------------
     # Control slots
@@ -532,8 +530,8 @@ class AnalysisTab(QWidget):
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
         self._time_range.set_total_duration(duracion_total)
-        # No visible window selector: the whole recording is drawn by default
-        # and you pan/zoom with the mouse wheel over the panels.
+        # The window selector defaults to the whole recording; narrow it with
+        # the minimap (or the ◀▶ / zoom controls) to inspect a segment.
         _dur_ini = duracion_total
         self._time_range.set_range(0.0, _dur_ini)
         self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
