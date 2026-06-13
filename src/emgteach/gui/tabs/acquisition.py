@@ -389,8 +389,8 @@ class AcquisitionTab(QWidget):
 
         row_actions.addWidget(grp_control, stretch=1)
 
-        # — Muscle load (live MVC), between Control and Markers (compact) —
-        row_actions.addWidget(self._build_load_panel(), stretch=0)
+        # — Muscle load (live MVC), between Control and Markers —
+        row_actions.addWidget(self._build_load_panel(), stretch=2)
 
         # LED idle timer
         self._led_idle_timer = QTimer(self)
@@ -1099,17 +1099,15 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
 
     def _build_load_panel(self) -> QGroupBox:
-        """Compact live muscle-load box (sits between Control and Markers in the
-        actions row): a Calibrate button and, per active channel, a load bar
-        (tiredness / fatigue zones) and a level readout."""
+        """Live muscle-load box (sits between Control and Markers in the actions
+        row): on a single line, the Calibrate button and — per active channel,
+        side by side — a load bar (tiredness / fatigue zones) and its P10/P50/P90
+        readout, with a status label at the end."""
         grp = QGroupBox(tr("Muscle load (live MVC)"))
-        lay = QVBoxLayout(grp)
-        lay.setContentsMargins(6, 3, 6, 3)
-        lay.setSpacing(2)
+        row = QHBoxLayout(grp)
+        row.setContentsMargins(6, 3, 6, 3)
+        row.setSpacing(8)
 
-        top = QHBoxLayout()
-        top.setContentsMargins(0, 0, 0, 0)
-        top.setSpacing(6)
         self._btn_calibrar = QPushButton(tr("Calibrate MVC"))
         self._btn_calibrar.setEnabled(False)
         self._btn_calibrar.setToolTip(
@@ -1117,12 +1115,7 @@ class AcquisitionTab(QWidget):
                "reference for the live load monitor.")
         )
         self._btn_calibrar.clicked.connect(self._on_calibrar)
-        top.addWidget(self._btn_calibrar)
-        self._lbl_load_info = QLabel(tr("Calibrate the MVC to start monitoring."))
-        self._lbl_load_info.setWordWrap(True)
-        self._lbl_load_info.setStyleSheet("font-size: 9px; color: #555555;")
-        top.addWidget(self._lbl_load_info, stretch=1)
-        lay.addLayout(top)
+        row.addWidget(self._btn_calibrar)
 
         self._load_rows: list[QWidget] = []
         self._load_name_labels: list[QLabel] = []
@@ -1130,26 +1123,30 @@ class AcquisitionTab(QWidget):
         self._load_readouts: list[QLabel] = []
         for c in range(MAX_CHANNELS):
             roww = QWidget()
-            row = QHBoxLayout(roww)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(4)
+            rr = QHBoxLayout(roww)
+            rr.setContentsMargins(0, 0, 0, 0)
+            rr.setSpacing(4)
             name = QLabel()
-            name.setMinimumWidth(46)
-            name.setStyleSheet(f"font-size: 9px; color: {_CHANNEL_COLOR_HEX[c]};")
+            name.setStyleSheet(
+                f"font-size: 9px; font-weight: bold; color: {_CHANNEL_COLOR_HEX[c]};"
+            )
             bar = LoadBar()
             bar.set_zones(self._profile.apda_warning_limit, self._profile.apda_danger_limit)
-            bar.setMinimumWidth(90)
+            bar.setMinimumWidth(120)
             readout = QLabel("")
             readout.setStyleSheet("font-size: 9px;")
-            row.addWidget(name)
-            row.addWidget(bar, stretch=1)
-            row.addWidget(readout)
+            rr.addWidget(name)
+            rr.addWidget(bar, stretch=1)
+            rr.addWidget(readout)
             self._load_rows.append(roww)
             self._load_name_labels.append(name)
             self._load_bars.append(bar)
             self._load_readouts.append(readout)
-            lay.addWidget(roww)
+            row.addWidget(roww, stretch=1)
 
+        self._lbl_load_info = QLabel("")
+        self._lbl_load_info.setStyleSheet("font-size: 9px; color: #555555;")
+        row.addWidget(self._lbl_load_info)
         return grp
 
     @Slot()
@@ -1214,8 +1211,7 @@ class AcquisitionTab(QWidget):
                 continue
             ol = self._online[c]
             self._load_readouts[c].setText(
-                tr("static {st:.0f} · median {md:.0f} · peak {pk:.0f} %").format(
-                    st=ol.static, md=ol.median, pk=ol.peak)
+                f"P10 {ol.static:.0f} · P50 {ol.median:.0f} · P90 {ol.peak:.0f} %"
             )
             self._load_readouts[c].setStyleSheet(
                 f"font-size: 9px; color: {colours[ol.status]};"
@@ -1229,7 +1225,7 @@ class AcquisitionTab(QWidget):
             self._online[c].reset()
             self._load_bars[c].reset()
             self._load_readouts[c].setText("")
-        self._lbl_load_info.setText(tr("Calibrate the MVC to start monitoring."))
+        self._lbl_load_info.setText("")
 
     def _stop_load_monitor(self) -> None:
         self._load_timer.stop()
