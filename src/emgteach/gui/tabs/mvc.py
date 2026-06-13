@@ -23,10 +23,10 @@ Plot: 3 matplotlib panels (filtered signal / envelope / normalised % MVC).
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib
-import numpy as np
 
 try:
     matplotlib.use("QtAgg")
@@ -37,11 +37,11 @@ except Exception:
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings, Qt, QTimer, Slot
-from PySide6.QtGui import QFontMetrics
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -56,8 +56,10 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
 from emgteach.io import list_edf_channels
+from emgteach.reports import build_mvc_report
 from emgteach.workers import MvcWorker
 
 # Available time-zoom factors (same as tab_analisis)
@@ -92,8 +94,8 @@ class MvcTab(QWidget):
         self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
         self._last_cvm_dir: str = self._settings.value("cvm/last_cvm_dir", ".")
 
-        # ── Vertical-scale state (4 panels: 0=filtered, 1=envelope, 2=norm, 3=APDF) ──
-        self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0}
+        # ── Vertical-scale state (3 time-series panels: 0=filtered, 1=envelope, 2=norm) ──
+        self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0}
         self._y_initial_lims: dict[int, tuple[float, float]] = {}
         self._axes_list: list = []   # active matplotlib axes
 
@@ -179,6 +181,11 @@ class MvcTab(QWidget):
         self._btn_guardar.clicked.connect(self._guardar_figura)
         row_params.addWidget(self._btn_guardar)
 
+        self._btn_informe = QPushButton(tr("Generate PDF report"))
+        self._btn_informe.setEnabled(False)
+        self._btn_informe.clicked.connect(self._generar_informe)
+        row_params.addWidget(self._btn_informe)
+
         ctrl.addLayout(row_params)
         root.addWidget(grp_ctrl)
 
@@ -190,115 +197,160 @@ class MvcTab(QWidget):
         self._progress.setVisible(False)
         root.addWidget(self._progress)
 
-        # ── Numeric summary panel ───────────────────────────────────
-        grp_resumen = QGroupBox(tr("Normalisation summary"))
-        grp_resumen.setContentsMargins(6, 4, 6, 4)
-        resumen_layout = QHBoxLayout(grp_resumen)
-        resumen_layout.setContentsMargins(6, 4, 6, 4)
-
-        self._lbl_cvm_ref = QLabel(f"{tr('MVC reference:')} —")
-        self._lbl_mean_norm = QLabel(f"{tr('Mean activation:')} —")
-        self._lbl_carga = QLabel(f"{tr('Muscle load:')} —")
-        for lbl in (self._lbl_cvm_ref, self._lbl_mean_norm, self._lbl_carga):
-            # Not bold and at 11 px to keep typographic uniformity with the
-            # rest of the summary labels.
-            lbl.setStyleSheet("font-size: 11px; padding: 2px 8px;")
-            resumen_layout.addWidget(lbl)
-
-        self._lbl_fuente = QLabel(f"{tr('MVC source:')} —")
-        self._lbl_fuente.setStyleSheet("font-size: 11px; color: #555555; padding: 2px 6px;")
-        resumen_layout.addWidget(self._lbl_fuente)
-
-        resumen_layout.addStretch()
-
-        self._lbl_archivo = QLabel("")
-        self._lbl_archivo.setStyleSheet("font-size: 11px; color: #444444; padding: 2px 4px;")
-        self._lbl_archivo.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        resumen_layout.addWidget(self._lbl_archivo)
-
-        fm = QFontMetrics(grp_resumen.font())
-        grp_resumen.setMaximumHeight(fm.lineSpacing() * 3 + 8)
-        root.addWidget(grp_resumen)
-
-        # ── Time-scale controls ────────────────────────────────
-        grp_ventana = QGroupBox(tr("Display window"))
-        ventana_layout = QHBoxLayout(grp_ventana)
-        ventana_layout.setContentsMargins(6, 4, 6, 4)
-
-        self._btn_tiempo_ampliar = QToolButton()
-        self._btn_tiempo_ampliar.setText("◀▶")
-        self._btn_tiempo_ampliar.setToolTip(tr("Widen the window (see more time)"))
-        self._btn_tiempo_ampliar.setStyleSheet(_TBTN_ST)
-        self._btn_tiempo_ampliar.setFixedSize(32, 26)
-        self._btn_tiempo_ampliar.setEnabled(False)
-        self._btn_tiempo_ampliar.clicked.connect(self._on_tiempo_ampliar)
-        ventana_layout.addWidget(self._btn_tiempo_ampliar)
-
-        self._combo_zoom = QComboBox()
-        self._combo_zoom.setStyleSheet(_COMBO_ST)
-        self._combo_zoom.setFixedSize(76, 26)
-        self._combo_zoom.setEnabled(False)
-        for f in _ZOOM_FACTORS:
-            self._combo_zoom.addItem(f"×{f}")
-        self._combo_zoom.activated.connect(self._on_combo_zoom_changed)
-        ventana_layout.addWidget(self._combo_zoom)
-
-        self._btn_tiempo_reducir = QToolButton()
-        self._btn_tiempo_reducir.setText("▶◀")
-        self._btn_tiempo_reducir.setToolTip(tr("Narrow the window (more detail)"))
-        self._btn_tiempo_reducir.setStyleSheet(_TBTN_ST)
-        self._btn_tiempo_reducir.setFixedSize(32, 26)
-        self._btn_tiempo_reducir.setEnabled(False)
-        self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
-        ventana_layout.addWidget(self._btn_tiempo_reducir)
-
-        ventana_layout.addSpacing(12)
-        self._lbl_inicio_info = QLabel(f"{tr('Start:')} — s")
-        self._lbl_inicio_info.setStyleSheet("font-size: 10px;")
-        ventana_layout.addWidget(self._lbl_inicio_info)
-
-        self._lbl_duracion_info = QLabel(f"{tr('Duration:')} — s")
-        self._lbl_duracion_info.setStyleSheet("font-size: 10px;")
-        ventana_layout.addWidget(self._lbl_duracion_info)
-
-        ventana_layout.addStretch()
-
-        self._btn_reset_ventana = QPushButton(tr("Reset window"))
-        self._btn_reset_ventana.setFixedHeight(26)
-        self._btn_reset_ventana.setStyleSheet("font-size: 10px;")
-        self._btn_reset_ventana.setEnabled(False)
-        self._btn_reset_ventana.clicked.connect(self._reset_ventana)
-        ventana_layout.addWidget(self._btn_reset_ventana)
-
-        root.addWidget(grp_ventana)
-
-        # ── Matplotlib canvas + vertical-scale sidebar ──────────────
+        # ══ Visualisation area (vertical scroll) ════════════════════════
+        # Top: the three time-series panels (with the ▲▼ sidebar). Below: the
+        # muscle-load APDF on its own square canvas + a structured data panel.
         self._fig = Figure(constrained_layout=True)
         self._canvas = FigureCanvasQTAgg(self._fig)
         self._canvas.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        # Mouse-wheel zoom on the panel under the cursor.
         self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
 
-        # ▲▼ sidebar (rebuilt after each draw, same as in tab_analisis)
         self._y_scale_sidebar = QWidget()
         self._y_scale_sidebar.setFixedWidth(38)
         self._y_scale_sidebar_layout = QVBoxLayout(self._y_scale_sidebar)
         self._y_scale_sidebar_layout.setContentsMargins(2, 4, 2, 4)
         self._y_scale_sidebar_layout.setSpacing(0)
 
-        canvas_container = QWidget()
-        canvas_hbox = QHBoxLayout(canvas_container)
-        canvas_hbox.setContentsMargins(0, 0, 0, 0)
-        canvas_hbox.setSpacing(2)
-        canvas_hbox.addWidget(self._y_scale_sidebar)
-        canvas_hbox.addWidget(self._canvas)
+        ts_container = QWidget()
+        ts_hbox = QHBoxLayout(ts_container)
+        ts_hbox.setContentsMargins(0, 0, 0, 0)
+        ts_hbox.setSpacing(2)
+        ts_hbox.addWidget(self._y_scale_sidebar)
+        ts_hbox.addWidget(self._canvas)
+
+        # Muscle-load APDF on its own (roughly square) canvas, ~1/3 of the width.
+        self._apdf_fig = Figure(constrained_layout=True)
+        self._apdf_canvas = FigureCanvasQTAgg(self._apdf_fig)
+        self._apdf_canvas.setFixedSize(360, 360)
+
+        # Structured data panel (replaces the old summary box).
+        self._data_box = self._build_data_panel()
+
+        bottom_block = QWidget()
+        bottom_hbox = QHBoxLayout(bottom_block)
+        bottom_hbox.setContentsMargins(0, 0, 0, 0)
+        bottom_hbox.setSpacing(8)
+        bottom_hbox.addWidget(self._apdf_canvas, stretch=0,
+                              alignment=Qt.AlignmentFlag.AlignTop)
+        bottom_hbox.addWidget(self._data_box, stretch=1)
+
+        viz_container = QWidget()
+        viz_v = QVBoxLayout(viz_container)
+        viz_v.setContentsMargins(0, 0, 0, 0)
+        viz_v.setSpacing(6)
+        viz_v.addWidget(ts_container)
+        viz_v.addWidget(bottom_block)
 
         scroll = QScrollArea()
-        scroll.setWidget(canvas_container)
+        scroll.setWidget(viz_container)
         scroll.setWidgetResizable(True)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         root.addWidget(scroll, stretch=1)
+
+        # ══ Display-window navigator at the bottom (same style as Analysis) ══
+        # A minimap bar that fills the width, with the start/duration labels and
+        # the scale buttons in a compact two-row cluster on the right. No box
+        # title and no reset button (the window updates live).
+        self._time_range = TimeRangeSelector()
+        self._time_range.setEnabled(False)
+        self._time_range.range_changed.connect(self._on_range_changed)
+        self._time_range.range_preview.connect(self._on_range_preview)
+
+        self._lbl_inicio_info = QLabel(f"{tr('Start:')} — s")
+        self._lbl_duracion_info = QLabel(f"{tr('Duration:')} — s")
+        for lbl in (self._lbl_inicio_info, self._lbl_duracion_info):
+            lbl.setStyleSheet("font-size: 9px; color: #333333;")
+
+        self._btn_tiempo_ampliar = QToolButton()
+        self._btn_tiempo_ampliar.setText("◀▶")
+        self._btn_tiempo_ampliar.setToolTip(tr("Widen the window (see more time)"))
+        self._btn_tiempo_ampliar.setStyleSheet(_TBTN_ST)
+        self._btn_tiempo_ampliar.setFixedSize(32, 20)
+        self._btn_tiempo_ampliar.setEnabled(False)
+        self._btn_tiempo_ampliar.clicked.connect(self._on_tiempo_ampliar)
+
+        self._combo_zoom = QComboBox()
+        self._combo_zoom.setStyleSheet(_COMBO_ST)
+        self._combo_zoom.setFixedSize(58, 20)
+        self._combo_zoom.setEnabled(False)
+        for f in _ZOOM_FACTORS:
+            self._combo_zoom.addItem(f"×{f}")
+        self._combo_zoom.activated.connect(self._on_combo_zoom_changed)
+
+        self._btn_tiempo_reducir = QToolButton()
+        self._btn_tiempo_reducir.setText("▶◀")
+        self._btn_tiempo_reducir.setToolTip(tr("Narrow the window (more detail)"))
+        self._btn_tiempo_reducir.setStyleSheet(_TBTN_ST)
+        self._btn_tiempo_reducir.setFixedSize(32, 20)
+        self._btn_tiempo_reducir.setEnabled(False)
+        self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
+
+        nav_controls = QWidget()
+        nav_controls.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        nav_ctrl_v = QVBoxLayout(nav_controls)
+        nav_ctrl_v.setContentsMargins(0, 0, 0, 0)
+        nav_ctrl_v.setSpacing(1)
+
+        nav_info_row = QHBoxLayout()
+        nav_info_row.setContentsMargins(0, 0, 0, 0)
+        nav_info_row.setSpacing(8)
+        nav_info_row.addWidget(self._lbl_inicio_info)
+        nav_info_row.addWidget(self._lbl_duracion_info)
+        nav_info_row.addStretch()
+        nav_ctrl_v.addLayout(nav_info_row)
+
+        nav_btn_row = QHBoxLayout()
+        nav_btn_row.setContentsMargins(0, 0, 0, 0)
+        nav_btn_row.setSpacing(4)
+        nav_btn_row.addWidget(self._btn_tiempo_ampliar)
+        nav_btn_row.addWidget(self._combo_zoom)
+        nav_btn_row.addWidget(self._btn_tiempo_reducir)
+        nav_btn_row.addStretch()
+        nav_ctrl_v.addLayout(nav_btn_row)
+
+        nav_row = QHBoxLayout()
+        nav_row.setContentsMargins(4, 2, 4, 2)
+        nav_row.setSpacing(8)
+        nav_row.addWidget(self._time_range, stretch=1)   # fills the width
+        nav_row.addWidget(nav_controls)                  # only as wide as needed
+        root.addLayout(nav_row)
+
+    def _build_data_panel(self) -> QGroupBox:
+        """Structured panel with the normalisation values and the Jonsson
+        muscle-load levels (replaces the old horizontal summary box)."""
+        box = QGroupBox(tr("Normalisation and muscle load"))
+        grid = QGridLayout(box)
+        grid.setContentsMargins(8, 6, 8, 6)
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(3)
+
+        def _row(r: int, key_text: str) -> QLabel:
+            k = QLabel(key_text)
+            k.setStyleSheet("font-size: 11px; color: #555555;")
+            v = QLabel("—")
+            v.setStyleSheet("font-size: 11px;")
+            grid.addWidget(k, r, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+            grid.addWidget(v, r, 1)
+            return v
+
+        self._d_file = _row(0, tr("File:"))
+        self._d_cvm_ref = _row(1, tr("MVC reference:"))
+        self._d_mean = _row(2, tr("Mean activation:"))
+        self._d_source = _row(3, tr("MVC source:"))
+        self._d_duration = _row(4, tr("Duration:"))
+
+        hdr = QLabel(tr("Muscle load (Jonsson APDF)"))
+        hdr.setStyleSheet("font-size: 11px; font-weight: bold; color: #1F4E79;")
+        grid.addWidget(hdr, 5, 0, 1, 2)
+        self._d_static = _row(6, tr("Static (P10):"))
+        self._d_median = _row(7, tr("Median (P50):"))
+        self._d_peak = _row(8, tr("Peak (P90):"))
+
+        grid.setColumnStretch(1, 1)
+        grid.setRowStretch(9, 1)
+        return box
 
     # ------------------------------------------------------------------
     # File-selection slots
@@ -384,24 +436,28 @@ class MvcTab(QWidget):
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)
+        self._btn_informe.setEnabled(True)
         self._actualizar_resumen(result)
 
-        # Initialise the time window: 1/3 of the total duration
+        # Initialise the time window: 1/3 of the (plotted) duration.
         t_total = float(result["t_plot"][-1]) if len(result["t_plot"]) > 0 else 60.0
         self._duracion_total = t_total
         dur_ini = t_total / 3.0
         self._inicio_s = 0.0
         self._duracion_s = dur_ini
+        self._time_range.set_total_duration(t_total)
+        self._time_range.set_range(self._inicio_s, self._duracion_s)
+        self._time_range.setEnabled(True)
 
         # Enable the time-scale controls
-        for w in (self._btn_tiempo_ampliar, self._btn_tiempo_reducir,
-                  self._combo_zoom, self._btn_reset_ventana):
+        for w in (self._btn_tiempo_ampliar, self._btn_tiempo_reducir, self._combo_zoom):
             w.setEnabled(True)
         self._sync_combo_zoom()
         self._update_info_labels()
 
-        # Reset the Y scales and draw
-        self._y_accum = {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0}
+        # Reset the Y scales; draw the time-series panels and the APDF.
+        self._y_accum = {0: 1.0, 1: 1.0, 2: 1.0}
+        self._dibujar_apdf(result)
         self._dibujar_paneles(result)
 
     @Slot(str)
@@ -415,22 +471,20 @@ class MvcTab(QWidget):
     # ------------------------------------------------------------------
 
     def _actualizar_resumen(self, r: dict) -> None:
-        self._lbl_archivo.setText(Path(r["edf_path"]).name)
         dim = r.get("dimension", "")
-        self._lbl_cvm_ref.setText(f"{tr('MVC reference:')} {r['mvc_amplitude_ref']:.4f} {dim}")
-        mean_norm = float(np.mean(r["emg_norm"][:r["n_plot"]]))
-        self._lbl_mean_norm.setText(f"{tr('Mean activation:')} {mean_norm:.1f} % MVC")
-        self._lbl_fuente.setText(f"{tr('MVC source:')} {r['mvc_source']}")
+        self._d_file.setText(Path(r["edf_path"]).name)
+        self._d_cvm_ref.setText(f"{r['mvc_amplitude_ref']:.4f} {dim}")
+        self._d_mean.setText(f"{float(r.get('mean_norm', 0.0)):.1f} % MVC")
+        self._d_source.setText(str(r["mvc_source"]))
+        dur = float(r["tiempo"][-1]) if len(r.get("tiempo", [])) else 0.0
+        self._d_duration.setText(f"{dur:.1f} s")
         apdf = r["apdf"]
-        self._lbl_carga.setText(
-            f"{tr('Muscle load:')} {tr('Static')} {apdf.static.value:.0f} % · "
-            f"{tr('Median')} {apdf.median.value:.0f} % · "
-            f"{tr('Peak')} {apdf.peak.value:.0f} % MVC"
-        )
-        self._lbl_carga.setStyleSheet(
-            "font-size: 11px; padding: 2px 8px; "
-            f"color: {'#cc0000' if apdf.any_exceeds else '#1a7a1a'};"
-        )
+        for lbl, lvl in ((self._d_static, apdf.static),
+                         (self._d_median, apdf.median),
+                         (self._d_peak, apdf.peak)):
+            color = "#cc0000" if lvl.exceeds else "#1a7a1a"
+            lbl.setText(f"{lvl.value:.0f} % MVC  (≤ {lvl.limit:.0f} %)")
+            lbl.setStyleSheet(f"font-size: 11px; color: {color};")
 
     # ------------------------------------------------------------------
     # Drawing the 3 panels
@@ -446,7 +500,7 @@ class MvcTab(QWidget):
         inicio = self._inicio_s
         fin = inicio + self._duracion_s
 
-        axes = self._fig.subplots(4, 1, sharex=False)
+        axes = self._fig.subplots(3, 1, sharex=False)
         self._axes_list = list(axes)
 
         # Panel 1: filtered + rectified signal
@@ -493,30 +547,6 @@ class MvcTab(QWidget):
         ax.legend(loc="upper right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
 
-        # Panel 4: muscle-load distribution (Jonsson APDF) over the whole
-        # recording. It is a distribution, so the time window does not apply.
-        ax = axes[3]
-        apdf = r["apdf"]
-        ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.8)
-        for prob in (10, 50, 90):
-            ax.axhline(prob, color="#cccccc", ls=":", lw=0.7)
-        for lvl, prob, name in (
-            (apdf.static, 10, tr("Static")),
-            (apdf.median, 50, tr("Median")),
-            (apdf.peak, 90, tr("Peak")),
-        ):
-            color = "#cc0000" if lvl.exceeds else "#1a9850"
-            ax.plot([lvl.value], [prob], "o", color=color, ms=7, zorder=5,
-                    label=f"{name}: {lvl.value:.0f} % (≤{lvl.limit:.0f} %)")
-        ax.set_title(tr("4. Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
-        ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
-        ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
-        ax.set_ylim(0, 100)
-        ax.set_xlim(0, float(apdf.load[-1]))
-        ax.tick_params(labelsize=7)
-        ax.legend(loc="lower right", fontsize=7)
-        ax.grid(True, color="#DDDDDD", alpha=0.5)
-
         # Save the initial ylims and reset the accumulators
         self._y_initial_lims = {i: ax.get_ylim() for i, ax in enumerate(self._axes_list)}
         self._y_accum = {i: 1.0 for i in range(len(self._axes_list))}
@@ -533,6 +563,36 @@ class MvcTab(QWidget):
         if self._last_result is None:
             return
         self._dibujar_paneles(self._last_result)
+
+    def _dibujar_apdf(self, r: dict) -> None:
+        """Draw the muscle-load APDF (whole recording) on its own square canvas.
+
+        It is a distribution, so the time window does not apply; it is drawn
+        once per analysis, not on every window change.
+        """
+        self._apdf_fig.clear()
+        ax = self._apdf_fig.add_subplot(111)
+        apdf = r["apdf"]
+        ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.8)
+        for prob in (10, 50, 90):
+            ax.axhline(prob, color="#cccccc", ls=":", lw=0.7)
+        for lvl, prob, name in (
+            (apdf.static, 10, tr("Static")),
+            (apdf.median, 50, tr("Median")),
+            (apdf.peak, 90, tr("Peak")),
+        ):
+            color = "#cc0000" if lvl.exceeds else "#1a9850"
+            ax.plot([lvl.value], [prob], "o", color=color, ms=7, zorder=5,
+                    label=f"{name}: {lvl.value:.0f} % (≤{lvl.limit:.0f} %)")
+        ax.set_title(tr("Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
+        ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
+        ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
+        ax.set_ylim(0, 100)
+        ax.set_xlim(0, float(apdf.load[-1]))
+        ax.tick_params(labelsize=7)
+        ax.legend(loc="lower right", fontsize=7)
+        ax.grid(True, color="#DDDDDD", alpha=0.5)
+        self._apdf_canvas.draw_idle()
 
     # ------------------------------------------------------------------
     # Vertical-scale sidebar (▲▼ per panel)
@@ -621,6 +681,20 @@ class MvcTab(QWidget):
     # Time-scale controls
     # ------------------------------------------------------------------
 
+    @Slot(float, float)
+    def _on_range_changed(self, inicio: float, duracion: float) -> None:
+        self._inicio_s = inicio
+        self._duracion_s = duracion
+        self._sync_combo_zoom()
+        self._update_info_labels()
+        self._redraw_timer.start()
+
+    @Slot(float, float)
+    def _on_range_preview(self, inicio: float, duracion: float) -> None:
+        self._inicio_s = inicio
+        self._duracion_s = duracion
+        self._update_info_labels()
+
     @Slot()
     def _on_tiempo_ampliar(self) -> None:
         """◀▶ — double the visible duration."""
@@ -629,6 +703,7 @@ class MvcTab(QWidget):
         nuevo_inicio = min(self._inicio_s, self._duracion_total - nueva_dur)
         self._inicio_s = nuevo_inicio
         self._duracion_s = nueva_dur
+        self._time_range.set_range(self._inicio_s, self._duracion_s)
         self._sync_combo_zoom()
         self._update_info_labels()
         self._redraw_timer.start()
@@ -640,6 +715,7 @@ class MvcTab(QWidget):
         nuevo_inicio = min(self._inicio_s, self._duracion_total - nueva_dur)
         self._inicio_s = nuevo_inicio
         self._duracion_s = nueva_dur
+        self._time_range.set_range(self._inicio_s, self._duracion_s)
         self._sync_combo_zoom()
         self._update_info_labels()
         self._redraw_timer.start()
@@ -652,6 +728,7 @@ class MvcTab(QWidget):
         nuevo_inicio = min(self._inicio_s, self._duracion_total - nueva_dur)
         self._inicio_s = nuevo_inicio
         self._duracion_s = nueva_dur
+        self._time_range.set_range(self._inicio_s, self._duracion_s)
         self._update_info_labels()
         self._redraw_timer.start()
 
@@ -678,16 +755,6 @@ class MvcTab(QWidget):
         self._lbl_inicio_info.setText(f"{tr('Start:')} {self._inicio_s:.1f} s")
         self._lbl_duracion_info.setText(f"{tr('Duration:')} {self._duracion_s:.1f} s")
 
-    @Slot()
-    def _reset_ventana(self) -> None:
-        """Return to start=0, duration=1/3 of the total."""
-        self._inicio_s = 0.0
-        self._duracion_s = self._duracion_total / 3.0
-        self._sync_combo_zoom()
-        self._update_info_labels()
-        if self._last_result is not None:
-            self._dibujar_paneles(self._last_result)  # no debounce (explicit action)
-
     # ------------------------------------------------------------------
     # Save figure
     # ------------------------------------------------------------------
@@ -705,6 +772,26 @@ class MvcTab(QWidget):
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
+
+    @Slot()
+    def _generar_informe(self) -> None:
+        """Generate the MVC / muscle-load PDF report next to the source EDF."""
+        if self._last_result is None:
+            return
+        edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        out = edf_path.with_name(f"{edf_path.stem}_informe_cvm_{ts}.pdf")
+        meta = {
+            "student": self._settings.value("analisis/student", ""),
+            "student_code": self._settings.value("analisis/student_code", ""),
+        }
+        try:
+            build_mvc_report(out, self._last_result, meta)
+            self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
+        except Exception as exc:
+            self._logger.append_error(
+                tr("Error generating the PDF report: {error}").format(error=exc)
+            )
 
     # ------------------------------------------------------------------
     # Helpers

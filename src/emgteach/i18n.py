@@ -353,6 +353,17 @@ _ES = {
     "Muscle load (Jonsson) — static {st:.1f} %, median {md:.1f} %, peak {pk:.1f} % MVC":
         "Carga muscular (Jonsson) — estático {st:.1f} %, mediano {md:.1f} %, "
         "pico {pk:.1f} % CVM",
+    "Muscle-load distribution (APDF, Jonsson)":
+        "Distribución de carga muscular (APDF, Jonsson)",
+    "Normalisation and muscle load": "Normalización y carga muscular",
+    "Muscle load (Jonsson APDF)": "Carga muscular (APDF de Jonsson)",
+    "Static (P10):": "Estático (P10):",
+    "Median (P50):": "Mediano (P50):",
+    "Peak (P90):": "Pico (P90):",
+    "MVC normalisation and muscle-load report":
+        "Informe de normalización CVM y carga muscular",
+    "exceeds limit": "supera el límite",
+    "within limit": "dentro del límite",
 
     # --- DSP diagnostics ---
     "Possible saturation: {pct:.1f}% of samples sit at ADC extremes "
