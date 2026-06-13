@@ -146,10 +146,18 @@ class MainWindow(QMainWindow):
         btn_about.setToolTip(tr("About EMG Bioinstrumentation"))
         btn_about.clicked.connect(self._show_about)
 
+        # New-session button: clears all three tabs back to a just-opened state
+        # (e.g. when switching to a new student) without restarting the app.
+        btn_reset = QToolButton()
+        btn_reset.setText(tr("New session"))
+        btn_reset.setToolTip(tr("Clear everything and start over (e.g. a new student)"))
+        btn_reset.clicked.connect(self._on_reset_all)
+
         corner = QWidget()
         corner_lay = QHBoxLayout(corner)
         corner_lay.setContentsMargins(0, 0, 4, 0)
         corner_lay.setSpacing(2)
+        corner_lay.addWidget(btn_reset)
         corner_lay.addWidget(self._combo_lang)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
@@ -168,6 +176,39 @@ class MainWindow(QMainWindow):
             tr("Language"),
             tr("The language change will take effect when you restart the application."),
         )
+
+    def _on_reset_all(self) -> None:
+        """Clear all tabs to a fresh state (new student) without restarting.
+
+        Refuses while a recording is in progress; the saved EDF files on disk
+        are never deleted. Asks for confirmation first.
+        """
+        if self._tab_adq.is_recording():
+            QMessageBox.information(
+                self,
+                tr("New session"),
+                tr("Stop the recording before starting a new session."),
+            )
+            return
+        resp = QMessageBox.question(
+            self,
+            tr("New session"),
+            tr(
+                "Clear everything and start a new session?\n\n"
+                "This clears the on-screen data, markers, log, calibration and "
+                "the loaded analysis. The EDF files already saved on disk are "
+                "not deleted."
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if resp != QMessageBox.StandardButton.Yes:
+            return
+        self._tab_adq.reset()
+        self._tab_ana.reset()
+        self._tab_cvm.reset()
+        self._logger.clear()
+        self._logger.append_log(tr("New session started."))
 
     def _show_about(self) -> None:
         QMessageBox.about(

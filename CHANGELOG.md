@@ -40,6 +40,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MVC / muscle-load PDF report.** A one-click "Generate PDF report" button
   in the MVC tab writes a report (panels + APDF + a metrics table with the
   load levels vs limits) next to the source EDF (`build_mvc_report`).
+- **New-session reset.** A "New session" button in the tab-bar corner clears
+  all three tabs back to their just-opened state — the live view, markers,
+  local log and MVC calibration, plus the loaded analysis/MVC files, results
+  and student name·code — so you can switch students without restarting the
+  app. The EDF files already saved on disk are not deleted; the button is
+  disabled while recording.
+- **Adjustable live-load thresholds.** The warning and danger zone limits
+  (% MVC) of the live muscle-load monitor can be tuned from the acquisition tab
+  once an MVC is calibrated; the values are remembered across sessions.
+- **Teaching documentation (bilingual).** A full doc set under `docs/` in
+  English and Spanish — user manual, 5-practical lab guide, evaluation rubric
+  and a one-page cheat sheet — plus `tools/md2pdf.py`, a small generator that
+  renders the Markdown sources to PDF using only existing dependencies
+  (`reportlab` + matplotlib's DejaVu fonts; no pandoc/LaTeX).
 
 ### Changed
 - **Compact, themed GUI.** The acquisition tab was reorganised into two compact

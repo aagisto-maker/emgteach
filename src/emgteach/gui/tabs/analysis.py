@@ -1125,6 +1125,70 @@ class AnalysisTab(QWidget):
         self._btn_tiempo_reducir.setEnabled(has_data)
         self._combo_zoom.setEnabled(has_data)
 
+    # ------------------------------------------------------------------
+    # New-session reset
+    # ------------------------------------------------------------------
+
+    def _reset_summary_labels(self) -> None:
+        _st = "font-size: 11px; padding: 0 6px;"
+        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
+        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
+        self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
+        self._lbl_fatiga.setStyleSheet(_st)
+        self._lbl_pendiente.setText(f"{tr('MDF slope:')} —")
+        self._lbl_rms_global.setText(f"{tr('Global RMS:')} —")
+        self._lbl_iemg.setText("iEMG: —")
+        self._lbl_duracion.setText(f"{tr('Duration:')} —")
+        self._lbl_archivo.setText("")
+
+    def reset(self) -> None:
+        """Clear the tab to its just-opened state (new student): loaded file,
+        results, student name/code, plots and summary."""
+        if self._worker and self._worker.isRunning():
+            self._worker.stop()
+            self._worker.wait(3000)
+        self._worker = None
+        self._last_result = None
+        self._markers = []
+        self._duracion_total = 60.0
+
+        self._edit_path.clear()
+        # Clearing the student fields also clears their persisted QSettings
+        # values (textChanged is wired to setValue).
+        self._edit_student.clear()
+        self._edit_student_code.clear()
+        self._spin_fenv.setValue(5.0)
+        self._combo_canal.blockSignals(True)
+        self._combo_canal.clear()
+        self._combo_canal.addItem("EMG")
+        self._combo_canal.blockSignals(False)
+
+        self._btn_analizar.setEnabled(False)
+        self._btn_guardar.setEnabled(False)
+        self._btn_informe.setEnabled(False)
+        self._btn_redibujar.setEnabled(False)
+
+        self._reset_summary_labels()
+        self._actualizar_lista_marcadores()
+
+        self._progress.setVisible(False)
+        self._progress.setValue(0)
+        self._progress.setFormat(tr("Ready"))
+
+        self._fig.clear()
+        self._canvas.draw_idle()
+        self._axes_list = []
+        self._rebuild_y_sidebar([])
+
+        self._time_range.setEnabled(False)
+        self._time_range.set_total_duration(60.0)
+        self._time_range.set_range(0.0, 10.0)
+        self._btn_tiempo_ampliar.setEnabled(False)
+        self._btn_tiempo_reducir.setEnabled(False)
+        self._combo_zoom.setEnabled(False)
+        self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')} 10.0 s")
+
     def cleanup(self) -> None:
         """Called by MainWindow.closeEvent — cancels and waits for the worker."""
         if self._worker and self._worker.isRunning():

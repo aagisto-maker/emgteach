@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSpinBox,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -153,13 +154,23 @@ class AcquisitionTab(QWidget):
         self._marker_events: list[tuple[float, str]] = []
         self._total_samples = 0
 
+        # Live-load zone thresholds (% MVC). Default from the signal profile,
+        # but adjustable in the UI once an MVC is calibrated and remembered
+        # across sessions (QSettings). warning < danger is always enforced.
+        self._load_warning = float(self._settings.value(
+            "adquisicion/load_warning", self._profile.apda_warning_limit, type=float))
+        self._load_danger = float(self._settings.value(
+            "adquisicion/load_danger", self._profile.apda_danger_limit, type=float))
+        if self._load_danger <= self._load_warning:
+            self._load_danger = self._load_warning + 1.0
+
         # ── Online muscle-load monitor (live MVC) ──
         # Per-channel MVC reference (mV) from a quick calibration, an OnlineLoad
         # accumulator and a calibration buffer; the live bars update per block
         # and the static/median/peak readout on a slower timer.
         self._mvc_ref: list[float | None] = [None] * MAX_CHANNELS
         self._online: list[OnlineLoad] = [
-            OnlineLoad(self._profile.apda_warning_limit, self._profile.apda_danger_limit)
+            OnlineLoad(self._load_warning, self._load_danger)
             for _ in range(MAX_CHANNELS)
         ]
         self._calibrating = False
@@ -1117,6 +1128,42 @@ class AcquisitionTab(QWidget):
         self._btn_calibrar.clicked.connect(self._on_calibrar)
         row.addWidget(self._btn_calibrar)
 
+        # Adjustable warning / danger thresholds (% MVC). Disabled until an MVC
+        # is calibrated; changing them updates the bars and the monitor live.
+        thr = QWidget()
+        thr_l = QHBoxLayout(thr)
+        thr_l.setContentsMargins(0, 0, 0, 0)
+        thr_l.setSpacing(2)
+        lbl_thr_w = QLabel(tr("Warning"))
+        lbl_thr_w.setStyleSheet("font-size: 9px; color: #E67E22;")
+        thr_l.addWidget(lbl_thr_w)
+        self._spin_warning = QSpinBox()
+        self._spin_warning.setRange(1, 99)
+        self._spin_warning.setSuffix(" %")
+        self._spin_warning.setFixedWidth(58)
+        self._spin_warning.setValue(round(self._load_warning))
+        self._spin_warning.setEnabled(False)
+        self._spin_warning.setToolTip(
+            tr("Load (% MVC) where the warning (tiredness) zone starts.")
+        )
+        self._spin_warning.valueChanged.connect(self._on_thresholds_changed)
+        thr_l.addWidget(self._spin_warning)
+        lbl_thr_d = QLabel(tr("Danger"))
+        lbl_thr_d.setStyleSheet("font-size: 9px; color: #cc0000;")
+        thr_l.addWidget(lbl_thr_d)
+        self._spin_danger = QSpinBox()
+        self._spin_danger.setRange(2, 100)
+        self._spin_danger.setSuffix(" %")
+        self._spin_danger.setFixedWidth(58)
+        self._spin_danger.setValue(round(self._load_danger))
+        self._spin_danger.setEnabled(False)
+        self._spin_danger.setToolTip(
+            tr("Load (% MVC) where the danger (fatigue) zone starts.")
+        )
+        self._spin_danger.valueChanged.connect(self._on_thresholds_changed)
+        thr_l.addWidget(self._spin_danger)
+        row.addWidget(thr)
+
         self._load_rows: list[QWidget] = []
         self._load_name_labels: list[QLabel] = []
         self._load_bars: list[LoadBar] = []
@@ -1131,7 +1178,7 @@ class AcquisitionTab(QWidget):
                 f"font-size: 9px; font-weight: bold; color: {_CHANNEL_COLOR_HEX[c]};"
             )
             bar = LoadBar()
-            bar.set_zones(self._profile.apda_warning_limit, self._profile.apda_danger_limit)
+            bar.set_zones(self._load_warning, self._load_danger)
             bar.setMinimumWidth(120)
             readout = QLabel("")
             readout.setStyleSheet("font-size: 9px;")
@@ -1164,6 +1211,42 @@ class AcquisitionTab(QWidget):
         for bar in self._load_bars:
             bar.reset()
 
+    def _set_thresholds_enabled(self, enabled: bool) -> None:
+        """Enable/disable the warning/danger spin-boxes (active only once an
+        MVC is calibrated)."""
+        self._spin_warning.setEnabled(enabled)
+        self._spin_danger.setEnabled(enabled)
+
+    @Slot()
+    def _on_thresholds_changed(self) -> None:
+        """Apply the warning/danger spin-boxes to the bars and the monitor.
+
+        Keeps ``warning < danger`` (nudging the danger value up if needed),
+        persists both to QSettings and refreshes the readout colours."""
+        self._spin_warning.blockSignals(True)
+        self._spin_danger.blockSignals(True)
+        w = self._spin_warning.value()
+        d = self._spin_danger.value()
+        if d <= w:
+            d = min(100, w + 1)
+            self._spin_danger.setValue(d)
+            if d <= w:                       # warning was at the top (99/100)
+                w = d - 1
+                self._spin_warning.setValue(w)
+        self._spin_warning.blockSignals(False)
+        self._spin_danger.blockSignals(False)
+
+        self._load_warning, self._load_danger = float(w), float(d)
+        self._settings.setValue("adquisicion/load_warning", self._load_warning)
+        self._settings.setValue("adquisicion/load_danger", self._load_danger)
+        for c in range(MAX_CHANNELS):
+            self._online[c].warning_limit = self._load_warning
+            self._online[c].danger_limit = self._load_danger
+            self._load_bars[c].set_zones(self._load_warning, self._load_danger)
+            self._load_bars[c].set_value(self._online[c].current,
+                                         active=bool(self._mvc_ref[c]))
+        self._update_load_readout()
+
     def _process_load(self, env: list) -> None:
         """Per-block hook from _on_data_ready: accumulate calibration samples or
         feed the live load monitor."""
@@ -1195,6 +1278,7 @@ class AcquisitionTab(QWidget):
             if self._mvc_ref[c]:
                 ok.append(self._active_labels()[c])
         self._btn_calibrar.setEnabled(True)
+        self._set_thresholds_enabled(bool(ok))
         if ok:
             self._lbl_load_info.setText(tr("MVC calibrated. Monitoring load."))
             self._log(tr("MVC calibrated for live load monitoring."))
@@ -1226,11 +1310,13 @@ class AcquisitionTab(QWidget):
             self._load_bars[c].reset()
             self._load_readouts[c].setText("")
         self._lbl_load_info.setText("")
+        self._set_thresholds_enabled(False)
 
     def _stop_load_monitor(self) -> None:
         self._load_timer.stop()
         self._calibrating = False
         self._btn_calibrar.setEnabled(False)
+        self._set_thresholds_enabled(False)
         for bar in self._load_bars:
             bar.set_value(0.0, active=False)
 
@@ -1459,6 +1545,37 @@ class AcquisitionTab(QWidget):
             self._worker.stop_forced()
             self._worker.wait(2000)
             self._desconectar()
+
+    # ------------------------------------------------------------------
+    # New-session reset (clear the live view for a new student)
+    # ------------------------------------------------------------------
+
+    def is_recording(self) -> bool:
+        """True while a recording worker is running."""
+        return bool(self._worker and self._worker.isRunning())
+
+    def reset(self) -> None:
+        """Clear the live acquisition view to its just-opened state.
+
+        Wipes the plot buffers, event markers, local log and the muscle-load
+        calibration, and restores the scales/time window. Keeps the device
+        connection and the saved configuration (MAC, folder, labels). The EDF
+        files already written to disk are NOT touched. No effect while
+        recording (the caller guards with :meth:`is_recording`).
+        """
+        if self.is_recording():
+            return
+        self._reset_buffers()
+        self._marker_events.clear()
+        self._total_samples = 0
+        for pool in self._marker_lines:
+            for line in pool:
+                line.hide()
+        self._reset_load_monitor()
+        self._reset_all_scales()
+        self._local_log.clear()
+        self._new_data = True
+        self._refresh_plots(force=True)
 
     # ------------------------------------------------------------------
     # Cleanup on window close

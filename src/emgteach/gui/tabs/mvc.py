@@ -917,6 +917,56 @@ class MvcTab(QWidget):
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
 
+    # ------------------------------------------------------------------
+    # New-session reset
+    # ------------------------------------------------------------------
+
+    def reset(self) -> None:
+        """Clear the tab to its just-opened state (new student): loaded files,
+        result, plots and data panel."""
+        if self._worker and self._worker.isRunning():
+            self._worker.stop()
+            self._worker.wait(3000)
+        self._worker = None
+        self._last_result = None
+        self._duracion_total = 60.0
+        self._inicio_s = 0.0
+        self._duracion_s = 60.0
+
+        self._edit_path.clear()
+        self._edit_cvm_path.clear()
+        self._spin_fenv.setValue(5.0)
+        self._combo_canal.blockSignals(True)
+        self._combo_canal.clear()
+        self._combo_canal.addItem("EMG")
+        self._combo_canal.blockSignals(False)
+
+        self._btn_calcular.setEnabled(False)
+        self._btn_guardar.setEnabled(False)
+        self._btn_informe.setEnabled(False)
+        self._progress.setVisible(False)
+
+        for la in (self._d_file, self._d_cvm_ref, self._d_source,
+                   self._d_duration, self._d_mean, self._d_static,
+                   self._d_median, self._d_peak):
+            la.setText("—")
+
+        self._fig.clear()
+        self._canvas.draw_idle()
+        self._apdf_fig.clear()
+        self._apdf_canvas.draw_idle()
+        self._axes_list = []
+        self._rebuild_y_sidebar()
+
+        self._time_range.setEnabled(False)
+        self._time_range.set_total_duration(60.0)
+        self._time_range.set_range(0.0, 10.0)
+        for w in (self._btn_tiempo_ampliar, self._btn_tiempo_reducir,
+                  self._combo_zoom):
+            w.setEnabled(False)
+        self._lbl_inicio_info.setText(f"{tr('Start:')} — s")
+        self._lbl_duracion_info.setText(f"{tr('Duration:')} — s")
+
     def cleanup(self) -> None:
         """Called by MainWindow.closeEvent — cancels and waits for the worker."""
         if self._worker and self._worker.isRunning():

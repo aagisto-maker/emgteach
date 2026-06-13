@@ -212,6 +212,28 @@ _ES = {
     "static {st:.0f} · median {md:.0f} · peak {pk:.0f} %":
         "estático {st:.0f} · mediano {md:.0f} · pico {pk:.0f} %",
     "not calibrated": "sin calibrar",
+    "Warning": "Aviso",
+    "Danger": "Peligro",
+    "Load (% MVC) where the warning (tiredness) zone starts.":
+        "Carga (% CVM) en la que empieza la zona de aviso (cansancio).",
+    "Load (% MVC) where the danger (fatigue) zone starts.":
+        "Carga (% CVM) en la que empieza la zona de peligro (fatiga).",
+
+    # -- new-session reset (tab-bar corner) --
+    "New session": "Nueva sesión",
+    "Clear everything and start over (e.g. a new student)":
+        "Borra todo y empieza de cero (p. ej. un nuevo alumno)",
+    "Stop the recording before starting a new session.":
+        "Detén la grabación antes de iniciar una nueva sesión.",
+    "Clear everything and start a new session?\n\n"
+    "This clears the on-screen data, markers, log, calibration and "
+    "the loaded analysis. The EDF files already saved on disk are "
+    "not deleted.":
+        "¿Borrar todo e iniciar una nueva sesión?\n\n"
+        "Se borran los datos en pantalla, los marcadores, el registro, la "
+        "calibración y el análisis cargado. Los archivos EDF ya guardados en "
+        "disco no se eliminan.",
+    "New session started.": "Nueva sesión iniciada.",
 
     # --- analysis worker / GUI ---
     "Loading file: {path}": "Cargando archivo: {path}",
