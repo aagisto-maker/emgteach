@@ -359,7 +359,7 @@ class AnalysisTab(QWidget):
         self._progress.setRange(0, 100)
         self._progress.setValue(0)
         self._progress.setTextVisible(True)
-        self._progress.setFormat("Listo")
+        self._progress.setFormat(tr("Ready"))
         self._progress.setVisible(False)
         root.addWidget(self._progress)
 
@@ -470,7 +470,7 @@ class AnalysisTab(QWidget):
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
             self._progress.setValue(0)
-            self._progress.setFormat("Listo")
+            self._progress.setFormat(tr("Ready"))
 
     def _populate_channels(self, path: str) -> None:
         """Fill the channel picker from the EDF header, keeping the choice."""
@@ -494,7 +494,7 @@ class AnalysisTab(QWidget):
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
         self._progress.setValue(0)
-        self._progress.setFormat("Analizando…  %p%")
+        self._progress.setFormat(tr("Analysing…  %p%"))
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
@@ -600,13 +600,13 @@ class AnalysisTab(QWidget):
 
         sign = r["fat_slope_sign"]
         if sign < 0:
-            texto = "Fatiga: DETECTADA (MDF decrece)"
+            texto = tr("Fatigue: DETECTED (MDF decreasing)")
             color = "#cc0000"
         elif sign > 0:
-            texto = "Fatiga: No detectada (MDF estable o crece)"
+            texto = tr("Fatigue: Not detected (MDF stable or increasing)")
             color = "#007700"
         else:
-            texto = "Fatiga: Indeterminada (Señal insuficiente)"
+            texto = tr("Fatigue: Undetermined (insufficient signal)")
             color = "#885500"
         self._lbl_fatiga.setText(texto)
         self._lbl_fatiga.setStyleSheet(f"font-size: 9px; padding: 0 4px; color: {color};")

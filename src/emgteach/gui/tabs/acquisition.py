@@ -609,7 +609,7 @@ class AcquisitionTab(QWidget):
 
         # Build the ▲▼ buttons in the sidebar (one per plot)
         self._plots_widgets = [self._plot_raw, self._plot_filt, self._plot_env]
-        labels = ["B", "F", "E"]   # button per plot: raw / filtered / envelope
+        labels = [tr("R"), tr("F"), tr("E")]   # button per plot: raw / filtered / envelope
         for i, (pw, lbl_txt) in enumerate(zip(self._plots_widgets, labels)):
             slot = QWidget()
             slot_vbox = QVBoxLayout(slot)

@@ -150,9 +150,9 @@ class MvcWorker(QThread):
                         ).format(error=exc)
                     )
                     mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
-                    mvc_source = (
-                        f"automática (percentil {self._percentile:.0f} de la señal de prueba)"
-                    )
+                    mvc_source = tr(
+                        "auto (percentile {p:.0f} of the test signal)"
+                    ).format(p=self._percentile)
             else:
                 mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
                 mvc_source = tr(

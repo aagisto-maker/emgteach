@@ -168,6 +168,9 @@ _ES = {
         "Restaurar rangos Y y ventana temporal a valores iniciales",
     "Zoom in (vertical) — {label}": "Ampliar (vertical) — {label}",
     "Zoom out (vertical) — {label}": "Reducir (vertical) — {label}",
+    # Vertical-zoom sidebar button letters (raw/filtered/envelope initials).
+    # "F" and "E" are identical in both languages and fall through to the key.
+    "R": "B",
     "Raw EMG signal (mV)": "Señal EMG en bruto (mV)",
     "Filtered EMG (notch 50 Hz + band-pass 20-450 Hz)":
         "EMG filtrado (notch 50 Hz + paso-banda 20-450 Hz)",
@@ -288,6 +291,14 @@ _ES = {
     "Error generating the PDF report: {error}": "Error al generar el informe PDF: {error}",
     "Amplitude (mV)": "Amplitud (mV)",
     "Time (s)": "Tiempo (s)",
+    # Progress bar + fatigue summary (analysis tab).
+    "Ready": "Listo",
+    "Analysing…  %p%": "Analizando…  %p%",
+    "Fatigue: DETECTED (MDF decreasing)": "Fatiga: DETECTADA (MDF decrece)",
+    "Fatigue: Not detected (MDF stable or increasing)":
+        "Fatiga: No detectada (MDF estable o crece)",
+    "Fatigue: Undetermined (insufficient signal)":
+        "Fatiga: Indeterminada (Señal insuficiente)",
 
     # --- MVC worker / GUI ---
     "Signal loaded — {fs:.0f} Hz — {dur:.1f} s — units: {units}":
