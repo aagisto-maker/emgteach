@@ -7,18 +7,27 @@ abstract: >-
   normalisation of surface EMG signals. Two interchangeable hardware
   backends are supported: BITalino over Bluetooth and Arduino RedBoard
   Plus + MyoWare 2.0 over USB serial. Output files follow the EDF+
-  standard with reliable buffered writing. Version 0.2.0 adds two-channel
+  standard with reliable buffered writing. Version 0.2.0 added two-channel
   acquisition (e.g. agonist/antagonist), automatic contraction-onset
-  annotation and one-click PDF session reports.
+  annotation and one-click PDF session reports; version 0.3.0 adds a stacked
+  two-channel live view and a bilingual (English/Spanish) interface.
 type: software
-version: 0.2.0
-date-released: "2026-06-11"
+version: 0.3.0
+date-released: "2026-06-13"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
     email: "aagisto@ucm.es"
     orcid: "https://orcid.org/0000-0002-3548-7264"
+  # TEMPLATE — copy this block for each additional author, fill it in, and
+  # remove the leading "# " from each line. Also add the person to AUTHORS.md
+  # with their CRediT roles. The orcid/email lines are optional.
+  # - family-names: "Family-Names"
+  #   given-names: "Given-Names"
+  #   affiliation: "Institution, City, Country"
+  #   email: "name@example.org"
+  #   orcid: "https://orcid.org/0000-0000-0000-0000"
 license: GPL-3.0-or-later
 doi: 10.5281/zenodo.20110845
 repository-code: "https://github.com/aagisto-maker/emgteach"
@@ -30,6 +39,8 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.20110846
     description: "Version-specific DOI for emgteach v0.1.0"
+  # A new version-specific DOI is minted by Zenodo when v0.3.0 is published;
+  # add it here as a third identifier at release time.
 keywords:
   - electromyography
   - EMG

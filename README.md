@@ -24,22 +24,28 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v0.2.0 extends the first public release with **two-channel
+`emgteach` v0.3.0 builds on the two-channel release with a **stacked
+two-channel live view**, a compact themed GUI and a **bilingual
+(English / Spanish) interface**. Earlier, v0.2.0 added **two-channel
 acquisition** (e.g. agonist/antagonist), **automatic contraction-onset
 annotation** and **one-click PDF session reports**. The package ships a
 Qt-free analytic core (io, dsp, fatigue, mvc, devices, profiles,
-reports), a Qt layer (workers + three-tab PySide6 GUI), and a test
-suite of 119 tests passing on Linux and Windows across Python
-3.10-3.12.
+reports, i18n), a Qt layer (workers + three-tab PySide6 GUI), and a test
+suite of 126 tests passing on Linux and Windows across Python
+3.10-3.12. See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 ## Highlights
 
 - **Three-tab GUI** (Acquisition, Analysis, MVC normalisation) wrapping a
   reusable acquisition library
+- **Bilingual interface (English / Spanish)** with automatic start-up
+  language detection and an in-app language switch
 - **Hardware-agnostic core** through the `AcquisitionDevice` interface;
   swap BITalino for Arduino+MyoWare with a single setting
 - **Two-channel acquisition** for agonist/antagonist studies, with an
   editable label per channel; the data layer is generic over N channels
+- **Stacked two-channel live view** that gives each channel its own
+  vertical lane (raw and filtered) for clearer agonist/antagonist reading
 - **Automatic onset detection** (baseline + k·SD threshold) that flags
   contraction onsets in real time and stores them as EDF+ annotations
 - **One-click PDF session reports**: signal plot with annotations,
@@ -140,14 +146,25 @@ methodological article on the buffered-write pattern it implements:
   Manuscript; reproducibility package:
   https://doi.org/10.5281/zenodo.20042878
 
-A dedicated software paper is in preparation.
+A dedicated software paper is in preparation. Author contributions are
+recorded in [`AUTHORS.md`](AUTHORS.md) using the
+[CRediT](https://credit.niso.org/) taxonomy.
+
+## Contributing
+
+Contributions are welcome — bug reports, documentation, tests, hardware
+backends and features. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the
+development setup, the test/lint commands, the branch and commit
+conventions, and how to add or translate user-facing strings (the UI is
+bilingual: English-canonical source plus a Spanish translation map).
 
 ## Development
 
 Parts of this software were developed with the assistance of an AI
 coding assistant (Anthropic's Claude) under the direction and review of
 the author, who set all requirements, took the design decisions and is
-responsible for the released code.
+responsible for the released code. The AI assistant is a tool and is not
+an author; see [`AUTHORS.md`](AUTHORS.md).
 
 ## Related work
 
