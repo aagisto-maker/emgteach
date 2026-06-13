@@ -425,6 +425,8 @@ class AnalysisTab(QWidget):
         # the panels still zooms too; _time_range defines the drawn segment
         # (see _on_result / _dibujar_paneles).
         nav_controls = QWidget()
+        # Only as wide as the controls need; the bar takes all the rest.
+        nav_controls.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         nav_ctrl_v = QVBoxLayout(nav_controls)
         nav_ctrl_v.setContentsMargins(0, 0, 0, 0)
         nav_ctrl_v.setSpacing(1)
@@ -432,25 +434,25 @@ class AnalysisTab(QWidget):
         nav_info_row = QHBoxLayout()
         nav_info_row.setContentsMargins(0, 0, 0, 0)
         nav_info_row.setSpacing(8)
-        nav_info_row.addStretch()
         nav_info_row.addWidget(self._lbl_inicio_info)
         nav_info_row.addWidget(self._lbl_duracion_info)
+        nav_info_row.addStretch()
         nav_ctrl_v.addLayout(nav_info_row)
 
         nav_btn_row = QHBoxLayout()
         nav_btn_row.setContentsMargins(0, 0, 0, 0)
         nav_btn_row.setSpacing(4)
-        nav_btn_row.addStretch()
         nav_btn_row.addWidget(self._btn_tiempo_ampliar)
         nav_btn_row.addWidget(self._combo_zoom)
         nav_btn_row.addWidget(self._btn_tiempo_reducir)
+        nav_btn_row.addStretch()
         nav_ctrl_v.addLayout(nav_btn_row)
 
         nav_row = QHBoxLayout()
         nav_row.setContentsMargins(4, 2, 4, 2)
         nav_row.setSpacing(8)
-        nav_row.addWidget(self._time_range, stretch=4)   # ~80 %
-        nav_row.addWidget(nav_controls, stretch=1)       # ~20 %
+        nav_row.addWidget(self._time_range, stretch=1)   # takes all remaining width
+        nav_row.addWidget(nav_controls)                  # only as wide as needed
         root.addLayout(nav_row)
 
     # ------------------------------------------------------------------
