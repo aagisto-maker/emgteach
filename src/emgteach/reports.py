@@ -163,7 +163,7 @@ def _draw_report_markers(ax: Any, markers: list, x0: float, x1: float) -> None:
 
 def _draw_analysis_panel(fig: Any, ax: Any, idx: int, result: Mapping[str, Any]) -> None:
     """Draw one analysis panel (0-7) onto ``ax``, mirroring the on-screen
-    panels of the Análisis tab so the report shows the same graphs."""
+    panels of the Analysis tab so the report shows the same graphs."""
     r = result
     times = r["times"]
     x0, x1 = float(times[0]), float(times[-1])

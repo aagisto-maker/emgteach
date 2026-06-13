@@ -1,7 +1,7 @@
-"""TimeRangeSelector — minimapa temporal interactivo.
+"""TimeRangeSelector — interactive time minimap.
 
-Muestra la duración total del registro como una barra y permite seleccionar
-visualmente un sub-rango [inicio, inicio+duracion] arrastrando con el ratón.
+Shows the recording's total duration as a bar and lets the user visually
+select a sub-range [start, start+duration] by dragging with the mouse.
 """
 
 from __future__ import annotations
@@ -12,13 +12,13 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 
 
 class TimeRangeSelector(QWidget):
-    range_changed = Signal(float, float)   # (inicio, duracion) al soltar el ratón
-    range_preview = Signal(float, float)   # (inicio, duracion) durante el arrastre
+    range_changed = Signal(float, float)   # (start, duration) on mouse release
+    range_preview = Signal(float, float)   # (start, duration) while dragging
 
-    _BAR_H   = 30   # px — altura del rectángulo de selección
-    _SCALE_H = 18   # px — altura de la escala temporal
-    _EDGE    = 6    # px — zona sensible en bordes izquierdo/derecho
-    _MIN_DUR = 0.5  # s  — duración mínima seleccionable
+    _BAR_H   = 30   # px — height of the selection rectangle
+    _SCALE_H = 18   # px — height of the time scale
+    _EDGE    = 6    # px — sensitive zone at the left/right edges
+    _MIN_DUR = 0.5  # s  — minimum selectable duration
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -35,7 +35,7 @@ class TimeRangeSelector(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setMouseTracking(True)
 
-    # ------------------------------------------------------------------ API pública
+    # ------------------------------------------------------------------ public API
 
     def set_total_duration(self, seconds: float) -> None:
         self._total = max(float(seconds), 1.0)
@@ -51,7 +51,7 @@ class TimeRangeSelector(QWidget):
     def get_range(self) -> tuple[float, float]:
         return self._inicio, self._duracion
 
-    # ------------------------------------------------------------------ helpers internos
+    # ------------------------------------------------------------------ internal helpers
 
     def _clamp(self) -> None:
         self._duracion = max(self._MIN_DUR, min(self._duracion, self._total))
@@ -81,7 +81,7 @@ class TimeRangeSelector(QWidget):
             return "move"
         return "outside"
 
-    # ------------------------------------------------------------------ pintado
+    # ------------------------------------------------------------------ painting
 
     def paintEvent(self, event) -> None:
         p = QPainter(self)
@@ -89,12 +89,12 @@ class TimeRangeSelector(QWidget):
         w  = self.width()
         bh = self._BAR_H
 
-        # Pista exterior
+        # Outer track
         p.setPen(QPen(QColor("#666666"), 1))
         p.setBrush(QColor("#f5f5f5"))
         p.drawRect(0, 0, w - 1, bh - 1)
 
-        # Rectángulo de selección
+        # Selection rectangle
         x1, x2 = self._rect_x1x2()
         fill = QColor("#1f77b4")
         fill.setAlpha(100)
@@ -102,7 +102,7 @@ class TimeRangeSelector(QWidget):
         p.setPen(QPen(QColor("#1f77b4"), 2))
         p.drawRect(x1, 1, x2 - x1, bh - 3)
 
-        # Escala temporal — tics cada 10%, con supresión de solapamiento
+        # Time scale — ticks every 10%, with overlap suppression
         font = QFont("Arial", 7)
         p.setFont(font)
         p.setPen(QColor("#444444"))
@@ -123,7 +123,7 @@ class TimeRangeSelector(QWidget):
 
         p.end()
 
-    # ------------------------------------------------------------------ ratón
+    # ------------------------------------------------------------------ mouse
 
     def mousePressEvent(self, event) -> None:
         if event.button() != Qt.MouseButton.LeftButton:

@@ -1,25 +1,24 @@
 """
-MvcTab — pestaña 3: normalización CVM (Contracción Voluntaria Máxima).
+MvcTab — tab 3: MVC normalisation (Maximum Voluntary Contraction).
 
-Carga un EDF de prueba y, opcionalmente, un EDF de referencia CVM.
-Normaliza la envolvente EMG como % del CVM de referencia (percentil 95).
-Si no se proporciona archivo CVM, usa auto-normalización sobre la propia
-señal de prueba.
+Loads a test EDF and, optionally, an MVC reference EDF. Normalises the EMG
+envelope as a % of the reference MVC (95th percentile). If no MVC file is
+provided, it uses auto-normalisation over the test signal itself.
 
-Controles:
-  - Selector de archivo EDF de prueba (ruta persistida en QSettings)
-  - Selector de archivo EDF de referencia CVM (opcional, persistido)
-  - Nombre del canal EMG
-  - Frecuencia de corte de la envolvente (editable, por defecto 5.0 Hz)
-  - Botón Calcular / Guardar figura
-  - Indicador de progreso (indeterminado mientras el worker corre)
+Controls:
+  - Test EDF file selector (path persisted in QSettings)
+  - MVC reference EDF file selector (optional, persisted)
+  - EMG channel name
+  - Envelope cutoff frequency (editable, default 5.0 Hz)
+  - Compute / Save figure button
+  - Progress indicator (indeterminate while the worker runs)
 
-Controles de escala (misma lógica que tab_analisis.py):
-  - Escala vertical: sidebar ▲▼ por panel (×1.5, límites 0.01×–100×)
-  - Escala temporal: botones ◀▶ + desplegable de factores
+Scale controls (same logic as tab_analisis.py):
+  - Vertical scale: ▲▼ sidebar per panel (×1.5, 0.01×–100× limits)
+  - Time scale: ◀▶ buttons + factor dropdown
 
-Panel de resumen: amplitud CVM de referencia, activación media, fuente.
-Gráfica: 3 paneles matplotlib (señal filtrada / envolvente / normalizada % CVM).
+Summary panel: reference MVC amplitude, mean activation, source.
+Plot: 3 matplotlib panels (filtered signal / envelope / normalised % MVC).
 """
 
 from __future__ import annotations
@@ -61,7 +60,7 @@ from emgteach.i18n import tr
 from emgteach.io import list_edf_channels
 from emgteach.workers import MvcWorker
 
-# Factores de zoom temporal disponibles (mismos que tab_analisis)
+# Available time-zoom factors (same as tab_analisis)
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
 _BTN_ST = (
@@ -70,8 +69,8 @@ _BTN_ST = (
     "QToolButton:hover { background: #dde8ff; }"
     "QToolButton:pressed { background: #b0c8ff; }"
 )
-# Variante de mayor tipografía para los controles de ventana temporal, igual
-# que en la pestaña de adquisición (_BTN_ST se reserva para los botones ▲▼).
+# Larger-typeface variant for the time-window controls, same as in the
+# acquisition tab (_BTN_ST is reserved for the ▲▼ buttons).
 _TBTN_ST = (
     "QToolButton { font-size: 11px; padding: 0px 2px; border: 1px solid #aaa; "
     "border-radius: 2px; background: #f5f5f5; }"
@@ -93,17 +92,17 @@ class MvcTab(QWidget):
         self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
         self._last_cvm_dir: str = self._settings.value("cvm/last_cvm_dir", ".")
 
-        # ── Estado escala vertical (3 paneles: 0=filtrada, 1=envolvente, 2=norm) ──
+        # ── Vertical-scale state (3 panels: 0=filtered, 1=envelope, 2=norm) ──
         self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0}
         self._y_initial_lims: dict[int, tuple[float, float]] = {}
-        self._axes_list: list = []   # ejes matplotlib activos
+        self._axes_list: list = []   # active matplotlib axes
 
-        # ── Estado escala temporal ──
-        self._duracion_total: float = 60.0   # s; actualizada al cargar EDF
+        # ── Time-scale state ──
+        self._duracion_total: float = 60.0   # s; updated when an EDF is loaded
         self._inicio_s: float = 0.0
         self._duracion_s: float = 60.0
 
-        # Debounce para el redibujado (400 ms, igual que tab_analisis)
+        # Debounce for the redraw (400 ms, same as tab_analisis)
         self._redraw_timer = QTimer(self)
         self._redraw_timer.setSingleShot(True)
         self._redraw_timer.setInterval(400)
@@ -112,13 +111,13 @@ class MvcTab(QWidget):
         self._build_ui()
 
     # ------------------------------------------------------------------
-    # Construcción de la interfaz
+    # Interface construction
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        # ── Panel de controles ──────────────────────────────────────────
+        # ── Controls panel ──────────────────────────────────────────
         grp_ctrl = QGroupBox(tr("MVC normalisation parameters"))
         ctrl = QVBoxLayout(grp_ctrl)
 
@@ -183,7 +182,7 @@ class MvcTab(QWidget):
         ctrl.addLayout(row_params)
         root.addWidget(grp_ctrl)
 
-        # ── Barra de progreso ───────────────────────────────────────────
+        # ── Progress bar ───────────────────────────────────────────
         self._progress = QProgressBar()
         self._progress.setRange(0, 0)
         self._progress.setTextVisible(False)
@@ -191,7 +190,7 @@ class MvcTab(QWidget):
         self._progress.setVisible(False)
         root.addWidget(self._progress)
 
-        # ── Panel de resumen numérico ───────────────────────────────────
+        # ── Numeric summary panel ───────────────────────────────────
         grp_resumen = QGroupBox(tr("Normalisation summary"))
         grp_resumen.setContentsMargins(6, 4, 6, 4)
         resumen_layout = QHBoxLayout(grp_resumen)
@@ -200,8 +199,8 @@ class MvcTab(QWidget):
         self._lbl_cvm_ref = QLabel(f"{tr('MVC reference:')} —")
         self._lbl_mean_norm = QLabel(f"{tr('Mean activation:')} —")
         for lbl in (self._lbl_cvm_ref, self._lbl_mean_norm):
-            # Sin negrita y a 11 px para mantener la uniformidad tipográfica con
-            # el resto de etiquetas del resumen.
+            # Not bold and at 11 px to keep typographic uniformity with the
+            # rest of the summary labels.
             lbl.setStyleSheet("font-size: 11px; padding: 2px 8px;")
             resumen_layout.addWidget(lbl)
 
@@ -220,7 +219,7 @@ class MvcTab(QWidget):
         grp_resumen.setMaximumHeight(fm.lineSpacing() * 3 + 8)
         root.addWidget(grp_resumen)
 
-        # ── Controles de escala temporal ────────────────────────────────
+        # ── Time-scale controls ────────────────────────────────
         grp_ventana = QGroupBox(tr("Display window"))
         ventana_layout = QHBoxLayout(grp_ventana)
         ventana_layout.setContentsMargins(6, 4, 6, 4)
@@ -272,16 +271,16 @@ class MvcTab(QWidget):
 
         root.addWidget(grp_ventana)
 
-        # ── Canvas matplotlib + sidebar de escala vertical ──────────────
+        # ── Matplotlib canvas + vertical-scale sidebar ──────────────
         self._fig = Figure(constrained_layout=True)
         self._canvas = FigureCanvasQTAgg(self._fig)
         self._canvas.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        # Zoom con la rueda del ratón sobre el panel bajo el cursor.
+        # Mouse-wheel zoom on the panel under the cursor.
         self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
 
-        # Sidebar ▲▼ (se reconstruye tras cada dibujo, igual que en tab_analisis)
+        # ▲▼ sidebar (rebuilt after each draw, same as in tab_analisis)
         self._y_scale_sidebar = QWidget()
         self._y_scale_sidebar.setFixedWidth(38)
         self._y_scale_sidebar_layout = QVBoxLayout(self._y_scale_sidebar)
@@ -301,7 +300,7 @@ class MvcTab(QWidget):
         root.addWidget(scroll, stretch=1)
 
     # ------------------------------------------------------------------
-    # Slots de selección de archivos
+    # File-selection slots
     # ------------------------------------------------------------------
 
     @Slot()
@@ -347,7 +346,7 @@ class MvcTab(QWidget):
         self._edit_cvm_path.clear()
 
     # ------------------------------------------------------------------
-    # Lanzar cálculo
+    # Launch computation
     # ------------------------------------------------------------------
 
     @Slot()
@@ -375,7 +374,7 @@ class MvcTab(QWidget):
         self._worker.start()
 
     # ------------------------------------------------------------------
-    # Slots del worker
+    # Worker slots
     # ------------------------------------------------------------------
 
     @Slot(dict)
@@ -386,21 +385,21 @@ class MvcTab(QWidget):
         self._btn_guardar.setEnabled(True)
         self._actualizar_resumen(result)
 
-        # Inicializar ventana temporal: 1/3 de la duración total
+        # Initialise the time window: 1/3 of the total duration
         t_total = float(result["t_plot"][-1]) if len(result["t_plot"]) > 0 else 60.0
         self._duracion_total = t_total
         dur_ini = t_total / 3.0
         self._inicio_s = 0.0
         self._duracion_s = dur_ini
 
-        # Habilitar controles de escala temporal
+        # Enable the time-scale controls
         for w in (self._btn_tiempo_ampliar, self._btn_tiempo_reducir,
                   self._combo_zoom, self._btn_reset_ventana):
             w.setEnabled(True)
         self._sync_combo_zoom()
         self._update_info_labels()
 
-        # Reset escalas Y y dibujar
+        # Reset the Y scales and draw
         self._y_accum = {0: 1.0, 1: 1.0, 2: 1.0}
         self._dibujar_paneles(result)
 
@@ -411,7 +410,7 @@ class MvcTab(QWidget):
         self._progress.setVisible(False)
 
     # ------------------------------------------------------------------
-    # Resumen numérico
+    # Numeric summary
     # ------------------------------------------------------------------
 
     def _actualizar_resumen(self, r: dict) -> None:
@@ -423,7 +422,7 @@ class MvcTab(QWidget):
         self._lbl_fuente.setText(f"{tr('MVC source:')} {r['mvc_source']}")
 
     # ------------------------------------------------------------------
-    # Dibujo de los 3 paneles
+    # Drawing the 3 panels
     # ------------------------------------------------------------------
 
     def _dibujar_paneles(self, r: dict) -> None:
@@ -432,14 +431,14 @@ class MvcTab(QWidget):
         n = r["n_plot"]
         t_full = r["t_plot"]
 
-        # Ventana temporal: selección por xlim (datos completos, ajuste de eje)
+        # Time window: selection via xlim (full data, axis adjustment)
         inicio = self._inicio_s
         fin = inicio + self._duracion_s
 
         axes = self._fig.subplots(3, 1, sharex=False)
         self._axes_list = list(axes)
 
-        # Panel 1: señal filtrada + rectificada
+        # Panel 1: filtered + rectified signal
         ax = axes[0]
         ax.plot(t_full, r["emg_filtered"][:n],
                 color="royalblue", lw=0.8, label=tr("Filtered EMG (20-450 Hz)"))
@@ -453,7 +452,7 @@ class MvcTab(QWidget):
         ax.legend(loc="upper right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
 
-        # Panel 2: envolvente + línea CVM
+        # Panel 2: envelope + MVC line
         ax = axes[1]
         ax.plot(t_full, r["emg_envelope"][:n],
                 color="purple", lw=2.0, label=tr("LP envelope (zero-phase)"))
@@ -468,7 +467,7 @@ class MvcTab(QWidget):
         ax.legend(loc="upper right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
 
-        # Panel 3: señal normalizada % CVM
+        # Panel 3: signal normalised % MVC
         ax = axes[2]
         ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25, color="darkorange")
         ax.plot(t_full, r["emg_norm"][:n],
@@ -483,7 +482,7 @@ class MvcTab(QWidget):
         ax.legend(loc="upper right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
 
-        # Guardar ylims iniciales y resetear acumuladores
+        # Save the initial ylims and reset the accumulators
         self._y_initial_lims = {i: ax.get_ylim() for i, ax in enumerate(self._axes_list)}
         self._y_accum = {i: 1.0 for i in range(3)}
 
@@ -493,21 +492,21 @@ class MvcTab(QWidget):
         self._canvas.updateGeometry()
         self._canvas.draw_idle()
 
-        # Reconstruir sidebar ▲▼
+        # Rebuild the ▲▼ sidebar
         self._rebuild_y_sidebar()
 
     def _redibujar_con_ventana_actual(self) -> None:
-        """Redibuja aplicando la ventana temporal actual sin reanalizar."""
+        """Redraw applying the current time window without re-analysing."""
         if self._last_result is None:
             return
         self._dibujar_paneles(self._last_result)
 
     # ------------------------------------------------------------------
-    # Sidebar de escala vertical (▲▼ por panel)
+    # Vertical-scale sidebar (▲▼ per panel)
     # ------------------------------------------------------------------
 
     def _rebuild_y_sidebar(self) -> None:
-        # Limpiar widgets anteriores
+        # Clear previous widgets
         while self._y_scale_sidebar_layout.count():
             item = self._y_scale_sidebar_layout.takeAt(0)
             if item.widget():
@@ -549,7 +548,7 @@ class MvcTab(QWidget):
             self._y_scale_sidebar_layout.addWidget(slot, stretch=1)
 
     def _y_zoom(self, panel_idx: int, ax, zoom_in: bool) -> None:
-        """Ajusta el rango Y del panel `panel_idx` por factor ×1.5."""
+        """Adjust the Y range of panel `panel_idx` by a factor of ×1.5."""
         factor = 1.5
         accum = self._y_accum.get(panel_idx, 1.0)
         if zoom_in:
@@ -586,12 +585,12 @@ class MvcTab(QWidget):
         self._canvas.draw_idle()
 
     # ------------------------------------------------------------------
-    # Controles de escala temporal
+    # Time-scale controls
     # ------------------------------------------------------------------
 
     @Slot()
     def _on_tiempo_ampliar(self) -> None:
-        """◀▶ — dobla la duración visible."""
+        """◀▶ — double the visible duration."""
         nueva_dur = min(self._duracion_s * 2.0, self._duracion_total)
         nueva_dur = max(nueva_dur, 0.5)
         nuevo_inicio = min(self._inicio_s, self._duracion_total - nueva_dur)
@@ -603,7 +602,7 @@ class MvcTab(QWidget):
 
     @Slot()
     def _on_tiempo_reducir(self) -> None:
-        """▶◀ — divide la duración visible a la mitad."""
+        """▶◀ — halve the visible duration."""
         nueva_dur = max(self._duracion_s / 2.0, 0.5)
         nuevo_inicio = min(self._inicio_s, self._duracion_total - nueva_dur)
         self._inicio_s = nuevo_inicio
@@ -648,16 +647,16 @@ class MvcTab(QWidget):
 
     @Slot()
     def _reset_ventana(self) -> None:
-        """Vuelve a inicio=0, duración=1/3 del total."""
+        """Return to start=0, duration=1/3 of the total."""
         self._inicio_s = 0.0
         self._duracion_s = self._duracion_total / 3.0
         self._sync_combo_zoom()
         self._update_info_labels()
         if self._last_result is not None:
-            self._dibujar_paneles(self._last_result)  # sin debounce (acción explícita)
+            self._dibujar_paneles(self._last_result)  # no debounce (explicit action)
 
     # ------------------------------------------------------------------
-    # Guardar figura
+    # Save figure
     # ------------------------------------------------------------------
 
     @Slot()
@@ -687,7 +686,7 @@ class MvcTab(QWidget):
         self._spin_fenv.setEnabled(habilitado)
 
     def cleanup(self) -> None:
-        """Llamado por MainWindow.closeEvent — cancela y espera al worker."""
+        """Called by MainWindow.closeEvent — cancels and waits for the worker."""
         if self._worker and self._worker.isRunning():
             self._worker.stop()
             self._worker.wait(5000)

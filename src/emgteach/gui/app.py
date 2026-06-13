@@ -1,13 +1,13 @@
 """
 EMG App — entry point.
 
-Crea la QApplication, muestra una splash screen breve, construye el
-QMainWindow con tres pestañas (Adquisición, Análisis, CVM) y arranca el
-event loop. Al cerrar, llama cleanup() en cada pestaña para garantizar
-que todos los workers terminan antes de salir.
+Creates the QApplication, shows a brief splash screen, builds the
+QMainWindow with three tabs (Acquisition, Analysis, MVC) and starts the
+event loop. On close, it calls cleanup() on each tab to ensure all
+workers finish before exiting.
 
-El idioma de la interfaz (inglés/español) se fija al arrancar y el selector
-lo cambia para el próximo reinicio (ver emgteach.i18n).
+The interface language (English/Spanish) is set at start-up; the selector
+changes it for the next restart (see emgteach.i18n).
 """
 
 from __future__ import annotations
@@ -72,12 +72,12 @@ def _make_splash() -> QSplashScreen:
 
 
 # ---------------------------------------------------------------------------
-# Estética compartida por todas las pestañas
+# Shared styling for all tabs
 # ---------------------------------------------------------------------------
-# Fondo de ventana gris claro, cajas (QGroupBox) en azul acero y zona de
-# gráficas en blanco (los marcos de gráficas usan objectName "plotsBox"; los
-# lienzos matplotlib de Análisis/CVM ya son blancos). El margen superior del
-# título evita que la primera fila de controles se solape con el título.
+# Light-gray window background, steel-blue boxes (QGroupBox) and white plot
+# areas (plot frames use the objectName "plotsBox"; the matplotlib canvases
+# of the Analysis/MVC tabs are already white). The title's top margin keeps
+# the first control row from overlapping the title.
 _APP_STYLESHEET = (
     "AcquisitionTab, AnalysisTab, MvcTab { background-color: #E1E6EB; }"
     "QGroupBox {"
@@ -101,7 +101,7 @@ _APP_STYLESHEET = (
 
 
 # ---------------------------------------------------------------------------
-# Ventana principal
+# Main window
 # ---------------------------------------------------------------------------
 
 class MainWindow(QMainWindow):
@@ -112,16 +112,16 @@ class MainWindow(QMainWindow):
 
         self._settings = settings
 
-        # Logger compartido por todas las pestañas
+        # Logger shared by all tabs
         self._logger = LoggerWidget()
 
-        # Pestañas
+        # Tabs
         self._tab_adq = AcquisitionTab(self._logger, settings)
         self._tab_ana = AnalysisTab(self._logger, settings)
         self._tab_cvm = MvcTab(self._logger, settings)
 
-        # Estética compartida: el fondo gris de cada pestaña (selector por clase)
-        # solo se pinta si el widget tiene WA_StyledBackground.
+        # Shared styling: each tab's gray background (class selector) is only
+        # painted if the widget has WA_StyledBackground.
         for tab in (self._tab_adq, self._tab_ana, self._tab_cvm):
             tab.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(_APP_STYLESHEET)
@@ -131,8 +131,8 @@ class MainWindow(QMainWindow):
         tabs.addTab(self._tab_ana, tr("Analysis"))
         tabs.addTab(self._tab_cvm, tr("MVC normalisation"))
 
-        # Esquina de la barra de pestañas: selector de idioma + botón "Acerca de"
-        # (sin barra de estado, coste vertical cero).
+        # Tab-bar corner: language selector + "About" button (no status bar,
+        # zero vertical cost).
         self._combo_lang = QComboBox()
         self._combo_lang.addItem("English", "en")
         self._combo_lang.addItem("Español", "es")
@@ -196,7 +196,7 @@ def main() -> None:
     app.setOrganizationName("Bioinstrumentacion")
 
     settings = QSettings("Bioinstrumentacion", "EMGApp")
-    # Fija el idioma (guardado o autodetectado) antes de construir la interfaz.
+    # Set the language (saved or auto-detected) before building the interface.
     set_language(resolve_startup_language(settings))
 
     splash = _make_splash()
@@ -205,7 +205,7 @@ def main() -> None:
 
     window = MainWindow(settings)
 
-    # Cierra la splash y muestra la ventana tras 1.5 s
+    # Close the splash and show the window after 1.5 s
     QTimer.singleShot(1500, splash.close)
     QTimer.singleShot(1500, window.show)
 

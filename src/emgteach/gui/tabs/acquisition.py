@@ -1,27 +1,27 @@
 """
-AcquisitionTab — pestaña 1: adquisición EMG en tiempo real con BITalino.
+AcquisitionTab — tab 1: real-time EMG acquisition with BITalino.
 
-Controles:
-  - Dirección MAC del BITalino (persistida con QSettings)
-  - Carpeta de destino para el EDF (persistida con QSettings)
-  - Botón Conectar / Desconectar
-  - Botón Iniciar / Detener grabación
+Controls:
+  - BITalino MAC address (persisted with QSettings)
+  - Destination folder for the EDF (persisted with QSettings)
+  - Connect / Disconnect button
+  - Start / Stop recording button
 
-Canales:
-  - 1 o 2 canales simultáneos (p. ej. agonista/antagonista), con etiqueta
-    editable por canal. Cada canal se dibuja superpuesto en su propio color.
+Channels:
+  - 1 or 2 simultaneous channels (e.g. agonist/antagonist), with an
+    editable label per channel. Each channel is drawn overlaid in its own colour.
 
-Visualización (pyqtgraph):
-  - Señal EMG en bruto
-  - Señal filtrada (notch + paso-banda)
-  - Envolvente
+Visualisation (pyqtgraph):
+  - Raw EMG signal
+  - Filtered signal (notch + band-pass)
+  - Envelope
 
-Controles de escala:
-  - Escala vertical: botones ▲▼ por gráfica (factor ×1.5, límites 0.01×–100× inicial)
-  - Escala temporal: desplegable de factores + botones ◀▶ (ventana deslizante sobre
-    el buffer circular; permite ver desde 0.5 s hasta los MAX_POINTS/fs segundos)
+Scale controls:
+  - Vertical scale: ▲▼ buttons per plot (×1.5 factor, 0.01×–100× of the initial limits)
+  - Time scale: factor dropdown + ◀▶ buttons (sliding window over the
+    ring buffer; lets you see from 0.5 s up to MAX_POINTS/fs seconds)
 
-La pestaña nunca bloquea la UI: toda la adquisición corre en AcquisitionWorker (QThread).
+The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread).
 """
 
 from __future__ import annotations
@@ -59,56 +59,56 @@ from emgteach.i18n import tr
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
 
-# Número de muestras en el buffer circular (= 30 s a 1000 Hz)
-# La ventana visible puede ser menor gracias al control de zoom temporal.
+# Number of samples in the ring buffer (= 30 s at 1000 Hz)
+# The visible window can be smaller thanks to the time-zoom control.
 MAX_POINTS = 30_000
-FS = EMG_PROFILE.sample_frequency  # Hz nominal (tomado del perfil de señal)
+FS = EMG_PROFILE.sample_frequency  # nominal Hz (taken from the signal profile)
 
-# Número máximo de canales simultáneos que ofrece la interfaz. La capa de
-# datos admite N, pero la UI se limita por ahora a 2 (agonista/antagonista).
+# Maximum number of simultaneous channels the interface offers. The data
+# layer supports N, but the UI is limited to 2 for now (agonist/antagonist).
 MAX_CHANNELS = 2
 
-# Número máximo de marcas de evento dibujadas simultáneamente en vivo
-# (pool reutilizable de líneas por gráfica; sobran para una ventana de 30 s).
+# Maximum number of event markers drawn live at once (a reusable pool of
+# lines per plot; more than enough for a 30 s window).
 MAX_MARKER_LINES = 40
 
-# Color por canal, consistente en las tres gráficas: así un color identifica
-# siempre al mismo sensor (azul = canal 1, rojo = canal 2).
+# Per-channel colour, consistent across the three plots: a colour always
+# identifies the same sensor (blue = channel 1, red = channel 2).
 _CHANNEL_COLORS = [(65, 105, 225), (214, 39, 40)]
 _CHANNEL_COLOR_HEX = ["#4169E1", "#D62728"]
 _CHANNEL_DEFAULT_LABELS = ["EMG", "EMG 2"]
-# Defaults usados brevemente en una versión anterior; se migran a los de
-# arriba si siguen guardados en QSettings (no pisa nombres elegidos por el
-# usuario, solo los antiguos por defecto).
+# Defaults briefly used in an earlier version; they are migrated to the ones
+# above if still stored in QSettings (this does not overwrite names chosen by
+# the user, only the old defaults).
 _OLD_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
 
-# Con 2 canales las gráficas de bruto y filtrada se apilan (un carril por
-# canal) en lugar de superponerse. El eje en mV deja de ser absoluto, así que
-# cada carril muestra ticks de referencia 0/±_CALIB_MV·ganancia (calibración
-# honesta que no tapa la señal). mV de señal real por gráfica (0=bruto,
-# 1=filtrada); la envolvente (2) nunca se apila.
+# With 2 channels the raw and filtered plots stack (one lane per channel)
+# instead of overlapping. The mV axis is no longer absolute, so each lane
+# shows reference ticks at 0/±_CALIB_MV·gain (an honest calibration that does
+# not hide the signal). Real signal mV per plot (0=raw, 1=filtered); the
+# envelope (2) never stacks.
 _CALIB_MV = {0: 1.0, 1: 0.2}
 
-# MAC por defecto del BITalino del laboratorio UCM (editable en el campo).
+# Default MAC of the UCM lab's BITalino (editable in the field).
 DEFAULT_MAC = "98:D3:91:FE:44:E4"
 
-# Intervalo (ms) tras el último dato recibido después del cual se considera
-# que no hay tráfico (el LED pasa de verde a amarillo).
+# Interval (ms) after the last received data beyond which there is considered
+# to be no traffic (the LED goes from green to yellow).
 LED_IDLE_MS = 500
 
-# Factores de zoom temporal disponibles (denominador: cuántas veces cabe la ventana
-# visible en el buffer total). Factor ×1 → ver todo el buffer.
+# Available time-zoom factors (denominator: how many times the visible window
+# fits in the total buffer). Factor ×1 → see the whole buffer.
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
-# Estilo compartido para botones de escala pequeños
+# Shared style for the small scale buttons
 _BTN_ST = (
     "QToolButton { font-size: 9px; padding: 0px; border: 1px solid #aaa; "
     "border-radius: 2px; background: #f5f5f5; }"
     "QToolButton:hover { background: #dde8ff; }"
     "QToolButton:pressed { background: #b0c8ff; }"
 )
-# Variante de mayor tipografía para los controles de ventana temporal (1-2 pt
-# más que _BTN_ST, que se reserva para los pequeños botones ▲▼ del sidebar).
+# Larger-typeface variant for the time-window controls (1-2 pt more than
+# _BTN_ST, which is reserved for the small ▲▼ sidebar buttons).
 _TBTN_ST = (
     "QToolButton { font-size: 11px; padding: 0px 2px; border: 1px solid #aaa; "
     "border-radius: 2px; background: #f5f5f5; }"
@@ -128,12 +128,12 @@ class AcquisitionTab(QWidget):
         self._worker: AcquisitionWorker | None = None
         self._profile = EMG_PROFILE
 
-        # Número de canales activos (1 o 2), persistido en QSettings.
+        # Number of active channels (1 or 2), persisted in QSettings.
         saved_n = int(self._settings.value("adquisicion/n_channels", 1))
         self._n_channels = min(max(saved_n, 1), MAX_CHANNELS)
 
-        # Buffers circulares por canal para las tres señales (30 s a 1000 Hz).
-        # Se reservan siempre MAX_CHANNELS; solo se rellenan los canales activos.
+        # Per-channel ring buffers for the three signals (30 s at 1000 Hz).
+        # MAX_CHANNELS are always allocated; only the active channels are filled.
         self._buf_raw = [
             deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
         ]
@@ -143,54 +143,54 @@ class AcquisitionTab(QWidget):
         self._buf_env = [
             deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
         ]
-        self._new_data = False  # flag: hay datos nuevos que pintar
+        self._new_data = False  # flag: there is new data to draw
 
-        # Eventos para dibujar líneas en vivo: (tiempo_s, etiqueta). El total
-        # de muestras adquiridas sitúa cada marca en la ventana deslizante.
+        # Events for drawing live lines: (time_s, label). The total number of
+        # acquired samples places each marker within the sliding window.
         self._marker_events: list[tuple[float, str]] = []
         self._total_samples = 0
 
-        # ---- Estado de escala vertical (por gráfica: 0=raw, 1=filt, 2=env) ----
-        # Rangos Y iniciales tomados del perfil de señal (se restauran en
-        # _reset_y_scales). Cambiar de modalidad = cambiar de perfil.
+        # ---- Vertical-scale state (per plot: 0=raw, 1=filt, 2=env) ----
+        # Initial Y ranges taken from the signal profile (restored in
+        # _reset_y_scales). Changing modality = changing profile.
         self._y_ranges_init: list[tuple[float, float]] = [
             self._profile.ylim_raw,       # raw
-            self._profile.ylim_filtered,  # filtrada
-            self._profile.ylim_envelope,  # envolvente
+            self._profile.ylim_filtered,  # filtered
+            self._profile.ylim_envelope,  # envelope
         ]
-        self._y_accum: list[float] = [1.0, 1.0, 1.0]  # factor acumulado por gráfica
-        # Ganancia de datos por gráfica, usada SOLO en modo apilado (2 canales)
-        # en bruto/filtrada: el zoom ▲▼ multiplica la señal dejando los carriles
-        # fijos, en lugar de escalar el ViewBox. En modo 1 canal no se usa.
+        self._y_accum: list[float] = [1.0, 1.0, 1.0]  # accumulated factor per plot
+        # Per-plot data gain, used ONLY in stacked mode (2 channels) on
+        # raw/filtered: the ▲▼ zoom multiplies the signal while keeping the
+        # lanes fixed, instead of scaling the ViewBox. Unused in 1-channel mode.
         self._y_gain: list[float] = [1.0, 1.0, 1.0]
 
-        # ---- Estado de escala temporal ----
-        # Número de muestras visibles en cada gráfica. Empieza mostrando 5 s.
-        self._n_visible: int = 5 * FS   # muestras visibles (ajustable con zoom)
+        # ---- Time-scale state ----
+        # Number of visible samples in each plot. Starts showing 5 s.
+        self._n_visible: int = 5 * FS   # visible samples (adjustable with zoom)
 
-        # Timer de render independiente — desacopla recepción de datos y redibujado.
-        # 33 ms ≈ 30 FPS máximo, independientemente de la velocidad del worker.
+        # Independent render timer — decouples data reception from redrawing.
+        # 33 ms ≈ 30 FPS max, regardless of the worker's speed.
         self._render_timer = QTimer(self)
         self._render_timer.setInterval(33)
         self._render_timer.timeout.connect(self._refresh_plots)
 
-        # Watchdog: dispara cada 1 s durante la grabación y verifica que el
-        # worker siga recibiendo muestras. Si no llegan datos en 3 s, fuerza
-        # la desconexión para desbloquear un read() colgado por pérdida de BT.
+        # Watchdog: fires every 1 s during recording and checks that the
+        # worker keeps receiving samples. If no data arrives within 3 s, it
+        # forces a disconnection to unblock a read() hung by a lost BT link.
         self._watchdog_timer = QTimer(self)
         self._watchdog_timer.setInterval(1000)
         self._watchdog_timer.timeout.connect(self._check_watchdog)
         self._watchdog_umbral_s = 3.0
 
-        # Logger local: instancia propia para mostrar en esta pestaña.
-        # Los mensajes se duplican al logger compartido (self._logger) para
-        # que tab_analisis también los reciba si los necesita.
+        # Local logger: own instance shown in this tab. Messages are mirrored
+        # to the shared logger (self._logger) so the analysis tab also receives
+        # them if it needs them.
         self._local_log = LoggerWidget()
 
         self._build_ui()
 
     # ------------------------------------------------------------------
-    # Helpers de log — escriben en el logger local Y en el compartido
+    # Log helpers — write to the local logger AND the shared one
     # ------------------------------------------------------------------
 
     def _log(self, msg: str) -> None:
@@ -202,33 +202,33 @@ class AcquisitionTab(QWidget):
         self._logger.append_error(msg)
 
     # ------------------------------------------------------------------
-    # Construcción de la interfaz
+    # Interface construction
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
-        # La estética (fondo gris, cajas azul acero, márgenes del título) está
-        # centralizada en gui/app.py y se aplica a todas las pestañas. Aquí solo
-        # se marca el marco de gráficas con objectName "plotsBox" para que quede
-        # en blanco (más abajo).
+        # The styling (gray background, steel-blue boxes, title margins) is
+        # centralised in gui/app.py and applied to all tabs. Here we only tag
+        # the plot frame with the objectName "plotsBox" so it stays white
+        # (below).
         root = QVBoxLayout(self)
         root.setContentsMargins(4, 4, 4, 4)
         root.setSpacing(4)
 
-        # ══ Fila superior: Configuración (izq.) | Registro de eventos (der.) ══
+        # ══ Top row: Configuration (left) | Event log (right) ══
         row_top = QHBoxLayout()
         row_top.setSpacing(4)
 
-        # — Configuración del dispositivo (media anchura) —
+        # — Device configuration (half width) —
         grp_config = QGroupBox(tr("Device configuration"))
         cfg_outer = QVBoxLayout(grp_config)
         cfg_outer.setContentsMargins(6, 3, 6, 3)
         cfg_outer.setSpacing(3)
 
-        # Fila 1: tipo de dispositivo + conexión (MAC o COM)
+        # Row 1: device type + connection (MAC or COM)
         cfg_row1 = QHBoxLayout()
         cfg_row1.setSpacing(6)
 
-        # Combo tipo de dispositivo
+        # Device-type combo
         self._combo_device_type = QComboBox()
         self._combo_device_type.addItem("BITalino (Bluetooth)")
         self._combo_device_type.addItem("Arduino + MyoWare 2.0 (USB)")
@@ -237,8 +237,8 @@ class AcquisitionTab(QWidget):
         self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
         cfg_row1.addWidget(self._combo_device_type, stretch=1)
 
-        # Zona central condicional: MAC (BITalino) o COM (Arduino)
-        # Envuelta en un QWidget para poder cambiar contenido sin rehacer el layout
+        # Conditional central area: MAC (BITalino) or COM (Arduino)
+        # Wrapped in a QWidget so the content can change without rebuilding the layout
         self._widget_mac = QWidget()
         mac_inner = QHBoxLayout(self._widget_mac)
         mac_inner.setContentsMargins(0, 0, 0, 0)
@@ -265,7 +265,7 @@ class AcquisitionTab(QWidget):
         btn_refresh_ports.clicked.connect(self._refresh_ports)
         ard_inner.addWidget(btn_refresh_ports)
 
-        # Contenedor que alterna entre _widget_mac y _widget_arduino
+        # Container that switches between _widget_mac and _widget_arduino
         self._stack_conn = QWidget()
         stack_layout = QHBoxLayout(self._stack_conn)
         stack_layout.setContentsMargins(0, 0, 0, 0)
@@ -274,7 +274,7 @@ class AcquisitionTab(QWidget):
         cfg_row1.addWidget(self._stack_conn, stretch=2)
         cfg_outer.addLayout(cfg_row1)
 
-        # Fila 2: carpeta de destino + Explorar
+        # Row 2: destination folder + Browse
         cfg_row2 = QHBoxLayout()
         cfg_row2.setSpacing(6)
         self._edit_dir = QLineEdit()
@@ -287,12 +287,12 @@ class AcquisitionTab(QWidget):
         cfg_row2.addWidget(btn_dir)
         cfg_outer.addLayout(cfg_row2)
 
-        # Visibilidad inicial de la zona de conexión
+        # Initial visibility of the connection area
         self._widget_mac.setVisible(saved_type == 0)
         self._widget_arduino.setVisible(saved_type == 1)
         self._refresh_ports()
 
-        # Fila 3: número de canales y etiquetas por canal
+        # Row 3: number of channels and per-channel labels
         ch_row = QHBoxLayout()
         ch_row.setSpacing(6)
         ch_row.addWidget(QLabel(tr("Channels:")))
@@ -307,7 +307,7 @@ class AcquisitionTab(QWidget):
         self._edit_labels: list[QLineEdit] = []
         for i in range(MAX_CHANNELS):
             edit = QLineEdit()
-            edit.setMaxLength(16)  # límite de etiqueta de canal EDF
+            edit.setMaxLength(16)  # EDF channel-label limit
             edit.setToolTip(
                 tr(
                     "Name of this channel's muscle/sensor (max. 16 characters; "
@@ -327,24 +327,23 @@ class AcquisitionTab(QWidget):
 
         row_top.addWidget(grp_config, stretch=1)
 
-        # — Registro de eventos (comparte la fila con la configuración) —
+        # — Event log (shares the row with the configuration) —
         grp_log = QGroupBox(tr("Event log"))
         log_layout = QVBoxLayout(grp_log)
         log_layout.setContentsMargins(4, 4, 4, 4)
-        # La fila superior (Configuración + Registro) ocupa ~3 filas de alto;
-        # el log llena esa caja y el espacio restante de la ventana va a las
-        # gráficas en tiempo real.
+        # The top row (Configuration + Log) is ~3 rows tall; the log fills that
+        # box and the remaining window space goes to the real-time plots.
         self._local_log.setMaximumHeight(90)
         log_layout.addWidget(self._local_log)
         row_top.addWidget(grp_log, stretch=1)
 
         root.addLayout(row_top)
 
-        # ══ Fila de acciones: Control | Marcadores (una línea cada una) ══
+        # ══ Actions row: Control | Markers (one line each) ══
         row_actions = QHBoxLayout()
         row_actions.setSpacing(4)
 
-        # — Control de adquisición (una sola línea) —
+        # — Acquisition control (single line) —
         grp_control = QGroupBox(tr("Acquisition control"))
         ctrl_layout = QHBoxLayout(grp_control)
         ctrl_layout.setContentsMargins(6, 3, 6, 3)
@@ -371,14 +370,14 @@ class AcquisitionTab(QWidget):
 
         row_actions.addWidget(grp_control, stretch=1)
 
-        # Timer LED idle
+        # LED idle timer
         self._led_idle_timer = QTimer(self)
         self._led_idle_timer.setSingleShot(True)
         self._led_idle_timer.setInterval(LED_IDLE_MS)
         self._led_idle_timer.timeout.connect(lambda: self._set_led("idle"))
         self._set_led("off")
 
-        # — Marcadores de eventos (una sola línea) —
+        # — Event markers (single line) —
         grp_markers = QGroupBox(tr("Event markers"))
         markers_layout = QHBoxLayout(grp_markers)
         markers_layout.setContentsMargins(6, 3, 6, 3)
@@ -397,8 +396,8 @@ class AcquisitionTab(QWidget):
         self._btn_marcar.clicked.connect(self._on_marcar)
         markers_layout.addWidget(self._btn_marcar)
 
-        # Detección automática de inicio de contracción (compacta, en línea).
-        # Las marcas añadidas quedan reflejadas en el "Registro de eventos".
+        # Automatic contraction-onset detection (compact, inline). Added
+        # markers are reflected in the "Event log".
         self._chk_auto = QCheckBox(tr("Auto-onset"))
         self._chk_auto.setToolTip(
             tr(
@@ -437,19 +436,19 @@ class AcquisitionTab(QWidget):
 
         root.addLayout(row_actions)
 
-        # Atajo de teclado M
+        # Keyboard shortcut M
         self._shortcut_m = QShortcut(QKeySequence("M"), self)
         self._shortcut_m.setEnabled(False)
         self._shortcut_m.activated.connect(self._on_marcar_rapido)
 
-        # ── Gráficas + controles de escala ──────────────────────────────
+        # ── Plots + scale controls ──────────────────────────────
         grp_plots = QGroupBox(tr("Real-time EMG signal"))
-        grp_plots.setObjectName("plotsBox")  # se mantiene en blanco (ver setStyleSheet)
+        grp_plots.setObjectName("plotsBox")  # stays white (see setStyleSheet)
         plots_root = QVBoxLayout(grp_plots)
         plots_root.setContentsMargins(6, 8, 6, 3)
         plots_root.setSpacing(3)
 
-        # -- Barra de escala temporal (arriba de las gráficas) -----------
+        # -- Time-scale bar (above the plots) -----------
         row_tiempo = QHBoxLayout()
         row_tiempo.addWidget(QLabel(tr("Time window:")))
 
@@ -466,7 +465,7 @@ class AcquisitionTab(QWidget):
         self._combo_zoom.setFixedSize(76, 26)
         for f in _ZOOM_FACTORS:
             self._combo_zoom.addItem(f"×{f}")
-        self._combo_zoom.setCurrentIndex(0)   # ×1 = todo el buffer
+        self._combo_zoom.setCurrentIndex(0)   # ×1 = the whole buffer
         self._combo_zoom.activated.connect(self._on_combo_zoom_changed)
         row_tiempo.addWidget(self._combo_zoom)
 
@@ -499,18 +498,18 @@ class AcquisitionTab(QWidget):
 
         plots_root.addLayout(row_tiempo)
 
-        # -- Área de gráficas con sidebar de escala vertical -------------
+        # -- Plot area with vertical-scale sidebar -------------
         pg.setConfigOption("background", "w")
         pg.setConfigOption("foreground", "k")
 
-        # Sidebar vertical (▲▼ por gráfica)
+        # Vertical sidebar (▲▼ per plot)
         self._sidebar = QWidget()
         self._sidebar.setFixedWidth(38)
         sidebar_vbox = QVBoxLayout(self._sidebar)
         sidebar_vbox.setContentsMargins(2, 4, 2, 4)
         sidebar_vbox.setSpacing(0)
 
-        # Contenedor gráficas
+        # Plots container
         plots_col = QWidget()
         plots_col_vbox = QVBoxLayout(plots_col)
         plots_col_vbox.setContentsMargins(0, 0, 0, 0)
@@ -523,13 +522,13 @@ class AcquisitionTab(QWidget):
         canvas_hbox.addWidget(plots_col)
         plots_root.addLayout(canvas_hbox)
 
-        # Una curva por canal en cada gráfica (color = canal). Se reservan
-        # MAX_CHANNELS curvas; las de canales inactivos quedan ocultas.
+        # One curve per channel in each plot (colour = channel). MAX_CHANNELS
+        # curves are allocated; those of inactive channels stay hidden.
         self._curves_raw: list = []
         self._curves_filt: list = []
         self._curves_env: list = []
 
-        # Señal bruta
+        # Raw signal
         self._plot_raw = pg.PlotWidget(title=tr("Raw EMG signal (mV)"))
         self._plot_raw.setYRange(*self._y_ranges_init[0])
         self._plot_raw.setLabel("left", "mV")
@@ -540,7 +539,7 @@ class AcquisitionTab(QWidget):
             )
         plots_col_vbox.addWidget(self._plot_raw)
 
-        # Señal filtrada
+        # Filtered signal
         self._plot_filt = pg.PlotWidget(
             title=tr("Filtered EMG (notch 50 Hz + band-pass 20-450 Hz)")
         )
@@ -553,7 +552,7 @@ class AcquisitionTab(QWidget):
             )
         plots_col_vbox.addWidget(self._plot_filt)
 
-        # Envolvente
+        # Envelope
         self._plot_env = pg.PlotWidget(
             title=tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
         )
@@ -566,9 +565,9 @@ class AcquisitionTab(QWidget):
             )
         plots_col_vbox.addWidget(self._plot_env)
 
-        # Pool reutilizable de líneas verticales para las marcas de evento,
-        # una colección por gráfica (se reposicionan en cada refresco según la
-        # ventana deslizante; color naranja, igual que en la pestaña Análisis).
+        # Reusable pool of vertical lines for the event markers, one collection
+        # per plot (repositioned on each refresh according to the sliding
+        # window; orange, like in the Analysis tab).
         marker_pen = pg.mkPen(color=(230, 126, 34), width=1, style=Qt.PenStyle.DashLine)
         self._marker_lines: list[list] = []
         for pw in (self._plot_raw, self._plot_filt, self._plot_env):
@@ -580,10 +579,10 @@ class AcquisitionTab(QWidget):
                 pool.append(line)
             self._marker_lines.append(pool)
 
-        # Anotaciones del modo apilado (2 canales), solo en bruto y filtrada:
-        # una línea base horizontal por canal (su "cero") y la etiqueta del
-        # músculo junto a cada carril. La calibración se presenta como ticks de
-        # referencia en el eje (ver _set_calib_ticks). Ocultas en modo 1 canal.
+        # Stacked-mode annotations (2 channels), only on raw and filtered: a
+        # horizontal baseline per channel (its "zero") and the muscle label
+        # next to each lane. The calibration is presented as reference ticks on
+        # the axis (see _set_calib_ticks). Hidden in 1-channel mode.
         self._baselines: dict[int, list] = {}
         self._lane_labels: dict[int, list] = {}
         for idx, pw in ((0, self._plot_raw), (1, self._plot_filt)):
@@ -608,9 +607,9 @@ class AcquisitionTab(QWidget):
             self._baselines[idx] = base_lines
             self._lane_labels[idx] = lane_labels
 
-        # Construir botones ▲▼ en el sidebar (uno por gráfica)
+        # Build the ▲▼ buttons in the sidebar (one per plot)
         self._plots_widgets = [self._plot_raw, self._plot_filt, self._plot_env]
-        labels = ["B", "F", "E"]   # Bruta / Filtrada / Envolvente
+        labels = ["B", "F", "E"]   # button per plot: raw / filtered / envelope
         for i, (pw, lbl_txt) in enumerate(zip(self._plots_widgets, labels)):
             slot = QWidget()
             slot_vbox = QVBoxLayout(slot)
@@ -650,18 +649,18 @@ class AcquisitionTab(QWidget):
 
         root.addWidget(grp_plots, stretch=1)
 
-        # Actualizar combo para que refleje n_visible inicial
+        # Update the combo so it reflects the initial n_visible
         self._sync_combo_zoom()
 
-        # Mostrar solo los canales activos y pintar la leyenda
+        # Show only the active channels and paint the legend
         self._apply_channel_visibility()
         self._update_legend()
-        # Configurar el modo de las gráficas (superpuesto o apilado) según el
-        # número de canales persistido.
+        # Configure the plot mode (overlaid or stacked) according to the
+        # persisted number of channels.
         self._apply_stacking_mode()
 
     # ------------------------------------------------------------------
-    # Slots de control de dispositivo
+    # Device-control slots
     # ------------------------------------------------------------------
 
     @Slot()
@@ -676,18 +675,18 @@ class AcquisitionTab(QWidget):
 
     @Slot()
     def _reset_mac(self) -> None:
-        """Restaura la MAC por defecto del laboratorio."""
+        """Restore the lab's default MAC."""
         self._edit_mac.setText(DEFAULT_MAC)
         self._settings.setValue("adquisicion/mac", DEFAULT_MAC)
 
     @Slot(int)
     def _on_device_type_changed(self, index: int) -> None:
-        """Muestra el campo MAC (BITalino) o el selector de puerto COM (Arduino)."""
+        """Show the MAC field (BITalino) or the COM-port selector (Arduino)."""
         self._widget_mac.setVisible(index == 0)
         self._widget_arduino.setVisible(index == 1)
 
     # ------------------------------------------------------------------
-    # Canales (1 o 2: agonista/antagonista)
+    # Channels (1 or 2: agonist/antagonist)
     # ------------------------------------------------------------------
 
     @Slot(int)
@@ -696,8 +695,8 @@ class AcquisitionTab(QWidget):
         self._settings.setValue("adquisicion/n_channels", self._n_channels)
         self._apply_channel_visibility()
         self._update_legend()
-        # Cambiar de 1↔2 canales reconfigura las gráficas (apilado vs
-        # superpuesto) y reinicia la ganancia del apilado.
+        # Switching 1↔2 channels reconfigures the plots (stacked vs overlaid)
+        # and resets the stacking gain.
         self._y_gain = [1.0, 1.0, 1.0]
         self._apply_stacking_mode()
 
@@ -731,33 +730,33 @@ class AcquisitionTab(QWidget):
             for i, lbl in enumerate(self._active_labels())
         ]
         self._lbl_legend.setText("&nbsp;&nbsp;&nbsp;".join(parts))
-        # Mantener sincronizadas las etiquetas de carril del modo apilado.
+        # Keep the stacked-mode lane labels in sync.
         if hasattr(self, "_lane_labels"):
             self._refresh_lane_label_texts()
 
     # ------------------------------------------------------------------
-    # Modo apilado (2 canales) en bruto / filtrada
+    # Stacked mode (2 channels) on raw / filtered
     # ------------------------------------------------------------------
 
     def _is_stacked(self, idx: int) -> bool:
-        """True si la gráfica idx (0=bruto, 1=filtrada) apila 2 canales."""
+        """True if plot idx (0=raw, 1=filtered) stacks 2 channels."""
         return self._n_channels == 2 and idx in (0, 1)
 
     def _lane_half(self, idx: int) -> float:
-        """Semialtura del rango inicial de la gráfica idx (= altura de un carril)."""
+        """Half-height of plot idx's initial range (= height of one lane)."""
         lo, hi = self._y_ranges_init[idx]
         return (hi - lo) / 2.0
 
     def _lane_baseline(self, idx: int, channel: int) -> float:
-        """Línea base (offset) del canal en la gráfica idx: canal 0 arriba (+A),
-        canal 1 abajo (-A)."""
+        """Baseline (offset) of the channel in plot idx: channel 0 on top (+A),
+        channel 1 below (-A)."""
         a = self._lane_half(idx)
         return a if channel == 0 else -a
 
     def _set_calib_ticks(self, idx: int) -> None:
-        """Ticks de referencia 0 y ±_CALIB_MV·ganancia en cada carril. Sustituyen
-        al eje mV absoluto (engañoso al apilar) por una calibración honesta que
-        no tapa la señal."""
+        """Reference ticks at 0 and ±_CALIB_MV·gain on each lane. They replace
+        the absolute mV axis (misleading when stacking) with an honest
+        calibration that does not hide the signal."""
         axis = self._plots_widgets[idx].getAxis("left")
         calib = _CALIB_MV[idx]
         g = self._y_gain[idx]
@@ -770,8 +769,8 @@ class AcquisitionTab(QWidget):
         axis.setTicks([major])
 
     def _refresh_lane_label_texts(self) -> None:
-        """Actualiza texto, color, posición y visibilidad de las etiquetas de
-        carril según las etiquetas activas y el modo apilado."""
+        """Update the text, colour, position and visibility of the lane labels
+        according to the active labels and the stacking mode."""
         labels = self._active_labels()
         for idx in (0, 1):
             a = self._lane_half(idx)
@@ -786,9 +785,9 @@ class AcquisitionTab(QWidget):
                     txt.hide()
 
     def _apply_stacking_mode(self) -> None:
-        """Configura rango Y, ticks de calibración y líneas base de bruto y
-        filtrada según el número de canales (1 = superpuesto sobre cero,
-        2 = dos carriles apilados). La envolvente nunca se apila."""
+        """Configure the Y range, calibration ticks and baselines of the raw
+        and filtered plots according to the number of channels (1 = overlaid on
+        zero, 2 = two stacked lanes). The envelope never stacks."""
         for idx in (0, 1):
             pw = self._plots_widgets[idx]
             axis = pw.getAxis("left")
@@ -805,7 +804,7 @@ class AcquisitionTab(QWidget):
                         bl.hide()
             else:
                 pw.setYRange(*self._y_ranges_init[idx], padding=0)
-                axis.setTicks(None)  # restaura ticks automáticos (mV absolutos)
+                axis.setTicks(None)  # restore automatic ticks (absolute mV)
                 for c in range(MAX_CHANNELS):
                     self._baselines[idx][c].hide()
         self._refresh_lane_label_texts()
@@ -833,7 +832,7 @@ class AcquisitionTab(QWidget):
 
     @Slot()
     def _refresh_ports(self) -> None:
-        """Repopula el combo de puertos COM con los disponibles en el sistema."""
+        """Repopulate the COM-port combo with those available on the system."""
         ports = ArduinoDevice.list_ports()
         saved_port = self._settings.value("adquisicion/port", "")
         self._combo_port.blockSignals(True)
@@ -958,8 +957,8 @@ class AcquisitionTab(QWidget):
         self._worker.marker_added.connect(self._on_marker_added)
         self._worker.start()
         self._render_timer.start()
-        # El watchdog arranca en _on_data_ready tras la primera muestra leída;
-        # no aquí, para no disparar durante device.open() (puede tardar ~3 s).
+        # The watchdog starts in _on_data_ready after the first sample is read;
+        # not here, so it does not fire during device.open() (can take ~3 s).
 
         self._btn_grabar.setText(tr("Stop recording"))
         self._btn_conectar.setEnabled(False)
@@ -985,13 +984,13 @@ class AcquisitionTab(QWidget):
         self._set_auto_controls_enabled(True)
 
     # ------------------------------------------------------------------
-    # Slots del worker
+    # Worker slots
     # ------------------------------------------------------------------
 
     @Slot(dict)
     def _on_data_ready(self, data: dict) -> None:
-        # Arranca el watchdog en la primera muestra recibida (no antes, para no
-        # disparar durante device.open() que puede tardar hasta 3 s en Arduino).
+        # Start the watchdog on the first received sample (not before, so it
+        # does not fire during device.open(), which can take up to 3 s on Arduino).
         if not self._watchdog_timer.isActive():
             self._watchdog_timer.start()
         # data_ready carries one array per channel; append each to its buffer.
@@ -1005,25 +1004,25 @@ class AcquisitionTab(QWidget):
         if raw:
             self._total_samples += len(raw[0])
         self._new_data = True
-        # LED verde: hay tráfico. El timer lo devolverá a amarillo si no llega
-        # ningún bloque nuevo en LED_IDLE_MS ms.
+        # Green LED: there is traffic. The timer will set it back to yellow if
+        # no new block arrives within LED_IDLE_MS ms.
         self._set_led("ok")
         self._led_idle_timer.start()
 
     def _refresh_plots(self, force: bool = False) -> None:
-        """Llamado cada 33 ms por _render_timer. Pinta solo si hay datos nuevos
-        (o si `force`, p. ej. al cambiar la ganancia del apilado)."""
+        """Called every 33 ms by _render_timer. Draws only if there is new data
+        (or if `force`, e.g. when changing the stacking gain)."""
         if not self._new_data and not force:
             return
         self._new_data = False
 
         n = min(self._n_visible, MAX_POINTS)
-        # Eje X en segundos relativo al inicio de la ventana visible (todos los
-        # buffers tienen la misma longitud, así que se calcula una sola vez).
+        # X axis in seconds relative to the start of the visible window (all
+        # buffers have the same length, so it is computed only once).
         t = np.arange(n) / FS
 
-        # En modo apilado (2 canales) bruto/filtrada se dibujan desplazados a su
-        # carril y escalados por la ganancia: mostrado = base + ganancia·señal.
+        # In stacked mode (2 channels) raw/filtered are drawn shifted to their
+        # lane and scaled by the gain: displayed = baseline + gain·signal.
         stacked_raw = self._is_stacked(0)
         stacked_filt = self._is_stacked(1)
 
@@ -1039,8 +1038,8 @@ class AcquisitionTab(QWidget):
             self._curves_filt[c].setData(t, arr_filt)
             self._curves_env[c].setData(t, arr_env)
 
-        # Reposicionar las líneas de marca: cada evento se sitúa según cuántas
-        # muestras hace que ocurrió, dentro de la ventana visible.
+        # Reposition the marker lines: each event is placed according to how
+        # many samples ago it occurred, within the visible window.
         win_s = n / FS
         visible = [
             win_s - (self._total_samples - tiempo * FS) / FS
@@ -1057,7 +1056,7 @@ class AcquisitionTab(QWidget):
                     line.hide()
 
     # ------------------------------------------------------------------
-    # Marcadores
+    # Markers
     # ------------------------------------------------------------------
 
     @Slot()
@@ -1085,9 +1084,9 @@ class AcquisitionTab(QWidget):
 
     @Slot(float, str)
     def _on_marker_added(self, tiempo: float, etiqueta: str) -> None:
-        # La marca queda reflejada en el "Registro de eventos" (log).
+        # The marker is reflected in the "Event log" (log).
         self._log(tr("Marker added: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta))
-        # Registrar el evento para dibujarlo en vivo sobre las gráficas.
+        # Record the event to draw it live over the plots.
         self._marker_events.append((tiempo, etiqueta))
 
     @Slot(str)
@@ -1112,14 +1111,14 @@ class AcquisitionTab(QWidget):
         self._set_auto_controls_enabled(True)
 
     # ------------------------------------------------------------------
-    # Escala vertical (▲▼ por gráfica)
+    # Vertical scale (▲▼ per plot)
     # ------------------------------------------------------------------
 
     def _y_zoom(self, idx: int, zoom_in: bool) -> None:
-        """Ajusta la escala vertical de la gráfica `idx` por factor 1.5.
+        """Adjust the vertical scale of plot `idx` by a factor of 1.5.
 
-        En modo apilado (bruto/filtrada con 2 canales) escala la ganancia de
-        datos dejando los carriles fijos; en el resto escala el ViewBox.
+        In stacked mode (raw/filtered with 2 channels) it scales the data gain
+        while keeping the lanes fixed; otherwise it scales the ViewBox.
         """
         factor = 1.5
 
@@ -1158,21 +1157,21 @@ class AcquisitionTab(QWidget):
         self._y_accum[idx] = new_accum
 
     def _reset_y_scales(self) -> None:
-        """Restaura la escala vertical de las tres gráficas a su estado inicial."""
+        """Restore the vertical scale of the three plots to their initial state."""
         self._y_accum = [1.0, 1.0, 1.0]
         self._y_gain = [1.0, 1.0, 1.0]
-        # Envolvente: nunca apilada, rango inicial directo.
+        # Envelope: never stacked, direct initial range.
         self._plot_env.setYRange(*self._y_ranges_init[2], padding=0)
-        # Bruto/filtrada: el modo (apilado o superpuesto) fija rango y anotaciones.
+        # Raw/filtered: the mode (stacked or overlaid) sets range and annotations.
         self._apply_stacking_mode()
 
     # ------------------------------------------------------------------
-    # Escala temporal (ventana deslizante)
+    # Time scale (sliding window)
     # ------------------------------------------------------------------
 
     @Slot()
     def _on_tiempo_ampliar(self) -> None:
-        """◀▶ — duplica la ventana visible (menos detalle, más contexto)."""
+        """◀▶ — double the visible window (less detail, more context)."""
         nueva = min(self._n_visible * 2, MAX_POINTS)
         nueva = max(nueva, int(0.5 * FS))
         self._n_visible = nueva
@@ -1181,7 +1180,7 @@ class AcquisitionTab(QWidget):
 
     @Slot()
     def _on_tiempo_reducir(self) -> None:
-        """▶◀ — divide la ventana visible a la mitad (más detalle)."""
+        """▶◀ — halve the visible window (more detail)."""
         nueva = max(self._n_visible // 2, int(0.5 * FS))
         self._n_visible = nueva
         self._sync_combo_zoom()
@@ -1196,7 +1195,7 @@ class AcquisitionTab(QWidget):
         self._update_ventana_label()
 
     def _sync_combo_zoom(self) -> None:
-        """Actualiza el combo para que refleje el n_visible actual."""
+        """Update the combo so it reflects the current n_visible."""
         if MAX_POINTS <= 0:
             return
         factor_actual = MAX_POINTS / self._n_visible
@@ -1209,7 +1208,7 @@ class AcquisitionTab(QWidget):
         self._combo_zoom.setCurrentIndex(best_idx)
         self._combo_zoom.blockSignals(False)
 
-        # Deshabilitar factores cuya ventana resultante sería < 0.5 s
+        # Disable factors whose resulting window would be < 0.5 s
         model = self._combo_zoom.model()
         for i, f in enumerate(_ZOOM_FACTORS):
             n = MAX_POINTS // f
@@ -1226,27 +1225,27 @@ class AcquisitionTab(QWidget):
             self._lbl_ventana_info.setText(f"{segundos * 1000:.0f} {tr('ms visible')}")
 
     def _reset_all_scales(self) -> None:
-        """Reset completo: rangos Y + ventana temporal al estado inicial."""
+        """Full reset: Y ranges + time window back to the initial state."""
         self._reset_y_scales()
         self._n_visible = 5 * FS
         self._sync_combo_zoom()
         self._update_ventana_label()
 
     # ------------------------------------------------------------------
-    # LED indicador de comunicación
+    # Communication-status LED
     # ------------------------------------------------------------------
 
     def _set_led(self, state: str) -> None:
         """
-        Ajusta el LED de comunicación.
-        state: 'off'  → rojo    (desconectado)
-               'idle' → amarillo (conectado, sin tráfico)
-               'ok'   → verde    (recibiendo datos)
+        Set the communication LED.
+        state: 'off'  → red    (disconnected)
+               'idle' → yellow (connected, no traffic)
+               'ok'   → green  (receiving data)
         """
         colors = {
-            "off":  ("#C0392B", "#7B241C"),   # rojo
-            "idle": ("#F1C40F", "#B7950B"),   # amarillo
-            "ok":   ("#27AE60", "#196F3D"),   # verde
+            "off":  ("#C0392B", "#7B241C"),   # red
+            "idle": ("#F1C40F", "#B7950B"),   # yellow
+            "ok":   ("#27AE60", "#196F3D"),   # green
         }
         fill, border = colors.get(state, colors["off"])
         self._led.setStyleSheet(
@@ -1256,15 +1255,15 @@ class AcquisitionTab(QWidget):
         )
 
     # ------------------------------------------------------------------
-    # Watchdog de conexión BITalino
+    # BITalino connection watchdog
     # ------------------------------------------------------------------
 
     @Slot()
     def _check_watchdog(self) -> None:
-        """Comprueba cada 1 s que el worker siga recibiendo muestras."""
+        """Check every 1 s that the worker keeps receiving samples."""
         if self._worker is None or not self._worker.isRunning():
             return
-        # Solo supervisar una vez que el worker esté en fase de lectura
+        # Only monitor once the worker is in its reading phase
         if not self._worker.is_streaming():
             return
         silencio = self._worker.time_since_last_sample()
@@ -1282,14 +1281,14 @@ class AcquisitionTab(QWidget):
             self._desconectar()
 
     # ------------------------------------------------------------------
-    # Limpieza al cerrar la ventana
+    # Cleanup on window close
     # ------------------------------------------------------------------
 
     def cleanup(self) -> None:
         """
-        Llamado por MainWindow.closeEvent antes de destruir la ventana.
-        Detiene timers, para el worker (forzado si es necesario) y espera
-        a que termine para garantizar que el EDF queda cerrado correctamente.
+        Called by MainWindow.closeEvent before destroying the window.
+        Stops timers, stops the worker (forced if necessary) and waits for it
+        to finish to ensure the EDF is closed correctly.
         """
         self._watchdog_timer.stop()
         self._render_timer.stop()

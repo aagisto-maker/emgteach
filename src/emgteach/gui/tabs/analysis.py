@@ -1,18 +1,18 @@
 """
-AnalysisTab — pestaña 2: análisis offline completo de señal EMG.
+AnalysisTab — tab 2: full offline analysis of an EMG signal.
 
-Reproduce los 7 paneles de analisis_emg_completo.py con matplotlib embebido
-en Qt (FigureCanvasQTAgg). El procesado corre en AnalysisWorker (QThread)
-para que la UI no se bloquee durante el análisis.
+Reproduces the 7 panels of analisis_emg_completo.py with matplotlib embedded
+in Qt (FigureCanvasQTAgg). Processing runs in AnalysisWorker (QThread) so the
+UI does not block during analysis.
 
-Controles:
-  - Selector de archivo EDF (ruta persistida en QSettings)
-  - Nombre del canal EMG
-  - Frecuencia de corte de la envolvente (editable, por defecto 5.0 Hz)
-  - Botón Analizar / Guardar figura
-  - Barra de progreso
+Controls:
+  - EDF file selector (path persisted in QSettings)
+  - EMG channel name
+  - Envelope cutoff frequency (editable, default 5.0 Hz)
+  - Analyse / Save figure button
+  - Progress bar
 
-Panel de resumen: MNF, MDF, indicador de fatiga.
+Summary panel: MNF, MDF, fatigue indicator.
 """
 
 from __future__ import annotations
@@ -98,19 +98,19 @@ class AnalysisTab(QWidget):
         self._build_ui()
 
     # ------------------------------------------------------------------
-    # Construcción de la interfaz
+    # Interface construction
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        # --- Fila superior: Parámetros (stretch 3) + Log (stretch 2) ---
+        # --- Top row: Parameters (stretch 3) + Log (stretch 2) ---
         grp_ctrl = QGroupBox(tr("Analysis parameters"))
         ctrl = QVBoxLayout(grp_ctrl)
         ctrl.setSpacing(4)
         ctrl.setContentsMargins(6, 4, 6, 4)
 
-        # Línea 1: archivo EDF + Analizar + Guardar
+        # Line 1: EDF file + Analyse + Save
         row_file = QHBoxLayout()
         row_file.addWidget(QLabel(tr("EDF file:")))
         self._edit_path = QLineEdit()
@@ -135,11 +135,11 @@ class AnalysisTab(QWidget):
         row_file.addWidget(self._btn_informe)
         ctrl.addLayout(row_file)
 
-        # Línea 2: canal + f_env
+        # Line 2: channel + f_env
         row_params = QHBoxLayout()
         row_params.addWidget(QLabel(tr("EMG channel:")))
         self._combo_canal = QComboBox()
-        self._combo_canal.setEditable(True)  # permite teclear si hace falta
+        self._combo_canal.setEditable(True)  # lets the user type if needed
         self._combo_canal.addItem("EMG")
         self._combo_canal.setFixedWidth(150)
         self._combo_canal.setToolTip(
@@ -177,7 +177,7 @@ class AnalysisTab(QWidget):
         row_params.addStretch()
         ctrl.addLayout(row_params)
 
-        # Log a la derecha de los parámetros
+        # Log to the right of the parameters
         grp_log_top = QGroupBox(tr("Event log"))
         log_top_layout = QVBoxLayout(grp_log_top)
         log_top_layout.setContentsMargins(4, 4, 4, 4)
@@ -189,16 +189,16 @@ class AnalysisTab(QWidget):
         top_row.addWidget(grp_log_top, stretch=2)
         root.addLayout(top_row)
 
-        # --- Selección de paneles — una línea compacta con scroll horizontal ---
+        # --- Panel selection — one compact line with horizontal scroll ---
         _PANEL_SHORT_LABELS = [
             "1A. Raw", "1B. Filt.+rect.", "2. Env. vs RMS",
             "3. Env. norm.", "4. PSD", "5. RMS/window",
             "6. MDF/time", "7. RMS vs MDF",
         ]
         grp_paneles = QGroupBox(tr("Panels to show"))
-        # Caja idéntica a las demás (mismo fondo de acero y mismo borde), como
-        # "Marcadores". Cada descripción de panel va en un chip blanco; su
-        # cuadrito de selección es blanco y se rellena de azul al marcarlo.
+        # Box identical to the others (same steel fill and border), like
+        # "Markers". Each panel description sits in a white chip; its tick box
+        # is white and fills blue when checked.
         grp_paneles.setStyleSheet(
             "QGroupBox {"
             "  background-color: #DCE7F4;"
@@ -255,8 +255,8 @@ class AnalysisTab(QWidget):
         paneles_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         paneles_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         paneles_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        # Viewport transparente: que se vea el fondo de acero de la caja en los
-        # huecos entre chips (si no, queda un recuadro gris claro interior).
+        # Transparent viewport: let the box's steel background show in the gaps
+        # between chips (otherwise an inner light-gray rectangle remains).
         paneles_scroll.viewport().setStyleSheet("background: transparent;")
         _fm = QFontMetrics(self.font())
         paneles_scroll.setFixedHeight(_fm.lineSpacing() * 2 + 10)
@@ -265,8 +265,8 @@ class AnalysisTab(QWidget):
         paneles_outer.setContentsMargins(4, 2, 4, 2)
         paneles_outer.addWidget(paneles_scroll)
 
-        # --- Segunda fila: Marcadores (stretch=2) + Paneles a mostrar (stretch=5),
-        #     justo debajo de Parámetros y Registro de eventos ---
+        # --- Second row: Markers (stretch=2) + Panels to show (stretch=5),
+        #     just below Parameters and Event log ---
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(4)
 
@@ -297,7 +297,7 @@ class AnalysisTab(QWidget):
         bottom_row.addWidget(grp_paneles, stretch=5)
         root.addLayout(bottom_row)
 
-        # --- Ventana de visualización (minimapa) — oculta (ver más abajo) ---
+        # --- Display window (minimap) — hidden (see below) ---
         grp_ventana = QGroupBox(tr("Display window"))
         ventana_vbox = QVBoxLayout(grp_ventana)
         ventana_vbox.setContentsMargins(6, 4, 6, 4)
@@ -363,7 +363,7 @@ class AnalysisTab(QWidget):
         self._progress.setVisible(False)
         root.addWidget(self._progress)
 
-        # --- Panel de resumen numérico (una fila) ---
+        # --- Numeric summary panel (one row) ---
         grp_resumen = QGroupBox(tr("Analysis summary"))
         grp_resumen.setContentsMargins(4, 2, 4, 2)
         resumen_inner = QWidget()
@@ -412,16 +412,16 @@ class AnalysisTab(QWidget):
 
         root.addWidget(grp_resumen)
 
-        # --- Canvas matplotlib con scroll (7 paneles son altos) ---
+        # --- Matplotlib canvas with scroll (the 7 panels are tall) ---
         self._fig = Figure(constrained_layout=True)
         self._canvas = FigureCanvasQTAgg(self._fig)
         self._canvas.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        # Zoom con la rueda del ratón sobre el panel bajo el cursor.
+        # Mouse-wheel zoom on the panel under the cursor.
         self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
 
-        # Sidebar de escala vertical: una pareja ▲▼ por panel activo
+        # Vertical-scale sidebar: one ▲▼ pair per active panel
         self._y_scale_sidebar = QWidget()
         self._y_scale_sidebar.setFixedWidth(38)
         self._y_scale_sidebar_layout = QVBoxLayout(self._y_scale_sidebar)
@@ -441,17 +441,17 @@ class AnalysisTab(QWidget):
 
         root.addWidget(scroll, stretch=1)
 
-        # La caja "Ventana de visualización" se ha retirado de la interfaz: el
-        # desplazamiento/zoom temporal se hace ahora con la rueda del ratón
-        # sobre los paneles. Se conserva grp_ventana (con _time_range y sus
-        # controles) como estado oculto para no romper los slots existentes;
-        # _time_range define el segmento dibujado y por defecto muestra todo el
-        # registro (ver _on_result). Así el canvas gana todo ese alto.
+        # The "Display window" box has been removed from the interface: time
+        # panning/zooming is now done with the mouse wheel over the panels.
+        # grp_ventana (with _time_range and its controls) is kept as hidden
+        # state so the existing slots do not break; _time_range defines the
+        # drawn segment and by default shows the whole recording (see
+        # _on_result). This way the canvas gains all that height.
         self._grp_ventana = grp_ventana
         grp_ventana.hide()
 
     # ------------------------------------------------------------------
-    # Slots de control
+    # Control slots
     # ------------------------------------------------------------------
 
     @Slot()
@@ -514,7 +514,7 @@ class AnalysisTab(QWidget):
         self._worker.start()
 
     # ------------------------------------------------------------------
-    # Slots del worker
+    # Worker slots
     # ------------------------------------------------------------------
 
     @Slot(int)
@@ -532,8 +532,8 @@ class AnalysisTab(QWidget):
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
         self._time_range.set_total_duration(duracion_total)
-        # Sin selector visible de ventana: se dibuja todo el registro por
-        # defecto y se navega/zooma con la rueda del ratón sobre los paneles.
+        # No visible window selector: the whole recording is drawn by default
+        # and you pan/zoom with the mouse wheel over the panels.
         _dur_ini = duracion_total
         self._time_range.set_range(0.0, _dur_ini)
         self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
@@ -584,7 +584,7 @@ class AnalysisTab(QWidget):
         self._progress.setVisible(False)
 
     # ------------------------------------------------------------------
-    # Resumen numérico
+    # Numeric summary
     # ------------------------------------------------------------------
 
     def _actualizar_resumen(self, r: dict) -> None:
@@ -612,7 +612,7 @@ class AnalysisTab(QWidget):
         self._lbl_fatiga.setStyleSheet(f"font-size: 9px; padding: 0 4px; color: {color};")
 
     # ------------------------------------------------------------------
-    # Dibujo de los 7 paneles (replica analisis_emg_completo.py)
+    # Drawing the 7 panels (replicates analisis_emg_completo.py)
     # ------------------------------------------------------------------
 
     def _dibujar_paneles(self, r: dict) -> None:
@@ -636,7 +636,7 @@ class AnalysisTab(QWidget):
 
         _grid = dict(ls="--", color="#DDDDDD", alpha=0.8)
 
-        # --- 1A: Señal bruta ---
+        # --- 1A: Raw signal ---
         if 0 in ax_map:
             ax = ax_map[0]
             ax.plot(times, r["emg_raw"],
@@ -649,7 +649,7 @@ class AnalysisTab(QWidget):
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
-        # --- 1B: Filtrada + rectificada ---
+        # --- 1B: Filtered + rectified ---
         if 1 in ax_map:
             ax = ax_map[1]
             ax.plot(times, r["emg_filtered"],
@@ -665,7 +665,7 @@ class AnalysisTab(QWidget):
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
-        # --- 2: Envolvente ---
+        # --- 2: Envelope ---
         if 2 in ax_map:
             ax = ax_map[2]
             ax.plot(times, r["emg_rectified"],
@@ -683,7 +683,7 @@ class AnalysisTab(QWidget):
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
-        # --- 3: Envolvente normalizada ---
+        # --- 3: Normalised envelope ---
         if 3 in ax_map:
             ax = ax_map[3]
             ax.plot(times, r["emg_envelope_normalised"],
@@ -715,7 +715,7 @@ class AnalysisTab(QWidget):
             ax.legend(fontsize=7)
             ax.grid(True, **_grid)
 
-        # --- 5: RMS por ventana ---
+        # --- 5: RMS per window ---
         if 5 in ax_map:
             ax = ax_map[5]
             ax.plot(r["t_seg"], r["rms_seg"],
@@ -730,7 +730,7 @@ class AnalysisTab(QWidget):
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
-        # --- 6: MDF vs tiempo ---
+        # --- 6: MDF vs time ---
         if 6 in ax_map:
             ax = ax_map[6]
             ax.scatter(r["t_seg"], r["mdf_seg"],
@@ -782,7 +782,7 @@ class AnalysisTab(QWidget):
         self._rebuild_y_sidebar(selected)
 
     # ------------------------------------------------------------------
-    # Guardar figura
+    # Save figure
     # ------------------------------------------------------------------
 
     @Slot()
@@ -804,17 +804,17 @@ class AnalysisTab(QWidget):
 
     @Slot()
     def _pedir_paneles_informe(self) -> list[int] | None:
-        """Diálogo modal para elegir qué gráficos se incluyen en el informe.
+        """Modal dialog to choose which graphs are included in the report.
 
-        Devuelve la lista de índices de panel (0-7) marcados, o ``None`` si el
-        usuario cancela. Por defecto vienen marcados los paneles que están
-        visibles en pantalla.
+        Returns the list of checked panel indices (0-7), or ``None`` if the
+        user cancels. By default the panels currently visible on screen are
+        pre-checked.
         """
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("Report graphs"))
         dlg.setMinimumWidth(340)
-        # Estética coherente con la app: fondo gris, encabezado en azul y cada
-        # gráfico en un recuadro blanco (chip), como en "Paneles a mostrar".
+        # Styling consistent with the app: gray background, blue header and each
+        # graph in a white box (chip), like in "Panels to show".
         dlg.setStyleSheet(
             "QDialog { background-color: #E1E6EB; }"
             "QLabel#dlgHeader { color: #1F4E79; font-weight: bold; font-size: 12px; }"
@@ -873,13 +873,13 @@ class AnalysisTab(QWidget):
     def _generar_informe(self) -> None:
         """Generate the PDF session report next to the source EDF.
 
-        Antes de elaborarlo pregunta qué gráficos incluir (diálogo con tics).
+        Before building it, asks which graphs to include (tick dialog).
         """
         if self._last_result is None:
             return
         paneles = self._pedir_paneles_informe()
         if paneles is None:
-            return  # cancelado por el usuario
+            return  # cancelled by the user
         edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         out = edf_path.with_name(f"{edf_path.stem}_informe_{ts}.pdf")
@@ -957,7 +957,7 @@ class AnalysisTab(QWidget):
             self._dibujar_paneles(self._last_result)
 
     # ------------------------------------------------------------------
-    # Escala vertical por panel
+    # Per-panel vertical scale
     # ------------------------------------------------------------------
 
     def _rebuild_y_sidebar(self, selected: list[int]) -> None:
@@ -1019,7 +1019,7 @@ class AnalysisTab(QWidget):
         self._canvas.draw_idle()
 
     # ------------------------------------------------------------------
-    # Controles de escala temporal
+    # Time-scale controls
     # ------------------------------------------------------------------
 
     @Slot()
@@ -1102,7 +1102,7 @@ class AnalysisTab(QWidget):
         self._combo_zoom.setEnabled(has_data)
 
     def cleanup(self) -> None:
-        """Llamado por MainWindow.closeEvent — cancela y espera al worker."""
+        """Called by MainWindow.closeEvent — cancels and waits for the worker."""
         if self._worker and self._worker.isRunning():
             self._worker.stop()
             self._worker.wait(5000)
