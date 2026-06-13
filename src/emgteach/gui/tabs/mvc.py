@@ -223,7 +223,7 @@ class MvcTab(QWidget):
         # Muscle-load APDF on its own (roughly square) canvas, ~1/3 of the width.
         self._apdf_fig = Figure(constrained_layout=True)
         self._apdf_canvas = FigureCanvasQTAgg(self._apdf_fig)
-        self._apdf_canvas.setFixedSize(360, 360)
+        self._apdf_canvas.setFixedSize(360, 120)
 
         # Structured data panel (replaces the old summary box).
         self._data_box = self._build_data_panel()
@@ -234,7 +234,8 @@ class MvcTab(QWidget):
         bottom_hbox.setSpacing(8)
         bottom_hbox.addWidget(self._apdf_canvas, stretch=0,
                               alignment=Qt.AlignmentFlag.AlignTop)
-        bottom_hbox.addWidget(self._data_box, stretch=1)
+        bottom_hbox.addWidget(self._data_box, stretch=1,
+                              alignment=Qt.AlignmentFlag.AlignTop)
 
         viz_container = QWidget()
         viz_v = QVBoxLayout(viz_container)
@@ -365,8 +366,9 @@ class MvcTab(QWidget):
         return super().eventFilter(obj, event)
 
     def _update_apdf_layout(self) -> None:
-        """Keep the muscle-load APDF square and filling the width left of the
-        data panel: the data panel takes at most ~1/3, the APDF the rest."""
+        """Size the muscle-load APDF: it fills the width left of the data panel
+        (data panel ≤ ~1/3, APDF the rest), and its height is ~1/4 of its width
+        (a low, wide chart)."""
         if not hasattr(self, "_apdf_canvas") or not hasattr(self, "_viz_scroll"):
             return
         vp = self._viz_scroll.viewport().width()
@@ -374,10 +376,11 @@ class MvcTab(QWidget):
             return
         data_w = max(180, vp // 3)            # data panel: at most ~1/3
         self._data_box.setMaximumWidth(data_w)
-        side = max(260, vp - data_w - 16)     # APDF: the rest, kept square
+        side = max(260, vp - data_w - 16)     # APDF width: fills the rest
+        height = max(120, side // 4)          # height ~ 1/4 of the width
         if (abs(side - self._apdf_canvas.width()) > 8
-                or abs(side - self._apdf_canvas.height()) > 8):
-            self._apdf_canvas.setFixedSize(side, side)
+                or abs(height - self._apdf_canvas.height()) > 8):
+            self._apdf_canvas.setFixedSize(side, height)
 
     # ------------------------------------------------------------------
     # File-selection slots

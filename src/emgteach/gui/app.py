@@ -61,7 +61,7 @@ def _make_splash() -> QSplashScreen:
     author_font = QFont("Arial", 9)
     p.setFont(author_font)
     p.setPen(QColor(220, 220, 220))
-    author_rect = px.rect().adjusted(0, 130, 0, 0)
+    author_rect = px.rect().adjusted(0, 152, 0, 0)
     p.drawText(author_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
                "Dr. Agis-Torres — UCM")
 
