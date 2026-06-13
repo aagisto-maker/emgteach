@@ -39,9 +39,10 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Slot
 from PySide6.QtWidgets import (
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QDoubleSpinBox,
     QFileDialog,
-    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -59,8 +60,14 @@ from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
 from emgteach.io import list_edf_channels
+from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_mvc_report
 from emgteach.workers import MvcWorker
+
+# Distinct base colour per Jonsson load level; an out-of-range value is drawn
+# with a red ring on top (see _dibujar_apdf / the data panel).
+_LEVEL_COLORS = {"static": "#2E86C1", "median": "#E67E22", "peak": "#8E44AD"}
+_OUT_COLOR = "#cc0000"
 
 # Available time-zoom factors (same as tab_analisis)
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
@@ -324,39 +331,50 @@ class MvcTab(QWidget):
         root.addLayout(nav_row)
 
     def _build_data_panel(self) -> QGroupBox:
-        """Structured panel with the normalisation values and the Jonsson
-        muscle-load levels (replaces the old horizontal summary box)."""
+        """Structured panel: the normalisation values and the Jonsson muscle-load
+        levels — each (where relevant) with its normal range and a short
+        explanation; out-of-range values are shown in red."""
         box = QGroupBox(tr("Normalisation and muscle load"))
-        grid = QGridLayout(box)
-        grid.setContentsMargins(8, 6, 8, 6)
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(3)
+        v = QVBoxLayout(box)
+        v.setContentsMargins(8, 6, 8, 6)
+        v.setSpacing(4)
 
-        def _row(r: int, key_text: str) -> QLabel:
-            k = QLabel(key_text)
-            k.setStyleSheet("font-size: 11px; color: #555555;")
-            v = QLabel("—")
-            v.setStyleSheet("font-size: 11px;")
-            grid.addWidget(k, r, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-            grid.addWidget(v, r, 1)
-            return v
+        def _lbl() -> QLabel:
+            la = QLabel("—")
+            la.setWordWrap(True)
+            la.setTextFormat(Qt.TextFormat.RichText)
+            la.setStyleSheet("font-size: 11px;")
+            v.addWidget(la)
+            return la
 
-        self._d_file = _row(0, tr("File:"))
-        self._d_cvm_ref = _row(1, tr("MVC reference:"))
-        self._d_mean = _row(2, tr("Mean activation:"))
-        self._d_source = _row(3, tr("MVC source:"))
-        self._d_duration = _row(4, tr("Duration:"))
+        self._d_file = _lbl()
+        self._d_cvm_ref = _lbl()
+        self._d_source = _lbl()
+        self._d_duration = _lbl()
+        self._d_mean = _lbl()
 
         hdr = QLabel(tr("Muscle load (Jonsson APDF)"))
         hdr.setStyleSheet("font-size: 11px; font-weight: bold; color: #1F4E79;")
-        grid.addWidget(hdr, 5, 0, 1, 2)
-        self._d_static = _row(6, tr("Static (P10):"))
-        self._d_median = _row(7, tr("Median (P50):"))
-        self._d_peak = _row(8, tr("Peak (P90):"))
-
-        grid.setColumnStretch(1, 1)
-        grid.setRowStretch(9, 1)
+        v.addWidget(hdr)
+        self._d_static = _lbl()
+        self._d_median = _lbl()
+        self._d_peak = _lbl()
+        v.addStretch()
         return box
+
+    @staticmethod
+    def _metric_html(label: str, value: float, limit: float,
+                     explanation: str, exceeds: bool | None = None) -> str:
+        """Rich-text for a metric: value (red if out of range) + its normal
+        range and a short explanation."""
+        out = (value > limit) if exceeds is None else exceeds
+        value_color = _OUT_COLOR if out else "#1a5276"
+        return (
+            f"<b>{label}</b> "
+            f"<span style='color:{value_color}'>{value:.0f} % MVC</span><br>"
+            f"<span style='color:#777777; font-size:9px'>"
+            f"{tr('Normal range:')} ≤ {limit:.0f} % — {explanation}</span>"
+        )
 
     def eventFilter(self, obj, event) -> bool:
         if (event.type() == QEvent.Type.Resize
@@ -500,19 +518,27 @@ class MvcTab(QWidget):
 
     def _actualizar_resumen(self, r: dict) -> None:
         dim = r.get("dimension", "")
-        self._d_file.setText(Path(r["edf_path"]).name)
-        self._d_cvm_ref.setText(f"{r['mvc_amplitude_ref']:.4f} {dim}")
-        self._d_mean.setText(f"{float(r.get('mean_norm', 0.0)):.1f} % MVC")
-        self._d_source.setText(str(r["mvc_source"]))
+        self._d_file.setText(f"<b>{tr('File:')}</b> {Path(r['edf_path']).name}")
+        self._d_cvm_ref.setText(
+            f"<b>{tr('MVC reference:')}</b> {r['mvc_amplitude_ref']:.4f} {dim}")
+        self._d_source.setText(f"<b>{tr('MVC source:')}</b> {r['mvc_source']}")
         dur = float(r["tiempo"][-1]) if len(r.get("tiempo", [])) else 0.0
-        self._d_duration.setText(f"{dur:.1f} s")
+        self._d_duration.setText(f"<b>{tr('Duration:')}</b> {dur:.1f} s")
+
+        self._d_mean.setText(self._metric_html(
+            tr("Mean activation:"), float(r.get("mean_norm", 0.0)),
+            EMG_PROFILE.apda_mean_limit, tr("average activation over the task")))
+
         apdf = r["apdf"]
-        for lbl, lvl in ((self._d_static, apdf.static),
-                         (self._d_median, apdf.median),
-                         (self._d_peak, apdf.peak)):
-            color = "#cc0000" if lvl.exceeds else "#1a7a1a"
-            lbl.setText(f"{lvl.value:.0f} % MVC  (≤ {lvl.limit:.0f} %)")
-            lbl.setStyleSheet(f"font-size: 11px; color: {color};")
+        self._d_static.setText(self._metric_html(
+            tr("Static (P10):"), apdf.static.value, apdf.static.limit,
+            tr("near-continuous background load"), apdf.static.exceeds))
+        self._d_median.setText(self._metric_html(
+            tr("Median (P50):"), apdf.median.value, apdf.median.limit,
+            tr("typical working load"), apdf.median.exceeds))
+        self._d_peak.setText(self._metric_html(
+            tr("Peak (P90):"), apdf.peak.value, apdf.peak.limit,
+            tr("recurrent high-effort load"), apdf.peak.exceeds))
 
     # ------------------------------------------------------------------
     # Drawing the 3 panels
@@ -609,8 +635,11 @@ class MvcTab(QWidget):
             (apdf.median, 50, tr("Median")),
             (apdf.peak, 90, tr("Peak")),
         ):
-            color = "#cc0000" if lvl.exceeds else "#1a9850"
-            ax.plot([lvl.value], [prob], "o", color=color, ms=7, zorder=5,
+            base = _LEVEL_COLORS[lvl.name]
+            ax.plot([lvl.value], [prob], "o", ms=9, zorder=5,
+                    markerfacecolor=base,
+                    markeredgecolor=(_OUT_COLOR if lvl.exceeds else base),
+                    markeredgewidth=(2.5 if lvl.exceeds else 0.8),
                     label=f"{name}: {lvl.value:.0f} % (≤{lvl.limit:.0f} %)")
         ax.set_title(tr("Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
         ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
@@ -801,11 +830,52 @@ class MvcTab(QWidget):
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
 
+    def _pedir_rango_informe(self) -> tuple[float, float] | None:
+        """Small dialog to pick the time range plotted in the report,
+        pre-filled with the currently visible window."""
+        dlg = QDialog(self)
+        dlg.setWindowTitle(tr("Report time range"))
+        lay = QVBoxLayout(dlg)
+        lay.setContentsMargins(12, 12, 12, 12)
+        lay.addWidget(QLabel(tr("Time range to plot (s):")))
+        total = max(self._duracion_total, self._inicio_s + self._duracion_s)
+        row = QHBoxLayout()
+        row.addWidget(QLabel(tr("Start:")))
+        spin_ini = QDoubleSpinBox()
+        spin_ini.setRange(0.0, max(0.0, total))
+        spin_ini.setDecimals(1)
+        spin_ini.setSingleStep(0.5)
+        spin_ini.setValue(float(self._inicio_s))
+        row.addWidget(spin_ini)
+        row.addWidget(QLabel(tr("Duration:")))
+        spin_dur = QDoubleSpinBox()
+        spin_dur.setRange(0.5, max(0.5, total))
+        spin_dur.setDecimals(1)
+        spin_dur.setSingleStep(0.5)
+        spin_dur.setValue(float(self._duracion_s))
+        row.addWidget(spin_dur)
+        row.addStretch()
+        lay.addLayout(row)
+        bb = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        bb.accepted.connect(dlg.accept)
+        bb.rejected.connect(dlg.reject)
+        lay.addWidget(bb)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return None
+        x0 = float(spin_ini.value())
+        x1 = min(x0 + float(spin_dur.value()), float(total))
+        return (x0, x1)
+
     @Slot()
     def _generar_informe(self) -> None:
         """Generate the MVC / muscle-load PDF report next to the source EDF."""
         if self._last_result is None:
             return
+        rango = self._pedir_rango_informe()
+        if rango is None:
+            return  # cancelled by the user
         edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         out = edf_path.with_name(f"{edf_path.stem}_informe_cvm_{ts}.pdf")
@@ -814,10 +884,7 @@ class MvcTab(QWidget):
             "student_code": self._settings.value("analisis/student_code", ""),
         }
         try:
-            build_mvc_report(
-                out, self._last_result, meta,
-                time_range=(self._inicio_s, self._inicio_s + self._duracion_s),
-            )
+            build_mvc_report(out, self._last_result, meta, time_range=rango)
             self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
         except Exception as exc:
             self._logger.append_error(

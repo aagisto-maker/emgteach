@@ -365,6 +365,12 @@ _ES = {
         "Informe de normalización CVM y carga muscular",
     "exceeds limit": "supera el límite",
     "within limit": "dentro del límite",
+    "Normal range:": "Rango normal:",
+    "near-continuous background load": "carga casi continua (de fondo)",
+    "typical working load": "carga de trabajo típica",
+    "recurrent high-effort load": "esfuerzos altos recurrentes",
+    "average activation over the task": "activación media durante la tarea",
+    "Report time range": "Rango temporal del informe",
 
     # --- DSP diagnostics ---
     "Possible saturation: {pct:.1f}% of samples sit at ADC extremes "

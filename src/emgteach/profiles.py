@@ -59,6 +59,9 @@ class SignalProfile:
         Recommended maximum loads (% MVC) for the static / median / peak
         levels of Jonsson's APDF muscle-load analysis (see
         :mod:`emgteach.apda`).
+    apda_mean_limit : float
+        Guideline maximum for the average sustained activation (% MVC), used
+        to flag the mean-activation readout.
     onset_k : float
         Threshold sensitivity for automatic onset detection, in baseline
         standard deviations (threshold = baseline mean + ``onset_k``*SD).
@@ -103,6 +106,9 @@ class SignalProfile:
     apda_static_limit: float = 5.0
     apda_median_limit: float = 14.0
     apda_peak_limit: float = 70.0
+    # Guideline maximum for the average sustained activation (% MVC); used only
+    # to flag the "mean activation" readout, not part of the APDF computation.
+    apda_mean_limit: float = 10.0
 
     # -- automatic onset detection (baseline + k*SD threshold) --
     onset_k: float = 3.0
