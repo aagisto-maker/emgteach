@@ -17,6 +17,15 @@ modules are migrated from the prototype.
 - **API reference** — auto-generated from docstrings via mkdocstrings
 - **Citing emgteach** — see [`CITATION.cff`](https://github.com/aagisto-maker/emgteach/blob/main/CITATION.cff)
 
+## User manual
+
+A detailed manual — what the app does and the physiological meaning of every
+metric — is available as a source document for an illustrated guide:
+
+- English: [`manual_emgteach.md`](manual_emgteach.md)
+- Spanish: [`manual_emgteach_es.md`](manual_emgteach_es.md)
+- Lab practical guide (Spanish): [`guion_practicas_es.md`](guion_practicas_es.md)
+
 ## Useful links
 
 - Source code: <https://github.com/aagisto-maker/emgteach>
