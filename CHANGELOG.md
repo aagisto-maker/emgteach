@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Report graph picker.** Generating a PDF report now opens a dialog to choose
   which analysis panels are rendered into the document; each selected panel is
   drawn as its own graph (`build_session_report(..., panels=...)`).
+- **Muscle-load analysis (Jonsson APDF).** The MVC tab now computes the
+  Amplitude Probability Distribution Function of the % MVC envelope and reports
+  the **static** (P10), **median** (P50) and **peak** (P90) load levels against
+  configurable recommended limits, with a dedicated distribution panel and a
+  colour-coded summary. New Qt-free `emgteach.apda` module
+  (`compute_apdf`); limits live in `SignalProfile`.
 
 ### Changed
 - **Compact, themed GUI.** The acquisition tab was reorganised into two compact

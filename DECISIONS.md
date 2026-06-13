@@ -12,6 +12,51 @@ used.
 
 ---
 
+## 2026-06-13 — Muscle-load analysis (Jonsson APDF) in the MVC tab
+
+### Decision 1 — Implement Jonsson's APDF method, offline first
+
+**Context.** A faithful equivalent of PluxBioSignals' "Muscle Load Analysis"
+add-on was requested. That add-on applies **Jonsson's Amplitude Probability
+Distribution Analysis (APDA / APDF)** — a published, public-domain method
+(Jonsson 1978/1982), not a proprietary algorithm.
+
+**Options evaluated.** Placement: (a) extend the existing MVC tab; (b) a new
+dedicated "Muscle load" tab; (c) a selectable panel in the Analysis tab.
+Scope: offline post-processing first vs. online (real-time) from the start.
+
+**Chosen: extend the MVC tab, offline first.** The MVC tab already computes
+`emg_norm` (the % MVC envelope), which is exactly the input to the APDF, so
+the offline analysis reuses almost everything (one new core function, one new
+plot panel, one summary line). The online / real-time variant (warning and
+danger zones during acquisition) is deferred to a second phase.
+
+### Decision 2 — Method lives in a Qt-free core module
+
+`src/emgteach/apda.py` (`compute_apdf`, `LoadLevel`, `ApdfResult`) implements
+the method with numpy only, mirroring `dsp.py` / `mvc.py`, and is unit-tested
+in isolation (`tests/test_apda.py`). The three Jonsson levels are the
+**static** (P10), **median** (P50) and **peak** (P90) of the % MVC
+distribution.
+
+### Decision 3 — Recommended limits live in the SignalProfile
+
+The static / median / peak recommended maxima (% MVC) are profile attributes
+(`apda_static_limit`=5, `apda_median_limit`=14, `apda_peak_limit`=70),
+following the Hito-1 extension-point pattern, so they are configurable per
+modality without touching the worker or GUI. The defaults follow common
+ergonomic guidance derived from Jonsson; they are starting values to be
+tuned, **not** clinical thresholds.
+
+### Scope note — whole recording, no real-time zones yet
+
+The offline APDF is computed over the **whole recording** (muscle load is a
+task-level statistic), independent of the display-window navigator. The
+real-time "warning / danger" zones of the Plux add-on belong to the deferred
+online phase.
+
+---
+
 ## 2026-06-11 — Hito 3: PDF session reports (+ visual polish)
 
 ### Decision 1 — PDF engine: reportlab
