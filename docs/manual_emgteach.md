@@ -360,12 +360,12 @@ distribution, **three load levels** are read:
 - Sustainedly exceeding these limits is associated with **fatigue** and a higher
   risk of **musculoskeletal disorders**.
 - In the **live monitor**, the current load is classified into **zones**: *Normal*
-  (green), *Warning* / tiredness (orange, by default above ~30 % MVC) and *Danger*
-  / fatigue (red, by default above ~50 % MVC). This enables **intervention** (a
+  (green), *Warning* / tiredness (orange, by default above ~40 % MVC) and *Danger*
+  / fatigue (red, by default above ~70 % MVC). This enables **intervention** (a
   pause, a posture change) before fatigue sets in.
 
-> **Note.** The default limits (static 5 %, median 14 %, peak 70 %; warning 30 %,
-> danger 50 %) are **guideline values** derived from the literature, **not clinical
+> **Note.** The default limits (static 5 %, median 14 %, peak 70 %; warning 40 %,
+> danger 70 %) are **guideline values** derived from the literature, **not clinical
 > thresholds**; they can be adjusted.
 
 [Suggested figure: annotated APDF chart with the cumulative curve and the

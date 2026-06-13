@@ -3,8 +3,8 @@
 **Las 3 pestañas** · **Adquisición**: registrar en vivo · **Análisis**: estudiar un
 EDF ya grabado · **CVM**: normalizar a % CVM y evaluar la carga muscular.
 
-**Cadena de señal:** Bruto → *notch 50 Hz + paso‑banda 20–450 Hz* → **Filtrada** →
-rectificada → **Envolvente** (paso‑bajo 5 Hz). *En el EDF solo se guarda el bruto;
+**Cadena de señal:** Cruda → *notch 50 Hz + paso‑banda 20–450 Hz* → **Filtrada** →
+rectificada → **Envolvente** (paso‑bajo 5 Hz). *En el EDF solo se guarda la cruda;
 lo demás se recalcula.*
 
 ---
@@ -16,7 +16,7 @@ lo demás se recalcula.*
    de contracción solo).
 - **LED:** rojo = desconectado · amarillo = sin datos · verde = recibiendo.
 - **Escalas:** ▲▼ por gráfica; zoom temporal con desplegable / ◀▶ / rueda.
-- **2 canales:** bruto y filtrada **apiladas**; envolvente **superpuesta** (azul =
+- **2 canales:** cruda y filtrada **apiladas**; envolvente **superpuesta** (azul =
   canal 1, rojo = canal 2).
 
 ### Carga muscular en vivo
