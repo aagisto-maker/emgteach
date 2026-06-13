@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from emgteach.apda import ApdfResult, LoadLevel, compute_apdf
 from emgteach.devices import AcquisitionDevice, ArduinoDevice, BitalinoDevice
 from emgteach.dsp import (
     OnsetDetector,
@@ -37,10 +38,12 @@ __all__ = [
     "AcquisitionDevice",
     "AcquisitionWorker",
     "AnalysisWorker",
+    "ApdfResult",
     "ArduinoDevice",
     "BitalinoDevice",
     "BufferedEdfWriter",
     "ChannelInfo",
+    "LoadLevel",
     "MvcWorker",
     "OnsetDetector",
     "RealtimeFilterState",
@@ -48,6 +51,7 @@ __all__ = [
     "__version__",
     "adaptive_ylim",
     "build_timestamped_path",
+    "compute_apdf",
     "compute_mvc",
     "compute_psd_mnf_mdf",
     "compute_segments",

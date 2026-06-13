@@ -55,6 +55,10 @@ class SignalProfile:
         Fractional overlap between consecutive analysis segments.
     mvc_percentile : float
         Percentile of the envelope used as the MVC reference amplitude.
+    apda_static_limit, apda_median_limit, apda_peak_limit : float
+        Recommended maximum loads (% MVC) for the static / median / peak
+        levels of Jonsson's APDF muscle-load analysis (see
+        :mod:`emgteach.apda`).
     onset_k : float
         Threshold sensitivity for automatic onset detection, in baseline
         standard deviations (threshold = baseline mean + ``onset_k``*SD).
@@ -95,6 +99,11 @@ class SignalProfile:
     overlap: float = 0.5
     mvc_percentile: float = 95.0
 
+    # -- muscle-load analysis (Jonsson APDF recommended maxima, % MVC) --
+    apda_static_limit: float = 5.0
+    apda_median_limit: float = 14.0
+    apda_peak_limit: float = 70.0
+
     # -- automatic onset detection (baseline + k*SD threshold) --
     onset_k: float = 3.0
     onset_baseline_s: float = 1.0
@@ -131,6 +140,12 @@ class SignalProfile:
             raise ValueError("f_env must be positive.")
         if not 0.0 <= self.overlap < 1.0:
             raise ValueError(f"overlap must be in [0, 1); got {self.overlap}.")
+        if not 0.0 < self.apda_static_limit <= self.apda_median_limit <= self.apda_peak_limit:
+            raise ValueError(
+                "Require 0 < apda_static_limit <= apda_median_limit <= "
+                f"apda_peak_limit; got {self.apda_static_limit}, "
+                f"{self.apda_median_limit}, {self.apda_peak_limit}."
+            )
 
     def filter_kwargs(self) -> dict[str, float]:
         """Return the four filter cut-offs as keyword arguments.
@@ -143,6 +158,15 @@ class SignalProfile:
             "f_high": self.f_high,
             "f_notch": self.f_notch,
             "f_env": self.f_env,
+        }
+
+    def apda_kwargs(self) -> dict[str, float]:
+        """APDF recommended maxima (% MVC) as kwargs for
+        :func:`emgteach.apda.compute_apdf`."""
+        return {
+            "static_limit": self.apda_static_limit,
+            "median_limit": self.apda_median_limit,
+            "peak_limit": self.apda_peak_limit,
         }
 
     def onset_kwargs(self) -> dict[str, float]:
