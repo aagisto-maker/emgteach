@@ -5,7 +5,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from emgteach.apda import ApdfResult, LoadLevel, compute_apdf
+from emgteach.apda import (
+    ApdfResult,
+    LoadLevel,
+    OnlineLoad,
+    classify_load,
+    compute_apdf,
+)
 
 
 def test_uniform_distribution_recovers_percentiles():
@@ -84,3 +90,43 @@ def test_loadlevel_fields():
     assert isinstance(lvl, LoadLevel)
     assert lvl.name == "median"
     assert lvl.value == pytest.approx(8.0)
+
+
+def test_classify_load_zones():
+    assert classify_load(10.0, 30.0, 50.0) == "normal"
+    assert classify_load(30.0, 30.0, 50.0) == "warning"
+    assert classify_load(45.0, 30.0, 50.0) == "warning"
+    assert classify_load(50.0, 30.0, 50.0) == "danger"
+    assert classify_load(80.0, 30.0, 50.0) == "danger"
+
+
+def test_online_load_tracks_levels_and_status():
+    ol = OnlineLoad(warning_limit=30.0, danger_limit=50.0, recent_n=100)
+    assert ol.n == 0
+    assert ol.current == 0.0
+    assert ol.status == "normal"
+
+    ol.add(np.full(500, 60.0))
+    assert ol.current == pytest.approx(60.0, abs=1e-6)
+    assert ol.status == "danger"
+    assert ol.static == pytest.approx(60.0, abs=1e-6)
+    assert ol.peak == pytest.approx(60.0, abs=1e-6)
+
+    ol.reset()
+    assert ol.n == 0
+    assert ol.status == "normal"
+
+
+def test_online_load_current_uses_recent_window_only():
+    ol = OnlineLoad(warning_limit=30.0, danger_limit=50.0, recent_n=100)
+    ol.add(np.full(1000, 5.0))    # old, scrolls out of the recent window
+    ol.add(np.full(100, 40.0))    # recent fills the window
+    assert ol.current == pytest.approx(40.0, abs=1e-6)
+    assert ol.status == "warning"
+    assert 5.0 <= ol.peak <= 40.0
+
+
+def test_online_load_ignores_nonfinite():
+    ol = OnlineLoad()
+    ol.add([1.0, np.nan, 3.0, np.inf])
+    assert ol.n == 2

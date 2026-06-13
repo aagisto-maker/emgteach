@@ -28,6 +28,7 @@ the offline analysis can both use it.
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -41,6 +42,8 @@ if TYPE_CHECKING:
 __all__ = [
     "ApdfResult",
     "LoadLevel",
+    "OnlineLoad",
+    "classify_load",
     "compute_apdf",
 ]
 
@@ -149,3 +152,83 @@ def compute_apdf(
         median=_level("median", _MEDIAN_PCTL, median_v, median_limit),
         peak=_level("peak", _PEAK_PCTL, peak_v, peak_limit),
     )
+
+
+def classify_load(value: float, warning_limit: float, danger_limit: float) -> str:
+    """Classify a load value (% MVC) as ``"normal"`` / ``"warning"`` / ``"danger"``.
+
+    ``"danger"`` at or above ``danger_limit`` (fatigue zone), ``"warning"`` at
+    or above ``warning_limit`` (tiredness zone), otherwise ``"normal"``.
+    """
+    if value >= danger_limit:
+        return "danger"
+    if value >= warning_limit:
+        return "warning"
+    return "normal"
+
+
+class OnlineLoad:
+    """Running muscle-load monitor for a stream of % MVC envelope samples.
+
+    Used during acquisition: feed it the envelope normalised to % MVC (against
+    a pre-acquired MVC reference) with :meth:`add`, then read the running
+    Jonsson levels (:attr:`static` / :attr:`median` / :attr:`peak`), the recent
+    :attr:`current` load and its :attr:`status` (normal / warning / danger).
+
+    It is Qt-free and keeps only bounded ring buffers, so it is safe to drive
+    from a real-time data callback.
+    """
+
+    def __init__(
+        self,
+        warning_limit: float = 30.0,
+        danger_limit: float = 50.0,
+        recent_n: int = 500,
+        maxlen: int = 600_000,
+    ) -> None:
+        self.warning_limit = float(warning_limit)
+        self.danger_limit = float(danger_limit)
+        self._buf: deque[float] = deque(maxlen=int(maxlen))
+        self._recent: deque[float] = deque(maxlen=int(recent_n))
+
+    def reset(self) -> None:
+        self._buf.clear()
+        self._recent.clear()
+
+    def add(self, pct_mvc: FloatArray | np.ndarray | list) -> None:
+        """Ingest a block of % MVC envelope samples."""
+        arr = np.asarray(pct_mvc, dtype=np.float64)
+        arr = arr[np.isfinite(arr)]
+        if arr.size == 0:
+            return
+        vals = arr.tolist()
+        self._buf.extend(vals)
+        self._recent.extend(vals)
+
+    @property
+    def n(self) -> int:
+        return len(self._buf)
+
+    @property
+    def current(self) -> float:
+        """Recent mean load (% MVC) — the value the status is based on."""
+        return float(np.mean(self._recent)) if self._recent else 0.0
+
+    def _pct(self, p: float) -> float:
+        return float(np.percentile(self._buf, p)) if self._buf else 0.0
+
+    @property
+    def static(self) -> float:
+        return self._pct(_STATIC_PCTL)
+
+    @property
+    def median(self) -> float:
+        return self._pct(_MEDIAN_PCTL)
+
+    @property
+    def peak(self) -> float:
+        return self._pct(_PEAK_PCTL)
+
+    @property
+    def status(self) -> str:
+        return classify_load(self.current, self.warning_limit, self.danger_limit)

@@ -62,6 +62,11 @@ class SignalProfile:
     apda_mean_limit : float
         Guideline maximum for the average sustained activation (% MVC), used
         to flag the mean-activation readout.
+    apda_warning_limit, apda_danger_limit : float
+        Load thresholds (% MVC) for the online monitor's tiredness (warning)
+        and fatigue (danger) zones.
+    apda_calib_s : float
+        Duration (s) of the quick in-app MVC calibration.
     onset_k : float
         Threshold sensitivity for automatic onset detection, in baseline
         standard deviations (threshold = baseline mean + ``onset_k``*SD).
@@ -109,6 +114,10 @@ class SignalProfile:
     # Guideline maximum for the average sustained activation (% MVC); used only
     # to flag the "mean activation" readout, not part of the APDF computation.
     apda_mean_limit: float = 10.0
+    # Online (real-time) muscle-load monitoring during acquisition.
+    apda_warning_limit: float = 30.0   # % MVC — tiredness (warning) zone
+    apda_danger_limit: float = 50.0    # % MVC — fatigue (danger) zone
+    apda_calib_s: float = 4.0          # s — quick MVC-calibration duration
 
     # -- automatic onset detection (baseline + k*SD threshold) --
     onset_k: float = 3.0
@@ -152,6 +161,13 @@ class SignalProfile:
                 f"apda_peak_limit; got {self.apda_static_limit}, "
                 f"{self.apda_median_limit}, {self.apda_peak_limit}."
             )
+        if not 0.0 < self.apda_warning_limit <= self.apda_danger_limit:
+            raise ValueError(
+                "Require 0 < apda_warning_limit <= apda_danger_limit; got "
+                f"{self.apda_warning_limit}, {self.apda_danger_limit}."
+            )
+        if self.apda_calib_s <= 0:
+            raise ValueError("apda_calib_s must be positive.")
 
     def filter_kwargs(self) -> dict[str, float]:
         """Return the four filter cut-offs as keyword arguments.
