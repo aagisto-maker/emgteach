@@ -76,6 +76,21 @@ window**: the Analysis graph-picker dialog exposes editable start/duration
 fields pre-filled with that window, and the one-click MVC report uses the
 window directly.
 
+### Decision 6 — Online muscle-load monitor (live MVC), GUI-side
+
+The real-time phase of the Plux "Muscle Load" add-on. The acquisition worker
+already emits the per-channel envelope on ``data_ready``, so the live monitor
+is computed **GUI-side** — no change to the worker or the buffer-then-flush EDF
+writer. A quick in-app **MVC calibration** (a few seconds of maximum
+contraction → 95th-percentile reference per channel) feeds an ``OnlineLoad``
+accumulator (``emgteach.apda``), and a compact panel shows a per-channel
+**load bar** with tiredness (warning) / fatigue (danger) zones plus the running
+static / median / peak. Thresholds (``apda_warning_limit`` /
+``apda_danger_limit``) and the calibration duration (``apda_calib_s``) live in
+the ``SignalProfile``. Calibration happens during recording (envelope only
+streams then); the calibration contraction is part of the EDF, which is
+acceptable for the teaching use case.
+
 ---
 
 ## 2026-06-11 — Hito 3: PDF session reports (+ visual polish)

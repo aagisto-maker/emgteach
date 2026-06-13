@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Report graph picker.** Generating a PDF report now opens a dialog to choose
   which analysis panels are rendered into the document; each selected panel is
   drawn as its own graph (`build_session_report(..., panels=...)`).
+- **Live muscle-load monitor (online APDA).** During acquisition, a quick MVC
+  calibration (a few seconds of maximum contraction) enables a per-channel load
+  bar with tiredness (warning) and fatigue (danger) zones plus the running
+  static / median / peak levels, computed GUI-side from the streamed envelope.
+  New `OnlineLoad` in `emgteach.apda` and a `LoadBar` widget; the zone
+  thresholds and calibration duration live in `SignalProfile`.
 - **Muscle-load analysis (Jonsson APDF).** The MVC tab now computes the
   Amplitude Probability Distribution Function of the % MVC envelope and reports
   the **static** (P10), **median** (P50) and **peak** (P90) load levels against
