@@ -515,17 +515,25 @@ def _render_mvc_figure(
     ax = axes[3]
     apdf = result["apdf"]
     ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.5)
-    for lvl, prob in ((apdf.static, 10), (apdf.median, 50), (apdf.peak, 90)):
+    for lvl, prob, name in (
+        (apdf.static, 10, tr("Static")),
+        (apdf.median, 50, tr("Median")),
+        (apdf.peak, 90, tr("Peak")),
+    ):
         base = _LEVEL_COLORS[lvl.name]
         ax.axhline(prob, color="#cccccc", ls=":", lw=0.6)
-        ax.plot([lvl.value], [prob], "o", ms=8,
-                markerfacecolor=base,
-                markeredgecolor=(_OUT_COLOR if lvl.exceeds else base),
-                markeredgewidth=(2.2 if lvl.exceeds else 0.6))
+        ax.plot([lvl.value], [prob], "o", ms=7, zorder=5,
+                markerfacecolor=base, markeredgecolor=base, markeredgewidth=0.6,
+                label=f"{name}: {lvl.value:.0f} % (≤{lvl.limit:.0f} %)")
+        if lvl.exceeds:
+            ax.plot([lvl.value], [prob], "o", ms=16, zorder=6,
+                    markerfacecolor="none", markeredgecolor=_OUT_COLOR,
+                    markeredgewidth=2.0)
     ax.set_title(tr("Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
     ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
     ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
     ax.set_ylim(0, 100)
+    ax.legend(loc="lower right", fontsize=6)
     ax.grid(True, color="#DDDDDD", alpha=0.5)
     ax.tick_params(labelsize=7)
 

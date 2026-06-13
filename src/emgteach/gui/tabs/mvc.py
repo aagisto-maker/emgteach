@@ -343,7 +343,7 @@ class MvcTab(QWidget):
             la = QLabel("—")
             la.setWordWrap(True)
             la.setTextFormat(Qt.TextFormat.RichText)
-            la.setStyleSheet("font-size: 11px;")
+            la.setStyleSheet("font-size: 12px;")
             v.addWidget(la)
             return la
 
@@ -354,7 +354,7 @@ class MvcTab(QWidget):
         self._d_mean = _lbl()
 
         hdr = QLabel(tr("Muscle load (Jonsson APDF)"))
-        hdr.setStyleSheet("font-size: 11px; font-weight: bold; color: #1F4E79;")
+        hdr.setStyleSheet("font-size: 12px; font-weight: bold; color: #1F4E79;")
         v.addWidget(hdr)
         self._d_static = _lbl()
         self._d_median = _lbl()
@@ -372,7 +372,7 @@ class MvcTab(QWidget):
         return (
             f"<b>{label}</b> "
             f"<span style='color:{value_color}'>{value:.0f} % MVC</span><br>"
-            f"<span style='color:#777777; font-size:9px'>"
+            f"<span style='color:#777777; font-size:10px'>"
             f"{tr('Normal range:')} ≤ {limit:.0f} % — {explanation}</span>"
         )
 
@@ -395,10 +395,17 @@ class MvcTab(QWidget):
         data_w = max(180, vp // 3)            # data panel: at most ~1/3
         self._data_box.setMaximumWidth(data_w)
         side = max(260, vp - data_w - 16)     # APDF width: fills the rest
-        height = max(120, side // 4)          # height ~ 1/4 of the width
+        # Chart and data panel share a height so they line up: the larger of the
+        # 1/4-of-width default and the data panel's content height (which depends
+        # on word-wrapping at the panel's width).
+        box_h = self._data_box.heightForWidth(data_w)
+        if box_h <= 0:
+            box_h = self._data_box.sizeHint().height()
+        height = max(120, side // 4, box_h)
         if (abs(side - self._apdf_canvas.width()) > 8
                 or abs(height - self._apdf_canvas.height()) > 8):
             self._apdf_canvas.setFixedSize(side, height)
+        self._data_box.setMinimumHeight(height)
 
     # ------------------------------------------------------------------
     # File-selection slots
@@ -540,6 +547,9 @@ class MvcTab(QWidget):
             tr("Peak (P90):"), apdf.peak.value, apdf.peak.limit,
             tr("recurrent high-effort load"), apdf.peak.exceeds))
 
+        # The data panel just grew; re-match the chart height to it.
+        self._update_apdf_layout()
+
     # ------------------------------------------------------------------
     # Drawing the 3 panels
     # ------------------------------------------------------------------
@@ -637,10 +647,14 @@ class MvcTab(QWidget):
         ):
             base = _LEVEL_COLORS[lvl.name]
             ax.plot([lvl.value], [prob], "o", ms=9, zorder=5,
-                    markerfacecolor=base,
-                    markeredgecolor=(_OUT_COLOR if lvl.exceeds else base),
-                    markeredgewidth=(2.5 if lvl.exceeds else 0.8),
+                    markerfacecolor=base, markeredgecolor=base, markeredgewidth=0.6,
                     label=f"{name}: {lvl.value:.0f} % (≤{lvl.limit:.0f} %)")
+            if lvl.exceeds:
+                # Out of range: a larger hollow red ring around the coloured dot
+                # (white gap between them) so it stands out.
+                ax.plot([lvl.value], [prob], "o", ms=20, zorder=6,
+                        markerfacecolor="none", markeredgecolor=_OUT_COLOR,
+                        markeredgewidth=2.2)
         ax.set_title(tr("Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
         ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
         ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
