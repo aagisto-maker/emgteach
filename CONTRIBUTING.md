@@ -62,6 +62,25 @@ Tests are marked with `hardware` (needs a physical device), `gui` (needs a
 `QApplication`, via `pytest-qt`) and `slow`. The default CI run excludes
 `hardware`.
 
+## Documentation PDFs
+
+The manuals, lab guide, rubric and cheat sheet under `docs/` are written in
+Markdown (`.md`, the source of truth). Hand-out **PDFs** are generated from
+them with a small in-repo tool that uses only existing dependencies
+(`reportlab` + the DejaVu fonts bundled with `matplotlib`) — no pandoc or
+LaTeX needed:
+
+```bash
+# Regenerate every docs/*.md -> docs/*.pdf
+python tools/md2pdf.py
+
+# Or only specific files (paths relative to docs/)
+python tools/md2pdf.py manual_emgteach_es.md cheatsheet.md
+```
+
+The generated `docs/*.pdf` are git-ignored; regenerate them after editing the
+`.md` sources.
+
 ## Pull-request workflow
 
 1. Create a feature branch off `main` (e.g. `feature/onset-export`,
