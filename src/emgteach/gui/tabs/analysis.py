@@ -297,40 +297,29 @@ class AnalysisTab(QWidget):
         bottom_row.addWidget(grp_paneles, stretch=5)
         root.addLayout(bottom_row)
 
-        # --- Display window (minimap navigator, added to the layout below) ---
-        grp_ventana = QGroupBox(tr("Display window"))
-        ventana_vbox = QVBoxLayout(grp_ventana)
-        ventana_vbox.setContentsMargins(6, 4, 6, 4)
-        ventana_vbox.setSpacing(2)
-
+        # --- Display-window navigator widgets (assembled in the bottom row) ---
+        # No box title (its meaning is obvious) and no reset button (the window
+        # updates live as you drag).
         self._time_range = TimeRangeSelector()
         self._time_range.setEnabled(False)
         self._time_range.range_changed.connect(self._on_range_changed)
         self._time_range.range_preview.connect(self._on_range_preview)
-        ventana_vbox.addWidget(self._time_range)
 
-        row_info = QHBoxLayout()
         self._lbl_inicio_info   = QLabel(f"{tr('Start:')} 0.0 s")
         self._lbl_duracion_info = QLabel(f"{tr('Duration:')} 10.0 s")
-        _info_sep = QLabel("|")
-        for lbl in (self._lbl_inicio_info, _info_sep, self._lbl_duracion_info):
-            lbl.setStyleSheet("font-size: 9px; padding: 0 4px; color: #333333;")
-        self._btn_reset_ventana = QPushButton(tr("Reset window"))
-        self._btn_reset_ventana.setEnabled(False)
-        self._btn_reset_ventana.setFixedHeight(22)
-        self._btn_reset_ventana.setStyleSheet("font-size: 9px;")
-        self._btn_reset_ventana.clicked.connect(self._reset_ventana)
+        for lbl in (self._lbl_inicio_info, self._lbl_duracion_info):
+            lbl.setStyleSheet("font-size: 9px; color: #333333;")
 
         _btn_st = "font-size: 9px;"
         self._btn_tiempo_ampliar = QPushButton("◀▶")
         self._btn_tiempo_ampliar.setToolTip(tr("Widen the time window (×2)"))
-        self._btn_tiempo_ampliar.setFixedSize(30, 22)
+        self._btn_tiempo_ampliar.setFixedSize(30, 20)
         self._btn_tiempo_ampliar.setStyleSheet(_btn_st)
         self._btn_tiempo_ampliar.setEnabled(False)
         self._btn_tiempo_ampliar.clicked.connect(self._on_tiempo_ampliar)
 
         self._combo_zoom = QComboBox()
-        self._combo_zoom.setFixedSize(62, 22)
+        self._combo_zoom.setFixedSize(58, 20)
         self._combo_zoom.setStyleSheet(_btn_st)
         self._combo_zoom.setEnabled(False)
         for f in _ZOOM_FACTORS:
@@ -339,20 +328,10 @@ class AnalysisTab(QWidget):
 
         self._btn_tiempo_reducir = QPushButton("▶◀")
         self._btn_tiempo_reducir.setToolTip(tr("Narrow the time window (÷2)"))
-        self._btn_tiempo_reducir.setFixedSize(30, 22)
+        self._btn_tiempo_reducir.setFixedSize(30, 20)
         self._btn_tiempo_reducir.setStyleSheet(_btn_st)
         self._btn_tiempo_reducir.setEnabled(False)
         self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
-
-        row_info.addWidget(self._lbl_inicio_info)
-        row_info.addWidget(_info_sep)
-        row_info.addWidget(self._lbl_duracion_info)
-        row_info.addStretch()
-        row_info.addWidget(self._btn_tiempo_ampliar)
-        row_info.addWidget(self._combo_zoom)
-        row_info.addWidget(self._btn_tiempo_reducir)
-        row_info.addWidget(self._btn_reset_ventana)
-        ventana_vbox.addLayout(row_info)
 
         # --- Barra de progreso ---
         self._progress = QProgressBar()
@@ -438,15 +417,41 @@ class AnalysisTab(QWidget):
         scroll = QScrollArea()
         scroll.setWidget(canvas_container)
         scroll.setWidgetResizable(True)
-
-        # Display-window navigator (minimap): sits directly above the plots and
-        # controls which time segment of the recording the panels show. The
-        # mouse wheel over the panels still zooms too; _time_range defines the
-        # drawn segment (see _on_result / _dibujar_paneles).
-        self._grp_ventana = grp_ventana
-        root.addWidget(grp_ventana)
-
         root.addWidget(scroll, stretch=1)
+
+        # Display-window navigator at the very bottom: the minimap takes ~80 %
+        # of the width; a compact two-row cluster (start/duration labels on top,
+        # scale buttons below) shares the row on the right. The mouse wheel over
+        # the panels still zooms too; _time_range defines the drawn segment
+        # (see _on_result / _dibujar_paneles).
+        nav_controls = QWidget()
+        nav_ctrl_v = QVBoxLayout(nav_controls)
+        nav_ctrl_v.setContentsMargins(0, 0, 0, 0)
+        nav_ctrl_v.setSpacing(1)
+
+        nav_info_row = QHBoxLayout()
+        nav_info_row.setContentsMargins(0, 0, 0, 0)
+        nav_info_row.setSpacing(8)
+        nav_info_row.addStretch()
+        nav_info_row.addWidget(self._lbl_inicio_info)
+        nav_info_row.addWidget(self._lbl_duracion_info)
+        nav_ctrl_v.addLayout(nav_info_row)
+
+        nav_btn_row = QHBoxLayout()
+        nav_btn_row.setContentsMargins(0, 0, 0, 0)
+        nav_btn_row.setSpacing(4)
+        nav_btn_row.addStretch()
+        nav_btn_row.addWidget(self._btn_tiempo_ampliar)
+        nav_btn_row.addWidget(self._combo_zoom)
+        nav_btn_row.addWidget(self._btn_tiempo_reducir)
+        nav_ctrl_v.addLayout(nav_btn_row)
+
+        nav_row = QHBoxLayout()
+        nav_row.setContentsMargins(4, 2, 4, 2)
+        nav_row.setSpacing(8)
+        nav_row.addWidget(self._time_range, stretch=4)   # ~80 %
+        nav_row.addWidget(nav_controls, stretch=1)       # ~20 %
+        root.addLayout(nav_row)
 
     # ------------------------------------------------------------------
     # Control slots
@@ -557,16 +562,6 @@ class AnalysisTab(QWidget):
 
     @Slot()
     def _redibujar_con_ventana_actual(self) -> None:
-        if self._last_result is not None:
-            self._dibujar_paneles(self._last_result)
-
-    @Slot()
-    def _reset_ventana(self) -> None:
-        dur = self._duracion_total
-        self._time_range.set_range(0.0, dur)
-        self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
-        self._lbl_duracion_info.setText(f"{tr('Duration:')}{dur:.1f} s")
-        self._sync_combo_zoom()
         if self._last_result is not None:
             self._dibujar_paneles(self._last_result)
 
@@ -1094,7 +1089,6 @@ class AnalysisTab(QWidget):
         self._spin_fenv.setEnabled(habilitado)
         has_data = habilitado and self._last_result is not None
         self._time_range.setEnabled(has_data)
-        self._btn_reset_ventana.setEnabled(has_data)
         self._btn_tiempo_ampliar.setEnabled(has_data)
         self._btn_tiempo_reducir.setEnabled(has_data)
         self._combo_zoom.setEnabled(has_data)

@@ -15,8 +15,8 @@ class TimeRangeSelector(QWidget):
     range_changed = Signal(float, float)   # (start, duration) on mouse release
     range_preview = Signal(float, float)   # (start, duration) while dragging
 
-    _BAR_H    = 30   # px — height of the selection rectangle
-    _SCALE_H  = 18   # px — height of the time scale
+    _BAR_H    = 16   # px — height of the selection rectangle
+    _SCALE_H  = 14   # px — height of the time scale
     _EDGE     = 7    # px — max width of each resize handle (capped to w/3)
     _MIN_GRAB = 18   # px — below this width the whole selection moves (no edge resize)
     _GRAB_PAD = 3    # px — extra catch margin around a thin selection, for moving
