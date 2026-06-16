@@ -24,6 +24,7 @@ authors:
   - family-names: "Fernandes"
     given-names: "Vítor Samuel"
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+    orcid: "https://orcid.org/0000-0001-6060-9035"
   - family-names: "Navarro-Dorado"
     given-names: "Jorge"
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
@@ -31,6 +32,7 @@ authors:
   - family-names: "Muñoz-Picos"
     given-names: "Mercedes"
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+    orcid: "https://orcid.org/0000-0002-1679-9588"
 license: GPL-3.0-or-later
 doi: 10.5281/zenodo.20723265
 repository-code: "https://github.com/aagisto-maker/emgteach"
