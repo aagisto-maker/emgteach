@@ -38,7 +38,7 @@ with ✱.
 - **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
   Spain
-- **ORCID:** _(to be added)_
+- **ORCID:** [0000-0002-4643-3528](https://orcid.org/0000-0002-4643-3528)
 - **CRediT roles:** Investigation · Resources · Validation · Visualization ·
   Writing – review & editing
 
