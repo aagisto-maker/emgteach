@@ -20,30 +20,27 @@ authors:
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
     email: "aagisto@ucm.es"
     orcid: "https://orcid.org/0000-0002-3548-7264"
-  # NOTE: add full given names and ORCID (and optional email) for the
-  # co-authors below when available.
+  # NOTE: add ORCID (and optional email) for the co-authors when available.
   - family-names: "Fernandes"
-    given-names: "V. S."
+    given-names: "Vítor Samuel"
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
   - family-names: "Navarro-Dorado"
-    given-names: "J."
+    given-names: "Jorge"
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
   - family-names: "Muñoz-Picos"
-    given-names: "M."
+    given-names: "Mercedes"
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
 license: GPL-3.0-or-later
-doi: 10.5281/zenodo.20110845
+doi: 10.5281/zenodo.20723265
 repository-code: "https://github.com/aagisto-maker/emgteach"
 url: "https://github.com/aagisto-maker/emgteach"
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.20110845
+    value: 10.5281/zenodo.20723265
     description: "Concept DOI for emgteach (always resolves to the latest version)"
   - type: doi
-    value: 10.5281/zenodo.20110846
-    description: "Version-specific DOI for emgteach v0.1.0"
-  # A new version-specific DOI is minted by Zenodo when v0.3.0 is published;
-  # add it here as a third identifier at release time.
+    value: 10.5281/zenodo.20723266
+    description: "Version-specific DOI for emgteach v0.3.0"
 keywords:
   - electromyography
   - EMG

@@ -24,7 +24,7 @@ with ✱.
   Supervision · Validation · Visualization · Writing – original draft ·
   Writing – review & editing
 
-### V. S. Fernandes
+### Vítor Samuel Fernandes
 
 - **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
@@ -33,7 +33,7 @@ with ✱.
 - **CRediT roles:** Investigation · Resources · Validation · Visualization ·
   Writing – review & editing
 
-### J. Navarro-Dorado
+### Jorge Navarro-Dorado
 
 - **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
@@ -42,7 +42,7 @@ with ✱.
 - **CRediT roles:** Investigation · Resources · Validation · Visualization ·
   Writing – review & editing
 
-### M. Muñoz-Picos
+### Mercedes Muñoz-Picos
 
 - **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,

@@ -6,7 +6,7 @@
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python: 3.10–3.12](https://img.shields.io/badge/python-3.10--3.12-blue.svg)](https://www.python.org/downloads/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20110845.svg)](https://doi.org/10.5281/zenodo.20110845)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20723265.svg)](https://doi.org/10.5281/zenodo.20723265)
 
 `emgteach` is a Python package that provides a unified PySide6 desktop
 application for real-time acquisition, offline analysis and maximum
@@ -138,9 +138,10 @@ If you use this software, please cite the package (a `CITATION.cff` file
 is provided for automatic citation export) and, where relevant, the
 methodological article on the buffered-write pattern it implements:
 
-- Agis-Torres, Á. (2026). *emgteach: an open-source teaching platform
-  for surface electromyography* (software). Zenodo.
-  https://doi.org/10.5281/zenodo.20110845
+- Agis-Torres, Á., Fernandes, V. S., Navarro-Dorado, J., & Muñoz-Picos, M.
+  (2026). *emgteach: an open-source teaching platform for surface
+  electromyography* (software). Zenodo.
+  https://doi.org/10.5281/zenodo.20723265
 - Agis-Torres, Á. (2026). *Silent corruption of EDF recordings during
   real-time biopotential streaming: a buffered-write solution.*
   Manuscript; reproducibility package:
