@@ -19,32 +19,37 @@ with ✱.
   Spain
 - **ORCID:** [0000-0002-3548-7264](https://orcid.org/0000-0002-3548-7264)
 - **Email:** aagisto@ucm.es
-- **CRediT roles:** Conceptualization · Methodology · Software · Validation ·
-  Visualization · Supervision · Project administration · Resources ·
-  Funding acquisition · Writing – original draft · Writing – review & editing
+- **CRediT roles:** Conceptualization · Data curation · Formal analysis ·
+  Investigation · Methodology · Project administration · Resources · Software ·
+  Supervision · Validation · Visualization · Writing – original draft ·
+  Writing – review & editing
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-  TEMPLATE — copy this block for each additional author, fill it in, and
-  delete these comment markers. Then add the same person to the `authors:`
-  block of CITATION.cff (a matching template is provided there too).
+### V. S. Fernandes
 
-### Given-Names Family-Names
+- **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
+  Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
+  Spain
+- **ORCID:** _(to be added)_
+- **CRediT roles:** Investigation · Resources · Validation · Visualization ·
+  Writing – review & editing
 
-- **Affiliation:** ...
-- **ORCID:** [0000-0000-0000-0000](https://orcid.org/0000-0000-0000-0000)
-- **Email:** name@example.org
-- **CRediT roles:** <pick the applicable roles from the list below, separated by " · ">
+### J. Navarro-Dorado
 
-  The 14 CRediT roles (use the exact wording; full definitions at
-  https://credit.niso.org/):
+- **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
+  Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
+  Spain
+- **ORCID:** _(to be added)_
+- **CRediT roles:** Investigation · Resources · Validation · Visualization ·
+  Writing – review & editing
 
-    Conceptualization · Data curation · Formal analysis ·
-    Funding acquisition · Investigation · Methodology ·
-    Project administration · Resources · Software · Supervision ·
-    Validation · Visualization · Writing – original draft ·
-    Writing – review & editing
+### M. Muñoz-Picos
 
-────────────────────────────────────────────────────────────────────────── -->
+- **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
+  Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
+  Spain
+- **ORCID:** _(to be added)_
+- **CRediT roles:** Data curation · Investigation · Resources · Validation ·
+  Writing – review & editing
 
 ## Development assistance
 

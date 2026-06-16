@@ -20,14 +20,17 @@ authors:
     affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
     email: "aagisto@ucm.es"
     orcid: "https://orcid.org/0000-0002-3548-7264"
-  # TEMPLATE — copy this block for each additional author, fill it in, and
-  # remove the leading "# " from each line. Also add the person to AUTHORS.md
-  # with their CRediT roles. The orcid/email lines are optional.
-  # - family-names: "Family-Names"
-  #   given-names: "Given-Names"
-  #   affiliation: "Institution, City, Country"
-  #   email: "name@example.org"
-  #   orcid: "https://orcid.org/0000-0000-0000-0000"
+  # NOTE: add full given names and ORCID (and optional email) for the
+  # co-authors below when available.
+  - family-names: "Fernandes"
+    given-names: "V. S."
+    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+  - family-names: "Navarro-Dorado"
+    given-names: "J."
+    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+  - family-names: "Muñoz-Picos"
+    given-names: "M."
+    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
 license: GPL-3.0-or-later
 doi: 10.5281/zenodo.20110845
 repository-code: "https://github.com/aagisto-maker/emgteach"
