@@ -1,0 +1,40 @@
+{
+  "upload_type": "software",
+  "title": "emgteach: an open-source teaching platform for surface electromyography",
+  "version": "0.3.0",
+  "language": "eng",
+  "license": "GPL-3.0-or-later",
+  "description": "emgteach is a Python package that provides a unified PySide6 desktop application for real-time acquisition, offline analysis and maximum voluntary contraction (MVC) normalisation of surface EMG signals. Two interchangeable hardware backends are supported: BITalino over Bluetooth and an Arduino RedBoard Plus + MyoWare 2.0 over USB serial. Output files follow the EDF+ standard with reliable buffered writing. The application ships a bilingual (English/Spanish) interface and is designed for hands-on biopotential acquisition in undergraduate physiology teaching laboratories.",
+  "creators": [
+    {
+      "name": "Agis-Torres, Ángel",
+      "affiliation": "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Madrid, Spain",
+      "orcid": "0000-0002-3548-7264"
+    },
+    {
+      "name": "Fernandes, V. S.",
+      "affiliation": "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Madrid, Spain"
+    },
+    {
+      "name": "Navarro-Dorado, J.",
+      "affiliation": "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Madrid, Spain"
+    },
+    {
+      "name": "Muñoz-Picos, M.",
+      "affiliation": "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Madrid, Spain"
+    }
+  ],
+  "keywords": [
+    "electromyography",
+    "EMG",
+    "EDF",
+    "EDF+",
+    "biopotential",
+    "Arduino",
+    "BITalino",
+    "MyoWare",
+    "physiology",
+    "teaching",
+    "open-source-hardware"
+  ]
+}
