@@ -177,8 +177,14 @@ _ES = {
     "Envelope (5 Hz low-pass filter, causal with continuous state)":
         "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
-    "Enter the BITalino MAC address before connecting.":
-        "Introduce la dirección MAC del BITalino antes de conectar.",
+    "Enter the BITalino COM port (e.g. COM5) or MAC address before connecting.":
+        "Introduce el puerto COM del BITalino (p. ej. COM5) o su dirección MAC antes de conectar.",
+    "Bluetooth COM port (e.g. COM5) or MAC address. Recommended: pair the "
+    "BITalino in Windows Bluetooth settings, then enter its virtual COM "
+    "port here. A MAC address only works if PyBluez is installed.":
+        "Puerto COM Bluetooth (p. ej. COM5) o dirección MAC. Recomendado: empareja el "
+        "BITalino en la configuración Bluetooth de Windows y escribe aquí su puerto COM "
+        "virtual. La dirección MAC solo funciona si PyBluez está instalado.",
     "Select a COM port for the Arduino before connecting.":
         "Selecciona un puerto COM para el Arduino antes de conectar.",
     "Device configured: {desc}. Press 'Start recording'.":

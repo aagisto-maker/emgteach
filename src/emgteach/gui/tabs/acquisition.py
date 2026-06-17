@@ -274,7 +274,14 @@ class AcquisitionTab(QWidget):
         mac_inner.setContentsMargins(0, 0, 0, 0)
         mac_inner.setSpacing(4)
         self._edit_mac = QLineEdit()
-        self._edit_mac.setPlaceholderText("98:D3:91:FE:44:E4")
+        self._edit_mac.setPlaceholderText("COM5   ·   98:D3:91:FE:44:E4")
+        self._edit_mac.setToolTip(
+            tr(
+                "Bluetooth COM port (e.g. COM5) or MAC address. Recommended: pair the "
+                "BITalino in Windows Bluetooth settings, then enter its virtual COM "
+                "port here. A MAC address only works if PyBluez is installed."
+            )
+        )
         self._edit_mac.setText(self._settings.value("adquisicion/mac", DEFAULT_MAC))
         mac_inner.addWidget(self._edit_mac)
         btn_reset_mac = QPushButton(tr("Default"))
@@ -901,7 +908,7 @@ class AcquisitionTab(QWidget):
             desc = self._edit_mac.text().strip()
             if not desc:
                 self._err(
-                    tr("Enter the BITalino MAC address before connecting.")
+                    tr("Enter the BITalino COM port (e.g. COM5) or MAC address before connecting.")
                 )
                 self._btn_conectar.setChecked(False)
                 return
