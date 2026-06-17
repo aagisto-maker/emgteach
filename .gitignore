@@ -42,6 +42,8 @@ desktop.ini
 # --- PyInstaller ---
 *.spec.bak
 *.exe
+packaging/build.log
+*_selftest.log
 
 # --- EDF recordings — never versioned ---
 *.edf
