@@ -5,6 +5,27 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Standalone Windows executable (PyInstaller).** A reproducible packaging
+  recipe under `packaging/` (`emgteach.spec` + `run_emgteach.py`) builds a
+  single windowed `dist/emgteach.exe` (~132 MB) that runs on any Windows 10/11
+  PC with no Python install — for the critical-testing phase. The frozen entry
+  point has a headless `--selftest` mode (imports the full runtime, builds the
+  window off-screen, writes the outcome to `emgteach_selftest.log`) used to
+  validate the binary after each build. The BITalino backend is bundled via the
+  pure-Python `bitalino` module over the **Windows Bluetooth virtual COM port**
+  (no PyBluez required). Build artefacts stay git-ignored; see
+  `packaging/README.md`.
+
+### Changed
+- **BITalino device field accepts a virtual COM port.** The acquisition tab now
+  documents that the BITalino can be addressed by its Windows Bluetooth COM port
+  (e.g. `COM5`) as well as by MAC — placeholder, tooltip and the connect-time
+  validation message were updated (bilingual EN/ES). This is what makes the
+  BITalino usable from the PyBluez-free standalone build.
+
 ## [0.3.0] — 2026-06-13
 
 ### Added
@@ -139,6 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/aagisto-maker/emgteach/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aagisto-maker/emgteach/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/aagisto-maker/emgteach/releases/tag/v0.1.0

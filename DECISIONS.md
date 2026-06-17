@@ -12,6 +12,60 @@ used.
 
 ---
 
+## 2026-06-17 — Standalone Windows build (PyInstaller)
+
+For a critical-testing phase the application must run on any Windows 10/11 PC
+**without** a Python installation. The packaging recipe lives under
+`packaging/` and is reproducible; the artefacts (`build/`, `dist/`,
+`*.exe`) stay git-ignored.
+
+### Decision 1 — Tool: PyInstaller, one-file, windowed
+
+**Options evaluated.** PyInstaller vs Nuitka vs cx_Freeze; one-file vs
+one-folder; windowed vs console.
+
+**Chosen: PyInstaller, one-file, windowed.** PyInstaller was already
+anticipated (the `build` extra pins `PyInstaller>=6.0`) and has mature
+PySide6 support. One-file (`dist/emgteach.exe`, ~132 MB) is the simplest
+thing to hand to a tester (email/USB, double-click); the few-second
+first-launch self-extraction is acceptable. Windowed (no console) keeps the
+experience clean; in-app errors already surface through the logger widget.
+The build is on the verified **Python 3.12** venv. UPX is **off** (it can
+corrupt Qt/numpy DLLs).
+
+### Decision 2 — Frozen entry point with a headless self-test
+
+A thin launcher (`packaging/run_emgteach.py`) delegates to
+`emgteach.__main__.main`, and adds a `--selftest` mode that imports the full
+runtime surface and builds the main window off-screen. Because the build is
+windowed (no stdout), the outcome is written to `emgteach_selftest.log` next
+to the executable. This turns "did the freeze drop a module?" into an
+observable exit code, validated post-build before shipping.
+
+### Decision 3 — BITalino bundled via the COM-port path, no PyBluez
+
+**Context.** Including the BITalino backend was requested. Its usual Bluetooth
+path needs `PyBluez-bitalino`, whose C extension requires Microsoft C++ Build
+Tools and does not work on Python 3.12 — impractical to freeze.
+
+**Chosen: bundle the pure-Python `bitalino` module only** (installed with
+`--no-deps`, so PyBluez is never pulled). The `bitalino` library connects over
+the **Windows Bluetooth virtual COM port** (`COMx`) using `pyserial`, with no
+PyBluez involved, and works on Python 3.12. The acquisition tab's device field
+now accepts and documents a `COMx` port (placeholder + tooltip + validation
+message, all bilingual); entering a MAC instead yields the library's own clear
+"connect using the Virtual COM Port" message rather than a crash. A
+PyBluez-based MAC build would force a separate Python 3.11 + C-toolchain setup
+and is out of scope for the test executable.
+
+### Scope note
+
+macOS / Linux builds must be produced on those OSes (PyInstaller does not
+cross-compile). The executable is unsigned; SmartScreen may warn. Code-signing
+and size trimming (Qt module pruning) are deferred.
+
+---
+
 ## 2026-06-13 — Muscle-load analysis (Jonsson APDF) in the MVC tab
 
 ### Decision 1 — Implement Jonsson's APDF method, offline first
