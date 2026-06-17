@@ -28,24 +28,32 @@ def _selftest_log_path() -> str:
     return os.path.join(base, "emgteach_selftest.log")
 
 
+# Runtime modules the frozen build must contain. Importing each one both
+# validates it was bundled and exercises mne's lazy loader.
+_RUNTIME_MODULES = (
+    "matplotlib",
+    "matplotlib.backends.backend_agg",     # PDF reports
+    "matplotlib.backends.backend_qtagg",   # Analysis / MVC tabs
+    "mne",                                 # Analysis EDF reader
+    "numpy",
+    "pyedflib",
+    "pyqtgraph",
+    "reportlab",                           # PDF reports
+    "scipy.signal",
+    "serial",                              # Arduino + BITalino-over-COM
+    "serial.tools.list_ports",
+    "bitalino",                            # BITalino backend (COM-port path)
+)
+
+
 def _selftest_body() -> None:
     """Import every runtime dependency and build the GUI off-screen."""
+    import importlib
+
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-    # Touch the heavy, dynamically-imported modules so a frozen build that
-    # dropped one fails here rather than in front of a tester.
-    import matplotlib  # noqa: F401
-    import matplotlib.backends.backend_agg  # noqa: F401  (PDF reports)
-    import matplotlib.backends.backend_qtagg  # noqa: F401  (Analysis/MVC tabs)
-    import mne  # noqa: F401  (Analysis EDF reader)
-    import numpy  # noqa: F401
-    import pyedflib  # noqa: F401
-    import pyqtgraph  # noqa: F401
-    import reportlab  # noqa: F401  (PDF reports)
-    import scipy.signal  # noqa: F401
-    import serial  # noqa: F401  (Arduino + BITalino-over-COM)
-
-    import bitalino  # noqa: F401  (BITalino backend, COM-port path)
+    for _name in _RUNTIME_MODULES:
+        importlib.import_module(_name)
 
     from PySide6.QtCore import QSettings
     from PySide6.QtWidgets import QApplication
