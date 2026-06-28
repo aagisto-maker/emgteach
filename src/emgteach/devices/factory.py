@@ -66,8 +66,8 @@ def create_device(backend_id: str, **kwargs: object) -> AcquisitionDevice:
     backend_id : str
         One of :func:`available_backends`.
     **kwargs
-        Forwarded verbatim to the registered builder, e.g. ``mac`` and
-        ``fs`` for BITalino, or ``port`` and ``fs`` for Arduino.
+        Forwarded verbatim to the registered builder, e.g. ``port`` and
+        ``fs`` for BITalino (its Bluetooth virtual COM port) or for Arduino.
 
     Returns
     -------
@@ -91,7 +91,7 @@ def create_device(backend_id: str, **kwargs: object) -> AcquisitionDevice:
 
 # -- Built-in backends -------------------------------------------------------
 # The device classes are valid builders (calling the class constructs an
-# instance). Importing them here does not pull in the optional `bitalino`
-# package: BitalinoDevice imports it lazily inside open().
+# instance). Importing them here is cheap: both backends import `serial`
+# (pyserial) lazily inside open(), so no hardware library loads at import time.
 register_device(BACKEND_BITALINO, BitalinoDevice)
 register_device(BACKEND_ARDUINO, ArduinoDevice)
