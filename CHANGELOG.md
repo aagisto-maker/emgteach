@@ -27,11 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `(r)evolution` is Bluetooth **Classic** (SPP), so `bleak` (BLE-only) cannot
   reach it; the COM-port path over `pyserial` does, and freezes/imports on every
   supported Python including 3.13/3.14. The public `AcquisitionDevice` API and
-  the watchdog (`force_close`) contract are unchanged. The acquisition tab now
-  takes a COM port (e.g. `COM5`); a MAC address is rejected with an actionable
-  bilingual message instead of a PyBluez crash (persistence key
-  `adquisicion/mac` → `adquisicion/port`). The `[bitalino]` optional extra is
-  removed. See ADR 2026-06-28.
+  the watchdog (`force_close`) contract are unchanged. The `[bitalino]` optional
+  extra is removed. See ADR 2026-06-28.
+- **MAC stays the stable, zero-config address.** The device field accepts a
+  **MAC** (default `98:D3:91:FE:44:E4` — resolved to the local COM port via the
+  port `hwid`, identical on every PC), an explicit **`COMx`**, or **empty** to
+  **autodetect** the BITalino by handshake. A MAC that is not paired, or a
+  failed autodetect, raises an actionable bilingual message. The serial open
+  retries with a short backoff to absorb the Bluetooth SPP port-release lag
+  (`WinError 1168`). Persistence key `adquisicion/mac` → `adquisicion/port`.
 
 ### Removed
 - **`bitalino` optional dependency / extra.** The protocol is now implemented

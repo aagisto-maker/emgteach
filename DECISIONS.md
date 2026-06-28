@@ -42,9 +42,28 @@ live mode, CRC-checked frame decode, stop→idle). Consequences:
 * Importable and freezable on every supported Python, including 3.13/3.14.
 * The public `AcquisitionDevice` API and the watchdog contract are unchanged;
   `force_close` now closes the serial port to release a stuck read.
-* The acquisition tab's device field takes a **COM port** (`COMx`); a MAC is
-  rejected with an actionable, bilingual message instead of a PyBluez crash.
-  Persistence key moved from `adquisicion/mac` to `adquisicion/port`.
+
+**Addressing — keep the MAC as the stable, zero-config identifier.** COM
+numbers differ per PC, which is why the lab worked by MAC. Although the *RFCOMM
+transport* by MAC is gone with PyBluez, the MAC itself is still usable: on
+Windows it appears inside each Bluetooth COM port's `hwid`, so `open()` resolves
+a MAC to whatever `COMx` the local machine assigned and connects over pyserial.
+The device field therefore accepts, in order of preference:
+
+* a **MAC** (default, e.g. `98:D3:91:FE:44:E4`) — same on every PC, resolved to
+  the local COM port via `hwid` (deterministic, no port probing);
+* an explicit **`COMx`** — used verbatim, as an override;
+* **empty / `auto`** — autodetect by probing the Bluetooth serial ports and
+  handshaking for the BITalino version string.
+
+A failed resolution raises an actionable bilingual message (MAC not paired / no
+BITalino found). Because a Bluetooth SPP port is released by Windows a moment
+after close, the serial open retries with a short backoff (covers the
+autodetect probe→reopen and quick reconnects; observed `WinError 1168`). The
+persistence key moved from `adquisicion/mac` to `adquisicion/port` (it now holds
+any of the three address forms). Empirically verified against the lab BITalino
+(`98:D3:91:FE:44:E4`): MAC and autodetect both resolve to `COM3` and stream at
+1 kHz.
 
 **Scope note.** This does not address running the *source* on Python 3.14:
 the pinned scientific stack (`numpy==1.26.4`, `scipy==1.13.1`,
