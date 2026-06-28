@@ -40,9 +40,8 @@ _RUNTIME_MODULES = (
     "pyqtgraph",
     "reportlab",                           # PDF reports
     "scipy.signal",
-    "serial",                              # Arduino + BITalino-over-COM
-    "serial.tools.list_ports",
-    "bitalino",                            # BITalino backend (COM-port path)
+    "serial",                              # Arduino USB + BITalino over Bluetooth COM
+    "serial.tools.list_ports",             # MAC->COM resolution + autodetect
 )
 
 
