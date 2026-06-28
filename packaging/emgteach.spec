@@ -6,10 +6,10 @@ Build (from the project root, inside the venv):
     pyinstaller --noconfirm packaging/emgteach.spec
 
 Produces a single windowed executable ``dist/emgteach.exe`` that needs no
-Python install on the target machine. The BITalino backend is bundled via
-the pure-Python ``bitalino`` module and works over the Windows Bluetooth
-*virtual COM port* (no PyBluez); the Arduino + MyoWare backend uses
-``pyserial``.
+Python install on the target machine. Both hardware backends talk over
+``pyserial``: the Arduino + MyoWare over USB serial, and the BITalino over
+its Windows Bluetooth *virtual COM port* (Bluetooth Classic / SPP). No
+PyBluez, no external ``bitalino`` package and no BLE stack are involved.
 """
 
 import os
@@ -51,8 +51,7 @@ hiddenimports += collect_submodules("pyedflib")
 hiddenimports += [
     "matplotlib.backends.backend_qtagg",  # Analysis / MVC live canvases
     "matplotlib.backends.backend_agg",    # PDF report rendering
-    "bitalino",                            # BITalino backend (COM-port path)
-    "serial",                              # pyserial (Arduino + BITalino COM)
+    "serial",                              # pyserial (Arduino USB + BITalino COM)
     "serial.tools.list_ports",             # COM-port enumeration in the GUI
 ]
 
