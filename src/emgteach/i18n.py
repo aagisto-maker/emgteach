@@ -436,8 +436,12 @@ _ES = {
     "A BITalino connection is already active. Close it before opening another.":
         "Ya hay una conexión BITalino activa. Ciérrala antes de abrir otra.",
     "The BITalino device is not open.": "El dispositivo BITalino no está abierto.",
-    "Could not open the BITalino port {port}: {err}":
-        "No se pudo abrir el puerto del BITalino {port}: {err}",
+    "Could not open the BITalino port {port}: {err}. If the port is "
+    "busy or access is denied, switch the BITalino off and on to reset "
+    "the Bluetooth link, then retry.":
+        "No se pudo abrir el puerto del BITalino {port}: {err}. Si el puerto está "
+        "ocupado o el acceso está denegado, apaga y enciende el BITalino para "
+        "reiniciar el enlace Bluetooth y reintenta.",
     "BITalino {mac} was not found among the paired Bluetooth COM "
     "ports. Pair it in the operating system's Bluetooth settings "
     "and switch it on.":

@@ -461,6 +461,23 @@ class TestBitalinoDeviceBasics:
                 device.open()
         device.close()
 
+    def test_open_busy_port_raises_actionable(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A busy / access-denied port must yield an actionable message that
+        # tells the user to power-cycle the BITalino, after the retries.
+        monkeypatch.setattr(BitalinoDevice, "_OPEN_RETRY_GAP_S", 0.0)
+        monkeypatch.setattr(BitalinoDevice, "_OPEN_RETRIES", 2)
+        device = BitalinoDevice("COM5")
+
+        def denied(*args, **kwargs):
+            raise PermissionError(13, "Access is denied")
+
+        with patch("serial.Serial", side_effect=denied), pytest.raises(
+            RuntimeError, match="off and on"
+        ):
+            device.open()
+
     def test_read_without_open_raises(self) -> None:
         device = BitalinoDevice("COM5")
         with pytest.raises(RuntimeError, match="not open"):

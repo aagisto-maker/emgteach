@@ -393,9 +393,11 @@ class BitalinoDevice(AcquisitionDevice):
                 if attempt < self._OPEN_RETRIES - 1:
                     time.sleep(self._OPEN_RETRY_GAP_S)
         raise RuntimeError(
-            tr("Could not open the BITalino port {port}: {err}").format(
-                port=port, err=last_exc
-            )
+            tr(
+                "Could not open the BITalino port {port}: {err}. If the port is "
+                "busy or access is denied, switch the BITalino off and on to reset "
+                "the Bluetooth link, then retry."
+            ).format(port=port, err=last_exc)
         )
 
     def _validate_config(self) -> None:
