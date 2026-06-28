@@ -12,6 +12,47 @@ used.
 
 ---
 
+## 2026-06-28 — BITalino backend rewritten on pyserial (supersedes 2026-06-17 Decision 3)
+
+**Context.** Even bundled `--no-deps`, the external pure-Python `bitalino`
+module only reaches the COM-port path when the *address looks like a COM port*;
+given a MAC address it still does `import bluetooth` (PyBluez) and fails with
+`No module named 'bluetooth'`. The device field defaulted to a MAC, so the
+common case walked straight into the dead PyBluez path, and the module also
+emitted a confusing "bluetooth wrapper failed to import" line even in COM mode.
+PyBluez itself is abandoned (2020) and uninstallable on modern Python (3.13+).
+
+**Options evaluated.** (a) Keep the external `bitalino` module and only steer
+users to a COM port; (b) migrate to `bleak`; (c) implement the BITalino wire
+protocol directly over `pyserial`.
+
+* `bleak` was rejected: it is **BLE-only**, while the BITalino *(revolution)*
+  is **Bluetooth Classic (SPP/RFCOMM)**. bleak cannot reach the device at all.
+* Steering users to a COM port keeps a fragile external dependency, the
+  `--no-deps` install dance, and the misleading import warning.
+
+**Chosen: implement the protocol directly over `pyserial` (option c).**
+`src/emgteach/devices/bitalino.py` now opens the Windows Bluetooth **virtual
+COM port** and speaks the BITalino protocol itself (version, set-rate, start
+live mode, CRC-checked frame decode, stop→idle). Consequences:
+
+* No PyBluez, no external `bitalino` package, no BLE stack. The `[bitalino]`
+  optional extra and the `bitalino` PyInstaller hidden-import are removed;
+  `pyserial` (already a hard dependency for Arduino) is the only transport.
+* Importable and freezable on every supported Python, including 3.13/3.14.
+* The public `AcquisitionDevice` API and the watchdog contract are unchanged;
+  `force_close` now closes the serial port to release a stuck read.
+* The acquisition tab's device field takes a **COM port** (`COMx`); a MAC is
+  rejected with an actionable, bilingual message instead of a PyBluez crash.
+  Persistence key moved from `adquisicion/mac` to `adquisicion/port`.
+
+**Scope note.** This does not address running the *source* on Python 3.14:
+the pinned scientific stack (`numpy==1.26.4`, `scipy==1.13.1`,
+`pyedflib==0.1.42`, PySide6) still targets 3.10–3.12, and the frozen
+executable ships its own 3.12 interpreter regardless of the host Python.
+
+---
+
 ## 2026-06-17 — Standalone Windows build (PyInstaller)
 
 For a critical-testing phase the application must run on any Windows 10/11 PC
