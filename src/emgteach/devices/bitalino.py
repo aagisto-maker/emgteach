@@ -15,6 +15,23 @@ backend uses it), it imports cleanly on every supported Python (3.10-3.14)
 and freezes without C-toolchain gymnastics, so the standalone executable
 keeps working across Windows updates.
 
+Addressing
+----------
+COM-port numbers vary per PC, which is awkward in a teaching lab. To keep
+configuration minimal and stable across machines, the constructor accepts
+three forms of address and :meth:`open` resolves them to a concrete port:
+
+* a **MAC address** (e.g. ``"98:D3:91:FE:44:E4"``) — the stable identifier
+  used historically. Windows exposes the paired device's MAC inside the COM
+  port's ``hwid``, so the MAC is resolved to whatever ``COMx`` the local PC
+  assigned. This is the recommended, same-on-every-PC form.
+* a **COM port** (e.g. ``"COM5"``) — used verbatim, as an explicit override.
+* **empty / ``"auto"``** — autodetect: probe the Bluetooth serial ports and
+  pick the first that answers the version handshake as a BITalino.
+
+No PyBluez is involved in any case: resolution only reads the COM-port list
+and the transport is always ``pyserial``.
+
 Wire protocol *(BITalino (revolution), live-acquisition mode)*
 --------------------------------------------------------------
 All commands are single bytes; the device must be idle to accept the
@@ -60,7 +77,7 @@ import math
 import re
 import threading
 import time
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
@@ -79,11 +96,12 @@ class BitalinoDevice(AcquisitionDevice):
     Parameters
     ----------
     port : str
-        Windows Bluetooth **virtual COM port** of the paired BITalino,
-        e.g. ``"COM5"`` (``/dev/...`` on POSIX). Pair the device in the
-        operating system's Bluetooth settings first; the COM port it
-        assigns is what goes here. A MAC address is **not** accepted —
-        direct MAC/RFCOMM needed PyBluez and is no longer supported.
+        Device address, resolved by :meth:`open` to a concrete COM port:
+        a **MAC address** (recommended, stable across PCs — resolved to the
+        local virtual COM port via its ``hwid``), an explicit **COM port**
+        (``"COM5"``, ``/dev/...``), or **empty/``"auto"``** to autodetect the
+        BITalino among the paired Bluetooth serial ports. The device must be
+        paired in the operating system's Bluetooth settings beforehand.
     fs : int, optional
         Sampling frequency in Hz (default 1000). Must be one of the rates
         supported by the BITalino firmware: 1, 10, 100 or 1000.
@@ -116,7 +134,13 @@ class BitalinoDevice(AcquisitionDevice):
     _BAUD = 115_200
     _TIMEOUT_OPEN_S = 5.0  # max wait for the version reply on open
     _TIMEOUT_READ_S = 5.0  # serial read timeout per chunk while streaming
+    _PROBE_TIMEOUT_S = 1.5  # max wait for the version reply while autodetecting
     _CMD_GAP_S = 0.1  # spacing the firmware requires between command bytes
+    # Windows releases a Bluetooth SPP virtual COM port a little after close, so
+    # a reopen (after autodetect probing, or a quick reconnect) can transiently
+    # fail with WinError 1168. Retry the open a few times before giving up.
+    _OPEN_RETRIES = 4
+    _OPEN_RETRY_GAP_S = 0.4
 
     # Sampling-rate byte encoding accepted by the firmware.
     _SRATE_CODE: ClassVar[dict[int, int]] = {1000: 3, 100: 2, 10: 1, 1: 0}
@@ -134,6 +158,7 @@ class BitalinoDevice(AcquisitionDevice):
         self._fs = int(fs)
         self._channels = list(channels) if channels is not None else [0]
         self._serial = None  # type: ignore[var-annotated]
+        self._resolved_port: str | None = None
         self._conn_lock = threading.Lock()
 
     # -- AcquisitionDevice properties ----------------------------------------
@@ -144,7 +169,12 @@ class BitalinoDevice(AcquisitionDevice):
 
     @property
     def name(self) -> str:
-        return f"BITalino ({self._port})" if self._port else "BITalino"
+        if self._resolved_port and self._resolved_port != self._port.strip():
+            label = self._port.strip() or "auto"
+            return f"BITalino ({label} -> {self._resolved_port})"
+        if self._port.strip():
+            return f"BITalino ({self._port})"
+        return "BITalino (auto)"
 
     @property
     def n_channels(self) -> int:
@@ -164,15 +194,15 @@ class BitalinoDevice(AcquisitionDevice):
         Raises
         ------
         RuntimeError
-            If a MAC address is supplied instead of a COM port, if a
-            connection is already active, if the sampling rate or channel
-            list is invalid, or if the device does not identify itself as
-            a BITalino.
+            If a connection is already active, if the sampling rate or channel
+            list is invalid, if the address cannot be resolved to a COM port
+            (MAC not paired / no BITalino autodetected), or if the device on
+            the resolved port does not identify itself as a BITalino.
         """
         import serial  # lazy — keeps import time low when device is not used
 
-        self._validate_address()
         self._validate_config()
+        resolved = self._resolve_port()  # MAC -> COM, autodetect, or direct COM
 
         with self._conn_lock:
             if self._serial is not None:
@@ -182,11 +212,7 @@ class BitalinoDevice(AcquisitionDevice):
                         "Close it before opening another."
                     )
                 )
-            ser = serial.Serial(
-                port=self._port,
-                baudrate=self._BAUD,
-                timeout=self._TIMEOUT_OPEN_S,
-            )
+            ser = self._open_serial(serial, resolved)
             try:
                 # Confirm we are actually talking to a BITalino before
                 # streaming, so a wrong COM port fails fast and clearly.
@@ -195,9 +221,9 @@ class BitalinoDevice(AcquisitionDevice):
                     raise RuntimeError(
                         tr(
                             "The device on {port} did not identify itself as a "
-                            "BITalino. Check that you entered its Bluetooth "
-                            "virtual COM port."
-                        ).format(port=self._port)
+                            "BITalino. Check that the BITalino is paired and "
+                            "switched on."
+                        ).format(port=resolved)
                     )
                 self._set_sampling_rate(ser)
                 self._start_streaming(ser)
@@ -208,6 +234,7 @@ class BitalinoDevice(AcquisitionDevice):
                     pass
                 raise
             ser.timeout = self._TIMEOUT_READ_S
+            self._resolved_port = resolved
             self._serial = ser
 
     def read(self, n_samples: int) -> FloatArray:
@@ -269,20 +296,107 @@ class BitalinoDevice(AcquisitionDevice):
 
     # -- protocol helpers ----------------------------------------------------
 
-    def _validate_address(self) -> None:
-        """Reject a MAC address with an actionable message."""
+    def _resolve_port(self) -> str:
+        """Resolve the configured address to a concrete serial port.
+
+        A MAC address is mapped to the local COM port whose ``hwid`` carries
+        that MAC; an explicit ``COMx`` / ``/dev/...`` is used verbatim; an
+        empty address (or ``"auto"``) triggers autodetection by handshake.
+        Never imports PyBluez — only reads the COM-port list.
+        """
         addr = self._port.strip()
-        if not addr:
-            raise RuntimeError(tr("No BITalino COM port given. Enter e.g. COM5."))
+        if addr and not self._MAC_RE.match(addr) and addr.lower() != "auto":
+            return addr  # explicit serial port
+
+        from serial.tools import list_ports
+
+        ports = list(list_ports.comports())
         if self._MAC_RE.match(addr):
+            wanted = self._norm_hex(addr)
+            for p in ports:
+                if wanted in self._norm_hex(p.hwid or ""):
+                    return p.device
             raise RuntimeError(
                 tr(
-                    "BITalino now connects through its Bluetooth virtual COM port "
-                    "(e.g. COM5), not a MAC address. Pair the device in the "
-                    "operating system's Bluetooth settings and enter the COM port "
-                    "it assigns. Direct MAC/RFCOMM (PyBluez) is no longer supported."
-                )
+                    "BITalino {mac} was not found among the paired Bluetooth COM "
+                    "ports. Pair it in the operating system's Bluetooth settings "
+                    "and switch it on."
+                ).format(mac=addr)
             )
+        return self._autodetect(ports)
+
+    def _autodetect(self, ports: list) -> str:
+        """Probe the Bluetooth serial ports and return the first BITalino."""
+        for p in self._bluetooth_ports(ports):
+            if self._probe(p):
+                return p
+        raise RuntimeError(
+            tr(
+                "No BITalino was found on the Bluetooth COM ports. Pair the "
+                "BITalino in the operating system's Bluetooth settings and switch "
+                "it on, or enter its MAC address or COM port explicitly."
+            )
+        )
+
+    @classmethod
+    def _bluetooth_ports(cls, ports: list) -> list[str]:
+        """Candidate outgoing Bluetooth serial ports, in enumeration order.
+
+        Keeps ports that look like a Bluetooth serial link and drops the
+        "incoming" port whose ``hwid`` carries the all-zero address, which
+        never answers a handshake.
+        """
+        out: list[str] = []
+        for p in ports:
+            hwid = (p.hwid or "").upper()
+            desc = (p.description or "").lower()
+            is_bt = "BTHENUM" in hwid or "bluetooth" in desc
+            if is_bt and "000000000000" not in cls._norm_hex(hwid):
+                out.append(p.device)
+        return out
+
+    def _probe(self, port: str) -> bool:
+        """Open *port* briefly and return ``True`` if it answers as a BITalino."""
+        import serial
+
+        try:
+            ser = serial.Serial(
+                port=port, baudrate=self._BAUD, timeout=self._PROBE_TIMEOUT_S
+            )
+        except Exception:
+            return False
+        try:
+            return "BITalino" in self._read_version(ser, timeout_s=self._PROBE_TIMEOUT_S)
+        except Exception:
+            return False
+        finally:
+            try:
+                ser.close()
+            except Exception:
+                pass
+
+    @staticmethod
+    def _norm_hex(s: str) -> str:
+        """Uppercase a string and strip ``:`` / ``-`` so MACs compare cleanly."""
+        return s.upper().replace(":", "").replace("-", "")
+
+    def _open_serial(self, serial_mod: Any, port: str) -> Any:
+        """Open *port*, retrying briefly to ride over Bluetooth SPP release lag."""
+        last_exc: Exception | None = None
+        for attempt in range(self._OPEN_RETRIES):
+            try:
+                return serial_mod.Serial(
+                    port=port, baudrate=self._BAUD, timeout=self._TIMEOUT_OPEN_S
+                )
+            except Exception as exc:  # pyserial: SerialException — retry transient lock
+                last_exc = exc
+                if attempt < self._OPEN_RETRIES - 1:
+                    time.sleep(self._OPEN_RETRY_GAP_S)
+        raise RuntimeError(
+            tr("Could not open the BITalino port {port}: {err}").format(
+                port=port, err=last_exc
+            )
+        )
 
     def _validate_config(self) -> None:
         """Validate sampling rate and channel list before opening the port."""
@@ -303,11 +417,11 @@ class BitalinoDevice(AcquisitionDevice):
         time.sleep(self._CMD_GAP_S)
         ser.write(bytes([byte]))  # type: ignore[attr-defined]
 
-    def _read_version(self, ser: object) -> str:
+    def _read_version(self, ser: object, timeout_s: float | None = None) -> str:
         """Request and return the firmware version string."""
         self._send(ser, 0x07)
         chars: list[str] = []
-        deadline = time.monotonic() + self._TIMEOUT_OPEN_S
+        deadline = time.monotonic() + (timeout_s or self._TIMEOUT_OPEN_S)
         while time.monotonic() < deadline:
             chunk = ser.read(1)  # type: ignore[attr-defined]
             if not chunk:
