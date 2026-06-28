@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "emgteach"
-version = "0.3.0"
+version = "1.0.0"
 description = "Open-source teaching platform for surface electromyography acquisition and analysis with Arduino-based hardware"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -29,7 +29,7 @@ maintainers = [
     { name = "Ángel Agis-Torres", email = "aagisto@ucm.es" },
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: X11 Applications :: Qt",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",

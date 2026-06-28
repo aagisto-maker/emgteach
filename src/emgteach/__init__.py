@@ -31,7 +31,7 @@ from emgteach.mvc import adaptive_ylim, compute_mvc, normalise_to_mvc
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
-__version__ = "0.3.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "EMG_PROFILE",
