@@ -116,7 +116,7 @@ _ES = {
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",
     "Default": "Por defecto",
-    "Restore default COM port ({port})": "Restaurar puerto COM por defecto ({port})",
+    "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
     "Refresh the list of available serial ports": "Refrescar lista de puertos serie disponibles",
     "EDF destination folder": "Carpeta de destino EDF",
@@ -177,14 +177,12 @@ _ES = {
     "Envelope (5 Hz low-pass filter, causal with continuous state)":
         "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
-    "Enter the BITalino Bluetooth virtual COM port (e.g. COM5) before connecting.":
-        "Introduce el puerto COM virtual Bluetooth del BITalino (p. ej. COM5) antes de conectar.",
-    "Bluetooth virtual COM port of the BITalino (e.g. COM5). Pair the "
-    "BITalino in Windows Bluetooth settings first, then enter the COM "
-    "port Windows assigns here. A MAC address is no longer supported.":
-        "Puerto COM virtual Bluetooth del BITalino (p. ej. COM5). Empareja primero el "
-        "BITalino en la configuración Bluetooth de Windows y escribe aquí el puerto COM "
-        "que Windows le asigne. La dirección MAC ya no está soportada.",
+    "BITalino MAC address (recommended — stable on every PC), or an "
+    "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
+    "the BITalino in Windows Bluetooth settings first. No PyBluez is used.":
+        "Dirección MAC del BITalino (recomendado — estable en cualquier PC), o un "
+        "puerto COM concreto (p. ej. COM5), o déjalo vacío para autodetectar. Empareja "
+        "antes el BITalino en la configuración Bluetooth de Windows. No se usa PyBluez.",
     "Select a COM port for the Arduino before connecting.":
         "Selecciona un puerto COM para el Arduino antes de conectar.",
     "Device configured: {desc}. Press 'Start recording'.":
@@ -438,21 +436,25 @@ _ES = {
     "A BITalino connection is already active. Close it before opening another.":
         "Ya hay una conexión BITalino activa. Ciérrala antes de abrir otra.",
     "The BITalino device is not open.": "El dispositivo BITalino no está abierto.",
-    "No BITalino COM port given. Enter e.g. COM5.":
-        "No se indicó el puerto COM del BITalino. Introduce p. ej. COM5.",
-    "BITalino now connects through its Bluetooth virtual COM port "
-    "(e.g. COM5), not a MAC address. Pair the device in the "
-    "operating system's Bluetooth settings and enter the COM port "
-    "it assigns. Direct MAC/RFCOMM (PyBluez) is no longer supported.":
-        "El BITalino se conecta ahora por su puerto COM virtual Bluetooth "
-        "(p. ej. COM5), no por una dirección MAC. Empareja el dispositivo en la "
-        "configuración Bluetooth del sistema e introduce el puerto COM que le "
-        "asigne. La conexión directa por MAC/RFCOMM (PyBluez) ya no está soportada.",
+    "Could not open the BITalino port {port}: {err}":
+        "No se pudo abrir el puerto del BITalino {port}: {err}",
+    "BITalino {mac} was not found among the paired Bluetooth COM "
+    "ports. Pair it in the operating system's Bluetooth settings "
+    "and switch it on.":
+        "No se encontró el BITalino {mac} entre los puertos COM Bluetooth "
+        "emparejados. Empareja el dispositivo en la configuración Bluetooth del "
+        "sistema y enciéndelo.",
+    "No BITalino was found on the Bluetooth COM ports. Pair the "
+    "BITalino in the operating system's Bluetooth settings and switch "
+    "it on, or enter its MAC address or COM port explicitly.":
+        "No se encontró ningún BITalino en los puertos COM Bluetooth. Empareja el "
+        "BITalino en la configuración Bluetooth del sistema y enciéndelo, o "
+        "introduce su dirección MAC o su puerto COM explícitamente.",
     "The device on {port} did not identify itself as a "
-    "BITalino. Check that you entered its Bluetooth "
-    "virtual COM port.":
+    "BITalino. Check that the BITalino is paired and "
+    "switched on.":
         "El dispositivo en {port} no se identificó como un BITalino. "
-        "Comprueba que introdujiste su puerto COM virtual Bluetooth.",
+        "Comprueba que el BITalino está emparejado y encendido.",
     "Unsupported BITalino sampling rate {fs} Hz. "
     "Use one of 1, 10, 100 or 1000.":
         "Frecuencia de muestreo {fs} Hz no soportada por el BITalino. "
