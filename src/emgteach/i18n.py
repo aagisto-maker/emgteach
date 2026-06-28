@@ -116,7 +116,7 @@ _ES = {
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",
     "Default": "Por defecto",
-    "Restore default MAC ({mac})": "Restaurar MAC por defecto ({mac})",
+    "Restore default COM port ({port})": "Restaurar puerto COM por defecto ({port})",
     "Refresh": "Refrescar",
     "Refresh the list of available serial ports": "Refrescar lista de puertos serie disponibles",
     "EDF destination folder": "Carpeta de destino EDF",
@@ -177,14 +177,14 @@ _ES = {
     "Envelope (5 Hz low-pass filter, causal with continuous state)":
         "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
-    "Enter the BITalino COM port (e.g. COM5) or MAC address before connecting.":
-        "Introduce el puerto COM del BITalino (p. ej. COM5) o su dirección MAC antes de conectar.",
-    "Bluetooth COM port (e.g. COM5) or MAC address. Recommended: pair the "
-    "BITalino in Windows Bluetooth settings, then enter its virtual COM "
-    "port here. A MAC address only works if PyBluez is installed.":
-        "Puerto COM Bluetooth (p. ej. COM5) o dirección MAC. Recomendado: empareja el "
-        "BITalino en la configuración Bluetooth de Windows y escribe aquí su puerto COM "
-        "virtual. La dirección MAC solo funciona si PyBluez está instalado.",
+    "Enter the BITalino Bluetooth virtual COM port (e.g. COM5) before connecting.":
+        "Introduce el puerto COM virtual Bluetooth del BITalino (p. ej. COM5) antes de conectar.",
+    "Bluetooth virtual COM port of the BITalino (e.g. COM5). Pair the "
+    "BITalino in Windows Bluetooth settings first, then enter the COM "
+    "port Windows assigns here. A MAC address is no longer supported.":
+        "Puerto COM virtual Bluetooth del BITalino (p. ej. COM5). Empareja primero el "
+        "BITalino en la configuración Bluetooth de Windows y escribe aquí el puerto COM "
+        "que Windows le asigne. La dirección MAC ya no está soportada.",
     "Select a COM port for the Arduino before connecting.":
         "Selecciona un puerto COM para el Arduino antes de conectar.",
     "Device configured: {desc}. Press 'Start recording'.":
@@ -435,13 +435,34 @@ _ES = {
     "The Arduino device is not open.": "El dispositivo Arduino no está abierto.",
     "Timeout while reading from the Arduino — connection lost.":
         "Tiempo de espera agotado al leer del Arduino — conexión perdida.",
-    "BitalinoDevice requires the optional 'bitalino' extra. "
-    'Install it with: pip install "emgteach[bitalino]"':
-        "BitalinoDevice requiere el extra opcional 'bitalino'. "
-        'Instálalo con: pip install "emgteach[bitalino]"',
     "A BITalino connection is already active. Close it before opening another.":
         "Ya hay una conexión BITalino activa. Ciérrala antes de abrir otra.",
     "The BITalino device is not open.": "El dispositivo BITalino no está abierto.",
+    "No BITalino COM port given. Enter e.g. COM5.":
+        "No se indicó el puerto COM del BITalino. Introduce p. ej. COM5.",
+    "BITalino now connects through its Bluetooth virtual COM port "
+    "(e.g. COM5), not a MAC address. Pair the device in the "
+    "operating system's Bluetooth settings and enter the COM port "
+    "it assigns. Direct MAC/RFCOMM (PyBluez) is no longer supported.":
+        "El BITalino se conecta ahora por su puerto COM virtual Bluetooth "
+        "(p. ej. COM5), no por una dirección MAC. Empareja el dispositivo en la "
+        "configuración Bluetooth del sistema e introduce el puerto COM que le "
+        "asigne. La conexión directa por MAC/RFCOMM (PyBluez) ya no está soportada.",
+    "The device on {port} did not identify itself as a "
+    "BITalino. Check that you entered its Bluetooth "
+    "virtual COM port.":
+        "El dispositivo en {port} no se identificó como un BITalino. "
+        "Comprueba que introdujiste su puerto COM virtual Bluetooth.",
+    "Unsupported BITalino sampling rate {fs} Hz. "
+    "Use one of 1, 10, 100 or 1000.":
+        "Frecuencia de muestreo {fs} Hz no soportada por el BITalino. "
+        "Usa 1, 10, 100 o 1000.",
+    "Invalid BITalino channel list; channels must be in 0..5.":
+        "Lista de canales del BITalino no válida; deben estar en 0..5.",
+    "Timeout while reading from the BITalino — connection lost.":
+        "Tiempo de espera agotado al leer del BITalino — conexión perdida.",
+    "Corrupted BITalino frame (CRC mismatch) — connection lost.":
+        "Trama del BITalino corrupta (error de CRC) — conexión perdida.",
 
     # --- PDF report ---
     "Yes — MDF decreases over time ({slope:+.2f} Hz/s)":
