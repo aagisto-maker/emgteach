@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "emgteach"
-version = "0.3.0"
+version = "1.0.0"
 description = "Open-source teaching platform for surface electromyography acquisition and analysis with Arduino-based hardware"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -29,7 +29,7 @@ maintainers = [
     { name = "Ángel Agis-Torres", email = "aagisto@ucm.es" },
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: X11 Applications :: Qt",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
@@ -47,13 +47,10 @@ classifiers = [
 # Pinned versions match the buffered-write reproducibility package and the bioinstrumentation
 # venv that has been verified to run on Windows 11 with Python 3.12.
 #
-# Note on `bitalino`: it is *not* a hard dependency. Its PyBluez backend
-# requires Microsoft C++ Build Tools to install on Windows + Python 3.12,
-# which is impractical for the typical teaching-lab user. Users who own
-# a BITalino install it via the `bitalino` extra:
-#     pip install "emgteach[bitalino]"
-# Users who only have an Arduino+MyoWare do not need it and the package
-# works without it.
+# Note on BITalino: no external `bitalino` package and no PyBluez are needed.
+# The BITalino (revolution) is Bluetooth Classic (SPP); on Windows it pairs as
+# a virtual COM port, and the backend speaks its wire protocol directly over
+# `pyserial` (already a hard dependency, shared with the Arduino backend).
 dependencies = [
     "PySide6>=6.6,<7.0",
     "pyqtgraph>=0.13",
@@ -67,9 +64,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-bitalino = [
-    "bitalino>=1.2",
-]
 dev = [
     "pytest>=8.3",
     "pytest-cov>=5.0",
@@ -87,7 +81,7 @@ build = [
     "PyInstaller>=6.0",
 ]
 all = [
-    "emgteach[bitalino,dev,docs,build]",
+    "emgteach[dev,docs,build]",
 ]
 
 [project.scripts]

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-06-28
+
 ### Added
 - **Standalone Windows executable (PyInstaller).** A reproducible packaging
   recipe under `packaging/` (`emgteach.spec` + `run_emgteach.py`) builds a
@@ -14,17 +16,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   PC with no Python install — for the critical-testing phase. The frozen entry
   point has a headless `--selftest` mode (imports the full runtime, builds the
   window off-screen, writes the outcome to `emgteach_selftest.log`) used to
-  validate the binary after each build. The BITalino backend is bundled via the
-  pure-Python `bitalino` module over the **Windows Bluetooth virtual COM port**
-  (no PyBluez required). Build artefacts stay git-ignored; see
-  `packaging/README.md`.
+  validate the binary after each build. Both hardware backends talk over
+  `pyserial` (the BITalino over its **Windows Bluetooth virtual COM port**); no
+  PyBluez or external `bitalino` package is bundled. Build artefacts stay
+  git-ignored; see `packaging/README.md`.
 
 ### Changed
-- **BITalino device field accepts a virtual COM port.** The acquisition tab now
-  documents that the BITalino can be addressed by its Windows Bluetooth COM port
-  (e.g. `COM5`) as well as by MAC — placeholder, tooltip and the connect-time
-  validation message were updated (bilingual EN/ES). This is what makes the
-  BITalino usable from the PyBluez-free standalone build.
+- **BITalino backend rewritten on `pyserial` (no PyBluez, no `bleak`, no
+  external `bitalino`).** `BitalinoDevice` now opens the Windows Bluetooth
+  **virtual COM port** and speaks the BITalino wire protocol directly (version,
+  set sampling rate, start live mode, CRC-checked frame decode, stop→idle). The
+  `(r)evolution` is Bluetooth **Classic** (SPP), so `bleak` (BLE-only) cannot
+  reach it; the COM-port path over `pyserial` does, and freezes/imports on every
+  supported Python including 3.13/3.14. The public `AcquisitionDevice` API and
+  the watchdog (`force_close`) contract are unchanged. The `[bitalino]` optional
+  extra is removed. See ADR 2026-06-28.
+- **MAC stays the stable, zero-config address.** The device field accepts a
+  **MAC** (default `98:D3:91:FE:44:E4` — resolved to the local COM port via the
+  port `hwid`, identical on every PC), an explicit **`COMx`**, or **empty** to
+  **autodetect** the BITalino by handshake. A MAC that is not paired, or a
+  failed autodetect, raises an actionable bilingual message. The serial open
+  retries with a short backoff to absorb the Bluetooth SPP port-release lag
+  (`WinError 1168`). Persistence key `adquisicion/mac` → `adquisicion/port`.
+
+### Removed
+- **`bitalino` optional dependency / extra.** The protocol is now implemented
+  in-tree over `pyserial`, so `pip install "emgteach[bitalino]"` is gone and no
+  external Bluetooth library is required.
 
 ## [0.3.0] — 2026-06-13
 

@@ -2,9 +2,10 @@
 
 These tests run on any machine without a BITalino, an Arduino or even
 a serial port. The :class:`AcquisitionDevice` contract is verified by
-constructing a minimal subclass; the Arduino backend is tested by
-mocking ``serial.Serial``; the BITalino backend is tested by mocking
-the ``bitalino`` module's ``BITalino`` class.
+constructing a minimal subclass; both hardware backends are tested by
+mocking ``serial.Serial`` — the BITalino backend now speaks its wire
+protocol directly over ``pyserial`` (Bluetooth virtual COM port), so the
+tests feed it hand-encoded BITalino frames.
 
 The watchdog property of the BITalino device — the most novel piece
 in the package, exposed in the GUI's ``QTimer`` poll — is verified by
@@ -267,114 +268,273 @@ class TestArduinoDevice:
 
 
 # ---------------------------------------------------------------------------
-# BitalinoDevice — mocked bitalino package
+# BitalinoDevice — mocked pyserial (Bluetooth virtual COM port)
 # ---------------------------------------------------------------------------
+#
+# The backend speaks the BITalino wire protocol over pyserial directly, so
+# the helpers below encode valid BITalino acquisition frames (with the 4-bit
+# CRC the device validates on read) to exercise the real decoder.
 
 
-class _FakeBITalino:
-    """Stand-in for ``bitalino.BITalino``.
+def _bitalino_crc4(frame: list[int]) -> int:
+    """Reference CRC-4 over a frame whose CRC nibble is already zeroed."""
+    x = 0
+    for byte in frame:
+        for bit in range(7, -1, -1):
+            x = x << 1
+            if x & 0x10:
+                x = x ^ 0x03
+            x = x ^ ((byte >> bit) & 0x01)
+    return x & 0x0F
 
-    Has a ``read_event`` controllable from tests so that we can simulate
-    a blocking ``read`` and a ``close`` from another thread.
-    """
 
-    def __init__(self, mac: str) -> None:
-        self.mac = mac
-        self.started = False
-        self.closed = False
-        self.read_event = threading.Event()
-        self.read_should_raise: BaseException | None = None
-        self.last_n: int = 0
+def _encode_frame_1ch(adc: int, seq: int = 0, digital: int = 0) -> bytes:
+    """Encode a single-channel (3-byte) BITalino acquisition frame."""
+    b0 = (adc & 0x3F) << 2  # A1[5:0] in the top 6 bits, 2 pad bits
+    b1 = ((digital & 0x0F) << 4) | ((adc >> 6) & 0x0F)  # 4 digital | A1[9:6]
+    b2 = (seq & 0x0F) << 4  # seq in high nibble, CRC nibble starts at 0
+    frame = [b0, b1, b2]
+    frame[2] |= _bitalino_crc4(frame)
+    return bytes(frame)
 
-    def start(self, fs: int, channels: list[int]) -> None:
-        self.started = True
 
-    def read(self, n: int) -> np.ndarray:
-        self.last_n = n
-        # Block until either the test sets read_event, or close() is called.
-        # When close() is called, raising mimics what real BITalino does
-        # when the underlying socket is yanked from under it.
-        self.read_event.wait(timeout=5.0)
-        if self.read_should_raise is not None:
-            raise self.read_should_raise
-        # Default: return n rows by 6 columns (BITalino returns a matrix)
-        # with ADC values ~512 (midscale).
-        return np.full((n, 6), 512.0)
+def _encode_frame_2ch(a1: int, a2: int, seq: int = 0, digital: int = 0) -> bytes:
+    """Encode a two-channel (4-byte) BITalino acquisition frame."""
+    b0 = a2 & 0xFF  # A2[7:0]
+    b1 = ((a1 & 0x3F) << 2) | ((a2 >> 8) & 0x03)  # A1[5:0] | A2[9:8]
+    b2 = ((digital & 0x0F) << 4) | ((a1 >> 6) & 0x0F)  # 4 digital | A1[9:6]
+    b3 = (seq & 0x0F) << 4
+    frame = [b0, b1, b2, b3]
+    frame[3] |= _bitalino_crc4(frame)
+    return bytes(frame)
 
-    def stop(self) -> None:
-        self.started = False
 
-    def close(self) -> None:
-        self.closed = True
-        # Unblock any pending read by signalling the event with an exception
-        if not self.read_event.is_set():
-            self.read_should_raise = OSError("Connection closed")
-            self.read_event.set()
+_VERSION_REPLY = b"BITalino_v5.2\n"
 
 
 @pytest.fixture
-def fake_bitalino_module(monkeypatch: pytest.MonkeyPatch) -> Iterator[MagicMock]:
-    """Patch the ``bitalino`` module so :class:`BitalinoDevice.open` finds it."""
-    fake = MagicMock()
-    fake.BITalino.side_effect = lambda mac: _FakeBITalino(mac)
-    monkeypatch.setitem(sys.modules, "bitalino", fake)
-    yield fake
+def fast_commands(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove the 100 ms inter-command spacing so tests run instantly."""
+    monkeypatch.setattr(BitalinoDevice, "_CMD_GAP_S", 0.0)
+
+
+class _FakePortInfo:
+    """Stand-in for ``serial.tools.list_ports_common.ListPortInfo``."""
+
+    def __init__(self, device: str, hwid: str, description: str = "") -> None:
+        self.device = device
+        self.hwid = hwid
+        self.description = description
+
+
+def _version_serial(*args, **kwargs) -> _FakeSerial:
+    """A ``_FakeSerial`` already primed with the BITalino version reply."""
+    s = _FakeSerial(*args, **kwargs)
+    s.binary_queue = bytearray(_VERSION_REPLY)
+    return s
+
+
+# A Bluetooth SPP port whose hwid carries the lab BITalino's MAC, the matching
+# "incoming" port with the all-zero address, and the Arduino's USB port.
+_BT_OUT = _FakePortInfo(
+    "COM3",
+    r"BTHENUM\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0046\8&x&0&98D391FE44E4_C0",
+    "Standard Serial over Bluetooth link (COM3)",
+)
+_BT_IN = _FakePortInfo(
+    "COM4",
+    r"BTHENUM\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0000\8&x&0&000000000000_00",
+    "Standard Serial over Bluetooth link (COM4)",
+)
+_USB = _FakePortInfo("COM6", "USB VID:PID=10C4:EA60", "Silicon Labs CP210x USB to UART Bridge")
+
+
+class TestBitalinoAddressing:
+    """MAC -> COM resolution and autodetection, all PyBluez-free."""
+
+    def test_mac_resolves_to_com_port(self, fast_commands: None) -> None:
+        device = BitalinoDevice("98:D3:91:FE:44:E4", channels=[0])
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_IN, _BT_OUT, _USB]
+        ), patch("serial.Serial", side_effect=_version_serial):
+            device.open()
+        assert device._resolved_port == "COM3"  # matched by the MAC in the hwid
+        assert "COM3" in device.name
+        device.close()
+
+    def test_mac_accepts_dash_separators(self, fast_commands: None) -> None:
+        device = BitalinoDevice("98-D3-91-FE-44-E4", channels=[0])
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_OUT]
+        ), patch("serial.Serial", side_effect=_version_serial):
+            device.open()
+        assert device._resolved_port == "COM3"
+        device.close()
+
+    def test_mac_not_paired_raises(self, fast_commands: None) -> None:
+        device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_IN, _USB]
+        ), pytest.raises(RuntimeError, match="was not found"):
+            device.open()
+
+    def test_autodetect_empty_address(self, fast_commands: None) -> None:
+        device = BitalinoDevice("", channels=[0])
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_OUT, _USB]
+        ), patch("serial.Serial", side_effect=_version_serial):
+            device.open()
+        assert device._resolved_port == "COM3"
+        device.close()
+
+    def test_autodetect_skips_incoming_zero_port(self, fast_commands: None) -> None:
+        # The all-zero "incoming" port must be filtered out as a candidate.
+        assert BitalinoDevice._bluetooth_ports([_BT_IN, _BT_OUT, _USB]) == ["COM3"]
+
+    def test_autodetect_none_found_raises(self, fast_commands: None) -> None:
+        device = BitalinoDevice("")
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_USB]
+        ), pytest.raises(RuntimeError, match="No BITalino"):
+            device.open()
+
+    def test_name_auto_when_empty(self) -> None:
+        assert BitalinoDevice("").name == "BITalino (auto)"
 
 
 class TestBitalinoDeviceBasics:
-    def test_open_without_extra_raises_helpful_error(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # Simulate the bitalino package not being installed
-        monkeypatch.setitem(sys.modules, "bitalino", None)
-        device = BitalinoDevice("00:00:00:00:00:00")
-        with pytest.raises(ImportError, match='emgteach\\[bitalino\\]'):
-            device.open()
-
-    def test_name_includes_mac(self) -> None:
-        device = BitalinoDevice("98:D3:91:FE:44:E4")
-        assert "98:D3:91:FE:44:E4" in device.name
+    def test_name_includes_port(self) -> None:
+        device = BitalinoDevice("COM5")
+        assert "COM5" in device.name
 
     def test_fs_property(self) -> None:
-        device = BitalinoDevice("00:00:00:00:00:00", fs=500)
+        device = BitalinoDevice("COM5", fs=500)
         assert device.fs == 500.0
 
-    def test_open_starts_streaming(self, fake_bitalino_module: MagicMock) -> None:
-        device = BitalinoDevice("AA:BB:CC:DD:EE:FF", fs=1000, channels=[0, 1])
-        device.open()
+    def test_n_channels_matches_channels(self) -> None:
+        assert BitalinoDevice("COM5").n_channels == 1
+        assert BitalinoDevice("COM5", channels=[0, 1]).n_channels == 2
+
+    def test_open_rejects_bad_sampling_rate(self, fast_commands: None) -> None:
+        device = BitalinoDevice("COM5", fs=42)
+        with pytest.raises(RuntimeError, match="sampling rate"):
+            device.open()
+
+    def test_open_sends_rate_and_start_commands(
+        self, fast_commands: None, fake_serial_factory: list[_FakeSerial]
+    ) -> None:
+        device = BitalinoDevice("COM5", fs=1000, channels=[0])
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
         assert device.is_connected
+        # set-rate for 1000 Hz: (3 << 6) | 0x03 = 0xC3; start live, ch0: 0x01 | 1<<2 = 0x05
+        assert 0xC3 in ser.written
+        assert 0x05 in ser.written
         device.close()
         assert not device.is_connected
+        # close() must send the stop/idle byte (0x00)
+        assert 0x00 in ser.written
 
-    def test_open_twice_raises(self, fake_bitalino_module: MagicMock) -> None:
-        device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
-        device.open()
-        with pytest.raises(RuntimeError, match="already active"):
+    def test_open_wrong_device_raises_and_closes_port(
+        self, fast_commands: None
+    ) -> None:
+        device = BitalinoDevice("COM5")
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(b"not-a-bitalino\n")
+        with patch("serial.Serial", return_value=ser), pytest.raises(
+            RuntimeError, match="did not identify"
+        ):
             device.open()
+        assert ser.is_open is False  # the port must be closed again on failure
+
+    def test_open_twice_raises(
+        self, fast_commands: None, fake_serial_factory: list[_FakeSerial]
+    ) -> None:
+        device = BitalinoDevice("COM5")
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+            with pytest.raises(RuntimeError, match="already active"):
+                device.open()
         device.close()
 
+    def test_open_busy_port_raises_actionable(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # A busy / access-denied port must yield an actionable message that
+        # tells the user to power-cycle the BITalino, after the retries.
+        monkeypatch.setattr(BitalinoDevice, "_OPEN_RETRY_GAP_S", 0.0)
+        monkeypatch.setattr(BitalinoDevice, "_OPEN_RETRIES", 2)
+        device = BitalinoDevice("COM5")
+
+        def denied(*args, **kwargs):
+            raise PermissionError(13, "Access is denied")
+
+        with patch("serial.Serial", side_effect=denied), pytest.raises(
+            RuntimeError, match="off and on"
+        ):
+            device.open()
+
     def test_read_without_open_raises(self) -> None:
-        device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
+        device = BitalinoDevice("COM5")
         with pytest.raises(RuntimeError, match="not open"):
             device.read(100)
 
     def test_close_without_open_is_noop(self) -> None:
-        device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
+        device = BitalinoDevice("COM5")
         device.close()  # must not raise
 
-    def test_n_channels_matches_channels(self) -> None:
-        assert BitalinoDevice("AA:BB:CC:DD:EE:FF").n_channels == 1
-        assert BitalinoDevice("AA:BB:CC:DD:EE:FF", channels=[0, 1]).n_channels == 2
+    def test_read_one_channel_decodes_to_mv(self, fast_commands: None) -> None:
+        device = BitalinoDevice("COM5", fs=1000, channels=[0])
+        ser = _FakeSerial()
+        # version reply, then two frames: ADC=1023 (full scale) and ADC=0
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + _encode_frame_1ch(1023) + _encode_frame_1ch(0)
+        )
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(2)
+        assert out.shape == (2, 1)
+        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)  # ADC max → +1.65 mV
+        np.testing.assert_allclose(out[1, 0], -1.65, atol=0.01)  # ADC 0  → -1.65 mV
+        device.close()
 
-    def test_read_two_channels_returns_two_columns(
-        self, fake_bitalino_module: MagicMock
-    ) -> None:
-        device = BitalinoDevice("AA:BB:CC:DD:EE:FF", channels=[0, 1])
-        device.open()
-        # Let the fake's blocking read return immediately.
-        device._device.read_event.set()
-        out = device.read(10)
-        assert out.shape == (10, 2)
+    def test_read_two_channels_returns_two_columns(self, fast_commands: None) -> None:
+        device = BitalinoDevice("COM5", fs=1000, channels=[0, 1])
+        ser = _FakeSerial()
+        # one frame: A1=1023 (+1.65 mV), A2=512 (≈ midscale → ≈0 mV)
+        ser.binary_queue = bytearray(_VERSION_REPLY + _encode_frame_2ch(1023, 512))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(1)
+        assert out.shape == (1, 2)
+        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)
+        assert abs(out[0, 1]) < 0.02
+        device.close()
+
+    def test_read_timeout_raises(self, fast_commands: None) -> None:
+        device = BitalinoDevice("COM5")
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY)  # no frames follow
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        with pytest.raises(RuntimeError, match="Timeout"):
+            device.read(1)
+        device.close()
+
+    def test_read_crc_mismatch_raises(self, fast_commands: None) -> None:
+        device = BitalinoDevice("COM5", channels=[0])
+        frame = bytearray(_encode_frame_1ch(500))
+        frame[-1] ^= 0x01  # corrupt the CRC nibble
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + bytes(frame))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        with pytest.raises(RuntimeError, match="CRC"):
+            device.read(1)
         device.close()
 
 
@@ -396,22 +556,56 @@ class TestBitalinoConversion:
         np.testing.assert_allclose(result, -1.65, atol=0.01)
 
 
+class _BlockingFakeSerial:
+    """Fake serial whose streaming read blocks until :meth:`close`.
+
+    During ``open`` it returns the version reply byte-by-byte; once that is
+    exhausted, any further ``read`` blocks on an event until ``close`` is
+    called from another thread — mimicking a real serial read that the
+    operating system releases when the port is yanked shut.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        self.timeout = kwargs.get("timeout")
+        self.is_open = True
+        self.written = bytearray()
+        self._version = bytearray(_VERSION_REPLY)
+        self._closed = threading.Event()
+
+    def write(self, data: bytes) -> int:
+        self.written += data
+        return len(data)
+
+    def read(self, n: int) -> bytes:
+        if self._version:
+            head = bytes(self._version[:n])
+            del self._version[:n]
+            return head
+        # Block as a real read would, until the port is closed.
+        self._closed.wait(timeout=5.0)
+        return b""
+
+    def close(self) -> None:
+        self.is_open = False
+        self._closed.set()
+
+
 class TestBitalinoWatchdog:
     """The pivotal property of :meth:`BitalinoDevice.force_close`.
 
-    Background. ``bitalino.BITalino.read`` can block indefinitely if the
-    Bluetooth link drops mid-session. The watchdog protocol releases
-    the blocked read by closing the socket from a second thread. The
-    test below reproduces the scenario in microcosm: thread A enters
-    ``read``; thread B calls ``force_close``; thread A must unblock
-    promptly (in much less than the 3-second GUI threshold).
+    Background. The per-frame serial read can block indefinitely if the
+    Bluetooth link drops mid-session. The watchdog protocol releases the
+    blocked read by closing the port from a second thread. The test below
+    reproduces the scenario: thread A enters ``read``; thread B calls
+    ``force_close``; thread A must unblock promptly (well under the 3-second
+    GUI threshold).
     """
 
-    def test_force_close_releases_blocked_read(
-        self, fake_bitalino_module: MagicMock
-    ) -> None:
-        device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
-        device.open()
+    def test_force_close_releases_blocked_read(self, fast_commands: None) -> None:
+        device = BitalinoDevice("COM5", channels=[0])
+        ser = _BlockingFakeSerial()
+        with patch("serial.Serial", return_value=ser):
+            device.open()
 
         elapsed_ms: list[float] = []
         exceptions: list[BaseException] = []
@@ -472,11 +666,12 @@ class TestDeviceFactory:
         assert "COM9" in device.name
 
     def test_create_bitalino_returns_bitalino_device(self) -> None:
-        # Construction must not require the optional `bitalino` package;
-        # it is imported lazily inside open(), not here.
-        device = create_device(BACKEND_BITALINO, mac="AA:BB:CC:DD:EE:FF", fs=1000)
+        # Construction must not touch the serial port; it is opened lazily
+        # inside open(), not here.
+        device = create_device(BACKEND_BITALINO, port="COM5", fs=1000)
         assert isinstance(device, BitalinoDevice)
         assert device.fs == 1000.0
+        assert "COM5" in device.name
 
     def test_unknown_backend_raises_keyerror(self) -> None:
         with pytest.raises(KeyError, match="Unknown device backend"):

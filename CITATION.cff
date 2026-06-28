@@ -9,11 +9,14 @@ abstract: >-
   Plus + MyoWare 2.0 over USB serial. Output files follow the EDF+
   standard with reliable buffered writing. Version 0.2.0 added two-channel
   acquisition (e.g. agonist/antagonist), automatic contraction-onset
-  annotation and one-click PDF session reports; version 0.3.0 adds a stacked
-  two-channel live view and a bilingual (English/Spanish) interface.
+  annotation and one-click PDF session reports; version 0.3.0 added a stacked
+  two-channel live view and a bilingual (English/Spanish) interface; version
+  1.0.0 reimplements the BITalino backend over pyserial (Bluetooth virtual COM
+  port, no PyBluez or external dependencies) with MAC-to-COM resolution and
+  autodetection, and ships a standalone Windows executable.
 type: software
-version: 0.3.0
-date-released: "2026-06-13"
+version: 1.0.0
+date-released: "2026-06-28"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

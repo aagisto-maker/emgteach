@@ -116,7 +116,7 @@ _ES = {
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",
     "Default": "Por defecto",
-    "Restore default MAC ({mac})": "Restaurar MAC por defecto ({mac})",
+    "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
     "Refresh the list of available serial ports": "Refrescar lista de puertos serie disponibles",
     "EDF destination folder": "Carpeta de destino EDF",
@@ -177,14 +177,12 @@ _ES = {
     "Envelope (5 Hz low-pass filter, causal with continuous state)":
         "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
-    "Enter the BITalino COM port (e.g. COM5) or MAC address before connecting.":
-        "Introduce el puerto COM del BITalino (p. ej. COM5) o su dirección MAC antes de conectar.",
-    "Bluetooth COM port (e.g. COM5) or MAC address. Recommended: pair the "
-    "BITalino in Windows Bluetooth settings, then enter its virtual COM "
-    "port here. A MAC address only works if PyBluez is installed.":
-        "Puerto COM Bluetooth (p. ej. COM5) o dirección MAC. Recomendado: empareja el "
-        "BITalino en la configuración Bluetooth de Windows y escribe aquí su puerto COM "
-        "virtual. La dirección MAC solo funciona si PyBluez está instalado.",
+    "BITalino MAC address (recommended — stable on every PC), or an "
+    "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
+    "the BITalino in Windows Bluetooth settings first. No PyBluez is used.":
+        "Dirección MAC del BITalino (recomendado — estable en cualquier PC), o un "
+        "puerto COM concreto (p. ej. COM5), o déjalo vacío para autodetectar. Empareja "
+        "antes el BITalino en la configuración Bluetooth de Windows. No se usa PyBluez.",
     "Select a COM port for the Arduino before connecting.":
         "Selecciona un puerto COM para el Arduino antes de conectar.",
     "Device configured: {desc}. Press 'Start recording'.":
@@ -435,13 +433,42 @@ _ES = {
     "The Arduino device is not open.": "El dispositivo Arduino no está abierto.",
     "Timeout while reading from the Arduino — connection lost.":
         "Tiempo de espera agotado al leer del Arduino — conexión perdida.",
-    "BitalinoDevice requires the optional 'bitalino' extra. "
-    'Install it with: pip install "emgteach[bitalino]"':
-        "BitalinoDevice requiere el extra opcional 'bitalino'. "
-        'Instálalo con: pip install "emgteach[bitalino]"',
     "A BITalino connection is already active. Close it before opening another.":
         "Ya hay una conexión BITalino activa. Ciérrala antes de abrir otra.",
     "The BITalino device is not open.": "El dispositivo BITalino no está abierto.",
+    "Could not open the BITalino port {port}: {err}. If the port is "
+    "busy or access is denied, switch the BITalino off and on to reset "
+    "the Bluetooth link, then retry.":
+        "No se pudo abrir el puerto del BITalino {port}: {err}. Si el puerto está "
+        "ocupado o el acceso está denegado, apaga y enciende el BITalino para "
+        "reiniciar el enlace Bluetooth y reintenta.",
+    "BITalino {mac} was not found among the paired Bluetooth COM "
+    "ports. Pair it in the operating system's Bluetooth settings "
+    "and switch it on.":
+        "No se encontró el BITalino {mac} entre los puertos COM Bluetooth "
+        "emparejados. Empareja el dispositivo en la configuración Bluetooth del "
+        "sistema y enciéndelo.",
+    "No BITalino was found on the Bluetooth COM ports. Pair the "
+    "BITalino in the operating system's Bluetooth settings and switch "
+    "it on, or enter its MAC address or COM port explicitly.":
+        "No se encontró ningún BITalino en los puertos COM Bluetooth. Empareja el "
+        "BITalino en la configuración Bluetooth del sistema y enciéndelo, o "
+        "introduce su dirección MAC o su puerto COM explícitamente.",
+    "The device on {port} did not identify itself as a "
+    "BITalino. Check that the BITalino is paired and "
+    "switched on.":
+        "El dispositivo en {port} no se identificó como un BITalino. "
+        "Comprueba que el BITalino está emparejado y encendido.",
+    "Unsupported BITalino sampling rate {fs} Hz. "
+    "Use one of 1, 10, 100 or 1000.":
+        "Frecuencia de muestreo {fs} Hz no soportada por el BITalino. "
+        "Usa 1, 10, 100 o 1000.",
+    "Invalid BITalino channel list; channels must be in 0..5.":
+        "Lista de canales del BITalino no válida; deben estar en 0..5.",
+    "Timeout while reading from the BITalino — connection lost.":
+        "Tiempo de espera agotado al leer del BITalino — conexión perdida.",
+    "Corrupted BITalino frame (CRC mismatch) — connection lost.":
+        "Trama del BITalino corrupta (error de CRC) — conexión perdida.",
 
     # --- PDF report ---
     "Yes — MDF decreases over time ({slope:+.2f} Hz/s)":

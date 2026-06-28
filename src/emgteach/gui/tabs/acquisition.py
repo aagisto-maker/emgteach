@@ -2,7 +2,7 @@
 AcquisitionTab — tab 1: real-time EMG acquisition with BITalino.
 
 Controls:
-  - BITalino MAC address (persisted with QSettings)
+  - BITalino Bluetooth virtual COM port (persisted with QSettings)
   - Destination folder for the EDF (persisted with QSettings)
   - Connect / Disconnect button
   - Start / Stop recording button
@@ -93,8 +93,10 @@ _OLD_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
 # envelope (2) never stacks.
 _CALIB_MV = {0: 1.0, 1: 0.2}
 
-# Default MAC of the UCM lab's BITalino (editable in the field).
-DEFAULT_MAC = "98:D3:91:FE:44:E4"
+# Default BITalino address (editable in the field). The lab's MAC is stable
+# across PCs; BitalinoDevice resolves it to the local virtual COM port. The
+# field also accepts an explicit COMx, or empty for autodetection.
+DEFAULT_BITALINO_ADDR = "98:D3:91:FE:44:E4"
 
 # Interval (ms) after the last received data beyond which there is considered
 # to be no traffic (the LED goes from green to yellow).
@@ -254,7 +256,7 @@ class AcquisitionTab(QWidget):
         cfg_outer.setContentsMargins(6, 3, 6, 3)
         cfg_outer.setSpacing(3)
 
-        # Row 1: device type + connection (MAC or COM)
+        # Row 1: device type + connection (COM port for both backends)
         cfg_row1 = QHBoxLayout()
         cfg_row1.setSpacing(6)
 
@@ -267,26 +269,30 @@ class AcquisitionTab(QWidget):
         self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
         cfg_row1.addWidget(self._combo_device_type, stretch=1)
 
-        # Conditional central area: MAC (BITalino) or COM (Arduino)
+        # Conditional central area: COM port (BITalino) or COM selector (Arduino)
         # Wrapped in a QWidget so the content can change without rebuilding the layout
         self._widget_mac = QWidget()
         mac_inner = QHBoxLayout(self._widget_mac)
         mac_inner.setContentsMargins(0, 0, 0, 0)
         mac_inner.setSpacing(4)
         self._edit_mac = QLineEdit()
-        self._edit_mac.setPlaceholderText("COM5   ·   98:D3:91:FE:44:E4")
+        self._edit_mac.setPlaceholderText("98:D3:91:FE:44:E4   ·   COM5   ·   (auto)")
         self._edit_mac.setToolTip(
             tr(
-                "Bluetooth COM port (e.g. COM5) or MAC address. Recommended: pair the "
-                "BITalino in Windows Bluetooth settings, then enter its virtual COM "
-                "port here. A MAC address only works if PyBluez is installed."
+                "BITalino MAC address (recommended — stable on every PC), or an "
+                "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
+                "the BITalino in Windows Bluetooth settings first. No PyBluez is used."
             )
         )
-        self._edit_mac.setText(self._settings.value("adquisicion/mac", DEFAULT_MAC))
+        self._edit_mac.setText(
+            self._settings.value("adquisicion/port", DEFAULT_BITALINO_ADDR)
+        )
         mac_inner.addWidget(self._edit_mac)
         btn_reset_mac = QPushButton(tr("Default"))
         btn_reset_mac.setFixedWidth(84)
-        btn_reset_mac.setToolTip(tr("Restore default MAC ({mac})").format(mac=DEFAULT_MAC))
+        btn_reset_mac.setToolTip(
+            tr("Restore default address ({addr})").format(addr=DEFAULT_BITALINO_ADDR)
+        )
         btn_reset_mac.clicked.connect(self._reset_mac)
         mac_inner.addWidget(btn_reset_mac)
 
@@ -715,13 +721,13 @@ class AcquisitionTab(QWidget):
 
     @Slot()
     def _reset_mac(self) -> None:
-        """Restore the lab's default MAC."""
-        self._edit_mac.setText(DEFAULT_MAC)
-        self._settings.setValue("adquisicion/mac", DEFAULT_MAC)
+        """Restore the default BITalino address (the lab's MAC)."""
+        self._edit_mac.setText(DEFAULT_BITALINO_ADDR)
+        self._settings.setValue("adquisicion/port", DEFAULT_BITALINO_ADDR)
 
     @Slot(int)
     def _on_device_type_changed(self, index: int) -> None:
-        """Show the MAC field (BITalino) or the COM-port selector (Arduino)."""
+        """Show the COM-port field (BITalino) or the COM-port selector (Arduino)."""
         self._widget_mac.setVisible(index == 0)
         self._widget_arduino.setVisible(index == 1)
 
@@ -905,14 +911,10 @@ class AcquisitionTab(QWidget):
     def _conectar(self) -> None:
         device_idx = self._combo_device_type.currentIndex()
         if device_idx == 0:  # BITalino
+            # Empty is allowed: BitalinoDevice autodetects the device. A MAC or
+            # an explicit COM port are also accepted and resolved on open().
             desc = self._edit_mac.text().strip()
-            if not desc:
-                self._err(
-                    tr("Enter the BITalino COM port (e.g. COM5) or MAC address before connecting.")
-                )
-                self._btn_conectar.setChecked(False)
-                return
-            self._settings.setValue("adquisicion/mac", desc)
+            self._settings.setValue("adquisicion/port", desc)
         else:  # Arduino
             desc = self._combo_port.currentText().strip()
             if not desc:
@@ -980,7 +982,7 @@ class AcquisitionTab(QWidget):
         if self._combo_device_type.currentIndex() == 0:
             device = create_device(
                 BACKEND_BITALINO,
-                mac=self._edit_mac.text().strip(),
+                port=self._edit_mac.text().strip(),
                 fs=FS,
                 channels=list(range(n)),
             )
