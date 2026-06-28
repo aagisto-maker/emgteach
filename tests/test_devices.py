@@ -318,6 +318,90 @@ def fast_commands(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(BitalinoDevice, "_CMD_GAP_S", 0.0)
 
 
+class _FakePortInfo:
+    """Stand-in for ``serial.tools.list_ports_common.ListPortInfo``."""
+
+    def __init__(self, device: str, hwid: str, description: str = "") -> None:
+        self.device = device
+        self.hwid = hwid
+        self.description = description
+
+
+def _version_serial(*args, **kwargs) -> _FakeSerial:
+    """A ``_FakeSerial`` already primed with the BITalino version reply."""
+    s = _FakeSerial(*args, **kwargs)
+    s.binary_queue = bytearray(_VERSION_REPLY)
+    return s
+
+
+# A Bluetooth SPP port whose hwid carries the lab BITalino's MAC, the matching
+# "incoming" port with the all-zero address, and the Arduino's USB port.
+_BT_OUT = _FakePortInfo(
+    "COM3",
+    r"BTHENUM\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0046\8&x&0&98D391FE44E4_C0",
+    "Standard Serial over Bluetooth link (COM3)",
+)
+_BT_IN = _FakePortInfo(
+    "COM4",
+    r"BTHENUM\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0000\8&x&0&000000000000_00",
+    "Standard Serial over Bluetooth link (COM4)",
+)
+_USB = _FakePortInfo("COM6", "USB VID:PID=10C4:EA60", "Silicon Labs CP210x USB to UART Bridge")
+
+
+class TestBitalinoAddressing:
+    """MAC -> COM resolution and autodetection, all PyBluez-free."""
+
+    def test_mac_resolves_to_com_port(self, fast_commands: None) -> None:
+        device = BitalinoDevice("98:D3:91:FE:44:E4", channels=[0])
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_IN, _BT_OUT, _USB]
+        ), patch("serial.Serial", side_effect=_version_serial):
+            device.open()
+        assert device._resolved_port == "COM3"  # matched by the MAC in the hwid
+        assert "COM3" in device.name
+        device.close()
+
+    def test_mac_accepts_dash_separators(self, fast_commands: None) -> None:
+        device = BitalinoDevice("98-D3-91-FE-44-E4", channels=[0])
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_OUT]
+        ), patch("serial.Serial", side_effect=_version_serial):
+            device.open()
+        assert device._resolved_port == "COM3"
+        device.close()
+
+    def test_mac_not_paired_raises(self, fast_commands: None) -> None:
+        device = BitalinoDevice("AA:BB:CC:DD:EE:FF")
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_IN, _USB]
+        ), pytest.raises(RuntimeError, match="was not found"):
+            device.open()
+
+    def test_autodetect_empty_address(self, fast_commands: None) -> None:
+        device = BitalinoDevice("", channels=[0])
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_BT_OUT, _USB]
+        ), patch("serial.Serial", side_effect=_version_serial):
+            device.open()
+        assert device._resolved_port == "COM3"
+        device.close()
+
+    def test_autodetect_skips_incoming_zero_port(self, fast_commands: None) -> None:
+        # The all-zero "incoming" port must be filtered out as a candidate.
+        assert BitalinoDevice._bluetooth_ports([_BT_IN, _BT_OUT, _USB]) == ["COM3"]
+
+    def test_autodetect_none_found_raises(self, fast_commands: None) -> None:
+        device = BitalinoDevice("")
+        with patch(
+            "serial.tools.list_ports.comports", return_value=[_USB]
+        ), pytest.raises(RuntimeError, match="No BITalino"):
+            device.open()
+
+    def test_name_auto_when_empty(self) -> None:
+        assert BitalinoDevice("").name == "BITalino (auto)"
+
+
 class TestBitalinoDeviceBasics:
     def test_name_includes_port(self) -> None:
         device = BitalinoDevice("COM5")
@@ -330,21 +414,6 @@ class TestBitalinoDeviceBasics:
     def test_n_channels_matches_channels(self) -> None:
         assert BitalinoDevice("COM5").n_channels == 1
         assert BitalinoDevice("COM5", channels=[0, 1]).n_channels == 2
-
-    def test_open_rejects_mac_address(
-        self, fast_commands: None, fake_serial_factory: list[_FakeSerial]
-    ) -> None:
-        # A MAC address must be refused with an actionable message, never a
-        # PyBluez import attempt, and the port must not even be opened.
-        device = BitalinoDevice("98:D3:91:FE:44:E4")
-        with pytest.raises(RuntimeError, match="virtual COM port"):
-            device.open()
-        assert len(fake_serial_factory) == 0
-
-    def test_open_rejects_empty_port(self, fast_commands: None) -> None:
-        device = BitalinoDevice("   ")
-        with pytest.raises(RuntimeError, match="COM port"):
-            device.open()
 
     def test_open_rejects_bad_sampling_rate(self, fast_commands: None) -> None:
         device = BitalinoDevice("COM5", fs=42)
