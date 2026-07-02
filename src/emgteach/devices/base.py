@@ -54,6 +54,21 @@ class AcquisitionDevice(ABC):
         """
         return 1
 
+    @property
+    def physical_min(self) -> float:
+        """Lower signal bound in physical units (mV) for the EDF header.
+
+        Backends override this with their true full-scale so the EDF digital
+        range maps to the signal without clipping and without wasting ADC
+        resolution. The generic default is a conservative ±3.3 mV.
+        """
+        return -3.3
+
+    @property
+    def physical_max(self) -> float:
+        """Upper signal bound in physical units (mV) for the EDF header."""
+        return 3.3
+
     @abstractmethod
     def open(self) -> None:
         """Establish the connection. Raises on failure."""

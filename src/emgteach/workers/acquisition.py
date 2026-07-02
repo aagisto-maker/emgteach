@@ -260,7 +260,12 @@ class AcquisitionWorker(QThread):
                 )
 
             edf_path = build_timestamped_path(self._save_dir)
-            channels = self._profile.build_channels(labels, fs)
+            channels = self._profile.build_channels(
+                labels,
+                fs,
+                physical_min=device.physical_min,
+                physical_max=device.physical_max,
+            )
             writer = BufferedEdfWriter(edf_path, channels=channels)
             self.log.emit(tr("Recording to: {path}").format(path=edf_path))
 

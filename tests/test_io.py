@@ -333,3 +333,27 @@ class TestAnnotationRoundTrip:
         result = read_edf_pyedflib(out_path)
         labels = [desc for _onset, desc in result["markers"]]
         assert "inicio contracción" in labels
+
+
+class TestPhysicalRangeNoClipping:
+    """The device-aware physical range must let a wide Arduino signal survive
+    the EDF round-trip, whereas the narrow BITalino default clips it — exactly
+    the data-loss bug the per-device range fixes."""
+
+    def _roundtrip_peak(self, out_path: str, pmax: float) -> float:
+        n = 2 * FS
+        sig = np.zeros(n, dtype=np.float64)
+        sig[n // 2] = 10.0  # a +10 mV peak, inside the Arduino ±12.5 mV range
+        ch = ChannelInfo(
+            "EMG", sample_frequency=FS, physical_min=-pmax, physical_max=pmax
+        )
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(sig)
+        return float(np.max(read_edf_pyedflib(out_path)["emg_raw"]))
+
+    def test_arduino_range_preserves_the_peak(self, out_path: str) -> None:
+        assert self._roundtrip_peak(out_path, 12.5) == pytest.approx(10.0, abs=0.1)
+
+    def test_narrow_default_range_clips_the_peak(self, out_path: str) -> None:
+        # With the old ±3.3 mV default the +10 mV peak is silently clipped.
+        assert self._roundtrip_peak(out_path, 3.3) < 3.5

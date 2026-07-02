@@ -201,7 +201,11 @@ class SignalProfile:
         }
 
     def build_channels(
-        self, sensor_labels: Sequence[str] | None = None, fs: int | None = None
+        self,
+        sensor_labels: Sequence[str] | None = None,
+        fs: int | None = None,
+        physical_min: float | None = None,
+        physical_max: float | None = None,
     ) -> list[ChannelInfo]:
         """Build one raw EDF channel per sensor.
 
@@ -230,8 +234,18 @@ class SignalProfile:
         """
         labels = list(sensor_labels) if sensor_labels else [self.raw_label]
         sf = int(fs) if fs is not None else self.sample_frequency
+        # Fall back to the ChannelInfo defaults (BITalino-compatible ±3.3 mV)
+        # when the caller does not pass a device-specific range.
+        pmin = -3.3 if physical_min is None else float(physical_min)
+        pmax = 3.3 if physical_max is None else float(physical_max)
         return [
-            ChannelInfo(label, dimension=self.dimension, sample_frequency=sf)
+            ChannelInfo(
+                label,
+                dimension=self.dimension,
+                sample_frequency=sf,
+                physical_min=pmin,
+                physical_max=pmax,
+            )
             for label in labels
         ]
 
