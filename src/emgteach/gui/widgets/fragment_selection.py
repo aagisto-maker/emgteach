@@ -168,6 +168,58 @@ class FragmentSelectionDialog(QDialog):
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         root.addWidget(self._table, stretch=1)
 
+        # Envelope-filter cut-offs used to detect activity and draw the preview.
+        filter_row = QHBoxLayout()
+        filter_row.addWidget(QLabel(tr("Envelope filter (Hz):")))
+        filter_row.addWidget(QLabel(tr("band")))
+        self._spin_flow = QDoubleSpinBox()
+        self._spin_flow.setRange(0.1, 100.0)
+        self._spin_flow.setDecimals(1)
+        self._spin_flow.setSingleStep(0.5)
+        self._spin_flow.setValue(self._f_low)
+        self._spin_flow.setFixedWidth(70)
+        self._spin_flow.setToolTip(tr("Band-pass low cut-off (Hz)."))
+        filter_row.addWidget(self._spin_flow)
+        filter_row.addWidget(QLabel("–"))
+        self._spin_fhigh = QDoubleSpinBox()
+        self._spin_fhigh.setRange(10.0, 1000.0)
+        self._spin_fhigh.setDecimals(1)
+        self._spin_fhigh.setSingleStep(5.0)
+        self._spin_fhigh.setValue(self._f_high)
+        self._spin_fhigh.setFixedWidth(78)
+        self._spin_fhigh.setToolTip(tr("Band-pass high cut-off (Hz)."))
+        filter_row.addWidget(self._spin_fhigh)
+        filter_row.addWidget(QLabel(tr("notch")))
+        self._spin_fnotch = QDoubleSpinBox()
+        self._spin_fnotch.setRange(10.0, 100.0)
+        self._spin_fnotch.setDecimals(1)
+        self._spin_fnotch.setSingleStep(1.0)
+        self._spin_fnotch.setValue(self._f_notch)
+        self._spin_fnotch.setFixedWidth(70)
+        self._spin_fnotch.setToolTip(tr("Mains-notch frequency (Hz), usually 50 or 60."))
+        filter_row.addWidget(self._spin_fnotch)
+        filter_row.addWidget(QLabel(tr("envelope")))
+        self._spin_fenv = QDoubleSpinBox()
+        self._spin_fenv.setRange(1.0, 20.0)
+        self._spin_fenv.setDecimals(1)
+        self._spin_fenv.setSingleStep(0.5)
+        self._spin_fenv.setValue(self._f_env)
+        self._spin_fenv.setFixedWidth(70)
+        self._spin_fenv.setToolTip(
+            tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
+        )
+        filter_row.addWidget(self._spin_fenv)
+        filter_row.addStretch()
+        root.addLayout(filter_row)
+        # Recompute the envelope/preview when a cut-off is committed.
+        for spin in (
+            self._spin_flow,
+            self._spin_fhigh,
+            self._spin_fnotch,
+            self._spin_fenv,
+        ):
+            spin.editingFinished.connect(self._recompute_envelope)
+
         # Detection parameters for the automatic proposal (editable defaults).
         params_row = QHBoxLayout()
         params_row.addWidget(QLabel(tr("Detection:")))
@@ -308,7 +360,32 @@ class FragmentSelectionDialog(QDialog):
 
     # -- actions -------------------------------------------------------------
 
+    def _recompute_envelope(self) -> None:
+        """Recompute the preview envelope from the current filter cut-offs.
+
+        Invalid bands (e.g. ``f_low >= f_high``) are ignored: the previous
+        envelope is kept so a half-typed value never crashes the dialog.
+        """
+        self._f_low = self._spin_flow.value()
+        self._f_high = self._spin_fhigh.value()
+        self._f_notch = self._spin_fnotch.value()
+        self._f_env = self._spin_fenv.value()
+        try:
+            self._env = process_offline(
+                self._raw,
+                self._fs,
+                f_low=self._f_low,
+                f_high=self._f_high,
+                f_notch=self._f_notch,
+                f_env=self._f_env,
+            )["emg_envelope"]
+        except Exception:  # pragma: no cover — invalid interim cut-offs
+            return
+        self._refresh_derived()
+
     def _auto_suggest(self) -> None:
+        # Sync the filter cut-offs first so preview and detection agree.
+        self._recompute_envelope()
         segs = suggest_significant_segments(
             self._raw,
             self._fs,

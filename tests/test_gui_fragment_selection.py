@@ -81,6 +81,26 @@ def test_default_detection_params_match_core(qapp: QCoreApplication) -> None:
     dlg.deleteLater()
 
 
+def test_filter_cutoffs_default_to_passed_kwargs(qapp: QCoreApplication) -> None:
+    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+    assert dlg._spin_flow.value() == FILTER_KWARGS["f_low"]
+    assert dlg._spin_fhigh.value() == FILTER_KWARGS["f_high"]
+    assert dlg._spin_fnotch.value() == FILTER_KWARGS["f_notch"]
+    assert dlg._spin_fenv.value() == FILTER_KWARGS["f_env"]
+    dlg.deleteLater()
+
+
+def test_editing_a_cutoff_recomputes_without_crashing(qapp: QCoreApplication) -> None:
+    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+    dlg._spin_fenv.setValue(2.0)
+    dlg._recompute_envelope()  # what editingFinished would trigger
+    assert dlg._f_env == 2.0
+    # A still-valid selection must survive the recompute.
+    dlg._auto_suggest()
+    assert dlg._table.rowCount() >= 1
+    dlg.deleteLater()
+
+
 def test_min_duration_param_filters_short_fragments(qapp: QCoreApplication) -> None:
     # Two 1.5 s bursts survive a 1 s minimum but not a 2 s minimum.
     dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
