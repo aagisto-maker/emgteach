@@ -90,6 +90,17 @@ def test_filter_cutoffs_default_to_passed_kwargs(qapp: QCoreApplication) -> None
     dlg.deleteLater()
 
 
+def test_filter_kwargs_reflects_edits(qapp: QCoreApplication) -> None:
+    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+    dlg._spin_flow.setValue(15.0)
+    dlg._spin_fenv.setValue(3.0)
+    fk = dlg.filter_kwargs()
+    assert fk["f_low"] == 15.0
+    assert fk["f_env"] == 3.0
+    assert fk["f_high"] == FILTER_KWARGS["f_high"]
+    dlg.deleteLater()
+
+
 def test_editing_a_cutoff_recomputes_without_crashing(qapp: QCoreApplication) -> None:
     dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
     dlg._spin_fenv.setValue(2.0)

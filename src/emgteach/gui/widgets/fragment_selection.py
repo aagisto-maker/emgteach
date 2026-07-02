@@ -454,6 +454,20 @@ class FragmentSelectionDialog(QDialog):
 
     # -- result --------------------------------------------------------------
 
+    def filter_kwargs(self) -> dict[str, float]:
+        """Return the filter cut-offs currently set in the dialog.
+
+        These are the band-pass / notch / envelope cut-offs the user tuned
+        for the preview and detection; the caller can reuse them for the
+        actual analysis so it matches what was seen here.
+        """
+        return {
+            "f_low": self._spin_flow.value(),
+            "f_high": self._spin_fhigh.value(),
+            "f_notch": self._spin_fnotch.value(),
+            "f_env": self._spin_fenv.value(),
+        }
+
     def selected_segments(self) -> list[tuple[float, float]]:
         """Return the checked fragments as normalised ``(start, end)`` tuples.
 

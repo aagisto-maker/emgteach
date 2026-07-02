@@ -229,6 +229,9 @@ class AnalysisTab(QWidget):
         self._lbl_fragmentos = QLabel("")
         row_roi.addWidget(self._lbl_fragmentos)
         self._selected_segments: list[tuple[float, float]] = []
+        # Filter cut-offs chosen in the fragment editor; when set they drive
+        # the actual analysis (not just detection). None = use the tab defaults.
+        self._analysis_filter_kwargs: dict[str, float] | None = None
         row_roi.addStretch()
         ctrl.addLayout(row_roi)
 
@@ -534,8 +537,10 @@ class AnalysisTab(QWidget):
             self._populate_channels(path)
             self._btn_analizar.setEnabled(True)
             self._btn_fragmentos.setEnabled(True)
-            # A new file invalidates any previous fragment selection.
+            # A new file invalidates any previous fragment selection and its
+            # associated filter cut-offs.
             self._selected_segments = []
+            self._analysis_filter_kwargs = None
             self._actualizar_etiqueta_fragmentos()
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
@@ -579,8 +584,12 @@ class AnalysisTab(QWidget):
         if not path:
             return
         canal = self._combo_canal.currentText().strip() or "EMG"
-        filter_kwargs = dict(EMG_PROFILE.filter_kwargs())
-        filter_kwargs["f_env"] = self._spin_fenv.value()
+        # Reopen with the previously chosen cut-offs, else the tab defaults.
+        if self._analysis_filter_kwargs is not None:
+            filter_kwargs = dict(self._analysis_filter_kwargs)
+        else:
+            filter_kwargs = dict(EMG_PROFILE.filter_kwargs())
+            filter_kwargs["f_env"] = self._spin_fenv.value()
         try:
             dlg = FragmentSelectionDialog.from_edf(
                 path, canal, filter_kwargs, segments=self._selected_segments or None,
@@ -593,6 +602,10 @@ class AnalysisTab(QWidget):
             return
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self._selected_segments = dlg.selected_segments()
+            # Adopt the cut-offs tuned in the editor for the actual analysis so
+            # what was previewed is what gets analysed. Reflect f_env in the tab.
+            self._analysis_filter_kwargs = dlg.filter_kwargs()
+            self._spin_fenv.setValue(self._analysis_filter_kwargs["f_env"])
             self._actualizar_etiqueta_fragmentos()
 
     def _actualizar_etiqueta_fragmentos(self) -> None:
@@ -611,7 +624,13 @@ class AnalysisTab(QWidget):
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
         canal = self._combo_canal.currentText().strip() or "EMG"
-        f_env = self._spin_fenv.value()
+        # Filter cut-offs: use the ones tuned in the fragment editor if any,
+        # else the tab's f_env with the profile band/notch defaults.
+        fk = self._analysis_filter_kwargs
+        f_low = fk["f_low"] if fk else None
+        f_high = fk["f_high"] if fk else None
+        f_notch = fk["f_notch"] if fk else None
+        f_env = fk["f_env"] if fk else self._spin_fenv.value()
 
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
@@ -635,6 +654,9 @@ class AnalysisTab(QWidget):
         self._worker = AnalysisWorker(
             edf_path=path,
             channel_name=canal,
+            f_low=f_low,
+            f_high=f_high,
+            f_notch=f_notch,
             f_env=f_env,
             plot_duration_s=0,
             roi_start_s=roi_start,
@@ -1354,6 +1376,7 @@ class AnalysisTab(QWidget):
         self._btn_analizar.setEnabled(False)
         self._btn_fragmentos.setEnabled(False)
         self._selected_segments = []
+        self._analysis_filter_kwargs = None
         self._actualizar_etiqueta_fragmentos()
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
