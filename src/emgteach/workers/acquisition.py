@@ -87,6 +87,7 @@ class AcquisitionWorker(QThread):
     finished_ok = Signal(str)
     error = Signal(str)
     marker_added = Signal(float, str)
+    marker_removed = Signal(float, str)
 
     def __init__(
         self,
@@ -189,6 +190,30 @@ class AcquisitionWorker(QThread):
         finally:
             self._markers_mutex.unlock()
         self.marker_added.emit(time_s, label)
+
+    @Slot(float, str)
+    def remove_marker(self, time_s: float, label: str) -> bool:
+        """Remove a pending marker before it is written to the EDF.
+
+        Markers are flushed to the file only on :meth:`run`'s cleanup, so a
+        marker deleted while recording never reaches the EDF. Removes the
+        entry whose time matches ``time_s`` (to the sample) and whose label
+        matches ``label``; returns ``True`` if one was removed. Thread-safe.
+        """
+        time_s = float(time_s)
+        removed = False
+        self._markers_mutex.lock()
+        try:
+            for i, (t, lbl) in enumerate(self._markers):
+                if lbl == label and abs(t - time_s) < 0.5 / self._device.fs:
+                    del self._markers[i]
+                    removed = True
+                    break
+        finally:
+            self._markers_mutex.unlock()
+        if removed:
+            self.marker_removed.emit(time_s, label)
+        return removed
 
     def _resolve_sensor_labels(self, n_channels: int) -> list[str] | None:
         """Return one base label per channel, or ``None`` on a mismatch.

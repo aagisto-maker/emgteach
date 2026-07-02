@@ -222,6 +222,45 @@ class TestAcquisitionWorker:
             f"Marker did not survive to EDF; got markers {result['markers']}"
         )
 
+    def test_deleted_marker_is_not_persisted(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        device = _FakeDevice(fs=1000)
+        worker = AcquisitionWorker(
+            device=device, save_dir=str(tmp_path), n_per_read=100
+        )
+        edf_path_holder: list[str] = []
+        worker.finished_ok.connect(edf_path_holder.append)
+
+        # Add two markers, then delete the first one before the recording
+        # stops. Only the second must survive to the EDF.
+        added_times: list[float] = []
+        worker.marker_added.connect(lambda t, _l: added_times.append(t))
+        state = {"n": 0}
+
+        def add_two(_block: dict) -> None:
+            state["n"] += 1
+            if state["n"] == 1:
+                worker.add_marker("keep")
+                worker.add_marker("undo_me")
+
+        worker.data_ready.connect(add_two)
+        worker.start()
+
+        def delete_and_stop() -> None:
+            # Remove the mistaken marker using its emitted time.
+            assert worker.remove_marker(added_times[1], "undo_me")
+            worker.stop()
+
+        QTimer.singleShot(800, delete_and_stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        result = read_edf_pyedflib(edf_path_holder[0])
+        labels = [label for _t, label in result["markers"]]
+        assert "keep" in labels
+        assert "undo_me" not in labels
+
     def test_data_ready_signal_is_emitted(
         self, qapp: QCoreApplication, tmp_path: Path
     ) -> None:

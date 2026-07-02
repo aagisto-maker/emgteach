@@ -42,6 +42,8 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QSpinBox,
     QToolButton,
@@ -455,10 +457,12 @@ class AcquisitionTab(QWidget):
         self._led_idle_timer.timeout.connect(lambda: self._set_led("idle"))
         self._set_led("off")
 
-        # — Event markers (single line) —
+        # — Event markers (controls row + editable list) —
         grp_markers = QGroupBox(tr("Event markers"))
-        markers_layout = QHBoxLayout(grp_markers)
-        markers_layout.setContentsMargins(6, 3, 6, 3)
+        markers_outer = QVBoxLayout(grp_markers)
+        markers_outer.setContentsMargins(6, 3, 6, 3)
+        markers_outer.setSpacing(4)
+        markers_layout = QHBoxLayout()
         markers_layout.setSpacing(6)
 
         self._combo_etiqueta = QComboBox()
@@ -509,6 +513,28 @@ class AcquisitionTab(QWidget):
         )
         self._spin_k.setEnabled(self._chk_auto.isChecked())
         markers_layout.addWidget(self._spin_k)
+        markers_outer.addLayout(markers_layout)
+
+        # Editable marker list: every marker added (manual or automatic) shows
+        # here while recording, and can be deleted before it is written to the
+        # EDF at stop — the fix for a mistaken MARK press.
+        list_row = QHBoxLayout()
+        list_row.setSpacing(6)
+        self._list_markers = QListWidget()
+        self._list_markers.setMaximumHeight(72)
+        self._list_markers.setToolTip(
+            tr("Markers recorded so far. Select one and press Delete to remove it.")
+        )
+        self._list_markers.itemSelectionChanged.connect(
+            self._on_marker_selection_changed
+        )
+        list_row.addWidget(self._list_markers, stretch=1)
+        self._btn_borrar_marca = QPushButton(tr("Delete"))
+        self._btn_borrar_marca.setEnabled(False)
+        self._btn_borrar_marca.setToolTip(tr("Delete the selected marker."))
+        self._btn_borrar_marca.clicked.connect(self._on_borrar_marcador)
+        list_row.addWidget(self._btn_borrar_marca)
+        markers_outer.addLayout(list_row)
 
         row_actions.addWidget(grp_markers, stretch=1)
 
@@ -1000,6 +1026,8 @@ class AcquisitionTab(QWidget):
 
         self._reset_buffers()
         self._marker_events.clear()
+        self._list_markers.clear()
+        self._btn_borrar_marca.setEnabled(False)
         self._total_samples = 0
         for pool in self._marker_lines:
             for line in pool:
@@ -1406,6 +1434,36 @@ class AcquisitionTab(QWidget):
         self._log(tr("Marker added: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta))
         # Record the event to draw it live over the plots.
         self._marker_events.append((tiempo, etiqueta))
+        # Add it to the editable marker list (data carries the exact key).
+        item = QListWidgetItem(f"t={tiempo:.1f} s — {etiqueta}")
+        item.setData(Qt.ItemDataRole.UserRole, (float(tiempo), etiqueta))
+        self._list_markers.addItem(item)
+        self._list_markers.scrollToBottom()
+
+    @Slot()
+    def _on_marker_selection_changed(self) -> None:
+        recording = bool(self._worker and self._worker.isRunning())
+        self._btn_borrar_marca.setEnabled(
+            recording and self._list_markers.currentItem() is not None
+        )
+
+    @Slot()
+    def _on_borrar_marcador(self) -> None:
+        item = self._list_markers.currentItem()
+        if item is None or not (self._worker and self._worker.isRunning()):
+            return
+        tiempo, etiqueta = item.data(Qt.ItemDataRole.UserRole)
+        if not self._worker.remove_marker(tiempo, etiqueta):
+            return
+        # Drop it from the live-plot events (first matching entry).
+        for i, (t, lbl) in enumerate(self._marker_events):
+            if lbl == etiqueta and abs(t - tiempo) < 1e-6:
+                del self._marker_events[i]
+                break
+        self._list_markers.takeItem(self._list_markers.row(item))
+        self._log(
+            tr("Marker deleted: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta)
+        )
 
     @Slot(str)
     def _on_error(self, msg: str) -> None:
@@ -1425,6 +1483,7 @@ class AcquisitionTab(QWidget):
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._combo_etiqueta.setEnabled(False)
         self._btn_marcar.setEnabled(False)
+        self._btn_borrar_marca.setEnabled(False)
         self._shortcut_m.setEnabled(False)
         self._set_auto_controls_enabled(True)
         self._stop_load_monitor()
@@ -1620,6 +1679,8 @@ class AcquisitionTab(QWidget):
             return
         self._reset_buffers()
         self._marker_events.clear()
+        self._list_markers.clear()
+        self._btn_borrar_marca.setEnabled(False)
         self._total_samples = 0
         for pool in self._marker_lines:
             for line in pool:
