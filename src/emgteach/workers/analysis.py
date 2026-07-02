@@ -153,15 +153,29 @@ class AnalysisWorker(QThread):
             if self._cancelled:
                 return
 
-            # 6) Fatigue polynomial fits
-            self.log.emit(tr("Polynomial fatigue fit (degree 2)…"))
+            # 6) Fatigue fit: linear MDF-vs-time regression (primary index)
+            self.log.emit(tr("Fitting MDF-vs-time regression…"))
             fat_time = fit_mdf_vs_time(segs["t_seg"], segs["mdf_seg"])
             fat_rms = fit_rms_vs_mdf(segs["mdf_seg"], segs["rms_seg"])
 
             if fat_time["slope_sign"] < 0:
-                self.log.emit(tr("Fatigue trend detected (MDF decreases over time)."))
+                self.log.emit(
+                    tr(
+                        "Fatigue trend: MDF slope {slope:.3f} Hz/s "
+                        "({decline:.1f}% decline, R²={r2:.2f})."
+                    ).format(
+                        slope=fat_time["slope"],
+                        decline=fat_time["pct_decline"],
+                        r2=fat_time["r_squared"],
+                    )
+                )
             elif fat_time["slope_sign"] > 0:
-                self.log.emit(tr("No fatigue (MDF increases or stays stable)."))
+                self.log.emit(
+                    tr(
+                        "No fatigue: MDF slope {slope:+.3f} Hz/s "
+                        "(R²={r2:.2f})."
+                    ).format(slope=fat_time["slope"], r2=fat_time["r_squared"])
+                )
             else:
                 self.log.emit(tr("MDF trend undefined (signal too short or constant)."))
             self.progress.emit(90)
@@ -169,14 +183,8 @@ class AnalysisWorker(QThread):
             # 7) Pack result
             rms_global = float(np.sqrt(np.mean(proc["emg_filtered"] ** 2)))
             iemg = float(trapezoid(proc["emg_rectified"], dx=1.0 / fs))
-            t_seg = segs["t_seg"]
-            if len(t_seg) >= 2:
-                mdf_slope = float(
-                    (fat_time["fitted"][-1] - fat_time["fitted"][0])
-                    / (t_seg[-1] - t_seg[0])
-                )
-            else:
-                mdf_slope = 0.0
+            # Primary fatigue index: slope of the linear MDF-vs-time regression.
+            mdf_slope = float(fat_time["slope"])
 
             result = {
                 # time-domain arrays (full length)
@@ -201,7 +209,11 @@ class AnalysisWorker(QThread):
                 "mdf_seg": segs["mdf_seg"],
                 # fatigue fits
                 "fat_fitted": fat_time["fitted"],
+                "fat_linear_fitted": fat_time["linear_fitted"],
                 "fat_slope_sign": fat_time["slope_sign"],
+                "fat_r_squared": fat_time["r_squared"],
+                "fat_pct_decline": fat_time["pct_decline"],
+                "fat_slope_per_min": fat_time["slope_per_min"],
                 "rms_mdf_range": fat_rms["mdf_range"],
                 "rms_mdf_fitted": fat_rms["fitted"],
                 # summary metrics

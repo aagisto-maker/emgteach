@@ -587,15 +587,19 @@ class AnalysisTab(QWidget):
         self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')}{r['mnf']:.1f} Hz")
         self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')}{r['mdf']:.1f} Hz")
         pendiente = r.get("mdf_slope", 0.0)
+        r2 = r.get("fat_r_squared", 0.0)
         signo = "+" if pendiente >= 0 else ""
-        self._lbl_pendiente.setText(f"{tr('MDF slope:')}{signo}{pendiente:.2f} Hz/s")
+        self._lbl_pendiente.setText(
+            f"{tr('MDF slope:')}{signo}{pendiente:.2f} Hz/s  (R²={r2:.2f})"
+        )
         self._lbl_rms_global.setText(f"{tr('Global RMS:')}{r.get('rms_global', 0.0):.2f} mV")
         self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
         self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
 
         sign = r["fat_slope_sign"]
+        decline = r.get("fat_pct_decline", 0.0)
         if sign < 0:
-            texto = tr("Fatigue: DETECTED (MDF decreasing)")
+            texto = tr("Fatigue: DETECTED (MDF −{decline:.1f}%)").format(decline=decline)
             color = "#cc0000"
         elif sign > 0:
             texto = tr("Fatigue: Not detected (MDF stable or increasing)")

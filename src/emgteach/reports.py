@@ -99,12 +99,17 @@ def _app_version() -> str:
 def _fatigue_text(result: Mapping[str, Any]) -> str:
     sign = int(result.get("fat_slope_sign", 0))
     slope = float(result.get("mdf_slope", 0.0))
+    r2 = float(result.get("fat_r_squared", 0.0))
+    decline = float(result.get("fat_pct_decline", 0.0))
     if sign < 0:
-        return tr("Yes — MDF decreases over time ({slope:+.2f} Hz/s)").format(slope=slope)
+        return tr(
+            "Yes — MDF falls {slope:+.2f} Hz/s "
+            "({decline:.1f}% decline, R²={r2:.2f})"
+        ).format(slope=slope, decline=decline, r2=r2)
     if sign > 0:
-        return tr("No — MDF stays stable or increases ({slope:+.2f} Hz/s)").format(
-            slope=slope
-        )
+        return tr(
+            "No — MDF stable or rising ({slope:+.2f} Hz/s, R²={r2:.2f})"
+        ).format(slope=slope, r2=r2)
     return tr("Undetermined (short or constant signal)")
 
 

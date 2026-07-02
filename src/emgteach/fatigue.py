@@ -35,10 +35,15 @@ def fit_mdf_vs_time(
     mdf_seg: FloatArray | np.ndarray,
     degree: int = 2,
 ) -> dict[str, Any]:
-    """Polynomial fit of MDF against time for fatigue trend detection.
+    """Fatigue trend of the median frequency (MDF) against time.
 
-    A negative ``slope_sign`` (i.e. the fitted curve descends from
-    start to end) is the standard indicator of muscular fatigue.
+    The primary, quantitative fatigue index is the **slope of a linear
+    least-squares regression of MDF on time**. A negative slope (MDF
+    falling as the contraction progresses) is the standard sign of
+    myoelectric fatigue; its magnitude in Hz/s, the goodness of fit
+    (``r_squared``) and the overall percentage decline give a single,
+    reportable number instead of the fragile sign of a parabola's
+    endpoints. A polynomial fit is still returned for the display curve.
 
     Parameters
     ----------
@@ -47,36 +52,76 @@ def fit_mdf_vs_time(
     mdf_seg : array-like
         Median-frequency value per segment (Hz).
     degree : int, optional
-        Polynomial degree (default 2).
+        Degree of the polynomial trend curve for display (default 2).
 
     Returns
     -------
     dict
-        ``coefs`` (lowest-degree first, length ``degree + 1``),
+        ``coefs`` (polynomial, lowest-degree first, length ``degree + 1``),
         ``fitted`` (polynomial evaluated at ``t_seg``),
-        ``slope_sign`` (-1, 0 or +1; -1 indicates fatigue trend).
+        ``slope`` (regression slope, Hz/s; negative = fatigue),
+        ``slope_per_min`` (slope in Hz/min),
+        ``intercept`` (regression intercept, Hz),
+        ``r_squared`` (coefficient of determination of the linear fit),
+        ``pct_decline`` (percentage MDF drop from the fitted start to the
+        fitted end, relative to the fitted initial value; positive =
+        fatigue), ``linear_fitted`` (the regression line at ``t_seg``),
+        ``slope_sign`` (-1, 0 or +1; sign of ``slope``).
     """
     t_seg = np.asarray(t_seg, dtype=np.float64)
     mdf_seg = np.asarray(mdf_seg, dtype=np.float64)
+    n = len(t_seg)
 
-    if len(t_seg) < degree + 1:
+    # -- polynomial trend curve (display only) --
+    if n < degree + 1:
         mean_mdf = float(np.mean(mdf_seg)) if mdf_seg.size > 0 else 0.0
+        coefs = np.zeros(degree + 1)
         fitted = np.full_like(t_seg, mean_mdf)
-        return {
-            "coefs": np.zeros(degree + 1),
-            "fitted": fitted,
-            "slope_sign": 0,
-        }
+    else:
+        coefs = polyfit(t_seg, mdf_seg, degree)  # lowest degree first
+        fitted = polyval(t_seg, coefs)
 
-    coefs = polyfit(t_seg, mdf_seg, degree)  # lowest degree first
-    fitted = polyval(t_seg, coefs)
-    slope_sign = int(np.sign(fitted[-1] - fitted[0]))
-
-    return {
+    # -- primary index: linear regression of MDF on time --
+    result: dict[str, Any] = {
         "coefs": coefs,
         "fitted": fitted,
-        "slope_sign": slope_sign,
+        "slope": 0.0,
+        "slope_per_min": 0.0,
+        "intercept": 0.0,
+        "r_squared": 0.0,
+        "pct_decline": 0.0,
+        "linear_fitted": fitted.copy(),
+        "slope_sign": 0,
     }
+    # A slope needs at least two segments at two distinct times.
+    if n < 2 or np.ptp(t_seg) == 0.0:
+        return result
+
+    intercept, slope = (float(v) for v in polyfit(t_seg, mdf_seg, 1))
+    linear_fitted = intercept + slope * t_seg
+
+    # R^2 of the linear fit.
+    ss_res = float(np.sum((mdf_seg - linear_fitted) ** 2))
+    ss_tot = float(np.sum((mdf_seg - np.mean(mdf_seg)) ** 2))
+    r_squared = 1.0 - ss_res / ss_tot if ss_tot > 0.0 else 0.0
+
+    # Percentage decline over the recording, relative to the fitted start.
+    mdf_start = intercept + slope * float(t_seg[0])
+    mdf_end = intercept + slope * float(t_seg[-1])
+    pct_decline = (
+        (mdf_start - mdf_end) / mdf_start * 100.0 if abs(mdf_start) > 1e-9 else 0.0
+    )
+
+    result.update(
+        slope=slope,
+        slope_per_min=slope * 60.0,
+        intercept=intercept,
+        r_squared=r_squared,
+        pct_decline=pct_decline,
+        linear_fitted=linear_fitted,
+        slope_sign=int(np.sign(slope)),
+    )
+    return result
 
 
 def fit_rms_vs_mdf(

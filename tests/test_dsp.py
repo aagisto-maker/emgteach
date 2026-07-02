@@ -363,6 +363,35 @@ class TestFatigue:
         assert result["slope_sign"] == 0
         assert np.allclose(result["fitted"], 100.0)
 
+    def test_linear_regression_index(self) -> None:
+        # MDF = 120 - 1.0*t over 0..30 s: slope -1 Hz/s, perfect fit,
+        # decline = 30/120 = 25%.
+        t_seg = np.linspace(0, 30, 30)
+        mdf_seg = 120 - 1.0 * t_seg
+        result = fit_mdf_vs_time(t_seg, mdf_seg, degree=2)
+        assert result["slope"] == pytest.approx(-1.0, abs=1e-6)
+        assert result["slope_per_min"] == pytest.approx(-60.0, abs=1e-4)
+        assert result["intercept"] == pytest.approx(120.0, abs=1e-6)
+        assert result["r_squared"] == pytest.approx(1.0, abs=1e-9)
+        assert result["pct_decline"] == pytest.approx(25.0, abs=1e-6)
+        assert len(result["linear_fitted"]) == len(t_seg)
+
+    def test_r_squared_drops_with_noise(self) -> None:
+        rng = np.random.default_rng(0)
+        t_seg = np.linspace(0, 30, 60)
+        clean = 120 - 1.0 * t_seg
+        noisy = clean + rng.normal(0, 15, size=t_seg.shape)
+        r2_clean = fit_mdf_vs_time(t_seg, clean)["r_squared"]
+        r2_noisy = fit_mdf_vs_time(t_seg, noisy)["r_squared"]
+        assert r2_clean > 0.99
+        assert r2_noisy < r2_clean
+
+    def test_too_few_points_zero_regression(self) -> None:
+        result = fit_mdf_vs_time(np.array([0.0]), np.array([100.0]))
+        assert result["slope"] == 0.0
+        assert result["r_squared"] == 0.0
+        assert result["pct_decline"] == 0.0
+
     def test_rms_vs_mdf_returns_expected_keys(self) -> None:
         mdf_seg = np.linspace(80, 120, 20)
         rms_seg = np.linspace(0.1, 0.5, 20)
