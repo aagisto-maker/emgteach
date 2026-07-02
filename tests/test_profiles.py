@@ -11,6 +11,7 @@ from __future__ import annotations
 import pytest
 
 from emgteach import EMG_PROFILE, ChannelInfo, SignalProfile
+from emgteach.profiles import ECG_PROFILE, PROFILES, get_profile
 
 
 class TestEmgProfileValues:
@@ -137,3 +138,36 @@ class TestImmutabilityAndValidation:
         assert ecg.name == "ECG"
         assert ecg.build_channels()[0].label == "ECG"
         assert ecg.filter_kwargs()["f_high"] == 100.0
+
+
+class TestEcgProfile:
+    """The shipped ECG_PROFILE and the profile registry."""
+
+    def test_ecg_profile_band_and_labels(self) -> None:
+        p = ECG_PROFILE
+        assert p.name == "ECG"
+        assert p.raw_label == "ECG"
+        assert p.dimension == "mV"
+        # Standard ECG monitoring band, mains notch shared with EMG.
+        assert (p.f_low, p.f_high, p.f_notch) == (0.5, 40.0, 50.0)
+        assert 0.0 < p.f_low < p.f_high
+
+    def test_ecg_builds_a_valid_channel(self) -> None:
+        (ch,) = ECG_PROFILE.build_channels()
+        assert ch.label == "ECG"
+        assert ch.sample_frequency == ECG_PROFILE.sample_frequency
+
+    def test_ecg_marker_presets(self) -> None:
+        assert "QRS complex" in ECG_PROFILE.marker_presets
+
+    def test_registry_contains_both_profiles(self) -> None:
+        assert PROFILES["EMG"] is EMG_PROFILE
+        assert PROFILES["ECG"] is ECG_PROFILE
+
+    def test_get_profile_is_case_insensitive(self) -> None:
+        assert get_profile("ecg") is ECG_PROFILE
+        assert get_profile("EMG") is EMG_PROFILE
+
+    def test_get_profile_unknown_raises(self) -> None:
+        with pytest.raises(KeyError, match="Unknown signal profile"):
+            get_profile("EEG")

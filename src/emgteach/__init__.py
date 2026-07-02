@@ -31,13 +31,21 @@ from emgteach.io import (
     write_edf_block,
 )
 from emgteach.mvc import adaptive_ylim, compute_mvc, normalise_to_mvc
-from emgteach.profiles import EMG_PROFILE, SignalProfile
+from emgteach.profiles import (
+    ECG_PROFILE,
+    EMG_PROFILE,
+    PROFILES,
+    SignalProfile,
+    get_profile,
+)
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
 __version__ = "1.0.0"
 
 __all__ = [
+    "ECG_PROFILE",
     "EMG_PROFILE",
+    "PROFILES",
     "AcquisitionDevice",
     "AcquisitionWorker",
     "AnalysisWorker",
@@ -70,6 +78,7 @@ __all__ = [
     "edf_duration",
     "fit_mdf_vs_time",
     "fit_rms_vs_mdf",
+    "get_profile",
     "list_edf_channels",
     "normalise_to_mvc",
     "process_offline",
