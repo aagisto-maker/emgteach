@@ -13,6 +13,7 @@ tested headless) or from an EDF file via :meth:`FragmentSelectionDialog.from_edf
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 import numpy as np
@@ -42,6 +43,13 @@ from emgteach.selection import (
     suggest_significant_segments,
     total_duration_s,
 )
+
+# Default detection parameters shown in the dialog, read straight from the core
+# function so the two never drift apart.
+_suggest_defaults = inspect.signature(suggest_significant_segments).parameters
+_DEFAULT_K = float(_suggest_defaults["k"].default)
+_DEFAULT_MIN_DURATION_S = float(_suggest_defaults["min_duration_s"].default)
+_DEFAULT_MERGE_GAP_S = float(_suggest_defaults["merge_gap_s"].default)
 
 
 class FragmentSelectionDialog(QDialog):
@@ -160,10 +168,53 @@ class FragmentSelectionDialog(QDialog):
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         root.addWidget(self._table, stretch=1)
 
+        # Detection parameters for the automatic proposal (editable defaults).
+        params_row = QHBoxLayout()
+        params_row.addWidget(QLabel(tr("Detection:")))
+        params_row.addWidget(QLabel(tr("sensitivity k")))
+        self._spin_k = QDoubleSpinBox()
+        self._spin_k.setRange(0.5, 10.0)
+        self._spin_k.setSingleStep(0.5)
+        self._spin_k.setValue(_DEFAULT_K)
+        self._spin_k.setFixedWidth(70)
+        self._spin_k.setToolTip(
+            tr(
+                "Threshold in robust standard deviations above the resting "
+                "baseline. Lower = more sensitive (keeps weaker activity)."
+            )
+        )
+        params_row.addWidget(self._spin_k)
+        params_row.addWidget(QLabel(tr("min. duration")))
+        self._spin_min_dur = QDoubleSpinBox()
+        self._spin_min_dur.setRange(0.1, 10.0)
+        self._spin_min_dur.setSingleStep(0.1)
+        self._spin_min_dur.setValue(_DEFAULT_MIN_DURATION_S)
+        self._spin_min_dur.setSuffix(" s")
+        self._spin_min_dur.setFixedWidth(84)
+        self._spin_min_dur.setToolTip(
+            tr("Shortest fragment kept; briefer active periods are discarded.")
+        )
+        params_row.addWidget(self._spin_min_dur)
+        params_row.addWidget(QLabel(tr("merge gap")))
+        self._spin_merge_gap = QDoubleSpinBox()
+        self._spin_merge_gap.setRange(0.0, 5.0)
+        self._spin_merge_gap.setSingleStep(0.1)
+        self._spin_merge_gap.setValue(_DEFAULT_MERGE_GAP_S)
+        self._spin_merge_gap.setSuffix(" s")
+        self._spin_merge_gap.setFixedWidth(84)
+        self._spin_merge_gap.setToolTip(
+            tr("Active periods separated by less than this are merged into one.")
+        )
+        params_row.addWidget(self._spin_merge_gap)
+        params_row.addStretch()
+        root.addLayout(params_row)
+
         # Action buttons.
         btn_row = QHBoxLayout()
         self._btn_auto = QPushButton(tr("Auto-suggest"))
-        self._btn_auto.setToolTip(tr("Re-run the automatic fragment proposal."))
+        self._btn_auto.setToolTip(
+            tr("Re-run the automatic fragment proposal with the parameters above.")
+        )
         self._btn_auto.clicked.connect(self._auto_suggest)
         btn_row.addWidget(self._btn_auto)
         self._btn_add = QPushButton(tr("Add fragment"))
@@ -265,6 +316,9 @@ class FragmentSelectionDialog(QDialog):
             f_high=self._f_high,
             f_notch=self._f_notch,
             f_env=self._f_env,
+            k=self._spin_k.value(),
+            min_duration_s=self._spin_min_dur.value(),
+            merge_gap_s=self._spin_merge_gap.value(),
         )
         self._set_rows(segs)
 

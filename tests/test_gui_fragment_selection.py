@@ -66,3 +66,29 @@ def test_preloaded_segments_are_used(qapp: QCoreApplication) -> None:
     segs = dlg.selected_segments()
     assert segs == [(1.0, 3.0), (5.0, 6.0)]
     dlg.deleteLater()
+
+
+def test_default_detection_params_match_core(qapp: QCoreApplication) -> None:
+    import inspect
+
+    from emgteach.selection import suggest_significant_segments
+
+    params = inspect.signature(suggest_significant_segments).parameters
+    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+    assert dlg._spin_k.value() == params["k"].default
+    assert dlg._spin_min_dur.value() == params["min_duration_s"].default
+    assert dlg._spin_merge_gap.value() == params["merge_gap_s"].default
+    dlg.deleteLater()
+
+
+def test_min_duration_param_filters_short_fragments(qapp: QCoreApplication) -> None:
+    # Two 1.5 s bursts survive a 1 s minimum but not a 2 s minimum.
+    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+    dlg._spin_min_dur.setValue(1.0)
+    dlg._auto_suggest()
+    assert dlg._table.rowCount() == 2
+    dlg._spin_min_dur.setValue(2.0)
+    dlg._auto_suggest()
+    # No burst is 2 s long -> falls back to the whole-recording proposal.
+    assert dlg._table.rowCount() == 1
+    dlg.deleteLater()
