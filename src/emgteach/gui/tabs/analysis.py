@@ -67,6 +67,7 @@ _PANEL_NOMBRES = [
 
 _PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
 
+from emgteach.exports import write_analysis_csv
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
@@ -133,6 +134,10 @@ class AnalysisTab(QWidget):
         self._btn_informe.setEnabled(False)
         self._btn_informe.clicked.connect(self._generar_informe)
         row_file.addWidget(self._btn_informe)
+        self._btn_csv = QPushButton(tr("Export CSV"))
+        self._btn_csv.setEnabled(False)
+        self._btn_csv.clicked.connect(self._exportar_csv)
+        row_file.addWidget(self._btn_csv)
         ctrl.addLayout(row_file)
 
         # Line 2: channel + f_env
@@ -507,6 +512,7 @@ class AnalysisTab(QWidget):
             self._btn_analizar.setEnabled(True)
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
+            self._btn_csv.setEnabled(False)
             self._progress.setValue(0)
             self._progress.setFormat(tr("Ready"))
 
@@ -543,6 +549,7 @@ class AnalysisTab(QWidget):
         self._progress.setFormat(tr("Analysing…  %p%"))
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
+        self._btn_csv.setEnabled(False)
         self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
         self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
         self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
@@ -581,6 +588,7 @@ class AnalysisTab(QWidget):
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)
         self._btn_informe.setEnabled(True)
+        self._btn_csv.setEnabled(True)
         self._btn_redibujar.setEnabled(True)
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
@@ -848,6 +856,28 @@ class AnalysisTab(QWidget):
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
+
+    @Slot()
+    def _exportar_csv(self) -> None:
+        if self._last_result is None:
+            return
+        carpeta = str(Path(self._last_result["edf_path"]).parent)
+        nombre = Path(self._last_result["edf_path"]).stem + "_analisis_emg.csv"
+        ruta_default = str(Path(carpeta) / nombre)
+
+        ruta, _ = QFileDialog.getSaveFileName(
+            self, tr("Export CSV"),
+            ruta_default,
+            tr("CSV files (*.csv)"),
+        )
+        if not ruta:
+            return
+        try:
+            write_analysis_csv(self._last_result, ruta)
+        except Exception as exc:  # pragma: no cover — GUI feedback only
+            self._logger.append_log(tr("CSV export error: {error}").format(error=exc))
+            return
+        self._logger.append_log(tr("CSV exported to: {path}").format(path=ruta))
 
     @Slot()
     def _pedir_paneles_informe(self) -> tuple[list[int], tuple[float, float]] | None:
@@ -1222,6 +1252,7 @@ class AnalysisTab(QWidget):
         self._btn_analizar.setEnabled(False)
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
+        self._btn_csv.setEnabled(False)
         self._btn_redibujar.setEnabled(False)
 
         self._reset_summary_labels()
