@@ -521,6 +521,51 @@ class TestAnalysisWorker:
         assert abs(r["duration"] - 1.3) < 0.15
         assert r["full_duration_s"] > 2.0
 
+    def test_multi_fragment_analysis_concatenates(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        pytest.importorskip("mne")
+        edf_path = self._generate_edf(qapp, tmp_path)  # ~2.2 s recording
+
+        # Keep two disjoint 0.7 s fragments -> ~1.4 s of concatenated signal.
+        analysis = AnalysisWorker(
+            edf_path=edf_path,
+            channel_name="EMG",
+            roi_segments=[(0.2, 0.9), (1.3, 2.0)],
+        )
+        results: list[dict] = []
+        errors: list[str] = []
+        analysis.result_ready.connect(results.append)
+        analysis.error.connect(errors.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.result_ready, timeout_ms=15000)
+        analysis.wait(15000)
+
+        assert not errors, f"Analysis emitted errors: {errors}"
+        r = results[0]
+        assert r["roi_segments"] == [(0.2, 0.9), (1.3, 2.0)]
+        # Duration is the sum of the kept fragments, not the whole file.
+        assert abs(r["duration"] - 1.4) < 0.15
+
+    def test_too_short_selection_emits_error(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        pytest.importorskip("mne")
+        edf_path = self._generate_edf(qapp, tmp_path)
+        analysis = AnalysisWorker(
+            edf_path=edf_path, channel_name="EMG", roi_segments=[(0.1, 0.5)]
+        )
+        results: list[dict] = []
+        errors: list[str] = []
+        analysis.result_ready.connect(results.append)
+        analysis.error.connect(errors.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.error, timeout_ms=15000)
+        analysis.wait(15000)
+
+        assert not results
+        assert errors and "minimum" in errors[0].lower()
+
 
 # ---------------------------------------------------------------------------
 # MvcWorker

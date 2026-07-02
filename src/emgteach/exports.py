@@ -54,9 +54,13 @@ def write_analysis_csv(
         Destination file. Overwritten if it exists.
     """
     full_dur = float(result.get("full_duration_s", result.get("duration", 0.0)))
+    segments = result.get("roi_segments")
     roi_a = result.get("roi_start_s")
     roi_b = result.get("roi_end_s")
-    if roi_a is not None and roi_b is not None and (
+    if segments and len(segments) > 1:
+        frag_txt = "; ".join(f"{float(a):.2f}-{float(b):.2f}" for a, b in segments)
+        window = tr("{n} fragments: {list} s").format(n=len(segments), list=frag_txt)
+    elif roi_a is not None and roi_b is not None and (
         float(roi_a) > 0.0 or float(roi_b) < full_dur - 1e-6
     ):
         window = tr("{a:.2f}-{b:.2f} s of {d:.1f} s").format(

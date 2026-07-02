@@ -40,6 +40,12 @@ from emgteach.profiles import (
     SignalProfile,
     get_profile,
 )
+from emgteach.selection import (
+    Segment,
+    normalise_segments,
+    suggest_significant_segments,
+    total_duration_s,
+)
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
 __version__ = "1.0.0"
@@ -64,6 +70,7 @@ __all__ = [
     "QualityStatus",
     "RealtimeFilterState",
     "RecordingMetadata",
+    "Segment",
     "SignalProfile",
     "__version__",
     "adaptive_ylim",
@@ -84,10 +91,13 @@ __all__ = [
     "fit_rms_vs_mdf",
     "get_profile",
     "list_edf_channels",
+    "normalise_segments",
     "normalise_to_mvc",
     "process_offline",
     "read_edf_metadata",
     "read_edf_mne",
     "read_edf_pyedflib",
+    "suggest_significant_segments",
+    "total_duration_s",
     "write_edf_block",
 ]

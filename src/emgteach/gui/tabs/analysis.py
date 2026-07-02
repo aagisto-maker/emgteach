@@ -68,10 +68,12 @@ _PANEL_NOMBRES = [
 _PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
 
 from emgteach.exports import write_analysis_csv
+from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
 from emgteach.io import edf_duration, list_edf_channels, read_edf_metadata
+from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
 
@@ -212,6 +214,21 @@ class AnalysisTab(QWidget):
         row_roi.addWidget(self._spin_roi_end)
         self._chk_roi.toggled.connect(self._spin_roi_start.setEnabled)
         self._chk_roi.toggled.connect(self._spin_roi_end.setEnabled)
+        row_roi.addSpacing(12)
+        # Assisted multi-fragment selection (auto-suggested, user-edited).
+        self._btn_fragmentos = QPushButton(tr("Select fragments…"))
+        self._btn_fragmentos.setToolTip(
+            tr(
+                "Open the assisted editor to keep the significant fragments and "
+                "discard the rest. Takes precedence over the region above."
+            )
+        )
+        self._btn_fragmentos.setEnabled(False)
+        self._btn_fragmentos.clicked.connect(self._editar_fragmentos)
+        row_roi.addWidget(self._btn_fragmentos)
+        self._lbl_fragmentos = QLabel("")
+        row_roi.addWidget(self._lbl_fragmentos)
+        self._selected_segments: list[tuple[float, float]] = []
         row_roi.addStretch()
         ctrl.addLayout(row_roi)
 
@@ -516,6 +533,10 @@ class AnalysisTab(QWidget):
             self._settings.setValue("analisis/last_dir", self._last_edf_dir)
             self._populate_channels(path)
             self._btn_analizar.setEnabled(True)
+            self._btn_fragmentos.setEnabled(True)
+            # A new file invalidates any previous fragment selection.
+            self._selected_segments = []
+            self._actualizar_etiqueta_fragmentos()
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
             self._btn_csv.setEnabled(False)
@@ -553,6 +574,40 @@ class AnalysisTab(QWidget):
             self._edit_student_code.setText(meta.student_code)
 
     @Slot()
+    def _editar_fragmentos(self) -> None:
+        path = self._edit_path.text().strip()
+        if not path:
+            return
+        canal = self._combo_canal.currentText().strip() or "EMG"
+        filter_kwargs = dict(EMG_PROFILE.filter_kwargs())
+        filter_kwargs["f_env"] = self._spin_fenv.value()
+        try:
+            dlg = FragmentSelectionDialog.from_edf(
+                path, canal, filter_kwargs, segments=self._selected_segments or None,
+                parent=self,
+            )
+        except Exception as exc:  # pragma: no cover — GUI feedback only
+            self._logger.append_log(
+                tr("Could not open the fragment editor: {error}").format(error=exc)
+            )
+            return
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._selected_segments = dlg.selected_segments()
+            self._actualizar_etiqueta_fragmentos()
+
+    def _actualizar_etiqueta_fragmentos(self) -> None:
+        n = len(self._selected_segments)
+        if n == 0:
+            self._lbl_fragmentos.setText("")
+        else:
+            total = sum(b - a for a, b in self._selected_segments)
+            self._lbl_fragmentos.setText(
+                tr("{n} fragment(s) selected ({d:.1f} s)").format(n=n, d=total)
+            )
+            # A fragment selection overrides the single-region control.
+            self._chk_roi.setChecked(False)
+
+    @Slot()
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
         canal = self._combo_canal.currentText().strip() or "EMG"
@@ -572,7 +627,8 @@ class AnalysisTab(QWidget):
         self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
 
         roi_start = roi_end = None
-        if self._chk_roi.isChecked():
+        roi_segments = self._selected_segments or None
+        if roi_segments is None and self._chk_roi.isChecked():
             roi_start = self._spin_roi_start.value()
             roi_end = self._spin_roi_end.value()
 
@@ -583,6 +639,7 @@ class AnalysisTab(QWidget):
             plot_duration_s=0,
             roi_start_s=roi_start,
             roi_end_s=roi_end,
+            roi_segments=roi_segments,
         )
         self._worker.result_ready.connect(self._on_result)
         self._worker.progress.connect(self._on_progress)
@@ -1244,6 +1301,9 @@ class AnalysisTab(QWidget):
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
         self._chk_roi.setEnabled(habilitado)
+        self._btn_fragmentos.setEnabled(
+            habilitado and bool(self._edit_path.text())
+        )
         roi_on = habilitado and self._chk_roi.isChecked()
         self._spin_roi_start.setEnabled(roi_on)
         self._spin_roi_end.setEnabled(roi_on)
@@ -1292,6 +1352,9 @@ class AnalysisTab(QWidget):
         self._combo_canal.blockSignals(False)
 
         self._btn_analizar.setEnabled(False)
+        self._btn_fragmentos.setEnabled(False)
+        self._selected_segments = []
+        self._actualizar_etiqueta_fragmentos()
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)

@@ -413,11 +413,23 @@ def build_session_report(
         [tr("Metric"), tr("Value")],
         [tr("Duration"), f"{float(result.get('duration', 0.0)):.1f} s"],
     ]
-    # State the analysed window explicitly when it is not the whole file.
+    # State the analysed window/fragments explicitly when not the whole file.
     full_dur = float(result.get("full_duration_s", 0.0))
+    segments = result.get("roi_segments")
     roi_a = result.get("roi_start_s")
     roi_b = result.get("roi_end_s")
-    if roi_a is not None and roi_b is not None and (
+    if segments and len(segments) > 1:
+        kept = sum(float(b) - float(a) for a, b in segments)
+        frag_txt = "; ".join(f"{float(a):.2f}-{float(b):.2f}" for a, b in segments)
+        metrics.append(
+            [
+                tr("Analysed fragments"),
+                tr("{n} fragments ({d:.2f} s of {full:.1f} s): {list} s").format(
+                    n=len(segments), d=kept, full=full_dur, list=frag_txt
+                ),
+            ]
+        )
+    elif roi_a is not None and roi_b is not None and (
         float(roi_a) > 0.0 or float(roi_b) < full_dur - 1e-6
     ):
         metrics.append(

@@ -22,6 +22,7 @@ from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
 from emgteach.i18n import tr
 from emgteach.io import read_edf_mne
 from emgteach.profiles import EMG_PROFILE, SignalProfile
+from emgteach.selection import Segment, normalise_segments, total_duration_s
 
 
 class AnalysisWorker(QThread):
@@ -58,6 +59,7 @@ class AnalysisWorker(QThread):
         plot_duration_s: float = 10.0,
         roi_start_s: float | None = None,
         roi_end_s: float | None = None,
+        roi_segments: list[tuple[float, float]] | None = None,
         profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
@@ -66,6 +68,12 @@ class AnalysisWorker(QThread):
         self._edf_path = edf_path
         self._roi_start_s = float(roi_start_s) if roi_start_s is not None else None
         self._roi_end_s = float(roi_end_s) if roi_end_s is not None else None
+        # Optional multi-fragment selection. When given (and non-empty) it takes
+        # precedence over the single roi_start/roi_end window: the kept fragments
+        # are concatenated and analysed as one continuous signal.
+        self._roi_segments = (
+            [(float(a), float(b)) for a, b in roi_segments] if roi_segments else None
+        )
         self._channel_name = (
             channel_name if channel_name is not None else profile.raw_label
         )
@@ -117,6 +125,50 @@ class AnalysisWorker(QThread):
         i1 = max(i0, min(i1, n_samples))
         return i0, i1, start_s, end_s
 
+    def _resolve_segments(
+        self, n_samples: int, fs: float, full_duration: float
+    ) -> list[tuple[int, int, float, float]] | None:
+        """Resolve the analysis fragments into ordered sample-index windows.
+
+        Precedence: an explicit multi-fragment ``roi_segments`` list, else the
+        single ``roi_start_s``/``roi_end_s`` window, else the whole recording.
+        The fragments are clamped to the recording, ordered and merged if they
+        overlap. The total kept time must be at least 1 s (the pipeline's
+        reflective-padding minimum); otherwise :attr:`error` is emitted and
+        ``None`` is returned.
+
+        Returns ``[(i0, i1, start_s, end_s), ...]`` in chronological order.
+        """
+        if self._roi_segments:
+            requested = self._roi_segments
+        elif self._roi_start_s is not None or self._roi_end_s is not None:
+            start = self._roi_start_s if self._roi_start_s is not None else 0.0
+            end = self._roi_end_s if self._roi_end_s is not None else full_duration
+            requested = [(start, end)]
+        else:
+            return [(0, n_samples, 0.0, full_duration)]
+
+        segs = normalise_segments(
+            [Segment(a, b) for a, b in requested], full_duration
+        )
+        total = total_duration_s(segs)
+        if not segs or total < 1.0:
+            self.error.emit(
+                tr(
+                    "The selected fragments total {t:.2f} s, below the 1 s "
+                    "minimum required for analysis."
+                ).format(t=total)
+            )
+            return None
+
+        bounds: list[tuple[int, int, float, float]] = []
+        for s in segs:
+            i0 = max(0, min(round(s.start_s * fs), n_samples))
+            i1 = max(i0, min(round(s.end_s * fs), n_samples))
+            if i1 > i0:
+                bounds.append((i0, i1, s.start_s, s.end_s))
+        return bounds
+
     def run(self) -> None:
         try:
             # 1) Load EDF
@@ -128,30 +180,52 @@ class AnalysisWorker(QThread):
             times = edf["times"]
             markers = edf.get("markers", [])
 
-            # 1b) Restrict to the region of interest, if requested. Everything
-            # downstream (DSP, PSD, segments, fatigue) then runs on the cropped
-            # window; time is re-based to 0 at the ROI start and markers are
-            # shifted/filtered to match. The selected window is recorded in the
-            # result so the report states it explicitly.
+            # 1b) Restrict to the selected fragment(s), if requested. The kept
+            # fragments are concatenated into one continuous signal; everything
+            # downstream (DSP, PSD, segments, fatigue) runs on it, time is
+            # re-based to 0 and markers are shifted into concatenated time (those
+            # in discarded fragments are dropped). The kept windows are recorded
+            # in the result so the report states them explicitly.
             full_duration = float(times[-1])
-            roi = self._resolve_roi(len(emg_raw), fs, full_duration)
-            if roi is None:
+            bounds = self._resolve_segments(len(emg_raw), fs, full_duration)
+            if bounds is None:
                 return  # error already emitted
-            i0, i1, roi_start_s, roi_end_s = roi
-            if i0 != 0 or i1 != len(emg_raw):
-                emg_raw = emg_raw[i0:i1]
+            kept_segments = [(s, e) for (_, _, s, e) in bounds]
+            is_whole = (
+                len(bounds) == 1
+                and bounds[0][0] == 0
+                and bounds[0][1] == len(emg_raw)
+            )
+            if not is_whole:
+                emg_raw = np.concatenate([emg_raw[i0:i1] for (i0, i1, _, _) in bounds])
                 times = np.arange(len(emg_raw), dtype=np.float64) / fs
-                markers = [
-                    (t - roi_start_s, label)
-                    for (t, label) in markers
-                    if roi_start_s <= t < roi_end_s
-                ]
-                self.log.emit(
-                    tr("Region of interest: {a:.2f}-{b:.2f} s ({d:.2f} s).").format(
-                        a=roi_start_s, b=roi_end_s, d=roi_end_s - roi_start_s
+                new_markers: list[tuple[float, str]] = []
+                offset = 0.0
+                for i0, i1, seg_a, seg_b in bounds:
+                    for t, label in markers:
+                        if seg_a <= t < seg_b:
+                            new_markers.append((offset + (t - seg_a), label))
+                    offset += (i1 - i0) / fs
+                markers = sorted(new_markers)
+                if len(bounds) == 1:
+                    self.log.emit(
+                        tr("Region of interest: {a:.2f}-{b:.2f} s ({d:.2f} s).").format(
+                            a=kept_segments[0][0],
+                            b=kept_segments[0][1],
+                            d=kept_segments[0][1] - kept_segments[0][0],
+                        )
                     )
-                )
+                else:
+                    kept_total = sum(b - a for a, b in kept_segments)
+                    self.log.emit(
+                        tr(
+                            "Analysing {n} selected fragments "
+                            "({d:.2f} s of {full:.2f} s)."
+                        ).format(n=len(bounds), d=kept_total, full=full_duration)
+                    )
 
+            roi_start_s = kept_segments[0][0]
+            roi_end_s = kept_segments[-1][1]
             duration = float(times[-1])
             self.log.emit(
                 tr("Channel «{name}» — {fs:.0f} Hz — {dur:.1f} s").format(
@@ -286,6 +360,7 @@ class AnalysisWorker(QThread):
                 "f_high": self._f_high,
                 "roi_start_s": roi_start_s,
                 "roi_end_s": roi_end_s,
+                "roi_segments": kept_segments,
                 "full_duration_s": full_duration,
                 "edf_path": self._edf_path,
                 "channel_name": self._channel_name,
