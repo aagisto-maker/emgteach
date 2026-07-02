@@ -85,6 +85,10 @@ class AnalysisWorker(QThread):
         """Request that the next checkpoint abandon the run."""
         self._cancelled = True
 
+    def is_cancelled(self) -> bool:
+        """``True`` once :meth:`stop` has been called."""
+        return self._cancelled
+
     def _resolve_roi(
         self, n_samples: int, fs: float, full_duration: float
     ) -> tuple[int, int, float, float] | None:

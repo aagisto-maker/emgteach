@@ -371,14 +371,20 @@ class AnalysisTab(QWidget):
         self._btn_tiempo_reducir.setEnabled(False)
         self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
 
-        # --- Barra de progreso ---
+        # --- Barra de progreso + Cancelar ---
+        progress_row = QHBoxLayout()
         self._progress = QProgressBar()
         self._progress.setRange(0, 100)
         self._progress.setValue(0)
         self._progress.setTextVisible(True)
         self._progress.setFormat(tr("Ready"))
         self._progress.setVisible(False)
-        root.addWidget(self._progress)
+        progress_row.addWidget(self._progress, stretch=1)
+        self._btn_cancelar = QPushButton(tr("Cancel"))
+        self._btn_cancelar.setVisible(False)
+        self._btn_cancelar.clicked.connect(self._cancelar_analisis)
+        progress_row.addWidget(self._btn_cancelar)
+        root.addLayout(progress_row)
 
         # --- Numeric summary panel (one row) ---
         grp_resumen = QGroupBox(tr("Analysis summary"))
@@ -556,6 +562,8 @@ class AnalysisTab(QWidget):
         self._progress.setVisible(True)
         self._progress.setValue(0)
         self._progress.setFormat(tr("Analysing…  %p%"))
+        self._btn_cancelar.setVisible(True)
+        self._btn_cancelar.setEnabled(True)
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)
@@ -580,7 +588,31 @@ class AnalysisTab(QWidget):
         self._worker.progress.connect(self._on_progress)
         self._worker.log.connect(self._logger.append_log)
         self._worker.error.connect(self._on_error)
+        # finished fires after run() returns for any reason (result, error or
+        # cancel); it guarantees the UI is restored even when the worker aborts
+        # at a checkpoint without emitting a result.
+        self._worker.finished.connect(self._on_analysis_finished)
         self._worker.start()
+
+    @Slot()
+    def _cancelar_analisis(self) -> None:
+        if self._worker is not None and self._worker.isRunning():
+            self._btn_cancelar.setEnabled(False)
+            self._logger.append_log(tr("Cancelling analysis…"))
+            self._worker.stop()
+
+    @Slot()
+    def _on_analysis_finished(self) -> None:
+        # Restore the UI regardless of how the run ended. If no result was
+        # produced (cancelled), re-enable the controls that _on_result would
+        # otherwise have handled.
+        self._btn_cancelar.setVisible(False)
+        self._btn_cancelar.setEnabled(False)
+        if self._last_result is None or (
+            self._worker is not None and self._worker.is_cancelled()
+        ):
+            self._progress.setVisible(False)
+            self._set_controles_habilitados(True)
 
     # ------------------------------------------------------------------
     # Worker slots
