@@ -38,7 +38,15 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from scipy.integrate import simpson
-from scipy.signal import iirfilter, sosfilt, sosfilt_zi, sosfiltfilt, welch
+from scipy.signal import (
+    iirfilter,
+    iirnotch,
+    sosfilt,
+    sosfilt_zi,
+    sosfiltfilt,
+    tf2sos,
+    welch,
+)
 
 from emgteach.i18n import tr
 
@@ -77,17 +85,58 @@ def design_bandpass(
 
 
 def design_notch(
-    f_notch: float, fs: float, order: int = 2, bandwidth: float = 1.0
+    f_notch: float,
+    fs: float,
+    q: float = 30.0,
+    harmonics: bool = True,
+    f_high: float = 450.0,
 ) -> FloatArray:
-    """Butterworth notch SOS coefficients (50 Hz mains by default)."""
-    return iirfilter(
-        order,
-        [f_notch - bandwidth, f_notch + bandwidth],
-        btype="bandstop",
-        fs=fs,
-        ftype="butter",
-        output="sos",
-    )
+    """Mains-interference notch as a cascade of narrow IIR notches.
+
+    A single :func:`scipy.signal.iirnotch` (quality factor ``q``) is far
+    narrower and deeper than the previous 2nd-order Butterworth band-stop:
+    at ``q=30`` the 50 Hz notch is only ~1.7 Hz wide, so it removes the
+    mains line while leaving the surrounding EMG spectrum essentially
+    untouched.
+
+    Real mains interference is not a pure sinusoid; it also injects odd
+    (and, with rectifying loads, even) harmonics at 100, 150, 200 … Hz that
+    fall squarely inside the 20-450 Hz EMG band and that the old single-band
+    notch left in place. When ``harmonics`` is ``True`` (the default) the
+    filter therefore stacks one notch at ``f_notch`` and one at each harmonic
+    up to ``f_high`` (bounded by the Nyquist frequency), returning the
+    combined SOS cascade.
+
+    Parameters
+    ----------
+    f_notch : float
+        Mains fundamental frequency (Hz), typically 50 (EU) or 60 (US).
+    fs : float
+        Sampling frequency (Hz).
+    q : float, optional
+        Quality factor of each notch (higher = narrower). Default 30.
+    harmonics : bool, optional
+        Also notch the integer harmonics of ``f_notch`` inside the band.
+        Default ``True``.
+    f_high : float, optional
+        Upper bound (Hz) for harmonic notches; harmonics at or above this
+        (or above Nyquist) are not added, as the band-pass removes them.
+        Default 450.
+
+    Returns
+    -------
+    ndarray
+        Second-order-sections array of shape ``(n_notches, 6)``.
+    """
+    f_max = min(float(f_high), fs / 2.0)
+    freqs = [float(f_notch)]
+    if harmonics:
+        k = 2
+        while f_notch * k < f_max - 1.0:
+            freqs.append(f_notch * k)
+            k += 1
+    sections = [tf2sos(*iirnotch(f0, q, fs=fs)) for f0 in freqs]
+    return np.vstack(sections)
 
 
 def design_lowpass(f_cut: float, fs: float, order: int = 2) -> FloatArray:
@@ -133,7 +182,7 @@ class RealtimeFilterState:
         order: int = 2,
     ) -> None:
         self.sos_band = design_bandpass(f_low, f_high, fs, order)
-        self.sos_notch = design_notch(f_notch, fs)
+        self.sos_notch = design_notch(f_notch, fs, f_high=f_high)
         self.sos_env = design_lowpass(f_env, fs, order)
 
         # Initial conditions are zeroed so the first samples do not see
@@ -221,7 +270,7 @@ def process_offline(
     """
     emg_raw = np.asarray(emg_raw, dtype=np.float64)
 
-    sos_notch = design_notch(f_notch, fs)
+    sos_notch = design_notch(f_notch, fs, f_high=f_high)
     sos_band = design_bandpass(f_low, f_high, fs, order)
     sos_env = design_lowpass(f_env, fs, order)
 

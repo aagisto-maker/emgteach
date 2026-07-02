@@ -76,10 +76,32 @@ class TestFilterDesign:
         assert _rms(out[int(0.5 * FS) :]) < 0.1 * _rms(sig)
 
     def test_notch_preserves_far_frequency(self) -> None:
+        # 175 Hz sits between two mains harmonics (150, 200), so the narrow
+        # comb must leave it essentially untouched.
         sos = design_notch(50.0, FS)
-        sig = _sinusoid(150.0)
+        sig = _sinusoid(175.0)
         out = sosfilt(sos, sig)
         assert _rms(out[int(0.5 * FS) :]) > 0.8 * _rms(sig)
+
+    def test_notch_suppresses_harmonics(self) -> None:
+        # The comb must also kill the mains harmonics that fall inside the
+        # 20-450 Hz band (100, 150, ... Hz), which the old single-band
+        # notch left untouched.
+        sos = design_notch(50.0, FS)
+        for f_harm in (100.0, 150.0, 250.0):
+            sig = _sinusoid(f_harm)
+            out = sosfilt(sos, sig)
+            assert _rms(out[int(0.5 * FS) :]) < 0.1 * _rms(sig), (
+                f"harmonic {f_harm} Hz not suppressed"
+            )
+
+    def test_notch_without_harmonics_keeps_them(self) -> None:
+        # With harmonics disabled only the fundamental is removed.
+        sos = design_notch(50.0, FS, harmonics=False)
+        fund = _sinusoid(50.0)
+        assert _rms(sosfilt(sos, fund)[int(0.5 * FS) :]) < 0.1 * _rms(fund)
+        h150 = _sinusoid(150.0)
+        assert _rms(sosfilt(sos, h150)[int(0.5 * FS) :]) > 0.8 * _rms(h150)
 
     def test_lowpass_attenuates_high_frequency(self) -> None:
         sos = design_lowpass(5.0, FS)
