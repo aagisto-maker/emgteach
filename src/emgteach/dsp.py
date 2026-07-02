@@ -34,6 +34,7 @@ References
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -57,7 +58,9 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "LiveQualityMonitor",
     "OnsetDetector",
+    "QualityStatus",
     "RealtimeFilterState",
     "compute_psd_mnf_mdf",
     "compute_segments",
@@ -506,6 +509,97 @@ def detect_acquisition_problems(
         "flat_baseline": flat_baseline,
         "warnings": warnings,
     }
+
+
+@dataclass(frozen=True)
+class QualityStatus:
+    """Outcome of one :meth:`LiveQualityMonitor.update` call.
+
+    Attributes
+    ----------
+    code : str
+        ``"ok"``, ``"saturation"`` or ``"flat"``.
+    message : str
+        Short, already-translated text for a status label.
+    saturation_frac : float
+        Fraction (0-1) of the block sitting at the hardware rails.
+    """
+
+    code: str
+    message: str
+    saturation_frac: float = 0.0
+
+
+class LiveQualityMonitor:
+    """Per-block signal-quality check for the live acquisition preview.
+
+    Unlike :func:`detect_acquisition_problems`, which inspects a whole saved
+    recording against its own data range, this monitor judges each incoming
+    block against the **device's true physical rails** (``physical_min`` /
+    ``physical_max``), so it can warn *while recording* that:
+
+    * the amplifier is **saturating** (a fraction of the block greater than
+      ``sat_frac`` sits within 1% of either rail — gain too high or a railing
+      electrode), or
+    * the electrode looks **disconnected** (the block's standard deviation is
+      below ``flat_std``, i.e. a suspiciously flat line — a real biopotential
+      always carries some baseline noise).
+
+    Otherwise the signal is reported as OK. The check is stateless per block,
+    so it tracks the signal as it streams without accumulating history.
+
+    Parameters
+    ----------
+    rail_min, rail_max : float
+        Hardware full-scale in physical units (mV), e.g. the device's
+        ``physical_min`` / ``physical_max``.
+    sat_frac : float, optional
+        Fraction of a block at the rails above which saturation is flagged
+        (default 0.02, i.e. 2%).
+    flat_std : float, optional
+        Standard-deviation threshold below which the block is deemed flat.
+        Defaults to 0.05% of the full-scale span.
+    """
+
+    def __init__(
+        self,
+        rail_min: float,
+        rail_max: float,
+        sat_frac: float = 0.02,
+        flat_std: float | None = None,
+    ) -> None:
+        self.rail_min = float(rail_min)
+        self.rail_max = float(rail_max)
+        span = self.rail_max - self.rail_min
+        if span <= 0:
+            raise ValueError("rail_max must be greater than rail_min.")
+        self._hi = self.rail_max - 0.01 * span
+        self._lo = self.rail_min + 0.01 * span
+        self._sat_frac = float(sat_frac)
+        self._flat_std = 5e-4 * span if flat_std is None else float(flat_std)
+
+    def update(self, block: FloatArray | np.ndarray) -> QualityStatus:
+        """Assess one raw block and return its :class:`QualityStatus`."""
+        x = np.asarray(block, dtype=np.float64).ravel()
+        if x.size == 0:
+            return QualityStatus("ok", tr("Signal OK"))
+
+        sat_frac = float(np.mean((x >= self._hi) | (x <= self._lo)))
+        if sat_frac > self._sat_frac:
+            return QualityStatus(
+                "saturation",
+                tr("Saturation: {pct:.0f}% at rails — lower gain").format(
+                    pct=sat_frac * 100.0
+                ),
+                sat_frac,
+            )
+        if float(np.std(x)) < self._flat_std:
+            return QualityStatus(
+                "flat",
+                tr("Flat signal — check electrode contact"),
+                sat_frac,
+            )
+        return QualityStatus("ok", tr("Signal OK"), sat_frac)
 
 
 # ---------------------------------------------------------------------------

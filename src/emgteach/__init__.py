@@ -5,7 +5,9 @@ from __future__ import annotations
 from emgteach.apda import ApdfResult, LoadLevel, OnlineLoad, classify_load, compute_apdf
 from emgteach.devices import AcquisitionDevice, ArduinoDevice, BitalinoDevice
 from emgteach.dsp import (
+    LiveQualityMonitor,
     OnsetDetector,
+    QualityStatus,
     RealtimeFilterState,
     compute_psd_mnf_mdf,
     compute_segments,
@@ -54,10 +56,12 @@ __all__ = [
     "BitalinoDevice",
     "BufferedEdfWriter",
     "ChannelInfo",
+    "LiveQualityMonitor",
     "LoadLevel",
     "MvcWorker",
     "OnlineLoad",
     "OnsetDetector",
+    "QualityStatus",
     "RealtimeFilterState",
     "RecordingMetadata",
     "SignalProfile",

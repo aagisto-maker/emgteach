@@ -58,6 +58,7 @@ from emgteach.devices import (
     ArduinoDevice,
     create_device,
 )
+from emgteach.dsp import LiveQualityMonitor
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import tr
@@ -78,6 +79,14 @@ MAX_CHANNELS = 2
 # Maximum number of event markers drawn live at once (a reusable pool of
 # lines per plot; more than enough for a 30 s window).
 MAX_MARKER_LINES = 40
+
+# Style per live signal-quality status code (green ok / red saturation /
+# amber flat-disconnected).
+_QUALITY_STYLES = {
+    "ok": "color: #1a7f37; font-weight: bold;",
+    "saturation": "color: #b00020; font-weight: bold;",
+    "flat": "color: #b06a00; font-weight: bold;",
+}
 
 # Per-channel colour, consistent across the three plots: a colour always
 # identifies the same sensor (blue = channel 1, red = channel 2).
@@ -444,6 +453,15 @@ class AcquisitionTab(QWidget):
         self._lbl_estado = QLabel(tr("Status: disconnected"))
         ctrl_layout.addWidget(self._lbl_estado)
         ctrl_layout.addStretch()
+
+        # Live signal-quality indicator (updated per acquired block).
+        self._lbl_calidad = QLabel("")
+        self._lbl_calidad.setToolTip(
+            tr("Live signal quality: saturation or a flat (disconnected) signal.")
+        )
+        self._lbl_calidad.setVisible(False)
+        ctrl_layout.addWidget(self._lbl_calidad)
+        self._quality_monitor: LiveQualityMonitor | None = None
 
         row_actions.addWidget(grp_control, stretch=1)
 
@@ -1061,6 +1079,11 @@ class AcquisitionTab(QWidget):
             protocol=self._edit_protocol.text().strip(),
             equipment=device.name,
         )
+        # Live quality check against the device's true physical rails.
+        self._quality_monitor = LiveQualityMonitor(
+            device.physical_min, device.physical_max
+        )
+        self._lbl_calidad.setVisible(True)
         self._worker = AcquisitionWorker(
             device=device,
             save_dir=save_dir,
@@ -1128,12 +1151,31 @@ class AcquisitionTab(QWidget):
         if raw:
             self._total_samples += len(raw[0])
         self._new_data = True
+        # Live signal-quality indicator (worst status across channels).
+        if self._quality_monitor is not None and raw:
+            self._update_quality(raw)
         # Live muscle-load monitor (calibration or per-block load update).
         self._process_load(env)
         # Green LED: there is traffic. The timer will set it back to yellow if
         # no new block arrives within LED_IDLE_MS ms.
         self._set_led("ok")
         self._led_idle_timer.start()
+
+    def _update_quality(self, raw: list) -> None:
+        """Show the worst per-channel quality status of the latest block."""
+        assert self._quality_monitor is not None
+        status = None
+        for c in range(min(len(raw), self._n_channels)):
+            s = self._quality_monitor.update(raw[c])
+            # Prefer a problem status over "ok"; first problem wins.
+            if s.code != "ok":
+                status = s
+                break
+            status = s
+        if status is None:
+            return
+        self._lbl_calidad.setText(status.message)
+        self._lbl_calidad.setStyleSheet(_QUALITY_STYLES.get(status.code, ""))
 
     def _refresh_plots(self, force: bool = False) -> None:
         """Called every 33 ms by _render_timer. Draws only if there is new data
@@ -1487,6 +1529,9 @@ class AcquisitionTab(QWidget):
         self._shortcut_m.setEnabled(False)
         self._set_auto_controls_enabled(True)
         self._stop_load_monitor()
+        self._quality_monitor = None
+        self._lbl_calidad.setVisible(False)
+        self._lbl_calidad.setText("")
 
     # ------------------------------------------------------------------
     # Vertical scale (▲▼ per plot)

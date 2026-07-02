@@ -16,6 +16,7 @@ import pytest
 from scipy.signal import sosfilt, sosfilt_zi
 
 from emgteach.dsp import (
+    LiveQualityMonitor,
     OnsetDetector,
     RealtimeFilterState,
     compute_psd_mnf_mdf,
@@ -275,6 +276,43 @@ class TestDetectAcquisitionProblems:
         result = detect_acquisition_problems(sig, FS)
         assert result["flat_baseline"] is True
         assert any("baseline" in w.lower() for w in result["warnings"])
+
+
+class TestLiveQualityMonitor:
+    """Per-block live quality check against the device's physical rails."""
+
+    def test_clean_block_is_ok(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5)
+        rng = np.random.default_rng(0)
+        status = mon.update(rng.normal(0.0, 0.3, size=100))
+        assert status.code == "ok"
+
+    def test_saturating_block_is_flagged(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5)
+        block = np.full(100, 12.5)  # pegged at the top rail
+        status = mon.update(block)
+        assert status.code == "saturation"
+        assert status.saturation_frac > 0.9
+
+    def test_flat_block_is_flagged(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5)
+        status = mon.update(np.full(100, 0.0))  # disconnected electrode
+        assert status.code == "flat"
+
+    def test_partial_saturation_below_threshold_is_ok(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5, sat_frac=0.1)
+        block = np.concatenate([np.full(5, 12.5), np.full(95, 1.0) * 0.0 + 2.0])
+        # 5% at rail (< 10% threshold), and enough variance -> ok
+        block[50:] = np.linspace(-2, 2, 50)
+        assert mon.update(block).code == "ok"
+
+    def test_invalid_rails_raise(self) -> None:
+        with pytest.raises(ValueError, match="rail_max"):
+            LiveQualityMonitor(1.0, 1.0)
+
+    def test_empty_block_is_ok(self) -> None:
+        mon = LiveQualityMonitor(-1.0, 1.0)
+        assert mon.update(np.array([])).code == "ok"
 
 
 # ---------------------------------------------------------------------------
