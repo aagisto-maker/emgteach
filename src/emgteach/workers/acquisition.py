@@ -24,7 +24,7 @@ from PySide6.QtCore import QMutex, QThread, Signal, Slot
 
 from emgteach.dsp import OnsetDetector, RealtimeFilterState
 from emgteach.i18n import tr
-from emgteach.io import BufferedEdfWriter, build_timestamped_path
+from emgteach.io import BufferedEdfWriter, RecordingMetadata, build_timestamped_path
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 
 if TYPE_CHECKING:
@@ -101,11 +101,13 @@ class AcquisitionWorker(QThread):
         sensor_labels: list[str] | None = None,
         auto_detect: bool = False,
         onset_k: float | None = None,
+        metadata: RecordingMetadata | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self._device = device
         self._save_dir = save_dir
+        self._metadata = metadata
         self._n_per_read = int(n_per_read)
         self._profile = profile
         self._sensor_labels = list(sensor_labels) if sensor_labels else None
@@ -266,7 +268,9 @@ class AcquisitionWorker(QThread):
                 physical_min=device.physical_min,
                 physical_max=device.physical_max,
             )
-            writer = BufferedEdfWriter(edf_path, channels=channels)
+            writer = BufferedEdfWriter(
+                edf_path, channels=channels, metadata=self._metadata
+            )
             self.log.emit(tr("Recording to: {path}").format(path=edf_path))
 
             sleep_ms = max(1, int(self._n_per_read / fs * 500))

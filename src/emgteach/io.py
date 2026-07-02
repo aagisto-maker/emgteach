@@ -43,9 +43,12 @@ if TYPE_CHECKING:
 __all__ = [
     "BufferedEdfWriter",
     "ChannelInfo",
+    "RecordingMetadata",
     "build_timestamped_path",
     "create_edf_writer",
+    "edf_duration",
     "list_edf_channels",
+    "read_edf_metadata",
     "read_edf_mne",
     "read_edf_pyedflib",
     "write_edf_block",
@@ -100,6 +103,80 @@ class ChannelInfo:
             "digital_min": self.digital_min,
             "digital_max": self.digital_max,
         }
+
+
+@dataclass(frozen=True)
+class RecordingMetadata:
+    """Optional EDF+ header identification for a teaching session.
+
+    Maps the lab's real-world fields (who recorded, which protocol, when)
+    onto the standard EDF+ patient/recording header so a saved ``.edf`` is
+    self-describing and a report can name the student and protocol without
+    a side-car file.
+
+    Attributes
+    ----------
+    student_name : str
+        Student's name -> EDF ``patientname``.
+    student_code : str
+        Student's code/ID -> EDF ``patientcode``.
+    protocol : str
+        Protocol description (e.g. "Isometric biceps, 30 s") ->
+        EDF ``recording_additional``.
+    technician : str
+        Supervisor/technician -> EDF ``technician``.
+    equipment : str
+        Acquisition device description -> EDF ``equipment``.
+    start_datetime : datetime, optional
+        Recording start timestamp -> EDF ``startdatetime``. When ``None``
+        pyedflib uses the current time.
+    """
+
+    student_name: str = ""
+    student_code: str = ""
+    protocol: str = ""
+    technician: str = ""
+    equipment: str = ""
+    start_datetime: datetime | None = None
+
+    def is_empty(self) -> bool:
+        """``True`` if no field carries information worth writing."""
+        return not any(
+            (
+                self.student_name,
+                self.student_code,
+                self.protocol,
+                self.technician,
+                self.equipment,
+                self.start_datetime is not None,
+            )
+        )
+
+    def apply_to(self, writer: Any) -> None:
+        """Push the non-empty fields onto a ``pyedflib.EdfWriter``.
+
+        Must be called before any sample is written (header is fixed once
+        data records begin). Unknown setters are ignored defensively so a
+        pyedflib version lacking one does not abort a recording.
+        """
+        setters = {
+            "setPatientName": self.student_name,
+            "setPatientCode": self.student_code,
+            "setRecordingAdditional": self.protocol,
+            "setTechnician": self.technician,
+            "setEquipment": self.equipment,
+        }
+        for name, value in setters.items():
+            if value and hasattr(writer, name):
+                try:
+                    getattr(writer, name)(value)
+                except Exception:  # pragma: no cover — defensive
+                    pass
+        if self.start_datetime is not None and hasattr(writer, "setStartdatetime"):
+            try:
+                writer.setStartdatetime(self.start_datetime)
+            except Exception:  # pragma: no cover — defensive
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +241,7 @@ class BufferedEdfWriter:
 
     path: PathLike
     channels: Sequence[ChannelInfo]
+    metadata: RecordingMetadata | None = None
     _writer: Any = field(default=None, init=False, repr=False)
     _buffers: list[FloatArray] = field(default_factory=list, init=False, repr=False)
     _fs: int = field(default=0, init=False, repr=False)
@@ -187,6 +265,10 @@ class BufferedEdfWriter:
             str(self.path), n, file_type=pyedflib.FILETYPE_EDFPLUS
         )
         self._writer.setSignalHeaders([ch.to_pyedflib_header() for ch in self.channels])
+
+        # EDF+ identification header (student, protocol, ...) before any data.
+        if self.metadata is not None and not self.metadata.is_empty():
+            self.metadata.apply_to(self._writer)
 
         # One pending-samples buffer per channel
         self._buffers = [np.array([], dtype=np.float64) for _ in self.channels]
@@ -454,6 +536,36 @@ def list_edf_channels(path: PathLike) -> list[str]:
         return []
     try:
         return [str(label) for label in reader.getSignalLabels()]
+    finally:
+        reader.close()
+
+
+def read_edf_metadata(path: PathLike) -> RecordingMetadata:
+    """Read the EDF+ identification header (student, protocol, ...).
+
+    Header-only and defensive: returns an empty :class:`RecordingMetadata`
+    if the file cannot be read, so callers can show whatever is present
+    without special-casing missing fields.
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return RecordingMetadata()
+    try:
+        try:
+            start_dt: datetime | None = reader.getStartdatetime()
+        except Exception:  # pragma: no cover — reader without the getter
+            start_dt = None
+        return RecordingMetadata(
+            student_name=str(reader.getPatientName() or ""),
+            student_code=str(reader.getPatientCode() or ""),
+            protocol=str(reader.getRecordingAdditional() or ""),
+            technician=str(reader.getTechnician() or ""),
+            equipment=str(reader.getEquipment() or ""),
+            start_datetime=start_dt,
+        )
     finally:
         reader.close()
 

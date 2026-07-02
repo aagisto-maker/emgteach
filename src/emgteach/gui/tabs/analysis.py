@@ -71,7 +71,7 @@ from emgteach.exports import write_analysis_csv
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
-from emgteach.io import edf_duration, list_edf_channels
+from emgteach.io import edf_duration, list_edf_channels, read_edf_metadata
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
 
@@ -537,6 +537,15 @@ class AnalysisTab(QWidget):
             self._spin_roi_start.setValue(0.0)
             self._spin_roi_end.setValue(dur)
 
+        # Pre-fill student/protocol from the EDF+ header written at recording
+        # time, without clobbering anything the user already typed here.
+        meta = read_edf_metadata(path)
+        self._edf_protocol = meta.protocol
+        if meta.student_name and not self._edit_student.text().strip():
+            self._edit_student.setText(meta.student_name)
+        if meta.student_code and not self._edit_student_code.text().strip():
+            self._edit_student_code.setText(meta.student_code)
+
     @Slot()
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
@@ -992,6 +1001,7 @@ class AnalysisTab(QWidget):
         meta = {
             "student": self._edit_student.text().strip(),
             "student_code": self._edit_student_code.text().strip(),
+            "protocol": getattr(self, "_edf_protocol", ""),
         }
         try:
             build_session_report(out, self._last_result, meta, panels=paneles,

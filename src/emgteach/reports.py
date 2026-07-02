@@ -359,6 +359,7 @@ def build_session_report(
     commit = meta.get("commit", git_commit_hash())
     student = str(meta.get("student", "")).strip()
     student_code = str(meta.get("student_code", "")).strip()
+    protocol = str(meta.get("protocol", "")).strip()
     device = str(meta.get("device", "")).strip()
 
     styles = getSampleStyleSheet()
@@ -382,6 +383,8 @@ def build_session_report(
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
+    if protocol:
+        header_lines.append(tr("Protocol: {p}").format(p=protocol))
     for line in header_lines:
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))
@@ -588,6 +591,7 @@ def build_mvc_report(
     commit = meta.get("commit", git_commit_hash())
     student = str(meta.get("student", "")).strip()
     student_code = str(meta.get("student_code", "")).strip()
+    protocol = str(meta.get("protocol", "")).strip()
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
@@ -608,6 +612,8 @@ def build_mvc_report(
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
+    if protocol:
+        header_lines.append(tr("Protocol: {p}").format(p=protocol))
     for line in header_lines:
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))

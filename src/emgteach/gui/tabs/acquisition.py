@@ -59,6 +59,7 @@ from emgteach.devices import (
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import tr
+from emgteach.io import RecordingMetadata
 from emgteach.mvc import compute_mvc
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
@@ -367,6 +368,37 @@ class AcquisitionTab(QWidget):
             self._edit_labels.append(edit)
             ch_row.addWidget(edit, stretch=1)
         cfg_outer.addLayout(ch_row)
+
+        # Row 4: session identification written to the EDF+ header.
+        meta_row = QHBoxLayout()
+        meta_row.setSpacing(6)
+        meta_row.addWidget(QLabel(tr("Student:")))
+        self._edit_student = QLineEdit()
+        self._edit_student.setPlaceholderText(tr("Name"))
+        self._edit_student.setText(self._settings.value("adquisicion/student", ""))
+        self._edit_student.textChanged.connect(
+            lambda v: self._settings.setValue("adquisicion/student", v)
+        )
+        meta_row.addWidget(self._edit_student, stretch=2)
+        meta_row.addWidget(QLabel(tr("Code:")))
+        self._edit_student_code = QLineEdit()
+        self._edit_student_code.setFixedWidth(90)
+        self._edit_student_code.setText(
+            self._settings.value("adquisicion/student_code", "")
+        )
+        self._edit_student_code.textChanged.connect(
+            lambda v: self._settings.setValue("adquisicion/student_code", v)
+        )
+        meta_row.addWidget(self._edit_student_code)
+        meta_row.addWidget(QLabel(tr("Protocol:")))
+        self._edit_protocol = QLineEdit()
+        self._edit_protocol.setPlaceholderText(tr("e.g. Isometric biceps 30 s"))
+        self._edit_protocol.setText(self._settings.value("adquisicion/protocol", ""))
+        self._edit_protocol.textChanged.connect(
+            lambda v: self._settings.setValue("adquisicion/protocol", v)
+        )
+        meta_row.addWidget(self._edit_protocol, stretch=3)
+        cfg_outer.addLayout(meta_row)
 
         row_top.addWidget(grp_config, stretch=1)
 
@@ -995,12 +1027,19 @@ class AcquisitionTab(QWidget):
             )
         self._settings.setValue("adquisicion/auto_detect", self._chk_auto.isChecked())
         self._settings.setValue("adquisicion/onset_k", self._spin_k.value())
+        metadata = RecordingMetadata(
+            student_name=self._edit_student.text().strip(),
+            student_code=self._edit_student_code.text().strip(),
+            protocol=self._edit_protocol.text().strip(),
+            equipment=device.name,
+        )
         self._worker = AcquisitionWorker(
             device=device,
             save_dir=save_dir,
             sensor_labels=labels,
             auto_detect=self._chk_auto.isChecked(),
             onset_k=self._spin_k.value(),
+            metadata=metadata,
         )
         self._worker.data_ready.connect(self._on_data_ready)
         self._worker.log.connect(self._log)

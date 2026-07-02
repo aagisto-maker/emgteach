@@ -17,9 +17,12 @@ import pytest
 from emgteach import (
     BufferedEdfWriter,
     ChannelInfo,
+    RecordingMetadata,
     build_timestamped_path,
     create_edf_writer,
+    edf_duration,
     list_edf_channels,
+    read_edf_metadata,
     read_edf_pyedflib,
     write_edf_block,
 )
@@ -357,3 +360,41 @@ class TestPhysicalRangeNoClipping:
     def test_narrow_default_range_clips_the_peak(self, out_path: str) -> None:
         # With the old ±3.3 mV default the +10 mV peak is silently clipped.
         assert self._roundtrip_peak(out_path, 3.3) < 3.5
+
+
+# ---------------------------------------------------------------------------
+# EDF+ recording metadata (student / protocol header)
+# ---------------------------------------------------------------------------
+
+
+class TestRecordingMetadata:
+    """Student/protocol identification round-trips through the EDF+ header."""
+
+    def _write(self, out_path: str, metadata: RecordingMetadata) -> None:
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        sig = np.zeros(2 * FS, dtype=np.float64)
+        with BufferedEdfWriter(out_path, channels=[ch], metadata=metadata) as writer:
+            writer.add_samples(sig)
+
+    def test_metadata_round_trips(self, out_path: str) -> None:
+        self._write(
+            out_path,
+            RecordingMetadata(
+                student_name="Ada Lovelace",
+                student_code="A123",
+                protocol="Isometric biceps 30 s",
+            ),
+        )
+        meta = read_edf_metadata(out_path)
+        assert meta.student_name == "Ada Lovelace"
+        assert meta.student_code == "A123"
+        assert meta.protocol == "Isometric biceps 30 s"
+
+    def test_no_metadata_is_valid(self, out_path: str) -> None:
+        # Writing without metadata must still produce a readable file.
+        self._write(out_path, RecordingMetadata())
+        assert edf_duration(out_path) == pytest.approx(2.0, abs=0.01)
+
+    def test_is_empty(self) -> None:
+        assert RecordingMetadata().is_empty()
+        assert not RecordingMetadata(student_name="x").is_empty()
