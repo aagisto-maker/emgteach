@@ -409,6 +409,23 @@ def build_session_report(
     metrics = [
         [tr("Metric"), tr("Value")],
         [tr("Duration"), f"{float(result.get('duration', 0.0)):.1f} s"],
+    ]
+    # State the analysed window explicitly when it is not the whole file.
+    full_dur = float(result.get("full_duration_s", 0.0))
+    roi_a = result.get("roi_start_s")
+    roi_b = result.get("roi_end_s")
+    if roi_a is not None and roi_b is not None and (
+        float(roi_a) > 0.0 or float(roi_b) < full_dur - 1e-6
+    ):
+        metrics.append(
+            [
+                tr("Analysed window"),
+                tr("{a:.2f}-{b:.2f} s of {d:.1f} s").format(
+                    a=float(roi_a), b=float(roi_b), d=full_dur
+                ),
+            ]
+        )
+    metrics += [
         [tr("Global RMS"), f"{float(result.get('rms_global', 0.0)):.4f} mV"],
         [tr("Mean frequency (MNF)"), f"{float(result.get('mnf', 0.0)):.1f} Hz"],
         [tr("Median frequency (MDF)"), f"{float(result.get('mdf', 0.0)):.1f} Hz"],

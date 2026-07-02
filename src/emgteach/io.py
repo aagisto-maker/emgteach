@@ -458,6 +458,25 @@ def list_edf_channels(path: PathLike) -> list[str]:
         reader.close()
 
 
+def edf_duration(path: PathLike) -> float:
+    """Return the recording duration in seconds (reads the header only).
+
+    Fast enough for GUI use (e.g. to bound a region-of-interest control):
+    it opens the file only to read ``getFileDuration``. Returns ``0.0`` if
+    the file cannot be read.
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return 0.0
+    try:
+        return float(reader.getFileDuration())
+    finally:
+        reader.close()
+
+
 # ---------------------------------------------------------------------------
 # Lower-level helpers (kept for backward compatibility with the prototype)
 # ---------------------------------------------------------------------------

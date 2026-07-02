@@ -56,12 +56,16 @@ class AnalysisWorker(QThread):
         seg_len_s: float | None = None,
         overlap: float | None = None,
         plot_duration_s: float = 10.0,
+        roi_start_s: float | None = None,
+        roi_end_s: float | None = None,
         profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self._profile = profile
         self._edf_path = edf_path
+        self._roi_start_s = float(roi_start_s) if roi_start_s is not None else None
+        self._roi_end_s = float(roi_end_s) if roi_end_s is not None else None
         self._channel_name = (
             channel_name if channel_name is not None else profile.raw_label
         )
@@ -81,6 +85,34 @@ class AnalysisWorker(QThread):
         """Request that the next checkpoint abandon the run."""
         self._cancelled = True
 
+    def _resolve_roi(
+        self, n_samples: int, fs: float, full_duration: float
+    ) -> tuple[int, int, float, float] | None:
+        """Clamp and validate the requested region of interest.
+
+        Returns ``(i0, i1, start_s, end_s)`` sample bounds and their times,
+        or ``None`` (after emitting :attr:`error`) if the window is invalid.
+        When no ROI is requested the full recording ``(0, n_samples, ...)``
+        is returned. The analysis needs enough samples for the pipeline's
+        500 ms reflective padding, so a window shorter than 1 s is rejected.
+        """
+        start_s = 0.0 if self._roi_start_s is None else max(0.0, self._roi_start_s)
+        end_s = full_duration if self._roi_end_s is None else self._roi_end_s
+        end_s = min(end_s, full_duration)
+        if end_s - start_s < 1.0:
+            self.error.emit(
+                tr(
+                    "The selected region ({a:.2f}-{b:.2f} s) is shorter than "
+                    "the 1 s minimum required for analysis."
+                ).format(a=start_s, b=end_s)
+            )
+            return None
+        i0 = round(start_s * fs)
+        i1 = round(end_s * fs)
+        i0 = max(0, min(i0, n_samples))
+        i1 = max(i0, min(i1, n_samples))
+        return i0, i1, start_s, end_s
+
     def run(self) -> None:
         try:
             # 1) Load EDF
@@ -91,6 +123,30 @@ class AnalysisWorker(QThread):
             fs = edf["sfreq"]
             times = edf["times"]
             markers = edf.get("markers", [])
+
+            # 1b) Restrict to the region of interest, if requested. Everything
+            # downstream (DSP, PSD, segments, fatigue) then runs on the cropped
+            # window; time is re-based to 0 at the ROI start and markers are
+            # shifted/filtered to match. The selected window is recorded in the
+            # result so the report states it explicitly.
+            full_duration = float(times[-1])
+            roi = self._resolve_roi(len(emg_raw), fs, full_duration)
+            if roi is None:
+                return  # error already emitted
+            i0, i1, roi_start_s, roi_end_s = roi
+            if i0 != 0 or i1 != len(emg_raw):
+                emg_raw = emg_raw[i0:i1]
+                times = np.arange(len(emg_raw), dtype=np.float64) / fs
+                markers = [
+                    (t - roi_start_s, label)
+                    for (t, label) in markers
+                    if roi_start_s <= t < roi_end_s
+                ]
+                self.log.emit(
+                    tr("Region of interest: {a:.2f}-{b:.2f} s ({d:.2f} s).").format(
+                        a=roi_start_s, b=roi_end_s, d=roi_end_s - roi_start_s
+                    )
+                )
 
             duration = float(times[-1])
             self.log.emit(
@@ -224,6 +280,9 @@ class AnalysisWorker(QThread):
                 # metadata
                 "fs": fs,
                 "f_high": self._f_high,
+                "roi_start_s": roi_start_s,
+                "roi_end_s": roi_end_s,
+                "full_duration_s": full_duration,
                 "edf_path": self._edf_path,
                 "channel_name": self._channel_name,
                 "markers": markers,

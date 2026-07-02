@@ -70,7 +70,7 @@ _PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
-from emgteach.io import list_edf_channels
+from emgteach.io import edf_duration, list_edf_channels
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
 
@@ -176,6 +176,39 @@ class AnalysisTab(QWidget):
         row_params.addWidget(self._edit_student_code)
         row_params.addStretch()
         ctrl.addLayout(row_params)
+
+        # Line 3: region of interest (optional analysis sub-window)
+        row_roi = QHBoxLayout()
+        self._chk_roi = QCheckBox(tr("Analyse only a region:"))
+        self._chk_roi.setToolTip(
+            tr(
+                "Restrict every metric (spectrum, RMS, fatigue) to the time "
+                "window below instead of the whole recording."
+            )
+        )
+        row_roi.addWidget(self._chk_roi)
+        row_roi.addWidget(QLabel(tr("from")))
+        self._spin_roi_start = QDoubleSpinBox()
+        self._spin_roi_start.setRange(0.0, 1_000_000.0)
+        self._spin_roi_start.setDecimals(2)
+        self._spin_roi_start.setSingleStep(0.5)
+        self._spin_roi_start.setSuffix(" s")
+        self._spin_roi_start.setFixedWidth(96)
+        self._spin_roi_start.setEnabled(False)
+        row_roi.addWidget(self._spin_roi_start)
+        row_roi.addWidget(QLabel(tr("to")))
+        self._spin_roi_end = QDoubleSpinBox()
+        self._spin_roi_end.setRange(0.0, 1_000_000.0)
+        self._spin_roi_end.setDecimals(2)
+        self._spin_roi_end.setSingleStep(0.5)
+        self._spin_roi_end.setSuffix(" s")
+        self._spin_roi_end.setFixedWidth(96)
+        self._spin_roi_end.setEnabled(False)
+        row_roi.addWidget(self._spin_roi_end)
+        self._chk_roi.toggled.connect(self._spin_roi_start.setEnabled)
+        self._chk_roi.toggled.connect(self._spin_roi_end.setEnabled)
+        row_roi.addStretch()
+        ctrl.addLayout(row_roi)
 
         # Log to the right of the parameters
         grp_log_top = QGroupBox(tr("Event log"))
@@ -490,6 +523,14 @@ class AnalysisTab(QWidget):
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
 
+        # Default the region-of-interest window to the whole recording.
+        dur = edf_duration(path)
+        if dur > 0.0:
+            self._spin_roi_start.setMaximum(dur)
+            self._spin_roi_end.setMaximum(dur)
+            self._spin_roi_start.setValue(0.0)
+            self._spin_roi_end.setValue(dur)
+
     @Slot()
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
@@ -506,11 +547,18 @@ class AnalysisTab(QWidget):
         self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
         self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
 
+        roi_start = roi_end = None
+        if self._chk_roi.isChecked():
+            roi_start = self._spin_roi_start.value()
+            roi_end = self._spin_roi_end.value()
+
         self._worker = AnalysisWorker(
             edf_path=path,
             channel_name=canal,
             f_env=f_env,
             plot_duration_s=0,
+            roi_start_s=roi_start,
+            roi_end_s=roi_end,
         )
         self._worker.result_ready.connect(self._on_result)
         self._worker.progress.connect(self._on_progress)
@@ -1123,6 +1171,10 @@ class AnalysisTab(QWidget):
         self._btn_analizar.setEnabled(habilitado and bool(self._edit_path.text()))
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
+        self._chk_roi.setEnabled(habilitado)
+        roi_on = habilitado and self._chk_roi.isChecked()
+        self._spin_roi_start.setEnabled(roi_on)
+        self._spin_roi_end.setEnabled(roi_on)
         has_data = habilitado and self._last_result is not None
         self._time_range.setEnabled(has_data)
         self._btn_tiempo_ampliar.setEnabled(has_data)
