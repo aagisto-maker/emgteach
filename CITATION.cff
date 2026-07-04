@@ -17,7 +17,7 @@ abstract: >-
   assisted fragment selection with an editable fragment editor, region-of-interest
   analysis, CSV export, a live signal-quality check and an ECG signal profile.
 type: software
-version: 1.1.0
+version: 1.1.1
 date-released: "2026-07-04"
 authors:
   - family-names: "Agis-Torres"
@@ -46,8 +46,8 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.21002297
     description: "Concept DOI for emgteach (always resolves to the latest version)"
-  # Version-specific DOI for v1.1.0 is minted by Zenodo on release — add it here afterwards.
-  # (v1.0.0 was 10.5281/zenodo.21002298.)
+  # Version-specific DOI for v1.1.1 is minted by Zenodo on release — add it here afterwards.
+  # (History: v1.1.0 = 10.5281/zenodo.21197169; v1.0.0 = 10.5281/zenodo.21002298.)
 keywords:
   - electromyography
   - EMG

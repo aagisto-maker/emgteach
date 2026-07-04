@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-07-04
+
+### Fixed
+- **Package version string.** `emgteach.__version__` still reported `1.0.0` in the
+  1.1.0 release; it now matches the packaged version. This corrects the frozen
+  build's `--selftest` banner and the PDF-report footer, both of which read from
+  `__version__`.
+
 ## [1.1.0] — 2026-07-04
 
 ### Added
@@ -207,7 +215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/aagisto-maker/emgteach/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/aagisto-maker/emgteach/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aagisto-maker/emgteach/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/aagisto-maker/emgteach/compare/v0.2.0...v0.3.0
