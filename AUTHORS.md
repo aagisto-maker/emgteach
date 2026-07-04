@@ -14,7 +14,7 @@ with ✱.
 
 ### Ángel Agis-Torres ✱ (corresponding author)
 
-- **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
+- **Affiliation:** Department of Physiology (Faculty of Pharmacy),
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
   Spain
 - **ORCID:** [0000-0002-3548-7264](https://orcid.org/0000-0002-3548-7264)
@@ -26,7 +26,7 @@ with ✱.
 
 ### Vítor Samuel Fernandes
 
-- **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
+- **Affiliation:** Department of Physiology (Faculty of Pharmacy),
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
   Spain
 - **ORCID:** [0000-0001-6060-9035](https://orcid.org/0000-0001-6060-9035)
@@ -35,7 +35,7 @@ with ✱.
 
 ### Jorge Navarro-Dorado
 
-- **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
+- **Affiliation:** Department of Physiology (Faculty of Pharmacy),
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
   Spain
 - **ORCID:** [0000-0002-4643-3528](https://orcid.org/0000-0002-4643-3528)
@@ -44,7 +44,7 @@ with ✱.
 
 ### Mercedes Muñoz-Picos
 
-- **Affiliation:** Departmental Section of Physiology, Faculty of Pharmacy,
+- **Affiliation:** Department of Physiology (Faculty of Pharmacy),
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
   Spain
 - **ORCID:** [0000-0002-1679-9588](https://orcid.org/0000-0002-1679-9588)
