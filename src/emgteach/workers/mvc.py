@@ -71,6 +71,10 @@ class MvcWorker(QThread):
     def stop(self) -> None:
         self._cancelled = True
 
+    def is_cancelled(self) -> bool:
+        """``True`` once :meth:`stop` has been called."""
+        return self._cancelled
+
     def run(self) -> None:
         try:
             # 1) Load test EDF

@@ -67,10 +67,13 @@ _PANEL_NOMBRES = [
 
 _PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
 
+from emgteach.exports import write_analysis_csv
+from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
-from emgteach.io import list_edf_channels
+from emgteach.io import edf_duration, list_edf_channels, read_edf_metadata
+from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
 
@@ -133,6 +136,10 @@ class AnalysisTab(QWidget):
         self._btn_informe.setEnabled(False)
         self._btn_informe.clicked.connect(self._generar_informe)
         row_file.addWidget(self._btn_informe)
+        self._btn_csv = QPushButton(tr("Export CSV"))
+        self._btn_csv.setEnabled(False)
+        self._btn_csv.clicked.connect(self._exportar_csv)
+        row_file.addWidget(self._btn_csv)
         ctrl.addLayout(row_file)
 
         # Line 2: channel + f_env
@@ -176,6 +183,57 @@ class AnalysisTab(QWidget):
         row_params.addWidget(self._edit_student_code)
         row_params.addStretch()
         ctrl.addLayout(row_params)
+
+        # Line 3: region of interest (optional analysis sub-window)
+        row_roi = QHBoxLayout()
+        self._chk_roi = QCheckBox(tr("Analyse only a region:"))
+        self._chk_roi.setToolTip(
+            tr(
+                "Restrict every metric (spectrum, RMS, fatigue) to the time "
+                "window below instead of the whole recording."
+            )
+        )
+        row_roi.addWidget(self._chk_roi)
+        row_roi.addWidget(QLabel(tr("from")))
+        self._spin_roi_start = QDoubleSpinBox()
+        self._spin_roi_start.setRange(0.0, 1_000_000.0)
+        self._spin_roi_start.setDecimals(2)
+        self._spin_roi_start.setSingleStep(0.5)
+        self._spin_roi_start.setSuffix(" s")
+        self._spin_roi_start.setFixedWidth(96)
+        self._spin_roi_start.setEnabled(False)
+        row_roi.addWidget(self._spin_roi_start)
+        row_roi.addWidget(QLabel(tr("to")))
+        self._spin_roi_end = QDoubleSpinBox()
+        self._spin_roi_end.setRange(0.0, 1_000_000.0)
+        self._spin_roi_end.setDecimals(2)
+        self._spin_roi_end.setSingleStep(0.5)
+        self._spin_roi_end.setSuffix(" s")
+        self._spin_roi_end.setFixedWidth(96)
+        self._spin_roi_end.setEnabled(False)
+        row_roi.addWidget(self._spin_roi_end)
+        self._chk_roi.toggled.connect(self._spin_roi_start.setEnabled)
+        self._chk_roi.toggled.connect(self._spin_roi_end.setEnabled)
+        row_roi.addSpacing(12)
+        # Assisted multi-fragment selection (auto-suggested, user-edited).
+        self._btn_fragmentos = QPushButton(tr("Select fragments…"))
+        self._btn_fragmentos.setToolTip(
+            tr(
+                "Open the assisted editor to keep the significant fragments and "
+                "discard the rest. Takes precedence over the region above."
+            )
+        )
+        self._btn_fragmentos.setEnabled(False)
+        self._btn_fragmentos.clicked.connect(self._editar_fragmentos)
+        row_roi.addWidget(self._btn_fragmentos)
+        self._lbl_fragmentos = QLabel("")
+        row_roi.addWidget(self._lbl_fragmentos)
+        self._selected_segments: list[tuple[float, float]] = []
+        # Filter cut-offs chosen in the fragment editor; when set they drive
+        # the actual analysis (not just detection). None = use the tab defaults.
+        self._analysis_filter_kwargs: dict[str, float] | None = None
+        row_roi.addStretch()
+        ctrl.addLayout(row_roi)
 
         # Log to the right of the parameters
         grp_log_top = QGroupBox(tr("Event log"))
@@ -333,14 +391,20 @@ class AnalysisTab(QWidget):
         self._btn_tiempo_reducir.setEnabled(False)
         self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
 
-        # --- Barra de progreso ---
+        # --- Barra de progreso + Cancelar ---
+        progress_row = QHBoxLayout()
         self._progress = QProgressBar()
         self._progress.setRange(0, 100)
         self._progress.setValue(0)
         self._progress.setTextVisible(True)
         self._progress.setFormat(tr("Ready"))
         self._progress.setVisible(False)
-        root.addWidget(self._progress)
+        progress_row.addWidget(self._progress, stretch=1)
+        self._btn_cancelar = QPushButton(tr("Cancel"))
+        self._btn_cancelar.setVisible(False)
+        self._btn_cancelar.clicked.connect(self._cancelar_analisis)
+        progress_row.addWidget(self._btn_cancelar)
+        root.addLayout(progress_row)
 
         # --- Numeric summary panel (one row) ---
         grp_resumen = QGroupBox(tr("Analysis summary"))
@@ -472,8 +536,15 @@ class AnalysisTab(QWidget):
             self._settings.setValue("analisis/last_dir", self._last_edf_dir)
             self._populate_channels(path)
             self._btn_analizar.setEnabled(True)
+            self._btn_fragmentos.setEnabled(True)
+            # A new file invalidates any previous fragment selection and its
+            # associated filter cut-offs.
+            self._selected_segments = []
+            self._analysis_filter_kwargs = None
+            self._actualizar_etiqueta_fragmentos()
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
+            self._btn_csv.setEnabled(False)
             self._progress.setValue(0)
             self._progress.setFormat(tr("Ready"))
 
@@ -490,33 +561,137 @@ class AnalysisTab(QWidget):
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
 
+        # Default the region-of-interest window to the whole recording.
+        dur = edf_duration(path)
+        if dur > 0.0:
+            self._spin_roi_start.setMaximum(dur)
+            self._spin_roi_end.setMaximum(dur)
+            self._spin_roi_start.setValue(0.0)
+            self._spin_roi_end.setValue(dur)
+
+        # Pre-fill student/protocol from the EDF+ header written at recording
+        # time, without clobbering anything the user already typed here.
+        meta = read_edf_metadata(path)
+        self._edf_protocol = meta.protocol
+        if meta.student_name and not self._edit_student.text().strip():
+            self._edit_student.setText(meta.student_name)
+        if meta.student_code and not self._edit_student_code.text().strip():
+            self._edit_student_code.setText(meta.student_code)
+
+    @Slot()
+    def _editar_fragmentos(self) -> None:
+        path = self._edit_path.text().strip()
+        if not path:
+            return
+        canal = self._combo_canal.currentText().strip() or "EMG"
+        # Reopen with the previously chosen cut-offs, else the tab defaults.
+        if self._analysis_filter_kwargs is not None:
+            filter_kwargs = dict(self._analysis_filter_kwargs)
+        else:
+            filter_kwargs = dict(EMG_PROFILE.filter_kwargs())
+            filter_kwargs["f_env"] = self._spin_fenv.value()
+        try:
+            dlg = FragmentSelectionDialog.from_edf(
+                path, canal, filter_kwargs, segments=self._selected_segments or None,
+                parent=self,
+            )
+        except Exception as exc:  # pragma: no cover — GUI feedback only
+            self._logger.append_log(
+                tr("Could not open the fragment editor: {error}").format(error=exc)
+            )
+            return
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._selected_segments = dlg.selected_segments()
+            # Adopt the cut-offs tuned in the editor for the actual analysis so
+            # what was previewed is what gets analysed. Reflect f_env in the tab.
+            self._analysis_filter_kwargs = dlg.filter_kwargs()
+            self._spin_fenv.setValue(self._analysis_filter_kwargs["f_env"])
+            self._actualizar_etiqueta_fragmentos()
+
+    def _actualizar_etiqueta_fragmentos(self) -> None:
+        n = len(self._selected_segments)
+        if n == 0:
+            self._lbl_fragmentos.setText("")
+        else:
+            total = sum(b - a for a, b in self._selected_segments)
+            self._lbl_fragmentos.setText(
+                tr("{n} fragment(s) selected ({d:.1f} s)").format(n=n, d=total)
+            )
+            # A fragment selection overrides the single-region control.
+            self._chk_roi.setChecked(False)
+
     @Slot()
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
         canal = self._combo_canal.currentText().strip() or "EMG"
-        f_env = self._spin_fenv.value()
+        # Filter cut-offs: use the ones tuned in the fragment editor if any,
+        # else the tab's f_env with the profile band/notch defaults.
+        fk = self._analysis_filter_kwargs
+        f_low = fk["f_low"] if fk else None
+        f_high = fk["f_high"] if fk else None
+        f_notch = fk["f_notch"] if fk else None
+        f_env = fk["f_env"] if fk else self._spin_fenv.value()
 
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
         self._progress.setValue(0)
         self._progress.setFormat(tr("Analysing…  %p%"))
+        self._btn_cancelar.setVisible(True)
+        self._btn_cancelar.setEnabled(True)
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
+        self._btn_csv.setEnabled(False)
         self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
         self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
         self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
 
+        roi_start = roi_end = None
+        roi_segments = self._selected_segments or None
+        if roi_segments is None and self._chk_roi.isChecked():
+            roi_start = self._spin_roi_start.value()
+            roi_end = self._spin_roi_end.value()
+
         self._worker = AnalysisWorker(
             edf_path=path,
             channel_name=canal,
+            f_low=f_low,
+            f_high=f_high,
+            f_notch=f_notch,
             f_env=f_env,
             plot_duration_s=0,
+            roi_start_s=roi_start,
+            roi_end_s=roi_end,
+            roi_segments=roi_segments,
         )
         self._worker.result_ready.connect(self._on_result)
         self._worker.progress.connect(self._on_progress)
         self._worker.log.connect(self._logger.append_log)
         self._worker.error.connect(self._on_error)
+        # finished fires after run() returns for any reason (result, error or
+        # cancel); it guarantees the UI is restored even when the worker aborts
+        # at a checkpoint without emitting a result.
+        self._worker.finished.connect(self._on_analysis_finished)
         self._worker.start()
+
+    @Slot()
+    def _cancelar_analisis(self) -> None:
+        if self._worker is not None and self._worker.isRunning():
+            self._btn_cancelar.setEnabled(False)
+            self._logger.append_log(tr("Cancelling analysis…"))
+            self._worker.stop()
+
+    @Slot()
+    def _on_analysis_finished(self) -> None:
+        # Restore the UI regardless of how the run ended. If no result was
+        # produced (cancelled), re-enable the controls that _on_result would
+        # otherwise have handled.
+        self._btn_cancelar.setVisible(False)
+        self._btn_cancelar.setEnabled(False)
+        if self._last_result is None or (
+            self._worker is not None and self._worker.is_cancelled()
+        ):
+            self._progress.setVisible(False)
+            self._set_controles_habilitados(True)
 
     # ------------------------------------------------------------------
     # Worker slots
@@ -533,6 +708,7 @@ class AnalysisTab(QWidget):
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)
         self._btn_informe.setEnabled(True)
+        self._btn_csv.setEnabled(True)
         self._btn_redibujar.setEnabled(True)
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
@@ -587,15 +763,19 @@ class AnalysisTab(QWidget):
         self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')}{r['mnf']:.1f} Hz")
         self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')}{r['mdf']:.1f} Hz")
         pendiente = r.get("mdf_slope", 0.0)
+        r2 = r.get("fat_r_squared", 0.0)
         signo = "+" if pendiente >= 0 else ""
-        self._lbl_pendiente.setText(f"{tr('MDF slope:')}{signo}{pendiente:.2f} Hz/s")
+        self._lbl_pendiente.setText(
+            f"{tr('MDF slope:')}{signo}{pendiente:.2f} Hz/s  (R²={r2:.2f})"
+        )
         self._lbl_rms_global.setText(f"{tr('Global RMS:')}{r.get('rms_global', 0.0):.2f} mV")
         self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
         self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
 
         sign = r["fat_slope_sign"]
+        decline = r.get("fat_pct_decline", 0.0)
         if sign < 0:
-            texto = tr("Fatigue: DETECTED (MDF decreasing)")
+            texto = tr("Fatigue: DETECTED (MDF −{decline:.1f}%)").format(decline=decline)
             color = "#cc0000"
         elif sign > 0:
             texto = tr("Fatigue: Not detected (MDF stable or increasing)")
@@ -798,6 +978,28 @@ class AnalysisTab(QWidget):
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
 
     @Slot()
+    def _exportar_csv(self) -> None:
+        if self._last_result is None:
+            return
+        carpeta = str(Path(self._last_result["edf_path"]).parent)
+        nombre = Path(self._last_result["edf_path"]).stem + "_analisis_emg.csv"
+        ruta_default = str(Path(carpeta) / nombre)
+
+        ruta, _ = QFileDialog.getSaveFileName(
+            self, tr("Export CSV"),
+            ruta_default,
+            tr("CSV files (*.csv)"),
+        )
+        if not ruta:
+            return
+        try:
+            write_analysis_csv(self._last_result, ruta)
+        except Exception as exc:  # pragma: no cover — GUI feedback only
+            self._logger.append_log(tr("CSV export error: {error}").format(error=exc))
+            return
+        self._logger.append_log(tr("CSV exported to: {path}").format(path=ruta))
+
+    @Slot()
     def _pedir_paneles_informe(self) -> tuple[list[int], tuple[float, float]] | None:
         """Modal dialog to choose which graphs (and time range) go in the report.
 
@@ -910,6 +1112,7 @@ class AnalysisTab(QWidget):
         meta = {
             "student": self._edit_student.text().strip(),
             "student_code": self._edit_student_code.text().strip(),
+            "protocol": getattr(self, "_edf_protocol", ""),
         }
         try:
             build_session_report(out, self._last_result, meta, panels=paneles,
@@ -1119,6 +1322,13 @@ class AnalysisTab(QWidget):
         self._btn_analizar.setEnabled(habilitado and bool(self._edit_path.text()))
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
+        self._chk_roi.setEnabled(habilitado)
+        self._btn_fragmentos.setEnabled(
+            habilitado and bool(self._edit_path.text())
+        )
+        roi_on = habilitado and self._chk_roi.isChecked()
+        self._spin_roi_start.setEnabled(roi_on)
+        self._spin_roi_end.setEnabled(roi_on)
         has_data = habilitado and self._last_result is not None
         self._time_range.setEnabled(has_data)
         self._btn_tiempo_ampliar.setEnabled(has_data)
@@ -1164,8 +1374,13 @@ class AnalysisTab(QWidget):
         self._combo_canal.blockSignals(False)
 
         self._btn_analizar.setEnabled(False)
+        self._btn_fragmentos.setEnabled(False)
+        self._selected_segments = []
+        self._analysis_filter_kwargs = None
+        self._actualizar_etiqueta_fragmentos()
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
+        self._btn_csv.setEnabled(False)
         self._btn_redibujar.setEnabled(False)
 
         self._reset_summary_labels()

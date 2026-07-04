@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-07-04
+
+### Added
+- **Assisted selection of significant fragments.** A new `selection` core
+  module and a `fragment_selection` GUI widget detect and let the user curate
+  the significant EMG fragments of a recording, with **editable detection
+  parameters** and **editable envelope-filter cut-offs** that are then applied
+  to the analysis.
+- **Region-of-interest (ROI) windowing** for offline analysis.
+- **CSV export of analysis results** (new Qt-free `emgteach.exports` module).
+- **Live signal-quality check** during acquisition.
+- **ECG signal profile and a profile registry.** A second `SignalProfile` (ECG)
+  alongside `EMG_PROFILE`, selectable through a registry — extending the
+  biopotential extension point to a new modality.
+- **Editable marker list** with delete-before-save on the acquisition tab.
+- **Student / protocol metadata** written into the EDF+ header.
+- **Cancel button** for long analysis and MVC runs.
+
+### Changed
+- **Linear MDF-vs-time regression** is now the primary fatigue index.
+- **Deep notch comb** that removes the mains fundamental and its harmonics.
+
+### Fixed
+- **Device-aware EDF physical range** so Arduino + MyoWare signals (5 V) are no
+  longer clipped.
+
+### Internal
+- Test suite grows to **216** passing tests on Python 3.10–3.12; `ruff` clean.
+
 ## [1.0.0] — 2026-06-28
 
 ### Added
@@ -178,7 +207,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/aagisto-maker/emgteach/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/aagisto-maker/emgteach/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/aagisto-maker/emgteach/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aagisto-maker/emgteach/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/aagisto-maker/emgteach/releases/tag/v0.1.0

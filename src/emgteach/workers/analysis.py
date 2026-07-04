@@ -22,6 +22,7 @@ from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
 from emgteach.i18n import tr
 from emgteach.io import read_edf_mne
 from emgteach.profiles import EMG_PROFILE, SignalProfile
+from emgteach.selection import Segment, normalise_segments, total_duration_s
 
 
 class AnalysisWorker(QThread):
@@ -56,12 +57,23 @@ class AnalysisWorker(QThread):
         seg_len_s: float | None = None,
         overlap: float | None = None,
         plot_duration_s: float = 10.0,
+        roi_start_s: float | None = None,
+        roi_end_s: float | None = None,
+        roi_segments: list[tuple[float, float]] | None = None,
         profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self._profile = profile
         self._edf_path = edf_path
+        self._roi_start_s = float(roi_start_s) if roi_start_s is not None else None
+        self._roi_end_s = float(roi_end_s) if roi_end_s is not None else None
+        # Optional multi-fragment selection. When given (and non-empty) it takes
+        # precedence over the single roi_start/roi_end window: the kept fragments
+        # are concatenated and analysed as one continuous signal.
+        self._roi_segments = (
+            [(float(a), float(b)) for a, b in roi_segments] if roi_segments else None
+        )
         self._channel_name = (
             channel_name if channel_name is not None else profile.raw_label
         )
@@ -81,6 +93,82 @@ class AnalysisWorker(QThread):
         """Request that the next checkpoint abandon the run."""
         self._cancelled = True
 
+    def is_cancelled(self) -> bool:
+        """``True`` once :meth:`stop` has been called."""
+        return self._cancelled
+
+    def _resolve_roi(
+        self, n_samples: int, fs: float, full_duration: float
+    ) -> tuple[int, int, float, float] | None:
+        """Clamp and validate the requested region of interest.
+
+        Returns ``(i0, i1, start_s, end_s)`` sample bounds and their times,
+        or ``None`` (after emitting :attr:`error`) if the window is invalid.
+        When no ROI is requested the full recording ``(0, n_samples, ...)``
+        is returned. The analysis needs enough samples for the pipeline's
+        500 ms reflective padding, so a window shorter than 1 s is rejected.
+        """
+        start_s = 0.0 if self._roi_start_s is None else max(0.0, self._roi_start_s)
+        end_s = full_duration if self._roi_end_s is None else self._roi_end_s
+        end_s = min(end_s, full_duration)
+        if end_s - start_s < 1.0:
+            self.error.emit(
+                tr(
+                    "The selected region ({a:.2f}-{b:.2f} s) is shorter than "
+                    "the 1 s minimum required for analysis."
+                ).format(a=start_s, b=end_s)
+            )
+            return None
+        i0 = round(start_s * fs)
+        i1 = round(end_s * fs)
+        i0 = max(0, min(i0, n_samples))
+        i1 = max(i0, min(i1, n_samples))
+        return i0, i1, start_s, end_s
+
+    def _resolve_segments(
+        self, n_samples: int, fs: float, full_duration: float
+    ) -> list[tuple[int, int, float, float]] | None:
+        """Resolve the analysis fragments into ordered sample-index windows.
+
+        Precedence: an explicit multi-fragment ``roi_segments`` list, else the
+        single ``roi_start_s``/``roi_end_s`` window, else the whole recording.
+        The fragments are clamped to the recording, ordered and merged if they
+        overlap. The total kept time must be at least 1 s (the pipeline's
+        reflective-padding minimum); otherwise :attr:`error` is emitted and
+        ``None`` is returned.
+
+        Returns ``[(i0, i1, start_s, end_s), ...]`` in chronological order.
+        """
+        if self._roi_segments:
+            requested = self._roi_segments
+        elif self._roi_start_s is not None or self._roi_end_s is not None:
+            start = self._roi_start_s if self._roi_start_s is not None else 0.0
+            end = self._roi_end_s if self._roi_end_s is not None else full_duration
+            requested = [(start, end)]
+        else:
+            return [(0, n_samples, 0.0, full_duration)]
+
+        segs = normalise_segments(
+            [Segment(a, b) for a, b in requested], full_duration
+        )
+        total = total_duration_s(segs)
+        if not segs or total < 1.0:
+            self.error.emit(
+                tr(
+                    "The selected fragments total {t:.2f} s, below the 1 s "
+                    "minimum required for analysis."
+                ).format(t=total)
+            )
+            return None
+
+        bounds: list[tuple[int, int, float, float]] = []
+        for s in segs:
+            i0 = max(0, min(round(s.start_s * fs), n_samples))
+            i1 = max(i0, min(round(s.end_s * fs), n_samples))
+            if i1 > i0:
+                bounds.append((i0, i1, s.start_s, s.end_s))
+        return bounds
+
     def run(self) -> None:
         try:
             # 1) Load EDF
@@ -92,6 +180,52 @@ class AnalysisWorker(QThread):
             times = edf["times"]
             markers = edf.get("markers", [])
 
+            # 1b) Restrict to the selected fragment(s), if requested. The kept
+            # fragments are concatenated into one continuous signal; everything
+            # downstream (DSP, PSD, segments, fatigue) runs on it, time is
+            # re-based to 0 and markers are shifted into concatenated time (those
+            # in discarded fragments are dropped). The kept windows are recorded
+            # in the result so the report states them explicitly.
+            full_duration = float(times[-1])
+            bounds = self._resolve_segments(len(emg_raw), fs, full_duration)
+            if bounds is None:
+                return  # error already emitted
+            kept_segments = [(s, e) for (_, _, s, e) in bounds]
+            is_whole = (
+                len(bounds) == 1
+                and bounds[0][0] == 0
+                and bounds[0][1] == len(emg_raw)
+            )
+            if not is_whole:
+                emg_raw = np.concatenate([emg_raw[i0:i1] for (i0, i1, _, _) in bounds])
+                times = np.arange(len(emg_raw), dtype=np.float64) / fs
+                new_markers: list[tuple[float, str]] = []
+                offset = 0.0
+                for i0, i1, seg_a, seg_b in bounds:
+                    for t, label in markers:
+                        if seg_a <= t < seg_b:
+                            new_markers.append((offset + (t - seg_a), label))
+                    offset += (i1 - i0) / fs
+                markers = sorted(new_markers)
+                if len(bounds) == 1:
+                    self.log.emit(
+                        tr("Region of interest: {a:.2f}-{b:.2f} s ({d:.2f} s).").format(
+                            a=kept_segments[0][0],
+                            b=kept_segments[0][1],
+                            d=kept_segments[0][1] - kept_segments[0][0],
+                        )
+                    )
+                else:
+                    kept_total = sum(b - a for a, b in kept_segments)
+                    self.log.emit(
+                        tr(
+                            "Analysing {n} selected fragments "
+                            "({d:.2f} s of {full:.2f} s)."
+                        ).format(n=len(bounds), d=kept_total, full=full_duration)
+                    )
+
+            roi_start_s = kept_segments[0][0]
+            roi_end_s = kept_segments[-1][1]
             duration = float(times[-1])
             self.log.emit(
                 tr("Channel «{name}» — {fs:.0f} Hz — {dur:.1f} s").format(
@@ -153,15 +287,29 @@ class AnalysisWorker(QThread):
             if self._cancelled:
                 return
 
-            # 6) Fatigue polynomial fits
-            self.log.emit(tr("Polynomial fatigue fit (degree 2)…"))
+            # 6) Fatigue fit: linear MDF-vs-time regression (primary index)
+            self.log.emit(tr("Fitting MDF-vs-time regression…"))
             fat_time = fit_mdf_vs_time(segs["t_seg"], segs["mdf_seg"])
             fat_rms = fit_rms_vs_mdf(segs["mdf_seg"], segs["rms_seg"])
 
             if fat_time["slope_sign"] < 0:
-                self.log.emit(tr("Fatigue trend detected (MDF decreases over time)."))
+                self.log.emit(
+                    tr(
+                        "Fatigue trend: MDF slope {slope:.3f} Hz/s "
+                        "({decline:.1f}% decline, R²={r2:.2f})."
+                    ).format(
+                        slope=fat_time["slope"],
+                        decline=fat_time["pct_decline"],
+                        r2=fat_time["r_squared"],
+                    )
+                )
             elif fat_time["slope_sign"] > 0:
-                self.log.emit(tr("No fatigue (MDF increases or stays stable)."))
+                self.log.emit(
+                    tr(
+                        "No fatigue: MDF slope {slope:+.3f} Hz/s "
+                        "(R²={r2:.2f})."
+                    ).format(slope=fat_time["slope"], r2=fat_time["r_squared"])
+                )
             else:
                 self.log.emit(tr("MDF trend undefined (signal too short or constant)."))
             self.progress.emit(90)
@@ -169,14 +317,8 @@ class AnalysisWorker(QThread):
             # 7) Pack result
             rms_global = float(np.sqrt(np.mean(proc["emg_filtered"] ** 2)))
             iemg = float(trapezoid(proc["emg_rectified"], dx=1.0 / fs))
-            t_seg = segs["t_seg"]
-            if len(t_seg) >= 2:
-                mdf_slope = float(
-                    (fat_time["fitted"][-1] - fat_time["fitted"][0])
-                    / (t_seg[-1] - t_seg[0])
-                )
-            else:
-                mdf_slope = 0.0
+            # Primary fatigue index: slope of the linear MDF-vs-time regression.
+            mdf_slope = float(fat_time["slope"])
 
             result = {
                 # time-domain arrays (full length)
@@ -201,7 +343,11 @@ class AnalysisWorker(QThread):
                 "mdf_seg": segs["mdf_seg"],
                 # fatigue fits
                 "fat_fitted": fat_time["fitted"],
+                "fat_linear_fitted": fat_time["linear_fitted"],
                 "fat_slope_sign": fat_time["slope_sign"],
+                "fat_r_squared": fat_time["r_squared"],
+                "fat_pct_decline": fat_time["pct_decline"],
+                "fat_slope_per_min": fat_time["slope_per_min"],
                 "rms_mdf_range": fat_rms["mdf_range"],
                 "rms_mdf_fitted": fat_rms["fitted"],
                 # summary metrics
@@ -212,6 +358,10 @@ class AnalysisWorker(QThread):
                 # metadata
                 "fs": fs,
                 "f_high": self._f_high,
+                "roi_start_s": roi_start_s,
+                "roi_end_s": roi_end_s,
+                "roi_segments": kept_segments,
+                "full_duration_s": full_duration,
                 "edf_path": self._edf_path,
                 "channel_name": self._channel_name,
                 "markers": markers,

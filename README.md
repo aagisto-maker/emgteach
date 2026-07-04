@@ -6,7 +6,7 @@
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python: 3.10–3.12](https://img.shields.io/badge/python-3.10--3.12-blue.svg)](https://www.python.org/downloads/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20723265.svg)](https://doi.org/10.5281/zenodo.20723265)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21002297.svg)](https://doi.org/10.5281/zenodo.21002297)
 
 `emgteach` is a Python package that provides a unified PySide6 desktop
 application for real-time acquisition, offline analysis and maximum
@@ -18,21 +18,23 @@ buffered writing, free of the silent corruption pitfall described in
 [Agis-Torres (2026)](https://doi.org/10.5281/zenodo.20042878).
 
 The package is intended for use in the practical teaching laboratory of
-the Section of Physiology, Faculty of Pharmacy, Universidad
+the Department of Physiology (Faculty of Pharmacy), Universidad
 Complutense de Madrid, and is freely available for any group wishing
 to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v0.3.0 builds on the two-channel release with a **stacked
-two-channel live view**, a compact themed GUI and a **bilingual
-(English / Spanish) interface**. Earlier, v0.2.0 added **two-channel
-acquisition** (e.g. agonist/antagonist), **automatic contraction-onset
-annotation** and **one-click PDF session reports**. The package ships a
-Qt-free analytic core (io, dsp, fatigue, mvc, devices, profiles,
+`emgteach` v1.1.0 adds an **assisted fragment editor** (curate the
+significant EMG fragments of a recording, with editable detection
+parameters and envelope-filter cut-offs applied to the analysis),
+**region-of-interest analysis**, **CSV export**, a **live signal-quality
+check** during recording, and an **ECG signal profile** alongside EMG.
+v1.0.0 reimplemented the BITalino backend over `pyserial` (no PyBluez)
+and shipped a standalone Windows executable. The package ships a Qt-free
+analytic core (io, dsp, fatigue, mvc, apda, profiles, selection, exports,
 reports, i18n), a Qt layer (workers + three-tab PySide6 GUI), and a test
-suite of 126 tests passing on Linux and Windows across Python
-3.10-3.12. See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
+suite of **216 tests** passing on Linux and Windows across Python
+3.10–3.12. See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 ## Highlights
 

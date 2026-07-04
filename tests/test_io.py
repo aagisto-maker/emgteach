@@ -17,9 +17,12 @@ import pytest
 from emgteach import (
     BufferedEdfWriter,
     ChannelInfo,
+    RecordingMetadata,
     build_timestamped_path,
     create_edf_writer,
+    edf_duration,
     list_edf_channels,
+    read_edf_metadata,
     read_edf_pyedflib,
     write_edf_block,
 )
@@ -333,3 +336,65 @@ class TestAnnotationRoundTrip:
         result = read_edf_pyedflib(out_path)
         labels = [desc for _onset, desc in result["markers"]]
         assert "inicio contracción" in labels
+
+
+class TestPhysicalRangeNoClipping:
+    """The device-aware physical range must let a wide Arduino signal survive
+    the EDF round-trip, whereas the narrow BITalino default clips it — exactly
+    the data-loss bug the per-device range fixes."""
+
+    def _roundtrip_peak(self, out_path: str, pmax: float) -> float:
+        n = 2 * FS
+        sig = np.zeros(n, dtype=np.float64)
+        sig[n // 2] = 10.0  # a +10 mV peak, inside the Arduino ±12.5 mV range
+        ch = ChannelInfo(
+            "EMG", sample_frequency=FS, physical_min=-pmax, physical_max=pmax
+        )
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(sig)
+        return float(np.max(read_edf_pyedflib(out_path)["emg_raw"]))
+
+    def test_arduino_range_preserves_the_peak(self, out_path: str) -> None:
+        assert self._roundtrip_peak(out_path, 12.5) == pytest.approx(10.0, abs=0.1)
+
+    def test_narrow_default_range_clips_the_peak(self, out_path: str) -> None:
+        # With the old ±3.3 mV default the +10 mV peak is silently clipped.
+        assert self._roundtrip_peak(out_path, 3.3) < 3.5
+
+
+# ---------------------------------------------------------------------------
+# EDF+ recording metadata (student / protocol header)
+# ---------------------------------------------------------------------------
+
+
+class TestRecordingMetadata:
+    """Student/protocol identification round-trips through the EDF+ header."""
+
+    def _write(self, out_path: str, metadata: RecordingMetadata) -> None:
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        sig = np.zeros(2 * FS, dtype=np.float64)
+        with BufferedEdfWriter(out_path, channels=[ch], metadata=metadata) as writer:
+            writer.add_samples(sig)
+
+    def test_metadata_round_trips(self, out_path: str) -> None:
+        self._write(
+            out_path,
+            RecordingMetadata(
+                student_name="Ada Lovelace",
+                student_code="A123",
+                protocol="Isometric biceps 30 s",
+            ),
+        )
+        meta = read_edf_metadata(out_path)
+        assert meta.student_name == "Ada Lovelace"
+        assert meta.student_code == "A123"
+        assert meta.protocol == "Isometric biceps 30 s"
+
+    def test_no_metadata_is_valid(self, out_path: str) -> None:
+        # Writing without metadata must still produce a readable file.
+        self._write(out_path, RecordingMetadata())
+        assert edf_duration(out_path) == pytest.approx(2.0, abs=0.01)
+
+    def test_is_empty(self) -> None:
+        assert RecordingMetadata().is_empty()
+        assert not RecordingMetadata(student_name="x").is_empty()

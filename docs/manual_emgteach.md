@@ -8,8 +8,8 @@
 > a screenshot or illustration is useful. The program and its interface are
 > available in English and Spanish.
 >
-> Software author: Dr. Ángel Agis‑Torres — Departmental Section of Physiology,
-> Faculty of Pharmacy, Universidad Complutense de Madrid.
+> Software author: Dr. Ángel Agis‑Torres — Department of Physiology
+> (Faculty of Pharmacy), Universidad Complutense de Madrid.
 
 ---
 

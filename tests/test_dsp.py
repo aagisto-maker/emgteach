@@ -16,6 +16,7 @@ import pytest
 from scipy.signal import sosfilt, sosfilt_zi
 
 from emgteach.dsp import (
+    LiveQualityMonitor,
     OnsetDetector,
     RealtimeFilterState,
     compute_psd_mnf_mdf,
@@ -76,10 +77,32 @@ class TestFilterDesign:
         assert _rms(out[int(0.5 * FS) :]) < 0.1 * _rms(sig)
 
     def test_notch_preserves_far_frequency(self) -> None:
+        # 175 Hz sits between two mains harmonics (150, 200), so the narrow
+        # comb must leave it essentially untouched.
         sos = design_notch(50.0, FS)
-        sig = _sinusoid(150.0)
+        sig = _sinusoid(175.0)
         out = sosfilt(sos, sig)
         assert _rms(out[int(0.5 * FS) :]) > 0.8 * _rms(sig)
+
+    def test_notch_suppresses_harmonics(self) -> None:
+        # The comb must also kill the mains harmonics that fall inside the
+        # 20-450 Hz band (100, 150, ... Hz), which the old single-band
+        # notch left untouched.
+        sos = design_notch(50.0, FS)
+        for f_harm in (100.0, 150.0, 250.0):
+            sig = _sinusoid(f_harm)
+            out = sosfilt(sos, sig)
+            assert _rms(out[int(0.5 * FS) :]) < 0.1 * _rms(sig), (
+                f"harmonic {f_harm} Hz not suppressed"
+            )
+
+    def test_notch_without_harmonics_keeps_them(self) -> None:
+        # With harmonics disabled only the fundamental is removed.
+        sos = design_notch(50.0, FS, harmonics=False)
+        fund = _sinusoid(50.0)
+        assert _rms(sosfilt(sos, fund)[int(0.5 * FS) :]) < 0.1 * _rms(fund)
+        h150 = _sinusoid(150.0)
+        assert _rms(sosfilt(sos, h150)[int(0.5 * FS) :]) > 0.8 * _rms(h150)
 
     def test_lowpass_attenuates_high_frequency(self) -> None:
         sos = design_lowpass(5.0, FS)
@@ -255,6 +278,43 @@ class TestDetectAcquisitionProblems:
         assert any("baseline" in w.lower() for w in result["warnings"])
 
 
+class TestLiveQualityMonitor:
+    """Per-block live quality check against the device's physical rails."""
+
+    def test_clean_block_is_ok(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5)
+        rng = np.random.default_rng(0)
+        status = mon.update(rng.normal(0.0, 0.3, size=100))
+        assert status.code == "ok"
+
+    def test_saturating_block_is_flagged(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5)
+        block = np.full(100, 12.5)  # pegged at the top rail
+        status = mon.update(block)
+        assert status.code == "saturation"
+        assert status.saturation_frac > 0.9
+
+    def test_flat_block_is_flagged(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5)
+        status = mon.update(np.full(100, 0.0))  # disconnected electrode
+        assert status.code == "flat"
+
+    def test_partial_saturation_below_threshold_is_ok(self) -> None:
+        mon = LiveQualityMonitor(-12.5, 12.5, sat_frac=0.1)
+        block = np.concatenate([np.full(5, 12.5), np.full(95, 1.0) * 0.0 + 2.0])
+        # 5% at rail (< 10% threshold), and enough variance -> ok
+        block[50:] = np.linspace(-2, 2, 50)
+        assert mon.update(block).code == "ok"
+
+    def test_invalid_rails_raise(self) -> None:
+        with pytest.raises(ValueError, match="rail_max"):
+            LiveQualityMonitor(1.0, 1.0)
+
+    def test_empty_block_is_ok(self) -> None:
+        mon = LiveQualityMonitor(-1.0, 1.0)
+        assert mon.update(np.array([])).code == "ok"
+
+
 # ---------------------------------------------------------------------------
 # Fatigue analysis
 # ---------------------------------------------------------------------------
@@ -340,6 +400,35 @@ class TestFatigue:
         result = fit_mdf_vs_time(t_seg, mdf_seg, degree=2)
         assert result["slope_sign"] == 0
         assert np.allclose(result["fitted"], 100.0)
+
+    def test_linear_regression_index(self) -> None:
+        # MDF = 120 - 1.0*t over 0..30 s: slope -1 Hz/s, perfect fit,
+        # decline = 30/120 = 25%.
+        t_seg = np.linspace(0, 30, 30)
+        mdf_seg = 120 - 1.0 * t_seg
+        result = fit_mdf_vs_time(t_seg, mdf_seg, degree=2)
+        assert result["slope"] == pytest.approx(-1.0, abs=1e-6)
+        assert result["slope_per_min"] == pytest.approx(-60.0, abs=1e-4)
+        assert result["intercept"] == pytest.approx(120.0, abs=1e-6)
+        assert result["r_squared"] == pytest.approx(1.0, abs=1e-9)
+        assert result["pct_decline"] == pytest.approx(25.0, abs=1e-6)
+        assert len(result["linear_fitted"]) == len(t_seg)
+
+    def test_r_squared_drops_with_noise(self) -> None:
+        rng = np.random.default_rng(0)
+        t_seg = np.linspace(0, 30, 60)
+        clean = 120 - 1.0 * t_seg
+        noisy = clean + rng.normal(0, 15, size=t_seg.shape)
+        r2_clean = fit_mdf_vs_time(t_seg, clean)["r_squared"]
+        r2_noisy = fit_mdf_vs_time(t_seg, noisy)["r_squared"]
+        assert r2_clean > 0.99
+        assert r2_noisy < r2_clean
+
+    def test_too_few_points_zero_regression(self) -> None:
+        result = fit_mdf_vs_time(np.array([0.0]), np.array([100.0]))
+        assert result["slope"] == 0.0
+        assert result["r_squared"] == 0.0
+        assert result["pct_decline"] == 0.0
 
     def test_rms_vs_mdf_returns_expected_keys(self) -> None:
         mdf_seg = np.linspace(80, 120, 20)

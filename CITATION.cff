@@ -13,28 +13,30 @@ abstract: >-
   two-channel live view and a bilingual (English/Spanish) interface; version
   1.0.0 reimplements the BITalino backend over pyserial (Bluetooth virtual COM
   port, no PyBluez or external dependencies) with MAC-to-COM resolution and
-  autodetection, and ships a standalone Windows executable.
+  autodetection, and ships a standalone Windows executable. Version 1.1.0 adds
+  assisted fragment selection with an editable fragment editor, region-of-interest
+  analysis, CSV export, a live signal-quality check and an ECG signal profile.
 type: software
-version: 1.0.0
-date-released: "2026-06-28"
+version: 1.1.0
+date-released: "2026-07-04"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
-    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+    affiliation: "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
     email: "aagisto@ucm.es"
     orcid: "https://orcid.org/0000-0002-3548-7264"
   # NOTE: add ORCID (and optional email) for the co-authors when available.
   - family-names: "Fernandes"
     given-names: "Vítor Samuel"
-    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+    affiliation: "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
     orcid: "https://orcid.org/0000-0001-6060-9035"
   - family-names: "Navarro-Dorado"
     given-names: "Jorge"
-    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+    affiliation: "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
     orcid: "https://orcid.org/0000-0002-4643-3528"
   - family-names: "Muñoz-Picos"
     given-names: "Mercedes"
-    affiliation: "Departmental Section of Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
+    affiliation: "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid, Spain"
     orcid: "https://orcid.org/0000-0002-1679-9588"
 license: GPL-3.0-or-later
 doi: 10.5281/zenodo.21002297
@@ -44,9 +46,8 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.21002297
     description: "Concept DOI for emgteach (always resolves to the latest version)"
-  - type: doi
-    value: 10.5281/zenodo.21002298
-    description: "Version-specific DOI for emgteach v1.0.0"
+  # Version-specific DOI for v1.1.0 is minted by Zenodo on release — add it here afterwards.
+  # (v1.0.0 was 10.5281/zenodo.21002298.)
 keywords:
   - electromyography
   - EMG
@@ -66,5 +67,5 @@ references:
       - family-names: "Agis-Torres"
         given-names: "Ángel"
     year: 2026
-    notes: "Manuscript under review; the DOI resolves to the reproducibility package."
-    doi: 10.5281/zenodo.20042878
+    notes: "Manuscript under review (JORS); the DOI resolves to the reproducibility package."
+    doi: 10.5281/zenodo.21163099

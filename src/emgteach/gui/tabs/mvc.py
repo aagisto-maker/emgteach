@@ -196,13 +196,19 @@ class MvcTab(QWidget):
         ctrl.addLayout(row_params)
         root.addWidget(grp_ctrl)
 
-        # ── Progress bar ───────────────────────────────────────────
+        # ── Progress bar + Cancel ──────────────────────────────────
+        progress_row = QHBoxLayout()
         self._progress = QProgressBar()
         self._progress.setRange(0, 0)
         self._progress.setTextVisible(False)
         self._progress.setFixedHeight(6)
         self._progress.setVisible(False)
-        root.addWidget(self._progress)
+        progress_row.addWidget(self._progress, stretch=1)
+        self._btn_cancelar = QPushButton(tr("Cancel"))
+        self._btn_cancelar.setVisible(False)
+        self._btn_cancelar.clicked.connect(self._cancelar_calculo)
+        progress_row.addWidget(self._btn_cancelar)
+        root.addLayout(progress_row)
 
         # ══ Visualisation area (vertical scroll) ════════════════════════
         # Top: the three time-series panels (with the ▲▼ sidebar). Below: the
@@ -465,6 +471,8 @@ class MvcTab(QWidget):
 
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
+        self._btn_cancelar.setVisible(True)
+        self._btn_cancelar.setEnabled(True)
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
 
@@ -477,7 +485,25 @@ class MvcTab(QWidget):
         self._worker.result_ready.connect(self._on_result)
         self._worker.log.connect(self._logger.append_log)
         self._worker.error.connect(self._on_error)
+        self._worker.finished.connect(self._on_calculo_finished)
         self._worker.start()
+
+    @Slot()
+    def _cancelar_calculo(self) -> None:
+        if self._worker is not None and self._worker.isRunning():
+            self._btn_cancelar.setEnabled(False)
+            self._logger.append_log(tr("Cancelling…"))
+            self._worker.stop()
+
+    @Slot()
+    def _on_calculo_finished(self) -> None:
+        self._btn_cancelar.setVisible(False)
+        self._btn_cancelar.setEnabled(False)
+        if self._last_result is None or (
+            self._worker is not None and self._worker.is_cancelled()
+        ):
+            self._progress.setVisible(False)
+            self._set_controles_habilitados(True)
 
     # ------------------------------------------------------------------
     # Worker slots

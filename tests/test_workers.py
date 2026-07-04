@@ -222,6 +222,45 @@ class TestAcquisitionWorker:
             f"Marker did not survive to EDF; got markers {result['markers']}"
         )
 
+    def test_deleted_marker_is_not_persisted(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        device = _FakeDevice(fs=1000)
+        worker = AcquisitionWorker(
+            device=device, save_dir=str(tmp_path), n_per_read=100
+        )
+        edf_path_holder: list[str] = []
+        worker.finished_ok.connect(edf_path_holder.append)
+
+        # Add two markers, then delete the first one before the recording
+        # stops. Only the second must survive to the EDF.
+        added_times: list[float] = []
+        worker.marker_added.connect(lambda t, _l: added_times.append(t))
+        state = {"n": 0}
+
+        def add_two(_block: dict) -> None:
+            state["n"] += 1
+            if state["n"] == 1:
+                worker.add_marker("keep")
+                worker.add_marker("undo_me")
+
+        worker.data_ready.connect(add_two)
+        worker.start()
+
+        def delete_and_stop() -> None:
+            # Remove the mistaken marker using its emitted time.
+            assert worker.remove_marker(added_times[1], "undo_me")
+            worker.stop()
+
+        QTimer.singleShot(800, delete_and_stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        result = read_edf_pyedflib(edf_path_holder[0])
+        labels = [label for _t, label in result["markers"]]
+        assert "keep" in labels
+        assert "undo_me" not in labels
+
     def test_data_ready_signal_is_emitted(
         self, qapp: QCoreApplication, tmp_path: Path
     ) -> None:
@@ -434,6 +473,98 @@ class TestAnalysisWorker:
             "fs",
         ):
             assert required in keys, f"Missing key: {required}"
+
+    def test_resolve_roi_full_recording(self, qapp: QCoreApplication) -> None:
+        # No ROI requested -> the whole recording, bounds (0, n).
+        w = AnalysisWorker(edf_path="x.edf")
+        assert w._resolve_roi(10_000, 1000.0, 10.0) == (0, 10_000, 0.0, 10.0)
+
+    def test_resolve_roi_window_and_clamp(self, qapp: QCoreApplication) -> None:
+        w = AnalysisWorker(edf_path="x.edf", roi_start_s=2.0, roi_end_s=5.0)
+        assert w._resolve_roi(10_000, 1000.0, 10.0) == (2000, 5000, 2.0, 5.0)
+        # An end beyond the recording is clamped to the full duration.
+        w2 = AnalysisWorker(edf_path="x.edf", roi_start_s=8.0, roi_end_s=99.0)
+        i0, i1, _a, b = w2._resolve_roi(10_000, 1000.0, 10.0)
+        assert (i0, i1) == (8000, 10_000)
+        assert b == 10.0
+
+    def test_resolve_roi_too_short_errors(self, qapp: QCoreApplication) -> None:
+        w = AnalysisWorker(edf_path="x.edf", roi_start_s=1.0, roi_end_s=1.5)
+        errors: list[str] = []
+        w.error.connect(errors.append)
+        assert w._resolve_roi(10_000, 1000.0, 10.0) is None
+        assert errors and "region" in errors[0].lower()
+
+    def test_roi_analysis_restricts_duration(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        pytest.importorskip("mne")
+        edf_path = self._generate_edf(qapp, tmp_path)
+
+        analysis = AnalysisWorker(
+            edf_path=edf_path, channel_name="EMG", roi_start_s=0.5, roi_end_s=1.8
+        )
+        results: list[dict] = []
+        errors: list[str] = []
+        analysis.result_ready.connect(results.append)
+        analysis.error.connect(errors.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.result_ready, timeout_ms=15000)
+        analysis.wait(15000)
+
+        assert not errors, f"Analysis emitted errors: {errors}"
+        assert len(results) == 1
+        r = results[0]
+        assert r["roi_start_s"] == 0.5
+        assert r["roi_end_s"] == 1.8
+        # Cropped analysis runs on ~1.3 s, not the full ~2.2 s recording.
+        assert abs(r["duration"] - 1.3) < 0.15
+        assert r["full_duration_s"] > 2.0
+
+    def test_multi_fragment_analysis_concatenates(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        pytest.importorskip("mne")
+        edf_path = self._generate_edf(qapp, tmp_path)  # ~2.2 s recording
+
+        # Keep two disjoint 0.7 s fragments -> ~1.4 s of concatenated signal.
+        analysis = AnalysisWorker(
+            edf_path=edf_path,
+            channel_name="EMG",
+            roi_segments=[(0.2, 0.9), (1.3, 2.0)],
+        )
+        results: list[dict] = []
+        errors: list[str] = []
+        analysis.result_ready.connect(results.append)
+        analysis.error.connect(errors.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.result_ready, timeout_ms=15000)
+        analysis.wait(15000)
+
+        assert not errors, f"Analysis emitted errors: {errors}"
+        r = results[0]
+        assert r["roi_segments"] == [(0.2, 0.9), (1.3, 2.0)]
+        # Duration is the sum of the kept fragments, not the whole file.
+        assert abs(r["duration"] - 1.4) < 0.15
+
+    def test_too_short_selection_emits_error(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        pytest.importorskip("mne")
+        edf_path = self._generate_edf(qapp, tmp_path)
+        analysis = AnalysisWorker(
+            edf_path=edf_path, channel_name="EMG", roi_segments=[(0.1, 0.5)]
+        )
+        results: list[dict] = []
+        errors: list[str] = []
+        analysis.result_ready.connect(results.append)
+        analysis.error.connect(errors.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.error, timeout_ms=15000)
+        analysis.wait(15000)
+
+        assert not results
+        assert errors and "minimum" in errors[0].lower()
 
 
 # ---------------------------------------------------------------------------

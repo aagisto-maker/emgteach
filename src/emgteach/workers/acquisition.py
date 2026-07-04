@@ -24,7 +24,7 @@ from PySide6.QtCore import QMutex, QThread, Signal, Slot
 
 from emgteach.dsp import OnsetDetector, RealtimeFilterState
 from emgteach.i18n import tr
-from emgteach.io import BufferedEdfWriter, build_timestamped_path
+from emgteach.io import BufferedEdfWriter, RecordingMetadata, build_timestamped_path
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 
 if TYPE_CHECKING:
@@ -87,6 +87,7 @@ class AcquisitionWorker(QThread):
     finished_ok = Signal(str)
     error = Signal(str)
     marker_added = Signal(float, str)
+    marker_removed = Signal(float, str)
 
     def __init__(
         self,
@@ -101,11 +102,13 @@ class AcquisitionWorker(QThread):
         sensor_labels: list[str] | None = None,
         auto_detect: bool = False,
         onset_k: float | None = None,
+        metadata: RecordingMetadata | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self._device = device
         self._save_dir = save_dir
+        self._metadata = metadata
         self._n_per_read = int(n_per_read)
         self._profile = profile
         self._sensor_labels = list(sensor_labels) if sensor_labels else None
@@ -188,6 +191,30 @@ class AcquisitionWorker(QThread):
             self._markers_mutex.unlock()
         self.marker_added.emit(time_s, label)
 
+    @Slot(float, str)
+    def remove_marker(self, time_s: float, label: str) -> bool:
+        """Remove a pending marker before it is written to the EDF.
+
+        Markers are flushed to the file only on :meth:`run`'s cleanup, so a
+        marker deleted while recording never reaches the EDF. Removes the
+        entry whose time matches ``time_s`` (to the sample) and whose label
+        matches ``label``; returns ``True`` if one was removed. Thread-safe.
+        """
+        time_s = float(time_s)
+        removed = False
+        self._markers_mutex.lock()
+        try:
+            for i, (t, lbl) in enumerate(self._markers):
+                if lbl == label and abs(t - time_s) < 0.5 / self._device.fs:
+                    del self._markers[i]
+                    removed = True
+                    break
+        finally:
+            self._markers_mutex.unlock()
+        if removed:
+            self.marker_removed.emit(time_s, label)
+        return removed
+
     def _resolve_sensor_labels(self, n_channels: int) -> list[str] | None:
         """Return one base label per channel, or ``None`` on a mismatch.
 
@@ -260,8 +287,15 @@ class AcquisitionWorker(QThread):
                 )
 
             edf_path = build_timestamped_path(self._save_dir)
-            channels = self._profile.build_channels(labels, fs)
-            writer = BufferedEdfWriter(edf_path, channels=channels)
+            channels = self._profile.build_channels(
+                labels,
+                fs,
+                physical_min=device.physical_min,
+                physical_max=device.physical_max,
+            )
+            writer = BufferedEdfWriter(
+                edf_path, channels=channels, metadata=self._metadata
+            )
             self.log.emit(tr("Recording to: {path}").format(path=edf_path))
 
             sleep_ms = max(1, int(self._n_per_read / fs * 500))

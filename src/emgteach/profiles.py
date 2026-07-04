@@ -25,8 +25,11 @@ from dataclasses import dataclass
 from emgteach.io import ChannelInfo
 
 __all__ = [
+    "ECG_PROFILE",
     "EMG_PROFILE",
+    "PROFILES",
     "SignalProfile",
+    "get_profile",
 ]
 
 
@@ -201,7 +204,11 @@ class SignalProfile:
         }
 
     def build_channels(
-        self, sensor_labels: Sequence[str] | None = None, fs: int | None = None
+        self,
+        sensor_labels: Sequence[str] | None = None,
+        fs: int | None = None,
+        physical_min: float | None = None,
+        physical_max: float | None = None,
     ) -> list[ChannelInfo]:
         """Build one raw EDF channel per sensor.
 
@@ -230,8 +237,18 @@ class SignalProfile:
         """
         labels = list(sensor_labels) if sensor_labels else [self.raw_label]
         sf = int(fs) if fs is not None else self.sample_frequency
+        # Fall back to the ChannelInfo defaults (BITalino-compatible ±3.3 mV)
+        # when the caller does not pass a device-specific range.
+        pmin = -3.3 if physical_min is None else float(physical_min)
+        pmax = 3.3 if physical_max is None else float(physical_max)
         return [
-            ChannelInfo(label, dimension=self.dimension, sample_frequency=sf)
+            ChannelInfo(
+                label,
+                dimension=self.dimension,
+                sample_frequency=sf,
+                physical_min=pmin,
+                physical_max=pmax,
+            )
             for label in labels
         ]
 
@@ -240,3 +257,56 @@ class SignalProfile:
 #: channel and display parameters that the package used before the Hito 1
 #: refactor, so consuming it changes no behaviour.
 EMG_PROFILE = SignalProfile(name="EMG")
+
+
+#: Profile for single-lead ECG, added to demonstrate that a new biopotential
+#: modality is a matter of instantiating :class:`SignalProfile` — no worker or
+#: GUI code needs to change. The DSP band (0.5-40 Hz) is the standard
+#: "monitoring" band that keeps the QRS/P/T morphology while removing baseline
+#: wander and high-frequency muscle noise; the 50 Hz mains notch is shared with
+#: EMG. The APDF/MVC fields are EMG-specific and left at their defaults (they
+#: are simply unused for ECG). Display ranges reflect the ~1 mV ECG amplitude.
+ECG_PROFILE = SignalProfile(
+    name="ECG",
+    f_low=0.5,
+    f_high=40.0,
+    f_notch=50.0,
+    f_env=5.0,
+    raw_label="ECG",
+    dimension="mV",
+    ylim_raw=(-2.0, 2.0),
+    ylim_filtered=(-2.0, 2.0),
+    ylim_envelope=(0.0, 2.0),
+    marker_presets=(
+        "P wave",
+        "QRS complex",
+        "T wave",
+        "Arrhythmia",
+        "Rest",
+        "Other…",
+    ),
+)
+
+
+#: Registry of the available signal profiles, keyed by their ``name``.
+PROFILES: dict[str, SignalProfile] = {
+    EMG_PROFILE.name: EMG_PROFILE,
+    ECG_PROFILE.name: ECG_PROFILE,
+}
+
+
+def get_profile(name: str) -> SignalProfile:
+    """Return the registered profile whose ``name`` matches (case-insensitive).
+
+    Raises
+    ------
+    KeyError
+        If no profile with that name is registered. The message lists the
+        available names to help the caller.
+    """
+    for key, profile in PROFILES.items():
+        if key.lower() == name.lower():
+            return profile
+    raise KeyError(
+        f"Unknown signal profile {name!r}. Available: {sorted(PROFILES)}."
+    )

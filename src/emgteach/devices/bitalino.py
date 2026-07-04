@@ -181,6 +181,15 @@ class BitalinoDevice(AcquisitionDevice):
         return len(self._channels)
 
     @property
+    def physical_min(self) -> float:
+        # BITalino EMG spans ±V_REF/2 mV at unity gain (see _raw_to_mv).
+        return -self._V_REF / 2.0
+
+    @property
+    def physical_max(self) -> float:
+        return self._V_REF / 2.0
+
+    @property
     def is_connected(self) -> bool:
         """``True`` while the underlying serial port is open."""
         with self._conn_lock:

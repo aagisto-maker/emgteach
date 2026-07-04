@@ -99,12 +99,17 @@ def _app_version() -> str:
 def _fatigue_text(result: Mapping[str, Any]) -> str:
     sign = int(result.get("fat_slope_sign", 0))
     slope = float(result.get("mdf_slope", 0.0))
+    r2 = float(result.get("fat_r_squared", 0.0))
+    decline = float(result.get("fat_pct_decline", 0.0))
     if sign < 0:
-        return tr("Yes — MDF decreases over time ({slope:+.2f} Hz/s)").format(slope=slope)
+        return tr(
+            "Yes — MDF falls {slope:+.2f} Hz/s "
+            "({decline:.1f}% decline, R²={r2:.2f})"
+        ).format(slope=slope, decline=decline, r2=r2)
     if sign > 0:
-        return tr("No — MDF stays stable or increases ({slope:+.2f} Hz/s)").format(
-            slope=slope
-        )
+        return tr(
+            "No — MDF stable or rising ({slope:+.2f} Hz/s, R²={r2:.2f})"
+        ).format(slope=slope, r2=r2)
     return tr("Undetermined (short or constant signal)")
 
 
@@ -354,6 +359,7 @@ def build_session_report(
     commit = meta.get("commit", git_commit_hash())
     student = str(meta.get("student", "")).strip()
     student_code = str(meta.get("student_code", "")).strip()
+    protocol = str(meta.get("protocol", "")).strip()
     device = str(meta.get("device", "")).strip()
 
     styles = getSampleStyleSheet()
@@ -377,6 +383,8 @@ def build_session_report(
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
+    if protocol:
+        header_lines.append(tr("Protocol: {p}").format(p=protocol))
     for line in header_lines:
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))
@@ -404,6 +412,35 @@ def build_session_report(
     metrics = [
         [tr("Metric"), tr("Value")],
         [tr("Duration"), f"{float(result.get('duration', 0.0)):.1f} s"],
+    ]
+    # State the analysed window/fragments explicitly when not the whole file.
+    full_dur = float(result.get("full_duration_s", 0.0))
+    segments = result.get("roi_segments")
+    roi_a = result.get("roi_start_s")
+    roi_b = result.get("roi_end_s")
+    if segments and len(segments) > 1:
+        kept = sum(float(b) - float(a) for a, b in segments)
+        frag_txt = "; ".join(f"{float(a):.2f}-{float(b):.2f}" for a, b in segments)
+        metrics.append(
+            [
+                tr("Analysed fragments"),
+                tr("{n} fragments ({d:.2f} s of {full:.1f} s): {list} s").format(
+                    n=len(segments), d=kept, full=full_dur, list=frag_txt
+                ),
+            ]
+        )
+    elif roi_a is not None and roi_b is not None and (
+        float(roi_a) > 0.0 or float(roi_b) < full_dur - 1e-6
+    ):
+        metrics.append(
+            [
+                tr("Analysed window"),
+                tr("{a:.2f}-{b:.2f} s of {d:.1f} s").format(
+                    a=float(roi_a), b=float(roi_b), d=full_dur
+                ),
+            ]
+        )
+    metrics += [
         [tr("Global RMS"), f"{float(result.get('rms_global', 0.0)):.4f} mV"],
         [tr("Mean frequency (MNF)"), f"{float(result.get('mnf', 0.0)):.1f} Hz"],
         [tr("Median frequency (MDF)"), f"{float(result.get('mdf', 0.0)):.1f} Hz"],
@@ -566,6 +603,7 @@ def build_mvc_report(
     commit = meta.get("commit", git_commit_hash())
     student = str(meta.get("student", "")).strip()
     student_code = str(meta.get("student_code", "")).strip()
+    protocol = str(meta.get("protocol", "")).strip()
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
@@ -586,6 +624,8 @@ def build_mvc_report(
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
+    if protocol:
+        header_lines.append(tr("Protocol: {p}").format(p=protocol))
     for line in header_lines:
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))

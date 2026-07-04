@@ -42,6 +42,8 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QSpinBox,
     QToolButton,
@@ -56,9 +58,11 @@ from emgteach.devices import (
     ArduinoDevice,
     create_device,
 )
+from emgteach.dsp import LiveQualityMonitor
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import tr
+from emgteach.io import RecordingMetadata
 from emgteach.mvc import compute_mvc
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
@@ -75,6 +79,14 @@ MAX_CHANNELS = 2
 # Maximum number of event markers drawn live at once (a reusable pool of
 # lines per plot; more than enough for a 30 s window).
 MAX_MARKER_LINES = 40
+
+# Style per live signal-quality status code (green ok / red saturation /
+# amber flat-disconnected).
+_QUALITY_STYLES = {
+    "ok": "color: #1a7f37; font-weight: bold;",
+    "saturation": "color: #b00020; font-weight: bold;",
+    "flat": "color: #b06a00; font-weight: bold;",
+}
 
 # Per-channel colour, consistent across the three plots: a colour always
 # identifies the same sensor (blue = channel 1, red = channel 2).
@@ -368,6 +380,37 @@ class AcquisitionTab(QWidget):
             ch_row.addWidget(edit, stretch=1)
         cfg_outer.addLayout(ch_row)
 
+        # Row 4: session identification written to the EDF+ header.
+        meta_row = QHBoxLayout()
+        meta_row.setSpacing(6)
+        meta_row.addWidget(QLabel(tr("Student:")))
+        self._edit_student = QLineEdit()
+        self._edit_student.setPlaceholderText(tr("Name"))
+        self._edit_student.setText(self._settings.value("adquisicion/student", ""))
+        self._edit_student.textChanged.connect(
+            lambda v: self._settings.setValue("adquisicion/student", v)
+        )
+        meta_row.addWidget(self._edit_student, stretch=2)
+        meta_row.addWidget(QLabel(tr("Code:")))
+        self._edit_student_code = QLineEdit()
+        self._edit_student_code.setFixedWidth(90)
+        self._edit_student_code.setText(
+            self._settings.value("adquisicion/student_code", "")
+        )
+        self._edit_student_code.textChanged.connect(
+            lambda v: self._settings.setValue("adquisicion/student_code", v)
+        )
+        meta_row.addWidget(self._edit_student_code)
+        meta_row.addWidget(QLabel(tr("Protocol:")))
+        self._edit_protocol = QLineEdit()
+        self._edit_protocol.setPlaceholderText(tr("e.g. Isometric biceps 30 s"))
+        self._edit_protocol.setText(self._settings.value("adquisicion/protocol", ""))
+        self._edit_protocol.textChanged.connect(
+            lambda v: self._settings.setValue("adquisicion/protocol", v)
+        )
+        meta_row.addWidget(self._edit_protocol, stretch=3)
+        cfg_outer.addLayout(meta_row)
+
         row_top.addWidget(grp_config, stretch=1)
 
         # — Event log (shares the row with the configuration) —
@@ -411,6 +454,15 @@ class AcquisitionTab(QWidget):
         ctrl_layout.addWidget(self._lbl_estado)
         ctrl_layout.addStretch()
 
+        # Live signal-quality indicator (updated per acquired block).
+        self._lbl_calidad = QLabel("")
+        self._lbl_calidad.setToolTip(
+            tr("Live signal quality: saturation or a flat (disconnected) signal.")
+        )
+        self._lbl_calidad.setVisible(False)
+        ctrl_layout.addWidget(self._lbl_calidad)
+        self._quality_monitor: LiveQualityMonitor | None = None
+
         row_actions.addWidget(grp_control, stretch=1)
 
         # — Muscle load (live MVC), between Control and Markers —
@@ -423,10 +475,12 @@ class AcquisitionTab(QWidget):
         self._led_idle_timer.timeout.connect(lambda: self._set_led("idle"))
         self._set_led("off")
 
-        # — Event markers (single line) —
+        # — Event markers (controls row + editable list) —
         grp_markers = QGroupBox(tr("Event markers"))
-        markers_layout = QHBoxLayout(grp_markers)
-        markers_layout.setContentsMargins(6, 3, 6, 3)
+        markers_outer = QVBoxLayout(grp_markers)
+        markers_outer.setContentsMargins(6, 3, 6, 3)
+        markers_outer.setSpacing(4)
+        markers_layout = QHBoxLayout()
         markers_layout.setSpacing(6)
 
         self._combo_etiqueta = QComboBox()
@@ -477,6 +531,28 @@ class AcquisitionTab(QWidget):
         )
         self._spin_k.setEnabled(self._chk_auto.isChecked())
         markers_layout.addWidget(self._spin_k)
+        markers_outer.addLayout(markers_layout)
+
+        # Editable marker list: every marker added (manual or automatic) shows
+        # here while recording, and can be deleted before it is written to the
+        # EDF at stop — the fix for a mistaken MARK press.
+        list_row = QHBoxLayout()
+        list_row.setSpacing(6)
+        self._list_markers = QListWidget()
+        self._list_markers.setMaximumHeight(72)
+        self._list_markers.setToolTip(
+            tr("Markers recorded so far. Select one and press Delete to remove it.")
+        )
+        self._list_markers.itemSelectionChanged.connect(
+            self._on_marker_selection_changed
+        )
+        list_row.addWidget(self._list_markers, stretch=1)
+        self._btn_borrar_marca = QPushButton(tr("Delete"))
+        self._btn_borrar_marca.setEnabled(False)
+        self._btn_borrar_marca.setToolTip(tr("Delete the selected marker."))
+        self._btn_borrar_marca.clicked.connect(self._on_borrar_marcador)
+        list_row.addWidget(self._btn_borrar_marca)
+        markers_outer.addLayout(list_row)
 
         row_actions.addWidget(grp_markers, stretch=1)
 
@@ -968,6 +1044,8 @@ class AcquisitionTab(QWidget):
 
         self._reset_buffers()
         self._marker_events.clear()
+        self._list_markers.clear()
+        self._btn_borrar_marca.setEnabled(False)
         self._total_samples = 0
         for pool in self._marker_lines:
             for line in pool:
@@ -995,12 +1073,24 @@ class AcquisitionTab(QWidget):
             )
         self._settings.setValue("adquisicion/auto_detect", self._chk_auto.isChecked())
         self._settings.setValue("adquisicion/onset_k", self._spin_k.value())
+        metadata = RecordingMetadata(
+            student_name=self._edit_student.text().strip(),
+            student_code=self._edit_student_code.text().strip(),
+            protocol=self._edit_protocol.text().strip(),
+            equipment=device.name,
+        )
+        # Live quality check against the device's true physical rails.
+        self._quality_monitor = LiveQualityMonitor(
+            device.physical_min, device.physical_max
+        )
+        self._lbl_calidad.setVisible(True)
         self._worker = AcquisitionWorker(
             device=device,
             save_dir=save_dir,
             sensor_labels=labels,
             auto_detect=self._chk_auto.isChecked(),
             onset_k=self._spin_k.value(),
+            metadata=metadata,
         )
         self._worker.data_ready.connect(self._on_data_ready)
         self._worker.log.connect(self._log)
@@ -1061,12 +1151,31 @@ class AcquisitionTab(QWidget):
         if raw:
             self._total_samples += len(raw[0])
         self._new_data = True
+        # Live signal-quality indicator (worst status across channels).
+        if self._quality_monitor is not None and raw:
+            self._update_quality(raw)
         # Live muscle-load monitor (calibration or per-block load update).
         self._process_load(env)
         # Green LED: there is traffic. The timer will set it back to yellow if
         # no new block arrives within LED_IDLE_MS ms.
         self._set_led("ok")
         self._led_idle_timer.start()
+
+    def _update_quality(self, raw: list) -> None:
+        """Show the worst per-channel quality status of the latest block."""
+        assert self._quality_monitor is not None
+        status = None
+        for c in range(min(len(raw), self._n_channels)):
+            s = self._quality_monitor.update(raw[c])
+            # Prefer a problem status over "ok"; first problem wins.
+            if s.code != "ok":
+                status = s
+                break
+            status = s
+        if status is None:
+            return
+        self._lbl_calidad.setText(status.message)
+        self._lbl_calidad.setStyleSheet(_QUALITY_STYLES.get(status.code, ""))
 
     def _refresh_plots(self, force: bool = False) -> None:
         """Called every 33 ms by _render_timer. Draws only if there is new data
@@ -1367,6 +1476,36 @@ class AcquisitionTab(QWidget):
         self._log(tr("Marker added: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta))
         # Record the event to draw it live over the plots.
         self._marker_events.append((tiempo, etiqueta))
+        # Add it to the editable marker list (data carries the exact key).
+        item = QListWidgetItem(f"t={tiempo:.1f} s — {etiqueta}")
+        item.setData(Qt.ItemDataRole.UserRole, (float(tiempo), etiqueta))
+        self._list_markers.addItem(item)
+        self._list_markers.scrollToBottom()
+
+    @Slot()
+    def _on_marker_selection_changed(self) -> None:
+        recording = bool(self._worker and self._worker.isRunning())
+        self._btn_borrar_marca.setEnabled(
+            recording and self._list_markers.currentItem() is not None
+        )
+
+    @Slot()
+    def _on_borrar_marcador(self) -> None:
+        item = self._list_markers.currentItem()
+        if item is None or not (self._worker and self._worker.isRunning()):
+            return
+        tiempo, etiqueta = item.data(Qt.ItemDataRole.UserRole)
+        if not self._worker.remove_marker(tiempo, etiqueta):
+            return
+        # Drop it from the live-plot events (first matching entry).
+        for i, (t, lbl) in enumerate(self._marker_events):
+            if lbl == etiqueta and abs(t - tiempo) < 1e-6:
+                del self._marker_events[i]
+                break
+        self._list_markers.takeItem(self._list_markers.row(item))
+        self._log(
+            tr("Marker deleted: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta)
+        )
 
     @Slot(str)
     def _on_error(self, msg: str) -> None:
@@ -1386,9 +1525,13 @@ class AcquisitionTab(QWidget):
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._combo_etiqueta.setEnabled(False)
         self._btn_marcar.setEnabled(False)
+        self._btn_borrar_marca.setEnabled(False)
         self._shortcut_m.setEnabled(False)
         self._set_auto_controls_enabled(True)
         self._stop_load_monitor()
+        self._quality_monitor = None
+        self._lbl_calidad.setVisible(False)
+        self._lbl_calidad.setText("")
 
     # ------------------------------------------------------------------
     # Vertical scale (▲▼ per plot)
@@ -1581,6 +1724,8 @@ class AcquisitionTab(QWidget):
             return
         self._reset_buffers()
         self._marker_events.clear()
+        self._list_markers.clear()
+        self._btn_borrar_marca.setEnabled(False)
         self._total_samples = 0
         for pool in self._marker_lines:
             for line in pool:

@@ -34,11 +34,20 @@ References
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from scipy.integrate import simpson
-from scipy.signal import iirfilter, sosfilt, sosfilt_zi, sosfiltfilt, welch
+from scipy.signal import (
+    iirfilter,
+    iirnotch,
+    sosfilt,
+    sosfilt_zi,
+    sosfiltfilt,
+    tf2sos,
+    welch,
+)
 
 from emgteach.i18n import tr
 
@@ -49,7 +58,9 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "LiveQualityMonitor",
     "OnsetDetector",
+    "QualityStatus",
     "RealtimeFilterState",
     "compute_psd_mnf_mdf",
     "compute_segments",
@@ -77,17 +88,58 @@ def design_bandpass(
 
 
 def design_notch(
-    f_notch: float, fs: float, order: int = 2, bandwidth: float = 1.0
+    f_notch: float,
+    fs: float,
+    q: float = 30.0,
+    harmonics: bool = True,
+    f_high: float = 450.0,
 ) -> FloatArray:
-    """Butterworth notch SOS coefficients (50 Hz mains by default)."""
-    return iirfilter(
-        order,
-        [f_notch - bandwidth, f_notch + bandwidth],
-        btype="bandstop",
-        fs=fs,
-        ftype="butter",
-        output="sos",
-    )
+    """Mains-interference notch as a cascade of narrow IIR notches.
+
+    A single :func:`scipy.signal.iirnotch` (quality factor ``q``) is far
+    narrower and deeper than the previous 2nd-order Butterworth band-stop:
+    at ``q=30`` the 50 Hz notch is only ~1.7 Hz wide, so it removes the
+    mains line while leaving the surrounding EMG spectrum essentially
+    untouched.
+
+    Real mains interference is not a pure sinusoid; it also injects odd
+    (and, with rectifying loads, even) harmonics at 100, 150, 200 … Hz that
+    fall squarely inside the 20-450 Hz EMG band and that the old single-band
+    notch left in place. When ``harmonics`` is ``True`` (the default) the
+    filter therefore stacks one notch at ``f_notch`` and one at each harmonic
+    up to ``f_high`` (bounded by the Nyquist frequency), returning the
+    combined SOS cascade.
+
+    Parameters
+    ----------
+    f_notch : float
+        Mains fundamental frequency (Hz), typically 50 (EU) or 60 (US).
+    fs : float
+        Sampling frequency (Hz).
+    q : float, optional
+        Quality factor of each notch (higher = narrower). Default 30.
+    harmonics : bool, optional
+        Also notch the integer harmonics of ``f_notch`` inside the band.
+        Default ``True``.
+    f_high : float, optional
+        Upper bound (Hz) for harmonic notches; harmonics at or above this
+        (or above Nyquist) are not added, as the band-pass removes them.
+        Default 450.
+
+    Returns
+    -------
+    ndarray
+        Second-order-sections array of shape ``(n_notches, 6)``.
+    """
+    f_max = min(float(f_high), fs / 2.0)
+    freqs = [float(f_notch)]
+    if harmonics:
+        k = 2
+        while f_notch * k < f_max - 1.0:
+            freqs.append(f_notch * k)
+            k += 1
+    sections = [tf2sos(*iirnotch(f0, q, fs=fs)) for f0 in freqs]
+    return np.vstack(sections)
 
 
 def design_lowpass(f_cut: float, fs: float, order: int = 2) -> FloatArray:
@@ -133,7 +185,7 @@ class RealtimeFilterState:
         order: int = 2,
     ) -> None:
         self.sos_band = design_bandpass(f_low, f_high, fs, order)
-        self.sos_notch = design_notch(f_notch, fs)
+        self.sos_notch = design_notch(f_notch, fs, f_high=f_high)
         self.sos_env = design_lowpass(f_env, fs, order)
 
         # Initial conditions are zeroed so the first samples do not see
@@ -221,7 +273,7 @@ def process_offline(
     """
     emg_raw = np.asarray(emg_raw, dtype=np.float64)
 
-    sos_notch = design_notch(f_notch, fs)
+    sos_notch = design_notch(f_notch, fs, f_high=f_high)
     sos_band = design_bandpass(f_low, f_high, fs, order)
     sos_env = design_lowpass(f_env, fs, order)
 
@@ -457,6 +509,97 @@ def detect_acquisition_problems(
         "flat_baseline": flat_baseline,
         "warnings": warnings,
     }
+
+
+@dataclass(frozen=True)
+class QualityStatus:
+    """Outcome of one :meth:`LiveQualityMonitor.update` call.
+
+    Attributes
+    ----------
+    code : str
+        ``"ok"``, ``"saturation"`` or ``"flat"``.
+    message : str
+        Short, already-translated text for a status label.
+    saturation_frac : float
+        Fraction (0-1) of the block sitting at the hardware rails.
+    """
+
+    code: str
+    message: str
+    saturation_frac: float = 0.0
+
+
+class LiveQualityMonitor:
+    """Per-block signal-quality check for the live acquisition preview.
+
+    Unlike :func:`detect_acquisition_problems`, which inspects a whole saved
+    recording against its own data range, this monitor judges each incoming
+    block against the **device's true physical rails** (``physical_min`` /
+    ``physical_max``), so it can warn *while recording* that:
+
+    * the amplifier is **saturating** (a fraction of the block greater than
+      ``sat_frac`` sits within 1% of either rail — gain too high or a railing
+      electrode), or
+    * the electrode looks **disconnected** (the block's standard deviation is
+      below ``flat_std``, i.e. a suspiciously flat line — a real biopotential
+      always carries some baseline noise).
+
+    Otherwise the signal is reported as OK. The check is stateless per block,
+    so it tracks the signal as it streams without accumulating history.
+
+    Parameters
+    ----------
+    rail_min, rail_max : float
+        Hardware full-scale in physical units (mV), e.g. the device's
+        ``physical_min`` / ``physical_max``.
+    sat_frac : float, optional
+        Fraction of a block at the rails above which saturation is flagged
+        (default 0.02, i.e. 2%).
+    flat_std : float, optional
+        Standard-deviation threshold below which the block is deemed flat.
+        Defaults to 0.05% of the full-scale span.
+    """
+
+    def __init__(
+        self,
+        rail_min: float,
+        rail_max: float,
+        sat_frac: float = 0.02,
+        flat_std: float | None = None,
+    ) -> None:
+        self.rail_min = float(rail_min)
+        self.rail_max = float(rail_max)
+        span = self.rail_max - self.rail_min
+        if span <= 0:
+            raise ValueError("rail_max must be greater than rail_min.")
+        self._hi = self.rail_max - 0.01 * span
+        self._lo = self.rail_min + 0.01 * span
+        self._sat_frac = float(sat_frac)
+        self._flat_std = 5e-4 * span if flat_std is None else float(flat_std)
+
+    def update(self, block: FloatArray | np.ndarray) -> QualityStatus:
+        """Assess one raw block and return its :class:`QualityStatus`."""
+        x = np.asarray(block, dtype=np.float64).ravel()
+        if x.size == 0:
+            return QualityStatus("ok", tr("Signal OK"))
+
+        sat_frac = float(np.mean((x >= self._hi) | (x <= self._lo)))
+        if sat_frac > self._sat_frac:
+            return QualityStatus(
+                "saturation",
+                tr("Saturation: {pct:.0f}% at rails — lower gain").format(
+                    pct=sat_frac * 100.0
+                ),
+                sat_frac,
+            )
+        if float(np.std(x)) < self._flat_std:
+            return QualityStatus(
+                "flat",
+                tr("Flat signal — check electrode contact"),
+                sat_frac,
+            )
+        return QualityStatus("ok", tr("Signal OK"), sat_frac)
 
 
 # ---------------------------------------------------------------------------

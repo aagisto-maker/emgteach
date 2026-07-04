@@ -707,3 +707,19 @@ class TestDeviceFactory:
         device = create_device("dummy", label="abc")
         assert isinstance(device, _DummyDevice)
         assert device.name == "dummy:abc"
+
+
+class TestDevicePhysicalRange:
+    """Each backend reports its true full-scale (mV) for the EDF header, so
+    strong contractions are not silently clipped (Arduino spans ±12.5 mV,
+    well beyond the BITalino default ±3.3 mV)."""
+
+    def test_arduino_full_scale_is_pm_12_5_mv(self) -> None:
+        device = ArduinoDevice("COM4")
+        assert device.physical_max == pytest.approx(12.5)
+        assert device.physical_min == pytest.approx(-12.5)
+
+    def test_bitalino_full_scale_is_pm_1_65_mv(self) -> None:
+        device = BitalinoDevice("COM5")
+        assert device.physical_max == pytest.approx(1.65)
+        assert device.physical_min == pytest.approx(-1.65)
