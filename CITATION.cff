@@ -17,8 +17,8 @@ abstract: >-
   assisted fragment selection with an editable fragment editor, region-of-interest
   analysis, CSV export, a live signal-quality check and an ECG signal profile.
 type: software
-version: 1.1.1
-date-released: "2026-07-04"
+version: 1.1.2
+date-released: "2026-07-05"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

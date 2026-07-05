@@ -48,7 +48,7 @@ from emgteach.selection import (
 )
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 __all__ = [
     "ECG_PROFILE",

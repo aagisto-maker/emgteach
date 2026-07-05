@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] — 2026-07-05
+
+### Added
+- **Numerical metric validation.** `validation/validate_metrics.py` checks MNF/MDF against analytic ground truth and an independent reference implementation, recovers an imposed fatigue slope, and verifies the MVC and APDF percentile levels; it runs in continuous integration.
+
 ## [1.1.1] — 2026-07-04
 
 ### Fixed
