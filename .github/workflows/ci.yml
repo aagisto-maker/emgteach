@@ -65,6 +65,9 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: pytest --cov=emgteach --cov-report=term-missing --cov-report=xml -m "not hardware"
 
+      - name: Validate numerical accuracy of the metrics
+        run: python validation/validate_metrics.py
+
       - name: Upload coverage to Codecov (Linux + 3.12 only, non-blocking)
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
         uses: codecov/codecov-action@v5
