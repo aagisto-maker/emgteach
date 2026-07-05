@@ -138,7 +138,7 @@ def main():
     print(hdr)
     print("-" * len(hdr))
     n_pass = 0
-    for metric, case, got, ref, err, tol, kind, unit, ok in _rows:
+    for metric, case, got, ref, err, tol, kind, _unit, ok in _rows:
         n_pass += ok
         tols = f"{tol * 100:.0f}%" if kind == "rel" else f"{tol:g}"
         print(f"{metric:<16}{case:<32}{got:>11.3f}{ref:>11.3f}"
