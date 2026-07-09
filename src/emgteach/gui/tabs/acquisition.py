@@ -13,8 +13,11 @@ Channels:
 
 Visualisation (pyqtgraph):
   - Raw EMG signal
-  - Filtered signal (notch + band-pass)
   - Envelope
+
+The filtered signal (notch + band-pass) is still computed for the envelope
+and written pipeline, but it is not shown on screen: for physiology students
+the intermediate filtered trace is not relevant to their study.
 
 Scale controls:
   - Vertical scale: ▲▼ buttons per plot (×1.5 factor, 0.01×–100× of the initial limits)
@@ -27,6 +30,8 @@ The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread)
 from __future__ import annotations
 
 from collections import deque
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pyqtgraph as pg
@@ -98,12 +103,12 @@ _CHANNEL_DEFAULT_LABELS = ["EMG", "EMG 2"]
 # the user, only the old defaults).
 _OLD_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
 
-# With 2 channels the raw and filtered plots stack (one lane per channel)
-# instead of overlapping. The mV axis is no longer absolute, so each lane
-# shows reference ticks at 0/±_CALIB_MV·gain (an honest calibration that does
-# not hide the signal). Real signal mV per plot (0=raw, 1=filtered); the
-# envelope (2) never stacks.
-_CALIB_MV = {0: 1.0, 1: 0.2}
+# With 2 channels the raw plot stacks (one lane per channel) instead of
+# overlapping. The mV axis is no longer absolute, so each lane shows reference
+# ticks at 0/±_CALIB_MV·gain (an honest calibration that does not hide the
+# signal). Real signal mV per stacking plot (0=raw); the envelope (1) never
+# stacks.
+_CALIB_MV = {0: 1.0}
 
 # Default BITalino address (editable in the field). The lab's MAC is stable
 # across PCs; BitalinoDevice resolves it to the local virtual COM port. The
@@ -155,9 +160,6 @@ class AcquisitionTab(QWidget):
         self._buf_raw = [
             deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
         ]
-        self._buf_filt = [
-            deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
-        ]
         self._buf_env = [
             deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
         ]
@@ -194,19 +196,18 @@ class AcquisitionTab(QWidget):
         self._load_timer.setInterval(400)
         self._load_timer.timeout.connect(self._update_load_readout)
 
-        # ---- Vertical-scale state (per plot: 0=raw, 1=filt, 2=env) ----
+        # ---- Vertical-scale state (per plot: 0=raw, 1=env) ----
         # Initial Y ranges taken from the signal profile (restored in
         # _reset_y_scales). Changing modality = changing profile.
         self._y_ranges_init: list[tuple[float, float]] = [
             self._profile.ylim_raw,       # raw
-            self._profile.ylim_filtered,  # filtered
             self._profile.ylim_envelope,  # envelope
         ]
-        self._y_accum: list[float] = [1.0, 1.0, 1.0]  # accumulated factor per plot
-        # Per-plot data gain, used ONLY in stacked mode (2 channels) on
-        # raw/filtered: the ▲▼ zoom multiplies the signal while keeping the
-        # lanes fixed, instead of scaling the ViewBox. Unused in 1-channel mode.
-        self._y_gain: list[float] = [1.0, 1.0, 1.0]
+        self._y_accum: list[float] = [1.0, 1.0]  # accumulated factor per plot
+        # Per-plot data gain, used ONLY in stacked mode (2 channels) on the raw
+        # plot: the ▲▼ zoom multiplies the signal while keeping the lanes fixed,
+        # instead of scaling the ViewBox. Unused in 1-channel mode.
+        self._y_gain: list[float] = [1.0, 1.0]
 
         # ---- Time-scale state ----
         # Number of visible samples in each plot. Starts showing 5 s.
@@ -272,13 +273,16 @@ class AcquisitionTab(QWidget):
         cfg_row1 = QHBoxLayout()
         cfg_row1.setSpacing(6)
 
-        # Device-type combo
+        # Device-type combo. The Arduino + MyoWare backend is intentionally
+        # hidden in the teaching app (the hardware is hard to source in the
+        # lab), so only BITalino is offered and the selector itself is hidden
+        # — the backend code path is kept intact for future use.
         self._combo_device_type = QComboBox()
         self._combo_device_type.addItem("BITalino (Bluetooth)")
-        self._combo_device_type.addItem("Arduino + MyoWare 2.0 (USB)")
-        saved_type = int(self._settings.value("adquisicion/device_type", 0))
+        saved_type = 0  # force BITalino (MyoWare backend hidden)
         self._combo_device_type.setCurrentIndex(saved_type)
         self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
+        self._combo_device_type.setVisible(False)
         cfg_row1.addWidget(self._combo_device_type, stretch=1)
 
         # Conditional central area: COM port (BITalino) or COM selector (Arduino)
@@ -647,7 +651,6 @@ class AcquisitionTab(QWidget):
         # One curve per channel in each plot (colour = channel). MAX_CHANNELS
         # curves are allocated; those of inactive channels stay hidden.
         self._curves_raw: list = []
-        self._curves_filt: list = []
         self._curves_env: list = []
 
         # Raw signal
@@ -661,24 +664,11 @@ class AcquisitionTab(QWidget):
             )
         plots_col_vbox.addWidget(self._plot_raw)
 
-        # Filtered signal
-        self._plot_filt = pg.PlotWidget(
-            title=tr("Filtered EMG (notch 50 Hz + band-pass 20-450 Hz)")
-        )
-        self._plot_filt.setYRange(*self._y_ranges_init[1])
-        self._plot_filt.setLabel("left", "mV")
-        self._plot_filt.showGrid(x=True, y=True, alpha=0.3)
-        for c in range(MAX_CHANNELS):
-            self._curves_filt.append(
-                self._plot_filt.plot(pen=pg.mkPen(color=_CHANNEL_COLORS[c], width=1))
-            )
-        plots_col_vbox.addWidget(self._plot_filt)
-
         # Envelope
         self._plot_env = pg.PlotWidget(
             title=tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
         )
-        self._plot_env.setYRange(*self._y_ranges_init[2])
+        self._plot_env.setYRange(*self._y_ranges_init[1])
         self._plot_env.setLabel("left", "mV")
         self._plot_env.showGrid(x=True, y=True, alpha=0.3)
         for c in range(MAX_CHANNELS):
@@ -692,7 +682,7 @@ class AcquisitionTab(QWidget):
         # window; orange, like in the Analysis tab).
         marker_pen = pg.mkPen(color=(230, 126, 34), width=1, style=Qt.PenStyle.DashLine)
         self._marker_lines: list[list] = []
-        for pw in (self._plot_raw, self._plot_filt, self._plot_env):
+        for pw in (self._plot_raw, self._plot_env):
             pool = []
             for _ in range(MAX_MARKER_LINES):
                 line = pg.InfiniteLine(angle=90, movable=False, pen=marker_pen)
@@ -701,13 +691,13 @@ class AcquisitionTab(QWidget):
                 pool.append(line)
             self._marker_lines.append(pool)
 
-        # Stacked-mode annotations (2 channels), only on raw and filtered: a
+        # Stacked-mode annotations (2 channels), only on the raw plot: a
         # horizontal baseline per channel (its "zero") and the muscle label
         # next to each lane. The calibration is presented as reference ticks on
         # the axis (see _set_calib_ticks). Hidden in 1-channel mode.
         self._baselines: dict[int, list] = {}
         self._lane_labels: dict[int, list] = {}
-        for idx, pw in ((0, self._plot_raw), (1, self._plot_filt)):
+        for idx, pw in ((0, self._plot_raw),):
             base_lines = []
             lane_labels = []
             for c in range(MAX_CHANNELS):
@@ -730,8 +720,8 @@ class AcquisitionTab(QWidget):
             self._lane_labels[idx] = lane_labels
 
         # Build the ▲▼ buttons in the sidebar (one per plot)
-        self._plots_widgets = [self._plot_raw, self._plot_filt, self._plot_env]
-        labels = [tr("R"), tr("F"), tr("E")]   # button per plot: raw / filtered / envelope
+        self._plots_widgets = [self._plot_raw, self._plot_env]
+        labels = [tr("R"), tr("E")]   # button per plot: raw / envelope
         for i, (pw, lbl_txt) in enumerate(zip(self._plots_widgets, labels)):
             slot = QWidget()
             slot_vbox = QVBoxLayout(slot)
@@ -819,7 +809,7 @@ class AcquisitionTab(QWidget):
         self._update_legend()
         # Switching 1↔2 channels reconfigures the plots (stacked vs overlaid)
         # and resets the stacking gain.
-        self._y_gain = [1.0, 1.0, 1.0]
+        self._y_gain = [1.0, 1.0]
         self._apply_stacking_mode()
 
     @Slot()
@@ -847,7 +837,6 @@ class AcquisitionTab(QWidget):
         for c in range(MAX_CHANNELS):
             visible = c < self._n_channels
             self._curves_raw[c].setVisible(visible)
-            self._curves_filt[c].setVisible(visible)
             self._curves_env[c].setVisible(visible)
         if hasattr(self, "_load_rows"):
             labels = self._active_labels()
@@ -871,8 +860,8 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
 
     def _is_stacked(self, idx: int) -> bool:
-        """True if plot idx (0=raw, 1=filtered) stacks 2 channels."""
-        return self._n_channels == 2 and idx in (0, 1)
+        """True if plot idx (0=raw) stacks 2 channels."""
+        return self._n_channels == 2 and idx == 0
 
     def _lane_half(self, idx: int) -> float:
         """Half-height of plot idx's initial range (= height of one lane)."""
@@ -904,7 +893,7 @@ class AcquisitionTab(QWidget):
         """Update the text, colour, position and visibility of the lane labels
         according to the active labels and the stacking mode."""
         labels = self._active_labels()
-        for idx in (0, 1):
+        for idx in (0,):
             a = self._lane_half(idx)
             for c in range(MAX_CHANNELS):
                 txt = self._lane_labels[idx][c]
@@ -918,9 +907,9 @@ class AcquisitionTab(QWidget):
 
     def _apply_stacking_mode(self) -> None:
         """Configure the Y range, calibration ticks and baselines of the raw
-        and filtered plots according to the number of channels (1 = overlaid on
-        zero, 2 = two stacked lanes). The envelope never stacks."""
-        for idx in (0, 1):
+        plot according to the number of channels (1 = overlaid on zero, 2 = two
+        stacked lanes). The envelope never stacks."""
+        for idx in (0,):
             pw = self._plots_widgets[idx]
             axis = pw.getAxis("left")
             a = self._lane_half(idx)
@@ -948,7 +937,7 @@ class AcquisitionTab(QWidget):
 
     def _reset_buffers(self) -> None:
         """Clear every per-channel ring buffer back to silence."""
-        for bufs in (self._buf_raw, self._buf_filt, self._buf_env):
+        for bufs in (self._buf_raw, self._buf_env):
             for buf in bufs:
                 buf.clear()
                 buf.extend([0.0] * MAX_POINTS)
@@ -1040,7 +1029,25 @@ class AcquisitionTab(QWidget):
             self._detener_grabacion()
 
     def _iniciar_grabacion(self) -> None:
+        # Ask where and under what name to save the EDF (same UX as the
+        # "Save figure" dialogs), pre-filled with the destination folder and a
+        # timestamped default name. Cancelling aborts the recording start.
         save_dir = self._edit_dir.text().strip() or "."
+        default_name = f"emg_{datetime.now():%Y-%m-%d_%H-%M}.edf"
+        ruta, _ = QFileDialog.getSaveFileName(
+            self, tr("Save EDF recording as…"),
+            str(Path(save_dir) / default_name),
+            tr("EDF files (*.edf *.EDF)"),
+        )
+        if not ruta:
+            self._btn_grabar.setChecked(False)
+            return
+        if not ruta.lower().endswith(".edf"):
+            ruta += ".edf"
+        save_path = ruta
+        save_dir = str(Path(ruta).parent)
+        self._edit_dir.setText(save_dir)
+        self._settings.setValue("adquisicion/save_dir", save_dir)
 
         self._reset_buffers()
         self._marker_events.clear()
@@ -1087,6 +1094,7 @@ class AcquisitionTab(QWidget):
         self._worker = AcquisitionWorker(
             device=device,
             save_dir=save_dir,
+            save_path=save_path,
             sensor_labels=labels,
             auto_detect=self._chk_auto.isChecked(),
             onset_k=self._spin_k.value(),
@@ -1141,12 +1149,12 @@ class AcquisitionTab(QWidget):
         if not self._watchdog_timer.isActive():
             self._watchdog_timer.start()
         # data_ready carries one array per channel; append each to its buffer.
+        # The filtered trace is still emitted by the worker (it feeds the
+        # envelope) but is no longer displayed, so it is not buffered here.
         raw = data["raw_mv"]
-        filt = data["filtered"]
         env = data["envelope"]
         for c in range(min(len(raw), MAX_CHANNELS)):
             self._buf_raw[c].extend(raw[c].tolist())
-            self._buf_filt[c].extend(filt[c].tolist())
             self._buf_env[c].extend(env[c].tolist())
         if raw:
             self._total_samples += len(raw[0])
@@ -1189,21 +1197,16 @@ class AcquisitionTab(QWidget):
         # buffers have the same length, so it is computed only once).
         t = np.arange(n) / FS
 
-        # In stacked mode (2 channels) raw/filtered are drawn shifted to their
+        # In stacked mode (2 channels) the raw plot is drawn shifted to each
         # lane and scaled by the gain: displayed = baseline + gain·signal.
         stacked_raw = self._is_stacked(0)
-        stacked_filt = self._is_stacked(1)
 
         for c in range(self._n_channels):
             arr_raw = np.array(list(self._buf_raw[c]))[-n:]
-            arr_filt = np.array(list(self._buf_filt[c]))[-n:]
             arr_env = np.array(list(self._buf_env[c]))[-n:]
             if stacked_raw:
                 arr_raw = self._lane_baseline(0, c) + self._y_gain[0] * arr_raw
-            if stacked_filt:
-                arr_filt = self._lane_baseline(1, c) + self._y_gain[1] * arr_filt
             self._curves_raw[c].setData(t, arr_raw)
-            self._curves_filt[c].setData(t, arr_filt)
             self._curves_env[c].setData(t, arr_env)
 
         # Reposition the marker lines: each event is placed according to how
@@ -1540,7 +1543,7 @@ class AcquisitionTab(QWidget):
     def _y_zoom(self, idx: int, zoom_in: bool) -> None:
         """Adjust the vertical scale of plot `idx` by a factor of 1.5.
 
-        In stacked mode (raw/filtered with 2 channels) it scales the data gain
+        In stacked mode (raw plot with 2 channels) it scales the data gain
         while keeping the lanes fixed; otherwise it scales the ViewBox.
         """
         factor = 1.5
@@ -1580,12 +1583,12 @@ class AcquisitionTab(QWidget):
         self._y_accum[idx] = new_accum
 
     def _reset_y_scales(self) -> None:
-        """Restore the vertical scale of the three plots to their initial state."""
-        self._y_accum = [1.0, 1.0, 1.0]
-        self._y_gain = [1.0, 1.0, 1.0]
+        """Restore the vertical scale of the two plots to their initial state."""
+        self._y_accum = [1.0, 1.0]
+        self._y_gain = [1.0, 1.0]
         # Envelope: never stacked, direct initial range.
-        self._plot_env.setYRange(*self._y_ranges_init[2], padding=0)
-        # Raw/filtered: the mode (stacked or overlaid) sets range and annotations.
+        self._plot_env.setYRange(*self._y_ranges_init[1], padding=0)
+        # Raw: the mode (stacked or overlaid) sets range and annotations.
         self._apply_stacking_mode()
 
     # ------------------------------------------------------------------

@@ -18,6 +18,7 @@ dropped Bluetooth link.
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QMutex, QThread, Signal, Slot
@@ -56,7 +57,14 @@ class AcquisitionWorker(QThread):
         uses the abstract interface, so adding a new backend does not
         require any change here.
     save_dir : str, optional
-        Directory in which to create the EDF file (default ``"."``).
+        Directory in which to create the EDF file (default ``"."``). Used
+        only when ``save_path`` is not given.
+    save_path : str, optional
+        Full path (folder + file name) for the EDF file. When given it takes
+        precedence over ``save_dir`` and the timestamped auto-name, so the
+        user can choose exactly where and under what name the recording is
+        saved (like the "Save as…" dialogs). Its parent folder is created if
+        needed.
     n_per_read : int, optional
         Number of samples to request per ``device.read`` call (default
         100, i.e. 100 ms at 1 kHz).
@@ -93,6 +101,7 @@ class AcquisitionWorker(QThread):
         self,
         device: AcquisitionDevice,
         save_dir: str = ".",
+        save_path: str | None = None,
         n_per_read: int = 100,
         f_low: float | None = None,
         f_high: float | None = None,
@@ -108,6 +117,7 @@ class AcquisitionWorker(QThread):
         super().__init__(parent)
         self._device = device
         self._save_dir = save_dir
+        self._save_path = save_path
         self._metadata = metadata
         self._n_per_read = int(n_per_read)
         self._profile = profile
@@ -286,7 +296,11 @@ class AcquisitionWorker(QThread):
                     )
                 )
 
-            edf_path = build_timestamped_path(self._save_dir)
+            if self._save_path:
+                edf_path = self._save_path
+                Path(edf_path).parent.mkdir(parents=True, exist_ok=True)
+            else:
+                edf_path = build_timestamped_path(self._save_dir)
             channels = self._profile.build_channels(
                 labels,
                 fs,

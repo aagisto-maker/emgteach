@@ -54,18 +54,51 @@ from PySide6.QtWidgets import (
 
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
+# Teaching panel layout. The three panels relevant to physiology students
+# (raw, normalised envelope, PSD) come first, renumbered 1A, 2, 3 and checked
+# by default; the remaining panels follow, renumbered 4-8, unchecked but still
+# selectable. Each entry is (original panel index, display number): the
+# original index (0-7) is the identity used by the plotting code and the PDF
+# report; the display number is what the student sees.
+_PANEL_LAYOUT: list[tuple[int, str]] = [
+    (0, "1A"),  # raw signal
+    (3, "2"),   # normalised envelope
+    (4, "3"),   # PSD with MNF/MDF
+    (1, "4"),   # filtered + rectified
+    (2, "5"),   # envelope vs RMS
+    (5, "6"),   # RMS per window
+    (6, "7"),   # MDF vs time (fatigue)
+    (7, "8"),   # RMS vs MDF
+]
+# Panels checked by default (original indices): raw, normalised envelope, PSD.
+_DEFAULT_PANELS: tuple[int, ...] = (0, 3, 4)
+
+# Full panel names (report dialog), in display order and renumbered.
 _PANEL_NOMBRES = [
     "1A. Raw signal",
-    "1B. Filtered + rectified",
-    "2. Envelope vs RMS",
-    "3. Normalised envelope",
-    "4. PSD with MNF/MDF",
-    "5. RMS per window",
-    "6. MDF vs time (fatigue)",
-    "7. RMS vs MDF",
+    "2. Normalised envelope",
+    "3. PSD with MNF/MDF",
+    "4. Filtered + rectified",
+    "5. Envelope vs RMS",
+    "6. RMS per window",
+    "7. MDF vs time (fatigue)",
+    "8. RMS vs MDF",
 ]
 
-_PANEL_SHORT_NAMES = ["1A", "1B", "2", "3", "4", "5", "6", "7"]
+# Short labels (on-screen checkbox row), in display order and renumbered.
+_PANEL_SHORT_LABELS = [
+    "1A. Raw",
+    "2. Env. norm.",
+    "3. PSD",
+    "4. Filt.+rect.",
+    "5. Env. vs RMS",
+    "6. RMS/window",
+    "7. MDF/time",
+    "8. RMS vs MDF",
+]
+
+# Display number per original panel index (sidebar labels, etc.).
+_PANEL_SHORT_NAMES = {pid: num for pid, num in _PANEL_LAYOUT}
 
 from emgteach.exports import write_analysis_csv
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
@@ -248,11 +281,6 @@ class AnalysisTab(QWidget):
         root.addLayout(top_row)
 
         # --- Panel selection — one compact line with horizontal scroll ---
-        _PANEL_SHORT_LABELS = [
-            "1A. Raw", "1B. Filt.+rect.", "2. Env. vs RMS",
-            "3. Env. norm.", "4. PSD", "5. RMS/window",
-            "6. MDF/time", "7. RMS vs MDF",
-        ]
         grp_paneles = QGroupBox(tr("Panels to show"))
         # Box identical to the others (same steel fill and border), like
         # "Markers". Each panel description sits in a white chip; its tick box
@@ -295,10 +323,15 @@ class AnalysisTab(QWidget):
         paneles_layout = QHBoxLayout(paneles_inner)
         paneles_layout.setContentsMargins(2, 0, 2, 0)
         paneles_layout.setSpacing(6)
+        # Checkboxes in teaching display order; original panel index per
+        # checkbox is kept in _panel_pids so the plotting/report code can map
+        # back to the canonical panel identity. Only the teaching panels are
+        # checked by default.
+        self._panel_pids: list[int] = [pid for pid, _ in _PANEL_LAYOUT]
         self._chk_paneles: list[QCheckBox] = []
-        for label in _PANEL_SHORT_LABELS:
+        for (pid, _num), label in zip(_PANEL_LAYOUT, _PANEL_SHORT_LABELS):
             chk = QCheckBox(tr(label))
-            chk.setChecked(True)
+            chk.setChecked(pid in _DEFAULT_PANELS)
             paneles_layout.addWidget(chk)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
@@ -794,7 +827,12 @@ class AnalysisTab(QWidget):
         self._fig.clear()
         self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)
 
-        selected = [i for i, chk in enumerate(self._chk_paneles) if chk.isChecked()]
+        # Map checked boxes (in teaching display order) back to their canonical
+        # panel indices; the subplot order follows the display order.
+        selected = [
+            self._panel_pids[i]
+            for i, chk in enumerate(self._chk_paneles) if chk.isChecked()
+        ]
         if not selected:
             self._canvas.draw_idle()
             return
@@ -831,7 +869,7 @@ class AnalysisTab(QWidget):
                     color="#1f77b4", lw=1.2, label=tr("Filtered EMG (20-450 Hz)"))
             ax.plot(times, r["emg_rectified"],
                     color="#d62728", lw=1.2, alpha=0.9, label=tr("Rectified EMG"))
-            ax.set_title(tr("1B. Filtered + rectified EMG signal"), fontsize=9)
+            ax.set_title(tr("4. Filtered + rectified EMG signal"), fontsize=9)
             ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -849,7 +887,7 @@ class AnalysisTab(QWidget):
                     color="#9467bd", lw=2.0, label=tr("LP envelope (zero-phase)"))
             ax.plot(times, r["rms_sliding"],
                     color="#2ca02c", lw=1.5, ls="--", label=tr("RMS envelope"))
-            ax.set_title(tr("2. EMG signal envelope"), fontsize=9)
+            ax.set_title(tr("5. EMG signal envelope"), fontsize=9)
             ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -864,7 +902,7 @@ class AnalysisTab(QWidget):
             ax.plot(times, r["emg_envelope_normalised"],
                     color="#9467bd", lw=1.8, label=tr("Normalised envelope (max=1)"))
             ax.axhline(1.0, color="#E74C3C", ls=":", lw=1.5, alpha=0.8)
-            ax.set_title(tr("3. Envelope normalised to maximum"), fontsize=9)
+            ax.set_title(tr("2. Envelope normalised to maximum"), fontsize=9)
             ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -882,7 +920,7 @@ class AnalysisTab(QWidget):
                        label=f"MNF: {r['mnf']:.1f} Hz")
             ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
                        label=f"MDF: {r['mdf']:.1f} Hz")
-            ax.set_title(tr("4. Power spectral density (PSD)"), fontsize=9)
+            ax.set_title(tr("3. Power spectral density (PSD)"), fontsize=9)
             ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
             ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
             ax.set_xlim(0, f_high + 50)
@@ -896,7 +934,7 @@ class AnalysisTab(QWidget):
             ax.plot(r["t_seg"], r["rms_seg"],
                     color="#2ca02c", lw=1.5, marker="o", ms=4,
                     label=tr("RMS per 1 s window"))
-            ax.set_title(tr("5. RMS amplitude over time"), fontsize=9)
+            ax.set_title(tr("6. RMS amplitude over time"), fontsize=9)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_ylabel("RMS (mV)", fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -917,7 +955,7 @@ class AnalysisTab(QWidget):
                         label=tr("Trend (degree-2 polynomial)"))
             ax.set_title(
                 tr(
-                    "6. Fatigue trend: median frequency vs. time\n"
+                    "7. Fatigue trend: median frequency vs. time\n"
                     "   (a decrease indicates muscle fatigue)"
                 ),
                 fontsize=9, pad=8,
@@ -941,7 +979,7 @@ class AnalysisTab(QWidget):
             cbar = self._fig.colorbar(sc, ax=ax, orientation="vertical", pad=0.02)
             cbar.set_label(tr("Time (s)"), fontsize=8)
             cbar.ax.tick_params(labelsize=7)
-            ax.set_title(tr("7. Amplitude (force) vs median frequency (fatigue)"), fontsize=9)
+            ax.set_title(tr("8. Amplitude (force) vs median frequency (fatigue)"), fontsize=9)
             ax.set_xlabel("MDF (Hz)", fontsize=8)
             ax.set_ylabel("RMS (mV)", fontsize=8)
             ax.tick_params(labelsize=7)
@@ -1090,7 +1128,10 @@ class AnalysisTab(QWidget):
 
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return None
-        paneles = [i for i, cb in enumerate(checks) if cb.isChecked()]
+        # Map checked boxes (display order) to canonical panel indices.
+        paneles = [
+            self._panel_pids[i] for i, cb in enumerate(checks) if cb.isChecked()
+        ]
         x0 = float(spin_ini.value())
         x1 = min(x0 + float(spin_dur.value()), float(total))
         return paneles, (x0, x1)
@@ -1108,7 +1149,18 @@ class AnalysisTab(QWidget):
         paneles, rango = seleccion
         edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        out = edf_path.with_name(f"{edf_path.stem}_informe_{ts}.pdf")
+        # Ask where and under what name to save the PDF (same UX as "Export CSV"
+        # / "Save figure"), pre-filled next to the EDF with a timestamped name.
+        ruta_default = str(edf_path.with_name(f"{edf_path.stem}_informe_{ts}.pdf"))
+        ruta, _ = QFileDialog.getSaveFileName(
+            self, tr("Save PDF report"), ruta_default,
+            tr("PDF documents (*.pdf)"),
+        )
+        if not ruta:
+            return  # cancelled by the user
+        if not ruta.lower().endswith(".pdf"):
+            ruta += ".pdf"
+        out = Path(ruta)
         meta = {
             "student": self._edit_student.text().strip(),
             "student_code": self._edit_student_code.text().strip(),

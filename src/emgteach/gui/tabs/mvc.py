@@ -918,7 +918,18 @@ class MvcTab(QWidget):
             return  # cancelled by the user
         edf_path = Path(str(self._last_result.get("edf_path", "")) or "sesion.edf")
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        out = edf_path.with_name(f"{edf_path.stem}_informe_cvm_{ts}.pdf")
+        # Ask where and under what name to save the PDF (same UX as "Save
+        # figure"), pre-filled next to the EDF with a timestamped name.
+        ruta_default = str(edf_path.with_name(f"{edf_path.stem}_informe_cvm_{ts}.pdf"))
+        ruta, _ = QFileDialog.getSaveFileName(
+            self, tr("Save PDF report"), ruta_default,
+            tr("PDF documents (*.pdf)"),
+        )
+        if not ruta:
+            return  # cancelled by the user
+        if not ruta.lower().endswith(".pdf"):
+            ruta += ".pdf"
+        out = Path(ruta)
         meta = {
             "student": self._settings.value("analisis/student", ""),
             "student_code": self._settings.value("analisis/student_code", ""),

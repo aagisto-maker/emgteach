@@ -155,15 +155,18 @@ def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:
     return buf
 
 
+# Report panel titles keyed by canonical panel index (0-7). The display
+# numbers match the teaching renumbering used in the Analysis tab: the three
+# teaching panels are 1A/2/3 and the rest 4-8.
 _PANEL_REPORT_TITLES = {
     0: "1A. Raw EMG signal",
-    1: "1B. Filtered + rectified EMG signal",
-    2: "2. EMG signal envelope",
-    3: "3. Envelope normalised to maximum",
-    4: "4. Power spectral density (PSD)",
-    5: "5. RMS amplitude over time",
-    6: "6. Fatigue: median frequency (MDF) vs time",
-    7: "7. Amplitude (RMS) vs median frequency (MDF)",
+    1: "4. Filtered + rectified EMG signal",
+    2: "5. EMG signal envelope",
+    3: "2. Envelope normalised to maximum",
+    4: "3. Power spectral density (PSD)",
+    5: "6. RMS amplitude over time",
+    6: "7. Fatigue: median frequency (MDF) vs time",
+    7: "8. Amplitude (RMS) vs median frequency (MDF)",
 }
 
 
@@ -236,7 +239,7 @@ def _draw_analysis_panel(
                    label=f"MNF: {float(r['mnf']):.1f} Hz")
         ax.axvline(r["mdf"], color="#C71585", ls="--", lw=1.8,
                    label=f"MDF: {float(r['mdf']):.1f} Hz")
-        ax.set_xlabel("Frecuencia (Hz)", fontsize=8)
+        ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
         ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
         ax.set_xlim(0, float(r.get("f_high", 450)) + 50)
         ax.legend(fontsize=7)

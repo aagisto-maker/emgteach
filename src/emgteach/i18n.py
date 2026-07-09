@@ -177,6 +177,7 @@ _ES = {
     "Envelope (5 Hz low-pass filter, causal with continuous state)":
         "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
+    "Save EDF recording as…": "Guardar grabación EDF como…",
     "BITalino MAC address (recommended — stable on every PC), or an "
     "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
     "the BITalino in Windows Bluetooth settings first. No PyBluez is used.":
@@ -269,13 +270,13 @@ _ES = {
     "Code:": "Código:",
     "Panels to show": "Paneles a mostrar",
     "1A. Raw": "1A. En bruto",
-    "1B. Filt.+rect.": "1B. Filtr.+rect.",
-    "2. Env. vs RMS": "2. Env. vs RMS",
-    "3. Env. norm.": "3. Env. norm.",
-    "4. PSD": "4. PSD",
-    "5. RMS/window": "5. RMS/ventana",
-    "6. MDF/time": "6. MDF/tiempo",
-    "7. RMS vs MDF": "7. RMS vs MDF",
+    "2. Env. norm.": "2. Env. norm.",
+    "3. PSD": "3. PSD",
+    "4. Filt.+rect.": "4. Filtr.+rect.",
+    "5. Env. vs RMS": "5. Env. vs RMS",
+    "6. RMS/window": "6. RMS/ventana",
+    "7. MDF/time": "7. MDF/tiempo",
+    "8. RMS vs MDF": "8. RMS vs MDF",
     "Redraw": "Redibujar",
     "Markers": "Marcadores",
     "Markers ({n}):": "Marcadores ({n}):",
@@ -295,39 +296,41 @@ _ES = {
     "MDF slope:": "Pendiente MDF:",
     "Global RMS:": "RMS global:",
     "1A. Raw signal": "1A. Señal en bruto",
-    "1B. Filtered + rectified": "1B. Filtrada + rectificada",
-    "2. Envelope vs RMS": "2. Envolvente vs RMS",
-    "3. Normalised envelope": "3. Envolvente normalizada",
-    "4. PSD with MNF/MDF": "4. PSD con MNF/MDF",
-    "5. RMS per window": "5. RMS por ventana",
-    "6. MDF vs time (fatigue)": "6. MDF vs tiempo (fatiga)",
+    "2. Normalised envelope": "2. Envolvente normalizada",
+    "3. PSD with MNF/MDF": "3. PSD con MNF/MDF",
+    "4. Filtered + rectified": "4. Filtrada + rectificada",
+    "5. Envelope vs RMS": "5. Envolvente vs RMS",
+    "6. RMS per window": "6. RMS por ventana",
+    "7. MDF vs time (fatigue)": "7. MDF vs tiempo (fatiga)",
     "1A. Raw EMG signal": "1A. Señal EMG en bruto",
     "Filtered EMG (20-450 Hz)": "EMG filtrado (20-450 Hz)",
-    "1B. Filtered + rectified EMG signal": "1B. Señal EMG filtrada + rectificada",
+    "4. Filtered + rectified EMG signal": "4. Señal EMG filtrada + rectificada",
     "Rectified EMG": "EMG rectificado",
     "LP envelope (zero-phase)": "Envolvente LP (fase cero)",
     "RMS envelope": "Envolvente RMS",
-    "2. EMG signal envelope": "2. Envolvente de la señal EMG",
+    "5. EMG signal envelope": "5. Envolvente de la señal EMG",
     "Normalised envelope (max=1)": "Envolvente normalizada (max=1)",
-    "3. Envelope normalised to maximum": "3. Envolvente normalizada al máximo",
+    "2. Envelope normalised to maximum": "2. Envolvente normalizada al máximo",
     "Normalised amplitude (0-1)": "Amplitud normalizada (0-1)",
-    "4. Power spectral density (PSD)": "4. Densidad espectral de potencia (PSD)",
+    "3. Power spectral density (PSD)": "3. Densidad espectral de potencia (PSD)",
     "Frequency (Hz)": "Frecuencia (Hz)",
     "RMS per 1 s window": "RMS por ventana de 1 s",
-    "5. RMS amplitude over time": "5. Amplitud RMS en el tiempo",
+    "6. RMS amplitude over time": "6. Amplitud RMS en el tiempo",
     "Median frequency per window": "Frecuencia mediana por ventana",
     "Trend (degree-2 polynomial)": "Tendencia (polinomio grado 2)",
-    "6. Fatigue trend: median frequency vs. time\n"
+    "7. Fatigue trend: median frequency vs. time\n"
     "   (a decrease indicates muscle fatigue)":
-        "6. Tendencia de fatiga: frecuencia mediana vs. tiempo\n"
+        "7. Tendencia de fatiga: frecuencia mediana vs. tiempo\n"
         "   (un descenso indica fatiga muscular)",
     "Degree-2 polynomial fit": "Ajuste polinómico grado 2",
-    "7. Amplitude (force) vs median frequency (fatigue)":
-        "7. Relación amplitud (fuerza) vs frecuencia mediana (fatiga)",
+    "8. Amplitude (force) vs median frequency (fatigue)":
+        "8. Relación amplitud (fuerza) vs frecuencia mediana (fatiga)",
     "Select EDF file": "Seleccionar archivo EDF",
     "EDF files (*.edf *.EDF)": "Archivos EDF (*.edf *.EDF)",
     "Save figure": "Guardar figura",
     "PNG images (*.png)": "Imágenes PNG (*.png)",
+    "Save PDF report": "Guardar informe PDF",
+    "PDF documents (*.pdf)": "Documentos PDF (*.pdf)",
     "Figure saved to: {path}": "Figura guardada en: {path}",
     "Report graphs": "Gráficos del informe",
     "Tick the graphs to add to the report:": "Marca los gráficos que se añadirán al informe:",
@@ -486,10 +489,10 @@ _ES = {
     "MDF per window": "MDF por ventana",
     "Trend (degree 2)": "Tendencia (grado 2)",
     "Degree-2 fit": "Ajuste grado 2",
-    "6. Fatigue: median frequency (MDF) vs time":
-        "6. Fatiga: frecuencia mediana (MDF) vs tiempo",
-    "7. Amplitude (RMS) vs median frequency (MDF)":
-        "7. Amplitud (RMS) vs frecuencia mediana (MDF)",
+    "7. Fatigue: median frequency (MDF) vs time":
+        "7. Fatiga: frecuencia mediana (MDF) vs tiempo",
+    "8. Amplitude (RMS) vs median frequency (MDF)":
+        "8. Amplitud (RMS) vs frecuencia mediana (MDF)",
     "EMG recording and analysis report": "Informe de registro y análisis de EMG",
     "Student: {name}": "Alumno/a: {name}",
     "Generated on: {dt:%Y-%m-%d %H:%M}": "Fecha de generación: {dt:%Y-%m-%d %H:%M}",
@@ -514,5 +517,131 @@ _ES = {
     "Device": "Dispositivo",
     "not stored in the EDF": "no almacenado en el EDF",
     "generated {dt:%Y-%m-%d %H:%M}": "generado {dt:%Y-%m-%d %H:%M}",
+
+    # --- fragment editor / CSV export / new UI (v1.1.x) ---
+    # -- DSP live signal-quality diagnostics --
+    "Signal OK": "Señal correcta",
+    "Flat signal — check electrode contact": "Señal plana — revisa el contacto del electrodo",
+    "Saturation: {pct:.0f}% at rails — lower gain":
+        "Saturación: {pct:.0f}% en los extremos — baja la ganancia",
+    # -- CSV export (exports.py) --
+    "undetermined": "indeterminada",
+    "fatigue (MDF decreasing)": "fatiga (MDF decreciente)",
+    "no fatigue (MDF stable/increasing)": "sin fatiga (MDF estable/creciente)",
+    "whole recording": "registro completo",
+    "File": "Archivo",
+    "Sampling rate (Hz)": "Frecuencia de muestreo (Hz)",
+    "Analysed window": "Ventana analizada",
+    "Duration (s)": "Duración (s)",
+    "Global RMS (mV)": "RMS global (mV)",
+    "MNF (Hz)": "MNF (Hz)",
+    "MDF (Hz)": "MDF (Hz)",
+    "MDF slope (Hz/s)": "Pendiente MDF (Hz/s)",
+    "MDF slope (Hz/min)": "Pendiente MDF (Hz/min)",
+    "MDF R2": "R² de MDF",
+    "MDF decline (%)": "Descenso MDF (%)",
+    "{n} fragments: {list} s": "{n} fragmentos: {list} s",
+    "{a:.2f}-{b:.2f} s of {d:.1f} s": "{a:.2f}-{b:.2f} s de {d:.1f} s",
+    "Per-segment metrics": "Métricas por segmento",
+    # -- fatigue verdicts (reports.py / workers) --
+    "Yes — MDF falls {slope:+.2f} Hz/s ({decline:.1f}% decline, R²={r2:.2f})":
+        "Sí — la MDF desciende {slope:+.2f} Hz/s ({decline:.1f}% de descenso, R²={r2:.2f})",
+    "No — MDF stable or rising ({slope:+.2f} Hz/s, R²={r2:.2f})":
+        "No — MDF estable o en aumento ({slope:+.2f} Hz/s, R²={r2:.2f})",
+    "Analysed fragments": "Fragmentos analizados",
+    "Protocol: {p}": "Protocolo: {p}",
+    "{n} fragments ({d:.2f} s of {full:.1f} s): {list} s":
+        "{n} fragmentos ({d:.2f} s de {full:.1f} s): {list} s",
+    "Fitting MDF-vs-time regression…": "Ajustando la regresión MDF-tiempo…",
+    "The selected region ({a:.2f}-{b:.2f} s) is shorter than the 1 s minimum required for analysis.":
+        "La región seleccionada ({a:.2f}-{b:.2f} s) es más corta que el mínimo de 1 s "
+        "requerido para el análisis.",
+    "The selected fragments total {t:.2f} s, below the 1 s minimum required for analysis.":
+        "Los fragmentos seleccionados suman {t:.2f} s, por debajo del mínimo de 1 s "
+        "requerido para el análisis.",
+    "Fatigue trend: MDF slope {slope:.3f} Hz/s ({decline:.1f}% decline, R²={r2:.2f}).":
+        "Tendencia de fatiga: pendiente MDF {slope:.3f} Hz/s ({decline:.1f}% de descenso, "
+        "R²={r2:.2f}).",
+    "Region of interest: {a:.2f}-{b:.2f} s ({d:.2f} s).":
+        "Región de interés: {a:.2f}-{b:.2f} s ({d:.2f} s).",
+    "Analysing {n} selected fragments ({d:.2f} s of {full:.2f} s).":
+        "Analizando {n} fragmentos seleccionados ({d:.2f} s de {full:.2f} s).",
+    "No fatigue: MDF slope {slope:+.3f} Hz/s (R²={r2:.2f}).":
+        "Sin fatiga: pendiente MDF {slope:+.3f} Hz/s (R²={r2:.2f}).",
+    # -- acquisition tab (protocol / markers) --
+    "Name": "Nombre",
+    "e.g. Isometric biceps 30 s": "p. ej. Bíceps isométrico 30 s",
+    "Live signal quality: saturation or a flat (disconnected) signal.":
+        "Calidad de señal en vivo: saturación o señal plana (desconectada).",
+    "Markers recorded so far. Select one and press Delete to remove it.":
+        "Marcadores registrados hasta ahora. Selecciona uno y pulsa Supr para eliminarlo.",
+    "Delete": "Eliminar",
+    "Delete the selected marker.": "Elimina el marcador seleccionado.",
+    "Protocol:": "Protocolo:",
+    "Marker deleted: t={t:.1f} s — {label}": "Marcador eliminado: t={t:.1f} s — {label}",
+    # -- analysis tab (region / fragments / CSV) --
+    "Export CSV": "Exportar CSV",
+    "Analyse only a region:": "Analizar solo una región:",
+    "Restrict every metric (spectrum, RMS, fatigue) to the time window below instead of the whole recording.":
+        "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
+        "abajo en lugar del registro completo.",
+    "Select fragments…": "Seleccionar fragmentos…",
+    "Open the assisted editor to keep the significant fragments and discard the rest. Takes precedence over the region above.":
+        "Abre el editor asistido para conservar los fragmentos significativos y descartar "
+        "el resto. Tiene prioridad sobre la región de arriba.",
+    "Cancel": "Cancelar",
+    "CSV files (*.csv)": "Archivos CSV (*.csv)",
+    "from": "desde",
+    "to": "hasta",
+    "Cancelling analysis…": "Cancelando análisis…",
+    "Fatigue: DETECTED (MDF −{decline:.1f}%)": "Fatiga: DETECTADA (MDF −{decline:.1f}%)",
+    "CSV exported to: {path}": "CSV exportado a: {path}",
+    "{n} fragment(s) selected ({d:.1f} s)": "{n} fragmento(s) seleccionado(s) ({d:.1f} s)",
+    "Could not open the fragment editor: {error}":
+        "No se pudo abrir el editor de fragmentos: {error}",
+    "CSV export error: {error}": "Error al exportar CSV: {error}",
+    "Cancelling…": "Cancelando…",
+    # -- fragment-selection widget --
+    "Select analysis fragments": "Seleccionar fragmentos de análisis",
+    "The app suggests the informative fragments (active periods). Adjust, add or remove them; only the checked fragments are analysed. You decide the final selection.":
+        "La app sugiere los fragmentos informativos (periodos activos). Ajústalos, "
+        "añádelos o quítalos; solo se analizan los fragmentos marcados. Tú decides la "
+        "selección final.",
+    "Band-pass low cut-off (Hz).": "Frecuencia de corte baja del paso-banda (Hz).",
+    "Band-pass high cut-off (Hz).": "Frecuencia de corte alta del paso-banda (Hz).",
+    "Mains-notch frequency (Hz), usually 50 or 60.":
+        "Frecuencia del notch de red (Hz), normalmente 50 o 60.",
+    "Envelope low-pass cut-off (Hz): lower = smoother envelope.":
+        "Frecuencia de corte del paso-bajo de la envolvente (Hz): menor = envolvente más suave.",
+    "Threshold in robust standard deviations above the resting baseline. Lower = more sensitive (keeps weaker activity).":
+        "Umbral en desviaciones típicas robustas sobre la línea base de reposo. "
+        "Menor = más sensible (conserva actividad más débil).",
+    "Shortest fragment kept; briefer active periods are discarded.":
+        "Fragmento más corto que se conserva; los periodos activos más breves se descartan.",
+    "Active periods separated by less than this are merged into one.":
+        "Los periodos activos separados por menos de esto se fusionan en uno.",
+    "Auto-suggest": "Auto-sugerir",
+    "Re-run the automatic fragment proposal with the parameters above.":
+        "Vuelve a ejecutar la propuesta automática de fragmentos con los parámetros de arriba.",
+    "Add fragment": "Añadir fragmento",
+    "Remove selected": "Quitar seleccionado",
+    "Whole recording": "Registro completo",
+    "Clear the selection and analyse everything.": "Borra la selección y analiza todo.",
+    "Use these fragments": "Usar estos fragmentos",
+    "Keep": "Conservar",
+    "Start (s)": "Inicio (s)",
+    "End (s)": "Fin (s)",
+    "Reason": "Motivo",
+    "Envelope filter (Hz):": "Filtro de envolvente (Hz):",
+    "band": "banda",
+    "notch": "notch",
+    "envelope": "envolvente",
+    "Detection:": "Detección:",
+    "sensitivity k": "sensibilidad k",
+    "min. duration": "duración mín.",
+    "merge gap": "hueco de fusión",
+    "Whole recording will be analysed.": "Se analizará el registro completo.",
+    "{n} fragment(s) — {d:.2f} s of {full:.1f} s": "{n} fragmento(s) — {d:.2f} s de {full:.1f} s",
+
     "page {n}": "página {n}",
 }
