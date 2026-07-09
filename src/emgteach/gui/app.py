@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtCore import QSettings, Qt, QTimer, qInstallMessageHandler
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -56,7 +56,7 @@ def _make_splash() -> QSplashScreen:
     p.setPen(QColor("#aaccee"))
     sub_rect = px.rect().adjusted(0, 80, 0, 0)
     p.drawText(sub_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-               tr("Arduino platforms (BITalino and MyoWare)"))
+               tr("BITalino acquisition platform"))
 
     author_font = QFont("Arial", 9)
     p.setFont(author_font)
@@ -231,7 +231,22 @@ class MainWindow(QMainWindow):
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _install_qt_message_filter() -> None:
+    """Drop a benign, noisy Qt/pyqtgraph font warning seen on some systems
+    ("QFont::setPointSize: Point size <= 0 (-1)"), emitted while pyqtgraph
+    renders axis labels. Everything else is forwarded to stderr unchanged so
+    real Qt diagnostics are still visible.
+    """
+    def _handler(mode, context, message) -> None:
+        if "Point size <= 0" in message:
+            return
+        sys.stderr.write(message + "\n")
+
+    qInstallMessageHandler(_handler)
+
+
 def main() -> None:
+    _install_qt_message_filter()
     app = QApplication(sys.argv)
     app.setApplicationName("EMG Bioinstrumentacion")
     app.setOrganizationName("Bioinstrumentacion")

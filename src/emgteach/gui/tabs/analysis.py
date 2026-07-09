@@ -461,6 +461,9 @@ class AnalysisTab(QWidget):
         self._lbl_pendiente = QLabel(f"{tr('MDF slope:')} —")
         self._lbl_rms_global = QLabel(f"{tr('Global RMS:')} —")
         self._lbl_iemg = QLabel("iEMG: —")
+        self._lbl_iemg.setToolTip(
+            tr("Integral of the rectified EMG — total muscle activation.")
+        )
         self._lbl_duracion = QLabel(f"{tr('Duration:')} —")
         self._lbl_archivo = QLabel("")
 

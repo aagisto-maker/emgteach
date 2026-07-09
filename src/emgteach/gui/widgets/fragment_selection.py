@@ -51,6 +51,19 @@ _DEFAULT_K = float(_suggest_defaults["k"].default)
 _DEFAULT_MIN_DURATION_S = float(_suggest_defaults["min_duration_s"].default)
 _DEFAULT_MERGE_GAP_S = float(_suggest_defaults["merge_gap_s"].default)
 
+# Translatable labels for the segment "reason" codes emitted by the detector
+# (emgteach.selection): shown in the table's "Reason" column.
+_REASON_KEYS = {
+    "activity": "activity",
+    "whole": "Whole recording",
+    "manual": "manual",
+}
+
+
+def _reason_text(reason: str) -> str:
+    """Human-readable, translated label for a segment reason code."""
+    return tr(_REASON_KEYS.get(reason, reason)) if reason else ""
+
 
 class FragmentSelectionDialog(QDialog):
     """Modal editor returning the fragments to analyse.
@@ -330,7 +343,7 @@ class FragmentSelectionDialog(QDialog):
         dur_item = QTableWidgetItem(f"{seg.duration_s:.2f}")
         dur_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
         self._table.setItem(row, 3, dur_item)
-        reason_item = QTableWidgetItem(seg.reason or "")
+        reason_item = QTableWidgetItem(_reason_text(seg.reason))
         reason_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
         self._table.setItem(row, 4, reason_item)
 

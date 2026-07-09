@@ -84,7 +84,7 @@ def resolve_startup_language(settings: Any = None) -> str:
 _ES = {
     # --- app / window ---
     "EMG Bioinstrumentation": "EMG Bioinstrumentación",
-    "Arduino platforms (BITalino and MyoWare)": "Plataformas Arduino (BITalino y MyoWare)",
+    "BITalino acquisition platform": "Plataforma de adquisición BITalino",
     "Acquisition": "Adquisición",
     "Analysis": "Análisis",
     "MVC normalisation": "Normalización CVM",
@@ -295,6 +295,8 @@ _ES = {
     "Fatigue:": "Fatiga:",
     "MDF slope:": "Pendiente MDF:",
     "Global RMS:": "RMS global:",
+    "Integral of the rectified EMG — total muscle activation.":
+        "Integral de la EMG rectificada — activación muscular total.",
     "1A. Raw signal": "1A. Señal en bruto",
     "2. Normalised envelope": "2. Envolvente normalizada",
     "3. PSD with MNF/MDF": "3. PSD con MNF/MDF",
@@ -626,6 +628,9 @@ _ES = {
     "Add fragment": "Añadir fragmento",
     "Remove selected": "Quitar seleccionado",
     "Whole recording": "Registro completo",
+    # Segment "reason" codes shown in the fragment table.
+    "activity": "actividad",
+    "manual": "manual",
     "Clear the selection and analyse everything.": "Borra la selección y analiza todo.",
     "Use these fragments": "Usar estos fragmentos",
     "Keep": "Conservar",
