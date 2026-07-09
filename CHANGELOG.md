@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-07-09
+
+### Changed
+- **Teaching-focused live view.** The Acquisition tab now plots only the raw signal and the envelope; the intermediate filtered trace is no longer shown (it is still computed for the envelope, and the EDF keeps the raw channel). This drops a step that is not relevant for physiology students.
+- **BITalino-only interface.** The Arduino + MyoWare backend is hidden in the device selector (its code path is unchanged), matching how the teaching lab is equipped.
+- **Teaching panel selection.** The Analysis "Panels to show" now defaults to the three panels used in class — raw signal, normalised envelope and PSD — renumbered 1A / 2 / 3; the remaining panels follow as 4–8, unchecked but still selectable. The numbering is consistent on screen and in the PDF report.
+- **Author credit.** The splash and About box now read "Dr. Agis-Torres et al.".
+
+### Added
+- **Choose where recordings are saved.** Starting a recording opens a "Save as…" dialog to pick the EDF file name and folder (pre-filled with a timestamped default), like the figure and CSV export dialogs.
+- **Choose where reports are saved.** The Analysis and MVC PDF reports are written through a "Save as…" dialog (name + folder) instead of an automatic name.
+- **iEMG hint.** A short tooltip explains the integrated-EMG value in the analysis summary.
+
+### Fixed
+- **Complete Spanish interface.** Translated the strings that still showed in English in the Spanish UI — the fragment editor, CSV export, region-of-interest controls, the Protocol metadata field, CSV column headers, fatigue verdicts, marker deletion and the fragment "reason" labels — plus a hard-coded Spanish axis label in the PDF report.
+- **Quieter console.** Suppressed a benign `QFont::setPointSize: Point size <= 0` warning emitted by pyqtgraph while drawing axis labels.
+
 ## [1.1.2] — 2026-07-05
 
 ### Added
