@@ -573,6 +573,10 @@ def _render_mvc_figure(
     ax.set_xlabel(tr("Load (% MVC)"), fontsize=8)
     ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
     ax.set_ylim(0, 100)
+    # Legend key for the out-of-range marker (the red ring drawn above).
+    ax.plot([], [], "o", linestyle="none", markersize=9,
+            markerfacecolor="none", markeredgecolor=_OUT_COLOR,
+            markeredgewidth=1.8, label=tr("Out of normal range"))
     ax.legend(loc="lower right", fontsize=6)
     ax.grid(True, color="#DDDDDD", alpha=0.5)
     ax.tick_params(labelsize=7)

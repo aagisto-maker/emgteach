@@ -175,6 +175,9 @@ class MvcTab(QWidget):
         self._spin_fenv.setSingleStep(0.5)
         self._spin_fenv.setValue(5.0)
         self._spin_fenv.setFixedWidth(80)
+        self._spin_fenv.setToolTip(
+            tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
+        )
         row_params.addWidget(self._spin_fenv)
 
         row_params.addStretch()
@@ -237,6 +240,13 @@ class MvcTab(QWidget):
         self._apdf_fig = Figure(constrained_layout=True)
         self._apdf_canvas = FigureCanvasQTAgg(self._apdf_fig)
         self._apdf_canvas.setFixedSize(360, 120)
+        self._apdf_canvas.setToolTip(
+            tr(
+                "Amplitude Probability Distribution Function (Jonsson): the % of "
+                "time the muscle stays below each load level (% MVC). The static "
+                "(P10), median (P50) and peak (P90) levels gauge overload risk."
+            )
+        )
 
         # Structured data panel (replaces the old summary box).
         self._data_box = self._build_data_panel()
@@ -687,6 +697,10 @@ class MvcTab(QWidget):
         ax.set_ylim(0, 100)
         ax.set_xlim(0, float(apdf.load[-1]))
         ax.tick_params(labelsize=7)
+        # Legend key for the out-of-range marker (the red ring drawn above).
+        ax.plot([], [], "o", linestyle="none", markersize=11,
+                markerfacecolor="none", markeredgecolor=_OUT_COLOR,
+                markeredgewidth=2.0, label=tr("Out of normal range"))
         ax.legend(loc="lower right", fontsize=7)
         ax.grid(True, color="#DDDDDD", alpha=0.5)
         self._apdf_canvas.draw_idle()

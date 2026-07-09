@@ -100,6 +100,18 @@ _PANEL_SHORT_LABELS = [
 # Display number per original panel index (sidebar labels, etc.).
 _PANEL_SHORT_NAMES = {pid: num for pid, num in _PANEL_LAYOUT}
 
+# Short, didactic tooltip per original panel index — what the panel shows.
+_PANEL_TOOLTIPS = {
+    0: "Raw EMG signal, unfiltered.",
+    3: "Envelope normalised to its maximum (0-1): the activation time course.",
+    4: "Power spectrum; MNF and MDF summarise its frequency content.",
+    1: "Band-pass filtered (20-450 Hz) and rectified signal.",
+    2: "Linear envelope vs the RMS envelope of the signal.",
+    5: "RMS amplitude per window: how the intensity evolves.",
+    6: "Median frequency over time; a fall indicates fatigue.",
+    7: "Amplitude-frequency relation (force vs fatigue).",
+}
+
 from emgteach.exports import write_analysis_csv
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
@@ -195,6 +207,9 @@ class AnalysisTab(QWidget):
         self._spin_fenv.setSingleStep(0.5)
         self._spin_fenv.setValue(5.0)
         self._spin_fenv.setFixedWidth(72)
+        self._spin_fenv.setToolTip(
+            tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
+        )
         row_params.addWidget(self._spin_fenv)
         row_params.addWidget(QLabel(tr("Student:")))
         self._edit_student = QLineEdit()
@@ -332,6 +347,7 @@ class AnalysisTab(QWidget):
         for (pid, _num), label in zip(_PANEL_LAYOUT, _PANEL_SHORT_LABELS):
             chk = QCheckBox(tr(label))
             chk.setChecked(pid in _DEFAULT_PANELS)
+            chk.setToolTip(tr(_PANEL_TOOLTIPS[pid]))
             paneles_layout.addWidget(chk)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
@@ -466,6 +482,20 @@ class AnalysisTab(QWidget):
         )
         self._lbl_duracion = QLabel(f"{tr('Duration:')} —")
         self._lbl_archivo = QLabel("")
+
+        # Didactic tooltips: what each summary metric means.
+        self._lbl_mnf.setToolTip(tr("Mean spectral frequency; tends to fall with fatigue."))
+        self._lbl_mdf.setToolTip(
+            tr("Frequency that splits the spectrum into two equal-power halves; "
+               "falls with fatigue.")
+        )
+        self._lbl_fatiga.setToolTip(tr("Fatigue indicator from the MDF trend over time."))
+        self._lbl_pendiente.setToolTip(tr("Slope of MDF over time (Hz/s); negative = fatigue."))
+        self._lbl_rms_global.setToolTip(
+            tr("Global RMS amplitude: mean intensity of the activation.")
+        )
+        self._lbl_duracion.setToolTip(tr("Analysed signal duration."))
+        self._lbl_archivo.setToolTip(tr("Analysed EDF file."))
 
         for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga, self._lbl_pendiente,
                     self._lbl_rms_global, self._lbl_iemg, self._lbl_duracion, self._lbl_archivo):

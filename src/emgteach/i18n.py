@@ -297,6 +297,44 @@ _ES = {
     "Global RMS:": "RMS global:",
     "Integral of the rectified EMG — total muscle activation.":
         "Integral de la EMG rectificada — activación muscular total.",
+    # --- didactic tooltips (panels, summary metrics, APDF) ---
+    "Raw EMG signal, unfiltered.": "Señal EMG cruda, sin filtrar.",
+    "Envelope normalised to its maximum (0-1): the activation time course.":
+        "Envolvente normalizada a su máximo (0-1): el curso temporal de la activación.",
+    "Power spectrum; MNF and MDF summarise its frequency content.":
+        "Espectro de potencia; MNF y MDF resumen su contenido en frecuencia.",
+    "Band-pass filtered (20-450 Hz) and rectified signal.":
+        "Señal filtrada paso-banda (20-450 Hz) y rectificada.",
+    "Linear envelope vs the RMS envelope of the signal.":
+        "Envolvente lineal frente a la envolvente RMS de la señal.",
+    "RMS amplitude per window: how the intensity evolves.":
+        "Amplitud RMS por ventana: cómo evoluciona la intensidad.",
+    "Median frequency over time; a fall indicates fatigue.":
+        "Frecuencia mediana en el tiempo; su descenso indica fatiga.",
+    "Amplitude-frequency relation (force vs fatigue).":
+        "Relación amplitud-frecuencia (fuerza frente a fatiga).",
+    "Mean spectral frequency; tends to fall with fatigue.":
+        "Frecuencia media del espectro; tiende a bajar con la fatiga.",
+    "Frequency that splits the spectrum into two equal-power halves; "
+    "falls with fatigue.":
+        "Frecuencia que divide el espectro en dos mitades de igual potencia; "
+        "baja con la fatiga.",
+    "Fatigue indicator from the MDF trend over time.":
+        "Indicador de fatiga a partir de la tendencia de la MDF en el tiempo.",
+    "Slope of MDF over time (Hz/s); negative = fatigue.":
+        "Pendiente de la MDF en el tiempo (Hz/s); negativa = fatiga.",
+    "Global RMS amplitude: mean intensity of the activation.":
+        "Amplitud RMS global: intensidad media de la activación.",
+    "Analysed signal duration.": "Duración de la señal analizada.",
+    "Analysed EDF file.": "Archivo EDF analizado.",
+    "Out of normal range": "Fuera del rango normal",
+    "Amplitude Probability Distribution Function (Jonsson): the % of "
+    "time the muscle stays below each load level (% MVC). The static "
+    "(P10), median (P50) and peak (P90) levels gauge overload risk.":
+        "Función de distribución de probabilidad de amplitud (Jonsson): el % del "
+        "tiempo que el músculo permanece por debajo de cada nivel de carga "
+        "(% CVM). Los niveles estático (P10), mediano (P50) y pico (P90) valoran "
+        "el riesgo de sobrecarga.",
     "1A. Raw signal": "1A. Señal en bruto",
     "2. Normalised envelope": "2. Envolvente normalizada",
     "3. PSD with MNF/MDF": "3. PSD con MNF/MDF",
