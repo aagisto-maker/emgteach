@@ -66,9 +66,10 @@ from emgteach.devices import (
 from emgteach.dsp import LiveQualityMonitor
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import RecordingMetadata
-from emgteach.mvc import compute_mvc
+from emgteach.mvc import mvc_from_reps
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
 
@@ -84,6 +85,11 @@ MAX_CHANNELS = 2
 # Maximum number of event markers drawn live at once (a reusable pool of
 # lines per plot; more than enough for a 30 s window).
 MAX_MARKER_LINES = 40
+
+# Guided MVC-calibration wizard timing.
+MVC_TICK_MS = 100   # state-machine tick
+MVC_READY_S = 3.0   # "get ready" countdown before each contraction
+MVC_REST_S = 2.0    # relax pause between reps / muscles
 
 # Style per live signal-quality status code (green ok / red saturation /
 # amber flat-disconnected).
@@ -189,9 +195,26 @@ class AcquisitionTab(QWidget):
             OnlineLoad(self._load_warning, self._load_danger)
             for _ in range(MAX_CHANNELS)
         ]
-        self._calibrating = False
-        self._calib_buf: list[list[float]] = [[] for _ in range(MAX_CHANNELS)]
-        self._calib_target = int(self._profile.apda_calib_s * FS)
+        # ── Guided MVC-calibration wizard (per-muscle, sequential) ──
+        # A small state machine driven by a 100 ms tick and the live envelope
+        # stream: for each active channel it runs a 3-2-1 countdown, a fixed
+        # maximal-contraction window, then a relax pause, optionally repeated
+        # (best of N). The reference is the best per-rep P95 of the envelope.
+        self._mvc_active = False
+        self._mvc_phase = ""          # "ready" | "contract" | "rest" | "done"
+        self._mvc_muscle = 0
+        self._mvc_rep = 0
+        self._mvc_reps = 1
+        self._mvc_elapsed = 0.0       # seconds spent in the current phase
+        self._mvc_peak = 0.0          # running peak of the current contraction
+        self._mvc_cur = 0.0           # current (recent) effort of the contraction
+        self._mvc_cur_buf: list[float] = []                  # current rep envelope
+        self._mvc_capture: list[list] = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_timer = QTimer(self)
+        self._mvc_timer.setInterval(MVC_TICK_MS)
+        self._mvc_timer.timeout.connect(self._mvc_tick)
+        # Floating guide drawn over the plots during the wizard.
+        self._mvc_overlay = MvcOverlay(self)
         self._load_timer = QTimer(self)
         self._load_timer.setInterval(400)
         self._load_timer.timeout.connect(self._update_load_readout)
@@ -568,6 +591,7 @@ class AcquisitionTab(QWidget):
 
         # ── Plots + scale controls ──────────────────────────────
         grp_plots = QGroupBox(tr("Real-time EMG signal"))
+        self._grp_plots = grp_plots  # for positioning the floating MVC guide
         grp_plots.setObjectName("plotsBox")  # stays white (see setStyleSheet)
         plots_root = QVBoxLayout(grp_plots)
         plots_root.setContentsMargins(6, 8, 6, 3)
@@ -1242,11 +1266,18 @@ class AcquisitionTab(QWidget):
         self._btn_calibrar = QPushButton(tr("Calibrate MVC"))
         self._btn_calibrar.setEnabled(False)
         self._btn_calibrar.setToolTip(
-            tr("Record a few seconds of maximum contraction to set the MVC "
-               "reference for the live load monitor.")
+            tr("Guided MVC calibration: contract each muscle in turn at maximum "
+               "when prompted; sets the reference for the live load monitor.")
         )
         self._btn_calibrar.clicked.connect(self._on_calibrar)
         row.addWidget(self._btn_calibrar)
+
+        self._chk_mvc_best3 = QCheckBox(tr("Best of 3"))
+        self._chk_mvc_best3.setToolTip(
+            tr("Repeat each muscle 3 times and keep the strongest contraction "
+               "(more reliable). Otherwise a single contraction per muscle.")
+        )
+        row.addWidget(self._chk_mvc_best3)
 
         # Adjustable warning / danger thresholds (% MVC). Disabled until an MVC
         # is calibrated; changing them updates the bars and the monitor live.
@@ -1323,18 +1354,23 @@ class AcquisitionTab(QWidget):
 
     @Slot()
     def _on_calibrar(self) -> None:
-        if not (self._worker and self._worker.isRunning()):
+        """Launch the guided, per-muscle MVC-calibration wizard."""
+        if not (self._worker and self._worker.isRunning()) or self._mvc_active:
             return
-        self._calibrating = True
-        self._calib_buf = [[] for _ in range(MAX_CHANNELS)]
-        self._calib_target = int(self._profile.apda_calib_s * FS)
+        self._mvc_active = True
+        self._mvc_reps = 3 if self._chk_mvc_best3.isChecked() else 1
+        self._mvc_muscle = 0
+        self._mvc_rep = 0
+        self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_ref = [None] * MAX_CHANNELS
+        self._set_thresholds_enabled(False)
         self._btn_calibrar.setEnabled(False)
-        self._lbl_load_info.setText(
-            tr("Calibrating… contract at maximum for {s:.0f} s.").format(
-                s=self._profile.apda_calib_s)
-        )
+        self._btn_grabar.setEnabled(False)
         for bar in self._load_bars:
             bar.reset()
+        self._reposition_mvc_overlay()
+        self._mvc_enter_ready()
+        self._mvc_timer.start()
 
     def _set_thresholds_enabled(self, enabled: bool) -> None:
         """Enable/disable the warning/danger spin-boxes (active only once an
@@ -1373,46 +1409,184 @@ class AcquisitionTab(QWidget):
         self._update_load_readout()
 
     def _process_load(self, env: list) -> None:
-        """Per-block hook from _on_data_ready: accumulate calibration samples or
-        feed the live load monitor."""
+        """Per-block hook from _on_data_ready: feed the MVC wizard during a
+        contraction window, otherwise update the live %MVC monitor."""
         n_ch = min(len(env), self._n_channels)
-        if self._calibrating:
-            for c in range(n_ch):
-                self._calib_buf[c].extend(env[c].tolist())
-            if self._calib_buf[0] and len(self._calib_buf[0]) >= self._calib_target:
-                self._finish_calibration()
+        if self._mvc_active:
+            if self._mvc_phase == "contract":
+                self._mvc_feed(env)
             return
-        if self._mvc_ref[0] is None:
+        if all(r is None for r in self._mvc_ref[:n_ch]):
             return
         for c in range(n_ch):
             ref = self._mvc_ref[c]
             if not ref:
                 continue
-            self._online[c].add(env[c] / ref * 100.0)
-            self._load_bars[c].set_value(self._online[c].current, active=True)
+            pct = env[c] / ref * 100.0
+            self._online[c].add(pct)
+            # The bar tracks the instantaneous load (this block ~100 ms) so it
+            # follows the contraction force; the P10/P50/P90 readout below uses
+            # the running OnlineLoad statistics.
+            inst = float(np.mean(pct)) if pct.size else 0.0
+            self._load_bars[c].set_value(inst, active=True)
 
-    def _finish_calibration(self) -> None:
-        self._calibrating = False
-        ok = []
-        for c in range(self._n_channels):
-            arr = np.asarray(self._calib_buf[c], dtype=float)
-            ref = compute_mvc(arr, self._profile.mvc_percentile) if arr.size else 0.0
-            self._mvc_ref[c] = ref if ref > 0 else None
-            self._online[c].reset()
-            self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
-            if self._mvc_ref[c]:
-                ok.append(self._active_labels()[c])
+    # -- Guided MVC-calibration wizard ---------------------------------------
+
+    def _mvc_info(self, text: str) -> None:
+        """Show the wizard's current instruction (small info label)."""
+        self._lbl_load_info.setText(text)
+
+    def _mvc_label(self) -> str:
+        """Label of the muscle being calibrated (channel label, never a name)."""
+        labels = self._active_labels()
+        c = self._mvc_muscle
+        return labels[c] if c < len(labels) else tr("Muscle {n}").format(n=c + 1)
+
+    def _mvc_enter_ready(self) -> None:
+        self._mvc_phase = "ready"
+        self._mvc_elapsed = 0.0
+        self._mvc_cur_buf = []
+        self._mvc_peak = 0.0
+
+    @Slot()
+    def _mvc_tick(self) -> None:
+        self._mvc_elapsed += MVC_TICK_MS / 1000.0
+        label = self._mvc_label()
+        rep = (
+            tr(" (rep {i}/{n})").format(i=self._mvc_rep + 1, n=self._mvc_reps)
+            if self._mvc_reps > 1
+            else ""
+        )
+        if self._mvc_phase == "ready":
+            count = max(1, int(np.ceil(MVC_READY_S - self._mvc_elapsed)))
+            self._mvc_overlay.show_ready(
+                tr("Get ready — {label}{rep}").format(label=label, rep=rep),
+                count,
+                tr("Maximum contraction when it reaches 0"),
+            )
+            self._mvc_info(
+                tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
+            )
+            if self._mvc_elapsed >= MVC_READY_S:
+                self._mvc_phase = "contract"
+                self._mvc_elapsed = 0.0
+                self._mvc_cur_buf = []
+                self._mvc_peak = 0.0
+                self._mvc_cur = 0.0
+        elif self._mvc_phase == "contract":
+            secs_left = max(0.0, self._profile.apda_calib_s - self._mvc_elapsed)
+            progress = min(1.0, self._mvc_elapsed / self._profile.apda_calib_s)
+            effort = (self._mvc_cur / self._mvc_peak) if self._mvc_peak > 0 else 0.0
+            self._mvc_overlay.show_contract(
+                tr("Contract {label} at maximum!{rep}").format(label=label, rep=rep),
+                secs_left,
+                progress,
+                effort,
+            )
+            self._mvc_info(
+                tr(
+                    "Contract {label} as hard as you can!  ({s:.0f} s)  "
+                    "peak {pk:.2f} mV"
+                ).format(label=label, s=secs_left, pk=self._mvc_peak)
+            )
+            if self._mvc_elapsed >= self._profile.apda_calib_s:
+                self._mvc_finish_rep()
+        elif self._mvc_phase == "rest":
+            sub = (
+                tr("Get ready for the next repetition")
+                if self._mvc_rep > 0
+                else tr("Next muscle: {label}").format(label=label)
+            )
+            self._mvc_overlay.show_relax(sub)
+            self._mvc_info(tr("Relax…"))
+            if self._mvc_elapsed >= MVC_REST_S:
+                self._mvc_enter_ready()
+
+    def _mvc_feed(self, env: list) -> None:
+        """Accumulate the active muscle's envelope during its contraction."""
+        c = self._mvc_muscle
+        if c < len(env) and env[c].size:
+            self._mvc_cur_buf.extend(env[c].tolist())
+            self._mvc_cur = float(np.mean(env[c]))
+            self._mvc_peak = max(self._mvc_peak, float(np.max(env[c])))
+
+    def _mvc_finish_rep(self) -> None:
+        self._mvc_capture[self._mvc_muscle].append(
+            np.asarray(self._mvc_cur_buf, dtype=float)
+        )
+        self._mvc_rep += 1
+        if self._mvc_rep < self._mvc_reps:
+            self._mvc_phase = "rest"          # rest, then repeat this muscle
+            self._mvc_elapsed = 0.0
+            return
+        self._mvc_compute_muscle(self._mvc_muscle)
+        self._mvc_rep = 0
+        if self._mvc_muscle + 1 < self._n_channels:
+            self._mvc_muscle += 1             # rest, then next muscle
+            self._mvc_phase = "rest"
+            self._mvc_elapsed = 0.0
+        else:
+            self._mvc_finish_all()
+
+    def _mvc_compute_muscle(self, c: int) -> None:
+        ref = mvc_from_reps(self._mvc_capture[c], self._profile.mvc_percentile)
+        self._mvc_ref[c] = ref if ref > 0 else None
+        self._online[c].reset()
+        self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
+
+    def _mvc_finish_all(self) -> None:
+        self._mvc_timer.stop()
+        self._mvc_active = False
+        self._mvc_phase = "done"
+        ok = [c for c in range(self._n_channels) if self._mvc_ref[c]]
         self._btn_calibrar.setEnabled(True)
+        if self._worker and self._worker.isRunning():
+            self._btn_grabar.setEnabled(True)
         self._set_thresholds_enabled(bool(ok))
         if ok:
-            self._lbl_load_info.setText(tr("MVC calibrated. Monitoring load."))
-            self._log(tr("MVC calibrated for live load monitoring."))
+            summary = " · ".join(
+                f"{self._active_labels()[c]}: {self._mvc_ref[c]:.2f} mV" for c in ok
+            )
+            self._mvc_info(
+                tr("MVC ready — {summary}. You can start recording.").format(
+                    summary=summary
+                )
+            )
+            self._log(tr("MVC calibrated: {summary}").format(summary=summary))
+            self._mvc_overlay.show_done(
+                tr("MVC ready"),
+                tr("{summary}\nYou can start recording.").format(summary=summary),
+            )
         else:
-            self._lbl_load_info.setText(tr("Calibration failed (no signal)."))
+            self._mvc_info(tr("Calibration failed (no signal)."))
+            self._mvc_overlay.show_done(
+                tr("Calibration failed"), tr("No signal — check the electrodes.")
+            )
+        QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
+
+    def _mvc_cancel(self) -> None:
+        """Abort the wizard (e.g. on stop/disconnect)."""
+        self._mvc_timer.stop()
+        self._mvc_active = False
+        self._mvc_phase = ""
+        self._mvc_overlay.hide_overlay()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._reposition_mvc_overlay()
+
+    def _reposition_mvc_overlay(self) -> None:
+        """Centre the floating MVC guide near the top of the plot area."""
+        ov = self._mvc_overlay
+        x = max(0, (self.width() - ov.width()) // 2)
+        y = 72
+        if hasattr(self, "_grp_plots"):
+            y = max(72, self._grp_plots.geometry().top() + 8)
+        ov.move(x, y)
 
     @Slot()
     def _update_load_readout(self) -> None:
-        if self._mvc_ref[0] is None:
+        if all(r is None for r in self._mvc_ref[: self._n_channels]):
             return
         colours = {"normal": "#1a7a1a", "warning": "#E67E22", "danger": "#cc0000"}
         for c in range(self._n_channels):
@@ -1427,9 +1601,9 @@ class AcquisitionTab(QWidget):
             )
 
     def _reset_load_monitor(self) -> None:
-        self._calibrating = False
+        self._mvc_cancel()
         self._mvc_ref = [None] * MAX_CHANNELS
-        self._calib_buf = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
         for c in range(MAX_CHANNELS):
             self._online[c].reset()
             self._load_bars[c].reset()
@@ -1439,7 +1613,7 @@ class AcquisitionTab(QWidget):
 
     def _stop_load_monitor(self) -> None:
         self._load_timer.stop()
-        self._calibrating = False
+        self._mvc_cancel()
         self._btn_calibrar.setEnabled(False)
         self._set_thresholds_enabled(False)
         for bar in self._load_bars:

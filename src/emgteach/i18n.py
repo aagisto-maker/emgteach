@@ -214,6 +214,39 @@ _ES = {
     "MVC calibrated for live load monitoring.":
         "CVM calibrado para el monitor de carga en vivo.",
     "Calibration failed (no signal).": "Calibración fallida (sin señal).",
+    # -- guided MVC-calibration wizard --
+    "Guided MVC calibration: contract each muscle in turn at maximum "
+    "when prompted; sets the reference for the live load monitor.":
+        "Calibración CVM guiada: contrae cada músculo por turnos al máximo "
+        "cuando se te indique; fija la referencia del monitor de carga en vivo.",
+    "Best of 3": "Mejor de 3",
+    "Repeat each muscle 3 times and keep the strongest contraction "
+    "(more reliable). Otherwise a single contraction per muscle.":
+        "Repite cada músculo 3 veces y conserva la contracción más fuerte "
+        "(más fiable). Si no, una sola contracción por músculo.",
+    "Muscle {n}": "Músculo {n}",
+    " (rep {i}/{n})": " (rep {i}/{n})",
+    "Get ready — {label}{rep}: {n}": "Prepárate — {label}{rep}: {n}",
+    "Get ready — {label}{rep}": "Prepárate — {label}{rep}",
+    "Maximum contraction when it reaches 0": "Contracción máxima al llegar a 0",
+    "Contract {label} at maximum!{rep}": "¡Contrae {label} al máximo!{rep}",
+    "Next muscle: {label}": "Siguiente músculo: {label}",
+    "Get ready for the next repetition": "Prepárate para la siguiente repetición",
+    "MVC ready": "CVM listo",
+    "{summary}\nYou can start recording.": "{summary}\nYa puedes empezar a grabar.",
+    "Calibration failed": "Calibración fallida",
+    "No signal — check the electrodes.": "Sin señal — revisa los electrodos.",
+    "Contract {label} as hard as you can!  ({s:.0f} s)  "
+    "peak {pk:.2f} mV":
+        "¡Contrae {label} todo lo que puedas!  ({s:.0f} s)  pico {pk:.2f} mV",
+    "Relax…": "Relaja…",
+    "Relax": "Relaja",
+    "Effort {pct:.0f} %": "Esfuerzo {pct:.0f} %",
+    "Push as hard as you can until it reaches 0":
+        "Empuja todo lo que puedas hasta llegar a 0",
+    "MVC ready — {summary}. You can start recording.":
+        "CVM listo — {summary}. Ya puedes empezar a grabar.",
+    "MVC calibrated: {summary}": "CVM calibrado: {summary}",
     "static {st:.0f} · median {md:.0f} · peak {pk:.0f} %":
         "estático {st:.0f} · mediano {md:.0f} · pico {pk:.0f} %",
     "not calibrated": "sin calibrar",

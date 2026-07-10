@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 __all__ = [
     "adaptive_ylim",
     "compute_mvc",
+    "mvc_from_reps",
     "normalise_to_mvc",
 ]
 
@@ -57,6 +58,34 @@ def compute_mvc(
     if value <= 0:
         value = float(np.max(env))
     return value
+
+
+def mvc_from_reps(reps: list, percentile: float = 95.0) -> float:
+    """MVC reference from one or more maximal-contraction repetitions.
+
+    Each entry of *reps* is the envelope of a single maximal contraction;
+    the reference is the **largest** per-repetition :func:`compute_mvc`
+    value, the gold-standard "best of N" rule. Empty repetitions are
+    ignored; returns ``0.0`` when there is no usable data.
+
+    Parameters
+    ----------
+    reps : sequence of array-like
+        One envelope per maximal-contraction repetition.
+    percentile : float, optional
+        Percentile passed to :func:`compute_mvc` (default 95).
+
+    Returns
+    -------
+    float
+        The reference amplitude (max across repetitions), or ``0.0``.
+    """
+    best = 0.0
+    for rep in reps:
+        arr = np.asarray(rep, dtype=np.float64)
+        if arr.size:
+            best = max(best, compute_mvc(arr, percentile))
+    return best
 
 
 def normalise_to_mvc(

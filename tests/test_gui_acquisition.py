@@ -6,8 +6,6 @@ feeding synthetic ``data_ready`` blocks, without a real device.
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 import pytest
 
@@ -30,6 +28,19 @@ class _FakeWorker:
         return True
 
 
+def _drive_calibration(tab, env_mv: float = 0.5) -> None:
+    """Run the guided MVC-calibration wizard to completion headlessly, by
+    ticking its state machine and feeding envelope data during each
+    contraction phase (the QTimer does not fire in the test event loop)."""
+    tab._on_calibrar()
+    for _ in range(5000):
+        if not tab._mvc_active:
+            break
+        if tab._mvc_phase == "contract":
+            tab._on_data_ready(_block(env_mv))
+        tab._mvc_tick()
+
+
 def test_live_load_calibration_and_zones(qapp) -> None:
     from PySide6.QtCore import QSettings
 
@@ -41,12 +52,9 @@ def test_live_load_calibration_and_zones(qapp) -> None:
     tab._apply_channel_visibility()
     tab._worker = _FakeWorker()
 
-    # Calibrate with a few seconds of "maximum contraction" (0.5 mV envelope).
-    tab._on_calibrar()
-    assert tab._calibrating
-    for _ in range(math.ceil(tab._calib_target / 1000)):
-        tab._on_data_ready(_block(0.5))
-    assert not tab._calibrating
+    # Run the guided MVC-calibration wizard to completion (0.5 mV envelope).
+    _drive_calibration(tab, 0.5)
+    assert not tab._mvc_active
     assert tab._mvc_ref[0] == pytest.approx(0.5, abs=1e-6)
 
     # Moderate load (0.25 mV -> 50 % MVC): warning zone (>= 40 %).
@@ -83,9 +91,7 @@ def test_load_thresholds_adjustable_after_calibration(qapp) -> None:
     assert not tab._spin_warning.isEnabled()
     assert not tab._spin_danger.isEnabled()
 
-    tab._on_calibrar()
-    for _ in range(math.ceil(tab._calib_target / 1000)):
-        tab._on_data_ready(_block(0.5))
+    _drive_calibration(tab, 0.5)
     assert tab._spin_warning.isEnabled()
     assert tab._spin_danger.isEnabled()
 
@@ -125,9 +131,7 @@ def test_reset_clears_acquisition_view(qapp) -> None:
     tab._apply_channel_visibility()
     tab._worker = _FakeWorker()
 
-    tab._on_calibrar()
-    for _ in range(math.ceil(tab._calib_target / 1000)):
-        tab._on_data_ready(_block(0.5))
+    _drive_calibration(tab, 0.5)
     tab._marker_events.append((1.0, "x"))
     assert tab._mvc_ref[0] is not None
 
