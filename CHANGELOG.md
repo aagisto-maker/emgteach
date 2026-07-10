@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Device backend selectable again.** The BITalino (Bluetooth) / Arduino + MyoWare 2.0 (USB) selector is shown again, so both interchangeable backends can be chosen — matching the documented, published feature set. BITalino remains the default.
+- **Neutral splash subtitle.** The start-up splash now reads "Surface EMG acquisition" instead of naming a single backend.
 
 ### Fixed
 - **Muscle-load tooltip layout.** The APDF chart's hover tooltip now word-wraps into a compact box instead of forcing a line break after each sentence.

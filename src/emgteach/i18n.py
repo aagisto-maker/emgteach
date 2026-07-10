@@ -84,7 +84,7 @@ def resolve_startup_language(settings: Any = None) -> str:
 _ES = {
     # --- app / window ---
     "EMG Bioinstrumentation": "EMG Bioinstrumentación",
-    "BITalino acquisition platform": "Plataforma de adquisición BITalino",
+    "Surface EMG acquisition": "Adquisición de EMG de superficie",
     "Acquisition": "Adquisición",
     "Analysis": "Análisis",
     "MVC normalisation": "Normalización CVM",

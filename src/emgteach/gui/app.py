@@ -56,7 +56,7 @@ def _make_splash() -> QSplashScreen:
     p.setPen(QColor("#aaccee"))
     sub_rect = px.rect().adjusted(0, 80, 0, 0)
     p.drawText(sub_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-               tr("BITalino acquisition platform"))
+               tr("Surface EMG acquisition"))
 
     author_font = QFont("Arial", 9)
     p.setFont(author_font)
