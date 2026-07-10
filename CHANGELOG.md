@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-07-10
+
 ### Added
 - **Guided MVC-calibration wizard.** A floating on-screen guide walks the subject through the live-MVC calibration one muscle at a time: a "get ready" countdown, a "contract at maximum" phase with a window-progress bar and a live effort bar, then a relax pause — with an optional **Best of 3** mode that repeats each muscle three times and keeps the strongest contraction. New `MvcOverlay` widget and `emgteach.mvc.mvc_from_reps` helper. (Restored from the unmerged `feat/guided-mvc-calibration` branch and ported onto the current teaching build.)
 
