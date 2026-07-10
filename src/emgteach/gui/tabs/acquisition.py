@@ -273,16 +273,15 @@ class AcquisitionTab(QWidget):
         cfg_row1 = QHBoxLayout()
         cfg_row1.setSpacing(6)
 
-        # Device-type combo. The Arduino + MyoWare backend is intentionally
-        # hidden in the teaching app (the hardware is hard to source in the
-        # lab), so only BITalino is offered and the selector itself is hidden
-        # — the backend code path is kept intact for future use.
+        # Device-type combo. Both interchangeable backends are offered — the
+        # BITalino (Bluetooth) and the Arduino + MyoWare 2.0 (USB) — matching
+        # the documented, published feature set. BITalino is the default.
         self._combo_device_type = QComboBox()
         self._combo_device_type.addItem("BITalino (Bluetooth)")
-        saved_type = 0  # force BITalino (MyoWare backend hidden)
+        self._combo_device_type.addItem("Arduino + MyoWare 2.0 (USB)")
+        saved_type = int(self._settings.value("adquisicion/device_type", 0))
         self._combo_device_type.setCurrentIndex(saved_type)
         self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
-        self._combo_device_type.setVisible(False)
         cfg_row1.addWidget(self._combo_device_type, stretch=1)
 
         # Conditional central area: COM port (BITalino) or COM selector (Arduino)

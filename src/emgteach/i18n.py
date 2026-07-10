@@ -328,15 +328,14 @@ _ES = {
     "Analysed signal duration.": "Duración de la señal analizada.",
     "Analysed EDF file.": "Archivo EDF analizado.",
     "Out of normal range": "Fuera del rango normal",
-    "Amplitude Probability Distribution Function (Jonsson):<br>"
-    "the % of time the muscle stays below each load level<br>"
-    "(% MVC). The static (P10), median (P50) and peak (P90)<br>"
-    "levels gauge overload risk.":
-        "Función de distribución de probabilidad de amplitud<br>"
-        "(Jonsson): el % del tiempo que el músculo permanece por<br>"
-        "debajo de cada nivel de carga (% CVM). Los niveles<br>"
-        "estático (P10), mediano (P50) y pico (P90) valoran el<br>"
-        "riesgo de sobrecarga.",
+    "<p>Amplitude Probability Distribution Function (Jonsson): "
+    "the % of time the muscle stays below each load level (% MVC). "
+    "The static (P10), median (P50) and peak (P90) levels gauge "
+    "overload risk.</p>":
+        "<p>Función de distribución de probabilidad de amplitud (Jonsson): "
+        "el % del tiempo que el músculo permanece por debajo de cada nivel "
+        "de carga (% CVM). Los niveles estático (P10), mediano (P50) y pico "
+        "(P90) valoran el riesgo de sobrecarga.</p>",
     "1A. Raw signal": "1A. Señal en bruto",
     "2. Normalised envelope": "2. Envolvente normalizada",
     "3. PSD with MNF/MDF": "3. PSD con MNF/MDF",

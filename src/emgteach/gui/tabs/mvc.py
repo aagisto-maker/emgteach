@@ -240,14 +240,14 @@ class MvcTab(QWidget):
         self._apdf_fig = Figure(constrained_layout=True)
         self._apdf_canvas = FigureCanvasQTAgg(self._apdf_fig)
         self._apdf_canvas.setFixedSize(360, 120)
-        # Rich-text (with <br>) so the tooltip wraps into a compact, readable
-        # block instead of one long line.
+        # Wrap in <p> so Qt treats it as rich text and word-wraps it into a
+        # compact box on its own (a plain long line would not wrap).
         self._apdf_canvas.setToolTip(
             tr(
-                "Amplitude Probability Distribution Function (Jonsson):<br>"
-                "the % of time the muscle stays below each load level<br>"
-                "(% MVC). The static (P10), median (P50) and peak (P90)<br>"
-                "levels gauge overload risk."
+                "<p>Amplitude Probability Distribution Function (Jonsson): "
+                "the % of time the muscle stays below each load level (% MVC). "
+                "The static (P10), median (P50) and peak (P90) levels gauge "
+                "overload risk.</p>"
             )
         )
 
