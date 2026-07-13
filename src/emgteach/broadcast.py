@@ -84,7 +84,14 @@ class _HttpServer(QTcpServer):
             sock.disconnected.connect(sock.deleteLater)
 
     def _serve(self, sock) -> None:
-        sock.readAll()  # consume the request; we serve the same page for any path
+        data = bytes(sock.readAll().data())
+        # A browser with "HTTPS-First" tries TLS first; a TLS ClientHello starts
+        # with the 0x16 (handshake) record byte. We only speak plain HTTP, so
+        # reset the connection: the browser then falls back to http:// instead
+        # of failing with ERR_SSL_PROTOCOL_ERROR.
+        if data[:1] == b"\x16":
+            sock.abort()
+            return
         body = self._html
         head = (
             b"HTTP/1.1 200 OK\r\n"
@@ -221,3 +228,72 @@ class BroadcastServer(QObject):
                 client.sendTextMessage(msg)
             except RuntimeError:
                 self._drop(client)
+
+
+def _demo_main() -> int:
+    """Serve the follower dashboard with synthetic data, for a quick preview::
+
+        python -m emgteach.broadcast
+
+    Open the printed URL in a browser to see exactly what students would see,
+    without any hardware. Ctrl-C to stop.
+    """
+    import math
+    import sys
+
+    from PySide6.QtCore import QCoreApplication, QTimer
+
+    app = QCoreApplication(sys.argv)
+    srv = BroadcastServer()
+    if not srv.start():
+        print("Could not start the broadcast server (port busy?).", file=sys.stderr)
+        return 1
+    print(f"emgteach dashboard preview (demo data) at {srv.follower_url()}")
+    srv.broadcast({"t": "config", "n": 2,
+                   "labels": ["Bíceps", "Tríceps"], "recording": True})
+    state = {"k": 0}
+
+    def _zone(p: float) -> str:
+        return "danger" if p >= 70 else "warning" if p >= 40 else "normal"
+
+    def tick() -> None:
+        k = state["k"]
+        state["k"] = k + 1
+        ph = k * 0.1
+        e0 = [max(0.0, 0.2 + 0.25 * math.sin(ph + i * 0.3) + 0.05 * math.sin(ph * 3))
+              for i in range(8)]
+        e1 = [max(0.0, 0.15 + 0.2 * math.sin(ph * 0.8 + i * 0.3 + 1)) for i in range(8)]
+        srv.broadcast({"t": "data", "env": [e0, e1]})
+        p0 = 30 + 40 * (0.5 + 0.5 * math.sin(ph * 0.5))
+        p1 = 20 + 55 * (0.5 + 0.5 * math.sin(ph * 0.4 + 2))
+        srv.broadcast({"t": "load", "warn": 40, "danger": 70, "ch": [
+            {"active": True, "pct": p0, "static": 8, "median": 22,
+             "peak": round(p0), "zone": _zone(p0)},
+            {"active": True, "pct": p1, "static": 6, "median": 18,
+             "peak": round(p1), "zone": _zone(p1)},
+        ]})
+        c = k % 120
+        if c < 30:
+            srv.broadcast({"t": "calib", "active": True, "phase": "ready",
+                           "title": "Prepárate — Bíceps",
+                           "sub": "Contracción máxima al llegar a 0", "count": 3 - c // 10})
+        elif c < 70:
+            cc = (c - 30) / 40.0
+            srv.broadcast({"t": "calib", "active": True, "phase": "contract",
+                           "title": "¡Contrae Bíceps al máximo!", "secs": 4 * (1 - cc),
+                           "progress": cc, "effort": 0.4 + 0.5 * math.sin(cc * 6)})
+        elif c < 80:
+            srv.broadcast({"t": "calib", "active": True, "phase": "done",
+                           "title": "CVM listo",
+                           "sub": "Bíceps: 0.52 mV · Tríceps: 0.48 mV"})
+        else:
+            srv.broadcast({"t": "calib", "active": False})
+
+    timer = QTimer()
+    timer.timeout.connect(tick)
+    timer.start(100)
+    return app.exec()
+
+
+if __name__ == "__main__":
+    raise SystemExit(_demo_main())

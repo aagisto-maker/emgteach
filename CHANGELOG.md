@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Classroom mode — students follow on their phones.** A new "Broadcast to phones" toggle in the Acquisition tab serves a read-only live dashboard over the local network: students open a URL in their phone/tablet browser (no install) and follow the session in real time — the envelope, the %MVC load bars, the guided-calibration steps and the markers. The operator PC keeps the single Bluetooth link to the BITalino (Bluetooth Classic is point-to-point) and re-broadcasts the already-computed data through Qt-native WebSocket + HTTP servers, so any number of students can watch at once. New `emgteach.broadcast` module and `web/dashboard.html` follower page; no extra runtime dependency.
+- **Classroom mode — students follow on their phones.** A new "Broadcast to phones" toggle in the Acquisition tab serves a read-only live dashboard over the local network: students open a URL in their phone/tablet browser (no install) and follow the session in real time — the envelope, the %MVC load bars, the guided-calibration steps and the markers. The operator PC keeps the single Bluetooth link to the BITalino (Bluetooth Classic is point-to-point) and re-broadcasts the already-computed data through Qt-native WebSocket + HTTP servers, so any number of students can watch at once. New `emgteach.broadcast` module and `web/dashboard.html` follower page; no extra runtime dependency. A `python -m emgteach.broadcast` demo mode previews the follower page with synthetic data, and the HTTP server resets TLS handshakes so a phone browser that auto-upgrades to `https://` falls back to `http://` on its own.
 
 ## [1.3.0] — 2026-07-10
 
