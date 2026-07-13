@@ -299,6 +299,38 @@ APDF (con los puntos de colores y anillos) y el panel de datos.]
 [Figura sugerida: detalle del panel de datos con un valor en rojo (fuera de
 rango) y su explicación.]
 
+### 4.4 Modo aula (seguidores en móviles) *(novedad)*
+
+Permite que **un solo equipo** (el ordenador que maneja el BITalino) **retransmita
+la sesión en vivo** a los móviles/tablets del resto del grupo, que solo la **siguen**
+desde el navegador (sin instalar nada). Pensado para prácticas en grupo: **una
+persona opera y varias siguen**.
+
+**Activación (pestaña Adquisición).**
+- Casilla **«Difundir a móviles (modo aula)»**. Al activarla, la app levanta un
+  pequeño servidor en la **red local** y muestra la dirección **«Los alumnos abren:
+  `http://<IP‑del‑PC>:8137`»** y el número de seguidores conectados.
+- El PC y los móviles deben estar en la **misma red Wi‑Fi/LAN**.
+
+**Qué ven los seguidores** (página «emgteach · Aula», de solo lectura):
+- La **envolvente** de cada canal en tiempo real y la **barra de % CVM** con sus
+  zonas de color; el estado de **grabación** y el guiado de **calibración CVM**
+  (preparar/mantener/relajar) reflejado en su móvil.
+- Botón **⬇️ Descargar sesión (CSV)** para guardar en su teléfono lo mostrado en
+  vivo (tiempo, envolvente, % CVM y marcadores).
+- Bloque **📊 Resultados del análisis**: cuando el operador/a ejecuta el análisis
+  offline, sus **métricas** (MNF, MDF, pendiente, RMS, iEMG, fatiga) se envían a los
+  móviles, junto con **⬇️ Descargar informe (PDF)** y **⬇️ Descargar resultados
+  (CSV)** en cuanto el operador/a los genera/exporta.
+
+> **Arquitectura.** El BITalino usa Bluetooth *punto a punto* (un dispositivo por
+> tarjeta): por eso **un** PC posee el enlace Bluetooth y **re‑difunde** por la red a
+> los seguidores. En los móviles no se instala nada y estos no pueden controlar el
+> equipo ni alterar la grabación (vista de solo lectura).
+
+[Figura sugerida: móvil de un alumno mostrando la página «Aula» con la envolvente,
+la barra de % CVM y el botón de descarga de sesión.]
+
 ---
 
 ## 5. Conceptos fisiológicos y métricas (guía de interpretación)
@@ -438,7 +470,19 @@ de generación, y se guardan automáticamente junto al EDF de origen.
 3. Realizar la tarea observando las **barras de carga**: si entran en naranja
    (cansancio) o rojo (fatiga), intervenir (pausa, cambio de postura).
 
-[Figura sugerida: diagrama de flujo de los dos flujos de trabajo.]
+### 7.3 Sesión en el aula con varios grupos (seguimiento en móviles)
+
+1. En cada puesto, **una persona** conecta el BITalino e **Inicia grabación** en su
+   PC.
+2. Activa **«Difundir a móviles (modo aula)»** y comparte la **dirección** con su
+   grupo (todos en la misma Wi‑Fi).
+3. El resto del grupo abre esa dirección en el móvil y **sigue** la señal, la
+   calibración y las marcas. Al terminar, cada alumno/a puede **descargar la sesión
+   (CSV)** y, tras el análisis del operador/a, el **informe/resultados** en su
+   teléfono.
+
+[Figura sugerida: diagrama de flujo de los flujos de trabajo, incluido el modo aula
+(1 operador → N seguidores en móvil).]
 
 ---
 
@@ -502,6 +546,24 @@ activa tras un análisis correcto).
 **El informe es ilegible con un registro largo.** Elige un **rango temporal más
 corto** en el diálogo del informe (por defecto, la ventana visible).
 
+### Modo aula (seguidores en el móvil)
+
+**El móvil no abre la página.** Comprueba que está en la **misma red Wi‑Fi** que el
+PC y que escribes la dirección **tal cual**, empezando por **`http://`** (no
+`https://`). Algunos navegadores intentan forzar HTTPS: escribe el `http://`
+explícitamente.
+
+**La dirección no carga en ningún móvil.** El *firewall* de Windows puede bloquear el
+puerto la primera vez: permite el acceso de **emgteach** en «redes privadas».
+Comprueba también que la IP mostrada es la de la red del aula (no una VPN).
+
+**Los seguidores no ven la señal.** Deben conectarse **después** de activar el modo
+aula y con una **grabación en curso**; la vista se actualiza al llegar datos.
+
+**No aparecen los resultados/descargas en el móvil.** Los resultados se envían cuando
+el operador/a **ejecuta el análisis**; el PDF/CSV, cuando los **genera/exporta** en la
+pestaña Análisis (con el modo aula activo).
+
 ### Software e instalación
 
 **La app no arranca.** Usa **Python 3.10–3.12** en el entorno virtual del proyecto.
@@ -524,6 +586,8 @@ Python 3.13+ aún no está soportado (la pila científica no tiene *wheels*).
 - **Estático / Mediano / Pico (P10/P50/P90)**: niveles de carga muscular.
 - **Onset**: inicio de contracción.
 - **EDF+**: formato de archivo estándar para biopotenciales.
+- **Modo aula**: retransmisión de la sesión en vivo por la red local para que los
+  alumnos la sigan (solo lectura) desde el navegador del móvil.
 
 ---
 
@@ -554,6 +618,8 @@ Python 3.13+ aún no está soportado (la pila científica no tiene *wheels*).
 11. Ilustración de la fatiga: desplazamiento espectral + MDF descendente.
 12. Gráfico APDF anotado con los niveles estático/mediano/pico y las zonas.
 13. Diagrama de flujo de los flujos de trabajo típicos.
+14. Modo aula: móvil del alumnado con la página «Aula» (envolvente, % CVM y botón de
+    descarga de sesión).
 
 > **Sugerencia de tono para el manual:** combinar instrucciones prácticas ("cómo
 > se hace") con recuadros de "¿qué significa fisiológicamente?" junto a cada

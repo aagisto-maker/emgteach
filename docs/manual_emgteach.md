@@ -293,6 +293,38 @@ chart (with the coloured points and rings) and the data panel.]
 [Suggested figure: detail of the data panel with a value in red (out of range) and
 its explanation.]
 
+### 4.4 Classroom mode (followers on phones) *(new)*
+
+Lets **a single machine** (the computer driving the BITalino) **broadcast the live
+session** to the phones/tablets of the rest of the group, who just **follow** it in
+the browser (nothing to install). Designed for group practicals: **one person
+operates, several follow**.
+
+**Enabling it (Acquisition tab).**
+- The **“Broadcast to phones (classroom mode)”** checkbox. When ticked, the app
+  starts a small server on the **local network** and shows the address **“Students
+  open:  `http://<PC‑IP>:8137`”** along with the number of connected followers.
+- The PC and the phones must be on the **same Wi‑Fi/LAN**.
+
+**What the followers see** (the read‑only “emgteach · Aula” page):
+- Each channel's **envelope** in real time and the **% MVC bar** with its colour
+  zones; the **recording** status and the **MVC calibration** guide
+  (prepare/hold/relax) mirrored on their phone.
+- A **⬇️ Descargar sesión (CSV)** button to save on their phone what is shown live
+  (time, envelope, % MVC and markers).
+- A **📊 Resultados del análisis** block: when the operator runs the offline
+  analysis, its **metrics** (MNF, MDF, slope, RMS, iEMG, fatigue) are pushed to the
+  phones, together with **⬇️ Descargar informe (PDF)** and **⬇️ Descargar resultados
+  (CSV)** as soon as the operator generates/exports them.
+
+> **Architecture.** The BITalino uses *point‑to‑point* Bluetooth (one device per
+> board): that is why **one** PC owns the Bluetooth link and **re‑broadcasts** over
+> the network to the followers. Nothing is installed on the phones and they cannot
+> control the equipment or alter the recording (read‑only view).
+
+[Suggested figure: a student's phone showing the “Aula” page with the envelope, the
+% MVC bar and the session download button.]
+
 ---
 
 ## 5. Physiological concepts and metrics (interpretation guide)
@@ -427,7 +459,19 @@ and are saved automatically next to the source EDF.
 3. Perform the task watching the **load bars**: if they enter orange (tiredness) or
    red (fatigue), intervene (pause, posture change).
 
-[Suggested figure: flow chart of the two workflows.]
+### 7.3 Classroom session with several groups (followers on phones)
+
+1. At each station, **one person** connects the BITalino and **Starts recording** on
+   their PC.
+2. They tick **“Broadcast to phones (classroom mode)”** and share the **address**
+   with their group (everyone on the same Wi‑Fi).
+3. The rest of the group opens that address on their phone and **follows** the signal,
+   the calibration and the markers. When finished, each student can **download the
+   session (CSV)** and, after the operator's analysis, the **report/results** on their
+   phone.
+
+[Suggested figure: flow chart of the workflows, including classroom mode
+(1 operator → N phone followers).]
 
 ---
 
@@ -491,6 +535,23 @@ after a successful analysis).
 **The report is unreadable for a long recording.** Choose a **shorter time range**
 in the report dialog (it defaults to the on‑screen window).
 
+### Classroom mode (followers on phones)
+
+**The phone won't open the page.** Check it is on the **same Wi‑Fi network** as the
+PC and that you type the address **exactly**, starting with **`http://`** (not
+`https://`). Some browsers try to force HTTPS: type the `http://` explicitly.
+
+**The address won't load on any phone.** The Windows *firewall* may block the port
+the first time: allow **emgteach** on “private networks”. Also check the shown IP is
+the classroom network's (not a VPN).
+
+**Followers don't see the signal.** They must connect **after** classroom mode is on
+and with a **recording in progress**; the view updates as data arrives.
+
+**Results/downloads don't appear on the phone.** Results are pushed when the operator
+**runs the analysis**; the PDF/CSV when they **generate/export** them on the Analysis
+tab (with classroom mode on).
+
 ### Software and installation
 
 **The app won't start.** Use **Python 3.10–3.12** in the project's virtual
@@ -513,6 +574,8 @@ for it).
 - **APDF**: amplitude probability distribution function (Jonsson's method).
 - **Static / Median / Peak (P10/P50/P90)**: muscular load levels.
 - **Onset**: contraction onset.
+- **Classroom mode**: live broadcast of the session over the local network so
+  students can follow it (read‑only) from their phone's browser.
 - **EDF+**: standard biopotential file format.
 
 ---
@@ -544,6 +607,8 @@ for it).
 11. Fatigue illustration: spectral shift + descending MDF.
 12. Annotated APDF chart with the static/median/peak levels and the zones.
 13. Flow chart of the typical workflows.
+14. Classroom mode: a student's phone showing the “Aula” page (envelope, % MVC and
+    the session download button).
 
 > **Tone suggestion for the manual:** combine practical instructions ("how to do
 > it") with "what does it mean physiologically?" boxes next to each metric, so it

@@ -54,6 +54,43 @@ Acquisition tab with the LED green during a contraction.]
 
 ---
 
+## Following the session on your phone (classroom mode)
+
+In a group practical, **one person drives the equipment** (the computer with the
+BITalino) and **everyone else follows the session in their phone's browser**, with
+nothing to install. The whole group sees the same signal in real time, and each
+student can save the data on their own phone.
+
+**For the person driving the equipment (operator):**
+1. On the **Acquisition** tab, tick the **“Broadcast to phones (classroom mode)”**
+   checkbox.
+2. An address like **`http://192.168.x.x:8137`** appears. Read it out or write it on
+   the board. The computer and the phones must be on **the same Wi‑Fi network**.
+3. Record as usual: the signal, the MVC calibration and the markers are pushed
+   automatically to the connected phones.
+
+**For those following on their phone (followers):**
+1. Connect the phone to **the same Wi‑Fi network** as the computer.
+2. Open the browser (Chrome, Safari…) and type the **address** the operator gave.
+   You will see the **“emgteach · Aula”** screen.
+3. Follow each channel's **envelope** and **% MVC** live, with their colours, just as
+   on the computer. During calibration you will see the same *prepare / hold / relax*
+   box.
+
+**Saving to your phone.**
+- **⬇️ Descargar sesión (CSV):** saves to the phone what you watched live (time,
+  per‑channel envelope, % MVC and the markers) to include in your report.
+- When the operator **runs the analysis**, the **“📊 Resultados del análisis”** block
+  appears with the metrics (MNF, MDF, RMS, iEMG, fatigue…) and the **⬇️ Descargar
+  informe (PDF)** and **⬇️ Descargar resultados (CSV)** buttons.
+
+> **Note.** The phone only **watches and downloads**: it does not drive the equipment
+> or change the recording. If it does not load, check you are on the **same Wi‑Fi**
+> and that you typed the address **exactly**, starting with **`http://`** (not
+> `https://`).
+
+---
+
 ## Practical 1 — Familiarisation and first recording
 
 **Objective.** Obtain a clean recording and recognise the three representations of
@@ -231,7 +268,7 @@ For each practical, submit:
 
 1. **Identification**: name/group, muscle(s) studied, device.
 2. **Screenshots/figures** of the relevant panels (or the **PDF report** generated
-   by the app).
+   by the app; in classroom mode it can be downloaded on the phone itself).
 3. Completed **data tables**.
 4. **Reasoned answers** to the questions.
 5. A brief **conclusion** relating the observations to the physiological background.

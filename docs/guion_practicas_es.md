@@ -56,6 +56,43 @@ Adquisición con el LED en verde durante una contracción.]
 
 ---
 
+## Seguir la sesión desde el móvil (modo aula)
+
+En una práctica en grupo, **una sola persona maneja el equipo** (el ordenador con el
+BITalino) y **el resto sigue la sesión en el navegador del móvil**, sin instalar
+nada. Así todo el grupo ve la misma señal en tiempo real y cada uno puede guardar los
+datos en su propio teléfono.
+
+**Para quien maneja el equipo (operador/a):**
+1. En la pestaña **Adquisición**, marca la casilla **«Difundir a móviles (modo
+   aula)»**.
+2. Aparece una dirección del tipo **`http://192.168.x.x:8137`**. Dila en voz alta o
+   escríbela en la pizarra. El ordenador y los móviles deben estar en **la misma red
+   Wi‑Fi**.
+3. Graba con normalidad: la señal, la calibración de CVM y las marcas se envían solas
+   a los móviles conectados.
+
+**Para quien sigue desde el móvil (seguidores):**
+1. Conecta el móvil a **la misma red Wi‑Fi** que el ordenador.
+2. Abre el navegador (Chrome, Safari…) y escribe la **dirección** que ha dado el
+   operador/a. Verás la pantalla **«emgteach · Aula»**.
+3. Sigue en vivo la **envolvente** de cada canal y el **% de CVM** con sus colores,
+   igual que en el ordenador. Durante la calibración verás el mismo cuadro de
+   *preparar / mantener / relajar*.
+
+**Guardar en tu móvil.**
+- **⬇️ Descargar sesión (CSV):** guarda en el teléfono lo que has visto en vivo
+  (tiempo, envolvente por canal, % CVM y las marcas) para incluirlo en el informe.
+- Cuando el operador/a **analice** el registro, aparecerá el bloque **«📊 Resultados
+  del análisis»** con las métricas (MNF, MDF, RMS, iEMG, fatiga…) y los botones
+  **⬇️ Descargar informe (PDF)** y **⬇️ Descargar resultados (CSV)**.
+
+> **Nota.** El móvil solo **mira y descarga**: no maneja el equipo ni modifica la
+> grabación. Si no carga, revisa que estás en la **misma Wi‑Fi** y que has escrito la
+> dirección **tal cual**, empezando por **`http://`** (no `https://`).
+
+---
+
 ## Práctica 1 — Familiarización y primer registro
 
 **Objetivo.** Obtener un registro limpio y reconocer las tres representaciones de
@@ -230,7 +267,7 @@ Para cada práctica, entregar:
 
 1. **Identificación**: nombre/grupo, músculo(s) estudiado(s), dispositivo.
 2. **Capturas/figuras** de los paneles relevantes (o el **informe PDF** generado
-   por la app).
+   por la app; en modo aula puede descargarse en el propio móvil).
 3. **Tablas de datos** cumplimentadas.
 4. **Respuestas razonadas** a las cuestiones.
 5. **Conclusión** breve relacionando lo observado con el fundamento fisiológico.
