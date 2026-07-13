@@ -151,7 +151,8 @@ _COMBO_ST = (
 
 
 class AcquisitionTab(QWidget):
-    def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None):
+    def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
+                 broadcast: BroadcastServer | None = None):
         super().__init__(parent)
         self._logger = logger
         self._settings = settings
@@ -258,7 +259,8 @@ class AcquisitionTab(QWidget):
 
         # Classroom broadcast: re-streams the live monitor to student browsers
         # over the local network (the operator PC owns the single BITalino link).
-        self._broadcast = BroadcastServer(parent=self)
+        # Shared with the Analysis tab when given by MainWindow.
+        self._broadcast = broadcast if broadcast is not None else BroadcastServer(parent=self)
         self._broadcast.clients_changed.connect(self._on_broadcast_clients)
 
         self._build_ui()

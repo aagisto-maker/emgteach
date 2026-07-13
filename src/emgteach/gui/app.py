@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach import __version__
+from emgteach.broadcast import BroadcastServer
 from emgteach.gui.tabs.acquisition import AcquisitionTab
 from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
@@ -115,9 +116,14 @@ class MainWindow(QMainWindow):
         # Logger shared by all tabs
         self._logger = LoggerWidget()
 
+        # Classroom broadcast — shared so the Analysis tab can also push its
+        # results/report to the student followers (the Acquisition tab owns the
+        # on/off toggle and the live stream).
+        self._broadcast = BroadcastServer(self)
+
         # Tabs
-        self._tab_adq = AcquisitionTab(self._logger, settings)
-        self._tab_ana = AnalysisTab(self._logger, settings)
+        self._tab_adq = AcquisitionTab(self._logger, settings, broadcast=self._broadcast)
+        self._tab_ana = AnalysisTab(self._logger, settings, broadcast=self._broadcast)
         self._tab_cvm = MvcTab(self._logger, settings)
 
         # Shared styling: each tab's gray background (class selector) is only
@@ -224,6 +230,7 @@ class MainWindow(QMainWindow):
         self._tab_adq.cleanup()
         self._tab_ana.cleanup()
         self._tab_cvm.cleanup()
+        self._broadcast.stop()
         event.accept()
 
 

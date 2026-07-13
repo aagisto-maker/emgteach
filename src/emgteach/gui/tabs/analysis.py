@@ -112,6 +112,7 @@ _PANEL_TOOLTIPS = {
     7: "Amplitude-frequency relation (force vs fatigue).",
 }
 
+from emgteach.broadcast import BroadcastServer
 from emgteach.exports import write_analysis_csv
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
@@ -124,10 +125,12 @@ from emgteach.workers import AnalysisWorker
 
 
 class AnalysisTab(QWidget):
-    def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None):
+    def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
+                 broadcast: BroadcastServer | None = None):
         super().__init__(parent)
         self._logger = logger
         self._settings = settings
+        self._broadcast = broadcast   # shared classroom-broadcast server (or None)
         self._worker: AnalysisWorker | None = None
         self._last_result: dict | None = None
         self._last_edf_dir: str = self._settings.value("analisis/last_dir", ".")
@@ -791,6 +794,7 @@ class AnalysisTab(QWidget):
         self._sync_combo_zoom()
         self._actualizar_resumen(result)
         self._dibujar_paneles(result)
+        self._bcast_results(result)
 
     @Slot(float, float)
     def _on_range_changed(self, inicio: float, duracion: float) -> None:
@@ -819,6 +823,39 @@ class AnalysisTab(QWidget):
         self._logger.append_error(msg)
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
+
+    # ------------------------------------------------------------------
+    # Classroom broadcast of the analysis results / downloads
+    # ------------------------------------------------------------------
+
+    def _broadcast_on(self) -> bool:
+        return self._broadcast is not None and self._broadcast.is_running()
+
+    def _bcast_results(self, r: dict) -> None:
+        """Push the analysis metrics to the student followers."""
+        if not self._broadcast_on():
+            return
+        self._broadcast.broadcast({
+            "t": "results",
+            "file": Path(str(r.get("edf_path", ""))).name,
+            "mnf": round(float(r.get("mnf", 0.0)), 1),
+            "mdf": round(float(r.get("mdf", 0.0)), 1),
+            "mdf_slope": round(float(r.get("mdf_slope", 0.0)), 2),
+            "rms": round(float(r.get("rms_global", 0.0)), 3),
+            "iemg": round(float(r.get("iemg", 0.0)), 1),
+            "duration": round(float(r.get("duration", 0.0)), 1),
+            "fatigue": int(r.get("fat_slope_sign", 0)),
+        })
+
+    def _bcast_download(self, kind: str, path: str, data: bytes,
+                        content_type: str, filename: str) -> None:
+        """Register a file for download and tell the followers it is ready."""
+        if not self._broadcast_on():
+            return
+        self._broadcast.register_download(path, data, content_type, filename)
+        self._broadcast.broadcast(
+            {"t": "download", "kind": kind, "url": path, "name": filename}
+        )
 
     # ------------------------------------------------------------------
     # Numeric summary
@@ -1069,6 +1106,8 @@ class AnalysisTab(QWidget):
             self._logger.append_log(tr("CSV export error: {error}").format(error=exc))
             return
         self._logger.append_log(tr("CSV exported to: {path}").format(path=ruta))
+        self._bcast_download("csv", "/dl/resultados.csv",
+                             Path(ruta).read_bytes(), "text/csv", Path(ruta).name)
 
     @Slot()
     def _pedir_paneles_informe(self) -> tuple[list[int], tuple[float, float]] | None:
@@ -1203,6 +1242,8 @@ class AnalysisTab(QWidget):
             build_session_report(out, self._last_result, meta, panels=paneles,
                                  time_range=rango)
             self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
+            self._bcast_download("report", "/dl/informe.pdf",
+                                 out.read_bytes(), "application/pdf", out.name)
         except Exception as exc:
             self._logger.append_error(
                 tr("Error generating the PDF report: {error}").format(error=exc)

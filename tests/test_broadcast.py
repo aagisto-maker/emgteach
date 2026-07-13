@@ -68,3 +68,33 @@ def test_broadcast_reaches_a_follower(qapp) -> None:
 
     ws.close()
     srv.stop()
+
+
+def test_registered_download_is_served(qapp) -> None:
+    from PySide6.QtCore import QEventLoop, QTimer
+    from PySide6.QtNetwork import QTcpSocket
+
+    from emgteach.broadcast import BroadcastServer
+
+    srv = BroadcastServer(http_port=8114, ws_port=8115)
+    assert srv.start()
+    srv.register_download("/dl/x.csv", b"a,b\n1,2\n", "text/csv", "datos.csv")
+
+    raw = bytearray()
+    sock = QTcpSocket()
+    sock.readyRead.connect(lambda: raw.extend(bytes(sock.readAll().data())))
+    sock.connected.connect(
+        lambda: sock.write(b"GET /dl/x.csv HTTP/1.1\r\nHost: x\r\n\r\n")
+    )
+    sock.connectToHost("127.0.0.1", 8114)
+
+    loop = QEventLoop()
+    QTimer.singleShot(600, loop.quit)
+    loop.exec()
+
+    resp = bytes(raw)
+    assert b"200 OK" in resp
+    assert b'Content-Disposition: attachment; filename="datos.csv"' in resp
+    assert b"a,b\n1,2\n" in resp
+    # An unregistered path still serves the dashboard, not a 404.
+    srv.stop()

@@ -70,11 +70,13 @@ def lan_ipv4() -> str:
 
 
 class _HttpServer(QTcpServer):
-    """Minimal HTTP/1.1 server that returns the dashboard page for any GET."""
+    """Minimal HTTP/1.1 server: the dashboard page for any path, plus any
+    registered downloadable files (the recording CSV, the analysis report)."""
 
-    def __init__(self, html: bytes, parent=None) -> None:
+    def __init__(self, html: bytes, downloads: dict, parent=None) -> None:
         super().__init__(parent)
         self._html = html
+        self._downloads = downloads          # path -> (bytes, content_type, filename)
         self.newConnection.connect(self._on_new)
 
     def _on_new(self) -> None:
@@ -92,15 +94,35 @@ class _HttpServer(QTcpServer):
         if data[:1] == b"\x16":
             sock.abort()
             return
-        body = self._html
-        head = (
-            b"HTTP/1.1 200 OK\r\n"
-            b"Content-Type: text/html; charset=utf-8\r\n"
-            b"Content-Length: " + str(len(body)).encode() + b"\r\n"
-            b"Cache-Control: no-store\r\n"
-            b"Connection: close\r\n\r\n"
-        )
-        sock.write(head + body)
+        try:
+            path = data.split(b"\r\n", 1)[0].decode("latin-1").split(" ")[1]
+            path = path.split("?")[0]
+        except (IndexError, UnicodeDecodeError):
+            path = "/"
+        entry = self._downloads.get(path)
+        if entry is not None:
+            payload, ctype, fname = entry
+            fn = fname.encode("ascii", "ignore")
+            head = (
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: " + ctype.encode() + b"\r\n"
+                b'Content-Disposition: attachment; filename="' + fn + b'"\r\n'
+                b"Content-Length: " + str(len(payload)).encode() + b"\r\n"
+                b"Access-Control-Allow-Origin: *\r\n"
+                b"Cache-Control: no-store\r\n"
+                b"Connection: close\r\n\r\n"
+            )
+            sock.write(head + payload)
+        else:
+            body = self._html
+            head = (
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: text/html; charset=utf-8\r\n"
+                b"Content-Length: " + str(len(body)).encode() + b"\r\n"
+                b"Cache-Control: no-store\r\n"
+                b"Connection: close\r\n\r\n"
+            )
+            sock.write(head + body)
         sock.flush()
         sock.disconnectFromHost()
 
@@ -130,6 +152,7 @@ class BroadcastServer(QObject):
         self._ws: QWebSocketServer | None = None
         self._clients: list = []
         self._last_config: dict | None = None
+        self._downloads: dict = {}   # path -> (bytes, content_type, filename)
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -140,7 +163,7 @@ class BroadcastServer(QObject):
         html = _load_dashboard_html().replace(
             b"{{WS_PORT}}", str(self._ws_port).encode()
         )
-        http = _HttpServer(html, self)
+        http = _HttpServer(html, self._downloads, self)
         if not http.listen(QHostAddress(QHostAddress.SpecialAddress.Any), self._http_port):
             http.deleteLater()
             return False
@@ -178,6 +201,7 @@ class BroadcastServer(QObject):
             self._http.deleteLater()
             self._http = None
         self._last_config = None
+        self._downloads.clear()
         self.clients_changed.emit(0)
 
     def is_running(self) -> bool:
@@ -228,6 +252,15 @@ class BroadcastServer(QObject):
                 client.sendTextMessage(msg)
             except RuntimeError:
                 self._drop(client)
+
+    def register_download(self, path: str, data: bytes,
+                          content_type: str, filename: str) -> None:
+        """Make a file downloadable at ``http://host:port<path>`` for followers.
+
+        Overwrites any file previously registered at the same path; all
+        registered files are cleared on :meth:`stop`.
+        """
+        self._downloads[path] = (bytes(data), content_type, filename)
 
 
 def _demo_main() -> int:

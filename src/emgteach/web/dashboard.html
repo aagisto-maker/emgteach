@@ -41,6 +41,16 @@
   .pct { font-weight:700; }
   #wait { text-align:center; color:#8a93a6; padding:30px 10px; font-size:14px; }
   footer { text-align:center; color:#66708a; font-size:11px; padding:14px; }
+  #tools { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  button, .dlbtn { background:#20304a; color:#dfe7f3; border:1px solid #3a4a63;
+                   border-radius:8px; padding:11px 15px; font-size:14px;
+                   text-decoration:none; display:inline-block; cursor:pointer; }
+  button:active, .dlbtn:active { background:#2c4064; }
+  #results .resgrid { display:grid; grid-template-columns:1fr 1fr; gap:2px 14px; }
+  #results .m { display:flex; justify-content:space-between; gap:8px; font-size:13px;
+                border-bottom:1px solid #222838; padding:5px 0; }
+  #results .m span { color:#aeb6c4; }
+  #resDl { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
 </style>
 </head>
 <body>
@@ -62,6 +72,14 @@
   </div>
   <div id="wait">Esperando datos del profesor…</div>
   <div id="chs"></div>
+  <div id="tools">
+    <button id="btnCsv">⬇️ Descargar sesión (CSV)</button>
+  </div>
+  <div id="results" class="ch" style="display:none">
+    <h2>📊 Resultados del análisis</h2>
+    <div class="resgrid" id="resMetrics"></div>
+    <div id="resDl"></div>
+  </div>
 </main>
 <footer>Vista de seguimiento (solo lectura) · emgteach</footer>
 
@@ -71,6 +89,8 @@ const WIN = 600;                       // samples kept per channel for the plot
 let nCh = 0, labels = [], warn = 40, danger = 70;
 const bufs = [];                       // ring buffers of envelope per channel
 const cards = [];                      // DOM refs per channel
+let sessionRows = [], lastLoad = [], markers = [], sampleCount = 0;
+const DT = 0.0125;                     // ~8 samples per 100 ms frame (session CSV)
 
 function buildChannels() {
   const chs = document.getElementById("chs");
@@ -192,14 +212,21 @@ function connect() {
     let m; try { m = JSON.parse(e.data); } catch { return; }
     if (m.t === "config") {
       nCh = m.n; labels = m.labels || []; buildChannels();
+      sessionRows = []; markers = []; sampleCount = 0;   // fresh session
       document.getElementById("rec").classList.toggle("on", !!m.recording);
     } else if (m.t === "data") {
-      if (m.env) pushData(m.env);
+      if (m.env) { pushData(m.env); accumulate(m.env); }
     } else if (m.t === "load") {
       if (m.warn != null) { warn = m.warn; danger = m.danger; positionZones(); }
-      if (m.ch) setLoad(m.ch);
+      if (m.ch) { lastLoad = m.ch; setLoad(m.ch); }
     } else if (m.t === "calib") {
       setCalib(m);
+    } else if (m.t === "marker") {
+      markers.push({ t: m.time, label: m.label });
+    } else if (m.t === "results") {
+      showResults(m);
+    } else if (m.t === "download") {
+      addDownload(m);
     } else if (m.t === "status") {
       document.getElementById("rec").classList.toggle("on", !!m.recording);
     }
@@ -209,6 +236,64 @@ function dot(on) {
   document.getElementById("dot").className = "dot " + (on ? "on" : "off");
   document.getElementById("cs").textContent = on ? "conectado" : "reconectando…";
 }
+// ---- session recording (client-side) + analysis results / downloads ----
+function accumulate(env) {
+  const n = env[0] ? env[0].length : 0;
+  for (let i = 0; i < n; i++) {
+    const row = [(sampleCount * DT).toFixed(3)];
+    for (let c = 0; c < nCh; c++) row.push(env[c] && env[c][i] != null ? env[c][i] : "");
+    for (let c = 0; c < nCh; c++)
+      row.push(lastLoad[c] && lastLoad[c].active ? Math.round(lastLoad[c].pct) : "");
+    sessionRows.push(row);
+    sampleCount++;
+  }
+  if (sessionRows.length > 200000) sessionRows.splice(0, sessionRows.length - 200000);
+}
+function dl(text, type, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function downloadSessionCsv() {
+  if (!sessionRows.length) { alert("Aún no hay datos de la sesión."); return; }
+  const hdr = ["# emgteach — sesión en vivo (vista del alumno)"];
+  if (markers.length)
+    hdr.push("# marcadores: " + markers.map(x => `t=${x.t}s ${x.label}`).join("; "));
+  const cols = ["t_s"]
+    .concat(labels.map(l => `${l}_env_mV`))
+    .concat(labels.map(l => `${l}_pctCVM`));
+  const lines = [cols.join(",")].concat(sessionRows.map(r => r.join(",")));
+  dl(hdr.join("\n") + "\n" + lines.join("\n"), "text/csv;charset=utf-8", "emgteach_sesion.csv");
+}
+document.getElementById("btnCsv").addEventListener("click", downloadSessionCsv);
+
+function showResults(m) {
+  document.getElementById("results").style.display = "block";
+  const fat = m.fatigue < 0 ? "Detectada" : m.fatigue > 0 ? "No detectada" : "Indeterminada";
+  const fc = m.fatigue < 0 ? "var(--dang)" : m.fatigue > 0 ? "var(--ok)" : "#c9a227";
+  const items = [
+    ["Archivo", m.file || "—"], ["Frec. media (MNF)", m.mnf + " Hz"],
+    ["Frec. mediana (MDF)", m.mdf + " Hz"], ["Pendiente MDF", m.mdf_slope + " Hz/s"],
+    ["RMS global", m.rms + " mV"], ["iEMG", m.iemg + " mV·s"],
+    ["Duración", m.duration + " s"], ["Fatiga", `<b style="color:${fc}">${fat}</b>`],
+  ];
+  document.getElementById("resMetrics").innerHTML =
+    items.map(([k, v]) => `<div class="m"><span>${k}</span><b>${v}</b></div>`).join("");
+}
+function addDownload(m) {
+  document.getElementById("results").style.display = "block";
+  const id = "dl_" + m.kind;
+  let a = document.getElementById(id);
+  if (!a) {
+    a = document.createElement("a"); a.id = id; a.className = "dlbtn";
+    document.getElementById("resDl").appendChild(a);
+  }
+  a.href = m.url; a.setAttribute("download", m.name || "");
+  a.textContent = m.kind === "report"
+    ? "⬇️ Descargar informe (PDF)" : "⬇️ Descargar resultados (CSV)";
+}
+
 connect();
 requestAnimationFrame(draw);
 </script>
