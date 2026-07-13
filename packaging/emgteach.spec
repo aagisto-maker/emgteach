@@ -47,12 +47,19 @@ hiddenimports += collect_submodules("pyqtgraph")
 binaries += collect_dynamic_libs("pyedflib")
 hiddenimports += collect_submodules("pyedflib")
 
+# --- classroom broadcast: dashboard page + Qt WebSocket/network modules -----
+datas += [
+    (os.path.join(SRC, "emgteach", "web", "dashboard.html"), "emgteach/web"),
+]
+
 # --- explicit hidden imports ------------------------------------------------
 hiddenimports += [
     "matplotlib.backends.backend_qtagg",  # Analysis / MVC live canvases
     "matplotlib.backends.backend_agg",    # PDF report rendering
     "serial",                              # pyserial (Arduino USB + BITalino COM)
     "serial.tools.list_ports",             # COM-port enumeration in the GUI
+    "PySide6.QtWebSockets",                # classroom broadcast (WebSocket data)
+    "PySide6.QtNetwork",                   # classroom broadcast (HTTP + TCP)
 ]
 
 # Trim clearly-unused / conflicting packages to keep the binary smaller and

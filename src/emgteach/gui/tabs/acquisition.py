@@ -57,6 +57,7 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach.apda import OnlineLoad
+from emgteach.broadcast import BroadcastServer
 from emgteach.devices import (
     BACKEND_ARDUINO,
     BACKEND_BITALINO,
@@ -255,6 +256,11 @@ class AcquisitionTab(QWidget):
         # them if it needs them.
         self._local_log = LoggerWidget()
 
+        # Classroom broadcast: re-streams the live monitor to student browsers
+        # over the local network (the operator PC owns the single BITalino link).
+        self._broadcast = BroadcastServer(parent=self)
+        self._broadcast.clients_changed.connect(self._on_broadcast_clients)
+
         self._build_ui()
 
     # ------------------------------------------------------------------
@@ -436,6 +442,27 @@ class AcquisitionTab(QWidget):
         )
         meta_row.addWidget(self._edit_protocol, stretch=3)
         cfg_outer.addLayout(meta_row)
+
+        # Row 5: classroom broadcast — students follow on their phone browser.
+        aula_row = QHBoxLayout()
+        aula_row.setSpacing(6)
+        self._chk_aula = QCheckBox(tr("Broadcast to phones (classroom mode)"))
+        self._chk_aula.setToolTip(
+            tr(
+                "Serve a read-only live view over the local network so students "
+                "can follow on their phone/tablet browser (no install). One "
+                "device drives the BITalino; the others just watch."
+            )
+        )
+        self._chk_aula.toggled.connect(self._on_toggle_broadcast)
+        aula_row.addWidget(self._chk_aula)
+        self._lbl_aula = QLabel("")
+        self._lbl_aula.setStyleSheet("font-size: 11px; color: #1F4E79; font-weight: bold;")
+        self._lbl_aula.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        aula_row.addWidget(self._lbl_aula, stretch=1)
+        cfg_outer.addLayout(aula_row)
 
         row_top.addWidget(grp_config, stretch=1)
 
@@ -834,6 +861,7 @@ class AcquisitionTab(QWidget):
         # and resets the stacking gain.
         self._y_gain = [1.0, 1.0]
         self._apply_stacking_mode()
+        self._bcast_config()
 
     @Slot()
     def _on_label_changed(self) -> None:
@@ -844,6 +872,7 @@ class AcquisitionTab(QWidget):
             labels = self._active_labels()
             for c in range(self._n_channels):
                 self._load_name_labels[c].setText(labels[c])
+        self._bcast_config()
 
     def _active_labels(self) -> list[str]:
         """Labels of the active channels, falling back to the defaults."""
@@ -1136,6 +1165,7 @@ class AcquisitionTab(QWidget):
         self._btn_grabar.setText(tr("Stop recording"))
         self._btn_conectar.setEnabled(False)
         self._lbl_estado.setText(tr("Status: recording…"))
+        self._bcast_status(True)
         self._combo_etiqueta.setEnabled(True)
         self._btn_marcar.setEnabled(True)
         self._shortcut_m.setEnabled(True)
@@ -1150,6 +1180,7 @@ class AcquisitionTab(QWidget):
         self._watchdog_timer.stop()
         self._render_timer.stop()
         self._stop_load_monitor()
+        self._bcast_status(False)
         if self._worker:
             self._worker.stop()
         self._btn_grabar.setText(tr("Start recording"))
@@ -1187,6 +1218,8 @@ class AcquisitionTab(QWidget):
             self._update_quality(raw)
         # Live muscle-load monitor (calibration or per-block load update).
         self._process_load(env)
+        # Re-broadcast to classroom followers (no-op if not running).
+        self._bcast_live(env)
         # Green LED: there is traffic. The timer will set it back to yellow if
         # no new block arrives within LED_IDLE_MS ms.
         self._set_led("ok")
@@ -1252,6 +1285,84 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
     # Muscle-load monitor (live MVC — Jonsson APDA)
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Classroom broadcast (followers watch on their phone browser)
+    # ------------------------------------------------------------------
+
+    @Slot(bool)
+    def _on_toggle_broadcast(self, checked: bool) -> None:
+        if checked:
+            if self._broadcast.start():
+                url = self._broadcast.follower_url()
+                self._lbl_aula.setText(tr("Students open:  {url}").format(url=url))
+                self._log(
+                    tr("Classroom mode on — students can follow at {url}").format(url=url)
+                )
+                self._bcast_config()
+            else:
+                self._chk_aula.setChecked(False)
+                self._err(tr("Could not start classroom mode (port busy?)."))
+        else:
+            self._broadcast.stop()
+            self._lbl_aula.setText("")
+            self._log(tr("Classroom mode off."))
+
+    @Slot(int)
+    def _on_broadcast_clients(self, n: int) -> None:
+        if self._broadcast.is_running():
+            url = self._broadcast.follower_url()
+            self._lbl_aula.setText(
+                tr("Students open:  {url}   ·   {n} following").format(url=url, n=n)
+            )
+
+    def _bcast_config(self) -> None:
+        self._broadcast.broadcast({
+            "t": "config", "n": self._n_channels,
+            "labels": self._active_labels(), "recording": self.is_recording(),
+        })
+
+    def _bcast_status(self, recording: bool) -> None:
+        self._broadcast.broadcast({"t": "status", "recording": recording})
+
+    def _bcast_live(self, env: list) -> None:
+        """Push a downsampled envelope + the live %MVC load to followers."""
+        if not self._broadcast.is_running():
+            return
+        env_out = []
+        for c in range(self._n_channels):
+            a = env[c] if c < len(env) else None
+            if a is None or not len(a):
+                env_out.append([])
+                continue
+            step = max(1, len(a) // 8)
+            env_out.append([round(float(x), 4) for x in a[::step][:8]])
+        self._broadcast.broadcast({"t": "data", "env": env_out})
+        ch = []
+        for c in range(self._n_channels):
+            ol = self._online[c]
+            active = bool(self._mvc_ref[c])
+            ch.append({
+                "active": active,
+                "pct": round(ol.current, 1) if active else 0.0,
+                "static": round(ol.static, 0), "median": round(ol.median, 0),
+                "peak": round(ol.peak, 0), "zone": ol.status,
+            })
+        self._broadcast.broadcast({
+            "t": "load", "warn": self._load_warning,
+            "danger": self._load_danger, "ch": ch,
+        })
+
+    def _bcast_calib(self, active: bool, phase: str = "", title: str = "",
+                     sub: str = "", count=None, secs=None,
+                     progress=None, effort=None) -> None:
+        if not self._broadcast.is_running():
+            return
+        self._broadcast.broadcast({
+            "t": "calib", "active": active, "phase": phase, "title": title,
+            "sub": sub, "count": count, "secs": secs,
+            "progress": progress, "effort": effort,
+        })
 
     def _build_load_panel(self) -> QGroupBox:
         """Live muscle-load box (sits between Control and Markers in the actions
@@ -1467,6 +1578,11 @@ class AcquisitionTab(QWidget):
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
             )
+            self._bcast_calib(
+                True, "ready",
+                tr("Get ready — {label}{rep}").format(label=label, rep=rep),
+                tr("Maximum contraction when it reaches 0"), count=count,
+            )
             if self._mvc_elapsed >= MVC_READY_S:
                 self._mvc_phase = "contract"
                 self._mvc_elapsed = 0.0
@@ -1489,6 +1605,11 @@ class AcquisitionTab(QWidget):
                     "peak {pk:.2f} mV"
                 ).format(label=label, s=secs_left, pk=self._mvc_peak)
             )
+            self._bcast_calib(
+                True, "contract",
+                tr("Contract {label} at maximum!{rep}").format(label=label, rep=rep),
+                secs=secs_left, progress=progress, effort=effort,
+            )
             if self._mvc_elapsed >= self._profile.apda_calib_s:
                 self._mvc_finish_rep()
         elif self._mvc_phase == "rest":
@@ -1499,6 +1620,7 @@ class AcquisitionTab(QWidget):
             )
             self._mvc_overlay.show_relax(sub)
             self._mvc_info(tr("Relax…"))
+            self._bcast_calib(True, "rest", tr("Relax"), sub)
             if self._mvc_elapsed >= MVC_REST_S:
                 self._mvc_enter_ready()
 
@@ -1557,12 +1679,18 @@ class AcquisitionTab(QWidget):
                 tr("MVC ready"),
                 tr("{summary}\nYou can start recording.").format(summary=summary),
             )
+            self._bcast_calib(True, "done", tr("MVC ready"), summary)
         else:
             self._mvc_info(tr("Calibration failed (no signal)."))
             self._mvc_overlay.show_done(
                 tr("Calibration failed"), tr("No signal — check the electrodes.")
             )
+            self._bcast_calib(
+                True, "done", tr("Calibration failed"),
+                tr("No signal — check the electrodes."),
+            )
         QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
+        QTimer.singleShot(5000, lambda: self._bcast_calib(False))
 
     def _mvc_cancel(self) -> None:
         """Abort the wizard (e.g. on stop/disconnect)."""
@@ -1570,6 +1698,7 @@ class AcquisitionTab(QWidget):
         self._mvc_active = False
         self._mvc_phase = ""
         self._mvc_overlay.hide_overlay()
+        self._bcast_calib(False)
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
@@ -1652,6 +1781,10 @@ class AcquisitionTab(QWidget):
         self._log(tr("Marker added: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta))
         # Record the event to draw it live over the plots.
         self._marker_events.append((tiempo, etiqueta))
+        if self._broadcast.is_running():
+            self._broadcast.broadcast(
+                {"t": "marker", "time": round(tiempo, 1), "label": etiqueta}
+            )
         # Add it to the editable marker list (data carries the exact key).
         item = QListWidgetItem(f"t={tiempo:.1f} s — {etiqueta}")
         item.setData(Qt.ItemDataRole.UserRole, (float(tiempo), etiqueta))
@@ -1925,6 +2058,7 @@ class AcquisitionTab(QWidget):
         self._watchdog_timer.stop()
         self._render_timer.stop()
         self._load_timer.stop()
+        self._broadcast.stop()
         if self._worker and self._worker.isRunning():
             self._worker.stop_forced()
             self._worker.wait(5000)

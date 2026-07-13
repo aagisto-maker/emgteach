@@ -115,6 +115,22 @@ _ES = {
     "sensor_labels has {n} entries but the device reports {m} channel(s).":
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",
+    # -- classroom broadcast (followers on phones) --
+    "Broadcast to phones (classroom mode)": "Difundir a móviles (modo aula)",
+    "Serve a read-only live view over the local network so students "
+    "can follow on their phone/tablet browser (no install). One "
+    "device drives the BITalino; the others just watch.":
+        "Sirve una vista en vivo de solo lectura por la red local para que los "
+        "alumnos sigan la sesión desde el navegador de su móvil/tablet (sin "
+        "instalar nada). Un dispositivo maneja el BITalino; los demás solo miran.",
+    "Students open:  {url}": "Los alumnos abren:  {url}",
+    "Students open:  {url}   ·   {n} following":
+        "Los alumnos abren:  {url}   ·   {n} siguiendo",
+    "Classroom mode on — students can follow at {url}":
+        "Modo aula activado — los alumnos pueden seguir en {url}",
+    "Could not start classroom mode (port busy?).":
+        "No se pudo iniciar el modo aula (¿puerto ocupado?).",
+    "Classroom mode off.": "Modo aula desactivado.",
     "Default": "Por defecto",
     "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
