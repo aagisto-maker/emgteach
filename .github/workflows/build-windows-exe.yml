@@ -1,0 +1,81 @@
+name: Build Windows exe
+
+# Builds the standalone Windows executable with the packaging/emgteach.spec
+# recipe (see packaging/README.md), verifies it with the frozen --selftest,
+# and uploads dist/emgteach.exe as a downloadable artifact.
+#
+# Release flow: publishing a GitHub release triggers this workflow, which
+# builds the exe and attaches it to that release as
+# emgteach-<tag>-windows-x64.exe — no manual upload needed.
+#
+# workflow_dispatch only becomes available once this file is on the default
+# branch; the pull_request trigger (scoped to packaging changes) lets a PR
+# produce a test build before that.
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+  push:
+    tags:
+      - "exe-*"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packaging/**"
+      - ".github/workflows/build-windows-exe.yml"
+
+# contents: write is needed to attach the exe to the release; the other
+# triggers only read.
+permissions:
+  contents: write
+
+jobs:
+  build-exe:
+    name: PyInstaller one-file build (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package and build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[build]"
+          pip install bitalino --no-deps
+
+      - name: Build with PyInstaller
+        run: pyinstaller --noconfirm --clean packaging/emgteach.spec
+
+      - name: Self-test the frozen executable (headless)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        # The exe is windowed (no console), so PowerShell won't wait for it
+        # on its own — Start-Process -Wait does. The outcome lands in
+        # emgteach_selftest.log next to the executable.
+        run: |
+          $p = Start-Process -FilePath "dist\emgteach.exe" -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
+          Get-Content dist\emgteach_selftest.log
+          exit $p.ExitCode
+
+      - name: Upload emgteach.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: emgteach-windows-exe
+          path: dist/emgteach.exe
+          if-no-files-found: error
+          compression-level: 6
+
+      - name: Attach the exe to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          Copy-Item dist\emgteach.exe "emgteach-$env:TAG-windows-x64.exe"
+          gh release upload "$env:TAG" "emgteach-$env:TAG-windows-x64.exe" --clobber

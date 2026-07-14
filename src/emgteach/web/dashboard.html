@@ -204,7 +204,9 @@ function setCalib(d) {
 // ---- WebSocket ----
 let ws, retry = 0;
 function connect() {
-  ws = new WebSocket(`ws://${location.hostname}:{{WS_PORT}}`);
+  // location.search carries the session code (?k=...) — the data server
+  // rejects connections without it.
+  ws = new WebSocket(`ws://${location.hostname}:{{WS_PORT}}/${location.search}`);
   ws.onopen = () => { retry = 0; dot(true); };
   ws.onclose = () => { dot(false); setTimeout(connect, Math.min(3000, 400 * ++retry)); };
   ws.onerror = () => ws.close();
@@ -289,7 +291,7 @@ function addDownload(m) {
     a = document.createElement("a"); a.id = id; a.className = "dlbtn";
     document.getElementById("resDl").appendChild(a);
   }
-  a.href = m.url; a.setAttribute("download", m.name || "");
+  a.href = m.url + location.search; a.setAttribute("download", m.name || "");
   a.textContent = m.kind === "report"
     ? "⬇️ Descargar informe (PDF)" : "⬇️ Descargar resultados (CSV)";
 }

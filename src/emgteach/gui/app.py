@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
         # Classroom broadcast — shared so the Analysis tab can also push its
         # results/report to the student followers (the Acquisition tab owns the
         # on/off toggle and the live stream).
-        self._broadcast = BroadcastServer(self)
+        self._broadcast = BroadcastServer(parent=self)
 
         # Tabs
         self._tab_adq = AcquisitionTab(self._logger, settings, broadcast=self._broadcast)

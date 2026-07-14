@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-07-14
+
 ### Added
 - **Classroom mode — students follow on their phones.** A new "Broadcast to phones" toggle in the Acquisition tab serves a read-only live dashboard over the local network: students open a URL in their phone/tablet browser (no install) and follow the session in real time — the envelope, the %MVC load bars, the guided-calibration steps and the markers. The operator PC keeps the single Bluetooth link to the BITalino (Bluetooth Classic is point-to-point) and re-broadcasts the already-computed data through Qt-native WebSocket + HTTP servers, so any number of students can watch at once. New `emgteach.broadcast` module and `web/dashboard.html` follower page; no extra runtime dependency. A `python -m emgteach.broadcast` demo mode previews the follower page with synthetic data, and the HTTP server resets TLS handshakes so a phone browser that auto-upgrades to `https://` falls back to `http://` on its own. Students can **download the live session as CSV** from the dashboard, and when the operator runs the offline analysis its **metrics and the PDF report / CSV are pushed to the followers to download** as well (the broadcast server is shared with the Analysis tab).
+- **Per-session access code for the classroom broadcast.** Every time the
+  broadcast is switched on, a fresh random code is minted and embedded in the
+  follower URL (`?k=...`); the HTTP and WebSocket servers reject requests
+  without the current code. Links shared for one practical die as soon as
+  that broadcast stops — students from a past session cannot reconnect, and
+  being on the same institutional network is no longer enough to watch.
+- **"Copy link" button.** Next to the classroom-mode toggle, copies the full
+  follower link to the clipboard so the instructor can paste it into an
+  email to the students.
+- **On-demand Windows build in CI.** A `Build Windows exe` workflow packages
+  the standalone `emgteach.exe` (PyInstaller one-file, gated on the frozen
+  `--selftest`) and, on a published GitHub release, attaches it to the
+  release automatically.
+
+### Fixed
+- **Start-up crash in the v1.4 test builds** (never in a published release):
+  the main window passed itself positionally into `BroadcastServer`, landing
+  in the `http_port` parameter and raising `TypeError` before the window
+  showed. A new GUI test constructs the real main window so start-up wiring
+  regressions fail in CI instead of on launch.
 
 ## [1.3.0] — 2026-07-10
 
@@ -256,7 +278,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/aagisto-maker/emgteach/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/aagisto-maker/emgteach/compare/v1.2.1...v1.3.0
+[1.2.1]: https://github.com/aagisto-maker/emgteach/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/aagisto-maker/emgteach/compare/v1.1.2...v1.2.0
+[1.1.2]: https://github.com/aagisto-maker/emgteach/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/aagisto-maker/emgteach/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/aagisto-maker/emgteach/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aagisto-maker/emgteach/compare/v0.3.0...v1.0.0

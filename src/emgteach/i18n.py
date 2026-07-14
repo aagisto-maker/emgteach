@@ -131,6 +131,18 @@ _ES = {
     "Could not start classroom mode (port busy?).":
         "No se pudo iniciar el modo aula (¿puerto ocupado?).",
     "Classroom mode off.": "Modo aula desactivado.",
+    "Classroom mode off — previous follower links are now invalid.":
+        "Modo aula desactivado — los enlaces anteriores ya no son válidos.",
+    "Copy link": "Copiar enlace",
+    "Copied ✓": "Copiado ✓",
+    "Copy the follower link to the clipboard, e.g. to email it to "
+    "the students. The link only works for this session: stopping "
+    "the broadcast invalidates it.":
+        "Copia el enlace para los alumnos al portapapeles, p. ej. para "
+        "enviarlo por correo. El enlace solo vale para esta sesión: al "
+        "desactivar la difusión queda invalidado.",
+    "Follower link copied to the clipboard.":
+        "Enlace para los alumnos copiado al portapapeles.",
     "Default": "Por defecto",
     "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
