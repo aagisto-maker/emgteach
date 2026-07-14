@@ -18,16 +18,26 @@ Frames are small JSON objects tagged by ``"t"``: ``config``, ``data``
 (envelope), ``load``, ``calib`` and ``marker``. The dashboard (``web/
 dashboard.html``) renders them. This module is import-safe without a running
 event loop; nothing is opened until :meth:`BroadcastServer.start`.
+
+Access control: every :meth:`BroadcastServer.start` mints a fresh random
+session code, embedded as ``?k=...`` in :meth:`BroadcastServer.follower_url`.
+Both servers reject requests without the current code, so a follower link
+only works for the session it was shared for — stopping and restarting the
+broadcast invalidates every previously shared link (students from a past
+practical cannot reconnect), and knowing the host's IP alone is not enough
+to watch.
 """
 
 from __future__ import annotations
 
 import json
+import secrets
 from pathlib import Path
+from urllib.parse import parse_qs
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QUrlQuery, Signal
 from PySide6.QtNetwork import QHostAddress, QNetworkInterface, QTcpServer
-from PySide6.QtWebSockets import QWebSocketServer
+from PySide6.QtWebSockets import QWebSocketProtocol, QWebSocketServer
 
 # Default ports for the classroom broadcast (HTTP page + WebSocket data).
 DEFAULT_HTTP_PORT = 8070
@@ -69,14 +79,33 @@ def lan_ipv4() -> str:
     return best
 
 
+# Served (with 403) when a request carries a wrong/expired session code.
+_DENIED_HTML = (
+    b"<!doctype html><meta charset=utf-8>"
+    b"<meta name=viewport content='width=device-width,initial-scale=1'>"
+    b"<title>emgteach</title>"
+    b"<body style='font-family:system-ui;background:#10141a;color:#dde;"
+    b"display:flex;align-items:center;justify-content:center;height:95vh;"
+    b"text-align:center'><div><h2>&#128274; Enlace no v&aacute;lido o "
+    b"sesi&oacute;n finalizada</h2><p>Pide al profesor el enlace de la "
+    b"sesi&oacute;n de hoy.<br><small>Invalid or expired session link "
+    b"&mdash; ask your instructor for today's link.</small></p></div>"
+)
+
+
 class _HttpServer(QTcpServer):
     """Minimal HTTP/1.1 server: the dashboard page for any path, plus any
-    registered downloadable files (the recording CSV, the analysis report)."""
+    registered downloadable files (the recording CSV, the analysis report).
 
-    def __init__(self, html: bytes, downloads: dict, parent=None) -> None:
+    Every request must carry the current session code (``?k=...``); anything
+    else gets the 403 page so stale links from a past session are dead ends.
+    """
+
+    def __init__(self, html: bytes, downloads: dict, token: str, parent=None) -> None:
         super().__init__(parent)
         self._html = html
         self._downloads = downloads          # path -> (bytes, content_type, filename)
+        self._token = token
         self.newConnection.connect(self._on_new)
 
     def _on_new(self) -> None:
@@ -95,10 +124,27 @@ class _HttpServer(QTcpServer):
             sock.abort()
             return
         try:
-            path = data.split(b"\r\n", 1)[0].decode("latin-1").split(" ")[1]
-            path = path.split("?")[0]
+            target = data.split(b"\r\n", 1)[0].decode("latin-1").split(" ")[1]
         except (IndexError, UnicodeDecodeError):
-            path = "/"
+            target = "/"
+        path, _, query = target.partition("?")
+        key = (parse_qs(query).get("k") or [""])[0]
+        # Compare as bytes: compare_digest() rejects non-ASCII str input.
+        if not secrets.compare_digest(
+            key.encode("utf-8", "ignore"), self._token.encode()
+        ):
+            body = _DENIED_HTML
+            head = (
+                b"HTTP/1.1 403 Forbidden\r\n"
+                b"Content-Type: text/html; charset=utf-8\r\n"
+                b"Content-Length: " + str(len(body)).encode() + b"\r\n"
+                b"Cache-Control: no-store\r\n"
+                b"Connection: close\r\n\r\n"
+            )
+            sock.write(head + body)
+            sock.flush()
+            sock.disconnectFromHost()
+            return
         entry = self._downloads.get(path)
         if entry is not None:
             payload, ctype, fname = entry
@@ -153,17 +199,25 @@ class BroadcastServer(QObject):
         self._clients: list = []
         self._last_config: dict | None = None
         self._downloads: dict = {}   # path -> (bytes, content_type, filename)
+        self._token: str = ""        # per-session access code; minted on start()
 
     # -- lifecycle -----------------------------------------------------------
 
     def start(self) -> bool:
-        """Start both servers. Returns ``True`` on success."""
+        """Start both servers. Returns ``True`` on success.
+
+        Mints a fresh session code, so links shared for a previous
+        broadcast stop working.
+        """
         if self.is_running():
             return True
+        # 6 lowercase hex chars: easy to (re)type on a phone, and with the
+        # link only valid while this session runs, ample against guessing.
+        self._token = secrets.token_hex(3)
         html = _load_dashboard_html().replace(
             b"{{WS_PORT}}", str(self._ws_port).encode()
         )
-        http = _HttpServer(html, self._downloads, self)
+        http = _HttpServer(html, self._downloads, self._token, self)
         if not http.listen(QHostAddress(QHostAddress.SpecialAddress.Any), self._http_port):
             http.deleteLater()
             return False
@@ -211,8 +265,12 @@ class BroadcastServer(QObject):
         return len(self._clients)
 
     def follower_url(self) -> str:
-        """URL students type in their browser to follow the session."""
-        return f"http://{lan_ipv4()}:{self._http_port}"
+        """URL students open in their browser to follow *this* session.
+
+        Includes the per-session access code; the link dies when the
+        broadcast is stopped.
+        """
+        return f"http://{lan_ipv4()}:{self._http_port}/?k={self._token}"
 
     # -- WebSocket clients ---------------------------------------------------
 
@@ -220,6 +278,13 @@ class BroadcastServer(QObject):
         assert self._ws is not None
         while self._ws.hasPendingConnections():
             client = self._ws.nextPendingConnection()
+            key = QUrlQuery(client.requestUrl()).queryItemValue("k")
+            if not secrets.compare_digest(
+                key.encode("utf-8", "ignore"), self._token.encode()
+            ):
+                client.close(QWebSocketProtocol.CloseCode.CloseCodePolicyViolated)
+                client.deleteLater()
+                continue
             client.disconnected.connect(lambda c=client: self._drop(c))
             self._clients.append(client)
             # A late joiner needs the current session config to initialise.

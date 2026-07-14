@@ -36,7 +36,7 @@ from pathlib import Path
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QSettings, Qt, QTimer, Slot
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QGuiApplication, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -458,6 +458,17 @@ class AcquisitionTab(QWidget):
         )
         self._chk_aula.toggled.connect(self._on_toggle_broadcast)
         aula_row.addWidget(self._chk_aula)
+        self._btn_copy_url = QPushButton(tr("Copy link"))
+        self._btn_copy_url.setToolTip(
+            tr(
+                "Copy the follower link to the clipboard, e.g. to email it to "
+                "the students. The link only works for this session: stopping "
+                "the broadcast invalidates it."
+            )
+        )
+        self._btn_copy_url.setVisible(False)
+        self._btn_copy_url.clicked.connect(self._copy_broadcast_url)
+        aula_row.addWidget(self._btn_copy_url)
         self._lbl_aula = QLabel("")
         self._lbl_aula.setStyleSheet("font-size: 11px; color: #1F4E79; font-weight: bold;")
         self._lbl_aula.setTextInteractionFlags(
@@ -1298,6 +1309,7 @@ class AcquisitionTab(QWidget):
             if self._broadcast.start():
                 url = self._broadcast.follower_url()
                 self._lbl_aula.setText(tr("Students open:  {url}").format(url=url))
+                self._btn_copy_url.setVisible(True)
                 self._log(
                     tr("Classroom mode on — students can follow at {url}").format(url=url)
                 )
@@ -1308,7 +1320,19 @@ class AcquisitionTab(QWidget):
         else:
             self._broadcast.stop()
             self._lbl_aula.setText("")
-            self._log(tr("Classroom mode off."))
+            self._btn_copy_url.setVisible(False)
+            self._log(tr("Classroom mode off — previous follower links are now invalid."))
+
+    @Slot()
+    def _copy_broadcast_url(self) -> None:
+        if not self._broadcast.is_running():
+            return
+        QGuiApplication.clipboard().setText(self._broadcast.follower_url())
+        self._log(tr("Follower link copied to the clipboard."))
+        self._btn_copy_url.setText(tr("Copied ✓"))
+        QTimer.singleShot(
+            1500, lambda: self._btn_copy_url.setText(tr("Copy link"))
+        )
 
     @Slot(int)
     def _on_broadcast_clients(self, n: int) -> None:
