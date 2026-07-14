@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-07-14
+
+### Fixed
+- **Packaging metadata version.** `.zenodo.json` and `CITATION.cff` still
+  declared version `1.3.0` after the 1.4.0 release; both now match the
+  packaged version, so the Zenodo archive and the citation record show the
+  correct version and feature list.
+
 ## [1.4.0] — 2026-07-14
 
 ### Added
@@ -278,7 +286,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/aagisto-maker/emgteach/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/aagisto-maker/emgteach/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/aagisto-maker/emgteach/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/aagisto-maker/emgteach/compare/v1.2.0...v1.2.1
