@@ -189,12 +189,15 @@ Permite **registrar** una sesión y observarla en vivo.
   sin tráfico), verde (recibiendo datos). Un *watchdog* fuerza la desconexión si
   el dispositivo deja de enviar datos (p. ej. pérdida de Bluetooth).
 
-**Gráficas en tiempo real** (tres):
+**Gráficas en tiempo real** (dos):
 - **Señal EMG en bruto** (mV).
-- **Señal filtrada** (notch + paso‑banda).
 - **Envolvente**.
 
-Con **dos canales**, las gráficas de la señal en bruto y la filtrada se muestran **apiladas**
+> El filtrado (notch de 50 Hz + paso‑banda 20–450 Hz) se sigue aplicando para
+> calcular la envolvente, pero la señal filtrada intermedia **ya no se dibuja**:
+> para docencia de Fisiología basta con la señal en bruto y su envolvente.
+
+Con **dos canales**, la gráfica de la señal en bruto se muestra **apilada**
 (un "carril" por canal, con su color), mientras que la envolvente, al ser no
 negativa, se **superpone** para comparar directamente ambos músculos. La escala
 vertical de cada gráfica se ajusta con botones **▲▼**, y la **ventana temporal**

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="{{LANG}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>emgteach — Aula</title>
+<title>emgteach</title>
 <style>
   :root { --blue:#4169E1; --red:#D62728; --ok:#1a7f37; --warn:#E67E22; --dang:#cc0000; }
   * { box-sizing: border-box; }
@@ -55,9 +55,9 @@
 </head>
 <body>
 <header>
-  <h1>emgteach · Aula</h1>
+  <h1 id="appTitle">emgteach</h1>
   <span id="rec">● REC</span>
-  <span id="conn"><span id="dot" class="dot off"></span><span id="cs">conectando…</span></span>
+  <span id="conn"><span id="dot" class="dot off"></span><span id="cs"></span></span>
 </header>
 <main>
   <div id="calib">
@@ -65,25 +65,72 @@
     <div class="count" id="cCount"></div>
     <div class="bars" id="cBars" style="display:none">
       <div class="bar"><i id="cProg"></i></div>
-      <div class="lbl" id="cEffortLbl">Esfuerzo</div>
+      <div class="lbl" id="cEffortLbl"></div>
       <div class="bar effort"><i id="cEffort"></i></div>
     </div>
     <div class="lbl" id="cSub"></div>
   </div>
-  <div id="wait">Esperando datos del profesor…</div>
+  <div id="wait"></div>
   <div id="chs"></div>
   <div id="tools">
-    <button id="btnCsv">⬇️ Descargar sesión (CSV)</button>
+    <button id="btnCsv"></button>
   </div>
   <div id="results" class="ch" style="display:none">
-    <h2>📊 Resultados del análisis</h2>
+    <h2 id="resultsTitle"></h2>
     <div class="resgrid" id="resMetrics"></div>
     <div id="resDl"></div>
   </div>
 </main>
-<footer>Vista de seguimiento (solo lectura) · emgteach</footer>
+<footer id="foot"></footer>
 
 <script>
+// ---- i18n: follow the app language injected by the server ----
+const ES = "{{LANG}}" !== "en";      // default to Spanish for any non-"en" value
+const M = {
+  // key:            [English,                              Spanish]
+  appTitle:          ["emgteach · Classroom",              "emgteach · Aula"],
+  title:             ["emgteach — Classroom",              "emgteach — Aula"],
+  connecting:        ["connecting…",                       "conectando…"],
+  connected:         ["connected",                         "conectado"],
+  reconnecting:      ["reconnecting…",                     "reconectando…"],
+  effort:            ["Effort",                            "Esfuerzo"],
+  waiting:           ["Waiting for the instructor's data…", "Esperando datos del profesor…"],
+  btnCsv:            ["⬇️ Download session (CSV)",          "⬇️ Descargar sesión (CSV)"],
+  resultsTitle:      ["📊 Analysis results",               "📊 Resultados del análisis"],
+  footer:            ["Follower view (read-only) · emgteach", "Vista de seguimiento (solo lectura) · emgteach"],
+  mvcUnit:           ["% MVC",                             "% CVM"],
+  noData:            ["No session data yet.",              "Aún no hay datos de la sesión."],
+  csvHeader:         ["# emgteach — live session (student view)", "# emgteach — sesión en vivo (vista del alumno)"],
+  csvMarkers:        ["# markers: ",                       "# marcadores: "],
+  csvFile:           ["emgteach_session.csv",              "emgteach_sesion.csv"],
+  mFile:             ["File",                              "Archivo"],
+  mMnf:              ["Mean freq. (MNF)",                  "Frec. media (MNF)"],
+  mMdf:              ["Median freq. (MDF)",                "Frec. mediana (MDF)"],
+  mSlope:            ["MDF slope",                         "Pendiente MDF"],
+  mRms:              ["Global RMS",                        "RMS global"],
+  mIemg:             ["iEMG",                              "iEMG"],
+  mDur:              ["Duration",                          "Duración"],
+  mFat:              ["Fatigue",                           "Fatiga"],
+  fatDetected:       ["Detected",                          "Detectada"],
+  fatNotDetected:    ["Not detected",                      "No detectada"],
+  fatUndetermined:   ["Undetermined",                      "Indeterminada"],
+  dlReport:          ["⬇️ Download report (PDF)",          "⬇️ Descargar informe (PDF)"],
+  dlResults:         ["⬇️ Download results (CSV)",         "⬇️ Descargar resultados (CSV)"],
+};
+function t(k) { return (M[k] || ["", ""])[ES ? 1 : 0]; }
+const UNIT = t("mvcUnit");
+
+function applyStaticText() {
+  document.title = t("title");
+  document.getElementById("appTitle").textContent = t("appTitle");
+  document.getElementById("cs").textContent = t("connecting");
+  document.getElementById("cEffortLbl").textContent = t("effort");
+  document.getElementById("wait").textContent = t("waiting");
+  document.getElementById("btnCsv").textContent = t("btnCsv");
+  document.getElementById("resultsTitle").textContent = t("resultsTitle");
+  document.getElementById("foot").textContent = t("footer");
+}
+
 const COLORS = ["#4169E1", "#D62728"];
 const WIN = 600;                       // samples kept per channel for the plot
 let nCh = 0, labels = [], warn = 40, danger = 70;
@@ -110,7 +157,7 @@ function buildChannels() {
           <div class="z zw"></div><div class="z zd"></div>
         </div>
         <div class="loadtxt">
-          <span class="pct">— % CVM</span>
+          <span class="pct">— ${UNIT}</span>
           <span class="stats">P10 — · P50 — · P90 —</span>
         </div>
       </div>`;
@@ -164,11 +211,11 @@ function draw() {
 function setLoad(chs) {
   for (let c = 0; c < Math.min(chs.length, cards.length); c++) {
     const k = cards[c], d = chs[c];
-    if (!d.active) { k.pct.textContent = "— % CVM"; k.stats.textContent = "P10 — · P50 — · P90 —"; k.fill.style.width = "0%"; continue; }
+    if (!d.active) { k.pct.textContent = "— " + UNIT; k.stats.textContent = "P10 — · P50 — · P90 —"; k.fill.style.width = "0%"; continue; }
     const col = d.zone === "danger" ? "var(--dang)" : d.zone === "warning" ? "var(--warn)" : "var(--ok)";
     k.fill.style.background = col;
     k.fill.style.width = Math.max(0, Math.min(100, d.pct)) + "%";
-    k.pct.textContent = Math.round(d.pct) + " % CVM";
+    k.pct.textContent = Math.round(d.pct) + " " + UNIT;
     k.pct.style.color = col;
     k.stats.textContent = `P10 ${Math.round(d.static)} · P50 ${Math.round(d.median)} · P90 ${Math.round(d.peak)}`;
   }
@@ -236,7 +283,7 @@ function connect() {
 }
 function dot(on) {
   document.getElementById("dot").className = "dot " + (on ? "on" : "off");
-  document.getElementById("cs").textContent = on ? "conectado" : "reconectando…";
+  document.getElementById("cs").textContent = on ? t("connected") : t("reconnecting");
 }
 // ---- session recording (client-side) + analysis results / downloads ----
 function accumulate(env) {
@@ -258,27 +305,28 @@ function dl(text, type, name) {
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 function downloadSessionCsv() {
-  if (!sessionRows.length) { alert("Aún no hay datos de la sesión."); return; }
-  const hdr = ["# emgteach — sesión en vivo (vista del alumno)"];
+  if (!sessionRows.length) { alert(t("noData")); return; }
+  const unitCol = ES ? "_pctCVM" : "_pctMVC";
+  const hdr = [t("csvHeader")];
   if (markers.length)
-    hdr.push("# marcadores: " + markers.map(x => `t=${x.t}s ${x.label}`).join("; "));
+    hdr.push(t("csvMarkers") + markers.map(x => `t=${x.t}s ${x.label}`).join("; "));
   const cols = ["t_s"]
     .concat(labels.map(l => `${l}_env_mV`))
-    .concat(labels.map(l => `${l}_pctCVM`));
+    .concat(labels.map(l => `${l}${unitCol}`));
   const lines = [cols.join(",")].concat(sessionRows.map(r => r.join(",")));
-  dl(hdr.join("\n") + "\n" + lines.join("\n"), "text/csv;charset=utf-8", "emgteach_sesion.csv");
+  dl(hdr.join("\n") + "\n" + lines.join("\n"), "text/csv;charset=utf-8", t("csvFile"));
 }
 document.getElementById("btnCsv").addEventListener("click", downloadSessionCsv);
 
 function showResults(m) {
   document.getElementById("results").style.display = "block";
-  const fat = m.fatigue < 0 ? "Detectada" : m.fatigue > 0 ? "No detectada" : "Indeterminada";
+  const fat = m.fatigue < 0 ? t("fatDetected") : m.fatigue > 0 ? t("fatNotDetected") : t("fatUndetermined");
   const fc = m.fatigue < 0 ? "var(--dang)" : m.fatigue > 0 ? "var(--ok)" : "#c9a227";
   const items = [
-    ["Archivo", m.file || "—"], ["Frec. media (MNF)", m.mnf + " Hz"],
-    ["Frec. mediana (MDF)", m.mdf + " Hz"], ["Pendiente MDF", m.mdf_slope + " Hz/s"],
-    ["RMS global", m.rms + " mV"], ["iEMG", m.iemg + " mV·s"],
-    ["Duración", m.duration + " s"], ["Fatiga", `<b style="color:${fc}">${fat}</b>`],
+    [t("mFile"), m.file || "—"], [t("mMnf"), m.mnf + " Hz"],
+    [t("mMdf"), m.mdf + " Hz"], [t("mSlope"), m.mdf_slope + " Hz/s"],
+    [t("mRms"), m.rms + " mV"], [t("mIemg"), m.iemg + " mV·s"],
+    [t("mDur"), m.duration + " s"], [t("mFat"), `<b style="color:${fc}">${fat}</b>`],
   ];
   document.getElementById("resMetrics").innerHTML =
     items.map(([k, v]) => `<div class="m"><span>${k}</span><b>${v}</b></div>`).join("");
@@ -292,10 +340,10 @@ function addDownload(m) {
     document.getElementById("resDl").appendChild(a);
   }
   a.href = m.url + location.search; a.setAttribute("download", m.name || "");
-  a.textContent = m.kind === "report"
-    ? "⬇️ Descargar informe (PDF)" : "⬇️ Descargar resultados (CSV)";
+  a.textContent = m.kind === "report" ? t("dlReport") : t("dlResults");
 }
 
+applyStaticText();
 connect();
 requestAnimationFrame(draw);
 </script>

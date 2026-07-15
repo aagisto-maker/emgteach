@@ -214,8 +214,12 @@ class BroadcastServer(QObject):
         # 6 lowercase hex chars: easy to (re)type on a phone, and with the
         # link only valid while this session runs, ample against guessing.
         self._token = secrets.token_hex(3)
+        from emgteach.i18n import get_language
+
         html = _load_dashboard_html().replace(
             b"{{WS_PORT}}", str(self._ws_port).encode()
+        ).replace(
+            b"{{LANG}}", get_language().encode()
         )
         http = _HttpServer(html, self._downloads, self._token, self)
         if not http.listen(QHostAddress(QHostAddress.SpecialAddress.Any), self._http_port):

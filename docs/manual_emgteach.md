@@ -184,14 +184,17 @@ Used to **record** a session and watch it live.
   traffic), green (receiving data). A *watchdog* forces a disconnection if the
   device stops sending data (e.g. a lost Bluetooth link).
 
-**Real‑time plots** (three):
+**Real‑time plots** (two):
 - **Raw EMG signal** (mV).
-- **Filtered signal** (notch + band‑pass).
 - **Envelope**.
 
-With **two channels**, the raw and filtered plots are shown **stacked** (one
-"lane" per channel, in its colour), while the envelope — being non‑negative — is
-**overlaid** so the two muscles can be compared directly. Each plot's vertical
+> The filtering (50 Hz notch + 20–450 Hz band‑pass) is still applied to compute
+> the envelope, but the intermediate filtered trace is **no longer drawn**: for
+> physiology teaching the raw signal and its envelope are enough.
+
+With **two channels**, the raw plot is shown **stacked** (one "lane" per channel,
+in its colour), while the envelope — being non‑negative — is **overlaid** so the
+two muscles can be compared directly. Each plot's vertical
 scale is adjusted with **▲▼** buttons, and the **time window** with a zoom
 dropdown and ◀▶ buttons (also with the mouse wheel).
 

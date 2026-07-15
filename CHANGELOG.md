@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Post-calibration auto-scale.** Once the MVC calibration finishes, the live plots resize to the subject: the envelope top is set to a headroom multiple of the MVC reference (so >100 %MVC phasic bursts stay on screen) and the raw plot to ±(measured peak), with a margin above and below. The ▲▼ reset returns to this calibrated scale. Fixes signals going off-window for stronger or weaker individuals.
 - **More representative MVC reference.** The MVC reference is now taken from the **strongest sustained window** of the calibration effort (`mvc_peak_hold`) instead of the percentile of the whole held contraction, which was diluted by the ramp-up and fatigue decay. This reduces the case where brief individual contractions overshoot 100 %MVC after calibrating with a sustained one.
 - **Neutral protocol example.** The Acquisition protocol field's placeholder no longer names a specific muscle ("Isometric contraction 30 s").
+- **Bilingual follower dashboard.** The classroom follower page (`web/dashboard.html`) now follows the app language — it renders in English when the app is in English (it was Spanish-only) — with the operator's language injected into the served page.
+- **Docs: two live plots.** The user-manual section on the Acquisition tab now says two real-time plots (raw + envelope), matching the removal of the intermediate filtered trace.
 
 ## [1.4.1] — 2026-07-14
 
