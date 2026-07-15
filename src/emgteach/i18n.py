@@ -143,6 +143,14 @@ _ES = {
         "desactivar la difusión queda invalidado.",
     "Follower link copied to the clipboard.":
         "Enlace para los alumnos copiado al portapapeles.",
+    "QR": "QR",
+    "Show a QR code students can scan to open the follower page.":
+        "Muestra un código QR que los alumnos escanean para abrir la página de seguimiento.",
+    "QR code unavailable (the 'segno' library is missing).":
+        "Código QR no disponible (falta la librería 'segno').",
+    "Scan to follow the session": "Escanea para seguir la sesión",
+    "Point the phone camera at the code (same Wi-Fi network).":
+        "Apunta la cámara del móvil al código (misma red Wi-Fi).",
     "Default": "Por defecto",
     "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
@@ -672,7 +680,7 @@ _ES = {
         "Sin fatiga: pendiente MDF {slope:+.3f} Hz/s (R²={r2:.2f}).",
     # -- acquisition tab (protocol / markers) --
     "Name": "Nombre",
-    "e.g. Isometric biceps 30 s": "p. ej. Bíceps isométrico 30 s",
+    "e.g. Isometric contraction 30 s": "p. ej. Contracción isométrica 30 s",
     "Live signal quality: saturation or a flat (disconnected) signal.":
         "Calidad de señal en vivo: saturación o señal plana (desconectada).",
     "Markers recorded so far. Select one and press Delete to remove it.":

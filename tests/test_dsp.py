@@ -29,7 +29,13 @@ from emgteach.dsp import (
     process_offline,
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
-from emgteach.mvc import adaptive_ylim, compute_mvc, normalise_to_mvc
+from emgteach.mvc import (
+    adaptive_ylim,
+    compute_mvc,
+    mvc_from_reps,
+    mvc_peak_hold,
+    normalise_to_mvc,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -457,6 +463,26 @@ class TestMVC:
         env[-1] = 0.5  # only the last value is nonzero
         # Percentile 95 of mostly zeros is 0 -> falls back to max (0.5)
         assert compute_mvc(env) == pytest.approx(0.5)
+
+    def test_peak_hold_picks_strongest_sustained_window(self) -> None:
+        # A long weak plateau (0.6) plus a brief strong burst (1.0) that is
+        # under 5 % of the trace, so it is missed by the whole-trace P95.
+        env = np.concatenate([np.full(300, 0.6), np.full(8, 1.0)])
+        assert compute_mvc(env) == pytest.approx(0.6, abs=0.02)  # burst too brief
+        # peak-hold over an 8-sample window recovers the true strong level.
+        assert mvc_peak_hold(env, window_samples=8) == pytest.approx(1.0, abs=0.02)
+
+    def test_peak_hold_falls_back_when_shorter_than_window(self) -> None:
+        env = np.array([0.4, 0.8])
+        assert mvc_peak_hold(env, window_samples=50) == pytest.approx(
+            compute_mvc(env)
+        )
+
+    def test_mvc_from_reps_uses_peak_hold_and_takes_best(self) -> None:
+        weak = np.full(100, 0.5)
+        strong = np.concatenate([np.full(30, 1.2), np.full(70, 0.5)])
+        best = mvc_from_reps([weak, strong], window_samples=30)
+        assert best == pytest.approx(1.2, abs=0.02)   # best-of-N across reps
 
     def test_normalise_to_mvc_scales_correctly(self) -> None:
         env = np.array([0.5, 1.0, 1.5])

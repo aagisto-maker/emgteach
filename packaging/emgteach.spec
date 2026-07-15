@@ -60,6 +60,7 @@ hiddenimports += [
     "serial.tools.list_ports",             # COM-port enumeration in the GUI
     "PySide6.QtWebSockets",                # classroom broadcast (WebSocket data)
     "PySide6.QtNetwork",                   # classroom broadcast (HTTP + TCP)
+    "segno",                               # classroom join QR code
 ]
 
 # Trim clearly-unused / conflicting packages to keep the binary smaller and

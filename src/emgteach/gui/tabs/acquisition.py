@@ -36,10 +36,11 @@ from pathlib import Path
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QSettings, Qt, QTimer, Slot
-from PySide6.QtGui import QGuiApplication, QKeySequence, QShortcut
+from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDialog,
     QDoubleSpinBox,
     QFileDialog,
     QGroupBox,
@@ -91,6 +92,13 @@ MAX_MARKER_LINES = 40
 MVC_TICK_MS = 100   # state-machine tick
 MVC_READY_S = 3.0   # "get ready" countdown before each contraction
 MVC_REST_S = 2.0    # relax pause between reps / muscles
+MVC_PEAK_WINDOW_S = 0.5   # strongest-sustained window used for the MVC reference
+
+# Headroom applied to the live plots when they auto-scale after calibration:
+# the envelope top is this multiple of the MVC reference (so >100 %MVC phasic
+# bursts stay visible), the raw plot spans ±(peak × factor).
+AUTOSCALE_ENV_FACTOR = 1.5
+AUTOSCALE_RAW_FACTOR = 1.25
 
 # Style per live signal-quality status code (green ok / red saturation /
 # amber flat-disconnected).
@@ -437,7 +445,7 @@ class AcquisitionTab(QWidget):
         meta_row.addWidget(self._edit_student_code)
         meta_row.addWidget(QLabel(tr("Protocol:")))
         self._edit_protocol = QLineEdit()
-        self._edit_protocol.setPlaceholderText(tr("e.g. Isometric biceps 30 s"))
+        self._edit_protocol.setPlaceholderText(tr("e.g. Isometric contraction 30 s"))
         self._edit_protocol.setText(self._settings.value("adquisicion/protocol", ""))
         self._edit_protocol.textChanged.connect(
             lambda v: self._settings.setValue("adquisicion/protocol", v)
@@ -469,6 +477,13 @@ class AcquisitionTab(QWidget):
         self._btn_copy_url.setVisible(False)
         self._btn_copy_url.clicked.connect(self._copy_broadcast_url)
         aula_row.addWidget(self._btn_copy_url)
+        self._btn_aula_qr = QPushButton(tr("QR"))
+        self._btn_aula_qr.setToolTip(
+            tr("Show a QR code students can scan to open the follower page.")
+        )
+        self._btn_aula_qr.clicked.connect(self._on_aula_qr)
+        self._btn_aula_qr.setEnabled(False)
+        aula_row.addWidget(self._btn_aula_qr)
         self._lbl_aula = QLabel("")
         self._lbl_aula.setStyleSheet("font-size: 11px; color: #1F4E79; font-weight: bold;")
         self._lbl_aula.setTextInteractionFlags(
@@ -1223,6 +1238,14 @@ class AcquisitionTab(QWidget):
         for c in range(min(len(raw), MAX_CHANNELS)):
             self._buf_raw[c].extend(raw[c].tolist())
             self._buf_env[c].extend(env[c].tolist())
+        # During the wizard's contraction window, track the raw peak so the
+        # plots can auto-scale to this subject once calibration finishes.
+        if self._mvc_active and self._mvc_phase == "contract":
+            for c in range(min(len(raw), MAX_CHANNELS)):
+                if raw[c].size:
+                    self._mvc_raw_peak[c] = max(
+                        self._mvc_raw_peak[c], float(np.max(np.abs(raw[c])))
+                    )
         if raw:
             self._total_samples += len(raw[0])
         self._new_data = True
@@ -1313,6 +1336,7 @@ class AcquisitionTab(QWidget):
                 self._log(
                     tr("Classroom mode on — students can follow at {url}").format(url=url)
                 )
+                self._btn_aula_qr.setEnabled(True)
                 self._bcast_config()
             else:
                 self._chk_aula.setChecked(False)
@@ -1321,6 +1345,7 @@ class AcquisitionTab(QWidget):
             self._broadcast.stop()
             self._lbl_aula.setText("")
             self._btn_copy_url.setVisible(False)
+            self._btn_aula_qr.setEnabled(False)
             self._log(tr("Classroom mode off — previous follower links are now invalid."))
 
     @Slot()
@@ -1333,6 +1358,49 @@ class AcquisitionTab(QWidget):
         QTimer.singleShot(
             1500, lambda: self._btn_copy_url.setText(tr("Copy link"))
         )
+
+    @Slot()
+    def _on_aula_qr(self) -> None:
+        """Show a scannable QR code of the follower URL in a small dialog."""
+        if not self._broadcast.is_running():
+            return
+        url = self._broadcast.follower_url()
+        pix = self._make_qr_pixmap(url)
+        if pix is None:
+            self._err(tr("QR code unavailable (the 'segno' library is missing)."))
+            return
+        dlg = QDialog(self)
+        dlg.setWindowTitle(tr("Scan to follow the session"))
+        lay = QVBoxLayout(dlg)
+        img = QLabel()
+        img.setPixmap(pix)
+        img.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(img)
+        cap = QLabel(url)
+        cap.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        cap.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        cap.setStyleSheet("font-weight: bold; color: #1F4E79;")
+        lay.addWidget(cap)
+        hint = QLabel(tr("Point the phone camera at the code (same Wi-Fi network)."))
+        hint.setWordWrap(True)
+        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(hint)
+        dlg.exec()
+
+    @staticmethod
+    def _make_qr_pixmap(url: str, scale: int = 8) -> QPixmap | None:
+        """Render *url* as a QR-code QPixmap, or None if segno is unavailable."""
+        try:
+            import io
+
+            import segno
+        except ImportError:
+            return None
+        buf = io.BytesIO()
+        segno.make(url, error="m").save(buf, kind="png", scale=scale, border=2)
+        pix = QPixmap()
+        pix.loadFromData(buf.getvalue(), "PNG")
+        return pix
 
     @Slot(int)
     def _on_broadcast_clients(self, n: int) -> None:
@@ -1499,6 +1567,7 @@ class AcquisitionTab(QWidget):
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_ref = [None] * MAX_CHANNELS
         self._set_thresholds_enabled(False)
         self._btn_calibrar.setEnabled(False)
@@ -1677,7 +1746,11 @@ class AcquisitionTab(QWidget):
             self._mvc_finish_all()
 
     def _mvc_compute_muscle(self, c: int) -> None:
-        ref = mvc_from_reps(self._mvc_capture[c], self._profile.mvc_percentile)
+        window = max(1, round(MVC_PEAK_WINDOW_S * FS))
+        ref = mvc_from_reps(
+            self._mvc_capture[c], self._profile.mvc_percentile,
+            window_samples=window,
+        )
         self._mvc_ref[c] = ref if ref > 0 else None
         self._online[c].reset()
         self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
@@ -1692,6 +1765,7 @@ class AcquisitionTab(QWidget):
             self._btn_grabar.setEnabled(True)
         self._set_thresholds_enabled(bool(ok))
         if ok:
+            self._autoscale_after_calibration(ok)
             summary = " · ".join(
                 f"{self._active_labels()[c]}: {self._mvc_ref[c]:.2f} mV" for c in ok
             )
@@ -1922,6 +1996,36 @@ class AcquisitionTab(QWidget):
         self._plot_env.setYRange(*self._y_ranges_init[1], padding=0)
         # Raw: the mode (stacked or overlaid) sets range and annotations.
         self._apply_stacking_mode()
+
+    def _autoscale_after_calibration(self, channels: list[int]) -> None:
+        """Fit the live plots to this subject once the MVC is known.
+
+        Sets the *initial* Y ranges (so the ▲▼ reset returns to this
+        calibrated scale) from the calibration itself: the envelope top is a
+        headroom multiple of the largest MVC reference (leaving room for
+        >100 %MVC phasic bursts and a small margin below 0), and the raw plot
+        spans ±(largest raw peak × factor). Falls back to the profile
+        defaults when a measure is missing, and never shrinks below them so a
+        weak calibration cannot hide the signal.
+        """
+        refs = [self._mvc_ref[c] for c in channels if self._mvc_ref[c]]
+        raw_peaks = [self._mvc_raw_peak[c] for c in channels
+                     if self._mvc_raw_peak[c] > 0]
+
+        # Envelope (plot 1): 0-based, with headroom above and a little below.
+        if refs:
+            top = max(refs) * AUTOSCALE_ENV_FACTOR
+            top = max(top, self._profile.ylim_envelope[1])   # never shrink
+            self._y_ranges_init[1] = (-0.05 * top, top)
+
+        # Raw (plot 0): symmetric around 0. In stacked mode this half becomes
+        # each lane's half-height (see _apply_stacking_mode).
+        if raw_peaks:
+            amp = max(raw_peaks) * AUTOSCALE_RAW_FACTOR
+            amp = max(amp, self._profile.ylim_raw[1])        # never shrink
+            self._y_ranges_init[0] = (-amp, amp)
+
+        self._reset_y_scales()
 
     # ------------------------------------------------------------------
     # Time scale (sliding window)

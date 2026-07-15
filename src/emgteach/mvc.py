@@ -28,6 +28,7 @@ __all__ = [
     "adaptive_ylim",
     "compute_mvc",
     "mvc_from_reps",
+    "mvc_peak_hold",
     "normalise_to_mvc",
 ]
 
@@ -60,20 +61,72 @@ def compute_mvc(
     return value
 
 
-def mvc_from_reps(reps: list, percentile: float = 95.0) -> float:
+def mvc_peak_hold(
+    emg_envelope: FloatArray | np.ndarray,
+    window_samples: int,
+    percentile: float = 95.0,
+) -> float:
+    """MVC reference from the strongest *sustained* window of the envelope.
+
+    Slides a window of ``window_samples`` over the calibration envelope and
+    returns the **highest window mean** — i.e. the largest amplitude the
+    subject actually held for that long. This is more representative of the
+    true maximum than the percentile of the whole trace, which is diluted by
+    the ramp-up and the fatigue decay of a held contraction (so brief phasic
+    contractions afterwards overshoot 100 %MVC less often).
+
+    Falls back to :func:`compute_mvc` when the trace is shorter than one
+    window (or the window is not positive).
+
+    Parameters
+    ----------
+    emg_envelope : array-like
+        Envelope of the maximal-contraction calibration trial.
+    window_samples : int
+        Length of the sustained window, in samples (e.g. ``0.5 s * fs``).
+    percentile : float, optional
+        Percentile used by the :func:`compute_mvc` fallback (default 95).
+
+    Returns
+    -------
+    float
+        The reference amplitude in the same units as ``emg_envelope``.
+    """
+    env = np.asarray(emg_envelope, dtype=np.float64)
+    w = int(window_samples)
+    if w < 1 or env.size < w:
+        return compute_mvc(env, percentile)
+    # Moving average over `w` samples via a cumulative sum (O(n)).
+    csum = np.cumsum(np.insert(env, 0, 0.0))
+    window_means = (csum[w:] - csum[:-w]) / w
+    value = float(np.max(window_means))
+    if value <= 0:
+        value = float(np.max(env)) if env.size else 0.0
+    return value
+
+
+def mvc_from_reps(
+    reps: list,
+    percentile: float = 95.0,
+    window_samples: int | None = None,
+) -> float:
     """MVC reference from one or more maximal-contraction repetitions.
 
     Each entry of *reps* is the envelope of a single maximal contraction;
-    the reference is the **largest** per-repetition :func:`compute_mvc`
-    value, the gold-standard "best of N" rule. Empty repetitions are
-    ignored; returns ``0.0`` when there is no usable data.
+    the reference is the **largest** per-repetition value, the gold-standard
+    "best of N" rule. Empty repetitions are ignored; returns ``0.0`` when
+    there is no usable data.
 
     Parameters
     ----------
     reps : sequence of array-like
         One envelope per maximal-contraction repetition.
     percentile : float, optional
-        Percentile passed to :func:`compute_mvc` (default 95).
+        Percentile used to summarise each repetition (default 95).
+    window_samples : int, optional
+        When given, each repetition is summarised with
+        :func:`mvc_peak_hold` (strongest sustained window) instead of the
+        plain percentile of the whole repetition.
 
     Returns
     -------
@@ -84,7 +137,11 @@ def mvc_from_reps(reps: list, percentile: float = 95.0) -> float:
     for rep in reps:
         arr = np.asarray(rep, dtype=np.float64)
         if arr.size:
-            best = max(best, compute_mvc(arr, percentile))
+            if window_samples:
+                val = mvc_peak_hold(arr, window_samples, percentile)
+            else:
+                val = compute_mvc(arr, percentile)
+            best = max(best, val)
     return best
 
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Scan-to-join QR code for classroom mode.** Next to the existing "Copy link" button, a **QR** button shows a code students scan with their phone camera to open the follower page instantly — no need to email the URL. New pure-Python `segno` dependency.
+
+### Changed
+- **Post-calibration auto-scale.** Once the MVC calibration finishes, the live plots resize to the subject: the envelope top is set to a headroom multiple of the MVC reference (so >100 %MVC phasic bursts stay on screen) and the raw plot to ±(measured peak), with a margin above and below. The ▲▼ reset returns to this calibrated scale. Fixes signals going off-window for stronger or weaker individuals.
+- **More representative MVC reference.** The MVC reference is now taken from the **strongest sustained window** of the calibration effort (`mvc_peak_hold`) instead of the percentile of the whole held contraction, which was diluted by the ramp-up and fatigue decay. This reduces the case where brief individual contractions overshoot 100 %MVC after calibrating with a sustained one.
+- **Neutral protocol example.** The Acquisition protocol field's placeholder no longer names a specific muscle ("Isometric contraction 30 s").
+
 ## [1.4.1] — 2026-07-14
 
 ### Fixed
