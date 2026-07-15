@@ -94,8 +94,8 @@ _ES = {
     "The language change will take effect when you restart the application.":
         "El cambio de idioma se aplicará al reiniciar la aplicación.",
     "Version": "Versión",
-    "Faculty of Pharmacy, Complutense University of Madrid":
-        "Facultad de Farmacia, Universidad Complutense de Madrid",
+    "Physiology Department, Complutense University of Madrid":
+        "Departamento de Fisiología, Universidad Complutense de Madrid",
 
     # --- acquisition worker / GUI ---
     "Loading EMG signal: {path}": "Cargando señal EMG: {path}",

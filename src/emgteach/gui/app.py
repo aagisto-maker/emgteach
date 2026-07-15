@@ -223,7 +223,7 @@ class MainWindow(QMainWindow):
             f"<b>{tr('EMG Bioinstrumentation')}</b><br>"
             f"{tr('Version')} {__version__}<br><br>"
             "Dr. Agis-Torres et al. — UCM<br>"
-            f"{tr('Faculty of Pharmacy, Complutense University of Madrid')}",
+            f"{tr('Physiology Department, Complutense University of Madrid')}",
         )
 
     def closeEvent(self, event) -> None:

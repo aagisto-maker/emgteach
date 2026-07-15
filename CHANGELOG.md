@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Neutral protocol example.** The Acquisition protocol field's placeholder no longer names a specific muscle ("Isometric contraction 30 s").
 - **Bilingual follower dashboard.** The classroom follower page (`web/dashboard.html`) now follows the app language — it renders in English when the app is in English (it was Spanish-only) — with the operator's language injected into the served page.
 - **Docs: two live plots.** The user-manual section on the Acquisition tab now says two real-time plots (raw + envelope), matching the removal of the intermediate filtered trace.
+- **About-box affiliation.** The "?" About dialog now reads "Physiology Department, Complutense University of Madrid" ("Departamento de Fisiología…" in Spanish) instead of naming the Faculty of Pharmacy.
 
 ## [1.4.1] — 2026-07-14
 
