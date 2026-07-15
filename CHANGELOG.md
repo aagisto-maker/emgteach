@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Agonist/antagonist envelope overlay in Analysis.** The Analysis tab can now analyse a **second channel** at the same time: a "Compare 2nd channel" picker (enabled and ticked automatically for 2-channel recordings) adds a new panel that **overlays both channels' envelopes** — shown by default for two-channel files. The second envelope is computed over the same region/fragment selection and is also available in the PDF report.
 - **Scan-to-join QR code for classroom mode.** Next to the existing "Copy link" button, a **QR** button shows a code students scan with their phone camera to open the follower page instantly — no need to email the URL. New pure-Python `segno` dependency.
 
 ### Changed

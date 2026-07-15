@@ -167,6 +167,7 @@ _PANEL_REPORT_TITLES = {
     5: "6. RMS amplitude over time",
     6: "7. Fatigue: median frequency (MDF) vs time",
     7: "8. Amplitude (RMS) vs median frequency (MDF)",
+    8: "9. Overlaid envelopes (agonist/antagonist)",
 }
 
 
@@ -273,6 +274,18 @@ def _draw_analysis_panel(
         ax.set_xlabel("MDF (Hz)", fontsize=8)
         ax.set_ylabel("RMS (mV)", fontsize=8)
         ax.legend(fontsize=7)
+    elif idx == 8:
+        ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.6,
+                label=str(r.get("channel_name") or tr("Muscle {n}").format(n=1)))
+        env2 = r.get("emg_envelope_2")
+        if env2 is not None:
+            ax.plot(times, env2, color="#D62728", lw=1.6,
+                    label=str(r.get("channel_name_2") or tr("Muscle {n}").format(n=2)))
+        ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
+        ax.set_xlim(x0, x1)
+        ax.legend(loc="upper right", fontsize=7)
+        _draw_report_markers(ax, markers, x0, x1)
 
     ax.set_title(tr(_PANEL_REPORT_TITLES.get(idx, "")), fontsize=9)
     ax.tick_params(labelsize=7)

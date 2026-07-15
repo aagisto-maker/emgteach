@@ -49,6 +49,7 @@ class AnalysisWorker(QThread):
         self,
         edf_path: str,
         channel_name: str | None = None,
+        channel_name_2: str | None = None,
         f_low: float | None = None,
         f_high: float | None = None,
         f_notch: float | None = None,
@@ -77,6 +78,8 @@ class AnalysisWorker(QThread):
         self._channel_name = (
             channel_name if channel_name is not None else profile.raw_label
         )
+        # Optional second channel: its envelope is overlaid (agonist/antagonist).
+        self._channel_name_2 = channel_name_2
         self._f_low = float(f_low) if f_low is not None else profile.f_low
         self._f_high = float(f_high) if f_high is not None else profile.f_high
         self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
@@ -377,6 +380,39 @@ class AnalysisWorker(QThread):
                     "overlap": self._overlap,
                 },
             }
+
+            # Optional second channel: its envelope is overlaid with the first
+            # (agonist/antagonist). Same file, so it reuses the fragment bounds;
+            # a failure here only drops the overlay, it never fails the run.
+            if self._channel_name_2 and self._channel_name_2 != self._channel_name:
+                try:
+                    edf2 = read_edf_mne(self._edf_path, self._channel_name_2)
+                    emg_raw_2 = edf2["emg_raw"]
+                    if not is_whole:
+                        emg_raw_2 = np.concatenate(
+                            [emg_raw_2[i0:i1] for (i0, i1, _, _) in bounds]
+                        )
+                    proc2 = process_offline(
+                        emg_raw_2, fs,
+                        f_low=self._f_low, f_high=self._f_high,
+                        f_notch=self._f_notch, f_env=self._f_env,
+                        rms_window_ms=self._rms_window_ms,
+                    )
+                    result["emg_envelope_2"] = proc2["emg_envelope"]
+                    result["emg_envelope_normalised_2"] = (
+                        proc2["emg_envelope_normalised"]
+                    )
+                    result["channel_name_2"] = self._channel_name_2
+                    self.log.emit(
+                        tr("2nd channel «{name}» overlaid.").format(
+                            name=self._channel_name_2
+                        )
+                    )
+                except Exception as exc:
+                    self.log.emit(
+                        tr("Could not analyse the 2nd channel «{name}»: {err}")
+                        .format(name=self._channel_name_2, err=exc)
+                    )
 
             self.progress.emit(100)
             self.result_ready.emit(result)

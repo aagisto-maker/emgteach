@@ -474,6 +474,63 @@ class TestAnalysisWorker:
         ):
             assert required in keys, f"Missing key: {required}"
 
+    def _generate_two_channel_edf(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> str:
+        device = _FakeDevice(fs=1000, n_channels=2)
+        worker = AcquisitionWorker(
+            device=device, save_dir=str(tmp_path), n_per_read=100,
+            sensor_labels=["Agonista", "Antagonista"],
+        )
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        QTimer.singleShot(2200, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=10000)
+        worker.wait(10000)
+        return edf_paths[0]
+
+    def test_second_channel_envelope_is_overlaid(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """channel_name_2 adds the antagonist envelope aligned with the first."""
+        pytest.importorskip("mne")
+        edf_path = self._generate_two_channel_edf(qapp, tmp_path)
+
+        analysis = AnalysisWorker(
+            edf_path=edf_path, channel_name="Agonista",
+            channel_name_2="Antagonista",
+        )
+        results: list[dict] = []
+        errors: list[str] = []
+        analysis.result_ready.connect(results.append)
+        analysis.error.connect(errors.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.result_ready, timeout_ms=15000)
+        analysis.wait(15000)
+
+        assert not errors, f"Analysis emitted errors: {errors}"
+        assert len(results) == 1
+        r = results[0]
+        assert r["channel_name_2"] == "Antagonista"
+        assert "emg_envelope_2" in r
+        # The overlaid envelope is aligned with the primary one.
+        assert len(r["emg_envelope_2"]) == len(r["emg_envelope"])
+
+    def test_no_second_channel_leaves_result_single(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """Without channel_name_2 the result carries no overlay keys."""
+        pytest.importorskip("mne")
+        edf_path = self._generate_edf(qapp, tmp_path)
+        analysis = AnalysisWorker(edf_path=edf_path, channel_name="EMG")
+        results: list[dict] = []
+        analysis.result_ready.connect(results.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.result_ready, timeout_ms=15000)
+        analysis.wait(15000)
+        assert results and "emg_envelope_2" not in results[0]
+
     def test_resolve_roi_full_recording(self, qapp: QCoreApplication) -> None:
         # No ROI requested -> the whole recording, bounds (0, n).
         w = AnalysisWorker(edf_path="x.edf")

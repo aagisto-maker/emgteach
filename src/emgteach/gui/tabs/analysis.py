@@ -60,6 +60,10 @@ _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 # selectable. Each entry is (original panel index, display number): the
 # original index (0-7) is the identity used by the plotting code and the PDF
 # report; the display number is what the student sees.
+# Canonical panel index 8 is the two-channel overlay (agonist/antagonist);
+# it is only meaningful when a second channel is analysed.
+_OVERLAY_PID = 8
+
 _PANEL_LAYOUT: list[tuple[int, str]] = [
     (0, "1A"),  # raw signal
     (3, "2"),   # normalised envelope
@@ -69,8 +73,10 @@ _PANEL_LAYOUT: list[tuple[int, str]] = [
     (5, "6"),   # RMS per window
     (6, "7"),   # MDF vs time (fatigue)
     (7, "8"),   # RMS vs MDF
+    (_OVERLAY_PID, "9"),  # overlaid envelopes (agonist/antagonist)
 ]
 # Panels checked by default (original indices): raw, normalised envelope, PSD.
+# The overlay panel (8) is checked dynamically when a 2nd channel is compared.
 _DEFAULT_PANELS: tuple[int, ...] = (0, 3, 4)
 
 # Full panel names (report dialog), in display order and renumbered.
@@ -83,6 +89,7 @@ _PANEL_NOMBRES = [
     "6. RMS per window",
     "7. MDF vs time (fatigue)",
     "8. RMS vs MDF",
+    "9. Overlaid envelopes (agonist/antagonist)",
 ]
 
 # Short labels (on-screen checkbox row), in display order and renumbered.
@@ -95,6 +102,7 @@ _PANEL_SHORT_LABELS = [
     "6. RMS/window",
     "7. MDF/time",
     "8. RMS vs MDF",
+    "9. Env. overlay",
 ]
 
 # Display number per original panel index (sidebar labels, etc.).
@@ -105,6 +113,8 @@ _PANEL_TOOLTIPS = {
     0: "Raw EMG signal, unfiltered.",
     3: "Envelope normalised to its maximum (0-1): the activation time course.",
     4: "Power spectrum; MNF and MDF summarise its frequency content.",
+    _OVERLAY_PID: "Both channels' envelopes overlaid — agonist/antagonist "
+                  "coordination (needs a 2nd channel).",
     1: "Band-pass filtered (20-450 Hz) and rectified signal.",
     2: "Linear envelope vs the RMS envelope of the signal.",
     5: "RMS amplitude per window: how the intensity evolves.",
@@ -204,6 +214,22 @@ class AnalysisTab(QWidget):
             )
         )
         row_params.addWidget(self._combo_canal)
+        # Optional second channel: overlay the agonist/antagonist envelopes.
+        self._chk_compare2 = QCheckBox(tr("Compare 2nd channel:"))
+        self._chk_compare2.setToolTip(
+            tr(
+                "Also analyse a second channel (e.g. antagonist) and overlay "
+                "both envelopes. Enabled automatically for 2-channel recordings."
+            )
+        )
+        row_params.addWidget(self._chk_compare2)
+        self._combo_canal2 = QComboBox()
+        self._combo_canal2.setEditable(True)
+        self._combo_canal2.setFixedWidth(150)
+        self._combo_canal2.setEnabled(False)
+        self._combo_canal2.setToolTip(tr("Second EMG channel to overlay."))
+        self._chk_compare2.toggled.connect(self._on_compare2_toggled)
+        row_params.addWidget(self._combo_canal2)
         row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
@@ -630,6 +656,19 @@ class AnalysisTab(QWidget):
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
 
+        # Second channel: fill and, for 2-channel recordings, default it to the
+        # other channel and turn the agonist/antagonist overlay on by default.
+        self._combo_canal2.blockSignals(True)
+        self._combo_canal2.clear()
+        self._combo_canal2.addItems(labels)
+        has_two = len(labels) >= 2
+        if has_two:
+            other = 1 if self._combo_canal.currentIndex() == 0 else 0
+            self._combo_canal2.setCurrentIndex(other)
+        self._combo_canal2.blockSignals(False)
+        self._chk_compare2.setEnabled(has_two)
+        self._chk_compare2.setChecked(has_two)   # triggers _on_compare2_toggled
+
         # Default the region-of-interest window to the whole recording.
         dur = edf_duration(path)
         if dur > 0.0:
@@ -693,6 +732,12 @@ class AnalysisTab(QWidget):
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
         canal = self._combo_canal.currentText().strip() or "EMG"
+        # Optional second channel for the agonist/antagonist overlay.
+        canal2 = None
+        if self._chk_compare2.isChecked():
+            c2 = self._combo_canal2.currentText().strip()
+            if c2 and c2 != canal:
+                canal2 = c2
         # Filter cut-offs: use the ones tuned in the fragment editor if any,
         # else the tab's f_env with the profile band/notch defaults.
         fk = self._analysis_filter_kwargs
@@ -723,6 +768,7 @@ class AnalysisTab(QWidget):
         self._worker = AnalysisWorker(
             edf_path=path,
             channel_name=canal,
+            channel_name_2=canal2,
             f_low=f_low,
             f_high=f_high,
             f_notch=f_notch,
@@ -893,6 +939,20 @@ class AnalysisTab(QWidget):
     # Drawing the 7 panels (replicates analisis_emg_completo.py)
     # ------------------------------------------------------------------
 
+    @Slot(bool)
+    def _on_compare2_toggled(self, checked: bool) -> None:
+        """Enable the 2nd-channel picker and (un)check the overlay panel."""
+        self._combo_canal2.setEnabled(checked)
+        self._set_overlay_panel_checked(checked)
+
+    def _set_overlay_panel_checked(self, checked: bool) -> None:
+        """Tick/untick the agonist/antagonist overlay panel checkbox."""
+        try:
+            pos = self._panel_pids.index(_OVERLAY_PID)
+        except ValueError:
+            return
+        self._chk_paneles[pos].setChecked(checked)
+
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
         self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)
@@ -977,6 +1037,31 @@ class AnalysisTab(QWidget):
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.set_ylim(0, 1.15)
+            ax.tick_params(labelsize=7)
+            ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True, **_grid)
+            self._dibujar_marcadores(ax, inicio_s, fin_s)
+
+        # --- Overlaid envelopes (agonist/antagonist) ---
+        if _OVERLAY_PID in ax_map:
+            ax = ax_map[_OVERLAY_PID]
+            lbl1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
+            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8, label=lbl1)
+            env2 = r.get("emg_envelope_2")
+            if env2 is not None:
+                lbl2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+                ax.plot(times, env2, color="#D62728", lw=1.8, label=lbl2)
+            else:
+                ax.text(
+                    0.5, 0.5,
+                    tr("Enable “Compare 2nd channel” to overlay the antagonist."),
+                    transform=ax.transAxes, ha="center", va="center",
+                    fontsize=8, color="#888888",
+                )
+            ax.set_title(tr("9. Overlaid envelopes (agonist/antagonist)"), fontsize=9)
+            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.legend(loc="upper right", fontsize=7)
             ax.grid(True, **_grid)

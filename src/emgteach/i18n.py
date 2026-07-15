@@ -330,6 +330,24 @@ _ES = {
     "Save figure (PNG)": "Guardar figura (PNG)",
     "Generate PDF report": "Generar informe PDF",
     "EMG channel:": "Canal EMG:",
+    "Compare 2nd channel:": "Comparar 2º canal:",
+    "Also analyse a second channel (e.g. antagonist) and overlay "
+    "both envelopes. Enabled automatically for 2-channel recordings.":
+        "Analiza también un segundo canal (p. ej. antagonista) y superpone "
+        "ambas envolventes. Se activa automáticamente en registros de 2 canales.",
+    "Second EMG channel to overlay.": "Segundo canal EMG a superponer.",
+    "9. Overlaid envelopes (agonist/antagonist)":
+        "9. Envolventes superpuestas (agonista/antagonista)",
+    "9. Env. overlay": "9. Env. superp.",
+    "Both channels' envelopes overlaid — agonist/antagonist "
+    "coordination (needs a 2nd channel).":
+        "Envolventes de ambos canales superpuestas — coordinación "
+        "agonista/antagonista (requiere un 2º canal).",
+    "Enable “Compare 2nd channel” to overlay the antagonist.":
+        "Activa «Comparar 2º canal» para superponer el antagonista.",
+    "2nd channel «{name}» overlaid.": "2º canal «{name}» superpuesto.",
+    "Could not analyse the 2nd channel «{name}»: {err}":
+        "No se pudo analizar el 2º canal «{name}»: {err}",
     "EMG channel of the EDF to analyse. Filled with the channels of "
     "the file when you select it (e.g. agonist/antagonist).":
         "Canal EMG del EDF a analizar. Se rellena con los canales del archivo "
