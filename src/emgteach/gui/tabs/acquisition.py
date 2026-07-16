@@ -179,7 +179,7 @@ class AcquisitionTab(QWidget):
         self._buf_env = [
             deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
         ]
-        # Optional BITalino accelerometer (A5): a single extra raw channel,
+        # Optional BITalino accelerometer (A4): a single extra raw channel,
         # kept out of the EMG channel machinery (load monitor, MVC wizard,
         # stacking) and shown in its own auto-scaled plot.
         self._acc_enabled = self._settings.value(
@@ -430,7 +430,7 @@ class AcquisitionTab(QWidget):
         self._chk_acc = QCheckBox(tr("ACC"))
         self._chk_acc.setToolTip(
             tr(
-                "Also record the BITalino accelerometer (A5) in its own plot and "
+                "Also record the BITalino accelerometer (A4) in its own plot and "
                 "EDF channel. Useful to relate muscle activation to movement, "
                 "flag motion artefacts, or show tremor. BITalino only."
             )
@@ -773,11 +773,11 @@ class AcquisitionTab(QWidget):
             )
         plots_col_vbox.addWidget(self._plot_env)
 
-        # Accelerometer (A5) — an auto-scaled extra plot, shown only when the
+        # Accelerometer (A4) — an auto-scaled extra plot, shown only when the
         # ACC checkbox is on. It is deliberately kept out of the ▲▼ scale
         # machinery and the EMG channel logic (single, self-scaling channel).
         self._plot_acc = pg.PlotWidget(
-            title=tr("Accelerometer (A5, normalised g)")
+            title=tr("Accelerometer (A4, normalised g)")
         )
         self._plot_acc.setLabel("left", "g")
         self._plot_acc.showGrid(x=True, y=True, alpha=0.3)
