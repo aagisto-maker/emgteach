@@ -168,6 +168,8 @@ _PANEL_REPORT_TITLES = {
     6: "7. Fatigue: median frequency (MDF) vs time",
     7: "8. Amplitude (RMS) vs median frequency (MDF)",
     8: "9. Overlaid envelopes (agonist/antagonist)",
+    9: "10. EMG vs MMG (electrical vs mechanical)",
+    10: "11. Tremor — accelerometer spectrum",
 }
 
 
@@ -286,6 +288,35 @@ def _draw_analysis_panel(
         ax.set_xlim(x0, x1)
         ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
+    elif idx == 9:
+        ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.5,
+                label=tr("EMG envelope (electrical)"))
+        mmg = r.get("acc_mmg_envelope")
+        if mmg is not None:
+            ax2 = ax.twinx()
+            ax2.plot(times, mmg, color="#2ca02c", lw=1.4,
+                     label=tr("MMG envelope (mechanical)"))
+            ax2.set_ylabel(tr("MMG (g)"), fontsize=8, color="#2ca02c")
+            ax2.tick_params(axis="y", labelsize=7, colors="#2ca02c")
+            ax2.set_xlim(x0, x1)
+        ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
+        ax.set_xlim(x0, x1)
+        ax.legend(loc="upper left", fontsize=7)
+        _draw_report_markers(ax, markers, x0, x1)
+    elif idx == 10:
+        freqs = r.get("acc_tremor_freqs")
+        psd = r.get("acc_tremor_psd")
+        if freqs is not None and psd is not None:
+            ax.plot(freqs, psd, color="#8c564b", lw=1.5)
+            peak = float(r.get("acc_tremor_peak_hz", 0.0))
+            if peak > 0:
+                ax.axvline(peak, color="#E74C3C", ls="--", lw=1.6,
+                           label=tr("Peak: {hz:.1f} Hz").format(hz=peak))
+                ax.legend(fontsize=7)
+            ax.set_xlim(0, 25)
+        ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
+        ax.set_ylabel("PSD (g²/Hz)", fontsize=8)
 
     ax.set_title(tr(_PANEL_REPORT_TITLES.get(idx, "")), fontsize=9)
     ax.tick_params(labelsize=7)

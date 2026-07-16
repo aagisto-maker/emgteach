@@ -48,6 +48,7 @@ __all__ = [
     "build_timestamped_path",
     "create_edf_writer",
     "edf_duration",
+    "find_edf_acc_channel",
     "list_edf_channels",
     "list_edf_emg_channels",
     "read_edf_metadata",
@@ -569,6 +570,44 @@ def list_edf_emg_channels(path: PathLike) -> list[str]:
                 continue
             out.append(str(label))
         return out
+    finally:
+        reader.close()
+
+
+def find_edf_acc_channel(path: PathLike) -> tuple[str, str] | None:
+    """Locate the accelerometer channel in an EDF and infer its placement.
+
+    Returns ``(label, placement)`` where ``placement`` is ``"muscle"``,
+    ``"limb"`` or ``"unknown"`` (parsed from the label the acquisition tab
+    writes, e.g. ``"ACC (muscle)"`` / ``"ACC (limb)"``), or ``None`` if the
+    file has no accelerometer channel. The ACC channel is the one whose
+    physical dimension is ``"g"`` (falling back to a label starting with
+    ``"ACC"``).
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return None
+    try:
+        labels = reader.getSignalLabels()
+        headers = reader.getSignalHeaders()
+        for label, header in zip(labels, headers, strict=False):
+            name = str(label).strip()
+            dim = str(
+                header.get("dimension", header.get("physical_dimension", ""))
+            ).strip().lower()
+            if dim == "g" or name.upper().startswith("ACC"):
+                low = name.lower()
+                if "musc" in low or "músc" in low:
+                    placement = "muscle"
+                elif "limb" in low or "segment" in low or "segmento" in low:
+                    placement = "limb"
+                else:
+                    placement = "unknown"
+                return name, placement
+        return None
     finally:
         reader.close()
 

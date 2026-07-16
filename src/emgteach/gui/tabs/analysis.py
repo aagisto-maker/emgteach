@@ -61,8 +61,14 @@ _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 # original index (0-7) is the identity used by the plotting code and the PDF
 # report; the display number is what the student sees.
 # Canonical panel index 8 is the two-channel overlay (agonist/antagonist);
-# it is only meaningful when a second channel is analysed.
+# it is only meaningful when a second channel is analysed. Indices 9 and 10 are
+# the accelerometer panels (EMG vs MMG, tremor FFT), only meaningful when the
+# recording has an accelerometer channel.
 _OVERLAY_PID = 8
+_MMG_PID = 9
+_TREMOR_PID = 10
+# Panels that require an accelerometer channel to be usable.
+_ACC_PIDS = (_MMG_PID, _TREMOR_PID)
 
 _PANEL_LAYOUT: list[tuple[int, str]] = [
     (0, "1A"),  # raw signal
@@ -74,6 +80,8 @@ _PANEL_LAYOUT: list[tuple[int, str]] = [
     (6, "7"),   # MDF vs time (fatigue)
     (7, "8"),   # RMS vs MDF
     (_OVERLAY_PID, "9"),  # overlaid envelopes (agonist/antagonist)
+    (_MMG_PID, "10"),     # EMG vs MMG (accelerometer on the muscle)
+    (_TREMOR_PID, "11"),  # tremor FFT (accelerometer)
 ]
 # Panels checked by default (original indices): raw, normalised envelope, PSD.
 # The overlay panel (8) is checked dynamically when a 2nd channel is compared.
@@ -90,6 +98,8 @@ _PANEL_NOMBRES = [
     "7. MDF vs time (fatigue)",
     "8. RMS vs MDF",
     "9. Overlaid envelopes (agonist/antagonist)",
+    "10. EMG vs MMG (electrical vs mechanical)",
+    "11. Tremor (accelerometer FFT)",
 ]
 
 # Short labels (on-screen checkbox row), in display order and renumbered.
@@ -103,6 +113,8 @@ _PANEL_SHORT_LABELS = [
     "7. MDF/time",
     "8. RMS vs MDF",
     "9. Env. overlay",
+    "10. EMG vs MMG",
+    "11. Tremor",
 ]
 
 # Display number per original panel index (sidebar labels, etc.).
@@ -115,6 +127,10 @@ _PANEL_TOOLTIPS = {
     4: "Power spectrum; MNF and MDF summarise its frequency content.",
     _OVERLAY_PID: "Both channels' envelopes overlaid — agonist/antagonist "
                   "coordination (needs a 2nd channel).",
+    _MMG_PID: "Electrical (EMG) vs mechanical (MMG, from the accelerometer on "
+              "the muscle) envelope — needs an accelerometer channel.",
+    _TREMOR_PID: "Frequency spectrum of the accelerometer with the tremor peak "
+                 "(physiological ~8-12 Hz) — needs an accelerometer channel.",
     1: "Band-pass filtered (20-450 Hz) and rectified signal.",
     2: "Linear envelope vs the RMS envelope of the signal.",
     5: "RMS amplitude per window: how the intensity evolves.",
@@ -131,6 +147,7 @@ from emgteach.i18n import tr
 from emgteach.io import (
     assess_edf_channels,
     edf_duration,
+    find_edf_acc_channel,
     list_edf_channels,
     list_edf_emg_channels,
     read_edf_metadata,
@@ -149,6 +166,9 @@ class AnalysisTab(QWidget):
         self._broadcast = broadcast   # shared classroom-broadcast server (or None)
         self._worker: AnalysisWorker | None = None
         self._last_result: dict | None = None
+        # Accelerometer channel of the loaded file (name + placement), if any.
+        self._acc_channel_name: str | None = None
+        self._acc_placement: str = "unknown"
         self._last_edf_dir: str = self._settings.value("analisis/last_dir", ".")
 
         self._duracion_total: float = 60.0
@@ -391,8 +411,9 @@ class AnalysisTab(QWidget):
             chk = QCheckBox(tr(label))
             chk.setChecked(pid in _DEFAULT_PANELS)
             chk.setToolTip(tr(_PANEL_TOOLTIPS[pid]))
-            # The overlay panel is only usable while comparing two channels.
-            if pid == _OVERLAY_PID:
+            # The overlay panel is only usable while comparing two channels;
+            # the accelerometer panels only when the file has an ACC channel.
+            if pid in (_OVERLAY_PID, *_ACC_PIDS):
                 chk.setEnabled(False)
             paneles_layout.addWidget(chk)
             self._chk_paneles.append(chk)
@@ -698,6 +719,15 @@ class AnalysisTab(QWidget):
         # Warn if any channel is flat (no signal) or saturated (bad contact).
         self._warn_channel_quality(path)
 
+        # Detect an accelerometer channel and enable its panels (EMG vs MMG,
+        # tremor); default-check the one matching how the ACC was placed.
+        acc = find_edf_acc_channel(path)
+        if acc is not None:
+            self._acc_channel_name, self._acc_placement = acc
+        else:
+            self._acc_channel_name, self._acc_placement = None, "unknown"
+        self._gate_acc_panels(acc is not None)
+
         # Default the region-of-interest window to the whole recording.
         dur = edf_duration(path)
         if dur > 0.0:
@@ -767,6 +797,10 @@ class AnalysisTab(QWidget):
             c2 = self._combo_canal2.currentText().strip()
             if c2 and c2 != canal:
                 canal2 = c2
+        # Accelerometer channel — only analysed when an ACC panel is selected.
+        acc_channel = None
+        if self._acc_channel_name and self._any_acc_panel_checked():
+            acc_channel = self._acc_channel_name
         # Filter cut-offs: use the ones tuned in the fragment editor if any,
         # else the tab's f_env with the profile band/notch defaults.
         fk = self._analysis_filter_kwargs
@@ -798,6 +832,8 @@ class AnalysisTab(QWidget):
             edf_path=path,
             channel_name=canal,
             channel_name_2=canal2,
+            acc_channel=acc_channel,
+            acc_placement=self._acc_placement,
             f_low=f_low,
             f_high=f_high,
             f_notch=f_notch,
@@ -1035,6 +1071,34 @@ class AnalysisTab(QWidget):
         chk.setChecked(active)
         chk.setEnabled(active)
 
+    def _any_acc_panel_checked(self) -> bool:
+        """True if any accelerometer panel (EMG-vs-MMG or tremor) is ticked."""
+        for pid in _ACC_PIDS:
+            try:
+                pos = self._panel_pids.index(pid)
+            except ValueError:
+                continue
+            if self._chk_paneles[pos].isChecked():
+                return True
+        return False
+
+    def _gate_acc_panels(self, has_acc: bool) -> None:
+        """Enable the accelerometer panels when the file has an ACC channel.
+
+        On enabling, the panel matching the ACC placement is ticked by default
+        (MMG for an ACC on the muscle, tremor for one on the moving segment);
+        without an ACC channel both are unticked and locked.
+        """
+        default_pid = _TREMOR_PID if self._acc_placement == "limb" else _MMG_PID
+        for pid in _ACC_PIDS:
+            try:
+                pos = self._panel_pids.index(pid)
+            except ValueError:
+                continue
+            chk = self._chk_paneles[pos]
+            chk.setEnabled(has_acc)
+            chk.setChecked(has_acc and pid == default_pid)
+
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
         self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)
@@ -1148,6 +1212,59 @@ class AnalysisTab(QWidget):
             ax.legend(loc="upper right", fontsize=7)
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
+
+        # --- EMG vs MMG (electrical vs mechanical) ---
+        if _MMG_PID in ax_map:
+            ax = ax_map[_MMG_PID]
+            mmg = r.get("acc_mmg_envelope")
+            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8,
+                    label=tr("EMG envelope (electrical)"))
+            if mmg is not None:
+                ax2 = ax.twinx()
+                ax2.plot(times, mmg, color="#2ca02c", lw=1.6,
+                         label=tr("MMG envelope (mechanical)"))
+                ax2.set_ylabel(tr("MMG (g)"), fontsize=8, color="#2ca02c")
+                ax2.tick_params(axis="y", labelsize=7, colors="#2ca02c")
+                ax2.set_xlim(inicio_s, fin_s)
+                ax2.legend(loc="upper right", fontsize=7)
+            else:
+                ax.text(0.5, 0.5,
+                        tr("No accelerometer channel in this recording."),
+                        transform=ax.transAxes, ha="center", va="center",
+                        fontsize=8, color="#888888")
+            ax.set_title(tr("10. EMG vs MMG (electrical vs mechanical)"), fontsize=9)
+            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+            ax.tick_params(axis="y", labelsize=7, colors="#4169E1")
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_xlim(inicio_s, fin_s)
+            ax.tick_params(axis="x", labelsize=7)
+            ax.legend(loc="upper left", fontsize=7)
+            ax.grid(True, **_grid)
+            self._dibujar_marcadores(ax, inicio_s, fin_s)
+
+        # --- Tremor (accelerometer FFT) ---
+        if _TREMOR_PID in ax_map:
+            ax = ax_map[_TREMOR_PID]
+            freqs = r.get("acc_tremor_freqs")
+            psd = r.get("acc_tremor_psd")
+            if freqs is not None and psd is not None:
+                ax.plot(freqs, psd, color="#8c564b", lw=1.6)
+                peak = float(r.get("acc_tremor_peak_hz", 0.0))
+                if peak > 0:
+                    ax.axvline(peak, color="#E74C3C", ls="--", lw=1.8,
+                               label=tr("Peak: {hz:.1f} Hz").format(hz=peak))
+                    ax.legend(loc="upper right", fontsize=7)
+                ax.set_xlim(0, 25)
+            else:
+                ax.text(0.5, 0.5,
+                        tr("No accelerometer channel in this recording."),
+                        transform=ax.transAxes, ha="center", va="center",
+                        fontsize=8, color="#888888")
+            ax.set_title(tr("11. Tremor — accelerometer spectrum"), fontsize=9)
+            ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
+            ax.set_ylabel("PSD (g²/Hz)", fontsize=8)
+            ax.tick_params(labelsize=7)
+            ax.grid(True, **_grid)
 
         # --- 4: PSD ---
         if 4 in ax_map:
@@ -1327,12 +1444,18 @@ class AnalysisTab(QWidget):
         lay.addWidget(encabezado)
 
         comparing = self._chk_compare2.isChecked()
+        has_acc = self._acc_channel_name is not None
         checks: list[QCheckBox] = []
         for i, nombre in enumerate(_PANEL_NOMBRES):
             cb = QCheckBox(tr(nombre))
             cb.setChecked(i < len(self._chk_paneles) and self._chk_paneles[i].isChecked())
-            # The overlay panel can only be reported when comparing two channels.
-            if self._panel_pids[i] == _OVERLAY_PID and not comparing:
+            pid = self._panel_pids[i]
+            # The overlay panel needs two compared channels; the accelerometer
+            # panels need an ACC channel — otherwise they cannot be reported.
+            locked = (pid == _OVERLAY_PID and not comparing) or (
+                pid in _ACC_PIDS and not has_acc
+            )
+            if locked:
                 cb.setChecked(False)
                 cb.setEnabled(False)
             lay.addWidget(cb)

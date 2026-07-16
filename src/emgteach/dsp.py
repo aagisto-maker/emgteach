@@ -70,7 +70,9 @@ __all__ = [
     "design_notch",
     "detect_acquisition_problems",
     "detect_onsets",
+    "mmg_envelope",
     "process_offline",
+    "tremor_spectrum",
 ]
 
 
@@ -510,6 +512,71 @@ def detect_acquisition_problems(
         "flat_baseline": flat_baseline,
         "warnings": warnings,
     }
+
+
+def mmg_envelope(
+    acc: FloatArray | np.ndarray,
+    fs: float,
+    f_low: float = 5.0,
+    f_high: float = 50.0,
+    f_env: float = 5.0,
+) -> FloatArray:
+    """Mechanomyography (MMG) envelope from an accelerometer on the muscle belly.
+
+    Band-passes the acceleration to the muscle-vibration band (default
+    5-50 Hz, which removes the DC/gravity term and gross-movement drift below
+    ~5 Hz), rectifies it and low-passes to an envelope — the mechanical
+    counterpart of the EMG envelope. Zero-phase (``sosfiltfilt``), matching the
+    offline EMG path so the two envelopes are directly comparable in time.
+
+    Parameters
+    ----------
+    acc : array-like
+        Accelerometer signal (any units; the mean is removed).
+    fs : float
+        Sampling frequency (Hz).
+    f_low, f_high : float, optional
+        Muscle-vibration band-pass cut-offs (Hz). Defaults 5 and 50.
+    f_env : float, optional
+        Envelope low-pass cut-off (Hz). Default 5.
+    """
+    a = np.asarray(acc, dtype=np.float64)
+    a = a - float(np.mean(a)) if a.size else a
+    nyq = fs / 2.0
+    fh = min(float(f_high), 0.9 * nyq)
+    filtered = sosfiltfilt(design_bandpass(f_low, fh, fs), a)
+    rectified = np.abs(filtered)
+    return sosfiltfilt(design_lowpass(f_env, fs), rectified)
+
+
+def tremor_spectrum(
+    acc: FloatArray | np.ndarray,
+    fs: float,
+    f_min: float = 2.0,
+    f_max: float = 20.0,
+) -> tuple[FloatArray, FloatArray, float]:
+    """Welch PSD of an accelerometer axis and its tremor peak frequency.
+
+    Returns ``(frequencies, psd, peak_hz)`` where ``peak_hz`` is the frequency
+    of maximum power inside ``[f_min, f_max]`` — the tremor band (physiological
+    tremor sits around 8-12 Hz). ``peak_hz`` is ``0.0`` when the band is empty.
+
+    Parameters
+    ----------
+    acc : array-like
+        Accelerometer signal (the mean is removed before the transform).
+    fs : float
+        Sampling frequency (Hz).
+    f_min, f_max : float, optional
+        Tremor search band (Hz). Defaults 2 and 20.
+    """
+    a = np.asarray(acc, dtype=np.float64)
+    a = a - float(np.mean(a)) if a.size else a
+    nper = min(len(a), int(4 * fs)) if a.size else 64
+    freqs, psd = welch(a, fs=fs, nperseg=max(64, nper))
+    band = (freqs >= f_min) & (freqs <= f_max)
+    peak = float(freqs[band][int(np.argmax(psd[band]))]) if np.any(band) else 0.0
+    return freqs, psd, peak
 
 
 def assess_channel_quality(

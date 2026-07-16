@@ -126,6 +126,36 @@ _ES = {
         "gráfica y canal EDF. Útil para relacionar la activación muscular con "
         "el movimiento, señalar artefactos de movimiento o mostrar el temblor. "
         "Solo BITalino.",
+    "on the muscle (MMG)": "en el músculo (MMG)",
+    "on the moving segment (tremor)": "en el segmento móvil (temblor)",
+    "Where the accelerometer is stuck — sets which ACC analyses apply.":
+        "Dónde se pega el acelerómetro — determina qué análisis de ACC aplican.",
+    "10. EMG vs MMG (electrical vs mechanical)":
+        "10. EMG vs MMG (eléctrico vs mecánico)",
+    "11. Tremor (accelerometer FFT)": "11. Temblor (FFT del acelerómetro)",
+    "10. EMG vs MMG": "10. EMG vs MMG",
+    "11. Tremor": "11. Temblor",
+    "11. Tremor — accelerometer spectrum":
+        "11. Temblor — espectro del acelerómetro",
+    "Electrical (EMG) vs mechanical (MMG, from the accelerometer on "
+    "the muscle) envelope — needs an accelerometer channel.":
+        "Envolvente eléctrica (EMG) vs mecánica (MMG, del acelerómetro sobre "
+        "el músculo) — requiere un canal de acelerómetro.",
+    "Frequency spectrum of the accelerometer with the tremor peak "
+    "(physiological ~8-12 Hz) — needs an accelerometer channel.":
+        "Espectro de frecuencia del acelerómetro con el pico de temblor "
+        "(fisiológico ~8-12 Hz) — requiere un canal de acelerómetro.",
+    "EMG envelope (electrical)": "Envolvente EMG (eléctrica)",
+    "MMG envelope (mechanical)": "Envolvente MMG (mecánica)",
+    "EMG (mV)": "EMG (mV)",
+    "MMG (g)": "MMG (g)",
+    "No accelerometer channel in this recording.":
+        "Este registro no tiene canal de acelerómetro.",
+    "Peak: {hz:.1f} Hz": "Pico: {hz:.1f} Hz",
+    "Accelerometer «{name}» — tremor peak {hz:.1f} Hz.":
+        "Acelerómetro «{name}» — pico de temblor {hz:.1f} Hz.",
+    "Could not analyse the accelerometer «{name}»: {err}":
+        "No se pudo analizar el acelerómetro «{name}»: {err}",
     "Broadcast to phones (classroom mode)": "Difundir a móviles (modo aula)",
     "Serve a read-only live view over the local network so students "
     "can follow on their phone/tablet browser (no install). One "

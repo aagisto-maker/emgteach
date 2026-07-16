@@ -104,6 +104,37 @@ def test_analysis_single_channel_disables_compare_and_overlay(
     assert not tab._chk_paneles[_overlay_pos(tab)].isEnabled()
 
 
+def test_accelerometer_panels_gated_on_acc_channel(qapp, tmp_path: Path) -> None:
+    from emgteach.gui.tabs.analysis import _MMG_PID, _TREMOR_PID
+
+    # File with an ACC channel placed on the limb -> tremor panel default-on.
+    with_acc = tmp_path / "with_acc.edf"
+    _write_edf(with_acc, [
+        ("EMG1", -1.65, 1.65, "mV"),
+        ("ACC (limb)", -1.0, 1.0, "g"),
+    ])
+    tab = _analysis_tab(qapp)
+    tab._populate_channels(str(with_acc))
+    # ACC excluded from the EMG channel picker.
+    assert [tab._combo_canal.itemText(i) for i in range(tab._combo_canal.count())] == [
+        "EMG1"
+    ]
+    assert tab._acc_channel_name == "ACC (limb)" and tab._acc_placement == "limb"
+    pm = tab._panel_pids.index(_MMG_PID)
+    pt = tab._panel_pids.index(_TREMOR_PID)
+    assert tab._chk_paneles[pm].isEnabled() and tab._chk_paneles[pt].isEnabled()
+    assert tab._chk_paneles[pt].isChecked()        # tremor default for "limb"
+    assert not tab._chk_paneles[pm].isChecked()
+
+    # File without an ACC channel -> both ACC panels locked.
+    no_acc = tmp_path / "no_acc.edf"
+    _write_edf(no_acc, [("EMG1", -1.65, 1.65, "mV")])
+    tab._populate_channels(str(no_acc))
+    assert tab._acc_channel_name is None
+    assert not tab._chk_paneles[pm].isEnabled()
+    assert not tab._chk_paneles[pt].isEnabled()
+
+
 def test_mvc_channel_picker_enabled_only_for_two_channels(
     qapp, tmp_path: Path
 ) -> None:

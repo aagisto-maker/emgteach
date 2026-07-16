@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Accelerometer analyses — EMG vs MMG and tremor** *(branch `feat/accelerometer`)*. When a recording has an accelerometer channel, the Analysis tab offers two new panels: **"EMG vs MMG"** overlays the electrical envelope (EMG, mV) and the mechanical envelope (MMG, computed from the accelerometer on the muscle) — the electromechanical coupling; and **"Tremor"** shows the accelerometer's frequency spectrum with the tremor peak marked (physiological ~8–12 Hz). A **placement selector** in the Acquisition tab ("on the muscle (MMG)" / "on the moving segment (tremor)") is stored in the ACC channel label so the Analysis tab pre-selects the relevant panel; both panels are locked when the file has no accelerometer. Also in the PDF report. New `dsp.mmg_envelope` / `dsp.tremor_spectrum` (the ACC is read with pyedflib to keep its `g` units, avoiding MNE's mV rescaling).
 - **Channel-quality warning on load.** When an EDF is opened in the Analysis or MVC tab, each EMG channel is checked and a warning is logged if it is **flat** (no signal — a disconnected electrode or a channel declared but never wired) or **saturated** (pinned at the ADC rails — bad electrode contact or too much gain); a low-amplitude channel gets a "weak signal" note. This makes it obvious when a two-channel recording actually only has data in one channel. New `emgteach.dsp.assess_channel_quality` / `emgteach.io.assess_edf_channels`.
 
 ### Changed

@@ -593,6 +593,48 @@ class TestAnalysisWorker:
         analysis.wait(15000)
         assert results and "emg_envelope_2" not in results[0]
 
+    def test_accelerometer_mmg_and_tremor(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """acc_channel adds the MMG envelope and the tremor peak to the result."""
+        pytest.importorskip("mne")
+        from pyedflib import highlevel
+
+        fs, n = 1000, 6000
+        t = np.arange(n) / fs
+        emg = 0.1 * np.random.default_rng(0).standard_normal(n)
+        acc = 0.3 * np.sin(2 * np.pi * 10.0 * t)  # 10 Hz tremor, in g
+        edf = tmp_path / "acc.edf"
+        headers = [
+            highlevel.make_signal_header(
+                "EMG1", sample_frequency=fs, physical_min=-1.65,
+                physical_max=1.65, dimension="mV",
+            ),
+            highlevel.make_signal_header(
+                "ACC (limb)", sample_frequency=fs, physical_min=-1.0,
+                physical_max=1.0, dimension="g",
+            ),
+        ]
+        highlevel.write_edf(str(edf), [emg, acc], headers, highlevel.make_header())
+
+        analysis = AnalysisWorker(
+            edf_path=str(edf), channel_name="EMG1",
+            acc_channel="ACC (limb)", acc_placement="limb",
+        )
+        results: list[dict] = []
+        analysis.result_ready.connect(results.append)
+        analysis.start()
+        _wait_for_signal(qapp, analysis.result_ready, timeout_ms=15000)
+        analysis.wait(15000)
+
+        assert results
+        r = results[0]
+        assert "acc_mmg_envelope" in r
+        assert len(r["acc_mmg_envelope"]) == len(r["emg_envelope"])
+        assert r["acc_tremor_peak_hz"] == pytest.approx(10.0, abs=0.5)
+        # MMG is in g (~0.2), not x1000 (the read_edf_mne pitfall).
+        assert r["acc_mmg_rms"] < 1.0
+
     def test_resolve_roi_full_recording(self, qapp: QCoreApplication) -> None:
         # No ROI requested -> the whole recording, bounds (0, n).
         w = AnalysisWorker(edf_path="x.edf")

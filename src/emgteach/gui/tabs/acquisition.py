@@ -438,6 +438,25 @@ class AcquisitionTab(QWidget):
         self._chk_acc.setChecked(bool(self._acc_enabled))
         self._chk_acc.toggled.connect(self._on_acc_toggled)
         ch_row.addWidget(self._chk_acc)
+        # Where the accelerometer is placed decides which analyses make sense
+        # (muscle → MMG; moving segment → kinematics/tremor). Stored in the ACC
+        # channel label so the Analysis tab knows.
+        self._combo_acc_place = QComboBox()
+        self._combo_acc_place.addItem(tr("on the muscle (MMG)"), "muscle")
+        self._combo_acc_place.addItem(tr("on the moving segment (tremor)"), "limb")
+        saved_place = self._settings.value("adquisicion/acc_placement", "muscle")
+        self._combo_acc_place.setCurrentIndex(1 if saved_place == "limb" else 0)
+        self._combo_acc_place.setEnabled(bool(self._acc_enabled))
+        self._combo_acc_place.setToolTip(
+            tr("Where the accelerometer is stuck — sets which ACC analyses apply.")
+        )
+        self._combo_acc_place.currentIndexChanged.connect(
+            lambda _i: self._settings.setValue(
+                "adquisicion/acc_placement",
+                self._combo_acc_place.currentData(),
+            )
+        )
+        ch_row.addWidget(self._combo_acc_place)
         cfg_outer.addLayout(ch_row)
 
         # Row 4: session identification written to the EDF+ header.
@@ -1051,6 +1070,9 @@ class AcquisitionTab(QWidget):
         # duration of a recording.
         is_bitalino = self._combo_device_type.currentIndex() == 0
         self._chk_acc.setEnabled(enabled and is_bitalino)
+        self._combo_acc_place.setEnabled(
+            enabled and is_bitalino and self._acc_enabled
+        )
 
     @Slot(bool)
     def _on_acc_toggled(self, checked: bool) -> None:
@@ -1058,6 +1080,7 @@ class AcquisitionTab(QWidget):
         self._acc_enabled = bool(checked)
         self._settings.setValue("adquisicion/acc", self._acc_enabled)
         self._plot_acc.setVisible(self._acc_enabled)
+        self._combo_acc_place.setEnabled(self._acc_enabled)
 
     def _reset_buffers(self) -> None:
         """Clear every per-channel ring buffer back to silence."""
@@ -1193,7 +1216,14 @@ class AcquisitionTab(QWidget):
         # The accelerometer is BITalino-only; when on, the device appends an ACC
         # channel and the worker needs a matching trailing "ACC" label.
         use_acc = self._acc_enabled and self._combo_device_type.currentIndex() == 0
-        worker_labels = [*labels, "ACC"] if use_acc else list(labels)
+        # Encode the placement in the ACC channel label (ASCII, ≤16 chars) so
+        # the Analysis tab can pick the right ACC analysis on load.
+        acc_label = (
+            "ACC (limb)"
+            if self._combo_acc_place.currentData() == "limb"
+            else "ACC (muscle)"
+        )
+        worker_labels = [*labels, acc_label] if use_acc else list(labels)
 
         if self._combo_device_type.currentIndex() == 0:
             device = create_device(

@@ -316,6 +316,30 @@ class TestChannelQuality:
         assert assess_channel_quality(sig, FS, physical_max=1.65) == "weak"
 
 
+class TestAccelerometerDSP:
+    """MMG envelope and tremor-spectrum helpers for the accelerometer panels."""
+
+    def test_tremor_spectrum_finds_the_peak(self) -> None:
+        from emgteach.dsp import tremor_spectrum
+
+        t = np.arange(int(6 * FS)) / FS
+        acc = 0.3 * np.sin(2 * np.pi * 10.0 * t)  # 10 Hz tremor
+        _freqs, _psd, peak = tremor_spectrum(acc, FS)
+        assert peak == pytest.approx(10.0, abs=0.5)
+
+    def test_mmg_envelope_shape_and_positive(self) -> None:
+        from emgteach.dsp import mmg_envelope
+
+        rng = np.random.default_rng(3)
+        acc = 0.2 * np.sin(2 * np.pi * 20.0 * np.arange(int(4 * FS)) / FS)
+        acc = acc + 0.02 * rng.standard_normal(acc.size)
+        env = mmg_envelope(acc, FS)
+        assert env.shape == acc.shape
+        assert np.all(env >= 0.0)
+        # A ~0.2 g vibration gives an envelope of the same order (not x1000).
+        assert 0.01 < float(np.mean(env)) < 1.0
+
+
 class TestLiveQualityMonitor:
     """Per-block live quality check against the device's physical rails."""
 

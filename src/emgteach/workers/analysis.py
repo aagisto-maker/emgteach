@@ -20,7 +20,7 @@ from emgteach.dsp import (
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
 from emgteach.i18n import tr
-from emgteach.io import read_edf_mne
+from emgteach.io import list_edf_channels, read_edf_mne, read_edf_pyedflib
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
 
@@ -50,6 +50,8 @@ class AnalysisWorker(QThread):
         edf_path: str,
         channel_name: str | None = None,
         channel_name_2: str | None = None,
+        acc_channel: str | None = None,
+        acc_placement: str = "unknown",
         f_low: float | None = None,
         f_high: float | None = None,
         f_notch: float | None = None,
@@ -80,6 +82,9 @@ class AnalysisWorker(QThread):
         )
         # Optional second channel: its envelope is overlaid (agonist/antagonist).
         self._channel_name_2 = channel_name_2
+        # Optional accelerometer channel: enables the MMG and tremor panels.
+        self._acc_channel = acc_channel
+        self._acc_placement = acc_placement
         self._f_low = float(f_low) if f_low is not None else profile.f_low
         self._f_high = float(f_high) if f_high is not None else profile.f_high
         self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
@@ -412,6 +417,45 @@ class AnalysisWorker(QThread):
                     self.log.emit(
                         tr("Could not analyse the 2nd channel «{name}»: {err}")
                         .format(name=self._channel_name_2, err=exc)
+                    )
+
+            # Optional accelerometer channel: the MMG (mechanical) envelope and
+            # the tremor spectrum. A failure only drops the ACC panels.
+            if self._acc_channel:
+                try:
+                    from emgteach.dsp import mmg_envelope, tremor_spectrum
+
+                    # The accelerometer is in g, not mV: read it with pyedflib
+                    # (physical units as-is) rather than read_edf_mne, which
+                    # multiplies by 1000 to turn MNE's volts back into mV.
+                    acc_idx = list_edf_channels(self._edf_path).index(
+                        self._acc_channel
+                    )
+                    acc_raw = read_edf_pyedflib(
+                        self._edf_path, channel_index=acc_idx
+                    )["emg_raw"]
+                    if not is_whole:
+                        acc_raw = np.concatenate(
+                            [acc_raw[i0:i1] for (i0, i1, _, _) in bounds]
+                        )
+                    mmg_env = mmg_envelope(acc_raw, fs)
+                    tf, tpsd, tpeak = tremor_spectrum(acc_raw, fs)
+                    result["acc_raw"] = acc_raw
+                    result["acc_mmg_envelope"] = mmg_env
+                    result["acc_mmg_rms"] = float(np.sqrt(np.mean(mmg_env ** 2)))
+                    result["acc_tremor_freqs"] = tf
+                    result["acc_tremor_psd"] = tpsd
+                    result["acc_tremor_peak_hz"] = tpeak
+                    result["acc_channel_name"] = self._acc_channel
+                    result["acc_placement"] = self._acc_placement
+                    self.log.emit(
+                        tr("Accelerometer «{name}» — tremor peak {hz:.1f} Hz.")
+                        .format(name=self._acc_channel, hz=tpeak)
+                    )
+                except Exception as exc:
+                    self.log.emit(
+                        tr("Could not analyse the accelerometer «{name}»: {err}")
+                        .format(name=self._acc_channel, err=exc)
                     )
 
             self.progress.emit(100)
