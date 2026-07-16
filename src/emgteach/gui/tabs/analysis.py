@@ -224,6 +224,18 @@ class AnalysisTab(QWidget):
         self._btn_csv.setEnabled(False)
         self._btn_csv.clicked.connect(self._exportar_csv)
         row_file.addWidget(self._btn_csv)
+        # Force-velocity study (needs an accelerometer channel in the file).
+        self._btn_fv = QPushButton(tr("Force-velocity study…"))
+        self._btn_fv.setEnabled(False)
+        self._btn_fv.setToolTip(
+            tr(
+                "Build the load-velocity, force-velocity, power and recruitment "
+                "curves from one recording where several known loads were "
+                "lifted. Needs an accelerometer channel."
+            )
+        )
+        self._btn_fv.clicked.connect(self._abrir_estudio_fv)
+        row_file.addWidget(self._btn_fv)
         ctrl.addLayout(row_file)
 
         # Line 2: channel + f_env
@@ -1004,6 +1016,29 @@ class AnalysisTab(QWidget):
     # Drawing the 7 panels (replicates analisis_emg_completo.py)
     # ------------------------------------------------------------------
 
+    def _abrir_estudio_fv(self) -> None:
+        """Open the force-velocity study dialog for the loaded recording."""
+        path = self._edit_path.text().strip()
+        if not path or not self._acc_channel_name:
+            return
+        canal = self._combo_canal.currentText().strip() or "EMG"
+        try:
+            from emgteach.gui.widgets.force_velocity_dialog import (
+                ForceVelocityDialog,
+            )
+
+            dlg = ForceVelocityDialog(
+                path, canal, self._acc_channel_name,
+                f_env=self._spin_fenv.value(), parent=self,
+            )
+            dlg.exec()
+        except Exception as exc:  # pragma: no cover — GUI feedback only
+            self._logger.append_error(
+                tr("Could not open the force-velocity study: {error}").format(
+                    error=exc
+                )
+            )
+
     def _warn_channel_quality(self, path: str) -> None:
         """Log a per-channel warning when a loaded channel is flat or saturated.
 
@@ -1098,6 +1133,8 @@ class AnalysisTab(QWidget):
             chk = self._chk_paneles[pos]
             chk.setEnabled(has_acc)
             chk.setChecked(has_acc and pid == default_pid)
+        # The force-velocity study also needs the accelerometer.
+        self._btn_fv.setEnabled(has_acc)
 
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()

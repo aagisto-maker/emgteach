@@ -135,6 +135,42 @@ def test_accelerometer_panels_gated_on_acc_channel(qapp, tmp_path: Path) -> None
     assert not tab._chk_paneles[pt].isEnabled()
 
 
+def test_force_velocity_dialog_detects_reps_and_draws(qapp, tmp_path: Path) -> None:
+    from pyedflib import highlevel
+
+    from emgteach.gui.widgets.force_velocity_dialog import ForceVelocityDialog
+
+    fs, n = 1000, 12000
+    t = np.arange(n) / fs
+    rng = np.random.default_rng(0)
+    emg = np.full(n, 0.01) + 0.003 * rng.standard_normal(n)
+    acc = 0.01 * rng.standard_normal(n)
+    for start, amp, freq in [(2.0, 0.15, 6.0), (5.0, 0.30, 4.0), (8.0, 0.5, 3.0)]:
+        i0 = int(start * fs)
+        i1 = i0 + int(0.8 * fs)
+        emg[i0:i1] += amp * np.abs(np.sin(2 * np.pi * 40 * t[i0:i1]))
+        acc[i0:i1] += 0.4 * np.sin(2 * np.pi * freq * t[i0:i1])
+    edf = tmp_path / "fv.edf"
+    headers = [
+        highlevel.make_signal_header(
+            "EMG1", sample_frequency=fs, physical_min=-1.65,
+            physical_max=1.65, dimension="mV",
+        ),
+        highlevel.make_signal_header(
+            "ACC (limb)", sample_frequency=fs, physical_min=-1.0,
+            physical_max=1.0, dimension="g",
+        ),
+    ]
+    highlevel.write_edf(str(edf), [emg, acc], headers, highlevel.make_header())
+
+    dlg = ForceVelocityDialog(str(edf), "EMG1", "ACC (limb)")
+    assert dlg._table.rowCount() == 3            # three lifts detected
+    # EMG amplitude rises with the (heavier) later reps — recruitment.
+    assert dlg._emg_amp[0] < dlg._emg_amp[2]
+    dlg._redraw()                                # four curves, no crash
+    assert len(dlg._fig.get_axes()) == 4
+
+
 def test_mvc_channel_picker_enabled_only_for_two_channels(
     qapp, tmp_path: Path
 ) -> None:

@@ -159,6 +159,38 @@ _ES = {
         "Acelerómetro «{name}» — pico de temblor {hz:.1f} Hz.",
     "Could not analyse the accelerometer «{name}»: {err}":
         "No se pudo analizar el acelerómetro «{name}»: {err}",
+    # -- force-velocity study --
+    "Force-velocity study…": "Estudio fuerza-velocidad…",
+    "Force-velocity study": "Estudio fuerza-velocidad",
+    "Build the load-velocity, force-velocity, power and recruitment "
+    "curves from one recording where several known loads were "
+    "lifted. Needs an accelerometer channel.":
+        "Construye las curvas carga-velocidad, fuerza-velocidad, potencia y "
+        "reclutamiento a partir de un registro en el que se levantaron varias "
+        "cargas conocidas. Requiere un canal de acelerómetro.",
+    "Could not open the force-velocity study: {error}":
+        "No se pudo abrir el estudio fuerza-velocidad: {error}",
+    "Repetitions (one per known load):":
+        "Repeticiones (una por carga conocida):",
+    "Rep": "Rep",
+    "Load (kg)": "Carga (kg)",
+    "Velocity (a.u.)": "Velocidad (u.a.)",
+    "Type the known load lifted in each repetition, then Redraw. "
+    "Velocity is in arbitrary units (the accelerometer is "
+    "uncalibrated); force is the load you enter.":
+        "Escribe la carga conocida levantada en cada repetición y pulsa "
+        "Redibujar. La velocidad está en unidades arbitrarias (el acelerómetro "
+        "no está calibrado); la fuerza es la carga que introduces.",
+    "No repetitions detected (or no loads entered).":
+        "No se detectaron repeticiones (o no se introdujeron cargas).",
+    "Load-velocity": "Carga-velocidad",
+    "Force-velocity (normalised)": "Fuerza-velocidad (normalizada)",
+    "Force (fraction of max)": "Fuerza (fracción del máximo)",
+    "Velocity (fraction of max)": "Velocidad (fracción del máximo)",
+    "Power (load × velocity)": "Potencia (carga × velocidad)",
+    "Power (a.u.)": "Potencia (u.a.)",
+    "Recruitment (load vs EMG)": "Reclutamiento (carga vs EMG)",
+    "EMG amplitude (mV)": "Amplitud EMG (mV)",
     "Broadcast to phones (classroom mode)": "Difundir a móviles (modo aula)",
     "Serve a read-only live view over the local network so students "
     "can follow on their phone/tablet browser (no install). One "
