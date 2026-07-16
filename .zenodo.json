@@ -8,23 +8,33 @@
   "creators": [
     {
       "name": "Agis-Torres, Ángel",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Department of Physiology, Complutense University of Madrid",
       "orcid": "0000-0002-3548-7264"
     },
     {
       "name": "Fernandes, Vítor Samuel",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Department of Physiology, Complutense University of Madrid",
       "orcid": "0000-0001-6060-9035"
     },
     {
       "name": "Navarro-Dorado, Jorge",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Department of Physiology, Complutense University of Madrid",
       "orcid": "0000-0002-4643-3528"
     },
     {
       "name": "Muñoz-Picos, Mercedes",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Department of Physiology, Complutense University of Madrid",
       "orcid": "0000-0002-1679-9588"
+    },
+    {
+      "name": "Climent, Belén",
+      "affiliation": "Department of Physiology, Complutense University of Madrid",
+      "orcid": "0000-0003-0852-9227"
+    },
+    {
+      "name": "Hernández, Medardo",
+      "affiliation": "Department of Physiology, Complutense University of Madrid",
+      "orcid": "0000-0001-7165-2135"
     }
   ],
   "keywords": [
