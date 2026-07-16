@@ -340,12 +340,27 @@ _ES = {
     "Save figure (PNG)": "Guardar figura (PNG)",
     "Generate PDF report": "Generar informe PDF",
     "EMG channel:": "Canal EMG:",
-    "Compare 2nd channel:": "Comparar 2º canal:",
-    "Also analyse a second channel (e.g. antagonist) and overlay "
-    "both envelopes. Enabled automatically for 2-channel recordings.":
-        "Analiza también un segundo canal (p. ej. antagonista) y superpone "
-        "ambas envolventes. Se activa automáticamente en registros de 2 canales.",
-    "Second EMG channel to overlay.": "Segundo canal EMG a superponer.",
+    "EMG channel to analyse. Every panel and the report use only "
+    "this channel. Filled with the file's channels (EMG1/EMG2) when "
+    "you select it.":
+        "Canal EMG a analizar. Todos los paneles y el informe usan solo este "
+        "canal. Se rellena con los canales del archivo (EMG1/EMG2) al "
+        "seleccionarlo.",
+    "Compare channels:": "Comparar canales:",
+    "Overlay the envelope of the two channels (agonist/antagonist). "
+    "The partner channel is set automatically to the other one. "
+    "Only available for two-channel recordings.":
+        "Superpone la envolvente de los dos canales (agonista/antagonista). "
+        "El canal pareja se fija automáticamente al otro. Solo disponible en "
+        "registros de dos canales.",
+    "Partner channel (chosen automatically).":
+        "Canal pareja (elegido automáticamente).",
+    "EMG channel to normalise (EMG1/EMG2 for two-channel files; "
+    "disabled when there is only one). The whole normalisation uses "
+    "this channel — press \"Compute MVC\" after changing it.":
+        "Canal EMG a normalizar (EMG1/EMG2 en archivos de dos canales; "
+        "desactivado si solo hay uno). Toda la normalización usa este canal; "
+        "pulsa «Calcular CVM» tras cambiarlo.",
     "9. Overlaid envelopes (agonist/antagonist)":
         "9. Envolventes superpuestas (agonista/antagonista)",
     "9. Env. overlay": "9. Env. superp.",

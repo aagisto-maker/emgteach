@@ -59,7 +59,7 @@ from PySide6.QtWidgets import (
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
-from emgteach.io import list_edf_channels
+from emgteach.io import list_edf_channels, list_edf_emg_channels
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_mvc_report
 from emgteach.workers import MvcWorker
@@ -163,8 +163,9 @@ class MvcTab(QWidget):
         self._combo_canal.setFixedWidth(150)
         self._combo_canal.setToolTip(
             tr(
-                "EMG channel of the EDF to normalise. Filled with the channels "
-                "of the test file when you select it."
+                "EMG channel to normalise (EMG1/EMG2 for two-channel files; "
+                "disabled when there is only one). The whole normalisation uses "
+                "this channel — press \"Compute MVC\" after changing it."
             )
         )
         row_params.addWidget(self._combo_canal)
@@ -445,8 +446,15 @@ class MvcTab(QWidget):
             self._btn_guardar.setEnabled(False)
 
     def _populate_channels(self, path: str) -> None:
-        """Fill the channel picker from the test EDF header."""
-        labels = list_edf_channels(path)
+        """Fill the channel picker with the test file's EMG channels (excludes
+        ACC).
+
+        With a single EMG channel the picker is disabled (nothing to choose);
+        with two it is enabled so the user selects EMG1 or EMG2. The whole
+        normalisation is computed for the selected channel — after changing it,
+        press "Compute MVC" to recompute for that channel.
+        """
+        labels = list_edf_emg_channels(path) or list_edf_channels(path)
         if not labels:
             return
         current = self._combo_canal.currentText().strip()
@@ -456,6 +464,7 @@ class MvcTab(QWidget):
         idx = self._combo_canal.findText(current)
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
+        self._combo_canal.setEnabled(len(labels) >= 2)
 
     @Slot()
     def _seleccionar_edf_cvm(self) -> None:

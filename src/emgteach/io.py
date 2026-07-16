@@ -48,6 +48,7 @@ __all__ = [
     "create_edf_writer",
     "edf_duration",
     "list_edf_channels",
+    "list_edf_emg_channels",
     "read_edf_metadata",
     "read_edf_mne",
     "read_edf_pyedflib",
@@ -536,6 +537,37 @@ def list_edf_channels(path: PathLike) -> list[str]:
         return []
     try:
         return [str(label) for label in reader.getSignalLabels()]
+    finally:
+        reader.close()
+
+
+def list_edf_emg_channels(path: PathLike) -> list[str]:
+    """Return only the EMG channel labels of an EDF file.
+
+    Non-biopotential channels — currently the accelerometer, written with the
+    physical dimension ``"g"`` (or the label ``"ACC"``) — are excluded, so a
+    channel picker offers only the muscle channels (e.g. EMG1/EMG2) and the
+    "one or two channels" logic is not confused by an extra movement channel.
+    Falls back to an empty list if the file cannot be read.
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return []
+    try:
+        labels = reader.getSignalLabels()
+        headers = reader.getSignalHeaders()
+        out: list[str] = []
+        for label, header in zip(labels, headers, strict=False):
+            dim = str(
+                header.get("dimension", header.get("physical_dimension", ""))
+            ).strip().lower()
+            if dim == "g" or str(label).strip().upper() == "ACC":
+                continue
+            out.append(str(label))
+        return out
     finally:
         reader.close()
 

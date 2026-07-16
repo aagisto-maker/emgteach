@@ -112,11 +112,11 @@ _QUALITY_STYLES = {
 # identifies the same sensor (blue = channel 1, red = channel 2).
 _CHANNEL_COLORS = [(65, 105, 225), (214, 39, 40)]
 _CHANNEL_COLOR_HEX = ["#4169E1", "#D62728"]
-_CHANNEL_DEFAULT_LABELS = ["EMG", "EMG 2"]
-# Defaults briefly used in an earlier version; they are migrated to the ones
-# above if still stored in QSettings (this does not overwrite names chosen by
-# the user, only the old defaults).
-_OLD_DEFAULT_LABELS = ["Canal 1", "Canal 2"]
+_CHANNEL_DEFAULT_LABELS = ["EMG1", "EMG2"]
+# Defaults used in earlier versions; they are migrated to the ones above if
+# still stored in QSettings (this does not overwrite names chosen by the user,
+# only the old defaults). One tuple of superseded defaults per channel.
+_OLD_DEFAULT_LABELS = [("Canal 1", "EMG"), ("Canal 2", "EMG 2")]
 
 # With 2 channels the raw plot stacks (one lane per channel) instead of
 # overlapping. The mV axis is no longer absolute, so each lane shows reference
@@ -421,7 +421,7 @@ class AcquisitionTab(QWidget):
             stored = self._settings.value(
                 f"adquisicion/label_{i}", _CHANNEL_DEFAULT_LABELS[i]
             )
-            if stored == _OLD_DEFAULT_LABELS[i]:
+            if stored in _OLD_DEFAULT_LABELS[i]:
                 stored = _CHANNEL_DEFAULT_LABELS[i]  # migrate old default
             edit.setText(stored)
             edit.textChanged.connect(self._on_label_changed)

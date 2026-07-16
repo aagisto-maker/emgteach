@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Clearer channel selection in Analysis and MVC.** On loading an EDF the app now detects whether it has one or two **EMG** channels (the accelerometer channel is never offered): with one channel the "Compare channels" option (Analysis) and the channel picker (MVC) are disabled; with two, you pick **EMG1** or **EMG2** and every panel, the report and the whole normalisation use **only that channel**. Comparing is **off by default** and, when turned on, the partner channel is set **automatically** to the other one (pick EMG1 → partner EMG2, and vice versa); the overlaid-envelopes panel (9) can only be ticked while comparing. Default acquisition channel labels are now **EMG1 / EMG2**.
+
 ### Added
 - **Accelerometer (ACC) channel — prototype** *(branch `feat/accelerometer`)*. The Acquisition tab has an **ACC** checkbox (BITalino only) that additionally records the accelerometer on analogue **A4** in its own auto-scaled plot and as a separate EDF channel (unit `g`, normalised/uncalibrated). A4 is wired for the ACC so it keeps the **same 10-bit resolution** as the EMG channels (EMG on A1/A2 at most). It is converted apart from the EMG (`BitalinoDevice(acc=True)` / `raw_to_acc`) and kept out of the EMG machinery (filtering, envelope, load monitor, MVC wizard) so it stays a plain movement/vibration trace. Foundation for movement-context, motion-artefact and MMG/tremor teaching uses.
 

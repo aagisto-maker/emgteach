@@ -128,7 +128,12 @@ from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
-from emgteach.io import edf_duration, list_edf_channels, read_edf_metadata
+from emgteach.io import (
+    edf_duration,
+    list_edf_channels,
+    list_edf_emg_channels,
+    read_edf_metadata,
+)
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
@@ -204,30 +209,38 @@ class AnalysisTab(QWidget):
         row_params = QHBoxLayout()
         row_params.addWidget(QLabel(tr("EMG channel:")))
         self._combo_canal = QComboBox()
-        self._combo_canal.setEditable(True)  # lets the user type if needed
+        self._combo_canal.setEditable(False)  # pick one of the file's channels
         self._combo_canal.addItem("EMG")
         self._combo_canal.setFixedWidth(150)
         self._combo_canal.setToolTip(
             tr(
-                "EMG channel of the EDF to analyse. Filled with the channels of "
-                "the file when you select it (e.g. agonist/antagonist)."
+                "EMG channel to analyse. Every panel and the report use only "
+                "this channel. Filled with the file's channels (EMG1/EMG2) when "
+                "you select it."
             )
+        )
+        self._combo_canal.currentIndexChanged.connect(
+            self._on_primary_channel_changed
         )
         row_params.addWidget(self._combo_canal)
-        # Optional second channel: overlay the agonist/antagonist envelopes.
-        self._chk_compare2 = QCheckBox(tr("Compare 2nd channel:"))
+        # Optional second channel: overlay the agonist/antagonist envelopes. The
+        # partner channel is chosen automatically (the other one), so the picker
+        # is read-only; it only lights up when comparing is on.
+        self._chk_compare2 = QCheckBox(tr("Compare channels:"))
         self._chk_compare2.setToolTip(
             tr(
-                "Also analyse a second channel (e.g. antagonist) and overlay "
-                "both envelopes. Enabled automatically for 2-channel recordings."
+                "Overlay the envelope of the two channels (agonist/antagonist). "
+                "The partner channel is set automatically to the other one. "
+                "Only available for two-channel recordings."
             )
         )
+        self._chk_compare2.setEnabled(False)
         row_params.addWidget(self._chk_compare2)
         self._combo_canal2 = QComboBox()
-        self._combo_canal2.setEditable(True)
+        self._combo_canal2.setEditable(False)
         self._combo_canal2.setFixedWidth(150)
-        self._combo_canal2.setEnabled(False)
-        self._combo_canal2.setToolTip(tr("Second EMG channel to overlay."))
+        self._combo_canal2.setEnabled(False)   # read-only: shows the partner
+        self._combo_canal2.setToolTip(tr("Partner channel (chosen automatically)."))
         self._chk_compare2.toggled.connect(self._on_compare2_toggled)
         row_params.addWidget(self._combo_canal2)
         row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
@@ -377,6 +390,9 @@ class AnalysisTab(QWidget):
             chk = QCheckBox(tr(label))
             chk.setChecked(pid in _DEFAULT_PANELS)
             chk.setToolTip(tr(_PANEL_TOOLTIPS[pid]))
+            # The overlay panel is only usable while comparing two channels.
+            if pid == _OVERLAY_PID:
+                chk.setEnabled(False)
             paneles_layout.addWidget(chk)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
@@ -644,8 +660,15 @@ class AnalysisTab(QWidget):
             self._progress.setFormat(tr("Ready"))
 
     def _populate_channels(self, path: str) -> None:
-        """Fill the channel picker from the EDF header, keeping the choice."""
-        labels = list_edf_channels(path)
+        """Fill the channel picker with the file's EMG channels (excludes ACC).
+
+        Detects whether the recording has one or two EMG channels: with one,
+        the channel is fixed and "Compare channels" is disabled; with two, the
+        user picks EMG1 or EMG2 and every panel/report uses only that channel.
+        Comparing is off by default and, when turned on, the partner channel is
+        set automatically to the other one.
+        """
+        labels = list_edf_emg_channels(path) or list_edf_channels(path)
         if not labels:
             return
         current = self._combo_canal.currentText().strip()
@@ -656,18 +679,20 @@ class AnalysisTab(QWidget):
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
 
-        # Second channel: fill and, for 2-channel recordings, default it to the
-        # other channel and turn the agonist/antagonist overlay on by default.
+        # Fill the (read-only) partner picker with the same channels.
         self._combo_canal2.blockSignals(True)
         self._combo_canal2.clear()
         self._combo_canal2.addItems(labels)
-        has_two = len(labels) >= 2
-        if has_two:
-            other = 1 if self._combo_canal.currentIndex() == 0 else 0
-            self._combo_canal2.setCurrentIndex(other)
         self._combo_canal2.blockSignals(False)
+
+        # One channel -> no comparison possible; two -> allow it (off by default).
+        has_two = len(labels) >= 2
+        self._chk_compare2.blockSignals(True)
+        self._chk_compare2.setChecked(False)
         self._chk_compare2.setEnabled(has_two)
-        self._chk_compare2.setChecked(has_two)   # triggers _on_compare2_toggled
+        self._chk_compare2.blockSignals(False)
+        self._sync_second_channel()
+        self._gate_overlay_panel(active=False)   # overlay only when comparing
 
         # Default the region-of-interest window to the whole recording.
         dur = edf_duration(path)
@@ -939,19 +964,45 @@ class AnalysisTab(QWidget):
     # Drawing the 7 panels (replicates analisis_emg_completo.py)
     # ------------------------------------------------------------------
 
+    @Slot(int)
+    def _on_primary_channel_changed(self, _index: int) -> None:
+        """When the analysed channel changes, keep the partner in sync."""
+        self._sync_second_channel()
+
     @Slot(bool)
     def _on_compare2_toggled(self, checked: bool) -> None:
-        """Enable the 2nd-channel picker and (un)check the overlay panel."""
-        self._combo_canal2.setEnabled(checked)
-        self._set_overlay_panel_checked(checked)
+        """Turn the overlay on/off: sync the partner channel and gate panel 9."""
+        self._sync_second_channel()
+        self._gate_overlay_panel(active=checked)
 
-    def _set_overlay_panel_checked(self, checked: bool) -> None:
-        """Tick/untick the agonist/antagonist overlay panel checkbox."""
+    def _sync_second_channel(self) -> None:
+        """Set the (read-only) partner picker to the channel not being analysed.
+
+        Selecting EMG1 makes the partner EMG2 and vice versa. With a single
+        channel there is no partner.
+        """
+        n = self._combo_canal2.count()
+        if n < 2:
+            return
+        other = 1 if self._combo_canal.currentIndex() == 0 else 0
+        self._combo_canal2.blockSignals(True)
+        self._combo_canal2.setCurrentIndex(other)
+        self._combo_canal2.blockSignals(False)
+
+    def _gate_overlay_panel(self, active: bool) -> None:
+        """Check+enable (active) or uncheck+disable the overlay panel checkbox.
+
+        The overlaid-envelopes panel (9) is only meaningful when comparing two
+        channels, so it cannot be ticked otherwise — avoiding confusion on
+        single-channel recordings.
+        """
         try:
             pos = self._panel_pids.index(_OVERLAY_PID)
         except ValueError:
             return
-        self._chk_paneles[pos].setChecked(checked)
+        chk = self._chk_paneles[pos]
+        chk.setChecked(active)
+        chk.setEnabled(active)
 
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
@@ -1244,10 +1295,15 @@ class AnalysisTab(QWidget):
         encabezado.setObjectName("dlgHeader")
         lay.addWidget(encabezado)
 
+        comparing = self._chk_compare2.isChecked()
         checks: list[QCheckBox] = []
         for i, nombre in enumerate(_PANEL_NOMBRES):
             cb = QCheckBox(tr(nombre))
             cb.setChecked(i < len(self._chk_paneles) and self._chk_paneles[i].isChecked())
+            # The overlay panel can only be reported when comparing two channels.
+            if self._panel_pids[i] == _OVERLAY_PID and not comparing:
+                cb.setChecked(False)
+                cb.setEnabled(False)
             lay.addWidget(cb)
             checks.append(cb)
 
