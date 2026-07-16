@@ -59,7 +59,11 @@ from PySide6.QtWidgets import (
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
-from emgteach.io import list_edf_channels, list_edf_emg_channels
+from emgteach.io import (
+    assess_edf_channels,
+    list_edf_channels,
+    list_edf_emg_channels,
+)
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_mvc_report
 from emgteach.workers import MvcWorker
@@ -465,6 +469,21 @@ class MvcTab(QWidget):
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
         self._combo_canal.setEnabled(len(labels) >= 2)
+
+        # Warn if a channel is flat (no signal) or saturated (bad contact).
+        for label, status in assess_edf_channels(path):
+            if status == "flat":
+                self._logger.append_error(
+                    tr("Channel «{ch}»: flat — no signal (electrode not "
+                       "connected?).").format(ch=label)
+                )
+            elif status == "saturated":
+                self._logger.append_error(
+                    tr("Channel «{ch}»: saturated — the trace is pinned at the "
+                       "rails (check the electrode contact or the gain).").format(
+                        ch=label
+                    )
+                )
 
     @Slot()
     def _seleccionar_edf_cvm(self) -> None:

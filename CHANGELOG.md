@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Channel-quality warning on load.** When an EDF is opened in the Analysis or MVC tab, each EMG channel is checked and a warning is logged if it is **flat** (no signal — a disconnected electrode or a channel declared but never wired) or **saturated** (pinned at the ADC rails — bad electrode contact or too much gain); a low-amplitude channel gets a "weak signal" note. This makes it obvious when a two-channel recording actually only has data in one channel. New `emgteach.dsp.assess_channel_quality` / `emgteach.io.assess_edf_channels`.
+
 ### Changed
 - **Clearer channel selection in Analysis and MVC.** On loading an EDF the app now detects whether it has one or two **EMG** channels (the accelerometer channel is never offered): with one channel the "Compare channels" option (Analysis) and the channel picker (MVC) are disabled; with two, you pick **EMG1** or **EMG2** and every panel, the report and the whole normalisation use **only that channel**. Comparing is **off by default** and, when turned on, the partner channel is set **automatically** to the other one (pick EMG1 → partner EMG2, and vice versa); the overlaid-envelopes panel (9) can only be ticked while comparing. Default acquisition channel labels are now **EMG1 / EMG2**.
 

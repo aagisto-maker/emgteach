@@ -284,6 +284,38 @@ class TestDetectAcquisitionProblems:
         assert any("baseline" in w.lower() for w in result["warnings"])
 
 
+class TestChannelQuality:
+    """Whole-channel load-time verdict used to warn on flat/saturated channels."""
+
+    def test_ok_channel(self) -> None:
+        from emgteach.dsp import assess_channel_quality
+
+        rng = np.random.default_rng(0)
+        sig = 0.1 * rng.standard_normal(int(3 * FS))  # ~0.1 mV RMS EMG
+        assert assess_channel_quality(sig, FS, physical_max=1.65) == "ok"
+
+    def test_flat_channel(self) -> None:
+        from emgteach.dsp import assess_channel_quality
+
+        sig = np.full(int(3 * FS), 0.001)  # essentially no signal
+        assert assess_channel_quality(sig, FS, physical_max=1.65) == "flat"
+
+    def test_saturated_channel(self) -> None:
+        from emgteach.dsp import assess_channel_quality
+
+        rng = np.random.default_rng(1)
+        # Half the samples pinned at the +full-scale rail (electrode off).
+        sig = rng.choice([1.65, -1.65, 0.2], size=int(3 * FS), p=[0.5, 0.2, 0.3])
+        assert assess_channel_quality(sig, FS, physical_max=1.65) == "saturated"
+
+    def test_weak_channel(self) -> None:
+        from emgteach.dsp import assess_channel_quality
+
+        rng = np.random.default_rng(2)
+        sig = 0.02 * rng.standard_normal(int(3 * FS))  # low but non-zero
+        assert assess_channel_quality(sig, FS, physical_max=1.65) == "weak"
+
+
 class TestLiveQualityMonitor:
     """Per-block live quality check against the device's physical rails."""
 

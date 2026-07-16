@@ -340,6 +340,14 @@ _ES = {
     "Save figure (PNG)": "Guardar figura (PNG)",
     "Generate PDF report": "Generar informe PDF",
     "EMG channel:": "Canal EMG:",
+    "Channel «{ch}»: flat — no signal (electrode not connected?).":
+        "Canal «{ch}»: plano — sin señal (¿electrodo sin conectar?).",
+    "Channel «{ch}»: saturated — the trace is pinned at the rails "
+    "(check the electrode contact or the gain).":
+        "Canal «{ch}»: saturado — la traza está pegada al tope "
+        "(revisa el contacto del electrodo o la ganancia).",
+    "Channel «{ch}»: weak signal (low amplitude).":
+        "Canal «{ch}»: señal débil (amplitud baja).",
     "EMG channel to analyse. Every panel and the report use only "
     "this channel. Filled with the file's channels (EMG1/EMG2) when "
     "you select it.":

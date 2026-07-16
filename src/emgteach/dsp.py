@@ -62,6 +62,7 @@ __all__ = [
     "OnsetDetector",
     "QualityStatus",
     "RealtimeFilterState",
+    "assess_channel_quality",
     "compute_psd_mnf_mdf",
     "compute_segments",
     "design_bandpass",
@@ -509,6 +510,43 @@ def detect_acquisition_problems(
         "flat_baseline": flat_baseline,
         "warnings": warnings,
     }
+
+
+def assess_channel_quality(
+    signal: FloatArray | np.ndarray, fs: float, physical_max: float = 1.65
+) -> str:
+    """One-word quality verdict for a whole EMG channel, for a load-time check.
+
+    Returns one of:
+
+    * ``"flat"`` — essentially no signal (a disconnected electrode or a
+      channel that was declared but never wired): very low amplitude over the
+      whole recording.
+    * ``"saturated"`` — the electrode lost contact / the gain was too high, so
+      the trace spends a large fraction of the time pinned at the ADC rails.
+    * ``"weak"`` — there is a signal but its amplitude is low; usable but worth
+      a heads-up.
+    * ``"ok"`` — a normal surface-EMG channel.
+
+    Complements :func:`detect_acquisition_problems` (whose saturation run
+    detector it reuses) with a *whole-channel* flat/weak amplitude check, so
+    the GUI can warn per channel the moment a file is opened.
+    """
+    s = np.asarray(signal, dtype=np.float64)
+    if s.size == 0:
+        return "flat"
+    rms = float(np.std(s))
+    p2p = float(np.ptp(s))
+    # Saturation: a big share of samples sit near the ±full-scale rails.
+    rail = float(np.mean(np.abs(s) >= 0.94 * abs(physical_max))) if physical_max else 0.0
+    if rail > 0.05:
+        return "saturated"
+    # Flat: no real activity anywhere in the recording.
+    if rms < 0.012 and p2p < 0.10:
+        return "flat"
+    if rms < 0.03:
+        return "weak"
+    return "ok"
 
 
 @dataclass(frozen=True)

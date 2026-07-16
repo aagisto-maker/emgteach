@@ -129,6 +129,7 @@ from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
 from emgteach.io import (
+    assess_edf_channels,
     edf_duration,
     list_edf_channels,
     list_edf_emg_channels,
@@ -694,6 +695,9 @@ class AnalysisTab(QWidget):
         self._sync_second_channel()
         self._gate_overlay_panel(active=False)   # overlay only when comparing
 
+        # Warn if any channel is flat (no signal) or saturated (bad contact).
+        self._warn_channel_quality(path)
+
         # Default the region-of-interest window to the whole recording.
         dur = edf_duration(path)
         if dur > 0.0:
@@ -963,6 +967,33 @@ class AnalysisTab(QWidget):
     # ------------------------------------------------------------------
     # Drawing the 7 panels (replicates analisis_emg_completo.py)
     # ------------------------------------------------------------------
+
+    def _warn_channel_quality(self, path: str) -> None:
+        """Log a per-channel warning when a loaded channel is flat or saturated.
+
+        Surfaces the common recording faults right when the file is opened, so
+        a flat (disconnected) or saturated (bad-contact) channel is obvious
+        before running the analysis.
+        """
+        for label, status in assess_edf_channels(path):
+            if status == "flat":
+                self._logger.append_error(
+                    tr("Channel «{ch}»: flat — no signal (electrode not "
+                       "connected?).").format(ch=label)
+                )
+            elif status == "saturated":
+                self._logger.append_error(
+                    tr("Channel «{ch}»: saturated — the trace is pinned at the "
+                       "rails (check the electrode contact or the gain).").format(
+                        ch=label
+                    )
+                )
+            elif status == "weak":
+                self._logger.append_log(
+                    tr("Channel «{ch}»: weak signal (low amplitude).").format(
+                        ch=label
+                    )
+                )
 
     @Slot(int)
     def _on_primary_channel_changed(self, _index: int) -> None:

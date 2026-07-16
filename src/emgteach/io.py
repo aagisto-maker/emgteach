@@ -44,6 +44,7 @@ __all__ = [
     "BufferedEdfWriter",
     "ChannelInfo",
     "RecordingMetadata",
+    "assess_edf_channels",
     "build_timestamped_path",
     "create_edf_writer",
     "edf_duration",
@@ -567,6 +568,43 @@ def list_edf_emg_channels(path: PathLike) -> list[str]:
             if dim == "g" or str(label).strip().upper() == "ACC":
                 continue
             out.append(str(label))
+        return out
+    finally:
+        reader.close()
+
+
+def assess_edf_channels(path: PathLike) -> list[tuple[str, str]]:
+    """Per-EMG-channel quality verdict for a file, for a warning on load.
+
+    Returns ``[(label, status), ...]`` where ``status`` is one of ``"ok"``,
+    ``"flat"``, ``"weak"`` or ``"saturated"`` (see
+    :func:`emgteach.dsp.assess_channel_quality`). Non-biopotential channels
+    (the accelerometer, dimension ``"g"``/label ``"ACC"``) and the annotation
+    channel are skipped. Returns an empty list if the file cannot be read.
+    """
+    import pyedflib
+
+    from emgteach.dsp import assess_channel_quality
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return []
+    try:
+        labels = reader.getSignalLabels()
+        headers = reader.getSignalHeaders()
+        out: list[tuple[str, str]] = []
+        for i, (label, header) in enumerate(zip(labels, headers, strict=False)):
+            name = str(label).strip()
+            dim = str(
+                header.get("dimension", header.get("physical_dimension", ""))
+            ).strip().lower()
+            if dim == "g" or name.upper() in ("ACC", "EDF ANNOTATIONS"):
+                continue
+            fs = float(header.get("sample_frequency", 1000) or 1000)
+            pmax = float(header.get("physical_max", 1.65) or 1.65)
+            status = assess_channel_quality(reader.readSignal(i), fs, pmax)
+            out.append((str(label), status))
         return out
     finally:
         reader.close()
