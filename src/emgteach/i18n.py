@@ -116,6 +116,16 @@ _ES = {
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",
     # -- classroom broadcast (followers on phones) --
+    # -- accelerometer (ACC) --
+    "ACC": "ACC",
+    "Accelerometer (A5, normalised g)": "Acelerómetro (A5, g normalizado)",
+    "Also record the BITalino accelerometer (A5) in its own plot and "
+    "EDF channel. Useful to relate muscle activation to movement, "
+    "flag motion artefacts, or show tremor. BITalino only.":
+        "Registra también el acelerómetro del BITalino (A5) en su propia "
+        "gráfica y canal EDF. Útil para relacionar la activación muscular con "
+        "el movimiento, señalar artefactos de movimiento o mostrar el temblor. "
+        "Solo BITalino.",
     "Broadcast to phones (classroom mode)": "Difundir a móviles (modo aula)",
     "Serve a read-only live view over the local network so students "
     "can follow on their phone/tablet browser (no install). One "

@@ -179,6 +179,13 @@ class AcquisitionTab(QWidget):
         self._buf_env = [
             deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS) for _ in range(MAX_CHANNELS)
         ]
+        # Optional BITalino accelerometer (A5): a single extra raw channel,
+        # kept out of the EMG channel machinery (load monitor, MVC wizard,
+        # stacking) and shown in its own auto-scaled plot.
+        self._acc_enabled = self._settings.value(
+            "adquisicion/acc", False, type=bool
+        )
+        self._buf_acc = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
         self._new_data = False  # flag: there is new data to draw
 
         # Events for drawing live lines: (time_s, label). The total number of
@@ -420,6 +427,17 @@ class AcquisitionTab(QWidget):
             edit.textChanged.connect(self._on_label_changed)
             self._edit_labels.append(edit)
             ch_row.addWidget(edit, stretch=1)
+        self._chk_acc = QCheckBox(tr("ACC"))
+        self._chk_acc.setToolTip(
+            tr(
+                "Also record the BITalino accelerometer (A5) in its own plot and "
+                "EDF channel. Useful to relate muscle activation to movement, "
+                "flag motion artefacts, or show tremor. BITalino only."
+            )
+        )
+        self._chk_acc.setChecked(bool(self._acc_enabled))
+        self._chk_acc.toggled.connect(self._on_acc_toggled)
+        ch_row.addWidget(self._chk_acc)
         cfg_outer.addLayout(ch_row)
 
         # Row 4: session identification written to the EDF+ header.
@@ -755,6 +773,21 @@ class AcquisitionTab(QWidget):
             )
         plots_col_vbox.addWidget(self._plot_env)
 
+        # Accelerometer (A5) — an auto-scaled extra plot, shown only when the
+        # ACC checkbox is on. It is deliberately kept out of the ▲▼ scale
+        # machinery and the EMG channel logic (single, self-scaling channel).
+        self._plot_acc = pg.PlotWidget(
+            title=tr("Accelerometer (A5, normalised g)")
+        )
+        self._plot_acc.setLabel("left", "g")
+        self._plot_acc.showGrid(x=True, y=True, alpha=0.3)
+        self._plot_acc.setYRange(-1.0, 1.0)
+        self._curve_acc = self._plot_acc.plot(
+            pen=pg.mkPen(color="#2ca02c", width=1)
+        )
+        self._plot_acc.setVisible(bool(self._acc_enabled))
+        plots_col_vbox.addWidget(self._plot_acc)
+
         # Reusable pool of vertical lines for the event markers, one collection
         # per plot (repositioned on each refresh according to the sliding
         # window; orange, like in the Analysis tab).
@@ -1014,6 +1047,17 @@ class AcquisitionTab(QWidget):
         self._combo_n_channels.setEnabled(enabled)
         for edit in self._edit_labels:
             edit.setEnabled(enabled)
+        # ACC is only available on the BITalino backend and is fixed for the
+        # duration of a recording.
+        is_bitalino = self._combo_device_type.currentIndex() == 0
+        self._chk_acc.setEnabled(enabled and is_bitalino)
+
+    @Slot(bool)
+    def _on_acc_toggled(self, checked: bool) -> None:
+        """Show/hide the accelerometer plot and remember the choice."""
+        self._acc_enabled = bool(checked)
+        self._settings.setValue("adquisicion/acc", self._acc_enabled)
+        self._plot_acc.setVisible(self._acc_enabled)
 
     def _reset_buffers(self) -> None:
         """Clear every per-channel ring buffer back to silence."""
@@ -1021,6 +1065,8 @@ class AcquisitionTab(QWidget):
             for buf in bufs:
                 buf.clear()
                 buf.extend([0.0] * MAX_POINTS)
+        self._buf_acc.clear()
+        self._buf_acc.extend([0.0] * MAX_POINTS)
 
     @Slot(bool)
     def _on_auto_toggled(self, checked: bool) -> None:
@@ -1144,12 +1190,18 @@ class AcquisitionTab(QWidget):
         for i, lbl in enumerate(labels):
             self._settings.setValue(f"adquisicion/label_{i}", lbl)
 
+        # The accelerometer is BITalino-only; when on, the device appends an ACC
+        # channel and the worker needs a matching trailing "ACC" label.
+        use_acc = self._acc_enabled and self._combo_device_type.currentIndex() == 0
+        worker_labels = [*labels, "ACC"] if use_acc else list(labels)
+
         if self._combo_device_type.currentIndex() == 0:
             device = create_device(
                 BACKEND_BITALINO,
                 port=self._edit_mac.text().strip(),
                 fs=FS,
                 channels=list(range(n)),
+                acc=use_acc,
             )
         else:
             device = create_device(
@@ -1175,7 +1227,7 @@ class AcquisitionTab(QWidget):
             device=device,
             save_dir=save_dir,
             save_path=save_path,
-            sensor_labels=labels,
+            sensor_labels=worker_labels,
             auto_detect=self._chk_auto.isChecked(),
             onset_k=self._spin_k.value(),
             metadata=metadata,
@@ -1235,13 +1287,19 @@ class AcquisitionTab(QWidget):
         # envelope) but is no longer displayed, so it is not buffered here.
         raw = data["raw_mv"]
         env = data["envelope"]
-        for c in range(min(len(raw), MAX_CHANNELS)):
+        # Fill the EMG channel buffers (bounded by the active EMG count, so the
+        # trailing ACC column is never mistaken for a second muscle).
+        for c in range(min(len(raw), self._n_channels, MAX_CHANNELS)):
             self._buf_raw[c].extend(raw[c].tolist())
             self._buf_env[c].extend(env[c].tolist())
+        # The accelerometer, when present, is the column right after the EMG
+        # channels; it feeds its own buffer/plot.
+        if self._acc_enabled and len(raw) > self._n_channels:
+            self._buf_acc.extend(raw[self._n_channels].tolist())
         # During the wizard's contraction window, track the raw peak so the
         # plots can auto-scale to this subject once calibration finishes.
         if self._mvc_active and self._mvc_phase == "contract":
-            for c in range(min(len(raw), MAX_CHANNELS)):
+            for c in range(min(len(raw), self._n_channels, MAX_CHANNELS)):
                 if raw[c].size:
                     self._mvc_raw_peak[c] = max(
                         self._mvc_raw_peak[c], float(np.max(np.abs(raw[c])))
@@ -1300,6 +1358,10 @@ class AcquisitionTab(QWidget):
                 arr_raw = self._lane_baseline(0, c) + self._y_gain[0] * arr_raw
             self._curves_raw[c].setData(t, arr_raw)
             self._curves_env[c].setData(t, arr_env)
+
+        if self._acc_enabled:
+            arr_acc = np.array(list(self._buf_acc))[-n:]
+            self._curve_acc.setData(t, arr_acc)
 
         # Reposition the marker lines: each event is placed according to how
         # many samples ago it occurred, within the visible window.
