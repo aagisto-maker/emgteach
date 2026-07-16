@@ -79,6 +79,34 @@ class _FakeDevice(AcquisitionDevice):
         self._opened = False
 
 
+class _FakeEmgAccDevice(_FakeDevice):
+    """Fake device exposing one EMG channel (mV) + one ACC channel (g).
+
+    The EMG column is the base 80 Hz sinusoid; the ACC column is a slow ramp so
+    a test can tell the two apart and check the ACC is stored raw (unfiltered).
+    """
+
+    def __init__(self, fs: int = 1000) -> None:
+        super().__init__(fs=fs, n_channels=2)
+
+    def read(self, n_samples: int) -> np.ndarray:
+        n = int(n_samples)
+        t = (self._cursor + np.arange(n)) / self._fs
+        emg = 0.3 * np.sin(2 * np.pi * 80.0 * t)
+        acc = np.linspace(-0.5, 0.5, n)          # slow, low-frequency "movement"
+        self._cursor += n
+        return np.column_stack([emg, acc]).astype(np.float64)
+
+    def channel_kinds(self) -> list[str]:
+        return ["EMG", "ACC"]
+
+    def channel_units(self) -> list[str]:
+        return ["mV", "g"]
+
+    def channel_physical_ranges(self) -> list[tuple[float, float]]:
+        return [(-1.65, 1.65), (-1.0, 1.0)]
+
+
 class _RestThenBurstDevice(AcquisitionDevice):
     """Low-amplitude rest, then a sustained high-amplitude 80 Hz burst.
 
@@ -346,6 +374,40 @@ class TestAcquisitionWorker:
         labels = [h["label"] for h in headers]
         assert labels == ["Agonista", "Antagonista"]
         assert len(signals) == 2
+
+    def test_accelerometer_channel_written_with_own_unit_and_unfiltered(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """An ACC channel is stored raw with unit 'g'; EMG keeps its own chain."""
+        from pyedflib import highlevel
+
+        device = _FakeEmgAccDevice(fs=1000)
+        worker = AcquisitionWorker(
+            device=device, save_dir=str(tmp_path), n_per_read=100,
+            sensor_labels=["EMG", "ACC"],
+        )
+        captured: list[dict] = []
+        worker.data_ready.connect(captured.append)
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        QTimer.singleShot(400, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        assert edf_paths and edf_paths[0]
+        _signals, headers, _ = highlevel.read_edf(edf_paths[0])
+        labels = [h["label"] for h in headers]
+        dims = [h["dimension"] for h in headers]
+        assert labels == ["EMG", "ACC"]
+        assert dims == ["mV", "g"]                 # ACC keeps its own unit
+        # The ACC block is emitted unfiltered: envelope == raw for that channel.
+        acc_blocks = [b for b in captured if len(b["raw_mv"]) == 2]
+        assert acc_blocks, "no two-channel blocks captured"
+        b = acc_blocks[0]
+        np.testing.assert_allclose(b["envelope"][1], b["raw_mv"][1])
+        # ...whereas the EMG channel is filtered, so its envelope differs from raw.
+        assert not np.allclose(b["envelope"][0], b["raw_mv"][0])
 
     def test_auto_detection_writes_an_automatic_marker(
         self, qapp: QCoreApplication, tmp_path: Path

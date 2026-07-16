@@ -25,7 +25,12 @@ from PySide6.QtCore import QMutex, QThread, Signal, Slot
 
 from emgteach.dsp import OnsetDetector, RealtimeFilterState
 from emgteach.i18n import tr
-from emgteach.io import BufferedEdfWriter, RecordingMetadata, build_timestamped_path
+from emgteach.io import (
+    BufferedEdfWriter,
+    ChannelInfo,
+    RecordingMetadata,
+    build_timestamped_path,
+)
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 
 if TYPE_CHECKING:
@@ -259,6 +264,10 @@ class AcquisitionWorker(QThread):
         if labels is None:
             self.finished_ok.emit("")
             return
+        # Per-channel signal kind: "EMG" channels get the notch+band-pass+
+        # envelope chain and onset detection; non-EMG channels (e.g. the
+        # BITalino accelerometer, kind "ACC") are stored and displayed raw.
+        kinds = list(device.channel_kinds())
         edf_path = ""
         writer: BufferedEdfWriter | None = None
 
@@ -270,8 +279,9 @@ class AcquisitionWorker(QThread):
             self._opening = False
             self.log.emit(tr("Connection established. Starting acquisition."))
 
-            # One independent filter chain per channel.
-            filter_states = [
+            # One independent filter chain per EMG channel; ACC channels get
+            # no filter (None) — they are stored/displayed raw.
+            filter_states: list[RealtimeFilterState | None] = [
                 RealtimeFilterState(
                     fs=fs,
                     f_low=self._f_low,
@@ -279,16 +289,19 @@ class AcquisitionWorker(QThread):
                     f_notch=self._f_notch,
                     f_env=self._f_env,
                 )
-                for _ in range(n_ch)
+                if kinds[c] == "EMG"
+                else None
+                for c in range(n_ch)
             ]
 
-            # Optional per-channel automatic onset detection on the envelope.
-            onset_detectors: list[OnsetDetector] | None = None
+            # Optional automatic onset detection on the envelope (EMG only).
+            onset_detectors: list[OnsetDetector | None] | None = None
             if self._auto_detect:
                 onset_kwargs = dict(self._profile.onset_kwargs())
                 onset_kwargs["k"] = self._onset_k
                 onset_detectors = [
-                    OnsetDetector(fs, **onset_kwargs) for _ in range(n_ch)
+                    OnsetDetector(fs, **onset_kwargs) if kinds[c] == "EMG" else None
+                    for c in range(n_ch)
                 ]
                 self.log.emit(
                     tr("Automatic onset detection enabled (k={k:.1f}).").format(
@@ -301,12 +314,28 @@ class AcquisitionWorker(QThread):
                 Path(edf_path).parent.mkdir(parents=True, exist_ok=True)
             else:
                 edf_path = build_timestamped_path(self._save_dir)
-            channels = self._profile.build_channels(
-                labels,
-                fs,
-                physical_min=device.physical_min,
-                physical_max=device.physical_max,
-            )
+            if "ACC" in kinds:
+                # Mixed modalities: build one EDF channel per column with its own
+                # unit and physical range (mV for EMG, g for the accelerometer).
+                units = list(device.channel_units())
+                ranges = list(device.channel_physical_ranges())
+                channels = [
+                    ChannelInfo(
+                        labels[c],
+                        dimension=units[c],
+                        sample_frequency=fs,
+                        physical_min=ranges[c][0],
+                        physical_max=ranges[c][1],
+                    )
+                    for c in range(n_ch)
+                ]
+            else:
+                channels = self._profile.build_channels(
+                    labels,
+                    fs,
+                    physical_min=device.physical_min,
+                    physical_max=device.physical_max,
+                )
             writer = BufferedEdfWriter(
                 edf_path, channels=channels, metadata=self._metadata
             )
@@ -345,17 +374,26 @@ class AcquisitionWorker(QThread):
                 env_list = []
                 for c in range(n_ch):
                     raw_c = block[:, c]
-                    filt_c, env_c = filter_states[c].process_block(raw_c)
+                    fstate = filter_states[c]
+                    if fstate is not None:
+                        filt_c, env_c = fstate.process_block(raw_c)
+                    else:
+                        # ACC (non-EMG): no filtering; stored/shown as-is.
+                        filt_c = raw_c
+                        env_c = raw_c
                     raw_list.append(raw_c.copy())
                     filt_list.append(filt_c.copy())
                     env_list.append(env_c.copy())
-                    if onset_detectors is not None:
+                    detector = (
+                        onset_detectors[c] if onset_detectors is not None else None
+                    )
+                    if detector is not None:
                         auto_label = (
                             tr("Onset (auto)")
                             if n_ch == 1
                             else tr("Onset (auto) — {label}").format(label=labels[c])
                         )
-                        for t_onset in onset_detectors[c].process(env_c):
+                        for t_onset in detector.process(env_c):
                             self._record_marker(t_onset, auto_label)
 
                 # One raw block per sensor, in the same order as the EDF

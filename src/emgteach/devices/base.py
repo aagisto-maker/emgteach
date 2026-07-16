@@ -69,6 +69,26 @@ class AcquisitionDevice(ABC):
         """Upper signal bound in physical units (mV) for the EDF header."""
         return 3.3
 
+    # -- optional per-channel metadata ---------------------------------------
+    # Backends that mix signal modalities (e.g. a BITalino recording EMG *and*
+    # its accelerometer) override these so each channel gets the right EDF unit
+    # and physical range and the worker can skip EMG filtering on non-EMG
+    # channels. The defaults describe a homogeneous EMG device, so single-
+    # modality backends and existing code are unaffected.
+
+    def channel_kinds(self) -> list[str]:
+        """Signal kind per channel: ``"EMG"`` (filtered, envelope) or a raw
+        modality such as ``"ACC"`` (stored as-is, not EMG-filtered)."""
+        return ["EMG"] * self.n_channels
+
+    def channel_units(self) -> list[str]:
+        """Physical unit per channel for the EDF header (e.g. ``"mV"``, ``"g"``)."""
+        return ["mV"] * self.n_channels
+
+    def channel_physical_ranges(self) -> list[tuple[float, float]]:
+        """``(min, max)`` physical range per channel for the EDF header."""
+        return [(self.physical_min, self.physical_max)] * self.n_channels
+
     @abstractmethod
     def open(self) -> None:
         """Establish the connection. Raises on failure."""

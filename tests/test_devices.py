@@ -309,6 +309,28 @@ def _encode_frame_2ch(a1: int, a2: int, seq: int = 0, digital: int = 0) -> bytes
     return bytes(frame)
 
 
+def _encode_frame_5ch(
+    a1: int, a2: int, a3: int, a4: int, a5: int, seq: int = 0
+) -> bytes:
+    """Encode a five-channel (8-byte) BITalino frame: A1-A4 10-bit, A5 6-bit.
+
+    This is the layout used when the accelerometer (A5) is recorded alongside
+    the EMG: the contiguous block A1..A5 is enabled so A5 lands in the 6-bit
+    position. Inverts the decoder's per-position bit extraction.
+    """
+    frame = [0] * 8
+    frame[0] = (a5 & 0x03) << 6
+    frame[1] = ((a4 & 0x0F) << 4) | ((a5 >> 2) & 0x0F)
+    frame[2] = ((a3 & 0x03) << 6) | ((a4 >> 4) & 0x3F)
+    frame[3] = (a3 >> 2) & 0xFF
+    frame[4] = a2 & 0xFF
+    frame[5] = ((a1 & 0x3F) << 2) | ((a2 >> 8) & 0x03)
+    frame[6] = (a1 >> 6) & 0x0F
+    frame[7] = (seq & 0x0F) << 4
+    frame[7] |= _bitalino_crc4(frame)
+    return bytes(frame)
+
+
 _VERSION_REPLY = b"BITalino_v5.2\n"
 
 
@@ -415,6 +437,34 @@ class TestBitalinoDeviceBasics:
         assert BitalinoDevice("COM5").n_channels == 1
         assert BitalinoDevice("COM5", channels=[0, 1]).n_channels == 2
 
+    def test_accelerometer_channel_layout_and_metadata(self) -> None:
+        # 1 EMG + ACC: exposes A1 (EMG/mV) + A5 (ACC/g); decodes A1..A5.
+        d = BitalinoDevice("COM5", channels=[0], acc=True)
+        assert d.n_channels == 2
+        assert d.channel_kinds() == ["EMG", "ACC"]
+        assert d.channel_units() == ["mV", "g"]
+        ranges = d.channel_physical_ranges()
+        assert ranges[0] == (-1.65, 1.65)
+        assert ranges[1] == (-1.0, 1.0)
+        assert d._decode_channels == [0, 1, 2, 3, 4]   # contiguous A1..A5
+        # 2 EMG + ACC exposes three channels; ACC last.
+        d2 = BitalinoDevice("COM5", channels=[0, 1], acc=True)
+        assert d2.n_channels == 3
+        assert d2.channel_kinds() == ["EMG", "EMG", "ACC"]
+
+    def test_no_accelerometer_is_unchanged(self) -> None:
+        d = BitalinoDevice("COM5", channels=[0, 1])
+        assert d.channel_kinds() == ["EMG", "EMG"]
+        assert d.channel_units() == ["mV", "mV"]
+        assert d._decode_channels == [0, 1]
+
+    def test_raw_to_acc_maps_full_scale_to_pm1(self) -> None:
+        np.testing.assert_allclose(BitalinoDevice.raw_to_acc(0), -1.0)
+        np.testing.assert_allclose(BitalinoDevice.raw_to_acc(63), 1.0)
+        np.testing.assert_allclose(
+            BitalinoDevice.raw_to_acc(np.array([0, 63])), [-1.0, 1.0]
+        )
+
     def test_open_rejects_bad_sampling_rate(self, fast_commands: None) -> None:
         device = BitalinoDevice("COM5", fs=42)
         with pytest.raises(RuntimeError, match="sampling rate"):
@@ -513,6 +563,23 @@ class TestBitalinoDeviceBasics:
         assert out.shape == (1, 2)
         np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)
         assert abs(out[0, 1]) < 0.02
+        device.close()
+
+    def test_read_two_channels_plus_accelerometer(self, fast_commands: None) -> None:
+        """acc=True exposes EMG + a normalised ACC column, decoded from A1..A5."""
+        device = BitalinoDevice("COM5", fs=1000, channels=[0, 1], acc=True)
+        # A1=1023 (+1.65 mV), A2=512 (~0 mV), A3/A4 ignored, A5=63 (+1.0 g).
+        frame = _encode_frame_5ch(a1=1023, a2=512, a3=0, a4=0, a5=63)
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + frame)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(1)
+        # Three exposed columns: EMG A1, EMG A2, ACC A5 (A3/A4 dropped).
+        assert out.shape == (1, 3)
+        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)   # A1 in mV
+        assert abs(out[0, 1]) < 0.02                             # A2 ~0 mV
+        np.testing.assert_allclose(out[0, 2], 1.0, atol=0.01)    # A5 = +1 g
         device.close()
 
     def test_read_timeout_raises(self, fast_commands: None) -> None:
