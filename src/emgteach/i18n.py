@@ -146,6 +146,9 @@ _ES = {
         "Espectro de frecuencia del acelerómetro con el pico de temblor "
         "(fisiológico ~8-12 Hz) — requiere un canal de acelerómetro.",
     "EMG envelope (electrical)": "Envolvente EMG (eléctrica)",
+    "EMG — {ch} (electrical)": "EMG — {ch} (eléctrico)",
+    "MMG is paired with «{ch}» — the muscle carrying the accelerometer.":
+        "El MMG se empareja con «{ch}» — el músculo que lleva el acelerómetro.",
     "MMG envelope (mechanical)": "Envolvente MMG (mecánica)",
     "EMG (mV)": "EMG (mV)",
     "MMG (g)": "MMG (g)",

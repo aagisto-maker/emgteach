@@ -289,8 +289,9 @@ def _draw_analysis_panel(
         ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 9:
+        emg_lbl = r.get("channel_name") or "EMG"
         ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.5,
-                label=tr("EMG envelope (electrical)"))
+                label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
         mmg = r.get("acc_mmg_envelope")
         if mmg is not None:
             ax2 = ax.twinx()

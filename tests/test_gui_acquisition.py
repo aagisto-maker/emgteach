@@ -41,6 +41,33 @@ def _drive_calibration(tab, env_mv: float = 0.5) -> None:
         tab._mvc_tick()
 
 
+def test_mmg_placement_locks_to_single_channel(qapp) -> None:
+    """ACC on the muscle (MMG) forces a single EMG channel; limb allows two."""
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    settings = QSettings("emgteach-test", "acc-lock")
+    settings.clear()
+    tab = AcquisitionTab(LoggerWidget(), settings)
+    tab._set_channel_controls_enabled(True)     # idle, BITalino by default
+    tab._combo_n_channels.setCurrentIndex(1)    # 2 channels
+    assert tab._combo_n_channels.isEnabled()
+
+    tab._chk_acc.setChecked(True)
+    tab._combo_acc_place.setCurrentIndex(0)     # "on the muscle (MMG)"
+    assert tab._combo_n_channels.currentIndex() == 0      # forced to 1 channel
+    assert not tab._combo_n_channels.isEnabled()          # and locked
+
+    tab._combo_acc_place.setCurrentIndex(1)     # "on the moving segment"
+    assert tab._combo_n_channels.isEnabled()              # two channels allowed
+
+    tab._chk_acc.setChecked(False)              # ACC off restores the control
+    assert tab._combo_n_channels.isEnabled()
+    settings.clear()
+
+
 def test_live_load_calibration_and_zones(qapp) -> None:
     from PySide6.QtCore import QSettings
 

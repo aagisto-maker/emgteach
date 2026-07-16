@@ -1217,8 +1217,9 @@ class AnalysisTab(QWidget):
         if _MMG_PID in ax_map:
             ax = ax_map[_MMG_PID]
             mmg = r.get("acc_mmg_envelope")
+            emg_lbl = r.get("channel_name") or "EMG"
             ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8,
-                    label=tr("EMG envelope (electrical)"))
+                    label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
             if mmg is not None:
                 ax2 = ax.twinx()
                 ax2.plot(times, mmg, color="#2ca02c", lw=1.6,
@@ -1227,6 +1228,12 @@ class AnalysisTab(QWidget):
                 ax2.tick_params(axis="y", labelsize=7, colors="#2ca02c")
                 ax2.set_xlim(inicio_s, fin_s)
                 ax2.legend(loc="upper right", fontsize=7)
+                # Remind that the MMG belongs to the muscle carrying the ACC.
+                ax.text(0.5, 0.98,
+                        tr("MMG is paired with «{ch}» — the muscle carrying the "
+                           "accelerometer.").format(ch=emg_lbl),
+                        transform=ax.transAxes, ha="center", va="top",
+                        fontsize=7, color="#888888")
             else:
                 ax.text(0.5, 0.5,
                         tr("No accelerometer channel in this recording."),

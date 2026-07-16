@@ -185,6 +185,10 @@ class AcquisitionTab(QWidget):
         self._acc_enabled = self._settings.value(
             "adquisicion/acc", False, type=bool
         )
+        # Whether the channel-config controls are currently editable (idle, not
+        # recording). Used together with the ACC placement to gate the channel
+        # count (MMG placement forces a single muscle).
+        self._channel_controls_enabled = True
         self._buf_acc = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
         self._new_data = False  # flag: there is new data to draw
 
@@ -450,12 +454,7 @@ class AcquisitionTab(QWidget):
         self._combo_acc_place.setToolTip(
             tr("Where the accelerometer is stuck — sets which ACC analyses apply.")
         )
-        self._combo_acc_place.currentIndexChanged.connect(
-            lambda _i: self._settings.setValue(
-                "adquisicion/acc_placement",
-                self._combo_acc_place.currentData(),
-            )
-        )
+        self._combo_acc_place.currentIndexChanged.connect(self._on_acc_place_changed)
         ch_row.addWidget(self._combo_acc_place)
         cfg_outer.addLayout(ch_row)
 
@@ -900,6 +899,9 @@ class AcquisitionTab(QWidget):
         # Configure the plot mode (overlaid or stacked) according to the
         # persisted number of channels.
         self._apply_stacking_mode()
+        # Apply the ACC-placement channel-count constraint to the initial state
+        # (MMG placement forces a single muscle).
+        self._apply_acc_placement_constraints()
 
     # ------------------------------------------------------------------
     # Device-control slots
@@ -1063,7 +1065,7 @@ class AcquisitionTab(QWidget):
         self._refresh_lane_label_texts()
 
     def _set_channel_controls_enabled(self, enabled: bool) -> None:
-        self._combo_n_channels.setEnabled(enabled)
+        self._channel_controls_enabled = enabled
         for edit in self._edit_labels:
             edit.setEnabled(enabled)
         # ACC is only available on the BITalino backend and is fixed for the
@@ -1073,6 +1075,8 @@ class AcquisitionTab(QWidget):
         self._combo_acc_place.setEnabled(
             enabled and is_bitalino and self._acc_enabled
         )
+        # The channel-count combo also depends on the ACC placement (MMG = 1).
+        self._apply_acc_placement_constraints()
 
     @Slot(bool)
     def _on_acc_toggled(self, checked: bool) -> None:
@@ -1081,6 +1085,30 @@ class AcquisitionTab(QWidget):
         self._settings.setValue("adquisicion/acc", self._acc_enabled)
         self._plot_acc.setVisible(self._acc_enabled)
         self._combo_acc_place.setEnabled(self._acc_enabled)
+        self._apply_acc_placement_constraints()
+
+    @Slot(int)
+    def _on_acc_place_changed(self, _index: int) -> None:
+        """Persist the ACC placement and apply its channel-count constraint."""
+        self._settings.setValue(
+            "adquisicion/acc_placement", self._combo_acc_place.currentData()
+        )
+        self._apply_acc_placement_constraints()
+
+    def _apply_acc_placement_constraints(self) -> None:
+        """Force a single EMG channel when the accelerometer is on a muscle.
+
+        An MMG accelerometer measures one muscle's vibration, so it can only be
+        paired with one EMG channel; two channels would be ambiguous. The
+        channel-count selector is therefore locked to 1 while the ACC is on and
+        placed on the muscle, and restored otherwise.
+        """
+        mmg = self._acc_enabled and self._combo_acc_place.currentData() == "muscle"
+        if mmg and self._combo_n_channels.currentIndex() != 0:
+            self._combo_n_channels.setCurrentIndex(0)  # 1 channel
+        self._combo_n_channels.setEnabled(
+            self._channel_controls_enabled and not mmg
+        )
 
     def _reset_buffers(self) -> None:
         """Clear every per-channel ring buffer back to silence."""
