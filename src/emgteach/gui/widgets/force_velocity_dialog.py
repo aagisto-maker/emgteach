@@ -148,7 +148,7 @@ class ForceVelocityDialog(QDialog):
             rep = QTableWidgetItem(str(i + 1))
             rep.setFlags(rep.flags() & read_only)
             self._table.setItem(i, 0, rep)
-            load = QTableWidgetItem(str(i + 1))  # default hint, editable
+            load = QTableWidgetItem("")  # blank — the user must enter the load
             self._table.setItem(i, 1, load)
             emg = QTableWidgetItem(f"{self._emg_amp[i]:.3f}")
             emg.setFlags(emg.flags() & read_only)
@@ -174,10 +174,15 @@ class ForceVelocityDialog(QDialog):
         loads = self._read_loads()
         valid = np.isfinite(loads) & (self._peak_vel.size > 0)
         axes = self._fig.subplots(2, 2)
-        if self._emg_amp.size == 0 or not np.any(valid):
+        if self._emg_amp.size == 0 or np.count_nonzero(valid) < 2:
+            msg = (
+                tr("No repetitions detected in this recording.")
+                if self._emg_amp.size == 0
+                else tr("Enter the load (kg) of at least two repetitions, "
+                        "then press Redraw.")
+            )
             axes[0, 0].text(
-                0.5, 0.5,
-                tr("No repetitions detected (or no loads entered)."),
+                0.5, 0.5, msg,
                 transform=axes[0, 0].transAxes, ha="center", va="center",
                 fontsize=9, color="#888888",
             )

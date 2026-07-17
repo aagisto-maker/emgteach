@@ -181,8 +181,10 @@ _ES = {
         "Escribe la carga conocida levantada en cada repetición y pulsa "
         "Redibujar. La velocidad está en unidades arbitrarias (el acelerómetro "
         "no está calibrado); la fuerza es la carga que introduces.",
-    "No repetitions detected (or no loads entered).":
-        "No se detectaron repeticiones (o no se introdujeron cargas).",
+    "No repetitions detected in this recording.":
+        "No se detectaron repeticiones en este registro.",
+    "Enter the load (kg) of at least two repetitions, then press Redraw.":
+        "Introduce la carga (kg) de al menos dos repeticiones y pulsa Redibujar.",
     "Load-velocity": "Carga-velocidad",
     "Force-velocity (normalised)": "Fuerza-velocidad (normalizada)",
     "Force (fraction of max)": "Fuerza (fracción del máximo)",
