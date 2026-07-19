@@ -94,6 +94,16 @@ MVC_READY_S = 3.0   # "get ready" countdown before each contraction
 MVC_REST_S = 2.0    # relax pause between reps / muscles
 MVC_PEAK_WINDOW_S = 0.5   # strongest-sustained window used for the MVC reference
 
+# Guided force-velocity: the opening MVC maximum is a *sustained* effort (a few
+# seconds to reach the true maximum), whereas each loaded rep is a *quick lift*
+# — the point is the shortening velocity, which a long isometric hold does not
+# show (and the accelerometer barely registers). The per-load lift duration is
+# taken from the plan dialog; the MVC hold is fixed here.
+FV_MVC_HOLD_S = 3.0
+# Longer recovery pause between the (maximal) MVC and the first loaded lift, so
+# the subject recovers from the maximum and sets up the first load in peace.
+FV_MVC_TO_LOADS_REST_S = 5.0
+
 # Headroom applied to the live plots when they auto-scale after calibration:
 # the envelope top is this multiple of the MVC reference (so >100 %MVC phasic
 # bursts stay visible), the raw plot spans ±(peak × factor).
@@ -190,6 +200,10 @@ class AcquisitionTab(QWidget):
         # count (MMG placement forces a single muscle).
         self._channel_controls_enabled = True
         self._buf_acc = deque([0.0] * MAX_POINTS, maxlen=MAX_POINTS)
+        # The live ACC plot has a stable ±1 g range (the accelerometer signal
+        # uses the full normalised range); the ▲▼ buttons magnify around the
+        # trace's current level. >1 zooms in.
+        self._acc_zoom = 1.0
         self._new_data = False  # flag: there is new data to draw
 
         # Events for drawing live lines: (time_s, label). The total number of
@@ -231,11 +245,37 @@ class AcquisitionTab(QWidget):
         self._mvc_cur = 0.0           # current (recent) effort of the contraction
         self._mvc_cur_buf: list[float] = []                  # current rep envelope
         self._mvc_capture: list[list] = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_timer = QTimer(self)
         self._mvc_timer.setInterval(MVC_TICK_MS)
         self._mvc_timer.timeout.connect(self._mvc_tick)
         # Floating guide drawn over the plots during the wizard.
         self._mvc_overlay = MvcOverlay(self)
+
+        # Guided force-velocity acquisition wizard: steps through a list of
+        # known loads, one short recording window each, auto-marking every
+        # window with its load so the F-V study reads the loads directly. Shares
+        # the floating overlay with the MVC wizard (they never run together).
+        # Phases: an MVC maximum first (no load) — "mvc_ready"/"mvc_contract"/
+        # "mvc_rest" — then, per load and per rep, a discrete contraction:
+        # "ready" (prepare countdown) → "contract" (contract with this load) →
+        # "rest", ending in "done".
+        self._fv_active = False
+        self._fv_phase = ""
+        self._fv_loads: list[float] = []
+        self._fv_idx = 0              # index into _fv_loads
+        self._fv_rep = 0              # current repetition within the load
+        self._fv_reps = 1             # contractions to perform per load
+        self._fv_prep_s = 5.0         # "prepare" countdown before each contraction
+        self._fv_window_s = 6.0       # duration of each contraction window
+        self._fv_elapsed = 0.0        # seconds spent in the current phase
+        self._fv_mvc_buf: list[float] = []   # envelope during the MVC maximum
+        self._fv_mvc_peak = 0.0
+        self._fv_mvc_cur = 0.0
+        self._fv_timer = QTimer(self)
+        self._fv_timer.setInterval(MVC_TICK_MS)
+        self._fv_timer.timeout.connect(self._fv_tick)
+
         self._load_timer = QTimer(self)
         self._load_timer.setInterval(400)
         self._load_timer.timeout.connect(self._update_load_readout)
@@ -456,6 +496,36 @@ class AcquisitionTab(QWidget):
         )
         self._combo_acc_place.currentIndexChanged.connect(self._on_acc_place_changed)
         ch_row.addWidget(self._combo_acc_place)
+        # Which analogue input the accelerometer is wired to. The BITalino packs
+        # enabled channels consecutively, so this must be the physical input;
+        # it defaults to A4 but is configurable (see the channel diagnostic).
+        self._combo_acc_channel = QComboBox()
+        for idx in range(6):
+            self._combo_acc_channel.addItem(f"A{idx + 1}", idx)
+        saved_acc_ch = self._settings.value("adquisicion/acc_channel", 3, type=int)
+        self._combo_acc_channel.setCurrentIndex(
+            saved_acc_ch if 0 <= saved_acc_ch < 6 else 3
+        )
+        self._combo_acc_channel.setEnabled(bool(self._acc_enabled))
+        self._combo_acc_channel.setToolTip(
+            tr("Analogue input the accelerometer is connected to (default A4). "
+               "Use \"Find ACC channel…\" if unsure.")
+        )
+        self._combo_acc_channel.currentIndexChanged.connect(
+            self._on_acc_channel_changed
+        )
+        ch_row.addWidget(QLabel(tr("ACC ch:")))
+        ch_row.addWidget(self._combo_acc_channel)
+        # Diagnostic: find which analogue input the accelerometer really is on.
+        self._btn_acc_diag = QPushButton(tr("Find ACC channel…"))
+        self._btn_acc_diag.setEnabled(False)
+        self._btn_acc_diag.setToolTip(
+            tr("Read all six analogue inputs live to see which one responds when "
+               "you tilt the accelerometer. Connect the BITalino first, and do "
+               "not run it while recording.")
+        )
+        self._btn_acc_diag.clicked.connect(self._on_acc_diagnose)
+        ch_row.addWidget(self._btn_acc_diag)
         cfg_outer.addLayout(ch_row)
 
         # Row 4: session identification written to the EDF+ header.
@@ -776,7 +846,11 @@ class AcquisitionTab(QWidget):
             self._curves_raw.append(
                 self._plot_raw.plot(pen=pg.mkPen(color=_CHANNEL_COLORS[c], width=1))
             )
-        plots_col_vbox.addWidget(self._plot_raw)
+        # Equal stretch + a small minimum so the three plots share the height
+        # (the ACC plot is not squeezed to a sliver) and stay aligned with their
+        # ▲▼ sidebar slots, while still shrinking to fit the screen.
+        self._plot_raw.setMinimumHeight(70)
+        plots_col_vbox.addWidget(self._plot_raw, stretch=1)
 
         # Envelope
         self._plot_env = pg.PlotWidget(
@@ -789,22 +863,24 @@ class AcquisitionTab(QWidget):
             self._curves_env.append(
                 self._plot_env.plot(pen=pg.mkPen(color=_CHANNEL_COLORS[c], width=2))
             )
-        plots_col_vbox.addWidget(self._plot_env)
+        self._plot_env.setMinimumHeight(70)
+        plots_col_vbox.addWidget(self._plot_env, stretch=1)
 
         # Accelerometer (A4) — an auto-scaled extra plot, shown only when the
         # ACC checkbox is on. It is deliberately kept out of the ▲▼ scale
         # machinery and the EMG channel logic (single, self-scaling channel).
         self._plot_acc = pg.PlotWidget(
-            title=tr("Accelerometer (A4, normalised g)")
+            title=tr("Accelerometer (normalised g)")
         )
         self._plot_acc.setLabel("left", "g")
         self._plot_acc.showGrid(x=True, y=True, alpha=0.3)
-        self._plot_acc.setYRange(-1.0, 1.0)
+        self._plot_acc.setYRange(-1.0, 1.0, padding=0)
         self._curve_acc = self._plot_acc.plot(
             pen=pg.mkPen(color="#2ca02c", width=1)
         )
         self._plot_acc.setVisible(bool(self._acc_enabled))
-        plots_col_vbox.addWidget(self._plot_acc)
+        self._plot_acc.setMinimumHeight(70)
+        plots_col_vbox.addWidget(self._plot_acc, stretch=1)
 
         # Reusable pool of vertical lines for the event markers, one collection
         # per plot (repositioned on each refresh according to the sliding
@@ -848,45 +924,61 @@ class AcquisitionTab(QWidget):
             self._baselines[idx] = base_lines
             self._lane_labels[idx] = lane_labels
 
-        # Build the ▲▼ buttons in the sidebar (one per plot)
+        # Build the ▲▼ buttons in the sidebar (one slot per plot). Each slot has
+        # stretch=1 so it spans the height of its plot; the ACC slot is shown or
+        # hidden together with the ACC plot so the buttons stay aligned with
+        # their plot whether there are two plots (raw+env) or three (+ACC).
+        from PySide6.QtCore import Qt as _Qt
+
         self._plots_widgets = [self._plot_raw, self._plot_env]
-        labels = [tr("R"), tr("E")]   # button per plot: raw / envelope
-        for i, (pw, lbl_txt) in enumerate(zip(self._plots_widgets, labels)):
+
+        def _make_zoom_slot(label_txt, on_up, on_down, up_tip, down_tip):
             slot = QWidget()
             slot_vbox = QVBoxLayout(slot)
             slot_vbox.setContentsMargins(0, 0, 0, 0)
             slot_vbox.setSpacing(1)
-
             btn_up = QToolButton()
             btn_up.setText("▲")
             btn_up.setFixedSize(32, 18)
             btn_up.setStyleSheet(_BTN_ST)
-            btn_up.setToolTip(tr("Zoom in (vertical) — {label}").format(label=lbl_txt))
-            btn_up.clicked.connect(
-                lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=True)
-            )
-
-            lbl = QLabel(lbl_txt)
+            btn_up.setToolTip(up_tip)
+            btn_up.clicked.connect(on_up)
+            lbl = QLabel(label_txt)
             lbl.setStyleSheet("font-size: 7px; color: #666;")
-            from PySide6.QtCore import Qt as _Qt
             lbl.setAlignment(_Qt.AlignmentFlag.AlignCenter)
-
             btn_dn = QToolButton()
             btn_dn.setText("▼")
             btn_dn.setFixedSize(32, 18)
             btn_dn.setStyleSheet(_BTN_ST)
-            btn_dn.setToolTip(tr("Zoom out (vertical) — {label}").format(label=lbl_txt))
-            btn_dn.clicked.connect(
-                lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=False)
+            btn_dn.setToolTip(down_tip)
+            btn_dn.clicked.connect(on_down)
+            slot_vbox.addStretch()
+            slot_vbox.addWidget(btn_up, alignment=_Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addWidget(lbl, alignment=_Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addWidget(btn_dn, alignment=_Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addStretch()
+            sidebar_vbox.addWidget(slot, stretch=1)
+            return slot
+
+        labels = [tr("R"), tr("E")]   # button per plot: raw / envelope
+        for i, lbl_txt in enumerate(labels):
+            _make_zoom_slot(
+                lbl_txt,
+                lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=True),
+                lambda checked=False, idx=i: self._y_zoom(idx, zoom_in=False),
+                tr("Zoom in (vertical) — {label}").format(label=lbl_txt),
+                tr("Zoom out (vertical) — {label}").format(label=lbl_txt),
             )
 
-            slot_vbox.addStretch()
-            slot_vbox.addWidget(btn_up,  alignment=_Qt.AlignmentFlag.AlignHCenter)
-            slot_vbox.addWidget(lbl,     alignment=_Qt.AlignmentFlag.AlignHCenter)
-            slot_vbox.addWidget(btn_dn,  alignment=_Qt.AlignmentFlag.AlignHCenter)
-            slot_vbox.addStretch()
-
-            sidebar_vbox.addWidget(slot, stretch=1)
+        # ACC slot: its ▲▼ magnify/shrink the auto-ranged accelerometer trace.
+        self._acc_sidebar_slot = _make_zoom_slot(
+            tr("A"),
+            lambda checked=False: self._acc_zoom_step(zoom_in=True),
+            lambda checked=False: self._acc_zoom_step(zoom_in=False),
+            tr("Zoom in (vertical) — accelerometer"),
+            tr("Zoom out (vertical) — accelerometer"),
+        )
+        self._acc_sidebar_slot.setVisible(bool(self._acc_enabled))
 
         root.addWidget(grp_plots, stretch=1)
 
@@ -1084,8 +1176,13 @@ class AcquisitionTab(QWidget):
         self._acc_enabled = bool(checked)
         self._settings.setValue("adquisicion/acc", self._acc_enabled)
         self._plot_acc.setVisible(self._acc_enabled)
+        # Keep the ACC ▲▼ sidebar slot in sync with its plot so the raw/envelope
+        # buttons stay aligned with their own plots.
+        self._acc_sidebar_slot.setVisible(self._acc_enabled)
         self._combo_acc_place.setEnabled(self._acc_enabled)
+        self._combo_acc_channel.setEnabled(self._acc_enabled)
         self._apply_acc_placement_constraints()
+        self._update_fv_button()
 
     @Slot(int)
     def _on_acc_place_changed(self, _index: int) -> None:
@@ -1094,6 +1191,82 @@ class AcquisitionTab(QWidget):
             "adquisicion/acc_placement", self._combo_acc_place.currentData()
         )
         self._apply_acc_placement_constraints()
+        self._update_fv_button()
+
+    @Slot(int)
+    def _on_acc_channel_changed(self, _index: int) -> None:
+        """Persist which analogue input carries the accelerometer."""
+        self._settings.setValue(
+            "adquisicion/acc_channel", self._combo_acc_channel.currentData()
+        )
+
+    @Slot()
+    def _on_acc_diagnose(self) -> None:
+        """Open the analogue-channel diagnostic to locate the ACC's real input.
+
+        Opens its own BITalino connection to all six analogue inputs, so it can
+        only run while connected and not recording.
+        """
+        if self._worker and self._worker.isRunning():
+            return
+        if self._combo_device_type.currentIndex() != 0:
+            return
+        from emgteach.gui.widgets.channel_diagnostic_dialog import (
+            ChannelDiagnosticDialog,
+        )
+
+        port = self._edit_mac.text().strip()
+
+        def _make_device():
+            return create_device(
+                BACKEND_BITALINO, port=port, fs=FS,
+                channels=[0, 1, 2, 3, 4, 5],
+            )
+
+        dlg = ChannelDiagnosticDialog(_make_device, self)
+        accepted = dlg.exec() == QDialog.DialogCode.Accepted
+        if accepted and dlg.found_channel is not None:
+            # Point the ACC at the analogue input the diagnostic identified.
+            idx = self._combo_acc_channel.findData(dlg.found_channel)
+            if idx >= 0:
+                self._combo_acc_channel.setCurrentIndex(idx)
+                self._log(
+                    tr("Accelerometer set to A{n}.").format(
+                        n=dlg.found_channel + 1
+                    )
+                )
+
+    def _refresh_fv_config_label(self) -> None:
+        """Show the last-used guided-F-V reps and loads next to the button."""
+        loads = self._settings.value("adquisicion/fv_loads", "", type=str)
+        reps = self._settings.value("adquisicion/fv_reps", 1, type=int)
+        if loads:
+            self._lbl_fv_config.setText(
+                tr("{reps}× · loads: {loads} kg").format(reps=reps, loads=loads)
+            )
+        else:
+            self._lbl_fv_config.setText(tr("(loads not set)"))
+
+    def _update_fv_button(self) -> None:
+        """Enable the guided force-velocity button when it can be launched.
+
+        Available once a BITalino is connected with the accelerometer on (the
+        wizard starts the recording itself if needed), whether idle or already
+        recording, and while no other wizard is running. Placement is not
+        gated — the plan dialog warns if the ACC is not on the moving segment.
+        """
+        connected = self._btn_conectar.isChecked()
+        bitalino = self._combo_device_type.currentIndex() == 0
+        busy = self._mvc_active or self._fv_active
+        self._btn_fv_guided.setEnabled(
+            connected and bool(self._acc_enabled) and bitalino and not busy
+        )
+        # The channel diagnostic opens its own connection, so only when idle
+        # (connected but not recording) and not during a wizard.
+        recording = bool(self._worker and self._worker.isRunning())
+        self._btn_acc_diag.setEnabled(
+            connected and bitalino and not recording and not busy
+        )
 
     def _apply_acc_placement_constraints(self) -> None:
         """Force a single EMG channel when the accelerometer is on a muscle.
@@ -1118,6 +1291,7 @@ class AcquisitionTab(QWidget):
                 buf.extend([0.0] * MAX_POINTS)
         self._buf_acc.clear()
         self._buf_acc.extend([0.0] * MAX_POINTS)
+        self._plot_acc.setYRange(-1.0, 1.0, padding=0)
 
     @Slot(bool)
     def _on_auto_toggled(self, checked: bool) -> None:
@@ -1177,6 +1351,7 @@ class AcquisitionTab(QWidget):
         self._set_channel_controls_enabled(False)
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._set_led("idle")
+        self._update_fv_button()
         self._log(tr("Device configured: {desc}. Press 'Start recording'.").format(desc=desc))
 
     def _desconectar(self) -> None:
@@ -1196,6 +1371,7 @@ class AcquisitionTab(QWidget):
         self._lbl_estado.setText(tr("Status: disconnected"))
         self._set_led("off")
         self._led_idle_timer.stop()
+        self._update_fv_button()
         self._log(tr("Device disconnected."))
 
     @Slot()
@@ -1254,12 +1430,26 @@ class AcquisitionTab(QWidget):
         worker_labels = [*labels, acc_label] if use_acc else list(labels)
 
         if self._combo_device_type.currentIndex() == 0:
+            # The EMG channels take the first analogue inputs, skipping the one
+            # the accelerometer is on (they must not collide). So with the ACC
+            # on A1, a single EMG channel lands on A2, etc.
+            acc_ch = self._combo_acc_channel.currentData()
+            if use_acc:
+                emg_channels = [c for c in range(6) if c != acc_ch][:n]
+            else:
+                emg_channels = list(range(n))
+            if use_acc:
+                emg_ports = ", ".join(f"A{c + 1}" for c in emg_channels)
+                self._log(tr(
+                    "Channels: EMG on {emg}, accelerometer on A{acc}."
+                ).format(emg=emg_ports, acc=acc_ch + 1))
             device = create_device(
                 BACKEND_BITALINO,
                 port=self._edit_mac.text().strip(),
                 fs=FS,
-                channels=list(range(n)),
+                channels=emg_channels,
                 acc=use_acc,
+                acc_channel=acc_ch,
             )
         else:
             device = create_device(
@@ -1311,6 +1501,7 @@ class AcquisitionTab(QWidget):
         # Live muscle-load monitor: ready to calibrate while recording.
         self._reset_load_monitor()
         self._btn_calibrar.setEnabled(True)
+        self._update_fv_button()
         self._load_timer.start()
         self._log(tr("Press M to quickly add a marker with the selected label."))
 
@@ -1437,6 +1628,30 @@ class AcquisitionTab(QWidget):
                     line.show()
                 elif line.isVisible():
                     line.hide()
+
+    def _apply_acc_range(self) -> None:
+        """Set the live ACC plot's Y range: the full ±1 g by default, or — when
+        magnified with ▲ — a smaller window centred on the trace's current
+        level (so zooming in keeps the gravity-offset signal in view).
+
+        The range is set only here (on zoom and on record start), never per
+        frame, so the plot is stable: at rest it shows a flat line, and it
+        deflects when the sensor moves — no auto-range flicker or drift.
+        """
+        if self._acc_zoom <= 1.0:
+            self._plot_acc.setYRange(-1.0, 1.0, padding=0)
+            return
+        n = min(self._n_visible, MAX_POINTS)
+        arr = np.array(list(self._buf_acc))[-n:]
+        centre = float(np.mean(arr)) if arr.size else 0.0
+        half = 1.0 / self._acc_zoom
+        self._plot_acc.setYRange(centre - half, centre + half, padding=0)
+
+    def _acc_zoom_step(self, zoom_in: bool) -> None:
+        """Magnify (▲) or widen (▼) the live ACC plot via its sidebar buttons."""
+        factor = 1.25 if zoom_in else 1 / 1.25
+        self._acc_zoom = min(50.0, max(1.0, self._acc_zoom * factor))
+        self._apply_acc_range()
 
     # ------------------------------------------------------------------
     # Muscle-load monitor (live MVC — Jonsson APDA)
@@ -1588,6 +1803,14 @@ class AcquisitionTab(QWidget):
         row.setContentsMargins(6, 3, 6, 3)
         row.setSpacing(8)
 
+        # Left column: the MVC-calibration controls and, stacked below them, the
+        # guided force-velocity controls — so the two guided flows read the same
+        # way (a button plus its selection to the right).
+        left_col = QVBoxLayout()
+        left_col.setSpacing(2)
+
+        mvc_row = QHBoxLayout()
+        mvc_row.setSpacing(6)
         self._btn_calibrar = QPushButton(tr("Calibrate MVC"))
         self._btn_calibrar.setEnabled(False)
         self._btn_calibrar.setToolTip(
@@ -1595,14 +1818,39 @@ class AcquisitionTab(QWidget):
                "when prompted; sets the reference for the live load monitor.")
         )
         self._btn_calibrar.clicked.connect(self._on_calibrar)
-        row.addWidget(self._btn_calibrar)
-
+        mvc_row.addWidget(self._btn_calibrar)
         self._chk_mvc_best3 = QCheckBox(tr("Best of 3"))
         self._chk_mvc_best3.setToolTip(
             tr("Repeat each muscle 3 times and keep the strongest contraction "
                "(more reliable). Otherwise a single contraction per muscle.")
         )
-        row.addWidget(self._chk_mvc_best3)
+        mvc_row.addWidget(self._chk_mvc_best3)
+        mvc_row.addStretch()
+        left_col.addLayout(mvc_row)
+
+        fv_row = QHBoxLayout()
+        fv_row.setSpacing(6)
+        self._btn_fv_guided = QPushButton(tr("Guided F-V…"))
+        self._btn_fv_guided.setEnabled(False)
+        self._btn_fv_guided.setToolTip(
+            tr("Guided force-velocity acquisition: an MVC maximum first (no "
+               "load), then a discrete 'contract with this load' prompt for "
+               "every repetition of every load. Starts the recording for you "
+               "and marks each contraction with its load so the force-velocity "
+               "study reads them directly. Enable the accelerometer and connect "
+               "the BITalino first.")
+        )
+        self._btn_fv_guided.clicked.connect(self._on_fv_guided)
+        fv_row.addWidget(self._btn_fv_guided)
+        # Shows the chosen reps and loads, mirroring "Best of 3" next to MVC.
+        self._lbl_fv_config = QLabel("")
+        self._lbl_fv_config.setStyleSheet("font-size: 9px; color: #555555;")
+        self._refresh_fv_config_label()
+        fv_row.addWidget(self._lbl_fv_config)
+        fv_row.addStretch()
+        left_col.addLayout(fv_row)
+
+        row.addLayout(left_col)
 
         # Adjustable warning / danger thresholds (% MVC). Disabled until an MVC
         # is calibrated; changing them updates the bars and the monitor live.
@@ -1680,7 +1928,9 @@ class AcquisitionTab(QWidget):
     @Slot()
     def _on_calibrar(self) -> None:
         """Launch the guided, per-muscle MVC-calibration wizard."""
-        if not (self._worker and self._worker.isRunning()) or self._mvc_active:
+        if not (self._worker and self._worker.isRunning()):
+            return
+        if self._mvc_active or self._fv_active:
             return
         self._mvc_active = True
         self._mvc_reps = 3 if self._chk_mvc_best3.isChecked() else 1
@@ -1692,6 +1942,7 @@ class AcquisitionTab(QWidget):
         self._set_thresholds_enabled(False)
         self._btn_calibrar.setEnabled(False)
         self._btn_grabar.setEnabled(False)
+        self._update_fv_button()          # disabled while the MVC wizard runs
         for bar in self._load_bars:
             bar.reset()
         self._reposition_mvc_overlay()
@@ -1741,6 +1992,10 @@ class AcquisitionTab(QWidget):
         if self._mvc_active:
             if self._mvc_phase == "contract":
                 self._mvc_feed(env)
+            return
+        if self._fv_active:
+            if self._fv_phase == "mvc_contract":
+                self._fv_mvc_feed(env)
             return
         if all(r is None for r in self._mvc_ref[:n_ch]):
             return
@@ -1881,6 +2136,7 @@ class AcquisitionTab(QWidget):
         self._mvc_phase = "done"
         ok = [c for c in range(self._n_channels) if self._mvc_ref[c]]
         self._btn_calibrar.setEnabled(True)
+        self._update_fv_button()          # re-enabled once the MVC wizard ends
         if self._worker and self._worker.isRunning():
             self._btn_grabar.setEnabled(True)
         self._set_thresholds_enabled(bool(ok))
@@ -1918,7 +2174,268 @@ class AcquisitionTab(QWidget):
         self._mvc_active = False
         self._mvc_phase = ""
         self._mvc_overlay.hide_overlay()
+        self._update_fv_button()
         self._bcast_calib(False)
+
+    # -- Guided force-velocity acquisition wizard ----------------------------
+
+    @Slot()
+    def _on_fv_guided(self) -> None:
+        """Launch the guided force-velocity acquisition wizard.
+
+        Asks for the list of known loads first (this is the load dialog the
+        operator sees), then — starting the recording itself if one is not
+        already running — guides an MVC maximum (no load) followed by a discrete
+        'contract with this load' prompt for every repetition of every load,
+        marking each contraction in the EDF so the Analysis-tab force-velocity
+        study reads the loads directly instead of the operator typing them.
+        """
+        if self._mvc_active or self._fv_active:
+            return
+        from emgteach.gui.widgets.force_velocity_plan_dialog import (
+            ForceVelocityPlanDialog,
+        )
+
+        placement = self._combo_acc_place.currentData()
+        dlg = ForceVelocityPlanDialog(self, placement=placement)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        loads = dlg.loads()
+        reps, prep_s, window_s = (
+            dlg.reps(), dlg.prep_seconds(), dlg.window_seconds()
+        )
+        if len(loads) < 2:
+            return
+        # Remember the plan and show it next to the button (like "Best of 3").
+        self._settings.setValue(
+            "adquisicion/fv_loads", ", ".join(f"{v:g}" for v in loads)
+        )
+        self._settings.setValue("adquisicion/fv_reps", int(reps))
+        self._refresh_fv_config_label()
+        # Start recording ourselves if the operator has not already — the
+        # wizard needs an active worker to mark the contractions in the EDF.
+        if not (self._worker and self._worker.isRunning()):
+            self._btn_grabar.setChecked(True)
+            self._iniciar_grabacion()
+            if not (self._worker and self._worker.isRunning()):
+                # The operator cancelled the save-path dialog (or start failed).
+                self._btn_grabar.setChecked(False)
+                return
+        self._fv_start(loads, reps, prep_s, window_s)
+
+    def _fv_start(
+        self,
+        loads: list[float],
+        reps: int,
+        prep_s: float,
+        window_s: float,
+    ) -> None:
+        """Start the guided F-V state machine for a validated load plan."""
+        if len(loads) < 2 or self._mvc_active or self._fv_active:
+            return
+        self._fv_loads = list(loads)
+        self._fv_reps = max(1, int(reps))
+        self._fv_prep_s = float(prep_s)
+        self._fv_window_s = float(window_s)
+        self._fv_active = True
+        self._fv_idx = 0
+        self._fv_rep = 0
+        self._fv_mvc_buf = []
+        self._fv_mvc_peak = 0.0
+        self._fv_mvc_cur = 0.0
+        self._btn_calibrar.setEnabled(False)
+        self._btn_grabar.setEnabled(False)
+        self._update_fv_button()          # disabled while the wizard runs
+        self._reposition_mvc_overlay()
+        self._fv_phase = "mvc_ready"       # an MVC maximum (no load) comes first
+        self._fv_elapsed = 0.0
+        self._fv_timer.start()
+
+    def _fv_current_load(self) -> float:
+        if 0 <= self._fv_idx < len(self._fv_loads):
+            return self._fv_loads[self._fv_idx]
+        return 0.0
+
+    def _fv_progress(self) -> str:
+        return tr(" (load {i}/{n}, rep {r}/{rn})").format(
+            i=self._fv_idx + 1, n=len(self._fv_loads),
+            r=self._fv_rep + 1, rn=self._fv_reps,
+        )
+
+    def _fv_info(self, text: str) -> None:
+        self._lbl_load_info.setText(text)
+
+    def _fv_mvc_feed(self, env: list) -> None:
+        """Accumulate the muscle's envelope during the MVC-maximum window."""
+        if env and env[0].size:
+            self._fv_mvc_buf.extend(env[0].tolist())
+            self._fv_mvc_cur = float(np.mean(env[0]))
+            self._fv_mvc_peak = max(self._fv_mvc_peak, float(np.max(env[0])))
+
+    @Slot()
+    def _fv_tick(self) -> None:
+        self._fv_elapsed += MVC_TICK_MS / 1000.0
+        kg = self._fv_current_load()
+        prep_s = self._fv_prep_s
+        mvc_hold_s = FV_MVC_HOLD_S       # sustained maximum
+        lift_s = self._fv_window_s       # quick loaded lift
+
+        if self._fv_phase == "mvc_ready":
+            count = max(1, int(np.ceil(MVC_READY_S - self._fv_elapsed)))
+            self._mvc_overlay.show_ready(
+                tr("Get ready — maximum contraction (no load)"),
+                count,
+                tr("Contract at maximum when it reaches 0"),
+            )
+            self._fv_info(
+                tr("Get ready — maximum (no load): {n}").format(n=count)
+            )
+            if self._fv_elapsed >= MVC_READY_S:
+                self._fv_phase = "mvc_contract"
+                self._fv_elapsed = 0.0
+                self._fv_mvc_buf = []
+                self._fv_mvc_peak = 0.0
+                self._fv_mvc_cur = 0.0
+        elif self._fv_phase == "mvc_contract":
+            secs_left = max(0.0, mvc_hold_s - self._fv_elapsed)
+            progress = min(1.0, self._fv_elapsed / mvc_hold_s)
+            effort = (
+                self._fv_mvc_cur / self._fv_mvc_peak
+                if self._fv_mvc_peak > 0 else 0.0
+            )
+            self._mvc_overlay.show_contract(
+                tr("Contract at maximum! (no load)"),
+                secs_left, progress, effort,
+            )
+            self._fv_info(tr("Contract at maximum! ({s:.0f} s)").format(
+                s=secs_left))
+            if self._fv_elapsed >= mvc_hold_s:
+                self._fv_compute_mvc()
+                self._fv_phase = "mvc_rest"
+                self._fv_elapsed = 0.0
+        elif self._fv_phase == "mvc_rest":
+            self._mvc_overlay.show_relax(
+                tr("Relax — now the loads, lightest first")
+            )
+            self._fv_info(tr("Relax — the loads come next…"))
+            if self._fv_elapsed >= FV_MVC_TO_LOADS_REST_S:
+                self._fv_phase = "ready"
+                self._fv_elapsed = 0.0
+        elif self._fv_phase == "ready":
+            count = max(1, int(np.ceil(prep_s - self._fv_elapsed)))
+            self._mvc_overlay.show_ready(
+                tr("Prepare {kg:g} kg{prog}").format(kg=kg, prog=self._fv_progress()),
+                count,
+                tr("Lift {kg:g} kg when it reaches 0").format(kg=kg),
+            )
+            self._fv_info(tr("Prepare {kg:g} kg{prog}: {n}").format(
+                kg=kg, prog=self._fv_progress(), n=count))
+            if self._fv_elapsed >= prep_s:
+                self._fv_begin_contract(kg)
+        elif self._fv_phase == "contract":
+            # A quick concentric lift — no hold. Show only the big "Lift!" cue
+            # (no hold timer or effort bar) and move straight to relax, so the
+            # accelerometer captures the shortening velocity rather than a flat
+            # isometric hold.
+            self._mvc_overlay.show_action(
+                tr("Lift {kg:g} kg!").format(kg=kg),
+                self._fv_progress().strip(),
+            )
+            self._fv_info(tr("Lift {kg:g} kg — then relax").format(kg=kg))
+            if self._fv_elapsed >= lift_s:
+                self._fv_finish_contract()
+        elif self._fv_phase == "rest":
+            more_reps = self._fv_rep < self._fv_reps
+            if more_reps:
+                sub = tr("Relax — another rep of {kg:g} kg").format(kg=kg)
+            else:
+                nxt = (
+                    self._fv_loads[self._fv_idx]
+                    if self._fv_idx < len(self._fv_loads) else kg
+                )
+                sub = tr("Relax — change to {kg:g} kg").format(kg=nxt)
+            self._mvc_overlay.show_relax(sub)
+            self._fv_info(tr("Relax…"))
+            if self._fv_elapsed >= MVC_REST_S:
+                self._fv_phase = "ready"
+                self._fv_elapsed = 0.0
+
+    def _fv_compute_mvc(self) -> None:
+        """Set the MVC reference from the guided maximum contraction."""
+        if not self._fv_mvc_buf:
+            return
+        window = max(1, round(MVC_PEAK_WINDOW_S * FS))
+        ref = mvc_from_reps(
+            [np.asarray(self._fv_mvc_buf, dtype=float)],
+            self._profile.mvc_percentile, window_samples=window,
+        )
+        if ref > 0:
+            self._mvc_ref[0] = ref
+            self._online[0].reset()
+            self._load_bars[0].set_value(0.0, active=True)
+            self._set_thresholds_enabled(True)
+            self._autoscale_after_calibration([0])
+            self._log(tr("F-V: MVC reference {ref:.2f} mV.").format(ref=ref))
+
+    def _fv_begin_contract(self, kg: float) -> None:
+        """Enter a contraction window and mark it in the EDF with its load."""
+        self._fv_phase = "contract"
+        self._fv_elapsed = 0.0
+        from emgteach.force_velocity import fv_load_marker
+
+        if self._worker and self._worker.isRunning():
+            self._worker.add_marker(fv_load_marker(kg))
+        self._log(tr("Force-velocity: contraction with {kg:g} kg.").format(kg=kg))
+
+    def _fv_finish_contract(self) -> None:
+        """Advance to the next rep, next load, or finish."""
+        self._fv_rep += 1
+        if self._fv_rep < self._fv_reps:
+            self._fv_phase = "rest"           # rest, then another rep, same load
+            self._fv_elapsed = 0.0
+            return
+        self._fv_rep = 0
+        self._fv_idx += 1
+        if self._fv_idx < len(self._fv_loads):
+            self._fv_phase = "rest"           # rest, then the next load
+            self._fv_elapsed = 0.0
+        else:
+            self._fv_finish_all()
+
+    def _fv_finish_all(self) -> None:
+        self._fv_timer.stop()
+        self._fv_active = False
+        self._fv_phase = "done"
+        if self._worker and self._worker.isRunning():
+            self._btn_grabar.setEnabled(True)
+            self._btn_calibrar.setEnabled(True)
+        self._update_fv_button()          # re-enabled once the wizard ends
+        n = len(self._fv_loads)
+        self._fv_info(
+            tr(
+                "Force-velocity: {n} loads recorded. Stop recording, then open "
+                "the Force-velocity study in the Analysis tab."
+            ).format(n=n)
+        )
+        self._mvc_overlay.show_done(
+            tr("Loads recorded"),
+            tr(
+                "{n} loads marked.\nStop recording, then open the "
+                "Force-velocity study."
+            ).format(n=n),
+        )
+        self._log(
+            tr("Force-velocity acquisition finished: {n} loads.").format(n=n)
+        )
+        QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
+
+    def _fv_cancel(self) -> None:
+        """Abort the guided F-V wizard (e.g. on stop/disconnect)."""
+        self._fv_timer.stop()
+        self._fv_active = False
+        self._fv_phase = ""
+        if not self._mvc_active:
+            self._mvc_overlay.hide_overlay()
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
@@ -1951,6 +2468,7 @@ class AcquisitionTab(QWidget):
 
     def _reset_load_monitor(self) -> None:
         self._mvc_cancel()
+        self._fv_cancel()
         self._mvc_ref = [None] * MAX_CHANNELS
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
         for c in range(MAX_CHANNELS):
@@ -1963,7 +2481,9 @@ class AcquisitionTab(QWidget):
     def _stop_load_monitor(self) -> None:
         self._load_timer.stop()
         self._mvc_cancel()
+        self._fv_cancel()
         self._btn_calibrar.setEnabled(False)
+        self._update_fv_button()
         self._set_thresholds_enabled(False)
         for bar in self._load_bars:
             bar.set_value(0.0, active=False)
@@ -2116,6 +2636,9 @@ class AcquisitionTab(QWidget):
         self._plot_env.setYRange(*self._y_ranges_init[1], padding=0)
         # Raw: the mode (stacked or overlaid) sets range and annotations.
         self._apply_stacking_mode()
+        # ACC: drop the manual zoom back to the full ±1 g.
+        self._acc_zoom = 1.0
+        self._plot_acc.setYRange(-1.0, 1.0, padding=0)
 
     def _autoscale_after_calibration(self, channels: list[int]) -> None:
         """Fit the live plots to this subject once the MVC is known.
