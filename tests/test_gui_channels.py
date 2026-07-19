@@ -105,9 +105,13 @@ def test_analysis_single_channel_disables_compare_and_overlay(
 
 
 def test_accelerometer_panels_gated_on_acc_channel(qapp, tmp_path: Path) -> None:
-    from emgteach.gui.tabs.analysis import _MMG_PID, _TREMOR_PID
+    from emgteach.gui.tabs.analysis import (
+        _MMG_PID,
+        _MOVEMENT_PID,
+        _TREMOR_PID,
+    )
 
-    # File with an ACC channel placed on the limb -> tremor panel default-on.
+    # File with an ACC channel placed on the limb -> movement panel default-on.
     with_acc = tmp_path / "with_acc.edf"
     _write_edf(with_acc, [
         ("EMG1", -1.65, 1.65, "mV"),
@@ -122,17 +126,24 @@ def test_accelerometer_panels_gated_on_acc_channel(qapp, tmp_path: Path) -> None
     assert tab._acc_channel_name == "ACC (limb)" and tab._acc_placement == "limb"
     pm = tab._panel_pids.index(_MMG_PID)
     pt = tab._panel_pids.index(_TREMOR_PID)
-    assert tab._chk_paneles[pm].isEnabled() and tab._chk_paneles[pt].isEnabled()
-    assert tab._chk_paneles[pt].isChecked()        # tremor default for "limb"
+    pv = tab._panel_pids.index(_MOVEMENT_PID)
+    assert (
+        tab._chk_paneles[pm].isEnabled()
+        and tab._chk_paneles[pt].isEnabled()
+        and tab._chk_paneles[pv].isEnabled()
+    )
+    assert tab._chk_paneles[pv].isChecked()        # movement default for "limb"
     assert not tab._chk_paneles[pm].isChecked()
+    assert not tab._chk_paneles[pt].isChecked()
 
-    # File without an ACC channel -> both ACC panels locked.
+    # File without an ACC channel -> all ACC panels locked.
     no_acc = tmp_path / "no_acc.edf"
     _write_edf(no_acc, [("EMG1", -1.65, 1.65, "mV")])
     tab._populate_channels(str(no_acc))
     assert tab._acc_channel_name is None
     assert not tab._chk_paneles[pm].isEnabled()
     assert not tab._chk_paneles[pt].isEnabled()
+    assert not tab._chk_paneles[pv].isEnabled()
 
 
 def test_force_velocity_dialog_detects_reps_and_draws(qapp, tmp_path: Path) -> None:
@@ -165,10 +176,103 @@ def test_force_velocity_dialog_detects_reps_and_draws(qapp, tmp_path: Path) -> N
 
     dlg = ForceVelocityDialog(str(edf), "EMG1", "ACC (limb)")
     assert dlg._table.rowCount() == 3            # three lifts detected
+    # No guided markers -> the load column (col 2) starts blank (manual entry).
+    assert all(dlg._table.item(i, 2).text() == "" for i in range(3))
+    # Every contraction starts ticked as valid (col 0 checkbox).
+    from PySide6.QtCore import Qt
+    assert all(
+        dlg._table.item(i, 0).checkState() == Qt.CheckState.Checked
+        for i in range(3)
+    )
     # EMG amplitude rises with the (heavier) later reps — recruitment.
     assert dlg._emg_amp[0] < dlg._emg_amp[2]
     dlg._redraw()                                # four curves, no crash
     assert len(dlg._fig.get_axes()) == 4
+
+
+def test_force_velocity_dialog_prefills_guided_loads(qapp, tmp_path: Path) -> None:
+    """A recording made by the guided wizard carries FV load annotations; the
+    dialog pre-fills the load column from them instead of leaving it blank."""
+    from pyedflib import highlevel
+
+    from emgteach.force_velocity import fv_load_marker
+    from emgteach.gui.widgets.force_velocity_dialog import ForceVelocityDialog
+
+    fs, n = 1000, 12000
+    t = np.arange(n) / fs
+    rng = np.random.default_rng(1)
+    emg = np.full(n, 0.01) + 0.003 * rng.standard_normal(n)
+    acc = 0.01 * rng.standard_normal(n)
+    plan = [(2.0, 4.0), (5.0, 6.0), (8.0, 8.0)]   # (start_s, load_kg)
+    for start, _kg in plan:
+        i0 = int(start * fs)
+        i1 = i0 + int(0.8 * fs)
+        emg[i0:i1] += 0.3 * np.abs(np.sin(2 * np.pi * 40 * t[i0:i1]))
+        acc[i0:i1] += 0.4 * np.sin(2 * np.pi * 4.0 * t[i0:i1])
+    edf = tmp_path / "fv_guided.edf"
+    headers = [
+        highlevel.make_signal_header(
+            "EMG1", sample_frequency=fs, physical_min=-1.65,
+            physical_max=1.65, dimension="mV",
+        ),
+        highlevel.make_signal_header(
+            "ACC (limb)", sample_frequency=fs, physical_min=-1.0,
+            physical_max=1.0, dimension="g",
+        ),
+    ]
+    header = highlevel.make_header()
+    # The wizard marks each load a moment before its lift window.
+    header["annotations"] = [
+        [start - 0.2, -1, fv_load_marker(kg)] for start, kg in plan
+    ]
+    highlevel.write_edf(str(edf), [emg, acc], headers, header)
+
+    dlg = ForceVelocityDialog(str(edf), "EMG1", "ACC (limb)")
+    assert dlg._table.rowCount() == 3
+    prefilled = [dlg._table.item(i, 2).text() for i in range(3)]
+    assert prefilled == ["4", "6", "8"]          # loads read from the markers
+    dlg._redraw()                                # draws directly, no typing
+    assert len(dlg._fig.get_axes()) == 4
+
+
+def test_channel_diagnostic_picks_the_responding_channel() -> None:
+    """The diagnostic flags a channel only when its range clearly stands out."""
+    from emgteach.gui.widgets.channel_diagnostic_dialog import (
+        ChannelDiagnosticDialog,
+    )
+
+    pick = ChannelDiagnosticDialog._pick_channel
+    # A4 (index 3) swings widely, the rest are noise -> index 3 wins.
+    assert pick([4.0, 3.0, 5.0, 220.0, 2.0, 1.0]) == 3
+    # Only noise everywhere -> no winner.
+    assert pick([4.0, 3.0, 5.0, 6.0, 2.0, 1.0]) is None
+    # Two channels swing similarly -> ambiguous, no false positive.
+    assert pick([200.0, 3.0, 180.0, 5.0]) is None
+    assert pick([]) is None
+
+
+def test_force_velocity_averages_reps_and_excludes_unticked() -> None:
+    """Repetitions at the same load are averaged; dropping one changes it."""
+    import numpy as np
+
+    from emgteach.gui.widgets.force_velocity_dialog import ForceVelocityDialog
+
+    loads = np.array([2.0, 2.0, 4.0, 4.0])
+    vel = np.array([1.0, 3.0, 0.5, 0.5])
+    emg = np.array([0.1, 0.3, 0.2, 0.2])
+
+    ul, uv, ue = ForceVelocityDialog._average_by_load(loads, vel, emg)
+    np.testing.assert_allclose(ul, [2.0, 4.0])
+    np.testing.assert_allclose(uv, [2.0, 0.5])       # (1+3)/2, (0.5+0.5)/2
+    np.testing.assert_allclose(ue, [0.2, 0.2])
+
+    # Drop the high-velocity outlier of the 2 kg load -> its mean changes.
+    keep = np.array([True, False, True, True])
+    ul2, uv2, _ = ForceVelocityDialog._average_by_load(
+        loads[keep], vel[keep], emg[keep]
+    )
+    np.testing.assert_allclose(ul2, [2.0, 4.0])
+    np.testing.assert_allclose(uv2, [1.0, 0.5])      # only the 1.0 rep remains
 
 
 def test_mvc_channel_picker_enabled_only_for_two_channels(

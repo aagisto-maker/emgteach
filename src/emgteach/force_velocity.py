@@ -24,16 +24,107 @@ load** entered by the user — emgteach has no force cell.
 
 from __future__ import annotations
 
+import re
+from collections.abc import Iterable, Sequence
+
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 from scipy.signal import iirfilter, sosfiltfilt
 
 __all__ = [
+    "assign_loads_to_reps",
     "force_velocity_curves",
+    "fv_load_marker",
+    "parse_fv_load_markers",
     "rep_metrics",
     "segment_contractions",
     "velocity_from_acc",
+    "windows_from_markers",
 ]
+
+# EDF annotation written by the guided force-velocity wizard at the start of
+# each load's recording window, e.g. "FV load=7.5 kg". The analysis dialog
+# parses these back so the load column is pre-filled instead of typed by hand.
+_FV_LOAD_RE = re.compile(r"FV\s+load=\s*([0-9]*\.?[0-9]+)", re.IGNORECASE)
+
+
+def fv_load_marker(load_kg: float) -> str:
+    """The EDF annotation label for a guided force-velocity load window."""
+    return f"FV load={load_kg:g} kg"
+
+
+def parse_fv_load_markers(
+    markers: Iterable[tuple[float, str]],
+) -> list[tuple[float, float]]:
+    """Extract ``(onset_s, load_kg)`` from EDF annotations, sorted by onset.
+
+    Only annotations written by the guided wizard (matching ``FV load=<kg>``)
+    are returned; any other markers in the recording are ignored.
+    """
+    out: list[tuple[float, float]] = []
+    for onset, desc in markers:
+        m = _FV_LOAD_RE.search(str(desc))
+        if m:
+            out.append((float(onset), float(m.group(1))))
+    out.sort(key=lambda p: p[0])
+    return out
+
+
+def windows_from_markers(
+    load_markers: Sequence[tuple[float, float]],
+    fs: float,
+    n_samples: int,
+    max_window_s: float = 6.0,
+    gap_s: float = 0.5,
+) -> tuple[list[tuple[int, int]], list[float]]:
+    """Rep windows taken straight from the guided-wizard load markers.
+
+    Each marker begins one contraction, so a window runs from the marker to
+    ``max_window_s`` later — but never into the next marker (minus ``gap_s``) nor
+    past the recording. This is far more robust than re-detecting bursts from the
+    EMG envelope, whose amplitude varies a lot between the MVC maximum and the
+    light loads. Returns ``(windows, loads)`` aligned by index.
+    """
+    windows: list[tuple[int, int]] = []
+    loads: list[float] = []
+    onsets = [o for o, _ in load_markers]
+    for i, (onset, kg) in enumerate(load_markers):
+        start = max(0.0, onset)
+        end = start + max_window_s
+        if i + 1 < len(onsets):
+            end = min(end, onsets[i + 1] - gap_s)
+        i0 = min(n_samples, int(start * fs))
+        i1 = min(n_samples, int(end * fs))
+        if i1 > i0:
+            windows.append((i0, i1))
+            loads.append(kg)
+    return windows, loads
+
+
+def assign_loads_to_reps(
+    windows: Sequence[tuple[int, int]],
+    fs: float,
+    load_markers: Sequence[tuple[float, float]],
+    tolerance_s: float = 0.25,
+) -> list[float | None]:
+    """Map each detected rep window to the load of its guided marker.
+
+    A rep belongs to the most recent load marker at or before the window's
+    start (within ``tolerance_s`` so a rep that begins a hair before its marker
+    still matches). Reps with no preceding marker get ``None`` — the caller
+    leaves those loads blank for manual entry.
+    """
+    loads: list[float | None] = []
+    for i0, _i1 in windows:
+        start_s = i0 / fs
+        chosen: float | None = None
+        for onset, kg in load_markers:
+            if onset <= start_s + tolerance_s:
+                chosen = kg
+            else:
+                break
+        loads.append(chosen)
+    return loads
 
 
 def velocity_from_acc(

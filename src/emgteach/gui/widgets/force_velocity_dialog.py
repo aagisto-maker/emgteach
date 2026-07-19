@@ -29,10 +29,13 @@ from PySide6.QtWidgets import (
 
 from emgteach.dsp import process_offline
 from emgteach.force_velocity import (
+    assign_loads_to_reps,
     force_velocity_curves,
+    parse_fv_load_markers,
     rep_metrics,
     segment_contractions,
     velocity_from_acc,
+    windows_from_markers,
 )
 from emgteach.i18n import tr
 from emgteach.io import list_edf_channels, read_edf_mne, read_edf_pyedflib
@@ -65,25 +68,35 @@ class ForceVelocityDialog(QDialog):
 
         # -- Left: reps table + note --------------------------------------
         left = QVBoxLayout()
-        left.addWidget(QLabel(tr("Repetitions (one per known load):")))
-        self._table = QTableWidget(0, 4)
+        left.addWidget(QLabel(tr("Repetitions (one per contraction):")))
+        self._table = QTableWidget(0, 5)
         self._table.setHorizontalHeaderLabels([
-            tr("Rep"), tr("Load (kg)"), tr("EMG (mV)"), tr("Velocity (a.u.)"),
+            tr("Use"), tr("Rep"), tr("Load (kg)"),
+            tr("EMG (mV)"), tr("Velocity (a.u.)"),
         ])
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
-        self._table.setMinimumWidth(360)
+        self._table.setMinimumWidth(400)
         left.addWidget(self._table, stretch=1)
 
         note = QLabel(tr(
-            "Type the known load lifted in each repetition, then Redraw. "
-            "Velocity is in arbitrary units (the accelerometer is "
-            "uncalibrated); force is the load you enter."
+            "Untick any contraction that is clearly not valid, then Redraw. "
+            "Repetitions at the same load are averaged. Velocity is in "
+            "arbitrary units (the accelerometer is uncalibrated); force is the "
+            "entered load."
         ))
         note.setWordWrap(True)
         note.setStyleSheet("color:#666; font-size:11px;")
         left.addWidget(note)
+
+        # Warns when the accelerometer barely moved (flat/pinned at a rail), so
+        # a column of 0.000 velocities is understood, not mistaken for a bug.
+        self._acc_warn = QLabel("")
+        self._acc_warn.setWordWrap(True)
+        self._acc_warn.setStyleSheet("color:#b00020; font-size:11px;")
+        self._acc_warn.setVisible(False)
+        left.addWidget(self._acc_warn)
 
         btn_row = QHBoxLayout()
         self._btn_redraw = QPushButton(tr("Redraw"))
@@ -119,6 +132,9 @@ class ForceVelocityDialog(QDialog):
         emg_raw = np.asarray(edf["emg_raw"], dtype=np.float64)
         fs = float(edf["sfreq"])
         self._fs = fs
+        # Loads written by the guided wizard, if any — used to pre-fill the
+        # table so the loads need not be typed by hand.
+        self._load_markers = parse_fv_load_markers(edf.get("markers", []))
         proc = process_offline(emg_raw, fs, f_env=self._f_env)
         self._emg_env = np.asarray(proc["emg_envelope"], dtype=np.float64)
 
@@ -132,8 +148,30 @@ class ForceVelocityDialog(QDialog):
         except Exception:
             acc_raw = np.zeros_like(self._emg_env)
         self._velocity = velocity_from_acc(acc_raw, fs)
+        # Flag a flat / rail-pinned accelerometer: then every velocity is ~0
+        # (the column of 0.000 the operator sees), which is a placement problem,
+        # not a bug. ~0.02 g of peak-to-peak is essentially no movement.
+        self._acc_flat = bool(acc_raw.size and float(np.ptp(acc_raw)) < 0.02)
+        if self._acc_flat:
+            self._acc_warn.setText(tr(
+                "⚠ The accelerometer barely moved (flat / pinned at a rail), so "
+                "the velocities are ~0. Put it on the moving segment, oriented "
+                "so its resting value sits mid-range (not at ±1 g), and lift "
+                "quickly."
+            ))
+        self._acc_warn.setVisible(self._acc_flat)
 
-        windows = segment_contractions(self._emg_env, fs)
+        # A guided recording carries one marker per contraction: take the rep
+        # windows straight from the markers (robust to the amplitude gap between
+        # the MVC maximum and the light loads). A free recording falls back to
+        # auto-detecting bursts from the EMG envelope.
+        if self._load_markers:
+            windows, self._marker_loads = windows_from_markers(
+                self._load_markers, fs, self._emg_env.size
+            )
+        else:
+            windows = segment_contractions(self._emg_env, fs)
+            self._marker_loads = None
         self._windows = windows
         self._emg_amp, self._peak_vel = rep_metrics(
             self._emg_env, self._velocity, windows
@@ -144,42 +182,83 @@ class ForceVelocityDialog(QDialog):
         n = len(self._windows)
         self._table.setRowCount(n)
         read_only = ~Qt.ItemFlag.ItemIsEditable
+        # Loads come from the guided markers directly (windows built from them)
+        # or, for a free recording, are matched to any markers by time.
+        if self._marker_loads is not None:
+            marker_loads: list = list(self._marker_loads)
+        else:
+            marker_loads = assign_loads_to_reps(
+                self._windows, self._fs, self._load_markers
+            )
         for i in range(n):
+            use = QTableWidgetItem()
+            use.setFlags(
+                (use.flags() & read_only)
+                | Qt.ItemFlag.ItemIsUserCheckable
+                | Qt.ItemFlag.ItemIsEnabled
+            )
+            use.setCheckState(Qt.CheckState.Checked)   # valid by default
+            self._table.setItem(i, 0, use)
             rep = QTableWidgetItem(str(i + 1))
             rep.setFlags(rep.flags() & read_only)
-            self._table.setItem(i, 0, rep)
-            load = QTableWidgetItem("")  # blank — the user must enter the load
-            self._table.setItem(i, 1, load)
+            self._table.setItem(i, 1, rep)
+            kg = marker_loads[i] if i < len(marker_loads) else None
+            load = QTableWidgetItem("" if kg is None else f"{kg:g}")
+            self._table.setItem(i, 2, load)
             emg = QTableWidgetItem(f"{self._emg_amp[i]:.3f}")
             emg.setFlags(emg.flags() & read_only)
-            self._table.setItem(i, 2, emg)
+            self._table.setItem(i, 3, emg)
             vel = QTableWidgetItem(f"{self._peak_vel[i]:.3f}")
             vel.setFlags(vel.flags() & read_only)
-            self._table.setItem(i, 3, vel)
+            self._table.setItem(i, 4, vel)
 
     def _read_loads(self) -> np.ndarray:
         loads = []
         for i in range(self._table.rowCount()):
-            item = self._table.item(i, 1)
+            item = self._table.item(i, 2)
             try:
                 loads.append(float(item.text().replace(",", ".")))
             except (ValueError, AttributeError):
                 loads.append(float("nan"))
         return np.asarray(loads, dtype=np.float64)
 
+    def _use_mask(self) -> np.ndarray:
+        """Per-row 'valid' state from the Use checkboxes."""
+        used = []
+        for i in range(self._table.rowCount()):
+            item = self._table.item(i, 0)
+            used.append(
+                item is not None and item.checkState() == Qt.CheckState.Checked
+            )
+        return np.asarray(used, dtype=bool)
+
+    @staticmethod
+    def _average_by_load(
+        loads: np.ndarray, vel: np.ndarray, emg: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Collapse repetitions at the same load to their mean, sorted by load."""
+        uniq = np.unique(loads)
+        vmean = np.array([float(np.mean(vel[loads == u])) for u in uniq])
+        emean = np.array([float(np.mean(emg[loads == u])) for u in uniq])
+        return uniq, vmean, emean
+
     # -- plotting ------------------------------------------------------------
 
     def _redraw(self) -> None:
         self._fig.clear()
         loads = self._read_loads()
-        valid = np.isfinite(loads) & (self._peak_vel.size > 0)
+        valid = np.isfinite(loads) & self._use_mask() & (self._peak_vel.size > 0)
         axes = self._fig.subplots(2, 2)
-        if self._emg_amp.size == 0 or np.count_nonzero(valid) < 2:
+        # Need at least two *distinct* loads (after averaging) to draw a curve.
+        n_loads = (
+            len(np.unique(loads[valid])) if np.any(valid) else 0
+        )
+        if self._emg_amp.size == 0 or n_loads < 2:
             msg = (
                 tr("No repetitions detected in this recording.")
                 if self._emg_amp.size == 0
-                else tr("Enter the load (kg) of at least two repetitions, "
-                        "then press Redraw.")
+                else tr("Tick at least two valid repetitions with a load "
+                        "(kg) entered, then press Redraw.")
             )
             axes[0, 0].text(
                 0.5, 0.5, msg,
@@ -191,32 +270,59 @@ class ForceVelocityDialog(QDialog):
             self._canvas.draw()
             return
 
-        loads = loads[valid]
-        vel = self._peak_vel[valid]
-        emg = self._emg_amp[valid]
+        # Average the valid repetitions of each load to one point per load.
+        loads, vel, emg = self._average_by_load(
+            loads[valid], self._peak_vel[valid], self._emg_amp[valid]
+        )
         c = force_velocity_curves(loads, vel)
         order = np.argsort(loads)
 
+        # With a flat accelerometer the velocity is meaningless noise, so the
+        # three velocity-based panels would draw a misleading curve. Show a note
+        # instead; the EMG-based recruitment panel below stays valid.
+        def _flat_note(ax, title, xlabel, ylabel):
+            ax.text(0.5, 0.5,
+                    tr("No velocity — accelerometer flat\n(see the warning)"),
+                    transform=ax.transAxes, ha="center", va="center",
+                    fontsize=8, color="#b00020")
+            ax.set_title(title, fontsize=9)
+            ax.set_xlabel(xlabel, fontsize=8)
+            ax.set_ylabel(ylabel, fontsize=8)
+
         # Load-velocity
         ax = axes[0, 0]
-        ax.plot(c["load"], c["velocity"], "o-", color="#0d7d7d", lw=1.8)
-        ax.set_title(tr("Load-velocity"), fontsize=9)
-        ax.set_xlabel(tr("Load (kg)"), fontsize=8)
-        ax.set_ylabel(tr("Velocity (a.u.)"), fontsize=8)
+        if self._acc_flat:
+            _flat_note(ax, tr("Load-velocity"), tr("Load (kg)"),
+                       tr("Velocity (a.u.)"))
+        else:
+            ax.plot(c["load"], c["velocity"], "o-", color="#0d7d7d", lw=1.8)
+            ax.set_title(tr("Load-velocity"), fontsize=9)
+            ax.set_xlabel(tr("Load (kg)"), fontsize=8)
+            ax.set_ylabel(tr("Velocity (a.u.)"), fontsize=8)
 
         # Force-velocity (normalised, Hill-shaped)
         ax = axes[0, 1]
-        ax.plot(c["force_norm"], c["velocity_norm"], "o-", color="#0d7d7d", lw=1.8)
-        ax.set_title(tr("Force-velocity (normalised)"), fontsize=9)
-        ax.set_xlabel(tr("Force (fraction of max)"), fontsize=8)
-        ax.set_ylabel(tr("Velocity (fraction of max)"), fontsize=8)
+        if self._acc_flat:
+            _flat_note(ax, tr("Force-velocity (normalised)"),
+                       tr("Force (fraction of max)"),
+                       tr("Velocity (fraction of max)"))
+        else:
+            ax.plot(c["force_norm"], c["velocity_norm"], "o-",
+                    color="#0d7d7d", lw=1.8)
+            ax.set_title(tr("Force-velocity (normalised)"), fontsize=9)
+            ax.set_xlabel(tr("Force (fraction of max)"), fontsize=8)
+            ax.set_ylabel(tr("Velocity (fraction of max)"), fontsize=8)
 
         # Power
         ax = axes[1, 0]
-        ax.plot(c["load"], c["power"], "o-", color="#E1A100", lw=1.8)
-        ax.set_title(tr("Power (load × velocity)"), fontsize=9)
-        ax.set_xlabel(tr("Load (kg)"), fontsize=8)
-        ax.set_ylabel(tr("Power (a.u.)"), fontsize=8)
+        if self._acc_flat:
+            _flat_note(ax, tr("Power (load × velocity)"), tr("Load (kg)"),
+                       tr("Power (a.u.)"))
+        else:
+            ax.plot(c["load"], c["power"], "o-", color="#E1A100", lw=1.8)
+            ax.set_title(tr("Power (load × velocity)"), fontsize=9)
+            ax.set_xlabel(tr("Load (kg)"), fontsize=8)
+            ax.set_ylabel(tr("Power (a.u.)"), fontsize=8)
 
         # Recruitment: load vs EMG
         ax = axes[1, 1]
