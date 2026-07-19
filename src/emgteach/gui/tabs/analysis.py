@@ -61,8 +61,15 @@ _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 # original index (0-7) is the identity used by the plotting code and the PDF
 # report; the display number is what the student sees.
 # Canonical panel index 8 is the two-channel overlay (agonist/antagonist);
-# it is only meaningful when a second channel is analysed.
+# it is only meaningful when a second channel is analysed. Indices 9-11 are the
+# accelerometer panels (EMG vs MMG, tremor FFT, movement vs EMG), only
+# meaningful when the recording has an accelerometer channel.
 _OVERLAY_PID = 8
+_MMG_PID = 9
+_TREMOR_PID = 10
+_MOVEMENT_PID = 11
+# Panels that require an accelerometer channel to be usable.
+_ACC_PIDS = (_MMG_PID, _TREMOR_PID, _MOVEMENT_PID)
 
 _PANEL_LAYOUT: list[tuple[int, str]] = [
     (0, "1A"),  # raw signal
@@ -74,6 +81,9 @@ _PANEL_LAYOUT: list[tuple[int, str]] = [
     (6, "7"),   # MDF vs time (fatigue)
     (7, "8"),   # RMS vs MDF
     (_OVERLAY_PID, "9"),  # overlaid envelopes (agonist/antagonist)
+    (_MMG_PID, "10"),     # EMG vs MMG (accelerometer on the muscle)
+    (_TREMOR_PID, "11"),  # tremor FFT (accelerometer)
+    (_MOVEMENT_PID, "12"),  # movement vs EMG (accelerometer on the limb)
 ]
 # Panels checked by default (original indices): raw, normalised envelope, PSD.
 # The overlay panel (8) is checked dynamically when a 2nd channel is compared.
@@ -90,6 +100,9 @@ _PANEL_NOMBRES = [
     "7. MDF vs time (fatigue)",
     "8. RMS vs MDF",
     "9. Overlaid envelopes (agonist/antagonist)",
+    "10. EMG vs MMG (electrical vs mechanical)",
+    "11. Tremor (accelerometer FFT)",
+    "12. Movement vs EMG (limb kinematics)",
 ]
 
 # Short labels (on-screen checkbox row), in display order and renumbered.
@@ -103,6 +116,9 @@ _PANEL_SHORT_LABELS = [
     "7. MDF/time",
     "8. RMS vs MDF",
     "9. Env. overlay",
+    "10. EMG vs MMG",
+    "11. Tremor",
+    "12. Move vs EMG",
 ]
 
 # Display number per original panel index (sidebar labels, etc.).
@@ -115,6 +131,13 @@ _PANEL_TOOLTIPS = {
     4: "Power spectrum; MNF and MDF summarise its frequency content.",
     _OVERLAY_PID: "Both channels' envelopes overlaid — agonist/antagonist "
                   "coordination (needs a 2nd channel).",
+    _MMG_PID: "Electrical (EMG) vs mechanical (MMG, from the accelerometer on "
+              "the muscle) envelope — needs an accelerometer channel.",
+    _TREMOR_PID: "Frequency spectrum of the accelerometer with the tremor peak "
+                 "(physiological ~8-12 Hz) — needs an accelerometer channel.",
+    _MOVEMENT_PID: "Movement (from the accelerometer on the moving segment) vs "
+                   "the EMG envelope — movement follows contraction; needs an "
+                   "accelerometer channel.",
     1: "Band-pass filtered (20-450 Hz) and rectified signal.",
     2: "Linear envelope vs the RMS envelope of the signal.",
     5: "RMS amplitude per window: how the intensity evolves.",
@@ -128,7 +151,14 @@ from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
-from emgteach.io import edf_duration, list_edf_channels, read_edf_metadata
+from emgteach.io import (
+    assess_edf_channels,
+    edf_duration,
+    find_edf_acc_channel,
+    list_edf_channels,
+    list_edf_emg_channels,
+    read_edf_metadata,
+)
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
@@ -143,6 +173,9 @@ class AnalysisTab(QWidget):
         self._broadcast = broadcast   # shared classroom-broadcast server (or None)
         self._worker: AnalysisWorker | None = None
         self._last_result: dict | None = None
+        # Accelerometer channel of the loaded file (name + placement), if any.
+        self._acc_channel_name: str | None = None
+        self._acc_placement: str = "unknown"
         self._last_edf_dir: str = self._settings.value("analisis/last_dir", ".")
 
         self._duracion_total: float = 60.0
@@ -198,36 +231,56 @@ class AnalysisTab(QWidget):
         self._btn_csv.setEnabled(False)
         self._btn_csv.clicked.connect(self._exportar_csv)
         row_file.addWidget(self._btn_csv)
+        # Force-velocity study (needs an accelerometer channel in the file).
+        self._btn_fv = QPushButton(tr("Force-velocity study…"))
+        self._btn_fv.setEnabled(False)
+        self._btn_fv.setToolTip(
+            tr(
+                "Build the load-velocity, force-velocity, power and recruitment "
+                "curves from one recording where several known loads were "
+                "lifted. Needs an accelerometer channel."
+            )
+        )
+        self._btn_fv.clicked.connect(self._abrir_estudio_fv)
+        row_file.addWidget(self._btn_fv)
         ctrl.addLayout(row_file)
 
         # Line 2: channel + f_env
         row_params = QHBoxLayout()
         row_params.addWidget(QLabel(tr("EMG channel:")))
         self._combo_canal = QComboBox()
-        self._combo_canal.setEditable(True)  # lets the user type if needed
+        self._combo_canal.setEditable(False)  # pick one of the file's channels
         self._combo_canal.addItem("EMG")
         self._combo_canal.setFixedWidth(150)
         self._combo_canal.setToolTip(
             tr(
-                "EMG channel of the EDF to analyse. Filled with the channels of "
-                "the file when you select it (e.g. agonist/antagonist)."
+                "EMG channel to analyse. Every panel and the report use only "
+                "this channel. Filled with the file's channels (EMG1/EMG2) when "
+                "you select it."
             )
+        )
+        self._combo_canal.currentIndexChanged.connect(
+            self._on_primary_channel_changed
         )
         row_params.addWidget(self._combo_canal)
-        # Optional second channel: overlay the agonist/antagonist envelopes.
-        self._chk_compare2 = QCheckBox(tr("Compare 2nd channel:"))
+        # Optional second channel: overlay the agonist/antagonist envelopes. The
+        # partner channel is chosen automatically (the other one), so the picker
+        # is read-only; it only lights up when comparing is on.
+        self._chk_compare2 = QCheckBox(tr("Compare channels:"))
         self._chk_compare2.setToolTip(
             tr(
-                "Also analyse a second channel (e.g. antagonist) and overlay "
-                "both envelopes. Enabled automatically for 2-channel recordings."
+                "Overlay the envelope of the two channels (agonist/antagonist). "
+                "The partner channel is set automatically to the other one. "
+                "Only available for two-channel recordings."
             )
         )
+        self._chk_compare2.setEnabled(False)
         row_params.addWidget(self._chk_compare2)
         self._combo_canal2 = QComboBox()
-        self._combo_canal2.setEditable(True)
+        self._combo_canal2.setEditable(False)
         self._combo_canal2.setFixedWidth(150)
-        self._combo_canal2.setEnabled(False)
-        self._combo_canal2.setToolTip(tr("Second EMG channel to overlay."))
+        self._combo_canal2.setEnabled(False)   # read-only: shows the partner
+        self._combo_canal2.setToolTip(tr("Partner channel (chosen automatically)."))
         self._chk_compare2.toggled.connect(self._on_compare2_toggled)
         row_params.addWidget(self._combo_canal2)
         row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
@@ -377,6 +430,10 @@ class AnalysisTab(QWidget):
             chk = QCheckBox(tr(label))
             chk.setChecked(pid in _DEFAULT_PANELS)
             chk.setToolTip(tr(_PANEL_TOOLTIPS[pid]))
+            # The overlay panel is only usable while comparing two channels;
+            # the accelerometer panels only when the file has an ACC channel.
+            if pid in (_OVERLAY_PID, *_ACC_PIDS):
+                chk.setEnabled(False)
             paneles_layout.addWidget(chk)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
@@ -644,8 +701,15 @@ class AnalysisTab(QWidget):
             self._progress.setFormat(tr("Ready"))
 
     def _populate_channels(self, path: str) -> None:
-        """Fill the channel picker from the EDF header, keeping the choice."""
-        labels = list_edf_channels(path)
+        """Fill the channel picker with the file's EMG channels (excludes ACC).
+
+        Detects whether the recording has one or two EMG channels: with one,
+        the channel is fixed and "Compare channels" is disabled; with two, the
+        user picks EMG1 or EMG2 and every panel/report uses only that channel.
+        Comparing is off by default and, when turned on, the partner channel is
+        set automatically to the other one.
+        """
+        labels = list_edf_emg_channels(path) or list_edf_channels(path)
         if not labels:
             return
         current = self._combo_canal.currentText().strip()
@@ -656,18 +720,32 @@ class AnalysisTab(QWidget):
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
 
-        # Second channel: fill and, for 2-channel recordings, default it to the
-        # other channel and turn the agonist/antagonist overlay on by default.
+        # Fill the (read-only) partner picker with the same channels.
         self._combo_canal2.blockSignals(True)
         self._combo_canal2.clear()
         self._combo_canal2.addItems(labels)
-        has_two = len(labels) >= 2
-        if has_two:
-            other = 1 if self._combo_canal.currentIndex() == 0 else 0
-            self._combo_canal2.setCurrentIndex(other)
         self._combo_canal2.blockSignals(False)
+
+        # One channel -> no comparison possible; two -> allow it (off by default).
+        has_two = len(labels) >= 2
+        self._chk_compare2.blockSignals(True)
+        self._chk_compare2.setChecked(False)
         self._chk_compare2.setEnabled(has_two)
-        self._chk_compare2.setChecked(has_two)   # triggers _on_compare2_toggled
+        self._chk_compare2.blockSignals(False)
+        self._sync_second_channel()
+        self._gate_overlay_panel(active=False)   # overlay only when comparing
+
+        # Warn if any channel is flat (no signal) or saturated (bad contact).
+        self._warn_channel_quality(path)
+
+        # Detect an accelerometer channel and enable its panels (EMG vs MMG,
+        # tremor); default-check the one matching how the ACC was placed.
+        acc = find_edf_acc_channel(path)
+        if acc is not None:
+            self._acc_channel_name, self._acc_placement = acc
+        else:
+            self._acc_channel_name, self._acc_placement = None, "unknown"
+        self._gate_acc_panels(acc is not None)
 
         # Default the region-of-interest window to the whole recording.
         dur = edf_duration(path)
@@ -738,6 +816,10 @@ class AnalysisTab(QWidget):
             c2 = self._combo_canal2.currentText().strip()
             if c2 and c2 != canal:
                 canal2 = c2
+        # Accelerometer channel — only analysed when an ACC panel is selected.
+        acc_channel = None
+        if self._acc_channel_name and self._any_acc_panel_checked():
+            acc_channel = self._acc_channel_name
         # Filter cut-offs: use the ones tuned in the fragment editor if any,
         # else the tab's f_env with the profile band/notch defaults.
         fk = self._analysis_filter_kwargs
@@ -769,6 +851,8 @@ class AnalysisTab(QWidget):
             edf_path=path,
             channel_name=canal,
             channel_name_2=canal2,
+            acc_channel=acc_channel,
+            acc_placement=self._acc_placement,
             f_low=f_low,
             f_high=f_high,
             f_notch=f_notch,
@@ -939,19 +1023,128 @@ class AnalysisTab(QWidget):
     # Drawing the 7 panels (replicates analisis_emg_completo.py)
     # ------------------------------------------------------------------
 
+    def _abrir_estudio_fv(self) -> None:
+        """Open the force-velocity study dialog for the loaded recording."""
+        path = self._edit_path.text().strip()
+        if not path or not self._acc_channel_name:
+            return
+        canal = self._combo_canal.currentText().strip() or "EMG"
+        try:
+            from emgteach.gui.widgets.force_velocity_dialog import (
+                ForceVelocityDialog,
+            )
+
+            dlg = ForceVelocityDialog(
+                path, canal, self._acc_channel_name,
+                f_env=self._spin_fenv.value(), parent=self,
+            )
+            dlg.exec()
+        except Exception as exc:  # pragma: no cover — GUI feedback only
+            self._logger.append_error(
+                tr("Could not open the force-velocity study: {error}").format(
+                    error=exc
+                )
+            )
+
+    def _warn_channel_quality(self, path: str) -> None:
+        """Log a per-channel warning when a loaded channel is flat or saturated.
+
+        Surfaces the common recording faults right when the file is opened, so
+        a flat (disconnected) or saturated (bad-contact) channel is obvious
+        before running the analysis.
+        """
+        for label, status in assess_edf_channels(path):
+            if status == "flat":
+                self._logger.append_error(
+                    tr("Channel «{ch}»: flat — no signal (electrode not "
+                       "connected?).").format(ch=label)
+                )
+            elif status == "saturated":
+                self._logger.append_error(
+                    tr("Channel «{ch}»: saturated — the trace is pinned at the "
+                       "rails (check the electrode contact or the gain).").format(
+                        ch=label
+                    )
+                )
+            elif status == "weak":
+                self._logger.append_log(
+                    tr("Channel «{ch}»: weak signal (low amplitude).").format(
+                        ch=label
+                    )
+                )
+
+    @Slot(int)
+    def _on_primary_channel_changed(self, _index: int) -> None:
+        """When the analysed channel changes, keep the partner in sync."""
+        self._sync_second_channel()
+
     @Slot(bool)
     def _on_compare2_toggled(self, checked: bool) -> None:
-        """Enable the 2nd-channel picker and (un)check the overlay panel."""
-        self._combo_canal2.setEnabled(checked)
-        self._set_overlay_panel_checked(checked)
+        """Turn the overlay on/off: sync the partner channel and gate panel 9."""
+        self._sync_second_channel()
+        self._gate_overlay_panel(active=checked)
 
-    def _set_overlay_panel_checked(self, checked: bool) -> None:
-        """Tick/untick the agonist/antagonist overlay panel checkbox."""
+    def _sync_second_channel(self) -> None:
+        """Set the (read-only) partner picker to the channel not being analysed.
+
+        Selecting EMG1 makes the partner EMG2 and vice versa. With a single
+        channel there is no partner.
+        """
+        n = self._combo_canal2.count()
+        if n < 2:
+            return
+        other = 1 if self._combo_canal.currentIndex() == 0 else 0
+        self._combo_canal2.blockSignals(True)
+        self._combo_canal2.setCurrentIndex(other)
+        self._combo_canal2.blockSignals(False)
+
+    def _gate_overlay_panel(self, active: bool) -> None:
+        """Check+enable (active) or uncheck+disable the overlay panel checkbox.
+
+        The overlaid-envelopes panel (9) is only meaningful when comparing two
+        channels, so it cannot be ticked otherwise — avoiding confusion on
+        single-channel recordings.
+        """
         try:
             pos = self._panel_pids.index(_OVERLAY_PID)
         except ValueError:
             return
-        self._chk_paneles[pos].setChecked(checked)
+        chk = self._chk_paneles[pos]
+        chk.setChecked(active)
+        chk.setEnabled(active)
+
+    def _any_acc_panel_checked(self) -> bool:
+        """True if any accelerometer panel (EMG-vs-MMG, tremor, movement) is
+        ticked."""
+        for pid in _ACC_PIDS:
+            try:
+                pos = self._panel_pids.index(pid)
+            except ValueError:
+                continue
+            if self._chk_paneles[pos].isChecked():
+                return True
+        return False
+
+    def _gate_acc_panels(self, has_acc: bool) -> None:
+        """Enable the accelerometer panels when the file has an ACC channel.
+
+        On enabling, the panel matching the ACC placement is ticked by default
+        (MMG for an ACC on the muscle, movement-vs-EMG for one on the moving
+        segment); without an ACC channel they are all unticked and locked.
+        """
+        default_pid = (
+            _MOVEMENT_PID if self._acc_placement == "limb" else _MMG_PID
+        )
+        for pid in _ACC_PIDS:
+            try:
+                pos = self._panel_pids.index(pid)
+            except ValueError:
+                continue
+            chk = self._chk_paneles[pos]
+            chk.setEnabled(has_acc)
+            chk.setChecked(has_acc and pid == default_pid)
+        # The force-velocity study also needs the accelerometer.
+        self._btn_fv.setEnabled(has_acc)
 
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
@@ -1064,6 +1257,104 @@ class AnalysisTab(QWidget):
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True, **_grid)
+            self._dibujar_marcadores(ax, inicio_s, fin_s)
+
+        # --- EMG vs MMG (electrical vs mechanical) ---
+        if _MMG_PID in ax_map:
+            ax = ax_map[_MMG_PID]
+            mmg = r.get("acc_mmg_envelope")
+            emg_lbl = r.get("channel_name") or "EMG"
+            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8,
+                    label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
+            if mmg is not None:
+                ax2 = ax.twinx()
+                ax2.plot(times, mmg, color="#2ca02c", lw=1.6,
+                         label=tr("MMG envelope (mechanical)"))
+                ax2.set_ylabel(tr("MMG (g)"), fontsize=8, color="#2ca02c")
+                ax2.tick_params(axis="y", labelsize=7, colors="#2ca02c")
+                ax2.set_xlim(inicio_s, fin_s)
+                ax2.legend(loc="upper right", fontsize=7)
+                # Remind that the MMG belongs to the muscle carrying the ACC.
+                ax.text(0.5, 0.98,
+                        tr("MMG is paired with «{ch}» — the muscle carrying the "
+                           "accelerometer.").format(ch=emg_lbl),
+                        transform=ax.transAxes, ha="center", va="top",
+                        fontsize=7, color="#888888")
+            else:
+                ax.text(0.5, 0.5,
+                        tr("No accelerometer channel in this recording."),
+                        transform=ax.transAxes, ha="center", va="center",
+                        fontsize=8, color="#888888")
+            ax.set_title(tr("10. EMG vs MMG (electrical vs mechanical)"), fontsize=9)
+            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+            ax.tick_params(axis="y", labelsize=7, colors="#4169E1")
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_xlim(inicio_s, fin_s)
+            ax.tick_params(axis="x", labelsize=7)
+            ax.legend(loc="upper left", fontsize=7)
+            ax.grid(True, **_grid)
+            self._dibujar_marcadores(ax, inicio_s, fin_s)
+
+        # --- Tremor (accelerometer FFT) ---
+        if _TREMOR_PID in ax_map:
+            ax = ax_map[_TREMOR_PID]
+            freqs = r.get("acc_tremor_freqs")
+            psd = r.get("acc_tremor_psd")
+            if freqs is not None and psd is not None:
+                ax.plot(freqs, psd, color="#8c564b", lw=1.6)
+                peak = float(r.get("acc_tremor_peak_hz", 0.0))
+                if peak > 0:
+                    ax.axvline(peak, color="#E74C3C", ls="--", lw=1.8,
+                               label=tr("Peak: {hz:.1f} Hz").format(hz=peak))
+                    ax.legend(loc="upper right", fontsize=7)
+                ax.set_xlim(0, 25)
+            else:
+                ax.text(0.5, 0.5,
+                        tr("No accelerometer channel in this recording."),
+                        transform=ax.transAxes, ha="center", va="center",
+                        fontsize=8, color="#888888")
+            ax.set_title(tr("11. Tremor — accelerometer spectrum"), fontsize=9)
+            ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
+            ax.set_ylabel("PSD (g²/Hz)", fontsize=8)
+            ax.tick_params(labelsize=7)
+            ax.grid(True, **_grid)
+
+        # --- Movement vs EMG (accelerometer on the moving segment) ---
+        if _MOVEMENT_PID in ax_map:
+            ax = ax_map[_MOVEMENT_PID]
+            move = r.get("acc_movement_envelope")
+            emg_lbl = r.get("channel_name") or "EMG"
+            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8,
+                    label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
+            if move is not None:
+                ax2 = ax.twinx()
+                ax2.plot(times, move, color="#D35400", lw=1.6,
+                         label=tr("Movement (limb kinematics)"))
+                ax2.set_ylabel(tr("Movement (a.u.)"), fontsize=8, color="#D35400")
+                ax2.tick_params(axis="y", labelsize=7, colors="#D35400")
+                ax2.set_xlim(inicio_s, fin_s)
+                ax2.legend(loc="upper right", fontsize=7)
+                # The accelerometer is uncalibrated, so the movement trace is in
+                # arbitrary units — the point is that it tracks the contraction.
+                ax.text(0.5, 0.98,
+                        tr("Movement from the accelerometer on the moving "
+                           "segment — follows «{ch}» (arbitrary units).")
+                        .format(ch=emg_lbl),
+                        transform=ax.transAxes, ha="center", va="top",
+                        fontsize=7, color="#888888")
+            else:
+                ax.text(0.5, 0.5,
+                        tr("No accelerometer channel in this recording."),
+                        transform=ax.transAxes, ha="center", va="center",
+                        fontsize=8, color="#888888")
+            ax.set_title(tr("12. Movement vs EMG (limb kinematics)"), fontsize=9)
+            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+            ax.tick_params(axis="y", labelsize=7, colors="#4169E1")
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_xlim(inicio_s, fin_s)
+            ax.tick_params(axis="x", labelsize=7)
+            ax.legend(loc="upper left", fontsize=7)
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
@@ -1244,10 +1535,21 @@ class AnalysisTab(QWidget):
         encabezado.setObjectName("dlgHeader")
         lay.addWidget(encabezado)
 
+        comparing = self._chk_compare2.isChecked()
+        has_acc = self._acc_channel_name is not None
         checks: list[QCheckBox] = []
         for i, nombre in enumerate(_PANEL_NOMBRES):
             cb = QCheckBox(tr(nombre))
             cb.setChecked(i < len(self._chk_paneles) and self._chk_paneles[i].isChecked())
+            pid = self._panel_pids[i]
+            # The overlay panel needs two compared channels; the accelerometer
+            # panels need an ACC channel — otherwise they cannot be reported.
+            locked = (pid == _OVERLAY_PID and not comparing) or (
+                pid in _ACC_PIDS and not has_acc
+            )
+            if locked:
+                cb.setChecked(False)
+                cb.setEnabled(False)
             lay.addWidget(cb)
             checks.append(cb)
 

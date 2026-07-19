@@ -268,9 +268,11 @@ def main() -> None:
 
     window = MainWindow(settings)
 
-    # Close the splash and show the window after 1.5 s
+    # Close the splash and show the window after 1.5 s. Start maximised so the
+    # whole interface fits the screen (and toggling the ACC plot redistributes
+    # space within the window instead of pushing it off-screen).
     QTimer.singleShot(1500, splash.close)
-    QTimer.singleShot(1500, window.show)
+    QTimer.singleShot(1500, window.showMaximized)
 
     sys.exit(app.exec())
 

@@ -30,6 +30,7 @@ with ✱.
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
   Spain
 - **ORCID:** [0000-0001-6060-9035](https://orcid.org/0000-0001-6060-9035)
+- **Email:** vleite@ucm.es
 - **CRediT roles:** Investigation · Resources · Validation · Visualization ·
   Writing – review & editing
 
@@ -39,6 +40,7 @@ with ✱.
   Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
   Spain
 - **ORCID:** [0000-0002-4643-3528](https://orcid.org/0000-0002-4643-3528)
+- **Email:** jorgend@ucm.es
 - **CRediT roles:** Investigation · Resources · Validation · Visualization ·
   Writing – review & editing
 
@@ -50,6 +52,24 @@ with ✱.
 - **ORCID:** [0000-0002-1679-9588](https://orcid.org/0000-0002-1679-9588)
 - **CRediT roles:** Data curation · Investigation · Resources · Validation ·
   Writing – review & editing
+
+### Belén Climent
+
+- **Affiliation:** Department of Physiology (Faculty of Pharmacy),
+  Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
+  Spain
+- **ORCID:** [0000-0003-0852-9227](https://orcid.org/0000-0003-0852-9227)
+- **Email:** bcliment@ucm.es
+- **CRediT roles:** Supervision · Validation · Writing – review & editing
+
+### Medardo Hernández
+
+- **Affiliation:** Department of Physiology (Faculty of Pharmacy),
+  Universidad Complutense de Madrid, Plaza Ramón y Cajal s/n, 28040 Madrid,
+  Spain
+- **ORCID:** [0000-0001-7165-2135](https://orcid.org/0000-0001-7165-2135)
+- **Email:** medardo@ucm.es
+- **CRediT roles:** Supervision · Validation · Writing – review & editing
 
 ## Development assistance
 

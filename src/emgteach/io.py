@@ -44,10 +44,13 @@ __all__ = [
     "BufferedEdfWriter",
     "ChannelInfo",
     "RecordingMetadata",
+    "assess_edf_channels",
     "build_timestamped_path",
     "create_edf_writer",
     "edf_duration",
+    "find_edf_acc_channel",
     "list_edf_channels",
+    "list_edf_emg_channels",
     "read_edf_metadata",
     "read_edf_mne",
     "read_edf_pyedflib",
@@ -536,6 +539,112 @@ def list_edf_channels(path: PathLike) -> list[str]:
         return []
     try:
         return [str(label) for label in reader.getSignalLabels()]
+    finally:
+        reader.close()
+
+
+def list_edf_emg_channels(path: PathLike) -> list[str]:
+    """Return only the EMG channel labels of an EDF file.
+
+    Non-biopotential channels — currently the accelerometer, written with the
+    physical dimension ``"g"`` (or the label ``"ACC"``) — are excluded, so a
+    channel picker offers only the muscle channels (e.g. EMG1/EMG2) and the
+    "one or two channels" logic is not confused by an extra movement channel.
+    Falls back to an empty list if the file cannot be read.
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return []
+    try:
+        labels = reader.getSignalLabels()
+        headers = reader.getSignalHeaders()
+        out: list[str] = []
+        for label, header in zip(labels, headers, strict=False):
+            dim = str(
+                header.get("dimension", header.get("physical_dimension", ""))
+            ).strip().lower()
+            if dim == "g" or str(label).strip().upper() == "ACC":
+                continue
+            out.append(str(label))
+        return out
+    finally:
+        reader.close()
+
+
+def find_edf_acc_channel(path: PathLike) -> tuple[str, str] | None:
+    """Locate the accelerometer channel in an EDF and infer its placement.
+
+    Returns ``(label, placement)`` where ``placement`` is ``"muscle"``,
+    ``"limb"`` or ``"unknown"`` (parsed from the label the acquisition tab
+    writes, e.g. ``"ACC (muscle)"`` / ``"ACC (limb)"``), or ``None`` if the
+    file has no accelerometer channel. The ACC channel is the one whose
+    physical dimension is ``"g"`` (falling back to a label starting with
+    ``"ACC"``).
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return None
+    try:
+        labels = reader.getSignalLabels()
+        headers = reader.getSignalHeaders()
+        for label, header in zip(labels, headers, strict=False):
+            name = str(label).strip()
+            dim = str(
+                header.get("dimension", header.get("physical_dimension", ""))
+            ).strip().lower()
+            if dim == "g" or name.upper().startswith("ACC"):
+                low = name.lower()
+                if "musc" in low or "músc" in low:
+                    placement = "muscle"
+                elif "limb" in low or "segment" in low or "segmento" in low:
+                    placement = "limb"
+                else:
+                    placement = "unknown"
+                return name, placement
+        return None
+    finally:
+        reader.close()
+
+
+def assess_edf_channels(path: PathLike) -> list[tuple[str, str]]:
+    """Per-EMG-channel quality verdict for a file, for a warning on load.
+
+    Returns ``[(label, status), ...]`` where ``status`` is one of ``"ok"``,
+    ``"flat"``, ``"weak"`` or ``"saturated"`` (see
+    :func:`emgteach.dsp.assess_channel_quality`). Non-biopotential channels
+    (the accelerometer, dimension ``"g"``/label ``"ACC"``) and the annotation
+    channel are skipped. Returns an empty list if the file cannot be read.
+    """
+    import pyedflib
+
+    from emgteach.dsp import assess_channel_quality
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:  # pragma: no cover — unreadable/missing file
+        return []
+    try:
+        labels = reader.getSignalLabels()
+        headers = reader.getSignalHeaders()
+        out: list[tuple[str, str]] = []
+        for i, (label, header) in enumerate(zip(labels, headers, strict=False)):
+            name = str(label).strip()
+            dim = str(
+                header.get("dimension", header.get("physical_dimension", ""))
+            ).strip().lower()
+            if dim == "g" or name.upper() in ("ACC", "EDF ANNOTATIONS"):
+                continue
+            fs = float(header.get("sample_frequency", 1000) or 1000)
+            pmax = float(header.get("physical_max", 1.65) or 1.65)
+            status = assess_channel_quality(reader.readSignal(i), fs, pmax)
+            out.append((str(label), status))
+        return out
     finally:
         reader.close()
 

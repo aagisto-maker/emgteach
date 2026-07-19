@@ -108,6 +108,15 @@ class BitalinoDevice(AcquisitionDevice):
     channels : sequence of int, optional
         Channel indices to record (default ``[0]``). The BITalino
         revolution exposes 6 analogue channels indexed 0..5.
+    acc : bool, optional
+        When ``True``, additionally record the accelerometer (analogue A4,
+        index 3) as an extra channel appended after the EMG channels. A4 keeps
+        the 10-bit resolution of the EMG channels. It is decoded as normalised
+        (uncalibrated) acceleration in *g* rather than millivolts and is tagged
+        ``"ACC"`` in :meth:`channel_kinds`, so the worker stores it with its
+        own EDF unit and does not apply the EMG filter chain (default
+        ``False``). Intended for EMG on A1/A2 at most, so the set stays within
+        A1..A4.
 
     Raises
     ------
@@ -129,6 +138,13 @@ class BitalinoDevice(AcquisitionDevice):
     # 3.3 V supply, unity gain, +/-1.65 mV referred to the input).
     _ADC_MAX = 2**10 - 1  # 1023
     _V_REF = 3.3
+    # The accelerometer is wired to analogue channel A4 (index 3) so it shares
+    # the 10-bit resolution of the EMG channels (A1-A4 are 10-bit; A5-A6 would
+    # be 6-bit). With the EMG on A1/A2 at most, the recorded set stays within
+    # A1..A4 and every channel keeps full resolution. The ACC is not a
+    # biopotential, so it is converted and stored apart (see _raw_to_acc).
+    _ACC_CHANNEL = 3
+    _ADC_MAX_ACC = 2**10 - 1  # 1023 (10-bit, A4)
 
     # Serial-link constants.
     _BAUD = 115_200
@@ -153,13 +169,49 @@ class BitalinoDevice(AcquisitionDevice):
         port: str,
         fs: int = 1000,
         channels: list[int] | None = None,
+        acc: bool = False,
+        acc_channel: int | None = None,
     ) -> None:
         self._port = str(port)
         self._fs = int(fs)
-        self._channels = list(channels) if channels is not None else [0]
+        emg = list(channels) if channels is not None else [0]
+        self._acc = bool(acc)
+        # Which analogue input the accelerometer is actually wired to. The
+        # BITalino packs the *enabled* channels consecutively in the frame, so
+        # this must be the physical channel; it defaults to A4 but is
+        # configurable because different sensors/boards land on different
+        # inputs (found with the channel diagnostic).
+        self._acc_channel = (
+            self._ACC_CHANNEL if acc_channel is None else int(acc_channel)
+        )
+        # The wire packs the *enabled* inputs in ascending order (``decode``),
+        # so the frame is always decoded ascending. But the rest of the app
+        # relies on "the accelerometer is the trailing column", so the exposed
+        # order is EMG channels first (as given) and the ACC last — whatever
+        # physical input each is on. ``_expose`` maps exposed position → column
+        # in the ascending-decoded frame.
+        emg_only = [c for c in emg if not (acc and c == self._acc_channel)]
+        if acc:
+            decode = sorted(set(emg) | {self._acc_channel})
+            expose = [*emg_only, self._acc_channel]
+        else:
+            decode = list(emg)
+            expose = list(emg)
+        self._decode_channels = decode
+        self._expose = [decode.index(c) for c in expose]
+        self._kinds = [
+            "ACC" if (acc and c == self._acc_channel) else "EMG" for c in expose
+        ]
+        # Public channel list = what read() returns, in exposed order.
+        self._channels = list(expose)
         self._serial = None  # type: ignore[var-annotated]
         self._resolved_port: str | None = None
         self._conn_lock = threading.Lock()
+
+    @property
+    def _n_decode(self) -> int:
+        """Number of channels actually enabled/decoded from the wire."""
+        return len(self._decode_channels)
 
     # -- AcquisitionDevice properties ----------------------------------------
 
@@ -188,6 +240,21 @@ class BitalinoDevice(AcquisitionDevice):
     @property
     def physical_max(self) -> float:
         return self._V_REF / 2.0
+
+    # -- per-channel metadata (EMG in mV, ACC in normalised g) ---------------
+
+    def channel_kinds(self) -> list[str]:
+        return list(self._kinds)
+
+    def channel_units(self) -> list[str]:
+        return ["g" if k == "ACC" else "mV" for k in self._kinds]
+
+    def channel_physical_ranges(self) -> list[tuple[float, float]]:
+        # ACC is decoded as normalised (uncalibrated) acceleration in [-1, 1] g.
+        return [
+            (-1.0, 1.0) if k == "ACC" else (self.physical_min, self.physical_max)
+            for k in self._kinds
+        ]
 
     @property
     def is_connected(self) -> bool:
@@ -265,7 +332,37 @@ class BitalinoDevice(AcquisitionDevice):
         frame_bytes = self._frame_size()
         raw_buf = self._receive_exact(ser, n * frame_bytes)  # blocking; no lock
         adc = self._decode_frames(raw_buf, n)
-        return self._raw_to_mv(adc)
+        return self._adc_to_physical(adc)
+
+    def read_raw(self, n_samples: int) -> FloatArray:
+        """Read *n_samples* and return the **raw ADC** value of every decoded
+        channel (no mV/g conversion), shape ``(n_samples, n_decode)``.
+
+        Used by the channel-diagnostic tool to see which analogue input carries
+        the accelerometer, independent of any per-channel scaling.
+        """
+        with self._conn_lock:
+            ser = self._serial
+        if ser is None:
+            raise RuntimeError(tr("The BITalino device is not open."))
+        n = int(n_samples)
+        frame_bytes = self._frame_size()
+        raw_buf = self._receive_exact(ser, n * frame_bytes)  # blocking; no lock
+        return self._decode_frames(raw_buf, n)
+
+    def _adc_to_physical(self, adc: FloatArray | np.ndarray) -> FloatArray:
+        """Select the exposed columns from the decoded frame and convert each to
+        its physical unit (mV for EMG, normalised g for ACC).
+
+        ``adc`` has one column per *decoded* channel (A1..A5 when the ACC is on);
+        only the positions in ``self._expose`` are returned, in exposed order.
+        """
+        arr = np.asarray(adc, dtype=np.float64)
+        out = np.empty((arr.shape[0], len(self._expose)), dtype=np.float64)
+        for i, (pos, kind) in enumerate(zip(self._expose, self._kinds, strict=True)):
+            col = arr[:, pos]
+            out[:, i] = self._raw_to_acc(col) if kind == "ACC" else self._raw_to_mv(col)
+        return out
 
     def close(self) -> None:
         """Stop streaming and close the COM port.
@@ -418,7 +515,9 @@ class BitalinoDevice(AcquisitionDevice):
                     "Use one of 1, 10, 100 or 1000."
                 ).format(fs=self._fs)
             )
-        if not self._channels or any(c not in range(6) for c in self._channels):
+        if not self._decode_channels or any(
+            c not in range(6) for c in self._decode_channels
+        ):
             raise RuntimeError(
                 tr("Invalid BITalino channel list; channels must be in 0..5.")
             )
@@ -451,13 +550,13 @@ class BitalinoDevice(AcquisitionDevice):
     def _start_streaming(self, ser: object) -> None:
         """Send the live-acquisition start command for the active channels."""
         command = 0x01  # low two bits: 01 = live mode
-        for ch in self._channels:
+        for ch in self._decode_channels:
             command |= 1 << (2 + ch)
         self._send(ser, command)
 
     def _frame_size(self) -> int:
         """Bytes per acquisition frame for the active channel count."""
-        n = self.n_channels
+        n = self._n_decode
         if n <= 4:
             return math.ceil((12.0 + 10.0 * n) / 8.0)
         return math.ceil((52.0 + 6.0 * (n - 4)) / 8.0)
@@ -481,7 +580,7 @@ class BitalinoDevice(AcquisitionDevice):
         the serial stream lost framing and is reported so the watchdog and
         worker can react.
         """
-        n_ch = self.n_channels
+        n_ch = self._n_decode
         frame_bytes = self._frame_size()
         out = np.empty((n_samples, n_ch), dtype=np.float64)
         for s in range(n_samples):
@@ -543,3 +642,21 @@ class BitalinoDevice(AcquisitionDevice):
     def raw_to_mv(raw_adc: FloatArray | np.ndarray) -> FloatArray:
         """Public alias of the internal ADC to mV conversion."""
         return BitalinoDevice._raw_to_mv(raw_adc)
+
+    @classmethod
+    def _raw_to_acc(cls, raw_adc: FloatArray | np.ndarray) -> FloatArray:
+        """Convert 10-bit BITalino ACC values (A4) to normalised acceleration (g).
+
+        The accelerometer sample (A4, 0..1023) is mapped linearly onto the
+        ``[-1, 1]`` g full-scale. This is **uncalibrated**: without the
+        per-device ``Cmin``/``Cmax`` reference it captures the shape, timing
+        and relative amplitude of the acceleration — enough for movement
+        segmentation, artefact monitoring and tremor-frequency demonstrations
+        — but not absolute g. A per-axis calibration step can refine it later.
+        """
+        return (np.asarray(raw_adc, dtype=np.float64) / cls._ADC_MAX_ACC) * 2.0 - 1.0
+
+    @staticmethod
+    def raw_to_acc(raw_adc: FloatArray | np.ndarray) -> FloatArray:
+        """Public alias of the internal ADC to acceleration conversion."""
+        return BitalinoDevice._raw_to_acc(raw_adc)

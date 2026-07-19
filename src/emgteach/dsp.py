@@ -38,7 +38,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from scipy.integrate import simpson
+from scipy.integrate import cumulative_trapezoid, simpson
 from scipy.signal import (
     iirfilter,
     iirnotch,
@@ -62,6 +62,7 @@ __all__ = [
     "OnsetDetector",
     "QualityStatus",
     "RealtimeFilterState",
+    "assess_channel_quality",
     "compute_psd_mnf_mdf",
     "compute_segments",
     "design_bandpass",
@@ -69,7 +70,9 @@ __all__ = [
     "design_notch",
     "detect_acquisition_problems",
     "detect_onsets",
+    "mmg_envelope",
     "process_offline",
+    "tremor_spectrum",
 ]
 
 
@@ -509,6 +512,151 @@ def detect_acquisition_problems(
         "flat_baseline": flat_baseline,
         "warnings": warnings,
     }
+
+
+def mmg_envelope(
+    acc: FloatArray | np.ndarray,
+    fs: float,
+    f_low: float = 5.0,
+    f_high: float = 50.0,
+    f_env: float = 5.0,
+) -> FloatArray:
+    """Mechanomyography (MMG) envelope from an accelerometer on the muscle belly.
+
+    Band-passes the acceleration to the muscle-vibration band (default
+    5-50 Hz, which removes the DC/gravity term and gross-movement drift below
+    ~5 Hz), rectifies it and low-passes to an envelope — the mechanical
+    counterpart of the EMG envelope. Zero-phase (``sosfiltfilt``), matching the
+    offline EMG path so the two envelopes are directly comparable in time.
+
+    Parameters
+    ----------
+    acc : array-like
+        Accelerometer signal (any units; the mean is removed).
+    fs : float
+        Sampling frequency (Hz).
+    f_low, f_high : float, optional
+        Muscle-vibration band-pass cut-offs (Hz). Defaults 5 and 50.
+    f_env : float, optional
+        Envelope low-pass cut-off (Hz). Default 5.
+    """
+    a = np.asarray(acc, dtype=np.float64)
+    a = a - float(np.mean(a)) if a.size else a
+    nyq = fs / 2.0
+    fh = min(float(f_high), 0.9 * nyq)
+    filtered = sosfiltfilt(design_bandpass(f_low, fh, fs), a)
+    rectified = np.abs(filtered)
+    return sosfiltfilt(design_lowpass(f_env, fs), rectified)
+
+
+def movement_envelope(
+    acc: FloatArray | np.ndarray,
+    fs: float,
+    hp_cutoff: float = 0.5,
+    f_env: float = 3.0,
+) -> FloatArray:
+    """Kinematic movement envelope from an accelerometer on a moving segment.
+
+    For a limb-mounted accelerometer the teaching signal is gross movement, not
+    muscle vibration: high-pass the acceleration to drop gravity and slow drift,
+    integrate it once to a velocity (arbitrary units — the accelerometer is
+    uncalibrated), high-pass the velocity again to remove the residual
+    integration drift, then rectify and low-pass to a smooth envelope. Overlaid
+    on the EMG envelope it shows that the movement follows the contraction.
+    Zero-phase (``sosfiltfilt``), matching the EMG/MMG envelope paths so the
+    traces line up in time.
+
+    Parameters
+    ----------
+    acc : array-like
+        Accelerometer signal (any units; the mean is removed).
+    fs : float
+        Sampling frequency (Hz).
+    hp_cutoff : float, optional
+        High-pass cut-off (Hz) applied to both the acceleration and the
+        integrated velocity to drop gravity and integration drift. Default 0.5.
+    f_env : float, optional
+        Envelope low-pass cut-off (Hz). Default 3.
+    """
+    a = np.asarray(acc, dtype=np.float64)
+    if a.size == 0:
+        return a
+    nyq = fs / 2.0
+    hp = min(float(hp_cutoff), 0.9 * nyq)
+    sos_hp = iirfilter(2, hp, btype="high", fs=fs, ftype="butter", output="sos")
+    acc_hp = sosfiltfilt(sos_hp, a - float(np.mean(a)))
+    vel = cumulative_trapezoid(acc_hp, dx=1.0 / fs, initial=0.0)
+    vel = sosfiltfilt(sos_hp, vel)  # remove the residual integration drift
+    rectified = np.abs(vel)
+    fe = min(float(f_env), 0.9 * nyq)
+    return sosfiltfilt(design_lowpass(fe, fs), rectified)
+
+
+def tremor_spectrum(
+    acc: FloatArray | np.ndarray,
+    fs: float,
+    f_min: float = 2.0,
+    f_max: float = 20.0,
+) -> tuple[FloatArray, FloatArray, float]:
+    """Welch PSD of an accelerometer axis and its tremor peak frequency.
+
+    Returns ``(frequencies, psd, peak_hz)`` where ``peak_hz`` is the frequency
+    of maximum power inside ``[f_min, f_max]`` — the tremor band (physiological
+    tremor sits around 8-12 Hz). ``peak_hz`` is ``0.0`` when the band is empty.
+
+    Parameters
+    ----------
+    acc : array-like
+        Accelerometer signal (the mean is removed before the transform).
+    fs : float
+        Sampling frequency (Hz).
+    f_min, f_max : float, optional
+        Tremor search band (Hz). Defaults 2 and 20.
+    """
+    a = np.asarray(acc, dtype=np.float64)
+    a = a - float(np.mean(a)) if a.size else a
+    nper = min(len(a), int(4 * fs)) if a.size else 64
+    freqs, psd = welch(a, fs=fs, nperseg=max(64, nper))
+    band = (freqs >= f_min) & (freqs <= f_max)
+    peak = float(freqs[band][int(np.argmax(psd[band]))]) if np.any(band) else 0.0
+    return freqs, psd, peak
+
+
+def assess_channel_quality(
+    signal: FloatArray | np.ndarray, fs: float, physical_max: float = 1.65
+) -> str:
+    """One-word quality verdict for a whole EMG channel, for a load-time check.
+
+    Returns one of:
+
+    * ``"flat"`` — essentially no signal (a disconnected electrode or a
+      channel that was declared but never wired): very low amplitude over the
+      whole recording.
+    * ``"saturated"`` — the electrode lost contact / the gain was too high, so
+      the trace spends a large fraction of the time pinned at the ADC rails.
+    * ``"weak"`` — there is a signal but its amplitude is low; usable but worth
+      a heads-up.
+    * ``"ok"`` — a normal surface-EMG channel.
+
+    Complements :func:`detect_acquisition_problems` (whose saturation run
+    detector it reuses) with a *whole-channel* flat/weak amplitude check, so
+    the GUI can warn per channel the moment a file is opened.
+    """
+    s = np.asarray(signal, dtype=np.float64)
+    if s.size == 0:
+        return "flat"
+    rms = float(np.std(s))
+    p2p = float(np.ptp(s))
+    # Saturation: a big share of samples sit near the ±full-scale rails.
+    rail = float(np.mean(np.abs(s) >= 0.94 * abs(physical_max))) if physical_max else 0.0
+    if rail > 0.05:
+        return "saturated"
+    # Flat: no real activity anywhere in the recording.
+    if rms < 0.012 and p2p < 0.10:
+        return "flat"
+    if rms < 0.03:
+        return "weak"
+    return "ok"
 
 
 @dataclass(frozen=True)

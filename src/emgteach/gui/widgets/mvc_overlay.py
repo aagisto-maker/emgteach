@@ -73,6 +73,18 @@ class MvcOverlay(QFrame):
         self.raise_()
         self.update()
 
+    def show_action(self, word: str, subtitle: str = "") -> None:
+        """A single big 'go now' cue (e.g. Lift!) — no bars, no countdown.
+
+        Used for a quick concentric action where a hold timer or effort bar
+        would only distract (and could read as 'something is missing')."""
+        self._mode = "action"
+        self._title = word
+        self._subtitle = subtitle
+        self.show()
+        self.raise_()
+        self.update()
+
     def show_done(self, title: str, subtitle: str) -> None:
         self._mode = "done"
         self._title = title
@@ -113,6 +125,12 @@ class MvcOverlay(QFrame):
                        colour=QColor(190, 190, 200))
         elif self._mode == "relax":
             self._text(p, self._relax_word(), 0, 60, w, 60, 40, bold=True, colour=_ACCENT)
+            if self._subtitle:
+                self._text(p, self._subtitle, 0, h - 40, w, 28, 12,
+                           colour=QColor(190, 190, 200))
+        elif self._mode == "action":
+            # Just the cue word, large and green — no bars or countdown.
+            self._text(p, self._title, 0, 60, w, 60, 38, bold=True, colour=_EFFORT)
             if self._subtitle:
                 self._text(p, self._subtitle, 0, h - 40, w, 28, 12,
                            colour=QColor(190, 190, 200))

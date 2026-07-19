@@ -1,30 +1,40 @@
 {
   "upload_type": "software",
   "title": "emgteach: an open-source teaching platform for surface electromyography",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "language": "eng",
   "license": "gpl-3.0-or-later",
-  "description": "<p>emgteach is an open-source Python package that provides a unified PySide6 desktop application for real-time acquisition, offline analysis and maximum voluntary contraction (MVC) normalisation of surface electromyography (sEMG) signals. It is designed for hands-on biopotential acquisition in undergraduate physiology teaching laboratories, and is meant to be set up by instructors with different levels of technical background and used directly by students during a practical session.</p><p>The application is hardware-agnostic through a common AcquisitionDevice interface and ships with two interchangeable low-cost backends: BITalino (revolution) over Bluetooth, and an Arduino RedBoard Plus + MyoWare 2.0 over USB serial (open firmware included). A single setting switches between them.</p><p>Main features:</p><ul><li>Three-tab GUI (Acquisition, Analysis, MVC normalisation) wrapping a reusable, Qt-free analytic core.</li><li>Bilingual interface (English / Spanish) with automatic start-up language detection and an in-app language switch.</li><li>Two-channel acquisition (e.g. agonist/antagonist) with a stacked two-channel live view.</li><li>Automatic contraction-onset detection (baseline + k·SD threshold) stored as EDF+ annotations.</li><li>Muscle-load analysis (Jonsson APDF): static (P10), median (P50) and peak (P90) %MVC levels, both offline and as a live monitor with warning/danger zones.</li><li>One-click PDF session and MVC/muscle-load reports.</li><li>Reliable EDF+ output using a buffered-write pattern that avoids a silent file-corruption artefact during continuous streaming.</li><li>Reproducible synthetic signals for class assignments and hardware-free continuous integration.</li><li>Assisted selection of significant fragments, with an editable fragment editor (detection parameters and envelope-filter cut-offs) applied to the analysis.</li><li>Region-of-interest analysis, CSV export of results, and a live signal-quality check during recording.</li><li>An ECG signal profile alongside EMG, selectable through a profile registry.</li><li>Classroom mode: a read-only live dashboard served over the local network so students follow the session on their phone/tablet browser (no install), with a per-session access code so the follower link only works while the broadcast is running.</li></ul><p>emgteach runs on Windows, macOS and Linux with Python 3.10–3.12, is covered by a suite of 223 automated tests, and is released under the GPL-3.0-or-later license. Source code, documentation and issue tracker: https://github.com/aagisto-maker/emgteach</p>",
+  "description": "<p>emgteach is an open-source Python package that provides a unified PySide6 desktop application for real-time acquisition, offline analysis and maximum voluntary contraction (MVC) normalisation of surface electromyography (sEMG) signals. It is designed for hands-on biopotential acquisition in undergraduate physiology teaching laboratories, and is meant to be set up by instructors with different levels of technical background and used directly by students during a practical session.</p><p>The application is hardware-agnostic through a common AcquisitionDevice interface and ships with two interchangeable low-cost backends: BITalino (revolution) over Bluetooth, and an Arduino RedBoard Plus + MyoWare 2.0 over USB serial (open firmware included). A single setting switches between them.</p><p>Main features:</p><ul><li>Three-tab GUI (Acquisition, Analysis, MVC normalisation) wrapping a reusable, Qt-free analytic core.</li><li>Bilingual interface (English / Spanish) with automatic start-up language detection and an in-app language switch.</li><li>Two-channel acquisition (e.g. agonist/antagonist) with a stacked two-channel live view.</li><li>Automatic contraction-onset detection (baseline + k·SD threshold) stored as EDF+ annotations.</li><li>Muscle-load analysis (Jonsson APDF): static (P10), median (P50) and peak (P90) %MVC levels, both offline and as a live monitor with warning/danger zones.</li><li>One-click PDF session and MVC/muscle-load reports.</li><li>Reliable EDF+ output using a buffered-write pattern that avoids a silent file-corruption artefact during continuous streaming.</li><li>Reproducible synthetic signals for class assignments and hardware-free continuous integration.</li><li>Assisted selection of significant fragments, with an editable fragment editor (detection parameters and envelope-filter cut-offs) applied to the analysis.</li><li>Region-of-interest analysis, CSV export of results, and a live signal-quality check during recording.</li><li>An ECG signal profile alongside EMG, selectable through a profile registry.</li><li>Classroom mode: a read-only live dashboard served over the local network so students follow the session on their phone/tablet browser (no install), with a per-session access code so the follower link only works while the broadcast is running.</li><li>Kinematics via the BITalino accelerometer (v2.0.0): a selectable ACC channel with a live channel-finder diagnostic, a movement-versus-EMG analysis panel, a guided force-velocity acquisition wizard (an MVC maximum followed by cued quick lifts, each auto-marked with its load), and a force-velocity study that turns one recording into the load-velocity, Hill force-velocity, power and recruitment curves.</li></ul><p>emgteach runs on Windows, macOS and Linux with Python 3.10–3.12, is covered by a suite of 272 automated tests, and is released under the GPL-3.0-or-later license. Source code, documentation and issue tracker: https://github.com/aagisto-maker/emgteach</p>",
   "creators": [
     {
       "name": "Agis-Torres, Ángel",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Physiology Department, Complutense University of Madrid",
       "orcid": "0000-0002-3548-7264"
     },
     {
       "name": "Fernandes, Vítor Samuel",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Physiology Department, Complutense University of Madrid",
       "orcid": "0000-0001-6060-9035"
     },
     {
       "name": "Navarro-Dorado, Jorge",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Physiology Department, Complutense University of Madrid",
       "orcid": "0000-0002-4643-3528"
     },
     {
       "name": "Muñoz-Picos, Mercedes",
-      "affiliation": "Department of Physiology (Faculty of Pharmacy), Universidad Complutense de Madrid, Madrid, Spain",
+      "affiliation": "Physiology Department, Complutense University of Madrid",
       "orcid": "0000-0002-1679-9588"
+    },
+    {
+      "name": "Climent, Belén",
+      "affiliation": "Physiology Department, Complutense University of Madrid",
+      "orcid": "0000-0003-0852-9227"
+    },
+    {
+      "name": "Hernández, Medardo",
+      "affiliation": "Physiology Department, Complutense University of Madrid",
+      "orcid": "0000-0001-7165-2135"
     }
   ],
   "keywords": [

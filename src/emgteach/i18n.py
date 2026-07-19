@@ -116,6 +116,247 @@ _ES = {
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",
     # -- classroom broadcast (followers on phones) --
+    # -- accelerometer (ACC) --
+    "ACC": "ACC",
+    "Accelerometer (normalised g)": "Acelerómetro (g normalizado)",
+    "Also record the BITalino accelerometer (A4) in its own plot and "
+    "EDF channel. Useful to relate muscle activation to movement, "
+    "flag motion artefacts, or show tremor. BITalino only.":
+        "Registra también el acelerómetro del BITalino (A4) en su propia "
+        "gráfica y canal EDF. Útil para relacionar la activación muscular con "
+        "el movimiento, señalar artefactos de movimiento o mostrar el temblor. "
+        "Solo BITalino.",
+    "on the muscle (MMG)": "en el músculo (MMG)",
+    "on the moving segment (tremor)": "en el segmento móvil (temblor)",
+    "Where the accelerometer is stuck — sets which ACC analyses apply.":
+        "Dónde se pega el acelerómetro — determina qué análisis de ACC aplican.",
+    "10. EMG vs MMG (electrical vs mechanical)":
+        "10. EMG vs MMG (eléctrico vs mecánico)",
+    "11. Tremor (accelerometer FFT)": "11. Temblor (FFT del acelerómetro)",
+    "10. EMG vs MMG": "10. EMG vs MMG",
+    "11. Tremor": "11. Temblor",
+    "11. Tremor — accelerometer spectrum":
+        "11. Temblor — espectro del acelerómetro",
+    "Electrical (EMG) vs mechanical (MMG, from the accelerometer on "
+    "the muscle) envelope — needs an accelerometer channel.":
+        "Envolvente eléctrica (EMG) vs mecánica (MMG, del acelerómetro sobre "
+        "el músculo) — requiere un canal de acelerómetro.",
+    "Frequency spectrum of the accelerometer with the tremor peak "
+    "(physiological ~8-12 Hz) — needs an accelerometer channel.":
+        "Espectro de frecuencia del acelerómetro con el pico de temblor "
+        "(fisiológico ~8-12 Hz) — requiere un canal de acelerómetro.",
+    "EMG envelope (electrical)": "Envolvente EMG (eléctrica)",
+    "EMG — {ch} (electrical)": "EMG — {ch} (eléctrico)",
+    "MMG is paired with «{ch}» — the muscle carrying the accelerometer.":
+        "El MMG se empareja con «{ch}» — el músculo que lleva el acelerómetro.",
+    "MMG envelope (mechanical)": "Envolvente MMG (mecánica)",
+    "EMG (mV)": "EMG (mV)",
+    "MMG (g)": "MMG (g)",
+    "No accelerometer channel in this recording.":
+        "Este registro no tiene canal de acelerómetro.",
+    "Peak: {hz:.1f} Hz": "Pico: {hz:.1f} Hz",
+    "Accelerometer «{name}» — tremor peak {hz:.1f} Hz.":
+        "Acelerómetro «{name}» — pico de temblor {hz:.1f} Hz.",
+    "Could not analyse the accelerometer «{name}»: {err}":
+        "No se pudo analizar el acelerómetro «{name}»: {err}",
+    # -- force-velocity study --
+    "Force-velocity study…": "Estudio fuerza-velocidad…",
+    "Force-velocity study": "Estudio fuerza-velocidad",
+    "Build the load-velocity, force-velocity, power and recruitment "
+    "curves from one recording where several known loads were "
+    "lifted. Needs an accelerometer channel.":
+        "Construye las curvas carga-velocidad, fuerza-velocidad, potencia y "
+        "reclutamiento a partir de un registro en el que se levantaron varias "
+        "cargas conocidas. Requiere un canal de acelerómetro.",
+    "Could not open the force-velocity study: {error}":
+        "No se pudo abrir el estudio fuerza-velocidad: {error}",
+    "Repetitions (one per contraction):":
+        "Repeticiones (una por contracción):",
+    "Use": "Usar",
+    "Rep": "Rep",
+    "Load (kg)": "Carga (kg)",
+    "Velocity (a.u.)": "Velocidad (u.a.)",
+    "Untick any contraction that is clearly not valid, then Redraw. "
+    "Repetitions at the same load are averaged. Velocity is in "
+    "arbitrary units (the accelerometer is uncalibrated); force is the "
+    "entered load.":
+        "Desmarca cualquier contracción que no sea claramente válida y pulsa "
+        "Redibujar. Las repeticiones de la misma carga se promedian. La "
+        "velocidad está en unidades arbitrarias (el acelerómetro no está "
+        "calibrado); la fuerza es la carga introducida.",
+    "⚠ The accelerometer barely moved (flat / pinned at a rail), so "
+    "the velocities are ~0. Put it on the moving segment, oriented "
+    "so its resting value sits mid-range (not at ±1 g), and lift "
+    "quickly.":
+        "⚠ El acelerómetro apenas se movió (plano / pegado a un extremo), así "
+        "que las velocidades son ~0. Colócalo en el segmento móvil, orientado "
+        "para que en reposo quede a media escala (no en ±1 g), y levanta "
+        "rápido.",
+    "No repetitions detected in this recording.":
+        "No se detectaron repeticiones en este registro.",
+    "No velocity — accelerometer flat\n(see the warning)":
+        "Sin velocidad — acelerómetro plano\n(ver el aviso)",
+    # Analogue-channel diagnostic (find where the accelerometer is wired).
+    "Find ACC channel…": "Buscar canal del ACC…",
+    "Read all six analogue inputs live to see which one responds when "
+    "you tilt the accelerometer. Connect the BITalino first, and do "
+    "not run it while recording.":
+        "Lee las seis entradas analógicas en vivo para ver cuál responde al "
+        "girar el acelerómetro. Conecta el BITalino primero, y no lo uses "
+        "mientras grabas.",
+    "Find the accelerometer channel": "Buscar el canal del acelerómetro",
+    "Reading all six analogue inputs. Tilt the accelerometer slowly "
+    "through 90° in each direction: the channel whose range grows the "
+    "most is where the accelerometer is wired. A4 is the one emgteach "
+    "uses for the ACC.":
+        "Leyendo las seis entradas analógicas. Gira el acelerómetro despacio "
+        "90° en cada dirección: el canal cuyo rango más crece es donde está "
+        "conectado el acelerómetro. A4 es el que emgteach usa para el ACC.",
+    "Value (raw)": "Valor (crudo)",
+    "Range": "Rango",
+    "Movement": "Movimiento",
+    "Reset ranges": "Reiniciar rangos",
+    "✓ The accelerometer responds on A4 — as expected.":
+        "✓ El acelerómetro responde en A4 — como debe ser.",
+    "→ The accelerometer is on {ch}, not A4. Move its plug to "
+    "the A4 port (or tell me and I make the ACC channel "
+    "selectable).":
+        "→ El acelerómetro está en {ch}, no en A4. Cambia su conector al "
+        "puerto A4 (o dímelo y hago el canal del ACC seleccionable).",
+    "Tilt the sensor 90°… no channel clearly responds yet.":
+        "Gira el sensor 90°… ningún canal responde claramente aún.",
+    "Could not read the BITalino: {err}":
+        "No se pudo leer el BITalino: {err}",
+    "Use this channel for the ACC": "Usar este canal para el ACC",
+    "ACC ch:": "Canal ACC:",
+    "Analogue input the accelerometer is connected to (default A4). "
+    "Use \"Find ACC channel…\" if unsure.":
+        "Entrada analógica a la que está conectado el acelerómetro (por "
+        "defecto A4). Usa «Buscar canal del ACC…» si no estás seguro.",
+    "Accelerometer set to A{n}.": "Acelerómetro fijado en A{n}.",
+    "Channels: EMG on {emg}, accelerometer on A{acc}.":
+        "Canales: EMG en {emg}, acelerómetro en A{acc}.",
+    "Tick at least two valid repetitions with a load (kg) entered, "
+    "then press Redraw.":
+        "Marca al menos dos repeticiones válidas con una carga (kg) "
+        "introducida y pulsa Redibujar.",
+    "Load-velocity": "Carga-velocidad",
+    "Force-velocity (normalised)": "Fuerza-velocidad (normalizada)",
+    "Force (fraction of max)": "Fuerza (fracción del máximo)",
+    "Velocity (fraction of max)": "Velocidad (fracción del máximo)",
+    "Power (load × velocity)": "Potencia (carga × velocidad)",
+    "Power (a.u.)": "Potencia (u.a.)",
+    "Recruitment (load vs EMG)": "Reclutamiento (carga vs EMG)",
+    "EMG amplitude (mV)": "Amplitud EMG (mV)",
+    # Guided force-velocity acquisition wizard.
+    "Guided F-V…": "F-V guiada…",
+    "Guided force-velocity acquisition": "Adquisición fuerza-velocidad guiada",
+    "Guided force-velocity acquisition: an MVC maximum first (no "
+    "load), then a discrete 'contract with this load' prompt for "
+    "every repetition of every load. Starts the recording for you "
+    "and marks each contraction with its load so the force-velocity "
+    "study reads them directly. Enable the accelerometer and connect "
+    "the BITalino first.":
+        "Adquisición fuerza-velocidad guiada: primero una CVM máxima (sin "
+        "carga) y luego un aviso «contrae con esta carga» para cada repetición "
+        "de cada carga. Inicia la grabación por ti y marca cada contracción con "
+        "su carga, para que el estudio fuerza-velocidad las lea directamente. "
+        "Activa el acelerómetro y conecta el BITalino primero.",
+    "List the known loads (kg) the subject will lift, lightest to "
+    "heaviest. The wizard guides one short recording per load and marks "
+    "each with its load, so the force-velocity study reads them "
+    "automatically.":
+        "Indica las cargas conocidas (kg) que levantará el sujeto, de menor a "
+        "mayor. El asistente guía un registro corto por carga y marca cada una "
+        "con su carga, para que el estudio fuerza-velocidad las lea "
+        "automáticamente.",
+    "Loads (kg):": "Cargas (kg):",
+    "e.g.  2, 4, 6, 8": "p. ej.  2, 4, 6, 8",
+    "Separate loads with commas or spaces; use a dot for decimals "
+    "(e.g. 7.5).":
+        "Separa las cargas con comas o espacios; usa el punto para decimales "
+        "(p. ej. 7.5).",
+    "⚠ The accelerometer is set to the muscle. For force-velocity "
+    "put it on the moving segment (set the placement to \"on the "
+    "moving segment\"), or the velocity will be near zero.":
+        "⚠ El acelerómetro está en el músculo. Para fuerza-velocidad ponlo en "
+        "el segmento móvil (pon la colocación en «en el segmento móvil»), o la "
+        "velocidad será casi cero.",
+    "Contractions per load:": "Contracciones por carga:",
+    "Contractions to perform at each load. The wizard prompts one at a "
+    "time; keep it low (1-3) so fatigue does not bias the heavier loads.":
+        "Contracciones a realizar en cada carga. El asistente las pide de una en "
+        "una; mantenlo bajo (1-3) para que la fatiga no sesgue las cargas más "
+        "pesadas.",
+    "Prepare time:": "Tiempo de preparación:",
+    "Countdown to prepare before each contraction.":
+        "Cuenta atrás para prepararte antes de cada contracción.",
+    "Lift time:": "Tiempo de levantamiento:",
+    "Time given for each loaded lift — a quick concentric movement, not "
+    "a hold (the MVC maximum is held separately).":
+        "Tiempo para cada levantamiento con carga — un movimiento concéntrico "
+        "rápido, no un mantenimiento (la CVM máxima se mantiene aparte).",
+    "Enter at least two positive loads (kg), separated by spaces.":
+        "Introduce al menos dos cargas positivas (kg), separadas por espacios.",
+    "List the known loads (kg) the subject will lift, lightest to "
+    "heaviest. The wizard first guides an MVC maximum (no load), then "
+    "for each load cues a quick lift ('Lift!' → 'Relax!', no hold), "
+    "marking each so the force-velocity study reads the loads "
+    "automatically.":
+        "Indica las cargas conocidas (kg) que levantará el sujeto, de menor a "
+        "mayor. El asistente guía primero una CVM máxima (sin carga) y luego, "
+        "para cada carga, indica un levantamiento rápido («¡Levanta!» → "
+        "«¡Relaja!», sin mantener), marcando cada uno para que el estudio "
+        "fuerza-velocidad lea las cargas automáticamente.",
+    # Config label next to the guided-F-V button (reps · loads).
+    "{reps}× · loads: {loads} kg": "{reps}× · cargas: {loads} kg",
+    "(loads not set)": "(cargas sin definir)",
+    # Guided-F-V wizard prompts (MVC maximum first, then per-load contractions).
+    "Get ready — maximum contraction (no load)":
+        "Prepárate — contracción máxima (sin carga)",
+    "Contract at maximum when it reaches 0":
+        "Contrae al máximo al llegar a 0",
+    "Get ready — maximum (no load): {n}":
+        "Prepárate — máxima (sin carga): {n}",
+    "Contract at maximum! (no load)": "¡Contrae al máximo! (sin carga)",
+    "Contract at maximum! ({s:.0f} s)": "¡Contrae al máximo! ({s:.0f} s)",
+    "Relax — now the loads, lightest first":
+        "Relaja — ahora las cargas, de menor a mayor",
+    "Relax — the loads come next…": "Relaja — ahora vienen las cargas…",
+    " (load {i}/{n}, rep {r}/{rn})": " (carga {i}/{n}, rep {r}/{rn})",
+    "Prepare {kg:g} kg{prog}": "Prepara {kg:g} kg{prog}",
+    "Prepare {kg:g} kg{prog}: {n}": "Prepara {kg:g} kg{prog}: {n}",
+    "Lift {kg:g} kg when it reaches 0":
+        "Levanta {kg:g} kg al llegar a 0",
+    "Lift {kg:g} kg!": "¡Levanta {kg:g} kg!",
+    "Lift {kg:g} kg — then relax": "Levanta {kg:g} kg — luego relaja",
+    "Relax — another rep of {kg:g} kg":
+        "Relaja — otra repetición de {kg:g} kg",
+    "Relax — change to {kg:g} kg": "Relaja — cambia a {kg:g} kg",
+    "F-V: MVC reference {ref:.2f} mV.":
+        "F-V: referencia CVM {ref:.2f} mV.",
+    "Force-velocity: contraction with {kg:g} kg.":
+        "Fuerza-velocidad: contracción con {kg:g} kg.",
+    "Loads recorded": "Cargas grabadas",
+    "{n} loads marked.\nStop recording, then open the "
+    "Force-velocity study.":
+        "{n} cargas marcadas.\nDetén la grabación y abre el estudio "
+        "fuerza-velocidad.",
+    "Force-velocity: {n} loads recorded. Stop recording, then open "
+    "the Force-velocity study in the Analysis tab.":
+        "Fuerza-velocidad: {n} cargas grabadas. Detén la grabación y abre el "
+        "estudio fuerza-velocidad en la pestaña Análisis.",
+    "Force-velocity acquisition finished: {n} loads.":
+        "Adquisición fuerza-velocidad terminada: {n} cargas.",
+    # Movement-vs-EMG analysis panel (accelerometer on the moving segment).
+    "Movement (limb kinematics)": "Movimiento (cinemática del segmento)",
+    "Movement (a.u.)": "Movimiento (u.a.)",
+    "12. Movement vs EMG (limb kinematics)":
+        "12. Movimiento vs EMG (cinemática del segmento)",
+    "Movement from the accelerometer on the moving segment — follows "
+    "«{ch}» (arbitrary units).":
+        "Movimiento del acelerómetro en el segmento móvil — sigue a «{ch}» "
+        "(unidades arbitrarias).",
     "Broadcast to phones (classroom mode)": "Difundir a móviles (modo aula)",
     "Serve a read-only live view over the local network so students "
     "can follow on their phone/tablet browser (no install). One "
@@ -204,6 +445,10 @@ _ES = {
         "Restaurar rangos Y y ventana temporal a valores iniciales",
     "Zoom in (vertical) — {label}": "Ampliar (vertical) — {label}",
     "Zoom out (vertical) — {label}": "Reducir (vertical) — {label}",
+    "Zoom in (vertical) — accelerometer":
+        "Ampliar (vertical) — acelerómetro",
+    "Zoom out (vertical) — accelerometer":
+        "Reducir (vertical) — acelerómetro",
     # Vertical-zoom sidebar button letters (raw/filtered/envelope initials).
     # "F" and "E" are identical in both languages and fall through to the key.
     "R": "B",
@@ -330,12 +575,35 @@ _ES = {
     "Save figure (PNG)": "Guardar figura (PNG)",
     "Generate PDF report": "Generar informe PDF",
     "EMG channel:": "Canal EMG:",
-    "Compare 2nd channel:": "Comparar 2º canal:",
-    "Also analyse a second channel (e.g. antagonist) and overlay "
-    "both envelopes. Enabled automatically for 2-channel recordings.":
-        "Analiza también un segundo canal (p. ej. antagonista) y superpone "
-        "ambas envolventes. Se activa automáticamente en registros de 2 canales.",
-    "Second EMG channel to overlay.": "Segundo canal EMG a superponer.",
+    "Channel «{ch}»: flat — no signal (electrode not connected?).":
+        "Canal «{ch}»: plano — sin señal (¿electrodo sin conectar?).",
+    "Channel «{ch}»: saturated — the trace is pinned at the rails "
+    "(check the electrode contact or the gain).":
+        "Canal «{ch}»: saturado — la traza está pegada al tope "
+        "(revisa el contacto del electrodo o la ganancia).",
+    "Channel «{ch}»: weak signal (low amplitude).":
+        "Canal «{ch}»: señal débil (amplitud baja).",
+    "EMG channel to analyse. Every panel and the report use only "
+    "this channel. Filled with the file's channels (EMG1/EMG2) when "
+    "you select it.":
+        "Canal EMG a analizar. Todos los paneles y el informe usan solo este "
+        "canal. Se rellena con los canales del archivo (EMG1/EMG2) al "
+        "seleccionarlo.",
+    "Compare channels:": "Comparar canales:",
+    "Overlay the envelope of the two channels (agonist/antagonist). "
+    "The partner channel is set automatically to the other one. "
+    "Only available for two-channel recordings.":
+        "Superpone la envolvente de los dos canales (agonista/antagonista). "
+        "El canal pareja se fija automáticamente al otro. Solo disponible en "
+        "registros de dos canales.",
+    "Partner channel (chosen automatically).":
+        "Canal pareja (elegido automáticamente).",
+    "EMG channel to normalise (EMG1/EMG2 for two-channel files; "
+    "disabled when there is only one). The whole normalisation uses "
+    "this channel — press \"Compute MVC\" after changing it.":
+        "Canal EMG a normalizar (EMG1/EMG2 en archivos de dos canales; "
+        "desactivado si solo hay uno). Toda la normalización usa este canal; "
+        "pulsa «Calcular CVM» tras cambiarlo.",
     "9. Overlaid envelopes (agonist/antagonist)":
         "9. Envolventes superpuestas (agonista/antagonista)",
     "9. Env. overlay": "9. Env. superp.",
