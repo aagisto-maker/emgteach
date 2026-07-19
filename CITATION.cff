@@ -16,9 +16,15 @@ abstract: >-
   autodetection, and ships a standalone Windows executable. Version 1.1.0 adds
   assisted fragment selection with an editable fragment editor, region-of-interest
   analysis, CSV export, a live signal-quality check and an ECG signal profile.
+  Version 2.0.0 adds a kinematic dimension via the BITalino accelerometer: a
+  selectable ACC channel with a live channel-finder diagnostic, a
+  movement-versus-EMG analysis panel, a guided force-velocity acquisition wizard
+  (an MVC maximum followed by cued quick lifts, each auto-marked with its load)
+  and a force-velocity study that turns one recording into the load-velocity,
+  Hill force-velocity, power and recruitment curves.
 type: software
-version: 1.4.1
-date-released: "2026-07-14"
+version: 2.0.0
+date-released: "2026-07-19"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
@@ -28,10 +34,12 @@ authors:
   - family-names: "Fernandes"
     given-names: "Vítor Samuel"
     affiliation: "Physiology Department, Complutense University of Madrid"
+    email: "vleite@ucm.es"
     orcid: "https://orcid.org/0000-0001-6060-9035"
   - family-names: "Navarro-Dorado"
     given-names: "Jorge"
     affiliation: "Physiology Department, Complutense University of Madrid"
+    email: "jorgend@ucm.es"
     orcid: "https://orcid.org/0000-0002-4643-3528"
   - family-names: "Muñoz-Picos"
     given-names: "Mercedes"
@@ -55,10 +63,8 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.21002297
     description: "Concept DOI for emgteach (always resolves to the latest version)"
-  - type: doi
-    value: 10.5281/zenodo.21362249
-    description: "Version-specific DOI for emgteach v1.4.1"
-  # (History: v1.3.0 = 10.5281/zenodo.21292858; v1.2.1 = 10.5281/zenodo.21289905; v1.2.0 = 10.5281/zenodo.21281048; v1.1.1 = 10.5281/zenodo.21197452; v1.1.0 = 10.5281/zenodo.21197169; v1.0.0 = 10.5281/zenodo.21002298.)
+  # Version-specific DOI for v2.0.0 to be minted on Zenodo at release.
+  # (History: v1.4.1 = 10.5281/zenodo.21362249; v1.3.0 = 10.5281/zenodo.21292858; v1.2.1 = 10.5281/zenodo.21289905; v1.2.0 = 10.5281/zenodo.21281048; v1.1.1 = 10.5281/zenodo.21197452; v1.1.0 = 10.5281/zenodo.21197169; v1.0.0 = 10.5281/zenodo.21002298.)
 keywords:
   - electromyography
   - EMG
