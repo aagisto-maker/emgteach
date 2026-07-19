@@ -545,6 +545,19 @@ class TestBitalinoDeviceBasics:
         assert abs(out[0, 1]) < 0.02
         device.close()
 
+    def test_read_raw_returns_adc_not_physical(self, fast_commands: None) -> None:
+        """read_raw returns the raw ADC of every channel (for the diagnostic)."""
+        device = BitalinoDevice("COM5", fs=1000, channels=[0, 1])
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + _encode_frame_2ch(1000, 250))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        raw = device.read_raw(1)
+        assert raw.shape == (1, 2)
+        np.testing.assert_allclose(raw[0, 0], 1000)   # A1 raw ADC (not mV)
+        np.testing.assert_allclose(raw[0, 1], 250)    # A2 raw ADC
+        device.close()
+
     def test_read_one_channel_plus_accelerometer(self, fast_commands: None) -> None:
         """acc=True on 1 EMG channel enables {A1, A4} and exposes EMG + ACC.
 
@@ -562,6 +575,45 @@ class TestBitalinoDeviceBasics:
         assert out.shape == (1, 2)
         np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)   # A1 in mV
         np.testing.assert_allclose(out[0, 1], 1.0, atol=0.01)    # A4 = +1 g
+        device.close()
+
+    def test_acc_channel_configurable(self, fast_commands: None) -> None:
+        """The accelerometer can be read from a different input than A4.
+
+        With 1 EMG (A1) and the ACC set to A2, {A1, A2} decode with position 0 =
+        A1 (EMG) and position 1 = A2 (ACC)."""
+        device = BitalinoDevice(
+            "COM5", fs=1000, channels=[0], acc=True, acc_channel=1
+        )
+        assert device.channel_kinds() == ["EMG", "ACC"]
+        frame = _encode_frame_2ch(1023, 0)  # A1=+1.65mV (EMG), A2=0→-1g (ACC)
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + frame)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(1)
+        assert out.shape == (1, 2)
+        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)   # A1 EMG in mV
+        np.testing.assert_allclose(out[0, 1], -1.0, atol=0.01)   # A2 ACC = -1 g
+        device.close()
+
+    def test_acc_below_emg_still_exposed_last(self, fast_commands: None) -> None:
+        """ACC on a *lower* input than the EMG (e.g. A1) is still the trailing
+        exposed column, so the app's 'ACC is last' assumption holds."""
+        device = BitalinoDevice(
+            "COM5", fs=1000, channels=[1], acc=True, acc_channel=0
+        )
+        assert device.channel_kinds() == ["EMG", "ACC"]
+        # decode ascending = [A1, A2]; frame position 0 = A1 (=0), 1 = A2 (=1023)
+        frame = _encode_frame_2ch(0, 1023)
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + frame)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(1)
+        assert out.shape == (1, 2)
+        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)   # EMG (A2), first
+        np.testing.assert_allclose(out[0, 1], -1.0, atol=0.01)   # ACC (A1), last
         device.close()
 
     def test_read_timeout_raises(self, fast_commands: None) -> None:

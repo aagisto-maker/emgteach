@@ -170,27 +170,40 @@ class BitalinoDevice(AcquisitionDevice):
         fs: int = 1000,
         channels: list[int] | None = None,
         acc: bool = False,
+        acc_channel: int | None = None,
     ) -> None:
         self._port = str(port)
         self._fs = int(fs)
         emg = list(channels) if channels is not None else [0]
         self._acc = bool(acc)
-        # The frame decoder extracts channels by position (ascending), so the
-        # enabled set is sorted and A4 (10-bit) is decoded like any 10-bit
-        # channel. With the ACC on A4 there is no need to pad the set: we just
-        # add A4 to the EMG channels and expose them all.
+        # Which analogue input the accelerometer is actually wired to. The
+        # BITalino packs the *enabled* channels consecutively in the frame, so
+        # this must be the physical channel; it defaults to A4 but is
+        # configurable because different sensors/boards land on different
+        # inputs (found with the channel diagnostic).
+        self._acc_channel = (
+            self._ACC_CHANNEL if acc_channel is None else int(acc_channel)
+        )
+        # The wire packs the *enabled* inputs in ascending order (``decode``),
+        # so the frame is always decoded ascending. But the rest of the app
+        # relies on "the accelerometer is the trailing column", so the exposed
+        # order is EMG channels first (as given) and the ACC last — whatever
+        # physical input each is on. ``_expose`` maps exposed position → column
+        # in the ascending-decoded frame.
+        emg_only = [c for c in emg if not (acc and c == self._acc_channel)]
         if acc:
-            decode = sorted(set(emg) | {self._ACC_CHANNEL})
-            self._kinds = [
-                "ACC" if c == self._ACC_CHANNEL else "EMG" for c in decode
-            ]
+            decode = sorted(set(emg) | {self._acc_channel})
+            expose = [*emg_only, self._acc_channel]
         else:
             decode = list(emg)
-            self._kinds = ["EMG"] * len(emg)
+            expose = list(emg)
         self._decode_channels = decode
-        self._expose = list(range(len(decode)))
-        # Public channel list = what read() returns, in exposed (ascending) order.
-        self._channels = list(decode)
+        self._expose = [decode.index(c) for c in expose]
+        self._kinds = [
+            "ACC" if (acc and c == self._acc_channel) else "EMG" for c in expose
+        ]
+        # Public channel list = what read() returns, in exposed order.
+        self._channels = list(expose)
         self._serial = None  # type: ignore[var-annotated]
         self._resolved_port: str | None = None
         self._conn_lock = threading.Lock()
@@ -320,6 +333,22 @@ class BitalinoDevice(AcquisitionDevice):
         raw_buf = self._receive_exact(ser, n * frame_bytes)  # blocking; no lock
         adc = self._decode_frames(raw_buf, n)
         return self._adc_to_physical(adc)
+
+    def read_raw(self, n_samples: int) -> FloatArray:
+        """Read *n_samples* and return the **raw ADC** value of every decoded
+        channel (no mV/g conversion), shape ``(n_samples, n_decode)``.
+
+        Used by the channel-diagnostic tool to see which analogue input carries
+        the accelerometer, independent of any per-channel scaling.
+        """
+        with self._conn_lock:
+            ser = self._serial
+        if ser is None:
+            raise RuntimeError(tr("The BITalino device is not open."))
+        n = int(n_samples)
+        frame_bytes = self._frame_size()
+        raw_buf = self._receive_exact(ser, n * frame_bytes)  # blocking; no lock
+        return self._decode_frames(raw_buf, n)
 
     def _adc_to_physical(self, adc: FloatArray | np.ndarray) -> FloatArray:
         """Select the exposed columns from the decoded frame and convert each to
