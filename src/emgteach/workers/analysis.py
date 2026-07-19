@@ -423,7 +423,11 @@ class AnalysisWorker(QThread):
             # the tremor spectrum. A failure only drops the ACC panels.
             if self._acc_channel:
                 try:
-                    from emgteach.dsp import mmg_envelope, tremor_spectrum
+                    from emgteach.dsp import (
+                        mmg_envelope,
+                        movement_envelope,
+                        tremor_spectrum,
+                    )
 
                     # The accelerometer is in g, not mV: read it with pyedflib
                     # (physical units as-is) rather than read_edf_mne, which
@@ -439,10 +443,12 @@ class AnalysisWorker(QThread):
                             [acc_raw[i0:i1] for (i0, i1, _, _) in bounds]
                         )
                     mmg_env = mmg_envelope(acc_raw, fs)
+                    move_env = movement_envelope(acc_raw, fs)
                     tf, tpsd, tpeak = tremor_spectrum(acc_raw, fs)
                     result["acc_raw"] = acc_raw
                     result["acc_mmg_envelope"] = mmg_env
                     result["acc_mmg_rms"] = float(np.sqrt(np.mean(mmg_env ** 2)))
+                    result["acc_movement_envelope"] = move_env
                     result["acc_tremor_freqs"] = tf
                     result["acc_tremor_psd"] = tpsd
                     result["acc_tremor_peak_hz"] = tpeak

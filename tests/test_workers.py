@@ -634,6 +634,10 @@ class TestAnalysisWorker:
         assert r["acc_tremor_peak_hz"] == pytest.approx(10.0, abs=0.5)
         # MMG is in g (~0.2), not x1000 (the read_edf_mne pitfall).
         assert r["acc_mmg_rms"] < 1.0
+        # The limb movement envelope is also computed, same length, positive.
+        assert "acc_movement_envelope" in r
+        assert len(r["acc_movement_envelope"]) == len(r["emg_envelope"])
+        assert np.all(r["acc_movement_envelope"] >= 0.0)
 
     def test_resolve_roi_full_recording(self, qapp: QCoreApplication) -> None:
         # No ROI requested -> the whole recording, bounds (0, n).

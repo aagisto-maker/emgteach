@@ -170,6 +170,7 @@ _PANEL_REPORT_TITLES = {
     8: "9. Overlaid envelopes (agonist/antagonist)",
     9: "10. EMG vs MMG (electrical vs mechanical)",
     10: "11. Tremor — accelerometer spectrum",
+    11: "12. Movement vs EMG (limb kinematics)",
 }
 
 
@@ -318,6 +319,23 @@ def _draw_analysis_panel(
             ax.set_xlim(0, 25)
         ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
         ax.set_ylabel("PSD (g²/Hz)", fontsize=8)
+    elif idx == 11:
+        emg_lbl = r.get("channel_name") or "EMG"
+        ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.5,
+                label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
+        move = r.get("acc_movement_envelope")
+        if move is not None:
+            ax2 = ax.twinx()
+            ax2.plot(times, move, color="#D35400", lw=1.4,
+                     label=tr("Movement (limb kinematics)"))
+            ax2.set_ylabel(tr("Movement (a.u.)"), fontsize=8, color="#D35400")
+            ax2.tick_params(axis="y", labelsize=7, colors="#D35400")
+            ax2.set_xlim(x0, x1)
+        ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
+        ax.set_xlim(x0, x1)
+        ax.legend(loc="upper left", fontsize=7)
+        _draw_report_markers(ax, markers, x0, x1)
 
     ax.set_title(tr(_PANEL_REPORT_TITLES.get(idx, "")), fontsize=9)
     ax.tick_params(labelsize=7)

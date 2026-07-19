@@ -61,14 +61,15 @@ _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 # original index (0-7) is the identity used by the plotting code and the PDF
 # report; the display number is what the student sees.
 # Canonical panel index 8 is the two-channel overlay (agonist/antagonist);
-# it is only meaningful when a second channel is analysed. Indices 9 and 10 are
-# the accelerometer panels (EMG vs MMG, tremor FFT), only meaningful when the
-# recording has an accelerometer channel.
+# it is only meaningful when a second channel is analysed. Indices 9-11 are the
+# accelerometer panels (EMG vs MMG, tremor FFT, movement vs EMG), only
+# meaningful when the recording has an accelerometer channel.
 _OVERLAY_PID = 8
 _MMG_PID = 9
 _TREMOR_PID = 10
+_MOVEMENT_PID = 11
 # Panels that require an accelerometer channel to be usable.
-_ACC_PIDS = (_MMG_PID, _TREMOR_PID)
+_ACC_PIDS = (_MMG_PID, _TREMOR_PID, _MOVEMENT_PID)
 
 _PANEL_LAYOUT: list[tuple[int, str]] = [
     (0, "1A"),  # raw signal
@@ -82,6 +83,7 @@ _PANEL_LAYOUT: list[tuple[int, str]] = [
     (_OVERLAY_PID, "9"),  # overlaid envelopes (agonist/antagonist)
     (_MMG_PID, "10"),     # EMG vs MMG (accelerometer on the muscle)
     (_TREMOR_PID, "11"),  # tremor FFT (accelerometer)
+    (_MOVEMENT_PID, "12"),  # movement vs EMG (accelerometer on the limb)
 ]
 # Panels checked by default (original indices): raw, normalised envelope, PSD.
 # The overlay panel (8) is checked dynamically when a 2nd channel is compared.
@@ -100,6 +102,7 @@ _PANEL_NOMBRES = [
     "9. Overlaid envelopes (agonist/antagonist)",
     "10. EMG vs MMG (electrical vs mechanical)",
     "11. Tremor (accelerometer FFT)",
+    "12. Movement vs EMG (limb kinematics)",
 ]
 
 # Short labels (on-screen checkbox row), in display order and renumbered.
@@ -115,6 +118,7 @@ _PANEL_SHORT_LABELS = [
     "9. Env. overlay",
     "10. EMG vs MMG",
     "11. Tremor",
+    "12. Move vs EMG",
 ]
 
 # Display number per original panel index (sidebar labels, etc.).
@@ -131,6 +135,9 @@ _PANEL_TOOLTIPS = {
               "the muscle) envelope — needs an accelerometer channel.",
     _TREMOR_PID: "Frequency spectrum of the accelerometer with the tremor peak "
                  "(physiological ~8-12 Hz) — needs an accelerometer channel.",
+    _MOVEMENT_PID: "Movement (from the accelerometer on the moving segment) vs "
+                   "the EMG envelope — movement follows contraction; needs an "
+                   "accelerometer channel.",
     1: "Band-pass filtered (20-450 Hz) and rectified signal.",
     2: "Linear envelope vs the RMS envelope of the signal.",
     5: "RMS amplitude per window: how the intensity evolves.",
@@ -1107,7 +1114,8 @@ class AnalysisTab(QWidget):
         chk.setEnabled(active)
 
     def _any_acc_panel_checked(self) -> bool:
-        """True if any accelerometer panel (EMG-vs-MMG or tremor) is ticked."""
+        """True if any accelerometer panel (EMG-vs-MMG, tremor, movement) is
+        ticked."""
         for pid in _ACC_PIDS:
             try:
                 pos = self._panel_pids.index(pid)
@@ -1121,10 +1129,12 @@ class AnalysisTab(QWidget):
         """Enable the accelerometer panels when the file has an ACC channel.
 
         On enabling, the panel matching the ACC placement is ticked by default
-        (MMG for an ACC on the muscle, tremor for one on the moving segment);
-        without an ACC channel both are unticked and locked.
+        (MMG for an ACC on the muscle, movement-vs-EMG for one on the moving
+        segment); without an ACC channel they are all unticked and locked.
         """
-        default_pid = _TREMOR_PID if self._acc_placement == "limb" else _MMG_PID
+        default_pid = (
+            _MOVEMENT_PID if self._acc_placement == "limb" else _MMG_PID
+        )
         for pid in _ACC_PIDS:
             try:
                 pos = self._panel_pids.index(pid)
@@ -1309,6 +1319,44 @@ class AnalysisTab(QWidget):
             ax.set_ylabel("PSD (g²/Hz)", fontsize=8)
             ax.tick_params(labelsize=7)
             ax.grid(True, **_grid)
+
+        # --- Movement vs EMG (accelerometer on the moving segment) ---
+        if _MOVEMENT_PID in ax_map:
+            ax = ax_map[_MOVEMENT_PID]
+            move = r.get("acc_movement_envelope")
+            emg_lbl = r.get("channel_name") or "EMG"
+            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8,
+                    label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
+            if move is not None:
+                ax2 = ax.twinx()
+                ax2.plot(times, move, color="#D35400", lw=1.6,
+                         label=tr("Movement (limb kinematics)"))
+                ax2.set_ylabel(tr("Movement (a.u.)"), fontsize=8, color="#D35400")
+                ax2.tick_params(axis="y", labelsize=7, colors="#D35400")
+                ax2.set_xlim(inicio_s, fin_s)
+                ax2.legend(loc="upper right", fontsize=7)
+                # The accelerometer is uncalibrated, so the movement trace is in
+                # arbitrary units — the point is that it tracks the contraction.
+                ax.text(0.5, 0.98,
+                        tr("Movement from the accelerometer on the moving "
+                           "segment — follows «{ch}» (arbitrary units).")
+                        .format(ch=emg_lbl),
+                        transform=ax.transAxes, ha="center", va="top",
+                        fontsize=7, color="#888888")
+            else:
+                ax.text(0.5, 0.5,
+                        tr("No accelerometer channel in this recording."),
+                        transform=ax.transAxes, ha="center", va="center",
+                        fontsize=8, color="#888888")
+            ax.set_title(tr("12. Movement vs EMG (limb kinematics)"), fontsize=9)
+            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+            ax.tick_params(axis="y", labelsize=7, colors="#4169E1")
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_xlim(inicio_s, fin_s)
+            ax.tick_params(axis="x", labelsize=7)
+            ax.legend(loc="upper left", fontsize=7)
+            ax.grid(True, **_grid)
+            self._dibujar_marcadores(ax, inicio_s, fin_s)
 
         # --- 4: PSD ---
         if 4 in ax_map:

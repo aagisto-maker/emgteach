@@ -38,7 +38,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from scipy.integrate import simpson
+from scipy.integrate import cumulative_trapezoid, simpson
 from scipy.signal import (
     iirfilter,
     iirnotch,
@@ -547,6 +547,49 @@ def mmg_envelope(
     filtered = sosfiltfilt(design_bandpass(f_low, fh, fs), a)
     rectified = np.abs(filtered)
     return sosfiltfilt(design_lowpass(f_env, fs), rectified)
+
+
+def movement_envelope(
+    acc: FloatArray | np.ndarray,
+    fs: float,
+    hp_cutoff: float = 0.5,
+    f_env: float = 3.0,
+) -> FloatArray:
+    """Kinematic movement envelope from an accelerometer on a moving segment.
+
+    For a limb-mounted accelerometer the teaching signal is gross movement, not
+    muscle vibration: high-pass the acceleration to drop gravity and slow drift,
+    integrate it once to a velocity (arbitrary units — the accelerometer is
+    uncalibrated), high-pass the velocity again to remove the residual
+    integration drift, then rectify and low-pass to a smooth envelope. Overlaid
+    on the EMG envelope it shows that the movement follows the contraction.
+    Zero-phase (``sosfiltfilt``), matching the EMG/MMG envelope paths so the
+    traces line up in time.
+
+    Parameters
+    ----------
+    acc : array-like
+        Accelerometer signal (any units; the mean is removed).
+    fs : float
+        Sampling frequency (Hz).
+    hp_cutoff : float, optional
+        High-pass cut-off (Hz) applied to both the acceleration and the
+        integrated velocity to drop gravity and integration drift. Default 0.5.
+    f_env : float, optional
+        Envelope low-pass cut-off (Hz). Default 3.
+    """
+    a = np.asarray(acc, dtype=np.float64)
+    if a.size == 0:
+        return a
+    nyq = fs / 2.0
+    hp = min(float(hp_cutoff), 0.9 * nyq)
+    sos_hp = iirfilter(2, hp, btype="high", fs=fs, ftype="butter", output="sos")
+    acc_hp = sosfiltfilt(sos_hp, a - float(np.mean(a)))
+    vel = cumulative_trapezoid(acc_hp, dx=1.0 / fs, initial=0.0)
+    vel = sosfiltfilt(sos_hp, vel)  # remove the residual integration drift
+    rectified = np.abs(vel)
+    fe = min(float(f_env), 0.9 * nyq)
+    return sosfiltfilt(design_lowpass(fe, fs), rectified)
 
 
 def tremor_spectrum(

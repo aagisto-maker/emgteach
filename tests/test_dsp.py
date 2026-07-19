@@ -339,6 +339,29 @@ class TestAccelerometerDSP:
         # A ~0.2 g vibration gives an envelope of the same order (not x1000).
         assert 0.01 < float(np.mean(env)) < 1.0
 
+    def test_movement_envelope_tracks_the_moving_burst(self) -> None:
+        from emgteach.dsp import movement_envelope
+
+        # A limb accelerometer at rest, then a slow ~1 Hz movement burst in the
+        # middle. The movement envelope should be positive, drop gravity (the DC
+        # term), and peak inside the burst rather than in the still periods.
+        n = int(8 * FS)
+        t = np.arange(n) / FS
+        acc = np.full(n, 0.98)  # ~1 g gravity offset while still
+        burst = (t > 3.0) & (t < 5.0)
+        acc[burst] += 0.15 * np.sin(2 * np.pi * 1.0 * t[burst])
+        env = movement_envelope(acc, FS)
+        assert env.shape == acc.shape
+        assert np.all(env >= 0.0)
+        mid = env[burst]
+        still = np.concatenate([env[t < 2.5], env[t > 5.5]])
+        assert float(np.mean(mid)) > 3.0 * float(np.mean(still) + 1e-9)
+
+    def test_movement_envelope_handles_empty(self) -> None:
+        from emgteach.dsp import movement_envelope
+
+        assert movement_envelope(np.array([]), FS).size == 0
+
 
 class TestLiveQualityMonitor:
     """Per-block live quality check against the device's physical rails."""
