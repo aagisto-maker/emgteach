@@ -180,7 +180,7 @@ _ES = {
     "Repetitions at the same load are averaged. Velocity is in "
     "arbitrary units (the accelerometer is uncalibrated); force is the "
     "entered load.":
-        "Desmarque cualquier contracción que no sea claramente válida y pulse "
+        "Desmarcar cualquier contracción que no sea claramente válida y pulsar "
         "Redibujar. Las repeticiones de la misma carga se promedian. La "
         "velocidad está en unidades arbitrarias (el acelerómetro no está "
         "calibrado); la fuerza es la carga introducida.",
@@ -189,8 +189,8 @@ _ES = {
     "so its resting value sits mid-range (not at ±1 g), and lift "
     "quickly.":
         "⚠ El acelerómetro apenas se movió (plano / pegado a un extremo), así "
-        "que las velocidades son ~0. Colóquelo en el segmento móvil, orientado "
-        "para que en reposo quede a media escala (no en ±1 g), y levante "
+        "que las velocidades son ~0. Colocarlo en el segmento móvil, orientado "
+        "para que en reposo quede a media escala (no en ±1 g), y levantar "
         "rápido.",
     "No repetitions detected in this recording.":
         "No se detectaron repeticiones en este registro.",
@@ -202,14 +202,14 @@ _ES = {
     "you tilt the accelerometer. Connect the BITalino first, and do "
     "not run it while recording.":
         "Lee las seis entradas analógicas en vivo para ver cuál responde al "
-        "girar el acelerómetro. Conecte el BITalino primero, y no lo use "
-        "mientras graba.",
+        "girar el acelerómetro. Conectar el BITalino primero, y no usarlo "
+        "mientras se graba.",
     "Find the accelerometer channel": "Buscar el canal del acelerómetro",
     "Reading all six analogue inputs. Tilt the accelerometer slowly "
     "through 90° in each direction: the channel whose range grows the "
     "most is where the accelerometer is wired. A4 is the one emgteach "
     "uses for the ACC.":
-        "Leyendo las seis entradas analógicas. Gire el acelerómetro despacio "
+        "Leyendo las seis entradas analógicas. Girar el acelerómetro despacio "
         "90° en cada dirección: el canal cuyo rango más crece es donde está "
         "conectado el acelerómetro. A4 es el que emgteach usa para el ACC.",
     "Value (raw)": "Valor (crudo)",
@@ -221,10 +221,10 @@ _ES = {
     "→ The accelerometer is on {ch}, not A4. Move its plug to "
     "the A4 port (or tell me and I make the ACC channel "
     "selectable).":
-        "→ El acelerómetro está en {ch}, no en A4. Cambie su conector al "
-        "puerto A4 (o dígamelo y hago el canal del ACC seleccionable).",
+        "→ El acelerómetro está en {ch}, no en A4. Cambiar su conector al "
+        "puerto A4 (o indicarlo y hago el canal del ACC seleccionable).",
     "Tilt the sensor 90°… no channel clearly responds yet.":
-        "Gire el sensor 90°… ningún canal responde claramente aún.",
+        "Girar el sensor 90°… ningún canal responde claramente aún.",
     "Could not read the BITalino: {err}":
         "No se pudo leer el BITalino: {err}",
     "Use this channel for the ACC": "Usar este canal para el ACC",
@@ -232,14 +232,14 @@ _ES = {
     "Analogue input the accelerometer is connected to (default A4). "
     "Use \"Find ACC channel…\" if unsure.":
         "Entrada analógica a la que está conectado el acelerómetro (por "
-        "defecto A4). Use «Buscar canal del ACC…» si no está seguro.",
+        "defecto A4). Usar «Buscar canal del ACC…» en caso de duda.",
     "Accelerometer set to A{n}.": "Acelerómetro fijado en A{n}.",
     "Channels: EMG on {emg}, accelerometer on A{acc}.":
         "Canales: EMG en {emg}, acelerómetro en A{acc}.",
     "Tick at least two valid repetitions with a load (kg) entered, "
     "then press Redraw.":
-        "Marque al menos dos repeticiones válidas con una carga (kg) "
-        "introducida y pulse Redibujar.",
+        "Marcar al menos dos repeticiones válidas con una carga (kg) "
+        "introducida y pulsar Redibujar.",
     "Load-velocity": "Carga-velocidad",
     "Force-velocity (normalised)": "Fuerza-velocidad (normalizada)",
     "Force (fraction of max)": "Fuerza (fracción del máximo)",
@@ -261,12 +261,12 @@ _ES = {
         "carga) y luego un aviso «contraiga con esta carga» para cada repetición "
         "de cada carga. Inicia la grabación por usted y marca cada contracción con "
         "su carga, para que el estudio fuerza-velocidad las lea directamente. "
-        "Active el acelerómetro y conecte el BITalino primero.",
+        "Activar el acelerómetro y conectar el BITalino primero.",
     "List the known loads (kg) the subject will lift, lightest to "
     "heaviest. The wizard guides one short recording per load and marks "
     "each with its load, so the force-velocity study reads them "
     "automatically.":
-        "Indique las cargas conocidas (kg) que levantará el sujeto, de menor a "
+        "Indicar las cargas conocidas (kg) que levantará el sujeto, de menor a "
         "mayor. El asistente guía un registro corto por carga y marca cada una "
         "con su carga, para que el estudio fuerza-velocidad las lea "
         "automáticamente.",
@@ -274,13 +274,13 @@ _ES = {
     "e.g.  2, 4, 6, 8": "p. ej.  2, 4, 6, 8",
     "Separate loads with commas or spaces; use a dot for decimals "
     "(e.g. 7.5).":
-        "Separe las cargas con comas o espacios; use el punto para decimales "
+        "Separar las cargas con comas o espacios; usar el punto para decimales "
         "(p. ej. 7.5).",
     "⚠ The accelerometer is set to the muscle. For force-velocity "
     "put it on the moving segment (set the placement to \"on the "
     "moving segment\"), or the velocity will be near zero.":
-        "⚠ El acelerómetro está en el músculo. Para fuerza-velocidad póngalo en "
-        "el segmento móvil (ponga la colocación en «en el segmento móvil»), o la "
+        "⚠ El acelerómetro está en el músculo. Para fuerza-velocidad ponerlo en "
+        "el segmento móvil (poner la colocación en «en el segmento móvil»), o la "
         "velocidad será casi cero.",
     "Contractions per load:": "Contracciones por carga:",
     "Contractions to perform at each load. The wizard prompts one at a "
@@ -297,13 +297,13 @@ _ES = {
         "Tiempo para cada levantamiento con carga — un movimiento concéntrico "
         "rápido, no un mantenimiento (la CVM máxima se mantiene aparte).",
     "Enter at least two positive loads (kg), separated by spaces.":
-        "Introduzca al menos dos cargas positivas (kg), separadas por espacios.",
+        "Introducir al menos dos cargas positivas (kg), separadas por espacios.",
     "List the known loads (kg) the subject will lift, lightest to "
     "heaviest. The wizard first guides an MVC maximum (no load), then "
     "for each load cues a quick lift ('Lift!' → 'Relax!', no hold), "
     "marking each so the force-velocity study reads the loads "
     "automatically.":
-        "Indique las cargas conocidas (kg) que levantará el sujeto, de menor a "
+        "Indicar las cargas conocidas (kg) que levantará el sujeto, de menor a "
         "mayor. El asistente guía primero una CVM máxima (sin carga) y luego, "
         "para cada carga, indica un levantamiento rápido («¡Levanta!» → "
         "«¡Relaja!», sin mantener), marcando cada uno para que el estudio "
@@ -340,7 +340,7 @@ _ES = {
     "Loads recorded": "Cargas grabadas",
     "{n} loads marked.\nStop recording, then open the "
     "Force-velocity study.":
-        "{n} cargas marcadas.\nDetenga la grabación y abra el estudio "
+        "{n} cargas marcadas.\nDetener la grabación y abrir el estudio "
         "fuerza-velocidad.",
     "Force-velocity: {n} loads recorded. Stop recording, then open "
     "the Force-velocity study in the Analysis tab.":
@@ -463,15 +463,15 @@ _ES = {
     "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
     "the BITalino in Windows Bluetooth settings first. No PyBluez is used.":
         "Dirección MAC del BITalino (recomendado — estable en cualquier PC), o un "
-        "puerto COM concreto (p. ej. COM5), o déjelo vacío para autodetectar. Empareje "
+        "puerto COM concreto (p. ej. COM5), o dejarlo vacío para autodetectar. Hay que emparejar "
         "antes el BITalino en la configuración Bluetooth de Windows. No se usa PyBluez.",
     "Select a COM port for the Arduino before connecting.":
-        "Seleccione un puerto COM para el Arduino antes de conectar.",
+        "Seleccionar un puerto COM para el Arduino antes de conectar.",
     "Device configured: {desc}. Press 'Start recording'.":
-        "Dispositivo configurado: {desc}. Pulse 'Iniciar grabación'.",
+        "Dispositivo configurado: {desc}. Ya se puede pulsar «Iniciar grabación».",
     "Device disconnected.": "Dispositivo desconectado.",
     "Press M to quickly add a marker with the selected label.":
-        "Pulse M para marcar rápidamente con la etiqueta seleccionada.",
+        "Pulsar M para marcar rápidamente con la etiqueta seleccionada.",
     "Custom marker": "Marcador personalizado",
     "Description (max. 60 characters):": "Descripción (máx. 60 caracteres):",
     "Marker added: t={t:.1f} s — {label}": "Marca añadida: t={t:.1f} s — {label}",
@@ -485,7 +485,7 @@ _ES = {
     "Calibrate MVC": "Calibrar CVM",
     "Record a few seconds of maximum contraction to set the MVC "
     "reference for the live load monitor.":
-        "Grabe unos segundos de contracción máxima para fijar la referencia "
+        "Grabar unos segundos de contracción máxima para fijar la referencia "
         "CVM del monitor de carga en vivo.",
     "Calibrate the MVC to start monitoring.":
         "Calibra el CVM para empezar a monitorizar.",
@@ -514,9 +514,9 @@ _ES = {
     "Next muscle: {label}": "Siguiente músculo: {label}",
     "Get ready for the next repetition": "Prepárate para la siguiente repetición",
     "MVC ready": "CVM listo",
-    "{summary}\nYou can start recording.": "{summary}\nYa puede empezar a grabar.",
+    "{summary}\nYou can start recording.": "{summary}\nYa se puede empezar a grabar.",
     "Calibration failed": "Calibración fallida",
-    "No signal — check the electrodes.": "Sin señal — revise los electrodos.",
+    "No signal — check the electrodes.": "Sin señal — conviene revisar los electrodos.",
     "Contract {label} as hard as you can!  ({s:.0f} s)  "
     "peak {pk:.2f} mV":
         "¡Contraiga {label} todo lo que pueda!  ({s:.0f} s)  pico {pk:.2f} mV",
@@ -526,7 +526,7 @@ _ES = {
     "Push as hard as you can until it reaches 0":
         "Empuje todo lo que pueda hasta llegar a 0",
     "MVC ready — {summary}. You can start recording.":
-        "CVM listo — {summary}. Ya puede empezar a grabar.",
+        "CVM listo — {summary}. Ya se puede empezar a grabar.",
     "MVC calibrated: {summary}": "CVM calibrado: {summary}",
     "static {st:.0f} · median {md:.0f} · peak {pk:.0f} %":
         "estático {st:.0f} · mediano {md:.0f} · pico {pk:.0f} %",
@@ -541,7 +541,7 @@ _ES = {
     # -- new-session reset (tab-bar corner) --
     "New session": "Nueva sesión",
     "Clear everything and start over (e.g. a new student)":
-        "Borre todo y empiece de cero (p. ej. un nuevo alumno)",
+        "Borra todo y vuelve al estado inicial (p. ej. un nuevo alumno)",
     "Stop the recording before starting a new session.":
         "Detenga la grabación antes de iniciar una nueva sesión.",
     "Clear everything and start a new session?\n\n"
@@ -569,7 +569,7 @@ _ES = {
         "Tendencia de MDF indeterminada (señal demasiado corta o constante).",
     "Analysis parameters": "Parámetros de análisis",
     "EDF file:": "Archivo EDF:",
-    "Select an EDF file…": "Seleccione un archivo EDF…",
+    "Select an EDF file…": "Seleccionar un archivo EDF…",
     "Browse…": "Explorar…",
     "Analyse": "Analizar",
     "Save figure (PNG)": "Guardar figura (PNG)",
@@ -580,7 +580,7 @@ _ES = {
     "Channel «{ch}»: saturated — the trace is pinned at the rails "
     "(check the electrode contact or the gain).":
         "Canal «{ch}»: saturado — la traza está pegada al tope "
-        "(revise el contacto del electrodo o la ganancia).",
+        "(conviene revisar el contacto del electrodo o la ganancia).",
     "Channel «{ch}»: weak signal (low amplitude).":
         "Canal «{ch}»: señal débil (amplitud baja).",
     "EMG channel to analyse. Every panel and the report use only "
@@ -603,7 +603,7 @@ _ES = {
     "this channel — press \"Compute MVC\" after changing it.":
         "Canal EMG a normalizar (EMG1/EMG2 en archivos de dos canales; "
         "desactivado si solo hay uno). Toda la normalización usa este canal; "
-        "pulse «Calcular CVM» tras cambiarlo.",
+        "pulsar «Calcular CVM» tras cambiarlo.",
     "9. Overlaid envelopes (agonist/antagonist)":
         "9. Envolventes superpuestas (agonista/antagonista)",
     "9. Env. overlay": "9. Env. superp.",
@@ -729,7 +729,7 @@ _ES = {
     "PDF documents (*.pdf)": "Documentos PDF (*.pdf)",
     "Figure saved to: {path}": "Figura guardada en: {path}",
     "Report graphs": "Gráficos del informe",
-    "Tick the graphs to add to the report:": "Marque los gráficos que se añadirán al informe:",
+    "Tick the graphs to add to the report:": "Marcar los gráficos que se añadirán al informe:",
     "Time range to plot (s):": "Tramo temporal a dibujar (s):",
     "PDF report generated: {path}": "Informe PDF generado: {path}",
     "Error generating the PDF report: {error}": "Error al generar el informe PDF: {error}",
@@ -762,7 +762,7 @@ _ES = {
         "Activación media normalizada: {value:.1f} % CVM",
     "MVC normalisation parameters": "Parámetros de normalización CVM",
     "Test EDF:": "EDF de prueba:",
-    "Select the EDF file to normalise…": "Seleccione el archivo EDF a normalizar…",
+    "Select the EDF file to normalise…": "Seleccionar el archivo EDF a normalizar…",
     "MVC reference EDF (optional):": "EDF de referencia CVM (opcional):",
     "Leave empty for auto-normalisation…": "Dejar vacío para auto-normalización…",
     "Remove": "Quitar",
@@ -819,7 +819,7 @@ _ES = {
     "Possible saturation: {pct:.1f}% of samples sit at ADC extremes "
     "for runs ≥ 10 ms. Check electrode contact and gain.":
         "Posible saturación: el {pct:.1f}% de las muestras están en los extremos "
-        "del ADC durante tramos ≥ 10 ms. Revise el contacto del electrodo y la ganancia.",
+        "del ADC durante tramos ≥ 10 ms. Conviene revisar el contacto del electrodo y la ganancia.",
     "Suspiciously flat baseline at the start of the recording. "
     "May indicate a disconnected electrode or misconfigured gain.":
         "Línea base sospechosamente plana al inicio del registro. "
@@ -845,23 +845,23 @@ _ES = {
     "ports. Pair it in the operating system's Bluetooth settings "
     "and switch it on.":
         "No se encontró el BITalino {mac} entre los puertos COM Bluetooth "
-        "emparejados. Empareje el dispositivo en la configuración Bluetooth del "
-        "sistema y enciéndalo.",
+        "emparejados. Hay que emparejar el dispositivo en la configuración Bluetooth "
+        "del sistema y encenderlo.",
     "No BITalino was found on the Bluetooth COM ports. Pair the "
     "BITalino in the operating system's Bluetooth settings and switch "
     "it on, or enter its MAC address or COM port explicitly.":
-        "No se encontró ningún BITalino en los puertos COM Bluetooth. Empareje el "
-        "BITalino en la configuración Bluetooth del sistema y enciéndalo, o "
-        "introduzca su dirección MAC o su puerto COM explícitamente.",
+        "No se encontró ningún BITalino en los puertos COM Bluetooth. Hay que emparejar "
+        "el BITalino en la configuración Bluetooth del sistema y encenderlo, o "
+        "introducir su dirección MAC o su puerto COM explícitamente.",
     "The device on {port} did not identify itself as a "
     "BITalino. Check that the BITalino is paired and "
     "switched on.":
         "El dispositivo en {port} no se identificó como un BITalino. "
-        "Compruebe que el BITalino está emparejado y encendido.",
+        "Conviene comprobar que el BITalino está emparejado y encendido.",
     "Unsupported BITalino sampling rate {fs} Hz. "
     "Use one of 1, 10, 100 or 1000.":
         "Frecuencia de muestreo {fs} Hz no soportada por el BITalino. "
-        "Use 1, 10, 100 o 1000.",
+        "Usar 1, 10, 100 o 1000.",
     "Invalid BITalino channel list; channels must be in 0..5.":
         "Lista de canales del BITalino no válida; deben estar en 0..5.",
     "Timeout while reading from the BITalino — connection lost.":
@@ -917,7 +917,7 @@ _ES = {
     # --- fragment editor / CSV export / new UI (v1.1.x) ---
     # -- DSP live signal-quality diagnostics --
     "Signal OK": "Señal correcta",
-    "Flat signal — check electrode contact": "Señal plana — revise el contacto del electrodo",
+    "Flat signal — check electrode contact": "Señal plana — conviene revisar el contacto del electrodo",
     "Saturation: {pct:.0f}% at rails — lower gain":
         "Saturación: {pct:.0f}% en los extremos — baja la ganancia",
     # -- CSV export (exports.py) --
@@ -970,7 +970,7 @@ _ES = {
     "Live signal quality: saturation or a flat (disconnected) signal.":
         "Calidad de señal en vivo: saturación o señal plana (desconectada).",
     "Markers recorded so far. Select one and press Delete to remove it.":
-        "Marcadores registrados hasta ahora. Seleccione uno y pulse Supr para eliminarlo.",
+        "Marcadores registrados hasta ahora. Seleccionar uno y pulsar Supr para eliminarlo.",
     "Delete": "Eliminar",
     "Delete the selected marker.": "Elimina el marcador seleccionado.",
     "Protocol:": "Protocolo:",
@@ -983,7 +983,7 @@ _ES = {
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
     "Open the assisted editor to keep the significant fragments and discard the rest. Takes precedence over the region above.":
-        "Abra el editor asistido para conservar los fragmentos significativos y descartar "
+        "Abre el editor asistido para conservar los fragmentos significativos y descartar "
         "el resto. Tiene prioridad sobre la región de arriba.",
     "Cancel": "Cancelar",
     "CSV files (*.csv)": "Archivos CSV (*.csv)",
@@ -1018,14 +1018,14 @@ _ES = {
         "Los periodos activos separados por menos de esto se fusionan en uno.",
     "Auto-suggest": "Auto-sugerir",
     "Re-run the automatic fragment proposal with the parameters above.":
-        "Vuelva a ejecutar la propuesta automática de fragmentos con los parámetros de arriba.",
+        "Vuelve a ejecutar la propuesta automática de fragmentos con los parámetros de arriba.",
     "Add fragment": "Añadir fragmento",
     "Remove selected": "Quitar seleccionado",
     "Whole recording": "Registro completo",
     # Segment "reason" codes shown in the fragment table.
     "activity": "actividad",
     "manual": "manual",
-    "Clear the selection and analyse everything.": "Borre la selección y analice todo.",
+    "Clear the selection and analyse everything.": "Borra la selección y analiza todo.",
     "Use these fragments": "Usar estos fragmentos",
     "Keep": "Conservar",
     "Start (s)": "Inicio (s)",
@@ -1087,7 +1087,7 @@ _ES = {
     "same position, and do not remove them in between.":
         "Para ello hacen falta dos registros: el que se quiere estudiar y un "
         "registro corto de referencia en el que el sujeto contrae el músculo "
-        "con toda la fuerza que pueda. Registre primero la referencia, con los "
+        "con toda la fuerza que pueda. Se registra primero la referencia, con los "
         "electrodos en la misma posición, y no los retire entre uno y otro.",
     "Without a reference recording this tab can still work, but the "
     "percentages it produces are not percentages of MVC and the muscle-load "
@@ -1100,7 +1100,7 @@ _ES = {
     # ── MVC reference picker ───────────────────────────────────────────
     "MVC reference EDF:": "EDF de referencia CVM:",
     "Required at this interface level — select a reference recording…":
-        "Obligatorio en este nivel de interfaz: seleccione un registro de "
+        "Obligatorio en este nivel de interfaz: seleccionar un registro de "
         "referencia…",
 
     # ── Auto-normalisation confirmation ────────────────────────────────
@@ -1117,7 +1117,7 @@ _ES = {
         "P50, P90) no se les pueden aplicar: una contracción mantenida los "
         "supera por construcción.",
     "Use this only to see the shape of the signal.":
-        "Use esta opción solo para ver la forma de la señal.",
+        "Usar esta opción solo para ver la forma de la señal.",
     "Choose a reference recording": "Elegir registro de referencia",
     "Continue without reference": "Continuar sin referencia",
 
@@ -1126,7 +1126,7 @@ _ES = {
     "Muscle-load analysis requires an MVC reference recording. Select one to "
     "interpret these values as muscle load limits.":
         "El análisis de carga muscular requiere un registro de referencia CVM. "
-        "Seleccione uno para interpretar estos valores como límites de carga "
+        "Hay que seleccionar uno para interpretar estos valores como límites de carga "
         "muscular.",
     " (auto-normalised, not %MVC)": " (auto-normalizada, no es %CVM)",
 
@@ -1151,14 +1151,14 @@ _ES = {
         "músculo y la convierte en medidas que se pueden interpretar. Funciona "
         "con cualquiera de dos sensores —un BITalino por Bluetooth o un "
         "Arduino + MyoWare 2.0 por USB— y se comporta igual con ambos.\n\n"
-        "¿Quiere un recorrido breve por lo que hace cada control y por su "
-        "significado fisiológico? Lleva un par de minutos, y puede volver a "
-        "abrirlo cuando quiera con el botón «Guía».",
+        "¿Se desea un recorrido breve por lo que hace cada control y por su "
+        "significado fisiológico? Lleva un par de minutos, y se puede volver a "
+        "abrir cuando se quiera con el botón «Guía».",
     "Stop the recording before starting the guide.":
-        "Detenga el registro antes de iniciar la guía.",
+        "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (BORRADOR, pendiente de revisión) ─
-    "Choose the practical first": "Elija primero la práctica",
+    "Choose the practical first": "Elegir primero la práctica",
     "Everything else follows from this. Each mode records what that practical "
     "needs — one muscle, an agonist/antagonist pair, or a muscle plus the "
     "accelerometer — and the rest of the interface offers only the "
@@ -1211,7 +1211,7 @@ _ES = {
     "anatomical name.":
         "Este nombre se escribe en el fichero EDF como etiqueta del canal, de "
         "modo que el registro sigue diciendo qué músculo era meses después. "
-        "Use el nombre anatómico.",
+        "Conviene usar el nombre anatómico.",
     "Where the accelerometer goes": "Dónde va el acelerómetro",
     "On the muscle it measures mechanomyogram (MMG): the transverse bulging "
     "of the fibres as they shorten, that is, the mechanical counterpart of "
@@ -1227,11 +1227,11 @@ _ES = {
     "rest it should be a flat line with only baseline noise. A signal that "
     "never returns to baseline usually means a loose electrode or a poor "
     "contact, not a tonic muscle.":
-        "Inicie el registro y pida la contracción. Vigile el trazado en vivo: "
+        "Se inicia el registro y se pide la contracción. Conviene vigilar el trazado en vivo: "
         "en reposo debe ser una línea plana con solo ruido de base. Una señal "
         "que nunca vuelve a la línea de base suele indicar un electrodo suelto "
         "o mal contacto, no un músculo tónico.",
-    "Let the class follow along": "Deje que la clase siga el registro",
+    "Let the class follow along": "Que la clase siga el registro",
     "This serves a read-only live view over the local network, so the rest of "
     "the group can watch the trace on their own phones while one person wears "
     "the electrodes. Nobody installs anything: they open a link, or scan the "
@@ -1248,7 +1248,7 @@ _ES = {
     "Press MARK to timestamp an event — the start of an effort, a change of "
     "load, the moment the subject reports fatigue. The marks travel inside "
     "the EDF and let you find each phase again during the analysis.":
-        "Pulse MARCA para poner una marca temporal en un suceso: el inicio de "
+        "Pulsar MARCA para poner una marca temporal en un suceso: el inicio de "
         "un esfuerzo, un cambio de carga, el momento en que el sujeto refiere "
         "fatiga. Las marcas viajan dentro del EDF y permiten reencontrar cada "
         "fase durante el análisis.",
