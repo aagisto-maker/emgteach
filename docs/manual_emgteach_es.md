@@ -96,8 +96,12 @@ señal sEMG", con ejemplo de trazado en bruto.]
 
 | Dispositivo | Conexión | Notas |
 |---|---|---|
-| **BITalino (revolution)** | Bluetooth | Plataforma de biopotenciales. Requiere Python ≤ 3.11. |
-| **Arduino RedBoard Plus + MyoWare 2.0** | USB serie | Sensor EMG de hardware abierto; funciona en todas las versiones soportadas. |
+| **BITalino (revolution)** | Bluetooth (Classic/SPP, como puerto COM virtual) | Plataforma de biopotenciales. Hay que emparejarlo antes en el sistema operativo. |
+| **Arduino RedBoard Plus + MyoWare 2.0** | USB serie | Sensor EMG de hardware abierto; el firmware se incluye en el repositorio. |
+
+Ninguno necesita un extra opcional ni un compilador: ambos hablan con su
+dispositivo mediante `pyserial`, y ambos funcionan en todas las versiones de
+Python soportadas (3.10–3.12).
 
 Ambos se manejan de forma intercambiable desde la aplicación (se elige el tipo
 de dispositivo en la pestaña de Adquisición).
@@ -505,7 +509,8 @@ de generación, y se guardan automáticamente junto al EDF de origen.
 
 **El dispositivo no conecta o el LED se queda en amarillo.**
 - *BITalino*: comprueba la dirección MAC y que el dispositivo esté emparejado por
-  Bluetooth. BITalino necesita **Python ≤ 3.11** (no funciona en 3.12).
+  Bluetooth. Es preferible la **dirección MAC** al número de COM: la MAC es la
+  misma en cualquier ordenador, el número de COM no.
 - *Arduino + MyoWare*: comprueba el **puerto COM** (usa *Refrescar* para listar los
   puertos) y el cable USB.
 - El **watchdog** fuerza la desconexión si no llegan datos en ~3 s; reconecta e

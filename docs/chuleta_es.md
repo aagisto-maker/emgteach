@@ -58,6 +58,7 @@ Cargar **EDF de prueba** (+ opcional **EDF de CVM**) → ver paneles + **gráfic
 - **Ruido 50 Hz** → mejorar contacto; alejar cargadores/cables.
 - **"Sin calibrar"** → pulsa **Calibrar CVM** *mientras grabas*.
 - **Informe ilegible (registro largo)** → acorta el **rango temporal** en el diálogo.
-- **BITalino no conecta** → emparejar Bluetooth; usar **Python ≤ 3.11**.
+- **BITalino no conecta** → emparejar primero en Bluetooth del sistema y dar
+  su **dirección MAC** (o dejar el campo vacío para autodetectar).
 
 > **Idea clave:** *amplitud = cuánto se activa el músculo; frecuencia = fatiga.*

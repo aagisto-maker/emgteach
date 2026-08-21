@@ -59,6 +59,7 @@ panel → **PDF report**.
 - **50 Hz noise** → improve contact; move away from chargers/cables.
 - **"Not calibrated"** → press **Calibrate MVC** *while recording*.
 - **Unreadable report (long recording)** → shorten the **time range** in the dialog.
-- **BITalino won't connect** → pair Bluetooth; use **Python ≤ 3.11**.
+- **BITalino won't connect** → pair it in the OS Bluetooth settings first,
+  then give its **MAC address** (or leave the field empty to autodetect).
 
 > **Key idea:** *amplitude = how much the muscle activates; frequency = fatigue.*

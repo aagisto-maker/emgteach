@@ -19,9 +19,8 @@ Physiology, Faculty of Pharmacy, Universidad Complutense de Madrid.
 ## Development setup
 
 `emgteach` targets **Python 3.10, 3.11 or 3.12** (the pinned scientific stack
-has no wheels for 3.13+ yet). The **BITalino** backend additionally requires
-**Python ≤ 3.11** (its PyBluez dependency does not work on 3.12). When in
-doubt, use **Python 3.11**.
+has no wheels for 3.13+ yet). Both hardware backends work on all three: they
+speak their device over `pyserial`, with no PyBluez and no compiler needed.
 
 ```bash
 git clone https://github.com/aagisto-maker/emgteach.git

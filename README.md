@@ -87,21 +87,23 @@ administrator privileges and configures the PATH automatically.
 
 ### Hardware backends
 
-`emgteach` ships out of the box with the **Arduino + MyoWare** backend
-over USB serial. To use the **BITalino** backend over Bluetooth you
-need to install the optional extra:
+Both backends work out of the box, on every supported Python version.
+Neither needs an optional extra or a compiler: both speak their device
+over `pyserial`, which is a hard dependency.
 
-```bash
-pip install "emgteach[bitalino]"
-```
+**BITalino (revolution)** — Bluetooth. The BITalino is Bluetooth Classic
+(SPP), so pair it in the operating system first; on Windows it then
+appears as a virtual COM port. Identify it in the app by its **MAC
+address**, which is the same on every PC, rather than by a COM number,
+which is not. Leaving the field empty autodetects it.
 
-> ⚠️ **BITalino needs Python ≤ 3.11.** The `bitalino` package depends on
-> `PyBluez-bitalino`, whose C extension does **not** work on Python 3.12
-> (it raises at connection time). Use **Python 3.11** for the BITalino
-> backend. On Windows it also has no precompiled wheel, so it needs
-> Microsoft C++ Build Tools to build from source. The Arduino + MyoWare
-> backend uses `pyserial` (pure Python) and is unaffected — it works on
-> every supported version.
+**Arduino RedBoard Plus + MyoWare 2.0** — USB serial. Flash the sketch in
+[`firmware/emgteach_arduino`](firmware/emgteach_arduino) once, then pick
+its COM port in the app.
+
+Recording, analysis and EDF+ output are identical whichever you use, and
+the choice is a single setting in the acquisition tab — so a class can
+run on whatever hardware it has.
 
 ## Quickstart
 
