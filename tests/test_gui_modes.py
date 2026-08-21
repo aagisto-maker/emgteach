@@ -130,13 +130,26 @@ def test_fine_controls_follow_the_flag_in_every_mode(
         main_window._tab_adq, main_window._tab_ana, main_window._tab_cvm
     )
     boxes = [
-        adq._box_thr, adq._box_aula, adq._box_autoonset, adq._chk_mvc_best3,
+        adq._box_thr, adq._box_autoonset, adq._chk_mvc_best3,
         ana._box_fenv, ana._box_roi, cvm._box_fenv,
     ]
     set_mode(main_window, qapp, mode, advanced=False)
     assert not any(shown(b) for b in boxes)
     set_mode(main_window, qapp, mode, advanced=True)
     assert all(shown(b) for b in boxes)
+
+
+@pytest.mark.parametrize("mode", MODES)
+def test_classroom_broadcast_is_offered_at_every_level(
+    main_window, qapp, mode
+) -> None:
+    """Following the recording on their own phones is what the practical is
+    for, not a fine adjustment: a teaching laboratory usually has one sensor,
+    and this is what turns one recording into something the whole class
+    reads."""
+    for advanced in (False, True):
+        set_mode(main_window, qapp, mode, advanced=advanced)
+        assert shown(main_window._tab_adq._box_aula)
 
 
 def test_something_still_running_stays_visible(main_window, qapp) -> None:

@@ -127,6 +127,20 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
+        tr("Let the class follow along"),
+        tr(
+            "This serves a read-only live view over the local network, so the "
+            "rest of the group can watch the trace on their own phones while "
+            "one person wears the electrodes. Nobody installs anything: they "
+            "open a link, or scan the QR code.\n\nIt is worth more than it "
+            "sounds. A single sensor is usually all a teaching laboratory has, "
+            "and this is what turns one recording into something the whole "
+            "class reads at the same time."
+        ),
+        lambda: adq._box_aula,
+        tab=TAB_ACQ,
+    ))
+    steps.append(CoachStep(
         tr("Mark what happens"),
         tr(
             "Press MARK to timestamp an event — the start of an effort, a "

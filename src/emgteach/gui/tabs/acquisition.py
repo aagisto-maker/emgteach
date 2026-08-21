@@ -2926,11 +2926,14 @@ class AcquisitionTab(QWidget):
         # appears — it would be a control that cannot disagree with the mode.
         self._box_nchan.setVisible(False)
 
+        # Following the class on their own phones is what the practical is
+        # for, not a fine adjustment, so it is offered at every level.
+        self._box_aula.setVisible(True)
+
         # Shared by every mode: fine control.
         # One exception — something still running stays visible even when the
-        # flag is off, because a broadcast nobody can stop, or automatic
-        # markers nobody asked for, is worse than one extra widget.
-        self._box_aula.setVisible(advanced or self._chk_aula.isChecked())
+        # flag is off, because automatic markers nobody asked for are worse
+        # than one extra widget.
         self._box_autoonset.setVisible(advanced or self._chk_auto.isChecked())
         self._box_thr.setVisible(advanced)
         # "Best of 3" shares its row with "Calibrate MVC", which stays visible;
