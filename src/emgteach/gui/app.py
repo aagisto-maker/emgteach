@@ -35,6 +35,8 @@ from emgteach.broadcast import BroadcastServer
 from emgteach.gui.tabs.acquisition import AcquisitionTab
 from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
+from emgteach.gui.tour import build_tour
+from emgteach.gui.widgets.coach import CoachMark
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import get_language, resolve_startup_language, set_language, tr
 from emgteach.modes import DEFAULT_MODE, MODES, mode_label, normalise_mode
@@ -168,6 +170,15 @@ class MainWindow(QMainWindow):
         self._combo_lang.setToolTip(tr("Interface language"))
         self._combo_lang.currentIndexChanged.connect(self._on_language_changed)
 
+        # Relaunches the guided tour at any time. Offered once on a first run
+        # and then never again by itself: a tour that reappears becomes a
+        # formality to dismiss rather than something anyone reads.
+        btn_tour = QToolButton()
+        btn_tour.setText(tr("Guide"))
+        btn_tour.setAutoRaise(True)
+        btn_tour.setToolTip(tr("Walk through the app and what it measures"))
+        btn_tour.clicked.connect(self.start_tour)
+
         btn_about = QToolButton()
         btn_about.setText("?")
         btn_about.setAutoRaise(True)
@@ -189,6 +200,7 @@ class MainWindow(QMainWindow):
         corner_lay.addWidget(self._combo_mode)
         corner_lay.addWidget(self._chk_advanced)
         corner_lay.addWidget(self._combo_lang)
+        corner_lay.addWidget(btn_tour)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
 
@@ -200,6 +212,64 @@ class MainWindow(QMainWindow):
 
         # Apply the stored mode once every tab exists and is laid out.
         self._apply_mode()
+
+        self._tabs = tabs
+        self._coach = CoachMark(self)
+
+    # ------------------------------------------------------------------
+    # Guided tour
+    # ------------------------------------------------------------------
+
+    def maybe_offer_tour(self) -> None:
+        """Offer the tour at start-up, unless it has been turned off.
+
+        Kept on by default rather than shown once: a teaching machine sees a
+        different student most sessions, and each of them is a first run. The
+        tick box is how the person who owns the machine turns it off, so the
+        decision belongs to them and not to whoever happened to open the app
+        first.
+        """
+        if not self._settings.value("app/tour_offer", True, type=bool):
+            return
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle(tr("A quick guide?"))
+        msg.setText(
+            tr(
+                "This is a teaching application: it records the electrical "
+                "activity of a muscle and turns it into measurements you can "
+                "interpret. It works with either of two sensors — a BITalino "
+                "over Bluetooth, or an Arduino + MyoWare 2.0 over USB — and "
+                "behaves the same way with both.\n\nWould you like a short "
+                "walkthrough of what each control does and what it means "
+                "physiologically? It takes a couple of minutes, and you can "
+                "reopen it later with the \"Guide\" button."
+            )
+        )
+        chk = QCheckBox(tr("Offer this guide next time"))
+        chk.setChecked(True)
+        msg.setCheckBox(chk)
+        msg.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        msg.setDefaultButton(QMessageBox.StandardButton.Yes)
+        answer = msg.exec()
+
+        self._settings.setValue("app/tour_offer", chk.isChecked())
+        if answer == QMessageBox.StandardButton.Yes:
+            self.start_tour()
+
+    def start_tour(self) -> None:
+        """Run the walkthrough for the mode currently selected."""
+        if self._tab_adq.is_recording():
+            QMessageBox.information(
+                self,
+                tr("Guide"),
+                tr("Stop the recording before starting the guide."),
+            )
+            return
+        self._coach.start(build_tour(self), on_tab=self._tabs.setCurrentIndex)
 
     def _mode(self) -> str:
         """Stored recording mode, defaulting to the single-muscle practical."""
@@ -320,6 +390,12 @@ def main() -> None:
     # space within the window instead of pushing it off-screen).
     QTimer.singleShot(1500, splash.close)
     QTimer.singleShot(1500, window.showMaximized)
+    # Offered from here rather than from the window's constructor: it is
+    # start-up behaviour, and a modal opened while the window is still being
+    # built would block anything that creates a MainWindow without a user in
+    # front of it. It also has to wait until the controls have a position, or
+    # the coach mark would have nothing to point at.
+    QTimer.singleShot(1600, window.maybe_offer_tour)
 
     sys.exit(app.exec())
 

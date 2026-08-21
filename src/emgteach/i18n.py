@@ -1130,5 +1130,198 @@ _ES = {
         "muscular.",
     " (auto-normalised, not %MVC)": " (auto-normalizada, no es %CVM)",
 
+    # ── Guided tour: chrome ────────────────────────────────────────────
+    "Guide": "Guía",
+    "Walk through the app and what it measures":
+        "Recorrido por la aplicación y por lo que mide",
+    "Skip": "Saltar",
+    "Back": "Atrás",
+    "Next": "Siguiente",
+    "Finish": "Terminar",
+    "Step {i} of {n}": "Paso {i} de {n}",
+    "A quick guide?": "¿Una guía rápida?",
+    "This is a teaching application: it records the electrical activity of a "
+    "muscle and turns it into measurements you can interpret. It works with "
+    "either of two sensors — a BITalino over Bluetooth, or an Arduino + "
+    "MyoWare 2.0 over USB — and behaves the same way with both.\n\nWould you "
+    "like a short walkthrough of what each control does and what it means "
+    "physiologically? It takes a couple of minutes, and you can reopen it "
+    "later with the \"Guide\" button.":
+        "Esta es una aplicación docente: registra la actividad eléctrica de un "
+        "músculo y la convierte en medidas que se pueden interpretar. Funciona "
+        "con cualquiera de dos sensores —un BITalino por Bluetooth o un "
+        "Arduino + MyoWare 2.0 por USB— y se comporta igual con ambos.\n\n"
+        "¿Quiere un recorrido breve por lo que hace cada control y por su "
+        "significado fisiológico? Lleva un par de minutos, y puede volver a "
+        "abrirlo cuando quiera con el botón «Guía».",
+    "Stop the recording before starting the guide.":
+        "Detenga el registro antes de iniciar la guía.",
+
+    # ── Guided tour: teaching content (BORRADOR, pendiente de revisión) ─
+    "Choose the practical first": "Elija primero la práctica",
+    "Everything else follows from this. Each mode records what that practical "
+    "needs — one muscle, an agonist/antagonist pair, or a muscle plus the "
+    "accelerometer — and the rest of the interface offers only the "
+    "measurements that make sense for it.":
+        "Todo lo demás se deriva de esto. Cada modo registra lo que esa "
+        "práctica necesita —un músculo, una pareja agonista/antagonista, o un "
+        "músculo más el acelerómetro— y el resto de la interfaz ofrece solo "
+        "las medidas que tienen sentido para ella.",
+    "Everything else is optional": "Lo demás es opcional",
+    "The fine controls — filter cut-offs, fatigue thresholds, region of "
+    "interest, classroom broadcast — are shared by all three modes and stay "
+    "out of the way until you tick this.":
+        "Los controles finos —frecuencias de corte, umbrales de fatiga, región "
+        "de interés, modo aula— son comunes a los tres modos y no estorban "
+        "hasta que marque esta casilla.",
+    "Two devices, one application": "Dos dispositivos, una aplicación",
+    "The recording can be made with either of two interchangeable front ends: "
+    "a BITalino over Bluetooth, or an Arduino RedBoard Plus with a MyoWare "
+    "2.0 sensor over USB, whose firmware ships with the application.\n\n"
+    "Which one is in use is a technical setting, made once by whoever "
+    "prepares the laboratory: it sits with the connection details under "
+    "\"Advanced options\". Nothing after that point changes — recording, "
+    "analysis and file format are identical either way — so it is not "
+    "something you need to touch during a practical, and a class can run on "
+    "whatever hardware it has.":
+        "El registro se puede hacer con cualquiera de dos frontales "
+        "intercambiables: un BITalino por Bluetooth, o un Arduino RedBoard "
+        "Plus con un sensor MyoWare 2.0 por USB, cuyo firmware se distribuye "
+        "con la aplicación.\n\nCuál de los dos se usa es un ajuste técnico, "
+        "que hace una sola vez quien prepara el laboratorio: está junto a los "
+        "datos de conexión, en «Opciones avanzadas». Nada de lo que viene "
+        "después cambia —registro, análisis y formato de fichero son "
+        "idénticos con cualquiera de los dos—, así que no es algo que haya "
+        "que tocar durante una práctica, y una clase puede funcionar con el "
+        "material del que disponga.",
+    "Offer this guide next time": "Ofrecer esta guía la próxima vez",
+    "Connect the sensor": "Conecte el sensor",
+    "With a BITalino, pair it in the operating system first; with the "
+    "Arduino, just plug in the USB cable. Either way the surface electrodes "
+    "go on the belly of the muscle, in line with the fibres, with the "
+    "reference on a bony point that does not contract.":
+        "Con un BITalino, empareje primero en el sistema operativo; con el "
+        "Arduino, basta con enchufar el cable USB. En ambos casos los "
+        "electrodos de superficie van sobre el vientre del músculo, en la "
+        "dirección de las fibras, con la referencia en un punto óseo que no se "
+        "contraiga.",
+    "Name the muscle": "Nombre el músculo",
+    "This name is written into the EDF file as the channel label, so the "
+    "recording still says which muscle it was months later. Use the "
+    "anatomical name.":
+        "Este nombre se escribe en el fichero EDF como etiqueta del canal, de "
+        "modo que el registro sigue diciendo qué músculo era meses después. "
+        "Use el nombre anatómico.",
+    "Where the accelerometer goes": "Dónde va el acelerómetro",
+    "On the muscle it measures mechanomyogram (MMG): the transverse bulging "
+    "of the fibres as they shorten, that is, the mechanical counterpart of "
+    "the electrical signal. On the moving segment it measures the movement "
+    "itself — its acceleration, and from that velocity and tremor.":
+        "Sobre el músculo mide el mecanomiograma (MMG): el abombamiento "
+        "transversal de las fibras al acortarse, es decir, la contrapartida "
+        "mecánica de la señal eléctrica. Sobre el segmento móvil mide el "
+        "movimiento mismo: su aceleración, y a partir de ella la velocidad y "
+        "el temblor.",
+    "Record": "Registre",
+    "Start recording and ask for the contraction. Watch the live trace: at "
+    "rest it should be a flat line with only baseline noise. A signal that "
+    "never returns to baseline usually means a loose electrode or a poor "
+    "contact, not a tonic muscle.":
+        "Inicie el registro y pida la contracción. Vigile el trazado en vivo: "
+        "en reposo debe ser una línea plana con solo ruido de base. Una señal "
+        "que nunca vuelve a la línea de base suele indicar un electrodo suelto "
+        "o mal contacto, no un músculo tónico.",
+    "Mark what happens": "Marque lo que ocurre",
+    "Press MARK to timestamp an event — the start of an effort, a change of "
+    "load, the moment the subject reports fatigue. The marks travel inside "
+    "the EDF and let you find each phase again during the analysis.":
+        "Pulse MARCA para poner una marca temporal en un suceso: el inicio de "
+        "un esfuerzo, un cambio de carga, el momento en que el sujeto refiere "
+        "fatiga. Las marcas viajan dentro del EDF y permiten reencontrar cada "
+        "fase durante el análisis.",
+    "Guided force-velocity": "Fuerza-velocidad guiada",
+    "This wizard walks through one contraction per load. With increasing "
+    "loads the shortening velocity falls: that inverse relation is the "
+    "force-velocity curve, and the product of the two gives the power, which "
+    "peaks at intermediate loads.":
+        "Este asistente guía una contracción por cada carga. Al aumentar la "
+        "carga cae la velocidad de acortamiento: esa relación inversa es la "
+        "curva fuerza-velocidad, y el producto de ambas da la potencia, que es "
+        "máxima con cargas intermedias.",
+    "Calibrate the maximum": "Calibre el máximo",
+    "A maximal voluntary contraction recorded now becomes the reference the "
+    "live load bars are expressed against. Without it the amplitude is in "
+    "millivolts, which says as much about the electrodes and the skin as "
+    "about the muscle.":
+        "Una contracción voluntaria máxima registrada ahora pasa a ser la "
+        "referencia respecto a la que se expresan las barras de carga en vivo. "
+        "Sin ella la amplitud está en milivoltios, que dice tanto de los "
+        "electrodos y de la piel como del músculo.",
+    "The three basic panels": "Los tres paneles básicos",
+    "Raw signal: the interference pattern of the motor units firing. "
+    "Normalised envelope: how activation changes over time, which is what you "
+    "compare between efforts. Power spectrum: how that activity is "
+    "distributed in frequency.":
+        "Señal en bruto: el patrón de interferencia de las unidades motoras al "
+        "descargar. Envolvente normalizada: cómo cambia la activación en el "
+        "tiempo, que es lo que se compara entre esfuerzos. Espectro de "
+        "potencia: cómo se reparte esa actividad en frecuencia.",
+    "Fatigue lives in the spectrum": "La fatiga está en el espectro",
+    "As a sustained contraction fatigues the muscle, the conduction velocity "
+    "of the fibres falls and the spectrum shifts towards low frequencies: the "
+    "median frequency (MDF) drops while the amplitude often rises, because "
+    "more motor units are recruited to hold the same force.":
+        "A medida que una contracción mantenida fatiga al músculo, la "
+        "velocidad de conducción de las fibras disminuye y el espectro se "
+        "desplaza hacia frecuencias bajas: la frecuencia mediana (MDF) baja "
+        "mientras la amplitud a menudo sube, porque se reclutan más unidades "
+        "motoras para sostener la misma fuerza.",
+    "Agonist and antagonist": "Agonista y antagonista",
+    "With two channels the envelopes can be overlaid. In a clean movement the "
+    "agonist activates while the antagonist stays nearly silent; simultaneous "
+    "activation is co-contraction, which stiffens the joint and is typical of "
+    "an unpractised or uncertain movement.":
+        "Con dos canales se pueden superponer las envolventes. En un "
+        "movimiento limpio el agonista se activa mientras el antagonista "
+        "permanece casi silente; la activación simultánea es co-contracción, "
+        "que rigidiza la articulación y es típica de un movimiento poco "
+        "entrenado o inseguro.",
+    # (the "Force-velocity study" caption itself is defined with the Analysis
+    # tab strings above; only the tour's explanation of it belongs here)
+    "Builds the load-velocity, force-velocity and power curves from a "
+    "recording where several known loads were lifted, and relates them to the "
+    "EMG amplitude — that is, to how much the muscle had to be recruited for "
+    "each load.":
+        "Construye las curvas carga-velocidad, fuerza-velocidad y potencia a "
+        "partir de un registro en el que se levantaron varias cargas "
+        "conocidas, y las relaciona con la amplitud EMG, es decir, con cuánto "
+        "hubo que reclutar el músculo para cada carga.",
+    "Take the results away": "Llévese los resultados",
+    "The report gathers the figures and the metrics into a PDF, and the CSV "
+    "export holds the numbers behind them for anyone who wants to work on "
+    "them elsewhere.":
+        "El informe reúne las figuras y las métricas en un PDF, y la "
+        "exportación CSV guarda los números que hay detrás para quien quiera "
+        "trabajarlos en otro sitio.",
+    "Why normalise at all": "Por qué normalizar",
+    "A raw amplitude cannot be compared between two people, or between two "
+    "sessions of the same person: it depends on the electrodes, the skin and "
+    "the fat beneath it. Expressing every value as a percentage of the "
+    "maximal contraction removes all of that and leaves the muscle.":
+        "Una amplitud bruta no se puede comparar entre dos personas, ni entre "
+        "dos sesiones de la misma persona: depende de los electrodos, de la "
+        "piel y de la grasa que hay debajo. Expresar cada valor como "
+        "porcentaje de la contracción máxima elimina todo eso y deja el "
+        "músculo.",
+    "Muscle load": "Carga muscular",
+    "Once the signal is in % MVC, the distribution of load over time can be "
+    "read against the Jonsson limits: the static level (P10) is the load that "
+    "is almost never released, and it is the one most associated with "
+    "sustained-effort discomfort.":
+        "Una vez la señal está en % CVM, la distribución de la carga en el "
+        "tiempo se puede leer frente a los límites de Jonsson: el nivel "
+        "estático (P10) es la carga que casi nunca se suelta, y es la más "
+        "asociada a las molestias por esfuerzo mantenido.",
+
     "page {n}": "página {n}",
 }
