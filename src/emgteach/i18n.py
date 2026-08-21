@@ -1042,5 +1042,93 @@ _ES = {
     "Whole recording will be analysed.": "Se analizará el registro completo.",
     "{n} fragment(s) — {d:.2f} s of {full:.1f} s": "{n} fragmento(s) — {d:.2f} s de {full:.1f} s",
 
+    # ── Recording modes and fine controls ──────────────────────────────
+    "Single-muscle contraction": "Contracción de un músculo",
+    "Agonist / antagonist contraction": "Contracción agonista / antagonista",
+    "Muscle kinematics": "Cinemática muscular",
+    "Which practical the app is set up for":
+        "Práctica para la que está configurada la aplicación",
+    "Advanced options": "Opciones avanzadas",
+    "Show the fine controls shared by every mode":
+        "Muestra los controles finos comunes a todos los modos",
+    "One-off setup": "Solo la primera vez",
+    "How many EMG sensors are being recorded.":
+        "Cuántos sensores de EMG se están registrando.",
+    "Accelerometer:": "Acelerómetro:",
+    "Compared with:": "Comparado con:",
+
+    # ── Recording that does not match the mode ─────────────────────────
+    "The recording does not match the mode": "El registro no concuerda con el modo",
+    "This recording has {n} EMG channel(s), and the agonist / antagonist "
+    "mode needs two.":
+        "Este registro tiene {n} canal(es) de EMG, y el modo agonista / "
+        "antagonista necesita dos.",
+    "Choose \"Single-muscle contraction\" or \"Muscle kinematics\" at the top "
+    "of the window, or open a recording made with two channels.":
+        "Elija «Contracción de un músculo» o «Cinemática muscular» en la parte "
+        "superior de la ventana, o abra un registro hecho con dos canales.",
+
+    # ── MVC entry screen ───────────────────────────────────────────────
+    "Normalising to maximum voluntary contraction (MVC)":
+        "Normalización a la contracción voluntaria máxima (CVM)",
+    "A raw EMG amplitude cannot be compared between two people, or between "
+    "two sessions of the same person: it depends on the electrodes, the skin "
+    "and the fat layer beneath it. Normalisation solves this by expressing "
+    "every value as a percentage of the amplitude that muscle reaches during "
+    "a maximal effort.":
+        "La amplitud bruta de una señal EMG no se puede comparar entre dos "
+        "personas, ni entre dos sesiones de la misma persona: depende de los "
+        "electrodos, de la piel y de la grasa que hay debajo. La normalización "
+        "resuelve esto expresando cada valor como porcentaje de la amplitud "
+        "que ese músculo alcanza en un esfuerzo máximo.",
+    "To do that you need two recordings: the one you want to study, and a "
+    "short reference recording in which the subject contracts the muscle as "
+    "hard as possible. Record the reference first, with the electrodes in the "
+    "same position, and do not remove them in between.":
+        "Para ello hacen falta dos registros: el que se quiere estudiar y un "
+        "registro corto de referencia en el que el sujeto contrae el músculo "
+        "con toda la fuerza que pueda. Registre primero la referencia, con los "
+        "electrodos en la misma posición, y no los retire entre uno y otro.",
+    "Without a reference recording this tab can still work, but the "
+    "percentages it produces are not percentages of MVC and the muscle-load "
+    "limits do not apply to them.":
+        "Sin registro de referencia esta pestaña funciona igualmente, pero los "
+        "porcentajes que produce no son porcentajes de CVM y los límites de "
+        "carga muscular no se les pueden aplicar.",
+    "I understand, continue": "Entendido, continuar",
+
+    # ── MVC reference picker ───────────────────────────────────────────
+    "MVC reference EDF:": "EDF de referencia CVM:",
+    "Required at this interface level — select a reference recording…":
+        "Obligatorio en este nivel de interfaz: seleccione un registro de "
+        "referencia…",
+
+    # ── Auto-normalisation confirmation ────────────────────────────────
+    "No MVC reference recording selected":
+        "No se ha seleccionado registro de referencia CVM",
+    "The signal will be normalised to the 95th percentile of itself. The "
+    "values will be shown as \"% MVC\", but they are not percentages of "
+    "maximum voluntary contraction, and the Jonsson muscle-load limits (P10, "
+    "P50, P90) do not apply: a sustained contraction will exceed them by "
+    "construction.":
+        "La señal se normalizará al percentil 95 de sí misma. Los valores "
+        "aparecerán como «% CVM», pero no son porcentajes de contracción "
+        "voluntaria máxima, y los límites de carga muscular de Jonsson (P10, "
+        "P50, P90) no se les pueden aplicar: una contracción mantenida los "
+        "supera por construcción.",
+    "Use this only to see the shape of the signal.":
+        "Use esta opción solo para ver la forma de la señal.",
+    "Choose a reference recording": "Elegir registro de referencia",
+    "Continue without reference": "Continuar sin referencia",
+
+    # ── Auto-normalisation marking (screen and report) ─────────────────
+    "auto (not a real %MVC)": "automática (no es %CVM real)",
+    "Muscle-load analysis requires an MVC reference recording. Select one to "
+    "interpret these values as muscle load limits.":
+        "El análisis de carga muscular requiere un registro de referencia CVM. "
+        "Seleccione uno para interpretar estos valores como límites de carga "
+        "muscular.",
+    " (auto-normalised, not %MVC)": " (auto-normalizada, no es %CVM)",
+
     "page {n}": "página {n}",
 }

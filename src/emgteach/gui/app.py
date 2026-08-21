@@ -18,6 +18,7 @@ from PySide6.QtCore import QSettings, Qt, QTimer, qInstallMessageHandler
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QHBoxLayout,
     QMainWindow,
@@ -36,6 +37,7 @@ from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import get_language, resolve_startup_language, set_language, tr
+from emgteach.modes import DEFAULT_MODE, MODES, mode_label, normalise_mode
 
 # ---------------------------------------------------------------------------
 # Splash screen
@@ -137,8 +139,28 @@ class MainWindow(QMainWindow):
         tabs.addTab(self._tab_ana, tr("Analysis"))
         tabs.addTab(self._tab_cvm, tr("MVC normalisation"))
 
-        # Tab-bar corner: language selector + "About" button (no status bar,
-        # zero vertical cost).
+        # Tab-bar corner: mode, advanced toggle, language and "About" (no
+        # status bar, zero vertical cost).
+        # The mode says which practical this is. It fixes the channel count and
+        # whether the accelerometer is used, and the tabs offer only what that
+        # practical needs. Unlike the language, it applies without restarting.
+        self._combo_mode = QComboBox()
+        for mode in MODES:
+            self._combo_mode.addItem(mode_label(mode), mode)
+        self._combo_mode.setCurrentIndex(MODES.index(self._mode()))
+        self._combo_mode.setToolTip(tr("Which practical the app is set up for"))
+        self._combo_mode.currentIndexChanged.connect(self._on_mode_changed)
+
+        # Orthogonal to the mode: the fine controls that apply to all three
+        # practicals alike (filter cut-offs, region of interest, thresholds,
+        # onset detection, classroom broadcast).
+        self._chk_advanced = QCheckBox(tr("Advanced options"))
+        self._chk_advanced.setChecked(self._advanced())
+        self._chk_advanced.setToolTip(
+            tr("Show the fine controls shared by every mode")
+        )
+        self._chk_advanced.toggled.connect(self._on_advanced_changed)
+
         self._combo_lang = QComboBox()
         self._combo_lang.addItem("English", "en")
         self._combo_lang.addItem("Español", "es")
@@ -164,6 +186,8 @@ class MainWindow(QMainWindow):
         corner_lay.setContentsMargins(0, 0, 4, 0)
         corner_lay.setSpacing(2)
         corner_lay.addWidget(btn_reset)
+        corner_lay.addWidget(self._combo_mode)
+        corner_lay.addWidget(self._chk_advanced)
         corner_lay.addWidget(self._combo_lang)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
@@ -173,6 +197,29 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(4, 4, 4, 4)
         root.addWidget(tabs, stretch=1)
         self.setCentralWidget(central)
+
+        # Apply the stored mode once every tab exists and is laid out.
+        self._apply_mode()
+
+    def _mode(self) -> str:
+        """Stored recording mode, defaulting to the single-muscle practical."""
+        return normalise_mode(self._settings.value("app/mode", DEFAULT_MODE))
+
+    def _advanced(self) -> bool:
+        return bool(self._settings.value("app/advanced", False, type=bool))
+
+    def _apply_mode(self) -> None:
+        mode, advanced = self._mode(), self._advanced()
+        for tab in (self._tab_adq, self._tab_ana, self._tab_cvm):
+            tab.apply_mode(mode, advanced)
+
+    def _on_mode_changed(self, index: int) -> None:
+        self._settings.setValue("app/mode", self._combo_mode.itemData(index))
+        self._apply_mode()
+
+    def _on_advanced_changed(self, checked: bool) -> None:
+        self._settings.setValue("app/advanced", checked)
+        self._apply_mode()
 
     def _on_language_changed(self, index: int) -> None:
         code = self._combo_lang.itemData(index)

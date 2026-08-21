@@ -71,6 +71,7 @@ from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import RecordingMetadata
+from emgteach.modes import mode_channels, mode_uses_acc
 from emgteach.mvc import mvc_from_reps
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
@@ -359,8 +360,12 @@ class AcquisitionTab(QWidget):
         cfg_outer.setContentsMargins(6, 3, 6, 3)
         cfg_outer.setSpacing(3)
 
-        # Row 1: device type + connection (COM port for both backends)
-        cfg_row1 = QHBoxLayout()
+        # Row 1: device type + connection (COM port for both backends).
+        # Wrapped in a named container so the basic UI level can hide the whole
+        # row at once — hiding the individual widgets would leave their labels.
+        self._box_device = QWidget()
+        cfg_row1 = QHBoxLayout(self._box_device)
+        cfg_row1.setContentsMargins(0, 0, 0, 0)
         cfg_row1.setSpacing(6)
 
         # Device-type combo. Both interchangeable backends are offered — the
@@ -420,7 +425,13 @@ class AcquisitionTab(QWidget):
         stack_layout.addWidget(self._widget_mac)
         stack_layout.addWidget(self._widget_arduino)
         cfg_row1.addWidget(self._stack_conn, stretch=2)
-        cfg_outer.addLayout(cfg_row1)
+        # Shown only when the basic level reveals this row because no port has
+        # been saved yet, so a first-time user knows it is a one-off step.
+        self._lbl_first_setup = QLabel(tr("One-off setup"))
+        self._lbl_first_setup.setStyleSheet("font-size: 9px; color: #1F4E79;")
+        self._lbl_first_setup.setVisible(False)
+        cfg_row1.addWidget(self._lbl_first_setup)
+        cfg_outer.addWidget(self._box_device)
 
         # Row 2: destination folder + Browse
         cfg_row2 = QHBoxLayout()
@@ -443,13 +454,26 @@ class AcquisitionTab(QWidget):
         # Row 3: number of channels and per-channel labels
         ch_row = QHBoxLayout()
         ch_row.setSpacing(6)
-        ch_row.addWidget(QLabel(tr("Channels:")))
+        # Channel-count block in its own container: the basic level hides it
+        # together with its label, keeping the per-channel names visible.
+        self._box_nchan = QWidget()
+        nchan_l = QHBoxLayout(self._box_nchan)
+        nchan_l.setContentsMargins(0, 0, 0, 0)
+        nchan_l.setSpacing(6)
+        nchan_l.addWidget(QLabel(tr("Channels:")))
         self._combo_n_channels = QComboBox()
         self._combo_n_channels.addItem(tr("1 (single sensor)"))
         self._combo_n_channels.addItem(tr("2 (agonist / antagonist)"))
+        # Capped: the second item is long, and left to size itself it starves
+        # the channel-name boxes next to it. The full text stays in the popup.
+        self._combo_n_channels.setMaximumWidth(150)
+        self._combo_n_channels.setToolTip(
+            tr("How many EMG sensors are being recorded.")
+        )
         self._combo_n_channels.setCurrentIndex(self._n_channels - 1)
         self._combo_n_channels.currentIndexChanged.connect(self._on_n_channels_changed)
-        ch_row.addWidget(self._combo_n_channels)
+        nchan_l.addWidget(self._combo_n_channels)
+        ch_row.addWidget(self._box_nchan)
 
         ch_row.addWidget(QLabel(tr("Labels:")))
         self._edit_labels: list[QLineEdit] = []
@@ -468,10 +492,26 @@ class AcquisitionTab(QWidget):
             if stored in _OLD_DEFAULT_LABELS[i]:
                 stored = _CHANNEL_DEFAULT_LABELS[i]  # migrate old default
             edit.setText(stored)
+            # Room for the 16 characters the EDF label allows: these are the
+            # muscle names, the one thing on this row the student really reads.
+            edit.setMinimumWidth(130)
             edit.textChanged.connect(self._on_label_changed)
             self._edit_labels.append(edit)
             ch_row.addWidget(edit, stretch=1)
+        # Whole accelerometer block in one container, shown only by the
+        # kinematics mode. Its caption is a plain label so that hiding the
+        # container takes it along.
+        self._box_acc = QWidget()
+        acc_l = QHBoxLayout(self._box_acc)
+        acc_l.setContentsMargins(0, 0, 0, 0)
+        acc_l.setSpacing(6)
+        acc_l.addWidget(QLabel(tr("Accelerometer:")))
+        # The mode decides whether the accelerometer is recorded, so this
+        # checkbox is never shown: it exists to drive the slots that enable the
+        # rest of the block, and is set from apply_mode. Leaving it on screen
+        # would offer the user a way to contradict the mode they chose.
         self._chk_acc = QCheckBox(tr("ACC"))
+        self._chk_acc.setVisible(False)
         self._chk_acc.setToolTip(
             tr(
                 "Also record the BITalino accelerometer (A4) in its own plot and "
@@ -481,7 +521,7 @@ class AcquisitionTab(QWidget):
         )
         self._chk_acc.setChecked(bool(self._acc_enabled))
         self._chk_acc.toggled.connect(self._on_acc_toggled)
-        ch_row.addWidget(self._chk_acc)
+        acc_l.addWidget(self._chk_acc)   # hidden; drives the slots
         # Where the accelerometer is placed decides which analyses make sense
         # (muscle → MMG; moving segment → kinematics/tremor). Stored in the ACC
         # channel label so the Analysis tab knows.
@@ -495,7 +535,7 @@ class AcquisitionTab(QWidget):
             tr("Where the accelerometer is stuck — sets which ACC analyses apply.")
         )
         self._combo_acc_place.currentIndexChanged.connect(self._on_acc_place_changed)
-        ch_row.addWidget(self._combo_acc_place)
+        acc_l.addWidget(self._combo_acc_place)
         # Which analogue input the accelerometer is wired to. The BITalino packs
         # enabled channels consecutively, so this must be the physical input;
         # it defaults to A4 but is configurable (see the channel diagnostic).
@@ -514,8 +554,15 @@ class AcquisitionTab(QWidget):
         self._combo_acc_channel.currentIndexChanged.connect(
             self._on_acc_channel_changed
         )
-        ch_row.addWidget(QLabel(tr("ACC ch:")))
-        ch_row.addWidget(self._combo_acc_channel)
+        # Which analogue input the sensor is wired to, and the diagnostic that
+        # finds it: one-off wiring details, like the port. Own container so the
+        # advanced flag can hide them without touching the placement choice.
+        self._box_acc_wiring = QWidget()
+        wiring_l = QHBoxLayout(self._box_acc_wiring)
+        wiring_l.setContentsMargins(0, 0, 0, 0)
+        wiring_l.setSpacing(6)
+        wiring_l.addWidget(QLabel(tr("ACC ch:")))
+        wiring_l.addWidget(self._combo_acc_channel)
         # Diagnostic: find which analogue input the accelerometer really is on.
         self._btn_acc_diag = QPushButton(tr("Find ACC channel…"))
         self._btn_acc_diag.setEnabled(False)
@@ -525,8 +572,13 @@ class AcquisitionTab(QWidget):
                "not run it while recording.")
         )
         self._btn_acc_diag.clicked.connect(self._on_acc_diagnose)
-        ch_row.addWidget(self._btn_acc_diag)
+        wiring_l.addWidget(self._btn_acc_diag)
+        acc_l.addWidget(self._box_acc_wiring)
+        acc_l.addStretch()
         cfg_outer.addLayout(ch_row)
+        # The accelerometer gets its own line. Sharing one with the channel
+        # names left both cramped, and the muscle names are what matter here.
+        cfg_outer.addWidget(self._box_acc)
 
         # Row 4: session identification written to the EDF+ header.
         meta_row = QHBoxLayout()
@@ -560,7 +612,11 @@ class AcquisitionTab(QWidget):
         cfg_outer.addLayout(meta_row)
 
         # Row 5: classroom broadcast — students follow on their phone browser.
-        aula_row = QHBoxLayout()
+        # Named container: the basic level hides the whole row, status label
+        # included.
+        self._box_aula = QWidget()
+        aula_row = QHBoxLayout(self._box_aula)
+        aula_row.setContentsMargins(0, 0, 0, 0)
         aula_row.setSpacing(6)
         self._chk_aula = QCheckBox(tr("Broadcast to phones (classroom mode)"))
         self._chk_aula.setToolTip(
@@ -596,7 +652,7 @@ class AcquisitionTab(QWidget):
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
         aula_row.addWidget(self._lbl_aula, stretch=1)
-        cfg_outer.addLayout(aula_row)
+        cfg_outer.addWidget(self._box_aula)
 
         row_top.addWidget(grp_config, stretch=1)
 
@@ -684,7 +740,13 @@ class AcquisitionTab(QWidget):
         markers_layout.addWidget(self._btn_marcar)
 
         # Automatic contraction-onset detection (compact, inline). Added
-        # markers are reflected in the "Event log".
+        # markers are reflected in the "Event log". Held in a named container so
+        # the basic level hides the checkbox, the "k:" label and the spin box
+        # together, leaving the manual MARK controls untouched.
+        self._box_autoonset = QWidget()
+        auto_l = QHBoxLayout(self._box_autoonset)
+        auto_l.setContentsMargins(0, 0, 0, 0)
+        auto_l.setSpacing(6)
         self._chk_auto = QCheckBox(tr("Auto-onset"))
         self._chk_auto.setToolTip(
             tr(
@@ -696,8 +758,8 @@ class AcquisitionTab(QWidget):
             self._settings.value("adquisicion/auto_detect", False, type=bool)
         )
         self._chk_auto.toggled.connect(self._on_auto_toggled)
-        markers_layout.addWidget(self._chk_auto)
-        markers_layout.addWidget(QLabel("k:"))
+        auto_l.addWidget(self._chk_auto)
+        auto_l.addWidget(QLabel("k:"))
         self._spin_k = QDoubleSpinBox()
         self._spin_k.setRange(1.0, 10.0)
         self._spin_k.setSingleStep(0.5)
@@ -717,7 +779,8 @@ class AcquisitionTab(QWidget):
             lambda v: self._settings.setValue("adquisicion/onset_k", v)
         )
         self._spin_k.setEnabled(self._chk_auto.isChecked())
-        markers_layout.addWidget(self._spin_k)
+        auto_l.addWidget(self._spin_k)
+        markers_layout.addWidget(self._box_autoonset)
         markers_outer.addLayout(markers_layout)
 
         # Editable marker list: every marker added (manual or automatic) shows
@@ -1828,7 +1891,11 @@ class AcquisitionTab(QWidget):
         mvc_row.addStretch()
         left_col.addLayout(mvc_row)
 
-        fv_row = QHBoxLayout()
+        # Named container: the basic level hides the guided force-velocity row
+        # (button and its configuration label) as a unit.
+        self._box_fv_guided = QWidget()
+        fv_row = QHBoxLayout(self._box_fv_guided)
+        fv_row.setContentsMargins(0, 0, 0, 0)
         fv_row.setSpacing(6)
         self._btn_fv_guided = QPushButton(tr("Guided F-V…"))
         self._btn_fv_guided.setEnabled(False)
@@ -1848,14 +1915,14 @@ class AcquisitionTab(QWidget):
         self._refresh_fv_config_label()
         fv_row.addWidget(self._lbl_fv_config)
         fv_row.addStretch()
-        left_col.addLayout(fv_row)
+        left_col.addWidget(self._box_fv_guided)
 
         row.addLayout(left_col)
 
         # Adjustable warning / danger thresholds (% MVC). Disabled until an MVC
         # is calibrated; changing them updates the bars and the monitor live.
-        thr = QWidget()
-        thr_l = QHBoxLayout(thr)
+        self._box_thr = QWidget()
+        thr_l = QHBoxLayout(self._box_thr)
         thr_l.setContentsMargins(0, 0, 0, 0)
         thr_l.setSpacing(2)
         lbl_thr_w = QLabel(tr("Warning"))
@@ -1891,7 +1958,7 @@ class AcquisitionTab(QWidget):
         )
         self._spin_danger.valueChanged.connect(self._on_thresholds_changed)
         thr_l.addWidget(self._spin_danger)
-        row.addWidget(thr)
+        row.addWidget(self._box_thr)
 
         self._load_rows: list[QWidget] = []
         self._load_name_labels: list[QLabel] = []
@@ -2821,6 +2888,68 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
     # Cleanup on window close
     # ------------------------------------------------------------------
+
+    def apply_mode(self, mode: str, advanced: bool) -> None:
+        """Set the tab up for one practical, optionally with the fine controls.
+
+        Whole containers are hidden, never the individual widgets: most of
+        these controls sit beside plain QLabels that are not kept as
+        attributes, so hiding the widget alone would leave its caption behind.
+
+        The mode *drives* the channel count and the accelerometer rather than
+        merely hiding their selectors. Hiding them alone was a bug: a
+        two-muscle set-up chosen in one mode survived into another that had no
+        way to show or change it, so the labels and load bars claimed two
+        muscles while the rest of the tab behaved as if there were one.
+        """
+        self._apply_mode_channels(mode)
+
+        # A fresh install has no saved port, so the connection row is revealed
+        # even without the advanced flag — otherwise a new user could not
+        # connect anything and the app would look broken.
+        port = str(self._settings.value("adquisicion/port", "") or "").strip()
+        first_setup = not advanced and not port
+        self._box_device.setVisible(advanced or first_setup)
+        self._lbl_first_setup.setVisible(first_setup)
+
+        # Belongs to the kinematics practical, not to the fine controls.
+        uses_acc = mode_uses_acc(mode)
+        self._box_acc.setVisible(uses_acc)
+        self._box_fv_guided.setVisible(uses_acc)
+        # Which analogue input the sensor is wired to, and the diagnostic that
+        # finds it, stay with the mode rather than behind the advanced flag:
+        # the default is A4 and a BITalino may well have it elsewhere, so
+        # hiding this would make a first kinematics recording read nothing.
+        self._box_acc_wiring.setVisible(uses_acc)
+
+        # The channel count is now decided by the mode, so its selector never
+        # appears — it would be a control that cannot disagree with the mode.
+        self._box_nchan.setVisible(False)
+
+        # Shared by every mode: fine control.
+        # One exception — something still running stays visible even when the
+        # flag is off, because a broadcast nobody can stop, or automatic
+        # markers nobody asked for, is worse than one extra widget.
+        self._box_aula.setVisible(advanced or self._chk_aula.isChecked())
+        self._box_autoonset.setVisible(advanced or self._chk_auto.isChecked())
+        self._box_thr.setVisible(advanced)
+        # "Best of 3" shares its row with "Calibrate MVC", which stays visible;
+        # it carries its own caption, so hiding it alone leaves nothing behind.
+        self._chk_mvc_best3.setVisible(advanced)
+
+    def _apply_mode_channels(self, mode: str) -> None:
+        """Make the recording match the mode: channel count and accelerometer.
+
+        Driven through the existing widgets so their slots run and the plots,
+        legend, load bars and broadcast configuration all follow.
+        """
+        wanted = mode_channels(mode)
+        if self._combo_n_channels.currentIndex() != wanted - 1:
+            self._combo_n_channels.setCurrentIndex(wanted - 1)
+
+        uses_acc = mode_uses_acc(mode)
+        if self._chk_acc.isChecked() != uses_acc:
+            self._chk_acc.setChecked(uses_acc)
 
     def cleanup(self) -> None:
         """

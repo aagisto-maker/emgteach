@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -88,6 +89,11 @@ _PANEL_LAYOUT: list[tuple[int, str]] = [
 # Panels checked by default (original indices): raw, normalised envelope, PSD.
 # The overlay panel (8) is checked dynamically when a 2nd channel is compared.
 _DEFAULT_PANELS: tuple[int, ...] = (0, 3, 4)
+
+# Panels always offered, in _PANEL_LAYOUT display order: 1A. Raw,
+# 2. Env. norm. and 3. PSD — the same three that are checked by default and
+# the teaching core of the tab. What follows depends on mode and flag.
+_BASIC_PANEL_COUNT = 3
 
 # Full panel names (report dialog), in display order and renumbered.
 _PANEL_NOMBRES = [
@@ -159,6 +165,7 @@ from emgteach.io import (
     list_edf_emg_channels,
     read_edf_metadata,
 )
+from emgteach.modes import DEFAULT_MODE, MODE_PAIR, mode_uses_acc
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
@@ -266,7 +273,17 @@ class AnalysisTab(QWidget):
         # Optional second channel: overlay the agonist/antagonist envelopes. The
         # partner channel is chosen automatically (the other one), so the picker
         # is read-only; it only lights up when comparing is on.
+        self._box_compare = QWidget()
+        compare_l = QHBoxLayout(self._box_compare)
+        compare_l.setContentsMargins(0, 0, 0, 0)
+        # Shown only in the agonist/antagonist mode, where comparing the two
+        # channels is the point of the practical. The pair comes from the
+        # recording, so it is stated rather than asked for.
+        compare_l.addWidget(QLabel(tr("Compared with:")))
+        # Kept to drive the overlay logic and gate panel 9, but never shown:
+        # in this mode there is nothing to opt into.
         self._chk_compare2 = QCheckBox(tr("Compare channels:"))
+        self._chk_compare2.setVisible(False)
         self._chk_compare2.setToolTip(
             tr(
                 "Overlay the envelope of the two channels (agonist/antagonist). "
@@ -275,15 +292,20 @@ class AnalysisTab(QWidget):
             )
         )
         self._chk_compare2.setEnabled(False)
-        row_params.addWidget(self._chk_compare2)
+        compare_l.addWidget(self._chk_compare2)
         self._combo_canal2 = QComboBox()
         self._combo_canal2.setEditable(False)
         self._combo_canal2.setFixedWidth(150)
         self._combo_canal2.setEnabled(False)   # read-only: shows the partner
         self._combo_canal2.setToolTip(tr("Partner channel (chosen automatically)."))
         self._chk_compare2.toggled.connect(self._on_compare2_toggled)
-        row_params.addWidget(self._combo_canal2)
-        row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
+        compare_l.addWidget(self._combo_canal2)
+        row_params.addWidget(self._box_compare)
+
+        self._box_fenv = QWidget()
+        fenv_l = QHBoxLayout(self._box_fenv)
+        fenv_l.setContentsMargins(0, 0, 0, 0)
+        fenv_l.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
         self._spin_fenv.setSingleStep(0.5)
@@ -292,7 +314,8 @@ class AnalysisTab(QWidget):
         self._spin_fenv.setToolTip(
             tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
         )
-        row_params.addWidget(self._spin_fenv)
+        fenv_l.addWidget(self._spin_fenv)
+        row_params.addWidget(self._box_fenv)
         row_params.addWidget(QLabel(tr("Student:")))
         self._edit_student = QLineEdit()
         self._edit_student.setFixedWidth(150)
@@ -314,8 +337,13 @@ class AnalysisTab(QWidget):
         row_params.addStretch()
         ctrl.addLayout(row_params)
 
-        # Line 3: region of interest (optional analysis sub-window)
-        row_roi = QHBoxLayout()
+        # Line 3: region of interest (optional analysis sub-window) and the
+        # fragment editor. The whole row is advanced, so it lives in a named
+        # container the basic level can hide in one call — its "from"/"to"
+        # captions are plain labels that could not be hidden individually.
+        self._box_roi = QWidget()
+        row_roi = QHBoxLayout(self._box_roi)
+        row_roi.setContentsMargins(0, 0, 0, 0)
         self._chk_roi = QCheckBox(tr("Analyse only a region:"))
         self._chk_roi.setToolTip(
             tr(
@@ -363,7 +391,7 @@ class AnalysisTab(QWidget):
         # the actual analysis (not just detection). None = use the tab defaults.
         self._analysis_filter_kwargs: dict[str, float] | None = None
         row_roi.addStretch()
-        ctrl.addLayout(row_roi)
+        ctrl.addWidget(self._box_roi)
 
         # Log to the right of the parameters
         grp_log_top = QGroupBox(tr("Event log"))
@@ -426,6 +454,13 @@ class AnalysisTab(QWidget):
         # checked by default.
         self._panel_pids: list[int] = [pid for pid, _ in _PANEL_LAYOUT]
         self._chk_paneles: list[QCheckBox] = []
+        # Tick state of panels the current mode hides, keyed by display index,
+        # so switching back to a mode that offers them restores the selection.
+        self._hidden_panels_checked: dict[int, bool] = {}
+        # Set by apply_mode; initialised here because loading a file consults
+        # the mode and may happen before the first apply_mode call.
+        self._mode: str = DEFAULT_MODE
+        self._advanced: bool = False
         for (pid, _num), label in zip(_PANEL_LAYOUT, _PANEL_SHORT_LABELS):
             chk = QCheckBox(tr(label))
             chk.setChecked(pid in _DEFAULT_PANELS)
@@ -726,7 +761,9 @@ class AnalysisTab(QWidget):
         self._combo_canal2.addItems(labels)
         self._combo_canal2.blockSignals(False)
 
-        # One channel -> no comparison possible; two -> allow it (off by default).
+        # One channel -> no comparison possible; two -> the agonist/antagonist
+        # mode turns it on by itself (_sync_compare_to_mode), since the pair is
+        # a property of the recording rather than something to opt into.
         has_two = len(labels) >= 2
         self._chk_compare2.blockSignals(True)
         self._chk_compare2.setChecked(False)
@@ -734,6 +771,9 @@ class AnalysisTab(QWidget):
         self._chk_compare2.blockSignals(False)
         self._sync_second_channel()
         self._gate_overlay_panel(active=False)   # overlay only when comparing
+        self._sync_compare_to_mode()
+        if self._mode == MODE_PAIR and not has_two:
+            self._warn_mode_mismatch(len(labels))
 
         # Warn if any channel is flat (no signal) or saturated (bad contact).
         self._warn_channel_quality(path)
@@ -1916,6 +1956,104 @@ class AnalysisTab(QWidget):
         self._combo_zoom.setEnabled(False)
         self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
         self._lbl_duracion_info.setText(f"{tr('Duration:')} 10.0 s")
+
+    def apply_mode(self, mode: str, advanced: bool) -> None:
+        """Offer the analyses that belong to one practical.
+
+        Whole containers are hidden rather than individual widgets: the region
+        and cut-off controls sit beside plain QLabels ("from", "to", "Envelope
+        cutoff frequency (Hz):") that are not kept as attributes and would
+        otherwise be left behind.
+        """
+        self._mode = mode
+        self._advanced = advanced
+
+        # Comparing two channels only means something with two of them, and
+        # the force-velocity study needs the accelerometer.
+        self._box_compare.setVisible(mode == MODE_PAIR)
+        # Shares its row with Save / PDF / CSV, which stay; it carries its own
+        # caption, so hiding it alone leaves nothing behind.
+        self._btn_fv.setVisible(mode_uses_acc(mode))
+
+        # Shared by every mode: fine control.
+        self._box_fenv.setVisible(advanced)
+        self._box_roi.setVisible(advanced)
+
+        self._sync_compare_to_mode()
+        self._apply_panel_visibility(mode, advanced)
+
+    def _sync_compare_to_mode(self) -> None:
+        """Comparing follows the mode and the file, never a separate tick.
+
+        In the agonist/antagonist mode the two channels come from the
+        recording, so the overlay is simply on whenever the file really has
+        two. Any other mode leaves it off.
+        """
+        # setEnabled() tracks whether the loaded file has a second channel.
+        want = self._mode == MODE_PAIR and self._chk_compare2.isEnabled()
+        if self._chk_compare2.isChecked() != want:
+            self._chk_compare2.setChecked(want)
+
+    def _warn_mode_mismatch(self, n_channels: int) -> None:
+        """The file cannot support the chosen practical — say so, and say what
+        to do about it. Left to itself the tab would silently behave as a
+        single-channel analysis while the mode still claimed two muscles."""
+        msg = tr(
+            "This recording has {n} EMG channel(s), and the agonist / "
+            "antagonist mode needs two."
+        ).format(n=n_channels)
+        self._logger.append_error(msg)
+        QMessageBox.warning(
+            self,
+            tr("The recording does not match the mode"),
+            msg
+            + "\n\n"
+            + tr(
+                "Choose \"Single-muscle contraction\" or \"Muscle kinematics\" "
+                "at the top of the window, or open a recording made with two "
+                "channels."
+            ),
+        )
+
+    def _panel_is_offered(self, index: int, mode: str, advanced: bool) -> bool:
+        """Whether the panel at this display position suits mode and flag.
+
+        The first three (raw, normalised envelope, PSD) are the teaching core
+        and are always offered. The next five are further EMG analyses that
+        apply to any practical, so they follow the advanced flag. The last four
+        belong to one practical each.
+        """
+        if index < _BASIC_PANEL_COUNT:
+            return True
+        pid = self._panel_pids[index]
+        if pid == _OVERLAY_PID:
+            return mode == MODE_PAIR
+        if pid in _ACC_PIDS:
+            return mode_uses_acc(mode)
+        return advanced
+
+    def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:
+        """Hide the panels this practical does not use, and untick them.
+
+        Hiding the checkbox is not enough: the plotting code selects panels by
+        isChecked(), so a panel ticked under one mode would still be drawn
+        under another, with no visible way to turn it off. What gets hidden is
+        remembered, so coming back restores the selection.
+        """
+        for i, chk in enumerate(self._chk_paneles):
+            offered = self._panel_is_offered(i, mode, advanced)
+            if offered:
+                chk.setVisible(True)
+                was = self._hidden_panels_checked.pop(i, None)
+                # Panels unavailable for the loaded file (overlay without a
+                # second channel, ACC panels without an ACC channel) stay off.
+                if was and chk.isEnabled():
+                    chk.setChecked(True)
+            else:
+                if i not in self._hidden_panels_checked:
+                    self._hidden_panels_checked[i] = chk.isChecked()
+                chk.setChecked(False)
+                chk.setVisible(False)
 
     def cleanup(self) -> None:
         """Called by MainWindow.closeEvent — cancels and waits for the worker."""

@@ -47,6 +47,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -64,6 +65,8 @@ from emgteach.io import (
     list_edf_channels,
     list_edf_emg_channels,
 )
+from emgteach.modes import DEFAULT_MODE
+from emgteach.mvc import AUTO_COLOR, AUTO_LOAD_MSG, AUTO_SUFFIX
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_mvc_report
 from emgteach.workers import MvcWorker
@@ -104,6 +107,19 @@ class MvcTab(QWidget):
         self._last_result: dict | None = None
         self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
         self._last_cvm_dir: str = self._settings.value("cvm/last_cvm_dir", ".")
+        # Recording mode and fine-control flag, and whether the explanatory
+        # entry screen has already been shown in this session (once per
+        # student, reset by "New session").
+        self._mode: str = DEFAULT_MODE
+        self._advanced: bool = False
+        self._entry_shown: bool = False
+
+        # Local logger, as the acquisition tab has. The shared LoggerWidget is
+        # a single widget and Qt can only show it in one layout, which is the
+        # Analysis tab's — so everything this tab logged used to be written
+        # somewhere invisible. That included the flat-channel and saturated-
+        # channel warnings, the most common mistake a student makes.
+        self._local_log = LoggerWidget()
 
         # ── Vertical-scale state (3 time-series panels: 0=filtered, 1=envelope, 2=norm) ──
         self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0}
@@ -128,7 +144,21 @@ class MvcTab(QWidget):
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
-        root = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        # Entry screen, shown *instead of* the tab the first time it is opened
+        # in each session. A dialog that pops up every time becomes a formality
+        # nobody reads by the third visit; a panel that replaces the tab once
+        # per student gets read.
+        self._entry_panel = self._build_entry_panel()
+        self._entry_panel.setVisible(False)
+        outer.addWidget(self._entry_panel)
+
+        self._box_body = QWidget()
+        outer.addWidget(self._box_body)
+        root = QVBoxLayout(self._box_body)
+        root.setContentsMargins(0, 0, 0, 0)
 
         # ── Controls panel ──────────────────────────────────────────
         grp_ctrl = QGroupBox(tr("MVC normalisation parameters"))
@@ -146,7 +176,10 @@ class MvcTab(QWidget):
         ctrl.addLayout(row_test)
 
         row_cvm = QHBoxLayout()
-        row_cvm.addWidget(QLabel(tr("MVC reference EDF (optional):")))
+        # Caption kept as an attribute: the basic level drops the "(optional)"
+        # because at that level a reference recording is compulsory.
+        self._lbl_cvm = QLabel(tr("MVC reference EDF (optional):"))
+        row_cvm.addWidget(self._lbl_cvm)
         self._edit_cvm_path = QLineEdit()
         self._edit_cvm_path.setPlaceholderText(tr("Leave empty for auto-normalisation…"))
         self._edit_cvm_path.setReadOnly(True)
@@ -174,7 +207,10 @@ class MvcTab(QWidget):
         )
         row_params.addWidget(self._combo_canal)
 
-        row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
+        self._box_fenv = QWidget()
+        fenv_l = QHBoxLayout(self._box_fenv)
+        fenv_l.setContentsMargins(0, 0, 0, 0)
+        fenv_l.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
         self._spin_fenv.setSingleStep(0.5)
@@ -183,7 +219,8 @@ class MvcTab(QWidget):
         self._spin_fenv.setToolTip(
             tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
         )
-        row_params.addWidget(self._spin_fenv)
+        fenv_l.addWidget(self._spin_fenv)
+        row_params.addWidget(self._box_fenv)
 
         row_params.addStretch()
         self._btn_calcular = QPushButton(tr("Compute MVC"))
@@ -203,6 +240,16 @@ class MvcTab(QWidget):
 
         ctrl.addLayout(row_params)
         root.addWidget(grp_ctrl)
+
+        # Event log for this tab. Kept short: what matters is that the
+        # flat-channel and saturated-channel warnings are seen before the
+        # student reads any numbers off a useless recording.
+        grp_log = QGroupBox(tr("Event log"))
+        log_layout = QVBoxLayout(grp_log)
+        log_layout.setContentsMargins(4, 4, 4, 4)
+        self._local_log.setMaximumHeight(70)
+        log_layout.addWidget(self._local_log)
+        root.addWidget(grp_log)
 
         # ── Progress bar + Cancel ──────────────────────────────────
         progress_row = QHBoxLayout()
@@ -432,6 +479,146 @@ class MvcTab(QWidget):
         self._data_box.setMinimumHeight(height)
 
     # ------------------------------------------------------------------
+    # Log helpers — write to the local logger AND the shared one
+    # ------------------------------------------------------------------
+
+    def _log(self, msg: str) -> None:
+        self._local_log.append_log(msg)
+        self._logger.append_log(msg)
+
+    def _err(self, msg: str) -> None:
+        self._local_log.append_error(msg)
+        self._logger.append_error(msg)
+
+    # ------------------------------------------------------------------
+    # Entry screen and interface level
+    # ------------------------------------------------------------------
+
+    def _build_entry_panel(self) -> QWidget:
+        """Panel explaining what an MVC is, shown once per session.
+
+        This is the concept the tab takes for granted everywhere else: the
+        abbreviation appears in the tab title, in two file pickers, on the
+        compute button and on the plot axes, and is never spelled out.
+        """
+        panel = QWidget()
+        lay = QVBoxLayout(panel)
+        lay.setContentsMargins(24, 24, 24, 24)
+        lay.setSpacing(12)
+
+        title = QLabel(tr("Normalising to maximum voluntary contraction (MVC)"))
+        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #1F4E79;")
+        title.setWordWrap(True)
+        lay.addWidget(title)
+
+        for paragraph in (
+            tr(
+                "A raw EMG amplitude cannot be compared between two people, or "
+                "between two sessions of the same person: it depends on the "
+                "electrodes, the skin and the fat layer beneath it. "
+                "Normalisation solves this by expressing every value as a "
+                "percentage of the amplitude that muscle reaches during a "
+                "maximal effort."
+            ),
+            tr(
+                "To do that you need two recordings: the one you want to study, "
+                "and a short reference recording in which the subject contracts "
+                "the muscle as hard as possible. Record the reference first, "
+                "with the electrodes in the same position, and do not remove "
+                "them in between."
+            ),
+            tr(
+                "Without a reference recording this tab can still work, but the "
+                "percentages it produces are not percentages of MVC and the "
+                "muscle-load limits do not apply to them."
+            ),
+        ):
+            lbl = QLabel(paragraph)
+            lbl.setWordWrap(True)
+            lbl.setStyleSheet("font-size: 12px;")
+            lay.addWidget(lbl)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_continue = QPushButton(tr("I understand, continue"))
+        btn_continue.setMinimumHeight(32)
+        btn_continue.clicked.connect(self._dismiss_entry_screen)
+        btn_row.addWidget(btn_continue)
+        lay.addLayout(btn_row)
+        lay.addStretch()
+        return panel
+
+    def showEvent(self, event) -> None:
+        """Show the entry screen the first time the tab is opened per session.
+
+        Qt delivers this when the tab becomes the current one; note that a
+        Show event never reaches changeEvent(), so this has to live here.
+        """
+        super().showEvent(event)
+        if not self._entry_shown:
+            self._show_entry_screen()
+
+    def _show_entry_screen(self) -> None:
+        self._entry_shown = True
+        self._entry_panel.setVisible(True)
+        self._box_body.setVisible(False)
+
+    def _dismiss_entry_screen(self) -> None:
+        self._entry_panel.setVisible(False)
+        self._box_body.setVisible(True)
+
+    def apply_mode(self, mode: str, advanced: bool) -> None:
+        """Normalisation works the same way in every mode, so nothing here
+        depends on which practical is selected.
+
+        The mode is kept anyway: with two muscles there are two channels to
+        normalise, which the channel picker already handles one at a time.
+
+        The advanced flag does two things: it reveals the cut-off control, and
+        it decides whether auto-normalisation is on offer at all — see
+        _reference_required.
+        """
+        self._mode = mode
+        self._advanced = advanced
+        self._box_fenv.setVisible(advanced)
+        self._refresh_reference_hint()
+        self._refresh_compute_enabled()
+
+    def _reference_required(self) -> bool:
+        """Whether an MVC reference file is compulsory right now.
+
+        Auto-normalisation divides the signal by the 95th percentile of
+        itself, which makes the Jonsson load limits meaningless: a sustained
+        contraction exceeds them by construction, so the tab paints a whole
+        recording red and it looks like a finding. That trap is worth keeping
+        for someone who knows what it is for, and worth removing otherwise —
+        the shape of the signal is already in the Analysis tab, honestly
+        labelled as normalised to its own maximum.
+        """
+        return not self._advanced
+
+    def _refresh_reference_hint(self) -> None:
+        """Label and placeholder for the reference picker follow the level."""
+        if self._reference_required():
+            self._lbl_cvm.setText(tr("MVC reference EDF:"))
+            self._edit_cvm_path.setPlaceholderText(
+                tr("Required at this interface level — select a reference recording…")
+            )
+        else:
+            self._lbl_cvm.setText(tr("MVC reference EDF (optional):"))
+            self._edit_cvm_path.setPlaceholderText(
+                tr("Leave empty for auto-normalisation…")
+            )
+
+    def _refresh_compute_enabled(self) -> None:
+        """Enable "Compute MVC" only when the current level has what it needs."""
+        has_test = bool(self._edit_path.text().strip())
+        has_ref = bool(self._edit_cvm_path.text().strip())
+        self._btn_calcular.setEnabled(
+            has_test and (has_ref or not self._reference_required())
+        )
+
+    # ------------------------------------------------------------------
     # File-selection slots
     # ------------------------------------------------------------------
 
@@ -446,7 +633,7 @@ class MvcTab(QWidget):
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("cvm/last_edf_dir", self._last_edf_dir)
             self._populate_channels(path)
-            self._btn_calcular.setEnabled(True)
+            self._refresh_compute_enabled()
             self._btn_guardar.setEnabled(False)
 
     def _populate_channels(self, path: str) -> None:
@@ -473,12 +660,12 @@ class MvcTab(QWidget):
         # Warn if a channel is flat (no signal) or saturated (bad contact).
         for label, status in assess_edf_channels(path):
             if status == "flat":
-                self._logger.append_error(
+                self._err(
                     tr("Channel «{ch}»: flat — no signal (electrode not "
                        "connected?).").format(ch=label)
                 )
             elif status == "saturated":
-                self._logger.append_error(
+                self._err(
                     tr("Channel «{ch}»: saturated — the trace is pinned at the "
                        "rails (check the electrode contact or the gain).").format(
                         ch=label
@@ -495,20 +682,68 @@ class MvcTab(QWidget):
             self._edit_cvm_path.setText(path)
             self._last_cvm_dir = str(Path(path).parent)
             self._settings.setValue("cvm/last_cvm_dir", self._last_cvm_dir)
+            self._refresh_compute_enabled()
 
     @Slot()
     def _limpiar_cvm(self) -> None:
         self._edit_cvm_path.clear()
+        self._refresh_compute_enabled()
 
     # ------------------------------------------------------------------
     # Launch computation
     # ------------------------------------------------------------------
+
+    def _confirmar_sin_referencia(self) -> bool:
+        """Ask before auto-normalising. True to go ahead with the computation.
+
+        The safe option is the default and it *fixes* the problem rather than
+        just describing it: picking a reference here feeds straight back into
+        the file picker.
+        """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle(tr("No MVC reference recording selected"))
+        msg.setText(
+            tr(
+                "The signal will be normalised to the 95th percentile of "
+                "itself. The values will be shown as \"% MVC\", but they are "
+                "not percentages of maximum voluntary contraction, and the "
+                "Jonsson muscle-load limits (P10, P50, P90) do not apply: a "
+                "sustained contraction will exceed them by construction."
+            )
+            + "\n\n"
+            + tr("Use this only to see the shape of the signal.")
+        )
+        btn_choose = msg.addButton(
+            tr("Choose a reference recording"), QMessageBox.ButtonRole.AcceptRole
+        )
+        btn_continue = msg.addButton(
+            tr("Continue without reference"), QMessageBox.ButtonRole.DestructiveRole
+        )
+        msg.setDefaultButton(btn_choose)
+        msg.exec()
+
+        if msg.clickedButton() is btn_choose:
+            self._seleccionar_edf_cvm()
+            # Only carry on if they actually picked one; cancelling the picker
+            # means they never confirmed auto-normalisation.
+            return bool(self._edit_cvm_path.text().strip())
+        return msg.clickedButton() is btn_continue
 
     @Slot()
     def _iniciar_calculo(self) -> None:
         path = self._edit_path.text().strip()
         cvm_path = self._edit_cvm_path.text().strip()
         f_env = self._spin_fenv.value()
+
+        # Computing without a reference is the one moment a misleading number
+        # is about to be produced, so this is where a modal earns its keep.
+        # The basic level never reaches it: there the button stays disabled
+        # until a reference is chosen.
+        if not cvm_path and not self._reference_required():
+            if not self._confirmar_sin_referencia():
+                return
+            cvm_path = self._edit_cvm_path.text().strip()
 
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
@@ -524,7 +759,7 @@ class MvcTab(QWidget):
             channel_index=self._combo_canal.currentIndex(),
         )
         self._worker.result_ready.connect(self._on_result)
-        self._worker.log.connect(self._logger.append_log)
+        self._worker.log.connect(self._log)
         self._worker.error.connect(self._on_error)
         self._worker.finished.connect(self._on_calculo_finished)
         self._worker.start()
@@ -533,7 +768,7 @@ class MvcTab(QWidget):
     def _cancelar_calculo(self) -> None:
         if self._worker is not None and self._worker.isRunning():
             self._btn_cancelar.setEnabled(False)
-            self._logger.append_log(tr("Cancelling…"))
+            self._log(tr("Cancelling…"))
             self._worker.stop()
 
     @Slot()
@@ -582,7 +817,7 @@ class MvcTab(QWidget):
 
     @Slot(str)
     def _on_error(self, msg: str) -> None:
-        self._logger.append_error(msg)
+        self._err(msg)
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
 
@@ -595,7 +830,14 @@ class MvcTab(QWidget):
         self._d_file.setText(f"<b>{tr('File:')}</b> {Path(r['edf_path']).name}")
         self._d_cvm_ref.setText(
             f"<b>{tr('MVC reference:')}</b> {r['mvc_amplitude_ref']:.4f} {dim}")
-        self._d_source.setText(f"<b>{tr('MVC source:')}</b> {r['mvc_source']}")
+        is_auto = bool(r.get("mvc_is_auto", False))
+        if is_auto:
+            self._d_source.setText(
+                f"<span style='color:{AUTO_COLOR}'><b>{tr('MVC source:')}</b> "
+                f"{tr('auto (not a real %MVC)')}</span>"
+            )
+        else:
+            self._d_source.setText(f"<b>{tr('MVC source:')}</b> {r['mvc_source']}")
         dur = float(r["tiempo"][-1]) if len(r.get("tiempo", [])) else 0.0
         self._d_duration.setText(f"<b>{tr('Duration:')}</b> {dur:.1f} s")
 
@@ -603,16 +845,26 @@ class MvcTab(QWidget):
             tr("Mean activation:"), float(r.get("mean_norm", 0.0)),
             EMG_PROFILE.apda_mean_limit, tr("average activation over the task")))
 
-        apdf = r["apdf"]
-        self._d_static.setText(self._metric_html(
-            tr("Static (P10):"), apdf.static.value, apdf.static.limit,
-            tr("near-continuous background load"), apdf.static.exceeds))
-        self._d_median.setText(self._metric_html(
-            tr("Median (P50):"), apdf.median.value, apdf.median.limit,
-            tr("typical working load"), apdf.median.exceeds))
-        self._d_peak.setText(self._metric_html(
-            tr("Peak (P90):"), apdf.peak.value, apdf.peak.limit,
-            tr("recurrent high-effort load"), apdf.peak.exceeds))
+        if is_auto:
+            # Better no number than a number with a footnote: the number is
+            # what gets copied into the notebook, the footnote is not.
+            self._d_static.setText(
+                f"<span style='color:#777777; font-size:11px'>"
+                f"{tr(AUTO_LOAD_MSG)}</span>"
+            )
+            self._d_median.setText("")
+            self._d_peak.setText("")
+        else:
+            apdf = r["apdf"]
+            self._d_static.setText(self._metric_html(
+                tr("Static (P10):"), apdf.static.value, apdf.static.limit,
+                tr("near-continuous background load"), apdf.static.exceeds))
+            self._d_median.setText(self._metric_html(
+                tr("Median (P50):"), apdf.median.value, apdf.median.limit,
+                tr("typical working load"), apdf.median.exceeds))
+            self._d_peak.setText(self._metric_html(
+                tr("Peak (P90):"), apdf.peak.value, apdf.peak.limit,
+                tr("recurrent high-effort load"), apdf.peak.exceeds))
 
         # The data panel just grew; re-match the chart height to it.
         self._update_apdf_layout()
@@ -656,7 +908,12 @@ class MvcTab(QWidget):
                    label=tr("MVC ref: {value:.4f} {units}").format(
                        value=r["mvc_amplitude_ref"], units=r.get("dimension", "")))
         ax.set_xlim(inicio, fin)
-        ax.set_title(tr("2. Envelope and MVC reference amplitude"), fontsize=9)
+        # The suffix travels with the figure: it is saved as PNG and lands in
+        # the report, and by then nothing else says the reference was faked.
+        auto_suffix = tr(AUTO_SUFFIX) if r.get("mvc_is_auto") else ""
+        ax.set_title(
+            tr("2. Envelope and MVC reference amplitude") + auto_suffix, fontsize=9
+        )
         ax.set_ylabel(tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.tick_params(labelsize=7)
@@ -670,7 +927,9 @@ class MvcTab(QWidget):
                 color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
         ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7, label=tr("100 % MVC"))
         ax.set_xlim(inicio, fin)
-        ax.set_title(tr("3. EMG signal normalised to MVC (% MVC)"), fontsize=9)
+        ax.set_title(
+            tr("3. EMG signal normalised to MVC (% MVC)") + auto_suffix, fontsize=9
+        )
         ax.set_ylabel(tr("% MVC"), fontsize=8)
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_ylim(0, r["ylim_max"])
@@ -703,6 +962,25 @@ class MvcTab(QWidget):
         """
         self._apdf_fig.clear()
         ax = self._apdf_fig.add_subplot(111)
+
+        # Against an auto-normalised reference the Jonsson limits mean nothing
+        # — a sustained contraction exceeds them by construction — so the
+        # curve is not drawn at all rather than drawn with a caveat.
+        if r.get("mvc_is_auto"):
+            ax.text(0.5, 0.5, tr(AUTO_LOAD_MSG), ha="center", va="center",
+                    fontsize=9, color="#666666", wrap=True,
+                    transform=ax.transAxes)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+            ax.set_title(
+                tr("Muscle-load distribution (APDF, Jonsson)") + tr(AUTO_SUFFIX),
+                fontsize=9,
+            )
+            self._apdf_canvas.draw_idle()
+            return
+
         apdf = r["apdf"]
         ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.8)
         for prob in (10, 50, 90):
@@ -913,7 +1191,7 @@ class MvcTab(QWidget):
         )
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
-            self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
+            self._log(tr("Figure saved to: {path}").format(path=ruta))
 
     def _pedir_rango_informe(self) -> tuple[float, float] | None:
         """Small dialog to pick the time range plotted in the report,
@@ -981,9 +1259,9 @@ class MvcTab(QWidget):
         }
         try:
             build_mvc_report(out, self._last_result, meta, time_range=rango)
-            self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
+            self._log(tr("PDF report generated: {path}").format(path=out))
         except Exception as exc:
-            self._logger.append_error(
+            self._err(
                 tr("Error generating the PDF report: {error}").format(error=exc)
             )
 
@@ -995,7 +1273,10 @@ class MvcTab(QWidget):
         self._btn_abrir.setEnabled(habilitado)
         self._btn_abrir_cvm.setEnabled(habilitado)
         self._btn_limpiar_cvm.setEnabled(habilitado)
-        self._btn_calcular.setEnabled(habilitado and bool(self._edit_path.text()))
+        if habilitado:
+            self._refresh_compute_enabled()
+        else:
+            self._btn_calcular.setEnabled(False)
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
 
@@ -1014,6 +1295,16 @@ class MvcTab(QWidget):
         self._duracion_total = 60.0
         self._inicio_s = 0.0
         self._duracion_s = 60.0
+
+        self._local_log.clear()
+
+        # A new session means a new student, so the explanation is due again:
+        # right away if this tab is the one on screen, otherwise the next time
+        # it is opened (showEvent does not fire for the tab already showing).
+        self._entry_shown = False
+        self._dismiss_entry_screen()
+        if self.isVisible():
+            self._show_entry_screen()
 
         self._edit_path.clear()
         self._edit_cvm_path.clear()

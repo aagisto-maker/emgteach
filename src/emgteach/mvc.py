@@ -25,12 +25,25 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "AUTO_COLOR",
+    "AUTO_LOAD_MSG",
+    "AUTO_SUFFIX",
     "adaptive_ylim",
     "compute_mvc",
     "mvc_from_reps",
     "mvc_peak_hold",
     "normalise_to_mvc",
 ]
+
+# Wording used wherever an auto-normalised result is marked — on screen and in
+# the PDF report alike. Kept here, in one place, so the two never drift apart
+# and so a single i18n entry covers both.
+AUTO_COLOR = "#cc0000"
+AUTO_SUFFIX = " (auto-normalised, not %MVC)"
+AUTO_LOAD_MSG = (
+    "Muscle-load analysis requires an MVC reference recording. Select one to "
+    "interpret these values as muscle load limits."
+)
 
 
 def compute_mvc(

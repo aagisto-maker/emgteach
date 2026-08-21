@@ -121,6 +121,11 @@ class MvcWorker(QThread):
             # 4) MVC reference
             mvc_amplitude_ref: float
             mvc_source: str
+            # Whether the reference is the test signal itself. Reported as a
+            # flag rather than inferred from mvc_source, which is translated:
+            # the interface has to mark these results and must not depend on
+            # the wording of a particular language.
+            mvc_is_auto: bool = True
 
             if self._mvc_path:
                 try:
@@ -147,6 +152,7 @@ class MvcWorker(QThread):
                     mvc_source = tr(
                         "external MVC file (percentile {p:.0f})"
                     ).format(p=self._percentile)
+                    mvc_is_auto = False
                 except Exception as exc:
                     self.log.emit(
                         tr(
@@ -205,6 +211,7 @@ class MvcWorker(QThread):
                 "tiempo": time_axis,
                 "mvc_amplitude_ref": mvc_amplitude_ref,
                 "mvc_source": mvc_source,
+                "mvc_is_auto": mvc_is_auto,
                 "ylim_max": ylim_max,
                 "dimension": dimension,
                 "fs": fs,
