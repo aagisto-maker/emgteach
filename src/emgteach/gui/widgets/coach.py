@@ -134,6 +134,14 @@ class CoachMark(QWidget):
         self._lbl_body.setStyleSheet("font-size: 12px;")
         lay.addWidget(self._lbl_body)
 
+        # A wrapped label reports its height through heightForWidth, and a
+        # layout only asks when the size policy says to. Without this the
+        # panel is sized from the unwrapped hint and clips the text.
+        for lbl in (self._lbl_title, self._lbl_body):
+            policy = lbl.sizePolicy()
+            policy.setHeightForWidth(True)
+            lbl.setSizePolicy(policy)
+
         row = QHBoxLayout()
         row.setSpacing(6)
         self._lbl_count = QLabel()
@@ -213,6 +221,36 @@ class CoachMark(QWidget):
         self._reposition()
         self.update()
 
+    def _panel_height(self) -> int:
+        """Height the panel needs for its text at the width it is pinned to.
+
+        adjustSize() is not enough here. A word-wrapped QLabel only knows its
+        height once its width is fixed, and the layout asks for that height
+        through heightForWidth — which it skips unless the label's size policy
+        advertises it. Without this the panel took the labels' unwrapped size
+        hint and every step lost its last lines; the two-paragraph ones lost
+        about six.
+        """
+        lay = self._panel.layout()
+        m = lay.contentsMargins()
+        # The styled border sits inside the panel but outside the layout, so
+        # it has to be counted separately — leaving it out is what cost the
+        # body its last line, two pixels at a time.
+        frame = self._panel.contentsMargins()
+        inner = _PANEL_W - frame.left() - frame.right() - m.left() - m.right()
+        needed = (
+            frame.top()
+            + m.top()
+            + self._lbl_title.heightForWidth(inner)
+            + lay.spacing()
+            + self._lbl_body.heightForWidth(inner)
+            + lay.spacing()
+            + self._btn_next.sizeHint().height()
+            + m.bottom()
+            + frame.bottom()
+        )
+        return max(needed, self._panel.sizeHint().height())
+
     def _reposition(self) -> None:
         """Put the hole over the target and the panel beside it."""
         self._hole = None
@@ -222,7 +260,7 @@ class CoachMark(QWidget):
             self._hole = QRect(top_left, target.size()).adjusted(-4, -4, 4, 4)
 
         self._panel.setFixedWidth(_PANEL_W)
-        self._panel.adjustSize()
+        self._panel.setFixedHeight(self._panel_height())
         pw, ph = self._panel.width(), self._panel.height()
         area = self.rect()
 

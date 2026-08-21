@@ -206,3 +206,43 @@ def test_it_refuses_while_recording(main_window, qapp, monkeypatch) -> None:
     main_window.start_tour()
     assert told
     assert not main_window._coach.isVisible()
+
+
+class TestNothingIsClipped:
+    """A wrapped QLabel only knows its height once its width is fixed, and a
+    layout only asks through heightForWidth when the size policy says to. Get
+    either wrong and the panel is sized from the unwrapped hint: every step
+    lost its last lines, and the two-paragraph ones about six.
+    """
+
+    @pytest.mark.parametrize("language", ["en", "es"])
+    @pytest.mark.parametrize("mode", MODES)
+    def test_every_step_shows_all_of_its_text(
+        self, main_window, qapp, mode, language
+    ) -> None:
+        from emgteach.i18n import get_language, set_language
+
+        previous = get_language()
+        set_language(language)
+        try:
+            set_mode(main_window, qapp, mode)
+            main_window.start_tour()
+            qapp.processEvents()
+            coach = main_window._coach
+
+            for index in range(len(coach._steps)):
+                coach._index = index
+                coach._render()
+                qapp.processEvents()
+                qapp.processEvents()
+                for label in (coach._lbl_title, coach._lbl_body):
+                    needed = label.heightForWidth(label.width())
+                    assert needed <= label.height() + 1, (
+                        f"{language}/{mode} — {coach._steps[index].title}: "
+                        f"{needed - label.height()} px of text cut off"
+                    )
+                # And the panel itself has to stay inside the window.
+                assert coach.rect().contains(coach._panel.geometry())
+            coach.stop()
+        finally:
+            set_language(previous)
