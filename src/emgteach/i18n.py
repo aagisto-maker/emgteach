@@ -1000,9 +1000,9 @@ _ES = {
     # -- fragment-selection widget --
     "Select analysis fragments": "Seleccionar fragmentos de análisis",
     "The app suggests the informative fragments (active periods). Adjust, add or remove them; only the checked fragments are analysed. You decide the final selection.":
-        "La app sugiere los fragmentos informativos (periodos activos). Ajústalos, "
-        "añádelos o quítalos; solo se analizan los fragmentos marcados. Tú decides la "
-        "selección final.",
+        "La app sugiere los fragmentos informativos (periodos activos). Se pueden "
+        "ajustar, añadir o quitar; solo se analizan los fragmentos marcados. La "
+        "selección final la decide el alumno.",
     "Band-pass low cut-off (Hz).": "Frecuencia de corte baja del paso-banda (Hz).",
     "Band-pass high cut-off (Hz).": "Frecuencia de corte alta del paso-banda (Hz).",
     "Mains-notch frequency (Hz), usually 50 or 60.":
