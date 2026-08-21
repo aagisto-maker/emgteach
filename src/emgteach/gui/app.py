@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QSettings, Qt, QTimer, qInstallMessageHandler
+from PySide6.QtCore import QLibraryInfo, QSettings, Qt, QTimer, QTranslator, qInstallMessageHandler
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -369,6 +369,28 @@ def _install_qt_message_filter() -> None:
     qInstallMessageHandler(_handler)
 
 
+def install_qt_translations(app: QApplication, language: str) -> QTranslator | None:
+    """Translate Qt's own strings — the standard dialog buttons above all.
+
+    "Yes", "No", "OK", "Cancel" and "Save" do not come from
+    :mod:`emgteach.i18n`: Qt draws them itself and translates them from its own
+    catalogue, so with no translator installed a Spanish interface still
+    asks the user to press "Yes". PySide6 ships qtbase_es, which is all it
+    takes.
+
+    The translator is returned so the caller can keep a reference to it:
+    dropping it uninstalls the translations.
+    """
+    if language == "en":
+        return None
+    translator = QTranslator()
+    path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+    if not translator.load(f"qtbase_{language}", path):
+        return None
+    app.installTranslator(translator)
+    return translator
+
+
 def main() -> None:
     _install_qt_message_filter()
     app = QApplication(sys.argv)
@@ -377,7 +399,10 @@ def main() -> None:
 
     settings = QSettings("Bioinstrumentacion", "EMGApp")
     # Set the language (saved or auto-detected) before building the interface.
-    set_language(resolve_startup_language(settings))
+    language = resolve_startup_language(settings)
+    set_language(language)
+    # Kept on the application so it is not garbage-collected.
+    app._qt_translator = install_qt_translations(app, language)
 
     splash = _make_splash()
     splash.show()
