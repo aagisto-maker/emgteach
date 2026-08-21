@@ -422,7 +422,7 @@ class TestBitalinoDeviceBasics:
         assert d.channel_kinds() == ["EMG", "ACC"]
         assert d.channel_units() == ["mV", "g"]
         ranges = d.channel_physical_ranges()
-        assert ranges[0] == (-1.65, 1.65)
+        assert ranges[0] == pytest.approx((-1650 / 1009, 1650 / 1009))
         assert ranges[1] == (-1.0, 1.0)
         assert d._decode_channels == [0, 3]            # A1 + A4 (both 10-bit)
         # 2 EMG + ACC exposes three channels {A1, A2, A4}; ACC last.
@@ -528,20 +528,20 @@ class TestBitalinoDeviceBasics:
             device.open()
         out = device.read(2)
         assert out.shape == (2, 1)
-        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)  # ADC max → +1.65 mV
-        np.testing.assert_allclose(out[1, 0], -1.65, atol=0.01)  # ADC 0  → -1.65 mV
+        np.testing.assert_allclose(out[0, 0], 1650 / 1009, rtol=1e-6)   # ADC max
+        np.testing.assert_allclose(out[1, 0], -1650 / 1009, rtol=1e-6)  # ADC 0
         device.close()
 
     def test_read_two_channels_returns_two_columns(self, fast_commands: None) -> None:
         device = BitalinoDevice("COM5", fs=1000, channels=[0, 1])
         ser = _FakeSerial()
-        # one frame: A1=1023 (+1.65 mV), A2=512 (≈ midscale → ≈0 mV)
+        # one frame: A1=1023 (full scale), A2=512 (≈ midscale → ≈0 mV)
         ser.binary_queue = bytearray(_VERSION_REPLY + _encode_frame_2ch(1023, 512))
         with patch("serial.Serial", return_value=ser):
             device.open()
         out = device.read(1)
         assert out.shape == (1, 2)
-        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)
+        np.testing.assert_allclose(out[0, 0], 1650 / 1009, rtol=1e-6)
         assert abs(out[0, 1]) < 0.02
         device.close()
 
@@ -565,7 +565,7 @@ class TestBitalinoDeviceBasics:
         position 0 = A1 (EMG, mV), position 1 = A4 (ACC, normalised g).
         """
         device = BitalinoDevice("COM5", fs=1000, channels=[0], acc=True)
-        # A1=1023 (+1.65 mV) at position 0; A4=1023 (+1.0 g) at position 1.
+        # A1=1023 (full scale) at position 0; A4=1023 (+1.0 g) at position 1.
         frame = _encode_frame_2ch(1023, 1023)
         ser = _FakeSerial()
         ser.binary_queue = bytearray(_VERSION_REPLY + frame)
@@ -573,7 +573,7 @@ class TestBitalinoDeviceBasics:
             device.open()
         out = device.read(1)
         assert out.shape == (1, 2)
-        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)   # A1 in mV
+        np.testing.assert_allclose(out[0, 0], 1650 / 1009, rtol=1e-6)   # A1 in mV
         np.testing.assert_allclose(out[0, 1], 1.0, atol=0.01)    # A4 = +1 g
         device.close()
 
@@ -586,14 +586,14 @@ class TestBitalinoDeviceBasics:
             "COM5", fs=1000, channels=[0], acc=True, acc_channel=1
         )
         assert device.channel_kinds() == ["EMG", "ACC"]
-        frame = _encode_frame_2ch(1023, 0)  # A1=+1.65mV (EMG), A2=0→-1g (ACC)
+        frame = _encode_frame_2ch(1023, 0)  # A1 full scale (EMG), A2=0→-1g (ACC)
         ser = _FakeSerial()
         ser.binary_queue = bytearray(_VERSION_REPLY + frame)
         with patch("serial.Serial", return_value=ser):
             device.open()
         out = device.read(1)
         assert out.shape == (1, 2)
-        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)   # A1 EMG in mV
+        np.testing.assert_allclose(out[0, 0], 1650 / 1009, rtol=1e-6)   # A1 EMG in mV
         np.testing.assert_allclose(out[0, 1], -1.0, atol=0.01)   # A2 ACC = -1 g
         device.close()
 
@@ -612,7 +612,7 @@ class TestBitalinoDeviceBasics:
             device.open()
         out = device.read(1)
         assert out.shape == (1, 2)
-        np.testing.assert_allclose(out[0, 0], 1.65, atol=0.01)   # EMG (A2), first
+        np.testing.assert_allclose(out[0, 0], 1650 / 1009, rtol=1e-6)   # EMG (A2), first
         np.testing.assert_allclose(out[0, 1], -1.0, atol=0.01)   # ACC (A1), last
         device.close()
 
@@ -640,21 +640,37 @@ class TestBitalinoDeviceBasics:
 
 
 class TestBitalinoConversion:
+    """The datasheet transfer function, gain included.
+
+        EMG(mV) = (ADC / 2**10 - 0.5) * 3.3 * 1000 / 1009
+
+    Dividing by the front-end gain is what makes the result a biopotential:
+    the ADC reads the amplifier's output, not the signal at the skin.
+    """
+
+    # (3.3 / 2) * 1000 / 1009
+    FULL_SCALE_MV = 1650.0 / 1009.0
+
     def test_raw_to_mv_midscale_is_zero(self) -> None:
         # ADC midscale (511.5) → 0 mV
         result = BitalinoDevice.raw_to_mv(np.array([511.5]))
         np.testing.assert_allclose(result, 0.0, atol=1e-6)
 
     def test_raw_to_mv_full_scale(self) -> None:
-        # ADC max → +1.65 V (+1.65 mV in BITalino convention from prototype)
-        # The conversion is ((adc/1023) - 0.5) * 3.3
         result = BitalinoDevice.raw_to_mv(np.array([1023.0]))
-        np.testing.assert_allclose(result, 1.65, atol=0.01)
+        np.testing.assert_allclose(result, self.FULL_SCALE_MV, rtol=1e-9)
 
     def test_raw_to_mv_zero_adc(self) -> None:
-        # ADC=0 → -1.65 V (full negative excursion)
         result = BitalinoDevice.raw_to_mv(np.array([0.0]))
-        np.testing.assert_allclose(result, -1.65, atol=0.01)
+        np.testing.assert_allclose(result, -self.FULL_SCALE_MV, rtol=1e-9)
+
+    def test_gain_is_divided_out(self) -> None:
+        """Guards the defect this replaced: treating the gain as unity left
+        the amplitude 0.9 % high, close enough to look right."""
+        uncorrected = 3.3 / 2.0          # what the ADC input swings, in volts
+        np.testing.assert_allclose(
+            uncorrected / self.FULL_SCALE_MV, 1.009, rtol=1e-6
+        )
 
 
 class _BlockingFakeSerial:
@@ -820,7 +836,9 @@ class TestDevicePhysicalRange:
         assert device.physical_max == pytest.approx(12.5)
         assert device.physical_min == pytest.approx(-12.5)
 
-    def test_bitalino_full_scale_is_pm_1_65_mv(self) -> None:
+    def test_bitalino_full_scale_is_gain_corrected(self) -> None:
+        """(VCC / 2) * 1000 / G, with G = 1009 — the same scale as the
+        samples, since this is what goes into the EDF header."""
         device = BitalinoDevice("COM5")
-        assert device.physical_max == pytest.approx(1.65)
-        assert device.physical_min == pytest.approx(-1.65)
+        assert device.physical_max == pytest.approx(1650 / 1009)
+        assert device.physical_min == pytest.approx(-1650 / 1009)

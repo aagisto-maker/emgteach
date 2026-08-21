@@ -623,7 +623,7 @@ def assess_edf_channels(path: PathLike) -> list[tuple[str, str]]:
     """
     import pyedflib
 
-    from emgteach.dsp import assess_channel_quality
+    from emgteach.dsp import DEFAULT_PHYSICAL_MAX_MV, assess_channel_quality
 
     try:
         reader = pyedflib.EdfReader(str(path))
@@ -641,7 +641,10 @@ def assess_edf_channels(path: PathLike) -> list[tuple[str, str]]:
             if dim == "g" or name.upper() in ("ACC", "EDF ANNOTATIONS"):
                 continue
             fs = float(header.get("sample_frequency", 1000) or 1000)
-            pmax = float(header.get("physical_max", 1.65) or 1.65)
+            pmax = float(
+                header.get("physical_max", DEFAULT_PHYSICAL_MAX_MV)
+                or DEFAULT_PHYSICAL_MAX_MV
+            )
             status = assess_channel_quality(reader.readSignal(i), fs, pmax)
             out.append((str(label), status))
         return out

@@ -134,10 +134,15 @@ class BitalinoDevice(AcquisitionDevice):
     >>> device.close()                     # doctest: +SKIP
     """
 
-    # ADC and analogue-front-end constants (BITalino EMG: 10-bit ADC,
-    # 3.3 V supply, unity gain, +/-1.65 mV referred to the input).
+    # ADC and analogue-front-end constants. The BITalino EMG channel is a
+    # 10-bit ADC on a 3.3 V supply reading the output of a differential
+    # amplifier of gain 1009, so the full ADC excursion corresponds to
+    # ±1.635 mV *referred to the electrodes* (see _raw_to_mv).
     _ADC_MAX = 2**10 - 1  # 1023
     _V_REF = 3.3
+    # Gain of the BITalino EMG front end (datasheet transfer function). The
+    # ADC never sees the biopotential itself, only this amplified copy of it.
+    _GAIN_EMG = 1009.0
     # The accelerometer is wired to analogue channel A4 (index 3) so it shares
     # the 10-bit resolution of the EMG channels (A1-A4 are 10-bit; A5-A6 would
     # be 6-bit). With the EMG on A1/A2 at most, the recorded set stays within
@@ -234,12 +239,13 @@ class BitalinoDevice(AcquisitionDevice):
 
     @property
     def physical_min(self) -> float:
-        # BITalino EMG spans ±V_REF/2 mV at unity gain (see _raw_to_mv).
-        return -self._V_REF / 2.0
+        # ±1.635 mV referred to the electrodes (see _raw_to_mv). This goes
+        # into the EDF header, so it has to be the same scale as the samples.
+        return -self._V_REF / 2.0 * 1000.0 / self._GAIN_EMG
 
     @property
     def physical_max(self) -> float:
-        return self._V_REF / 2.0
+        return self._V_REF / 2.0 * 1000.0 / self._GAIN_EMG
 
     # -- per-channel metadata (EMG in mV, ACC in normalised g) ---------------
 
@@ -631,12 +637,24 @@ class BitalinoDevice(AcquisitionDevice):
 
     @classmethod
     def _raw_to_mv(cls, raw_adc: FloatArray | np.ndarray) -> FloatArray:
-        """Convert 10-bit BITalino ADC values to millivolts.
+        """Convert 10-bit BITalino ADC values to millivolts at the electrodes.
 
-        BITalino EMG channels expose ±1.65 mV across the full ADC
-        excursion at 3.3 V supply with unity gain.
+        The datasheet transfer function, with the volts-to-millivolts factor
+        folded in::
+
+            EMG(mV) = (ADC / 2**n - 0.5) * VCC * 1000 / G
+
+        where ``n`` = 10 bits, ``VCC`` = 3.3 V and ``G`` = 1009. Dividing by
+        the gain is what makes the result a biopotential: the ADC reads the
+        amplifier's output, not the signal at the skin.
+
+        Full excursion is therefore ±1.635 mV, not the ±1.65 mV this returned
+        while the gain was treated as unity. The two are within 0.9 % of each
+        other by coincidence — the gain is close to 1000 and a volt is 1000 mV
+        — which is why the amplitudes looked plausible.
         """
-        return ((np.asarray(raw_adc, dtype=np.float64) / cls._ADC_MAX) - 0.5) * cls._V_REF
+        normalised = (np.asarray(raw_adc, dtype=np.float64) / cls._ADC_MAX) - 0.5
+        return normalised * cls._V_REF * 1000.0 / cls._GAIN_EMG
 
     @staticmethod
     def raw_to_mv(raw_adc: FloatArray | np.ndarray) -> FloatArray:

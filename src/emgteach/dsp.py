@@ -622,8 +622,17 @@ def tremor_spectrum(
     return freqs, psd, peak
 
 
+# Full-scale amplitude of a BITalino EMG channel in mV at the electrodes:
+# (VCC / 2) * 1000 / G, with VCC = 3.3 V and a front-end gain G = 1009 (see
+# emgteach.devices.bitalino). Used only as a fallback when a recording does
+# not declare its own physical range.
+DEFAULT_PHYSICAL_MAX_MV = 1.635
+
+
 def assess_channel_quality(
-    signal: FloatArray | np.ndarray, fs: float, physical_max: float = 1.65
+    signal: FloatArray | np.ndarray,
+    fs: float,
+    physical_max: float = DEFAULT_PHYSICAL_MAX_MV,
 ) -> str:
     """One-word quality verdict for a whole EMG channel, for a load-time check.
 
