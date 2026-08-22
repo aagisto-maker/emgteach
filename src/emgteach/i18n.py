@@ -145,7 +145,6 @@ _ES = {
     "(physiological ~8-12 Hz) — needs an accelerometer channel.":
         "Espectro de frecuencia del acelerómetro con el pico de temblor "
         "(fisiológico ~8-12 Hz) — requiere un canal de acelerómetro.",
-    "EMG envelope (electrical)": "Envolvente EMG (eléctrica)",
     "EMG — {ch} (electrical)": "EMG — {ch} (eléctrico)",
     "MMG is paired with «{ch}» — the muscle carrying the accelerometer.":
         "El MMG se empareja con «{ch}» — el músculo que lleva el acelerómetro.",
@@ -262,14 +261,6 @@ _ES = {
         "de cada carga. Inicia la grabación por usted y marca cada contracción con "
         "su carga, para que el estudio fuerza-velocidad las lea directamente. "
         "Activar el acelerómetro y conectar el BITalino primero.",
-    "List the known loads (kg) the subject will lift, lightest to "
-    "heaviest. The wizard guides one short recording per load and marks "
-    "each with its load, so the force-velocity study reads them "
-    "automatically.":
-        "Indicar las cargas conocidas (kg) que levantará el sujeto, de menor a "
-        "mayor. El asistente guía un registro corto por carga y marca cada una "
-        "con su carga, para que el estudio fuerza-velocidad las lea "
-        "automáticamente.",
     "Loads (kg):": "Cargas (kg):",
     "e.g.  2, 4, 6, 8": "p. ej.  2, 4, 6, 8",
     "Separate loads with commas or spaces; use a dot for decimals "
@@ -370,7 +361,6 @@ _ES = {
         "Modo seguimiento en móviles activado — los alumnos pueden seguir en {url}",
     "Could not start classroom mode (port busy?).":
         "No se pudo iniciar el modo seguimiento en móviles (¿puerto ocupado?).",
-    "Classroom mode off.": "Modo seguimiento en móviles desactivado.",
     "Classroom mode off — previous follower links are now invalid.":
         "Modo seguimiento en móviles desactivado — los enlaces anteriores ya no son válidos.",
     "Copy link": "Copiar enlace",
@@ -452,8 +442,6 @@ _ES = {
     # "F" and "E" are identical in both languages and fall through to the key.
     "R": "B",
     "Raw EMG signal (mV)": "Señal EMG en bruto (mV)",
-    "Filtered EMG (notch 50 Hz + band-pass 20-450 Hz)":
-        "EMG filtrado (notch 50 Hz + paso-banda 20-450 Hz)",
     "Envelope (5 Hz low-pass filter, causal with continuous state)":
         "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
@@ -482,14 +470,8 @@ _ES = {
     # -- live muscle-load monitor --
     "Muscle load (live MVC)": "Carga muscular (CVM en vivo)",
     "Calibrate MVC": "Calibrar CVM",
-    "Record a few seconds of maximum contraction to set the MVC "
-    "reference for the live load monitor.":
-        "Grabar unos segundos de contracción máxima para fijar la referencia "
-        "CVM del monitor de carga en vivo.",
     "Calibrate the MVC to start monitoring.":
         "Calibra el CVM para empezar a monitorizar.",
-    "Calibrating… contract at maximum for {s:.0f} s.":
-        "Calibrando… contraiga al máximo durante {s:.0f} s.",
     "MVC calibrated. Monitoring load.": "CVM calibrado. Monitorizando carga.",
     "MVC calibrated for live load monitoring.":
         "CVM calibrado para el monitor de carga en vivo.",
@@ -527,8 +509,6 @@ _ES = {
     "MVC ready — {summary}. You can start recording.":
         "CVM listo — {summary}. Ya se puede empezar a grabar.",
     "MVC calibrated: {summary}": "CVM calibrado: {summary}",
-    "static {st:.0f} · median {md:.0f} · peak {pk:.0f} %":
-        "estático {st:.0f} · mediano {md:.0f} · pico {pk:.0f} %",
     "not calibrated": "sin calibrar",
     "Warning": "Aviso",
     "Danger": "Peligro",
@@ -560,8 +540,6 @@ _ES = {
     "Computing PSD, MNF and MDF…": "Calculando PSD, MNF y MDF…",
     "Computing segment-wise RMS and MDF…": "Calculando RMS y MDF por ventana…",
     "Polynomial fatigue fit (degree 2)…": "Ajuste polinómico de fatiga (grado 2)…",
-    "Fatigue trend detected (MDF decreases over time).":
-        "Tendencia de fatiga detectada (la MDF desciende con el tiempo).",
     "No fatigue (MDF increases or stays stable).":
         "Sin fatiga (la MDF aumenta o se mantiene estable).",
     "MDF trend undefined (signal too short or constant).":
@@ -636,8 +614,6 @@ _ES = {
     "Markers ({n}):": "Marcadores ({n}):",
     "No markers": "Sin marcadores",
     "Go": "Ir",
-    "Display window": "Ventana de visualización",
-    "Reset window": "Reset ventana",
     "Widen the time window (×2)": "Ampliar ventana temporal (×2)",
     "Narrow the time window (÷2)": "Reducir ventana temporal (÷2)",
     "Analysis summary": "Resumen del análisis",
@@ -737,7 +713,6 @@ _ES = {
     # Progress bar + fatigue summary (analysis tab).
     "Ready": "Listo",
     "Analysing…  %p%": "Analizando…  %p%",
-    "Fatigue: DETECTED (MDF decreasing)": "Fatiga: DETECTADA (MDF decrece)",
     "Fatigue: Not detected (MDF stable or increasing)":
         "Fatiga: No detectada (MDF estable o crece)",
     "Fatigue: Undetermined (insufficient signal)":
@@ -770,7 +745,6 @@ _ES = {
         "Canal EMG del EDF a normalizar. Se rellena con los canales "
         "del archivo de prueba al seleccionarlo.",
     "Compute MVC": "Calcular CVM",
-    "Normalisation summary": "Resumen de normalización",
     "MVC reference:": "CVM referencia:",
     "Mean activation:": "Activación media:",
     "MVC source:": "Fuente CVM:",
@@ -785,12 +759,9 @@ _ES = {
     "Select test EDF": "Seleccionar EDF de prueba",
     "Select MVC reference EDF": "Seleccionar EDF de referencia CVM",
     # -- muscle-load analysis (Jonsson APDF) --
-    "Muscle load:": "Carga muscular:",
     "Static": "Estático",
     "Median": "Mediano",
     "Peak": "Pico",
-    "4. Muscle-load distribution (APDF, Jonsson)":
-        "4. Distribución de carga muscular (APDF, Jonsson)",
     "Load (% MVC)": "Carga (% CVM)",
     "Cumulative % of time": "% del tiempo acumulado",
     "Muscle load (Jonsson) — static {st:.1f} %, median {md:.1f} %, peak {pk:.1f} % MVC":
@@ -869,10 +840,6 @@ _ES = {
         "Trama del BITalino corrupta (error de CRC) — conexión perdida.",
 
     # --- PDF report ---
-    "Yes — MDF decreases over time ({slope:+.2f} Hz/s)":
-        "Sí — la MDF desciende con el tiempo ({slope:+.2f} Hz/s)",
-    "No — MDF stays stable or increases ({slope:+.2f} Hz/s)":
-        "No — la MDF se mantiene o aumenta ({slope:+.2f} Hz/s)",
     "Undetermined (short or constant signal)": "Indeterminada (señal corta o constante)",
     "Filtered (mV)": "Filtrada (mV)",
     "EMG signal — channel «{name}»": "Señal EMG — canal «{name}»",
@@ -1138,21 +1105,6 @@ _ES = {
     "Next": "Siguiente",
     "Finish": "Terminar",
     "Step {i} of {n}": "Paso {i} de {n}",
-    "A quick guide?": "¿Una guía rápida?",
-    "This is a teaching application: it records the electrical activity of a "
-    "muscle and turns it into measurements you can interpret. It works with "
-    "either of two sensors — a BITalino over Bluetooth, or an Arduino + "
-    "MyoWare 2.0 over USB — and behaves the same way with both.\n\nWould you "
-    "like a short walkthrough of what each control does and what it means "
-    "physiologically? It takes a couple of minutes, and you can reopen it "
-    "later with the \"Guide\" button.":
-        "Esta es una aplicación docente: registra la actividad eléctrica de un "
-        "músculo y la convierte en medidas que se pueden interpretar. Funciona "
-        "con cualquiera de dos sensores —un BITalino por Bluetooth o un "
-        "Arduino + MyoWare 2.0 por USB— y se comporta igual con ambos.\n\n"
-        "¿Se desea un recorrido breve por lo que hace cada control y por su "
-        "significado fisiológico? Lleva un par de minutos, y se puede volver a "
-        "abrir cuando se quiera con el botón «Guía».",
     "Stop the recording before starting the guide.":
         "Hay que detener el registro antes de iniciar la guía.",
 
@@ -1173,44 +1125,8 @@ _ES = {
         "Los controles finos —frecuencias de corte, umbrales de fatiga, región "
         "de interés— son comunes a los tres modos y no estorban hasta que se "
         "marca esta casilla.",
-    "Two devices, one application": "Dos dispositivos, una aplicación",
-    "The recording can be made with either of two interchangeable front ends: "
-    "a BITalino over Bluetooth, or an Arduino RedBoard Plus with a MyoWare "
-    "2.0 sensor over USB, whose firmware ships with the application.\n\n"
-    "Which one is in use is a technical setting, made once by whoever "
-    "prepares the laboratory: it sits with the connection details under "
-    "\"Advanced options\". Nothing after that point changes — recording, "
-    "analysis and file format are identical either way — so it is not "
-    "something you need to touch during a practical, and a class can run on "
-    "whatever hardware it has.":
-        "El registro se puede hacer con cualquiera de dos frontales "
-        "intercambiables: un BITalino por Bluetooth, o un Arduino RedBoard "
-        "Plus con un sensor MyoWare 2.0 por USB, cuyo firmware se distribuye "
-        "con la aplicación.\n\nCuál de los dos se usa es un ajuste técnico, "
-        "que hace una sola vez quien prepara el laboratorio: está junto a los "
-        "datos de conexión, en «Opciones avanzadas». Nada de lo que viene "
-        "después cambia —registro, análisis y formato de fichero son "
-        "idénticos con cualquiera de los dos—, así que no es algo que haya "
-        "que tocar durante una práctica, y una clase puede funcionar con el "
-        "material del que disponga.",
     "Offer this guide next time": "Ofrecer esta guía la próxima vez",
     "Connect the sensor": "Conectar el sensor",
-    "With a BITalino, pair it in the operating system first; with the "
-    "Arduino, just plug in the USB cable. Either way the surface electrodes "
-    "go on the belly of the muscle, in line with the fibres, with the "
-    "reference on a bony point that does not contract.":
-        "Con un BITalino, empareje primero en el sistema operativo; con el "
-        "Arduino, basta con enchufar el cable USB. En ambos casos los "
-        "electrodos de superficie van sobre el vientre del músculo, en la "
-        "dirección de las fibras, con la referencia en un punto óseo que no se "
-        "contraiga.",
-    "Name the muscle": "Nombre el músculo",
-    "This name is written into the EDF file as the channel label, so the "
-    "recording still says which muscle it was months later. Use the "
-    "anatomical name.":
-        "Este nombre se escribe en el fichero EDF como etiqueta del canal, de "
-        "modo que el registro sigue diciendo qué músculo era meses después. "
-        "Conviene usar el nombre anatómico.",
     "Where the accelerometer goes": "Dónde va el acelerómetro",
     "On the muscle it measures the mechanomyogram (MMG): the transverse bulging "
     "of the fibres as they shorten, that is, the mechanical counterpart of "
@@ -1221,7 +1137,6 @@ _ES = {
         "mecánica de la señal eléctrica. Sobre el segmento móvil mide el "
         "movimiento mismo: su aceleración, y a partir de ella la velocidad y "
         "el temblor.",
-    "Record": "Registre",
     "Start recording and ask for the contraction. Watch the live trace: at "
     "rest it should be a flat line with only baseline noise. A signal that "
     "never returns to baseline usually means a loose electrode or a poor "
@@ -1230,19 +1145,6 @@ _ES = {
         "en reposo debe ser una línea plana con solo ruido de base. Una señal "
         "que nunca vuelve a la línea de base suele indicar un electrodo suelto "
         "o mal contacto, no un músculo tónico.",
-    "Let the class follow along": "Que la clase siga el registro",
-    "This serves a read-only live view over the local network, so the rest of "
-    "the group can watch the trace on their own phones while one person wears "
-    "the electrodes. Nobody installs anything: they open a link, or scan the "
-    "QR code.\n\nIt is worth more than it sounds. A single sensor is usually "
-    "all a teaching laboratory has, and this is what turns one recording into "
-    "something the whole class reads at the same time.":
-        "Esto sirve una vista en vivo de solo lectura por la red local, de modo "
-        "que el resto del grupo puede ver el trazado en su propio móvil "
-        "mientras una persona lleva los electrodos. Nadie instala nada: abren "
-        "un enlace, o escanean el código QR.\n\nVale más de lo que parece. Un "
-        "laboratorio docente suele tener un único sensor, y esto es lo que "
-        "convierte un solo registro en algo que lee toda la clase a la vez.",
     "Mark what happens": "Marcar lo que ocurre",
     "Press MARK to timestamp an event — the start of an effort, a change of "
     "load, the moment the subject reports fatigue. The marks travel inside "
@@ -1260,15 +1162,6 @@ _ES = {
         "carga cae la velocidad de acortamiento: esa relación inversa es la "
         "curva fuerza-velocidad, y el producto de ambas da la potencia, que es "
         "máxima con cargas intermedias.",
-    "Calibrate the maximum": "Calibre el máximo",
-    "A maximal voluntary contraction recorded now becomes the reference the "
-    "live load bars are expressed against. Without it the amplitude is in "
-    "millivolts, which says as much about the electrodes and the skin as "
-    "about the muscle.":
-        "Una contracción voluntaria máxima registrada ahora pasa a ser la "
-        "referencia respecto a la que se expresan las barras de carga en vivo. "
-        "Sin ella la amplitud está en milivoltios, que dice tanto de los "
-        "electrodos y de la piel como del músculo.",
     "The three basic panels": "Los tres paneles básicos",
     "Raw signal: the interference pattern of the motor units firing. "
     "Normalised envelope: how activation changes over time, which is what "
@@ -1289,15 +1182,6 @@ _ES = {
         "mientras la amplitud a menudo sube, porque se reclutan más unidades "
         "motoras para sostener la misma fuerza.",
     "Agonist and antagonist": "Agonista y antagonista",
-    "With two channels the envelopes can be overlaid. In a clean movement the "
-    "agonist activates while the antagonist stays nearly silent; simultaneous "
-    "activation is co-contraction, which stiffens the joint and is typical of "
-    "an unpractised or uncertain movement.":
-        "Con dos canales se pueden superponer las envolventes. En un "
-        "movimiento limpio el agonista se activa mientras el antagonista "
-        "permanece casi silente; la activación simultánea es co-contracción, "
-        "que rigidiza la articulación y es típica de un movimiento poco "
-        "entrenado o inseguro.",
     # (the "Force-velocity study" caption itself is defined with the Analysis
     # tab strings above; only the tour's explanation of it belongs here)
     "Builds the load-velocity, force-velocity and power curves from a "
@@ -1308,32 +1192,8 @@ _ES = {
         "partir de un registro en el que se levantaron varias cargas "
         "conocidas, y las relaciona con la amplitud EMG, es decir, con cuántas "
         "unidades motoras hubo que reclutar para cada carga.",
-    "Take the results away": "Llévese los resultados",
-    "The report gathers the figures and the metrics into a PDF, and the CSV "
-    "export holds the numbers behind them for anyone who wants to work on "
-    "them elsewhere.":
-        "El informe reúne las figuras y las métricas en un PDF, y la "
-        "exportación CSV guarda los números que hay detrás para quien quiera "
-        "trabajarlos en otro sitio.",
     "Why normalise at all": "Por qué normalizar",
-    "A raw amplitude cannot be compared between two people, or between two "
-    "sessions of the same person: it depends on the electrodes, the skin and "
-    "the fat beneath it. Expressing every value as a percentage of the "
-    "maximal contraction removes all of that and leaves the muscle.":
-        "Una amplitud bruta no se puede comparar entre dos personas, ni entre "
-        "dos sesiones de la misma persona: depende de los electrodos, de la "
-        "piel y de la grasa que hay debajo. Expresar cada valor como "
-        "porcentaje de la contracción máxima elimina todo eso y deja el "
-        "músculo.",
     "Muscle load": "Carga muscular",
-    "Once the signal is in % MVC, the distribution of load over time can be "
-    "read against the Jonsson limits: the static level (P10) is the load that "
-    "is almost never released, and it is the one most associated with "
-    "sustained-effort discomfort.":
-        "Una vez la señal está en % CVM, la distribución de la carga en el "
-        "tiempo se puede leer frente a los límites de Jonsson: el nivel "
-        "estático (P10) es la carga que casi nunca se suelta, y es la más "
-        "asociada a las molestias por esfuerzo mantenido.",
 
     # ── Tutorial: texto revisado por el autor (22-ago-2026) ──────────
     'Quick guide':
