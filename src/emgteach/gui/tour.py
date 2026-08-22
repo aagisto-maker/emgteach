@@ -58,18 +58,10 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
 
     # ── Acquisition ───────────────────────────────────────────────────
     steps.append(CoachStep(
-        tr("Two devices, one application"),
+        tr("Devices the application supports"),
         tr(
-            "The recording can be made with either of two interchangeable "
-            "front ends: a BITalino over Bluetooth, or an Arduino RedBoard "
-            "Plus with a MyoWare 2.0 sensor over USB, whose firmware ships "
-            "with the application.\n\nWhich one is in use is a technical "
-            "setting, made once by whoever prepares the laboratory: it sits "
-            "with the connection details under \"Advanced options\". Nothing "
-            "after that point changes — recording, analysis and file format "
-            "are identical either way — so it is not something you need to "
-            "touch during a practical, and a class can run on whatever "
-            "hardware it has."
+            "The recording can be made with either of two devices: BITalino "
+            "(Bluetooth) or Arduino (USB)."
         ),
         # On a first run the connection block is on screen and this points
         # straight at the device selector; later it is tucked away with the
@@ -81,21 +73,20 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
     steps.append(CoachStep(
         tr("Connect the sensor"),
         tr(
-            "With a BITalino, pair it in the operating system first; with the "
-            "Arduino, just plug in the USB cable. Either way the surface "
-            "electrodes go on the belly of the muscle, in line with the "
-            "fibres, with the reference on a bony point that does not "
-            "contract."
+            "The board has to be switched on and the electrodes connected. "
+            "The surface electrodes go on the belly of the muscle, in line "
+            "with the fibres, with the reference on a bony point that does "
+            "not contract."
         ),
         lambda: adq._btn_conectar,
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
-        tr("Name the muscle"),
+        tr("Assign the labels"),
         tr(
             "This name is written into the EDF file as the channel label, so "
-            "the recording still says which muscle it was months later. Use "
-            "the anatomical name."
+            "the recording keeps the muscle and the channel identified. The "
+            "anatomical name is the one worth using."
         ),
         lambda: adq._edit_labels[0],
         tab=TAB_ACQ,
@@ -116,7 +107,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         ))
 
     steps.append(CoachStep(
-        tr("Record"),
+        tr("Recording"),
         tr(
             "Start recording and ask for the contraction. Watch the live "
             "trace: at rest it should be a flat line with only baseline "
@@ -127,15 +118,12 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
-        tr("Let the class follow along"),
+        tr("Follow the recording from several devices"),
         tr(
-            "This serves a read-only live view over the local network, so the "
-            "rest of the group can watch the trace on their own phones while "
-            "one person wears the electrodes. Nobody installs anything: they "
-            "open a link, or scan the QR code.\n\nIt is worth more than it "
-            "sounds. A single sensor is usually all a teaching laboratory has, "
-            "and this is what turns one recording into something the whole "
-            "class reads at the same time."
+            "A read-only live view over the local network: the group can "
+            "watch the trace on their own phones while one person wears the "
+            "electrodes. Nobody installs anything — a link is opened, or the "
+            "QR code scanned."
         ),
         lambda: adq._box_aula,
         tab=TAB_ACQ,
@@ -166,12 +154,15 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         ))
 
     steps.append(CoachStep(
-        tr("Calibrate the maximum"),
+        tr("Calibrate the maximum contraction"),
         tr(
             "A maximal voluntary contraction recorded now becomes the "
-            "reference the live load bars are expressed against. Without it "
-            "the amplitude is in millivolts, which says as much about the "
-            "electrodes and the skin as about the muscle."
+            "reference the live load bars are expressed against. Without that "
+            "reference the amplitude stays in millivolts, and a millivolt "
+            "does not measure the muscle alone: it also depends on where the "
+            "electrodes were stuck and how much skin and fat lie between them "
+            "and the fibres. That is why two recordings in millivolts cannot "
+            "be compared."
         ),
         lambda: adq._btn_calibrar,
         tab=TAB_ACQ,
@@ -209,7 +200,8 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
                 "With two channels the envelopes can be overlaid. In a clean "
                 "movement the agonist activates while the antagonist stays "
                 "nearly silent; simultaneous activation is co-contraction, "
-                "which stiffens the joint and is typical of an unpractised or "
+                "which holds the joint rigid and is typical of an unpractised "
+                "or "
                 "uncertain movement."
             ),
             lambda: ana._box_compare,
@@ -230,11 +222,10 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         ))
 
     steps.append(CoachStep(
-        tr("Take the results away"),
+        tr("Download the results: report and data"),
         tr(
-            "The report gathers the figures and the metrics into a PDF, and "
-            "the CSV export holds the numbers behind them for anyone who "
-            "wants to work on them elsewhere."
+            "The report gathers the figures and the metrics into a PDF "
+            "document. Export CSV saves the recording's data."
         ),
         lambda: ana._btn_informe,
         tab=TAB_ANA,
@@ -250,8 +241,10 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             "A raw amplitude cannot be compared between two people, or "
             "between two sessions of the same person: it depends on the "
             "electrodes, the skin and the fat beneath it. Expressing every "
-            "value as a percentage of the maximal contraction removes all of "
-            "that and leaves the muscle."
+            "value as a percentage of the maximal contraction cancels all of "
+            "that out, because the two amplitudes share the same electrodes "
+            "and the same skin: what is left is how hard the muscle is "
+            "working."
         ),
         lambda: cvm._edit_cvm_path,
         tab=TAB_MVC,
@@ -262,8 +255,9 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tr(
             "Once the signal is in % MVC, the distribution of load over time "
             "can be read against the Jonsson limits: the static level (P10) "
-            "is the load that is almost never released, and it is the one "
-            "most associated with sustained-effort discomfort."
+            "is the load the muscle stays above 90 % of the time, the "
+            "background tension it hardly ever lets go of, and the level most "
+            "associated with sustained-effort discomfort."
         ),
         lambda: cvm._btn_calcular,
         tab=TAB_MVC,

@@ -357,7 +357,6 @@ _ES = {
     "«{ch}» (arbitrary units).":
         "Movimiento del acelerómetro en el segmento móvil — sigue a «{ch}» "
         "(unidades arbitrarias).",
-    "Broadcast to phones (classroom mode)": "Difundir a móviles (modo aula)",
     "Serve a read-only live view over the local network so students "
     "can follow on their phone/tablet browser (no install). One "
     "device drives the BITalino; the others just watch.":
@@ -1195,7 +1194,7 @@ _ES = {
         "que tocar durante una práctica, y una clase puede funcionar con el "
         "material del que disponga.",
     "Offer this guide next time": "Ofrecer esta guía la próxima vez",
-    "Connect the sensor": "Conecte el sensor",
+    "Connect the sensor": "Conectar el sensor",
     "With a BITalino, pair it in the operating system first; with the "
     "Arduino, just plug in the USB cable. Either way the surface electrodes "
     "go on the belly of the muscle, in line with the fibres, with the "
@@ -1335,6 +1334,44 @@ _ES = {
         "tiempo se puede leer frente a los límites de Jonsson: el nivel "
         "estático (P10) es la carga que casi nunca se suelta, y es la más "
         "asociada a las molestias por esfuerzo mantenido.",
+
+    # ── Tutorial: texto revisado por el autor (22-ago-2026) ──────────
+    'Quick guide':
+        'Guía rápida',
+    'The electrical activity of a muscle is recorded and turned into measurements that can be interpreted. It works with either of two sensors: a BITalino over Bluetooth or an Arduino + MyoWare 2.0 over USB.\n\nFor a short walkthrough of the application, press Yes.':
+        'Se registra la actividad eléctrica de un músculo y se convierte en medidas que se pueden interpretar. Funciona con cualquiera de dos sensores: un BITalino por Bluetooth o un Arduino + MyoWare 2.0 por USB.\n\nPara un recorrido breve por la aplicación, pulsar Sí.',
+    'Devices the application supports':
+        'Dispositivos soportados por la aplicación',
+    'The recording can be made with either of two devices: BITalino (Bluetooth) or Arduino (USB).':
+        'El registro se puede hacer con uno cualquiera de dos dispositivos: BITalino (Bluetooth) o Arduino (USB).',
+    'The board has to be switched on and the electrodes connected. The surface electrodes go on the belly of the muscle, in line with the fibres, with the reference on a bony point that does not contract.':
+        'La placa tiene que estar encendida y los electrodos conectados. Los electrodos de superficie van sobre el vientre del músculo, en la dirección de las fibras, con la referencia en un punto óseo que no se contraiga.',
+    'Assign the labels':
+        'Asignar etiquetas',
+    'This name is written into the EDF file as the channel label, so the recording keeps the muscle and the channel identified. The anatomical name is the one worth using.':
+        'Este nombre se escribe en el fichero EDF como etiqueta del canal, de modo que el registro mantiene la identificación del músculo y del canal. Conviene usar el nombre anatómico.',
+    'Recording':
+        'Registro',
+    'Follow the recording from several devices':
+        'Seguir el registro de forma distribuida',
+    'A read-only live view over the local network: the group can watch the trace on their own phones while one person wears the electrodes. Nobody installs anything — a link is opened, or the QR code scanned.':
+        'Vista en vivo de solo lectura por la red local: el grupo puede ver el trazado en su propio móvil mientras una persona lleva los electrodos. Nadie instala nada: se abre un enlace, o se escanea el código QR.',
+    'Calibrate the maximum contraction':
+        'Calibrar el máximo de contracción',
+    'A maximal voluntary contraction recorded now becomes the reference the live load bars are expressed against. Without that reference the amplitude stays in millivolts, and a millivolt does not measure the muscle alone: it also depends on where the electrodes were stuck and how much skin and fat lie between them and the fibres. That is why two recordings in millivolts cannot be compared.':
+        'Una contracción voluntaria máxima registrada ahora pasa a ser la referencia respecto a la que se expresan las barras de carga en vivo. Sin esa referencia la amplitud queda en milivoltios, y un milivoltio no mide solo al músculo: depende también de dónde se pegaron los electrodos y de cuánta piel y grasa hay entre ellos y las fibras. Por eso dos registros en milivoltios no se pueden comparar.',
+    'Download the results: report and data':
+        'Descargar resultados: informe y datos',
+    "The report gathers the figures and the metrics into a PDF document. Export CSV saves the recording's data.":
+        'El informe reúne las figuras y las métricas en un documento PDF. Exportar CSV permite guardar los datos del registro.',
+    'With two channels the envelopes can be overlaid. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-contraction, which holds the joint rigid and is typical of an unpractised or uncertain movement.':
+        'Con dos canales se pueden superponer las envolventes. En un movimiento limpio el agonista se activa mientras el antagonista permanece casi silente; la activación simultánea es co-contracción, que mantiene rígida la articulación y es típica de un movimiento poco entrenado o inseguro.',
+    'A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working.':
+        'Una amplitud bruta no se puede comparar entre dos personas, ni entre dos sesiones de la misma persona: depende de los electrodos, de la piel y de la grasa que hay debajo. Expresar cada valor como porcentaje de la contracción máxima cancela todo eso, porque las dos amplitudes comparten los mismos electrodos y la misma piel: lo que queda es cuánto está trabajando el músculo.',
+    'Once the signal is in % MVC, the distribution of load over time can be read against the Jonsson limits: the static level (P10) is the load the muscle stays above 90 % of the time, the background tension it hardly ever lets go of, and the level most associated with sustained-effort discomfort.':
+        'Una vez la señal está en % CVM, la distribución de la carga en el tiempo se puede leer frente a los límites de Jonsson: el nivel estático (P10) es la carga que el músculo supera el 90 % del tiempo, la tensión de fondo que casi nunca llega a relajar, y el nivel más asociado a las molestias por esfuerzo mantenido.',
+    'Broadcast to phones (in the laboratory)':
+        'Difundir a móviles (en laboratorio)',
 
     "page {n}": "página {n}",
 }

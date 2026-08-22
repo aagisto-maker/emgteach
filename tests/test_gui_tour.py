@@ -96,13 +96,14 @@ def test_the_offer_names_both_sensors(main_window, offer) -> None:
 
 
 @pytest.mark.parametrize("mode", MODES)
-def test_every_mode_explains_both_front_ends(main_window, qapp, mode) -> None:
-    """Which device is in use is the teacher's setting, but the student should
-    still know what it means."""
+def test_every_mode_names_both_devices(main_window, qapp, mode) -> None:
+    """A student should know the application takes either device, whichever
+    one the laboratory happens to have wired up. The sensor model is named in
+    the start-up message rather than here — see the test for that."""
     set_mode(main_window, qapp, mode)
     bodies = " ".join(step.body for step in build_tour(main_window))
     assert "BITalino" in bodies
-    assert "MyoWare" in bodies and "Arduino" in bodies
+    assert "Arduino" in bodies
 
 
 def test_steps_match_the_practical(main_window, qapp) -> None:

@@ -618,7 +618,7 @@ class AcquisitionTab(QWidget):
         aula_row = QHBoxLayout(self._box_aula)
         aula_row.setContentsMargins(0, 0, 0, 0)
         aula_row.setSpacing(6)
-        self._chk_aula = QCheckBox(tr("Broadcast to phones (classroom mode)"))
+        self._chk_aula = QCheckBox(tr("Broadcast to phones (in the laboratory)"))
         self._chk_aula.setToolTip(
             tr(
                 "Serve a read-only live view over the local network so students "

@@ -234,17 +234,14 @@ class MainWindow(QMainWindow):
 
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Question)
-        msg.setWindowTitle(tr("A quick guide?"))
+        msg.setWindowTitle(tr("Quick guide"))
         msg.setText(
             tr(
-                "This is a teaching application: it records the electrical "
-                "activity of a muscle and turns it into measurements you can "
-                "interpret. It works with either of two sensors — a BITalino "
-                "over Bluetooth, or an Arduino + MyoWare 2.0 over USB — and "
-                "behaves the same way with both.\n\nWould you like a short "
-                "walkthrough of what each control does and what it means "
-                "physiologically? It takes a couple of minutes, and you can "
-                "reopen it later with the \"Guide\" button."
+                "The electrical activity of a muscle is recorded and turned "
+                "into measurements that can be interpreted. It works with "
+                "either of two sensors: a BITalino over Bluetooth or an "
+                "Arduino + MyoWare 2.0 over USB.\n\nFor a short walkthrough "
+                "of the application, press Yes."
             )
         )
         chk = QCheckBox(tr("Offer this guide next time"))
