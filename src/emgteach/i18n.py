@@ -367,12 +367,12 @@ _ES = {
     "Students open:  {url}   ·   {n} following":
         "Los alumnos abren:  {url}   ·   {n} siguiendo",
     "Classroom mode on — students can follow at {url}":
-        "Modo aula activado — los alumnos pueden seguir en {url}",
+        "Modo seguimiento en móviles activado — los alumnos pueden seguir en {url}",
     "Could not start classroom mode (port busy?).":
-        "No se pudo iniciar el modo aula (¿puerto ocupado?).",
-    "Classroom mode off.": "Modo aula desactivado.",
+        "No se pudo iniciar el modo seguimiento en móviles (¿puerto ocupado?).",
+    "Classroom mode off.": "Modo seguimiento en móviles desactivado.",
     "Classroom mode off — previous follower links are now invalid.":
-        "Modo aula desactivado — los enlaces anteriores ya no son válidos.",
+        "Modo seguimiento en móviles desactivado — los enlaces anteriores ya no son válidos.",
     "Copy link": "Copiar enlace",
     "Copied ✓": "Copiado ✓",
     "Copy the follower link to the clipboard, e.g. to email it to "
@@ -1171,7 +1171,8 @@ _ES = {
     "interest, classroom broadcast — are shared by all three modes and stay "
     "out of the way until you tick this.":
         "Los controles finos —frecuencias de corte, umbrales de fatiga, región "
-        "de interés, modo aula— son comunes a los tres modos y no estorban "
+        "de interés, seguimiento en móviles— son comunes a los tres modos y no "
+        "estorban "
         "hasta que marque esta casilla.",
     "Two devices, one application": "Dos dispositivos, una aplicación",
     "The recording can be made with either of two interchangeable front ends: "
