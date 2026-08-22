@@ -46,3 +46,43 @@ def test_resolve_startup_language_prefers_saved_setting() -> None:
             return "es" if key == "app/language" else default
 
     assert i18n.resolve_startup_language(_FakeSettings()) == "es"
+
+
+def _tr_keys() -> dict[str, str]:
+    """Every literal passed to tr() in the source tree, with where it is used."""
+    import ast
+    import pathlib
+
+    root = pathlib.Path(i18n.__file__).parent
+    found: dict[str, str] = {}
+    for path in sorted(root.rglob("*.py")):
+        if path.name == "i18n.py":
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "tr"
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                found.setdefault(node.args[0].value, f"{path.name}:{node.lineno}")
+    return found
+
+
+def test_every_translatable_string_has_a_spanish_entry() -> None:
+    """No tr() literal may fall back to English in the Spanish interface.
+
+    This is the silent failure of a hand-written catalogue: a key that drifts
+    from the source by one character — an em dash where the entry has a hyphen —
+    still runs, it just quietly shows English to Spanish-speaking students. It
+    is how "E" and "A" went years without an entry while their sibling "R" had
+    one, and only looked right because the initial happens to match in both
+    languages.
+    """
+    missing = {k: where for k, where in _tr_keys().items() if k not in i18n._ES}
+    assert not missing, "sin traducción al español: " + "; ".join(
+        f"{where} {key[:60]!r}"
+        for key, where in sorted(missing.items(), key=lambda kv: kv[1])
+    )

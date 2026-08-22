@@ -1233,5 +1233,14 @@ _ES = {
     'Broadcast to phones (in the laboratory)':
         'Difundir a móviles (en laboratorio)',
 
+    # Iniciales de los botones de zoom vertical y la etiqueta de error.
+    # Coinciden en los dos idiomas —Envolvente, Acelerómetro, Error—, pero se
+    # declaran igualmente: sin entrada propia funcionaban por casualidad, al
+    # devolver tr() la clave inglesa. Su hermana «R» sí se traduce (Raw ->
+    # Bruto), que es lo que delató el hueco.
+    "E": "E",
+    "A": "A",
+    "Error:": "Error:",
+
     "page {n}": "página {n}",
 }
