@@ -49,8 +49,8 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tr("Everything else is optional"),
         tr(
             "The fine controls — filter cut-offs, fatigue thresholds, region "
-            "of interest, classroom broadcast — are shared by all three modes "
-            "and stay out of the way until you tick this."
+            "of interest — are shared by all three modes and stay out of the "
+            "way until this is ticked."
         ),
         lambda: win._chk_advanced,
         tab=TAB_ACQ,
@@ -74,9 +74,8 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tr("Connect the sensor"),
         tr(
             "The board has to be switched on and the electrodes connected. "
-            "The surface electrodes go on the belly of the muscle, in line "
-            "with the fibres, with the reference on a bony point that does "
-            "not contract."
+            "They go on the belly of the muscle, in line with the fibres, "
+            "with the reference on a bony point that does not contract."
         ),
         lambda: adq._btn_conectar,
         tab=TAB_ACQ,
@@ -86,7 +85,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tr(
             "This name is written into the EDF file as the channel label, so "
             "the recording keeps the muscle and the channel identified. The "
-            "anatomical name is the one worth using."
+            "anatomical name is the one to use."
         ),
         lambda: adq._edit_labels[0],
         tab=TAB_ACQ,
@@ -96,7 +95,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         steps.append(CoachStep(
             tr("Where the accelerometer goes"),
             tr(
-                "On the muscle it measures mechanomyogram (MMG): the "
+                "On the muscle it measures the mechanomyogram (MMG): the "
                 "transverse bulging of the fibres as they shorten, that is, "
                 "the mechanical counterpart of the electrical signal. On the "
                 "moving segment it measures the movement itself — its "
@@ -133,7 +132,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tr(
             "Press MARK to timestamp an event — the start of an effort, a "
             "change of load, the moment the subject reports fatigue. The "
-            "marks travel inside the EDF and let you find each phase again "
+            "marks travel inside the EDF, so each phase can be found again "
             "during the analysis."
         ),
         lambda: adq._btn_marcar,
@@ -160,7 +159,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             "reference the live load bars are expressed against. Without that "
             "reference the amplitude stays in millivolts, and a millivolt "
             "does not measure the muscle alone: it also depends on where the "
-            "electrodes were stuck and how much skin and fat lie between them "
+            "electrodes were placed and how much skin and fat lie between them "
             "and the fibres. That is why two recordings in millivolts cannot "
             "be compared."
         ),
@@ -174,7 +173,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tr(
             "Raw signal: the interference pattern of the motor units firing. "
             "Normalised envelope: how activation changes over time, which is "
-            "what you compare between efforts. Power spectrum: how that "
+            "what makes two efforts comparable. Power spectrum: how that "
             "activity is distributed in frequency."
         ),
         lambda: ana._chk_paneles[0],
@@ -201,8 +200,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
                 "movement the agonist activates while the antagonist stays "
                 "nearly silent; simultaneous activation is co-contraction, "
                 "which holds the joint rigid and is typical of an unpractised "
-                "or "
-                "uncertain movement."
+                "or uncertain movement."
             ),
             lambda: ana._box_compare,
             tab=TAB_ANA,
@@ -214,8 +212,8 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             tr(
                 "Builds the load-velocity, force-velocity and power curves "
                 "from a recording where several known loads were lifted, and "
-                "relates them to the EMG amplitude — that is, to how much the "
-                "muscle had to be recruited for each load."
+                "relates them to the EMG amplitude — that is, to how many "
+                "motor units had to be recruited for each load."
             ),
             lambda: ana._btn_fv,
             tab=TAB_ANA,
@@ -225,7 +223,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tr("Download the results: report and data"),
         tr(
             "The report gathers the figures and the metrics into a PDF "
-            "document. Export CSV saves the recording's data."
+            "document. The CSV export saves the recording's data."
         ),
         lambda: ana._btn_informe,
         tab=TAB_ANA,

@@ -238,7 +238,8 @@ class MainWindow(QMainWindow):
         msg.setText(
             tr(
                 "The electrical activity of a muscle is recorded and turned "
-                "into measurements that can be interpreted. It works with "
+                "into measurements that can be interpreted. The application "
+                "works with "
                 "either of two sensors: a BITalino over Bluetooth or an "
                 "Arduino + MyoWare 2.0 over USB.\n\nFor a short walkthrough "
                 "of the application, press Yes."

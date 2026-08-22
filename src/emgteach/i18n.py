@@ -1168,12 +1168,11 @@ _ES = {
         "las medidas que tienen sentido para ella.",
     "Everything else is optional": "Lo demás es opcional",
     "The fine controls — filter cut-offs, fatigue thresholds, region of "
-    "interest, classroom broadcast — are shared by all three modes and stay "
-    "out of the way until you tick this.":
+    "interest — are shared by all three modes and stay out of the way until "
+    "this is ticked.":
         "Los controles finos —frecuencias de corte, umbrales de fatiga, región "
-        "de interés, seguimiento en móviles— son comunes a los tres modos y no "
-        "estorban "
-        "hasta que marque esta casilla.",
+        "de interés— son comunes a los tres modos y no estorban hasta que se "
+        "marca esta casilla.",
     "Two devices, one application": "Dos dispositivos, una aplicación",
     "The recording can be made with either of two interchangeable front ends: "
     "a BITalino over Bluetooth, or an Arduino RedBoard Plus with a MyoWare "
@@ -1213,7 +1212,7 @@ _ES = {
         "modo que el registro sigue diciendo qué músculo era meses después. "
         "Conviene usar el nombre anatómico.",
     "Where the accelerometer goes": "Dónde va el acelerómetro",
-    "On the muscle it measures mechanomyogram (MMG): the transverse bulging "
+    "On the muscle it measures the mechanomyogram (MMG): the transverse bulging "
     "of the fibres as they shorten, that is, the mechanical counterpart of "
     "the electrical signal. On the moving segment it measures the movement "
     "itself — its acceleration, and from that velocity and tremor.":
@@ -1244,10 +1243,10 @@ _ES = {
         "un enlace, o escanean el código QR.\n\nVale más de lo que parece. Un "
         "laboratorio docente suele tener un único sensor, y esto es lo que "
         "convierte un solo registro en algo que lee toda la clase a la vez.",
-    "Mark what happens": "Marque lo que ocurre",
+    "Mark what happens": "Marcar lo que ocurre",
     "Press MARK to timestamp an event — the start of an effort, a change of "
     "load, the moment the subject reports fatigue. The marks travel inside "
-    "the EDF and let you find each phase again during the analysis.":
+    "the EDF, so each phase can be found again during the analysis.":
         "Pulsar MARCA para poner una marca temporal en un suceso: el inicio de "
         "un esfuerzo, un cambio de carga, el momento en que el sujeto refiere "
         "fatiga. Las marcas viajan dentro del EDF y permiten reencontrar cada "
@@ -1272,8 +1271,8 @@ _ES = {
         "electrodos y de la piel como del músculo.",
     "The three basic panels": "Los tres paneles básicos",
     "Raw signal: the interference pattern of the motor units firing. "
-    "Normalised envelope: how activation changes over time, which is what you "
-    "compare between efforts. Power spectrum: how that activity is "
+    "Normalised envelope: how activation changes over time, which is what "
+    "makes two efforts comparable. Power spectrum: how that activity is "
     "distributed in frequency.":
         "Señal en bruto: el patrón de interferencia de las unidades motoras al "
         "descargar. Envolvente normalizada: cómo cambia la activación en el "
@@ -1303,12 +1302,12 @@ _ES = {
     # tab strings above; only the tour's explanation of it belongs here)
     "Builds the load-velocity, force-velocity and power curves from a "
     "recording where several known loads were lifted, and relates them to the "
-    "EMG amplitude — that is, to how much the muscle had to be recruited for "
+    "EMG amplitude — that is, to how many motor units had to be recruited for "
     "each load.":
         "Construye las curvas carga-velocidad, fuerza-velocidad y potencia a "
         "partir de un registro en el que se levantaron varias cargas "
-        "conocidas, y las relaciona con la amplitud EMG, es decir, con cuánto "
-        "hubo que reclutar el músculo para cada carga.",
+        "conocidas, y las relaciona con la amplitud EMG, es decir, con cuántas "
+        "unidades motoras hubo que reclutar para cada carga.",
     "Take the results away": "Llévese los resultados",
     "The report gathers the figures and the metrics into a PDF, and the CSV "
     "export holds the numbers behind them for anyone who wants to work on "
@@ -1339,17 +1338,17 @@ _ES = {
     # ── Tutorial: texto revisado por el autor (22-ago-2026) ──────────
     'Quick guide':
         'Guía rápida',
-    'The electrical activity of a muscle is recorded and turned into measurements that can be interpreted. It works with either of two sensors: a BITalino over Bluetooth or an Arduino + MyoWare 2.0 over USB.\n\nFor a short walkthrough of the application, press Yes.':
+    'The electrical activity of a muscle is recorded and turned into measurements that can be interpreted. The application works with either of two sensors: a BITalino over Bluetooth or an Arduino + MyoWare 2.0 over USB.\n\nFor a short walkthrough of the application, press Yes.':
         'Se registra la actividad eléctrica de un músculo y se convierte en medidas que se pueden interpretar. Funciona con cualquiera de dos sensores: un BITalino por Bluetooth o un Arduino + MyoWare 2.0 por USB.\n\nPara un recorrido breve por la aplicación, pulsar Sí.',
     'Devices the application supports':
         'Dispositivos soportados por la aplicación',
     'The recording can be made with either of two devices: BITalino (Bluetooth) or Arduino (USB).':
         'El registro se puede hacer con uno cualquiera de dos dispositivos: BITalino (Bluetooth) o Arduino (USB).',
-    'The board has to be switched on and the electrodes connected. The surface electrodes go on the belly of the muscle, in line with the fibres, with the reference on a bony point that does not contract.':
-        'La placa tiene que estar encendida y los electrodos conectados. Los electrodos de superficie van sobre el vientre del músculo, en la dirección de las fibras, con la referencia en un punto óseo que no se contraiga.',
+    'The board has to be switched on and the electrodes connected. They go on the belly of the muscle, in line with the fibres, with the reference on a bony point that does not contract.':
+        'La placa tiene que estar encendida y los electrodos conectados. Van sobre el vientre del músculo, en la dirección de las fibras, con la referencia en un punto óseo que no se contraiga.',
     'Assign the labels':
         'Asignar etiquetas',
-    'This name is written into the EDF file as the channel label, so the recording keeps the muscle and the channel identified. The anatomical name is the one worth using.':
+    'This name is written into the EDF file as the channel label, so the recording keeps the muscle and the channel identified. The anatomical name is the one to use.':
         'Este nombre se escribe en el fichero EDF como etiqueta del canal, de modo que el registro mantiene la identificación del músculo y del canal. Conviene usar el nombre anatómico.',
     'Recording':
         'Registro',
@@ -1359,11 +1358,11 @@ _ES = {
         'Vista en vivo de solo lectura por la red local: el grupo puede ver el trazado en su propio móvil mientras una persona lleva los electrodos. Nadie instala nada: se abre un enlace, o se escanea el código QR.',
     'Calibrate the maximum contraction':
         'Calibrar el máximo de contracción',
-    'A maximal voluntary contraction recorded now becomes the reference the live load bars are expressed against. Without that reference the amplitude stays in millivolts, and a millivolt does not measure the muscle alone: it also depends on where the electrodes were stuck and how much skin and fat lie between them and the fibres. That is why two recordings in millivolts cannot be compared.':
-        'Una contracción voluntaria máxima registrada ahora pasa a ser la referencia respecto a la que se expresan las barras de carga en vivo. Sin esa referencia la amplitud queda en milivoltios, y un milivoltio no mide solo al músculo: depende también de dónde se pegaron los electrodos y de cuánta piel y grasa hay entre ellos y las fibras. Por eso dos registros en milivoltios no se pueden comparar.',
+    'A maximal voluntary contraction recorded now becomes the reference the live load bars are expressed against. Without that reference the amplitude stays in millivolts, and a millivolt does not measure the muscle alone: it also depends on where the electrodes were placed and how much skin and fat lie between them and the fibres. That is why two recordings in millivolts cannot be compared.':
+        'Una contracción voluntaria máxima registrada ahora pasa a ser la referencia respecto a la que se expresan las barras de carga en vivo. Sin esa referencia la amplitud queda en milivoltios, y un milivoltio no mide solo al músculo: depende también de dónde se colocaron los electrodos y de cuánta piel y grasa hay entre ellos y las fibras. Por eso dos registros en milivoltios no se pueden comparar.',
     'Download the results: report and data':
         'Descargar resultados: informe y datos',
-    "The report gathers the figures and the metrics into a PDF document. Export CSV saves the recording's data.":
+    "The report gathers the figures and the metrics into a PDF document. The CSV export saves the recording's data.":
         'El informe reúne las figuras y las métricas en un documento PDF. Exportar CSV permite guardar los datos del registro.',
     'With two channels the envelopes can be overlaid. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-contraction, which holds the joint rigid and is typical of an unpractised or uncertain movement.':
         'Con dos canales se pueden superponer las envolventes. En un movimiento limpio el agonista se activa mientras el antagonista permanece casi silente; la activación simultánea es co-contracción, que mantiene rígida la articulación y es típica de un movimiento poco entrenado o inseguro.',
