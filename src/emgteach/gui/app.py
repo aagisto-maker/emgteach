@@ -143,8 +143,11 @@ class MainWindow(QMainWindow):
         # recording they just made, so it travels between the tabs instead of
         # being hunted for three times. Opening a file by hand in Analysis
         # feeds the MVC tab the same way.
+        # One chain, not two branches: the recording reaches the MVC tab
+        # *through* the Analysis tab, carrying the muscle chosen there. Wiring
+        # both tabs to the acquisition directly made each ask which muscle,
+        # so the same question came up twice in a row.
         self._tab_adq.recording_saved.connect(self._tab_ana.adopt_recording)
-        self._tab_adq.recording_saved.connect(self._tab_cvm.adopt_recording)
         self._tab_ana.file_opened.connect(self._tab_cvm.adopt_recording)
 
         # Shared styling: each tab's gray background (class selector) is only

@@ -1312,5 +1312,30 @@ _ES = {
     "Recording loaded to normalise: {path}":
         "Registro cargado para normalizar: {path}",
 
+    # Normalizar contra el propio registro, ofrecido con su advertencia.
+    "Use this recording": "Usar este registro",
+    "Normalise against this recording itself?":
+        "¿Normalizar contra el propio registro?",
+    "The signal will be divided by the 95th percentile of itself, so the "
+    "strongest moment of this recording becomes 100 % — whatever the muscle "
+    "can really do. Two recordings normalised this way cannot be compared "
+    "with each other, and the Jonsson load limits do not apply: a sustained "
+    "contraction exceeds them by construction.\n\nWhat does survive is the "
+    "shape over time: when the muscle worked harder and when it let go.":
+        "La señal se dividirá por el percentil 95 de sí misma, así que el "
+        "momento más fuerte de este registro pasa a ser el 100 % —sea cual sea "
+        "lo que el músculo pueda dar de verdad—. Dos registros normalizados "
+        "así no se pueden comparar entre sí, y los límites de carga de Jonsson "
+        "no se aplican: una contracción sostenida los supera por "
+        "construcción.\n\nLo que sí se conserva es la forma en el tiempo: "
+        "cuándo trabajó más el músculo y cuándo aflojó.",
+    "Use it, showing the shape only": "Usarlo, solo para ver la forma",
+    "Normalising against the recording itself — shape only, not % MVC.":
+        "Normalizando contra el propio registro: solo la forma, no % CVM.",
+    "A reference recording is required to express the signal as % MVC and to "
+    "read it against the Jonsson limits.":
+        "Hace falta un registro de referencia para expresar la señal en % CVM "
+        "y poder leerla frente a los límites de Jonsson.",
+
     "page {n}": "página {n}",
 }

@@ -122,6 +122,9 @@ class MvcTab(QWidget):
         self._mode: str = DEFAULT_MODE
         self._advanced: bool = False
         self._entry_shown: bool = False
+        # Whether the user has accepted normalising against the test recording
+        # itself. Per file: a new recording is a new decision.
+        self._auto_aceptada: bool = False
 
         # Local logger, as the acquisition tab has. The shared LoggerWidget is
         # a single widget and Qt can only show it in one layout, which is the
@@ -248,6 +251,15 @@ class MvcTab(QWidget):
         self._lbl_calcular_bloqueado.setStyleSheet("color: #8a5000; font-size: 11px;")
         self._lbl_calcular_bloqueado.setVisible(False)
         row_params.addWidget(self._lbl_calcular_bloqueado, stretch=1)
+
+        # The way out for someone who has already recorded and has no maximal
+        # effort to compare against. It is a worse measurement, not a
+        # forbidden one, so it is offered rather than hidden — but it says
+        # what it costs before it is taken.
+        self._btn_usar_mismo = QPushButton(tr("Use this recording"))
+        self._btn_usar_mismo.setVisible(False)
+        self._btn_usar_mismo.clicked.connect(self._ofrecer_auto_normalizacion)
+        row_params.addWidget(self._btn_usar_mismo)
 
         self._btn_guardar = QPushButton(tr("Save figure (PNG)"))
         self._btn_guardar.setEnabled(False)
@@ -655,7 +667,8 @@ class MvcTab(QWidget):
         and say out loud what is missing when it is not."""
         has_test = bool(self._edit_path.text().strip())
         has_ref = bool(self._edit_cvm_path.text().strip())
-        listo = has_test and (has_ref or not self._reference_required())
+        falta_ref = self._reference_required() and not has_ref
+        listo = has_test and (has_ref or not falta_ref or self._auto_aceptada)
         self._btn_calcular.setEnabled(listo)
 
         if listo:
@@ -664,21 +677,30 @@ class MvcTab(QWidget):
             motivo = tr("Select the recording to normalise.")
         else:
             # The one case that looks like a fault rather than a missing step:
-            # everything is filled in except a file the basic level insists on.
+            # everything is filled in except a file this practical insists on.
             motivo = tr(
                 "A reference recording is required to express the signal as "
-                "% MVC and to read it against the Jonsson limits. Tick "
-                "\"Advanced options\" to normalise without one."
+                "% MVC and to read it against the Jonsson limits."
             )
         self._lbl_calcular_bloqueado.setText(motivo)
         self._lbl_calcular_bloqueado.setVisible(bool(motivo))
+        # Offered only where it is the missing piece, and only once: after it
+        # is accepted the button has nothing left to offer.
+        self._btn_usar_mismo.setVisible(
+            has_test and falta_ref and not self._auto_aceptada
+        )
 
     # ------------------------------------------------------------------
     # File-selection slots
     # ------------------------------------------------------------------
 
-    def adopt_recording(self, path: str) -> None:
+    def adopt_recording(self, path: str, channel: str = "") -> None:
         """Take this recording as the one to normalise.
+
+        ``channel`` is the muscle already chosen for this file elsewhere. When
+        it is given the tab uses it and asks nothing: normalising a different
+        muscle from the one being analysed is possible but is never what the
+        two-questions-in-a-row flow was offering.
 
         The reference file is left alone: it is a different recording by
         definition — the maximal effort — and guessing it from the test file
@@ -688,7 +710,12 @@ class MvcTab(QWidget):
             return
         self._edit_path.setText(path)
         self._last_edf_dir = str(Path(path).parent)
-        self._populate_channels(path)
+        self._auto_aceptada = False      # a new recording is a new decision
+        self._populate_channels(path, ask=not channel)
+        if channel:
+            idx = self._combo_canal.findText(channel)
+            if idx >= 0:
+                self._combo_canal.setCurrentIndex(idx)
         self._refresh_compute_enabled()
         self._btn_guardar.setEnabled(False)
         self._log(
@@ -705,11 +732,12 @@ class MvcTab(QWidget):
             self._edit_path.setText(path)
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("cvm/last_edf_dir", self._last_edf_dir)
+            self._auto_aceptada = False  # a new recording is a new decision
             self._populate_channels(path)
             self._refresh_compute_enabled()
             self._btn_guardar.setEnabled(False)
 
-    def _populate_channels(self, path: str) -> None:
+    def _populate_channels(self, path: str, ask: bool = True) -> None:
         """Fill the channel picker with the test file's EMG channels (excludes
         ACC).
 
@@ -733,7 +761,7 @@ class MvcTab(QWidget):
         # Normalisation is about one muscle. With two in the file, taking the
         # first without asking would put a reference amplitude, a load
         # distribution and a PDF report against a muscle nobody chose.
-        if len(labels) >= 2:
+        if ask and len(labels) >= 2:
             self._ask_which_channel(labels)
 
         # Warn if a channel is flat (no signal) or saturated (bad contact).
@@ -771,6 +799,48 @@ class MvcTab(QWidget):
     # ------------------------------------------------------------------
     # Launch computation
     # ------------------------------------------------------------------
+
+    @Slot()
+    def _ofrecer_auto_normalizacion(self) -> None:
+        """Offer the test recording as its own reference, and say what it costs.
+
+        The number stops being a percentage of anything measured: the signal is
+        divided by a percentile of itself, so the loudest part of *this*
+        recording becomes 100 % whatever the muscle can actually do. The shape
+        over time survives, which is what makes it worth offering at all.
+        """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setWindowTitle(tr("Normalise against this recording itself?"))
+        msg.setText(
+            tr(
+                "The signal will be divided by the 95th percentile of itself, "
+                "so the strongest moment of this recording becomes 100 % — "
+                "whatever the muscle can really do. Two recordings normalised "
+                "this way cannot be compared with each other, and the Jonsson "
+                "load limits do not apply: a sustained contraction exceeds "
+                "them by construction.\n\nWhat does survive is the shape over "
+                "time: when the muscle worked harder and when it let go."
+            )
+        )
+        btn_si = msg.addButton(
+            tr("Use it, showing the shape only"), QMessageBox.ButtonRole.DestructiveRole
+        )
+        btn_ref = msg.addButton(
+            tr("Choose a reference recording"), QMessageBox.ButtonRole.AcceptRole
+        )
+        msg.setDefaultButton(btn_ref)
+        msg.exec()
+
+        if msg.clickedButton() is btn_ref:
+            self._seleccionar_edf_cvm()
+        elif msg.clickedButton() is btn_si:
+            self._auto_aceptada = True
+            self._log(
+                tr("Normalising against the recording itself — shape only, "
+                   "not % MVC.")
+            )
+        self._refresh_compute_enabled()
 
     def _confirmar_sin_referencia(self) -> bool:
         """Ask before auto-normalising. True to go ahead with the computation.

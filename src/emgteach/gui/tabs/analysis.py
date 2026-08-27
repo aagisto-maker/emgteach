@@ -185,9 +185,10 @@ from emgteach.workers import AnalysisWorker
 
 
 class AnalysisTab(QWidget):
-    #: Emitted with the path of the EDF opened here, so the MVC tab can use
-    #: the same recording without being asked for it again.
-    file_opened = Signal(str)
+    #: Emitted with the path of the EDF opened here and the muscle chosen for
+    #: it, so the MVC tab uses the same recording *and* the same muscle without
+    #: asking a question that has just been answered.
+    file_opened = Signal(str, str)
 
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
@@ -733,12 +734,17 @@ class AnalysisTab(QWidget):
         Only fills it in — it does not run the analysis. Loading is cheap and
         expected; computing is neither, and a run nobody asked for would fight
         whatever the student was reading.
+
+        This is where the muscle gets chosen for a two-channel recording, and
+        the choice travels on from here: asking again in the MVC tab would be
+        putting the same question twice in a row.
         """
         if not path or (self._worker is not None and self._worker.isRunning()):
             return
         self._edit_path.setText(path)
         self._last_edf_dir = str(Path(path).parent)
         self._populate_channels(path)
+        self.file_opened.emit(path, self._combo_canal.currentText().strip())
         self._btn_analizar.setEnabled(True)
         self._btn_fragmentos.setEnabled(True)
         self._selected_segments = []
@@ -760,7 +766,7 @@ class AnalysisTab(QWidget):
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("analisis/last_dir", self._last_edf_dir)
             self._populate_channels(path)
-            self.file_opened.emit(path)
+            self.file_opened.emit(path, self._combo_canal.currentText().strip())
             self._btn_analizar.setEnabled(True)
             self._btn_fragmentos.setEnabled(True)
             # A new file invalidates any previous fragment selection and its
