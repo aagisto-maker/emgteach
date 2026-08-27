@@ -46,13 +46,16 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
-        tr("Everything else is optional"),
+        tr("How much the reading asks of you"),
         tr(
-            "The fine controls — filter cut-offs, fatigue thresholds, region "
-            "of interest — are shared by all three modes and stay out of the "
-            "way until this is ticked."
+            "The band says how far the practical goes: basic is direct "
+            "measurement, and each step beyond it puts more of the reading in "
+            "your interpretation rather than in the number. The fine controls "
+            "— filter cut-offs, fatigue thresholds, region of interest — are "
+            "not spread across the practicals; they all live in \"Free "
+            "analysis\", which offers everything and guides nothing."
         ),
-        lambda: win._chk_advanced,
+        lambda: win._lbl_nivel,
         tab=TAB_ACQ,
     ))
 
@@ -168,29 +171,34 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
     ))
 
     # ── Analysis ──────────────────────────────────────────────────────
-    steps.append(CoachStep(
+    # The agonist/antagonist practical offers a different set of panels — one
+    # raw trace per muscle and the two envelopes overlaid — so the steps that
+    # explain the general three would be pointing at checkboxes that are not
+    # there.
+    if mode != MODE_PAIR:
+        steps.append(CoachStep(
         tr("The three basic panels"),
-        tr(
-            "Raw signal: the interference pattern of the motor units firing. "
-            "Normalised envelope: how activation changes over time, which is "
-            "what makes two efforts comparable. Power spectrum: how that "
-            "activity is distributed in frequency."
-        ),
-        lambda: ana._chk_paneles[0],
-        tab=TAB_ANA,
-    ))
-    steps.append(CoachStep(
-        tr("Fatigue lives in the spectrum"),
-        tr(
-            "As a sustained contraction fatigues the muscle, the conduction "
-            "velocity of the fibres falls and the spectrum shifts towards low "
-            "frequencies: the median frequency (MDF) drops while the "
-            "amplitude often rises, because more motor units are recruited to "
-            "hold the same force."
-        ),
-        lambda: ana._chk_paneles[2],
-        tab=TAB_ANA,
-    ))
+            tr(
+                "Raw signal: the interference pattern of the motor units "
+                "firing. Normalised envelope: how activation changes over "
+                "time, which is what makes two efforts comparable. Power "
+                "spectrum: how that activity is distributed in frequency."
+            ),
+            lambda: ana._chk_paneles[0],
+            tab=TAB_ANA,
+        ))
+        steps.append(CoachStep(
+            tr("Fatigue lives in the spectrum"),
+            tr(
+                "As a sustained contraction fatigues the muscle, the "
+                "conduction velocity of the fibres falls and the spectrum "
+                "shifts towards low frequencies: the median frequency (MDF) "
+                "drops while the amplitude often rises, because more motor "
+                "units are recruited to hold the same force."
+            ),
+            lambda: ana._chk_paneles[2],
+            tab=TAB_ANA,
+        ))
 
     if mode == MODE_PAIR:
         steps.append(CoachStep(

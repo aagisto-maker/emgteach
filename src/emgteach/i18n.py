@@ -1275,5 +1275,36 @@ _ES = {
         "referirán al canal que se elija aquí.",
     "Normalising {muscle}.": "Se normaliza {muscle}.",
 
+    # Cuarto modo y franja de complejidad.
+    "Free analysis": "Análisis libre",
+    "Basic analysis — direct measurements":
+        "Análisis básico — medidas directas",
+    "Intermediate analysis — comparison between muscles":
+        "Análisis intermedio — comparación entre músculos",
+    "Advanced analysis — derived quantities":
+        "Análisis avanzado — magnitudes derivadas",
+    "Free analysis — every control, no guidance":
+        "Análisis libre — todos los controles, sin guía",
+
+    # Panel del bruto del segundo músculo, y el paso del tour sobre la franja.
+    "1B. Raw signal — 2nd muscle": "1B. Señal en bruto — 2º músculo",
+    "1B. Raw (2nd)": "1B. Bruto (2º)",
+    "1B. Raw EMG signal — {muscle}": "1B. Señal EMG en bruto — {muscle}",
+    "Raw EMG signal of the second muscle, unfiltered (needs a 2nd channel).":
+        "Señal EMG en bruto del segundo músculo, sin filtrar (necesita un 2º canal).",
+    "How much the reading asks of you": "Cuánto exige la lectura",
+    "The band says how far the practical goes: basic is direct measurement, "
+    "and each step beyond it puts more of the reading in your interpretation "
+    "rather than in the number. The fine controls — filter cut-offs, fatigue "
+    "thresholds, region of interest — are not spread across the practicals; "
+    "they all live in \"Free analysis\", which offers everything and guides "
+    "nothing.":
+        "La franja dice hasta dónde llega la práctica: básico es medida "
+        "directa, y cada escalón por encima pone más parte de la lectura en la "
+        "interpretación y menos en el número. Los controles finos —frecuencias "
+        "de corte, umbrales de fatiga, región de interés— no están repartidos "
+        "por las prácticas: viven todos en «Análisis libre», que lo ofrece todo "
+        "y no guía nada.",
+
     "page {n}": "página {n}",
 }

@@ -69,11 +69,16 @@ _OVERLAY_PID = 8
 _MMG_PID = 9
 _TREMOR_PID = 10
 _MOVEMENT_PID = 11
+#: Raw trace of the second muscle. Only the agonist/antagonist practical
+#: records two, and there the point is to see each muscle before comparing
+#: them, so one raw panel is not enough.
+_RAW2_PID = 12
 # Panels that require an accelerometer channel to be usable.
 _ACC_PIDS = (_MMG_PID, _TREMOR_PID, _MOVEMENT_PID)
 
 _PANEL_LAYOUT: list[tuple[int, str]] = [
     (0, "1A"),  # raw signal
+    (_RAW2_PID, "1B"),  # raw signal of the second muscle (agonist/antagonist)
     (3, "2"),   # normalised envelope
     (4, "3"),   # PSD with MNF/MDF
     (1, "4"),   # filtered + rectified
@@ -93,11 +98,16 @@ _DEFAULT_PANELS: tuple[int, ...] = (0, 3, 4)
 # Panels always offered, in _PANEL_LAYOUT display order: 1A. Raw,
 # 2. Env. norm. and 3. PSD — the same three that are checked by default and
 # the teaching core of the tab. What follows depends on mode and flag.
-_BASIC_PANEL_COUNT = 3
+#: The teaching core, by identifier rather than by position: raw signal,
+#: normalised envelope and PSD. Positions moved when the second muscle's raw
+#: trace was inserted after the first, and an index-based rule would have
+#: silently changed which panels counted as basic.
+_CORE_PIDS: tuple[int, ...] = (0, 3, 4)
 
 # Full panel names (report dialog), in display order and renumbered.
 _PANEL_NOMBRES = [
     "1A. Raw signal",
+    "1B. Raw signal — 2nd muscle",
     "2. Normalised envelope",
     "3. PSD with MNF/MDF",
     "4. Filtered + rectified",
@@ -114,6 +124,7 @@ _PANEL_NOMBRES = [
 # Short labels (on-screen checkbox row), in display order and renumbered.
 _PANEL_SHORT_LABELS = [
     "1A. Raw",
+    "1B. Raw (2nd)",
     "2. Env. norm.",
     "3. PSD",
     "4. Filt.+rect.",
@@ -149,6 +160,8 @@ _PANEL_TOOLTIPS = {
     5: "RMS amplitude per window: how the intensity evolves.",
     6: "Median frequency over time; a fall indicates fatigue.",
     7: "Amplitude-frequency relation (force vs fatigue).",
+    _RAW2_PID: "Raw EMG signal of the second muscle, unfiltered (needs a 2nd "
+               "channel).",
 }
 
 from emgteach.broadcast import BroadcastServer
@@ -165,7 +178,7 @@ from emgteach.io import (
     list_edf_emg_channels,
     read_edf_metadata,
 )
-from emgteach.modes import DEFAULT_MODE, MODE_PAIR, mode_uses_acc
+from emgteach.modes import DEFAULT_MODE, MODE_FREE, MODE_PAIR, mode_uses_acc
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
@@ -1234,7 +1247,25 @@ class AnalysisTab(QWidget):
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
-        # --- 1B: Filtered + rectified ---
+        # --- 1B: Raw signal of the second muscle ---
+        if _RAW2_PID in ax_map:
+            ax = ax_map[_RAW2_PID]
+            crudo2 = r.get("emg_raw_2")
+            if crudo2 is not None:
+                ax.plot(times, crudo2, color="#333333", lw=0.8, alpha=0.7)
+            nombre2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+            ax.set_title(
+                tr("1B. Raw EMG signal — {muscle}").format(muscle=nombre2),
+                fontsize=9,
+            )
+            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_xlim(inicio_s, fin_s)
+            ax.tick_params(labelsize=7)
+            ax.grid(True, **_grid)
+            self._dibujar_marcadores(ax, inicio_s, fin_s)
+
+        # --- Filtered + rectified ---
         if 1 in ax_map:
             ax = ax_map[1]
             ax.plot(times, r["emg_filtered"],
@@ -2060,19 +2091,26 @@ class AnalysisTab(QWidget):
     def _panel_is_offered(self, index: int, mode: str, advanced: bool) -> bool:
         """Whether the panel at this display position suits mode and flag.
 
-        The first three (raw, normalised envelope, PSD) are the teaching core
-        and are always offered. The next five are further EMG analyses that
-        apply to any practical, so they follow the advanced flag. The last four
-        belong to one practical each.
+        The agonist/antagonist practical is a closed set: the raw trace of
+        each muscle and the two envelopes overlaid, and nothing else. Adding a
+        spectrum or a fatigue slope there would be about one of the two
+        muscles, which is not what the practical is asking.
+
+        Elsewhere the first three (raw, normalised envelope, PSD) are the
+        teaching core and are always offered; the next five are further EMG
+        analyses that apply to any practical, so they follow the fine-control
+        level; the rest belong to one practical each.
         """
-        if index < _BASIC_PANEL_COUNT:
-            return True
         pid = self._panel_pids[index]
-        if pid == _OVERLAY_PID:
-            return mode == MODE_PAIR
+        if mode == MODE_FREE:
+            return True                      # everything: that is what it is for
+        if mode == MODE_PAIR:
+            return pid in (0, _RAW2_PID, _OVERLAY_PID)
+        if pid in (_RAW2_PID, _OVERLAY_PID):
+            return False                     # both need a second muscle
         if pid in _ACC_PIDS:
             return mode_uses_acc(mode)
-        return advanced
+        return pid in _CORE_PIDS
 
     def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:
         """Hide the panels this practical does not use, and untick them.

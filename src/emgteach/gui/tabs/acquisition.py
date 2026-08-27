@@ -71,7 +71,7 @@ from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import RecordingMetadata
-from emgteach.modes import mode_channels, mode_uses_acc
+from emgteach.modes import mode_channels, mode_forces_setup, mode_uses_acc
 from emgteach.mvc import mvc_from_reps
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
@@ -2946,6 +2946,11 @@ class AcquisitionTab(QWidget):
         Driven through the existing widgets so their slots run and the plots,
         legend, load bars and broadcast configuration all follow.
         """
+        if not mode_forces_setup(mode):
+            # The free mode offers everything and imposes nothing: whatever the
+            # user set stays set.
+            return
+
         wanted = mode_channels(mode)
         if self._combo_n_channels.currentIndex() != wanted - 1:
             self._combo_n_channels.setCurrentIndex(wanted - 1)

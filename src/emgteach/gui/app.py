@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QHBoxLayout,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QSplashScreen,
@@ -39,7 +40,15 @@ from emgteach.gui.tour import build_tour
 from emgteach.gui.widgets.coach import CoachMark
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import get_language, resolve_startup_language, set_language, tr
-from emgteach.modes import DEFAULT_MODE, MODES, mode_label, normalise_mode
+from emgteach.modes import (
+    DEFAULT_MODE,
+    MODES,
+    mode_complexity_colour,
+    mode_complexity_label,
+    mode_label,
+    mode_shows_fine_controls,
+    normalise_mode,
+)
 
 # ---------------------------------------------------------------------------
 # Splash screen
@@ -153,15 +162,14 @@ class MainWindow(QMainWindow):
         self._combo_mode.setToolTip(tr("Which practical the app is set up for"))
         self._combo_mode.currentIndexChanged.connect(self._on_mode_changed)
 
-        # Orthogonal to the mode: the fine controls that apply to all three
-        # practicals alike (filter cut-offs, region of interest, thresholds,
-        # onset detection, classroom broadcast).
-        self._chk_advanced = QCheckBox(tr("Advanced options"))
-        self._chk_advanced.setChecked(self._advanced())
-        self._chk_advanced.setToolTip(
-            tr("Show the fine controls shared by every mode")
-        )
-        self._chk_advanced.toggled.connect(self._on_advanced_changed)
+        # The level of detail is a property of the practical, not a second
+        # switch beside it: two independent axes meant the user had to hold
+        # both in mind to know why a control was on screen or not. The fine
+        # controls live in the free mode now, and this band says which level
+        # the current practical is at.
+        self._lbl_nivel = QLabel()
+        self._lbl_nivel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_nivel.setContentsMargins(8, 3, 8, 3)
 
         self._combo_lang = QComboBox()
         self._combo_lang.addItem("English", "en")
@@ -198,7 +206,6 @@ class MainWindow(QMainWindow):
         corner_lay.setSpacing(2)
         corner_lay.addWidget(btn_reset)
         corner_lay.addWidget(self._combo_mode)
-        corner_lay.addWidget(self._chk_advanced)
         corner_lay.addWidget(self._combo_lang)
         corner_lay.addWidget(btn_tour)
         corner_lay.addWidget(btn_about)
@@ -207,6 +214,7 @@ class MainWindow(QMainWindow):
         central = QWidget()
         root = QVBoxLayout(central)
         root.setContentsMargins(4, 4, 4, 4)
+        root.addWidget(self._lbl_nivel)
         root.addWidget(tabs, stretch=1)
         self.setCentralWidget(central)
 
@@ -274,19 +282,31 @@ class MainWindow(QMainWindow):
         return normalise_mode(self._settings.value("app/mode", DEFAULT_MODE))
 
     def _advanced(self) -> bool:
-        return bool(self._settings.value("app/advanced", False, type=bool))
+        """Whether the fine controls are on screen — now a property of the mode.
+
+        Kept as a method because the tabs and the tour ask the window for it;
+        what changed is that nothing can set it independently of the practical.
+        """
+        return mode_shows_fine_controls(self._mode())
 
     def _apply_mode(self) -> None:
-        mode, advanced = self._mode(), self._advanced()
+        mode = self._mode()
         for tab in (self._tab_adq, self._tab_ana, self._tab_cvm):
-            tab.apply_mode(mode, advanced)
+            tab.apply_mode(mode, mode_shows_fine_controls(mode))
+        self._refresh_nivel_band()
+
+    def _refresh_nivel_band(self) -> None:
+        """Colour and caption of the complexity band."""
+        mode = self._mode()
+        color = mode_complexity_colour(mode)
+        self._lbl_nivel.setText(mode_complexity_label(mode))
+        self._lbl_nivel.setStyleSheet(
+            f"background-color: {color}; color: white; font-weight: bold; "
+            "font-size: 11px; border-radius: 3px;"
+        )
 
     def _on_mode_changed(self, index: int) -> None:
         self._settings.setValue("app/mode", self._combo_mode.itemData(index))
-        self._apply_mode()
-
-    def _on_advanced_changed(self, checked: bool) -> None:
-        self._settings.setValue("app/advanced", checked)
         self._apply_mode()
 
     def _on_language_changed(self, index: int) -> None:

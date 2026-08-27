@@ -1,11 +1,15 @@
-"""Recording modes and the advanced-options flag.
+"""Recording modes: what each practical records, and what it puts on screen.
 
-The mode is not a filter over the interface: it *drives* what is recorded.
+The mode is not a filter over the interface, it *drives* what is recorded.
 Hiding the channel selector without setting the channel count was a real bug —
 a two-muscle set-up survived into a screen that could neither show nor change
 it, so the labels and load bars claimed two muscles while the rest of the tab
-behaved as if there were one. Most of what follows guards against that class
-of mistake coming back.
+behaved as if there were one.
+
+The level of detail belongs to the practical too. There used to be a separate
+"advanced options" tick, orthogonal to the mode, and holding two independent
+axes in mind to explain why a control was on screen is what made the interface
+hard to follow. The fine controls now live in a fourth mode of their own.
 
 Marked ``gui`` (needs a QApplication).
 """
@@ -15,9 +19,21 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from emgteach.modes import MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE, MODES
+from emgteach.modes import (
+    MODE_FREE,
+    MODE_KINEMATICS,
+    MODE_PAIR,
+    MODE_SINGLE,
+    MODES,
+    mode_complexity,
+    mode_complexity_colour,
+    mode_shows_fine_controls,
+)
 
 pytestmark = pytest.mark.gui
+
+#: Practicals, as opposed to the free mode, which makes no teaching claim.
+PRACTICALS = (MODE_SINGLE, MODE_PAIR, MODE_KINEMATICS)
 
 
 def shown(widget) -> bool:
@@ -29,10 +45,8 @@ def shown(widget) -> bool:
     return not widget.isHidden()
 
 
-def set_mode(win, qapp, mode: str, advanced: bool | None = None) -> None:
+def set_mode(win, qapp, mode: str) -> None:
     win._combo_mode.setCurrentIndex(MODES.index(mode))
-    if advanced is not None:
-        win._chk_advanced.setChecked(advanced)
     qapp.processEvents()
 
 
@@ -56,7 +70,6 @@ def make_edf(path, n_channels: int, fs: int = 1000, secs: int = 12) -> str:
 
 def test_defaults_to_the_single_muscle_practical(main_window) -> None:
     assert main_window._mode() == MODE_SINGLE
-    assert main_window._advanced() is False
 
 
 def test_channel_count_selector_is_never_shown(main_window, qapp) -> None:
@@ -70,7 +83,7 @@ def test_channel_count_selector_is_never_shown(main_window, qapp) -> None:
     ("mode", "channels"),
     [(MODE_SINGLE, 1), (MODE_PAIR, 2), (MODE_KINEMATICS, 1)],
 )
-def test_mode_sets_the_channel_count(main_window, qapp, mode, channels) -> None:
+def test_practical_sets_the_channel_count(main_window, qapp, mode, channels) -> None:
     set_mode(main_window, qapp, mode)
     adq = main_window._tab_adq
     assert adq._n_channels == channels
@@ -94,38 +107,38 @@ def test_leaving_the_pair_practical_clears_the_second_channel(
     assert adq._combo_n_channels.currentIndex() == 0
 
 
-@pytest.mark.parametrize("mode", MODES)
-def test_mode_sets_the_accelerometer(main_window, qapp, mode) -> None:
+@pytest.mark.parametrize("mode", PRACTICALS)
+def test_practical_sets_the_accelerometer(main_window, qapp, mode) -> None:
+    from emgteach.modes import mode_uses_acc
+
     set_mode(main_window, qapp, mode)
     adq = main_window._tab_adq
-    uses_acc = mode == MODE_KINEMATICS
+    uses_acc = mode_uses_acc(mode)
     assert adq._chk_acc.isChecked() is uses_acc
     assert shown(adq._box_acc) is uses_acc
     assert shown(adq._box_fv_guided) is uses_acc
 
 
-def test_accelerometer_wiring_follows_the_mode_not_the_flag(
+def test_accelerometer_wiring_travels_with_the_accelerometer(
     main_window, qapp
 ) -> None:
-    """The default input is A4 and a rig may have it elsewhere; hiding this
-    behind the advanced flag would make a first kinematics recording read
-    nothing at all."""
+    """The default input is A4 and a rig may have it elsewhere, so this cannot
+    be tucked away: a first kinematics recording would read nothing at all."""
     adq = main_window._tab_adq
-    set_mode(main_window, qapp, MODE_KINEMATICS, advanced=False)
-    assert shown(adq._box_acc_wiring)
-    set_mode(main_window, qapp, MODE_KINEMATICS, advanced=True)
+    set_mode(main_window, qapp, MODE_KINEMATICS)
     assert shown(adq._box_acc_wiring)
     set_mode(main_window, qapp, MODE_SINGLE)
     assert not shown(adq._box_acc_wiring)
 
 
-# ── the advanced flag is orthogonal to the mode ────────────────────────
+# ── the level of detail is part of the practical ───────────────────────
 
 
 @pytest.mark.parametrize("mode", MODES)
-def test_fine_controls_follow_the_flag_in_every_mode(
-    main_window, qapp, mode
-) -> None:
+def test_fine_controls_belong_to_the_free_mode(main_window, qapp, mode) -> None:
+    """A practical that offered a filter cut-off would be asking the student to
+    decide it in the middle of a physiology exercise, which is a different
+    lesson from the one it is teaching."""
     adq, ana, cvm = (
         main_window._tab_adq, main_window._tab_ana, main_window._tab_cvm
     )
@@ -133,64 +146,105 @@ def test_fine_controls_follow_the_flag_in_every_mode(
         adq._box_thr, adq._box_autoonset, adq._chk_mvc_best3,
         ana._box_fenv, ana._box_roi, cvm._box_fenv,
     ]
-    set_mode(main_window, qapp, mode, advanced=False)
-    assert not any(shown(b) for b in boxes)
-    set_mode(main_window, qapp, mode, advanced=True)
-    assert all(shown(b) for b in boxes)
+    set_mode(main_window, qapp, mode)
+    esperado = mode_shows_fine_controls(mode)
+    assert esperado is (mode == MODE_FREE)
+    assert all(shown(b) is esperado for b in boxes)
+
+
+def test_the_advanced_tick_is_gone(main_window) -> None:
+    """Two independent axes is what made it hard to follow."""
+    assert not hasattr(main_window, "_chk_advanced")
 
 
 @pytest.mark.parametrize("mode", MODES)
-def test_classroom_broadcast_is_offered_at_every_level(
+def test_classroom_broadcast_is_offered_in_every_mode(
     main_window, qapp, mode
 ) -> None:
     """Following the recording on their own phones is what the practical is
     for, not a fine adjustment: a teaching laboratory usually has one sensor,
     and this is what turns one recording into something the whole class
     reads."""
-    for advanced in (False, True):
-        set_mode(main_window, qapp, mode, advanced=advanced)
-        assert shown(main_window._tab_adq._box_aula)
+    set_mode(main_window, qapp, mode)
+    assert shown(main_window._tab_adq._box_aula)
 
 
-def test_something_still_running_stays_visible(main_window, qapp) -> None:
-    """A broadcast nobody can stop is worse than one extra widget."""
-    adq = main_window._tab_adq
-    set_mode(main_window, qapp, MODE_SINGLE, advanced=True)
-    adq._chk_aula.setChecked(True)
-    set_mode(main_window, qapp, MODE_SINGLE, advanced=False)
-    assert shown(adq._box_aula)
-    adq._chk_aula.setChecked(False)
+# ── the complexity band ────────────────────────────────────────────────
+
+
+class TestComplexityBand:
+    """It says how much of the reading is interpretation rather than
+    measurement — which is the thing a student cannot tell by looking."""
+
+    def test_every_mode_has_its_own_level(self, main_window, qapp) -> None:
+        niveles = {mode_complexity(m) for m in MODES}
+        assert niveles == {"basic", "intermediate", "advanced", "free"}
+
+    @pytest.mark.parametrize("mode", MODES)
+    def test_the_band_follows_the_mode(self, main_window, qapp, mode) -> None:
+        set_mode(main_window, qapp, mode)
+        texto = main_window._lbl_nivel.text()
+        assert texto, f"{mode}: the band says nothing"
+        assert mode_complexity_colour(mode) in main_window._lbl_nivel.styleSheet()
+
+    def test_the_practicals_are_ordered(self) -> None:
+        """Their order is the point: one muscle, then two, then derived."""
+        assert [mode_complexity(m) for m in PRACTICALS] == [
+            "basic", "intermediate", "advanced",
+        ]
+
+    def test_the_free_mode_is_off_that_scale(self) -> None:
+        """It is not harder than kinematics, it is a different kind of thing —
+        so it does not get a colour from the same ramp."""
+        assert mode_complexity(MODE_FREE) == "free"
+        practicas = {mode_complexity_colour(m) for m in PRACTICALS}
+        assert mode_complexity_colour(MODE_FREE) not in practicas
 
 
 # ── analysis offers what the practical needs ───────────────────────────
 
 
-def _acc_panel_indices(ana) -> list[int]:
-    from emgteach.gui.tabs.analysis import _ACC_PIDS
+def panels_offered(ana) -> set[int]:
+    """Panel identifiers currently on offer."""
+    return {
+        ana._panel_pids[i]
+        for i, chk in enumerate(ana._chk_paneles)
+        if not chk.isHidden()
+    }
 
-    return [i for i, pid in enumerate(ana._panel_pids) if pid in _ACC_PIDS]
 
+def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
+    from emgteach.gui.tabs.analysis import (
+        _ACC_PIDS,
+        _CORE_PIDS,
+        _OVERLAY_PID,
+        _RAW2_PID,
+    )
 
-@pytest.mark.parametrize("mode", MODES)
-def test_analysis_matches_the_mode(main_window, qapp, mode) -> None:
-    from emgteach.gui.tabs.analysis import _OVERLAY_PID
-
-    set_mode(main_window, qapp, mode, advanced=False)
     ana = main_window._tab_ana
-    overlay = ana._panel_pids.index(_OVERLAY_PID)
 
-    assert shown(ana._box_compare) is (mode == MODE_PAIR)
-    assert shown(ana._chk_paneles[overlay]) is (mode == MODE_PAIR)
-    assert shown(ana._btn_fv) is (mode == MODE_KINEMATICS)
-    for i in _acc_panel_indices(ana):
-        assert shown(ana._chk_paneles[i]) is (mode == MODE_KINEMATICS)
+    set_mode(main_window, qapp, MODE_SINGLE)
+    assert panels_offered(ana) == set(_CORE_PIDS)
 
-    # The three teaching panels are always on offer; the further EMG analyses
-    # apply to any practical and so follow the flag.
-    assert all(shown(c) for c in ana._chk_paneles[:3])
-    assert not any(shown(c) for c in ana._chk_paneles[3:8])
-    set_mode(main_window, qapp, mode, advanced=True)
-    assert all(shown(c) for c in ana._chk_paneles[3:8])
+    # The pair practical is a closed set: each muscle raw, then the two
+    # envelopes overlaid. A spectrum there would be about one of the two.
+    set_mode(main_window, qapp, MODE_PAIR)
+    assert panels_offered(ana) == {0, _RAW2_PID, _OVERLAY_PID}
+
+    set_mode(main_window, qapp, MODE_KINEMATICS)
+    assert panels_offered(ana) == set(_CORE_PIDS) | set(_ACC_PIDS)
+
+    # The free mode is the one place nothing is withheld.
+    set_mode(main_window, qapp, MODE_FREE)
+    assert panels_offered(ana) == set(ana._panel_pids)
+
+
+def test_the_second_raw_panel_sits_next_to_the_first(main_window) -> None:
+    """Reading muscle against muscle needs them adjacent, not one at each end."""
+    from emgteach.gui.tabs.analysis import _RAW2_PID
+
+    pids = main_window._tab_ana._panel_pids
+    assert pids.index(_RAW2_PID) == pids.index(0) + 1
 
 
 def test_panels_the_mode_hides_are_unticked_and_restored(
@@ -198,9 +252,12 @@ def test_panels_the_mode_hides_are_unticked_and_restored(
 ) -> None:
     """The plotting code selects by isChecked(), so a panel left ticked would
     still be drawn with no visible way to turn it off."""
+    from emgteach.gui.tabs.analysis import _ACC_PIDS
+
     ana = main_window._tab_ana
-    set_mode(main_window, qapp, MODE_KINEMATICS, advanced=True)
-    acc = [i for i in _acc_panel_indices(ana) if ana._chk_paneles[i].isEnabled()]
+    set_mode(main_window, qapp, MODE_KINEMATICS)
+    acc = [i for i, pid in enumerate(ana._panel_pids)
+           if pid in _ACC_PIDS and ana._chk_paneles[i].isEnabled()]
     for i in acc:
         ana._chk_paneles[i].setChecked(True)
 
@@ -237,7 +294,9 @@ def test_pair_practical_warns_on_a_single_channel_file(
     warnings: list[tuple[str, str]] = []
     monkeypatch.setattr(
         QMessageBox, "warning",
-        staticmethod(lambda parent, title, text, *a, **k: warnings.append((title, text))),
+        staticmethod(
+            lambda parent, title, text, *a, **k: warnings.append((title, text))
+        ),
     )
 
     ana = main_window._tab_ana
@@ -251,90 +310,6 @@ def test_pair_practical_warns_on_a_single_channel_file(
     assert "Single-muscle" in text or "un músculo" in text
     assert "kinematics" in text or "Cinemática" in text
     assert not ana._chk_compare2.isChecked()
-
-
-@pytest.mark.parametrize("mode", [MODE_SINGLE, MODE_KINEMATICS])
-def test_other_practicals_accept_a_single_channel_file(
-    main_window, qapp, tmp_path, monkeypatch, mode
-) -> None:
-    from PySide6.QtWidgets import QMessageBox
-
-    warnings: list = []
-    monkeypatch.setattr(
-        QMessageBox, "warning",
-        staticmethod(lambda *a, **k: warnings.append(a)),
-    )
-    set_mode(main_window, qapp, mode)
-    main_window._tab_ana._populate_channels(make_edf(tmp_path / "one.edf", 1))
-    qapp.processEvents()
-    assert warnings == []
-
-
-# ── normalisation ──────────────────────────────────────────────────────
-
-
-def test_auto_normalisation_needs_the_advanced_flag(main_window, qapp) -> None:
-    """Auto-normalisation divides the signal by a percentile of itself, which
-    makes the Jonsson limits meaningless. Worth keeping for someone who knows
-    what it is for; worth removing otherwise."""
-    cvm = main_window._tab_cvm
-    cvm._edit_path.setText("recording.edf")
-    cvm._edit_cvm_path.clear()
-
-    set_mode(main_window, qapp, MODE_SINGLE, advanced=False)
-    cvm._refresh_compute_enabled()
-    assert not cvm._btn_calcular.isEnabled()
-
-    cvm._edit_cvm_path.setText("reference.edf")
-    cvm._refresh_compute_enabled()
-    assert cvm._btn_calcular.isEnabled()
-
-    cvm._edit_cvm_path.clear()
-    set_mode(main_window, qapp, MODE_SINGLE, advanced=True)
-    cvm._refresh_compute_enabled()
-    assert cvm._btn_calcular.isEnabled()
-
-
-# ── hiding containers, not widgets ─────────────────────────────────────
-
-
-@pytest.mark.parametrize("mode", MODES)
-@pytest.mark.parametrize("advanced", [False, True])
-def test_no_caption_is_left_behind(main_window, qapp, mode, advanced) -> None:
-    """Several controls sit beside plain QLabels that are not kept as
-    attributes, so hiding the widget alone would strand its caption."""
-    from PySide6.QtWidgets import QLabel, QTabWidget
-
-    orphans = {
-        "Channels:", "ACC ch:", "Warning", "Danger", "k:", "from", "to",
-        "Envelope cutoff frequency (Hz):", "Accelerometer:", "Compared with:",
-    }
-    set_mode(main_window, qapp, mode, advanced=advanced)
-    tabs = main_window.findChild(QTabWidget)
-    for index, tab in enumerate(
-        (main_window._tab_adq, main_window._tab_ana, main_window._tab_cvm)
-    ):
-        tabs.setCurrentIndex(index)
-        qapp.processEvents()
-        if tab is main_window._tab_cvm:
-            tab._dismiss_entry_screen()   # its greeting covers the tab
-            qapp.processEvents()
-        # Real visibility here: a caption is only stranded if the user sees it.
-        visible = {
-            lbl.text().strip()
-            for lbl in tab.findChildren(QLabel)
-            if lbl.isVisible() and lbl.text().strip()
-        }
-        stranded = visible & orphans
-        # A caption is fine when its own block is on screen.
-        if shown(main_window._tab_adq._box_acc):
-            stranded -= {"Accelerometer:", "ACC ch:"}
-        if shown(main_window._tab_ana._box_compare):
-            stranded.discard("Compared with:")
-        if advanced:
-            stranded -= {"Warning", "Danger", "k:", "from", "to",
-                         "Envelope cutoff frequency (Hz):"}
-        assert not stranded, f"{mode}/advanced={advanced}: {sorted(stranded)}"
 
 
 # ── two muscles recorded, one practical that studies one ───────────────
@@ -396,3 +371,96 @@ class TestChoosingWhichMuscle:
         main_window._tab_ana._populate_channels(make_edf(tmp_path / "one.edf", 1))
         qapp.processEvents()
         assert raised == []
+
+
+# ── normalisation ──────────────────────────────────────────────────────
+
+
+def test_auto_normalisation_belongs_to_the_free_mode(main_window, qapp) -> None:
+    """Auto-normalisation divides the signal by a percentile of itself, which
+    makes the Jonsson limits meaningless. Worth keeping for someone who knows
+    what it is for; worth removing from a practical."""
+    cvm = main_window._tab_cvm
+    cvm._edit_path.setText("recording.edf")
+    cvm._edit_cvm_path.clear()
+
+    set_mode(main_window, qapp, MODE_SINGLE)
+    cvm._refresh_compute_enabled()
+    assert not cvm._btn_calcular.isEnabled()
+    # And it says why, rather than leaving a dead button on screen.
+    assert shown(cvm._lbl_calcular_bloqueado)
+    assert cvm._lbl_calcular_bloqueado.text()
+
+    cvm._edit_cvm_path.setText("reference.edf")
+    cvm._refresh_compute_enabled()
+    assert cvm._btn_calcular.isEnabled()
+    assert not shown(cvm._lbl_calcular_bloqueado)
+
+    cvm._edit_cvm_path.clear()
+    set_mode(main_window, qapp, MODE_FREE)
+    cvm._refresh_compute_enabled()
+    assert cvm._btn_calcular.isEnabled()
+
+
+class TestMvcPanelSelection:
+    """The tab always drew all three panels, which is a lot of vertical space
+    for a student who is after one of them."""
+
+    def test_all_three_are_offered_and_ticked(self, main_window) -> None:
+        chks = main_window._tab_cvm._chk_paneles
+        assert len(chks) == 3
+        assert all(c.isChecked() for c in chks)
+
+    def test_unticking_drops_the_panel(self, main_window) -> None:
+        cvm = main_window._tab_cvm
+        cvm._chk_paneles[0].setChecked(False)
+        cvm._chk_paneles[1].setChecked(False)
+        assert cvm._paneles_activos() == [2]
+
+    def test_nothing_ticked_still_draws_one(self, main_window) -> None:
+        """A blank canvas reads as a fault rather than as a choice."""
+        cvm = main_window._tab_cvm
+        for c in cvm._chk_paneles:
+            c.setChecked(False)
+        assert cvm._paneles_activos() == [0]
+
+
+# ── hiding containers, not widgets ─────────────────────────────────────
+
+
+@pytest.mark.parametrize("mode", MODES)
+def test_no_caption_is_left_behind(main_window, qapp, mode) -> None:
+    """Several controls sit beside plain QLabels that are not kept as
+    attributes, so hiding the widget alone would strand its caption."""
+    from PySide6.QtWidgets import QLabel, QTabWidget
+
+    orphans = {
+        "Channels:", "ACC ch:", "Warning", "Danger", "k:", "from", "to",
+        "Envelope cutoff frequency (Hz):", "Accelerometer:", "Compared with:",
+    }
+    set_mode(main_window, qapp, mode)
+    tabs = main_window.findChild(QTabWidget)
+    for index, tab in enumerate(
+        (main_window._tab_adq, main_window._tab_ana, main_window._tab_cvm)
+    ):
+        tabs.setCurrentIndex(index)
+        qapp.processEvents()
+        if tab is main_window._tab_cvm:
+            tab._dismiss_entry_screen()   # its greeting covers the tab
+            qapp.processEvents()
+        # Real visibility here: a caption is only stranded if the user sees it.
+        visible = {
+            lbl.text().strip()
+            for lbl in tab.findChildren(QLabel)
+            if lbl.isVisible() and lbl.text().strip()
+        }
+        stranded = visible & orphans
+        # A caption is fine when its own block is on screen.
+        if shown(main_window._tab_adq._box_acc):
+            stranded -= {"Accelerometer:", "ACC ch:"}
+        if shown(main_window._tab_ana._box_compare):
+            stranded.discard("Compared with:")
+        if mode_shows_fine_controls(mode):
+            stranded -= {"Warning", "Danger", "k:", "from", "to",
+                         "Envelope cutoff frequency (Hz):"}
+        assert not stranded, f"{mode}: {sorted(stranded)}"
