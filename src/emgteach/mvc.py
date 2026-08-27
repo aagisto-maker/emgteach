@@ -190,12 +190,17 @@ def adaptive_ylim(
     n_plot: int,
     margin: float = 0.10,
 ) -> float:
-    """Y-axis upper limit for normalised plots, with sensible headroom.
+    """Y-axis upper limit for normalised plots: fills the panel, clips nothing.
 
-    Returns the larger of 110 %MVC and the 99th percentile of the
-    visible window times ``1 + margin``. This keeps fast peaks of
-    saturating contractions visible while keeping the plot tidy at
-    rest.
+    Returns the larger of 110 %MVC and the highest value in the visible window
+    times ``1 + margin``.
+
+    It used to take the 99th percentile instead of the maximum, and claimed in
+    this docstring to keep fast peaks visible — which it did not. A brief
+    maximal effort is exactly the sample that sits above the 99th percentile,
+    so the peak of the contraction was drawn past the top of the axis and the
+    student read a flat top where the real maximum was. Whatever a tidier
+    y-axis is worth, it is not worth cutting the measurement off.
 
     Parameters
     ----------
@@ -204,7 +209,7 @@ def adaptive_ylim(
     n_plot : int
         Number of leading samples included in the current plot view.
     margin : float, optional
-        Fractional headroom above the 99th percentile (default 0.10).
+        Fractional headroom above the maximum (default 0.10).
 
     Returns
     -------
@@ -212,5 +217,7 @@ def adaptive_ylim(
         Suggested upper Y-axis limit (%MVC).
     """
     visible = np.asarray(emg_normalised, dtype=np.float64)[:n_plot]
-    p99 = float(np.percentile(visible, 99))
-    return max(110.0, p99 * (1.0 + margin))
+    visible = visible[np.isfinite(visible)]
+    if visible.size == 0:
+        return 110.0
+    return max(110.0, float(visible.max()) * (1.0 + margin))

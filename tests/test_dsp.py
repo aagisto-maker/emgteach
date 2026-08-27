@@ -574,11 +574,24 @@ class TestMVC:
 
     def test_adaptive_ylim_minimum_110(self) -> None:
         env_norm = np.full(100, 50.0)  # all values at 50 %MVC
-        # 99th percentile is 50; 50 * 1.10 = 55 < 110, so floor kicks in
+        # 50 * 1.10 = 55 < 110, so the floor kicks in and the 100 % line has
+        # room above it.
         assert adaptive_ylim(env_norm, n_plot=100) == 110.0
 
-    def test_adaptive_ylim_scales_with_p99(self) -> None:
+    def test_adaptive_ylim_scales_with_the_maximum(self) -> None:
         env_norm = np.full(100, 200.0)  # peak well above MVC
         result = adaptive_ylim(env_norm, n_plot=100, margin=0.10)
-        # 200 * 1.10 = 220 > 110, so we get the scaled value
         assert result == pytest.approx(220.0, rel=0.01)
+
+    def test_adaptive_ylim_never_clips_a_brief_peak(self) -> None:
+        """The regression this replaced: the limit came from the 99th
+        percentile, and a short maximal effort is exactly the sample above it.
+        The peak of the contraction was drawn past the top of the axis and the
+        student read a flat top where the real maximum was."""
+        env_norm = np.full(1000, 40.0)
+        env_norm[500:502] = 300.0            # 0.2 % of the window
+        limite = adaptive_ylim(env_norm, n_plot=1000)
+        assert limite >= 300.0, "the peak is cut off"
+
+    def test_adaptive_ylim_survives_an_empty_window(self) -> None:
+        assert adaptive_ylim(np.array([]), n_plot=0) == 110.0
