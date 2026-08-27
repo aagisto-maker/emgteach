@@ -1914,6 +1914,19 @@ class AcquisitionTab(QWidget):
         )
         self._btn_fv_guided.clicked.connect(self._on_fv_guided)
         fv_row.addWidget(self._btn_fv_guided)
+
+        # Deliberately never disabled: rehearsing is what you do *before* the
+        # device is connected and the subject is holding a weight, so gating it
+        # on the hardware would put it out of reach exactly when it is useful.
+        self._btn_fv_rehearse = QPushButton(tr("Rehearse…"))
+        self._btn_fv_rehearse.setToolTip(
+            tr("Play the whole guided procedure with no hardware: the same "
+               "prompts in the same order over a synthetic recording, with an "
+               "explanation of each step, ending in the force-velocity study.")
+        )
+        self._btn_fv_rehearse.clicked.connect(self._on_fv_rehearse)
+        fv_row.addWidget(self._btn_fv_rehearse)
+
         # Shows the chosen reps and loads, mirroring "Best of 3" next to MVC.
         self._lbl_fv_config = QLabel("")
         self._lbl_fv_config.setStyleSheet("font-size: 9px; color: #555555;")
@@ -2294,6 +2307,19 @@ class AcquisitionTab(QWidget):
                 self._btn_grabar.setChecked(False)
                 return
         self._fv_start(loads, reps, prep_s, window_s)
+
+    @Slot()
+    def _on_fv_rehearse(self) -> None:
+        """Rehearse the guided procedure — no device, no subject, no recording."""
+        from emgteach.gui.widgets.fv_rehearsal_dialog import (
+            ForceVelocityRehearsalDialog,
+        )
+
+        dlg = ForceVelocityRehearsalDialog.run(self)
+        if dlg is not None:
+            # Modeless and kept alive: the point is to leave it open beside the
+            # real controls while following it.
+            self._fv_rehearsal = dlg
 
     def _fv_start(
         self,

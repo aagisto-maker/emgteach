@@ -154,6 +154,20 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             lambda: adq._box_fv_guided,
             tab=TAB_ACQ,
         ))
+        steps.append(CoachStep(
+            tr("Rehearse it before doing it"),
+            tr(
+                "This is the longest procedure in the application, and it "
+                "runs on a timer with a subject already holding a weight — a "
+                "bad moment to find out what comes next. \"Rehearse\" plays "
+                "the whole thing with no hardware: the same prompts in the "
+                "same order, each one explained, ending in the study you "
+                "would get. It can be paused and replayed; the real one "
+                "cannot."
+            ),
+            lambda: adq._btn_fv_rehearse,
+            tab=TAB_ACQ,
+        ))
 
     steps.append(CoachStep(
         tr("Calibrate the maximum contraction"),
