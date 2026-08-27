@@ -8,9 +8,9 @@ The tour follows the selected mode: it explains the accelerometer only in the
 kinematics practical and agonist/antagonist coordination only in that one.
 Explaining a control the user cannot see is worse than not explaining it.
 
-DRAFT TEXT. The physiology here is a first pass written from the existing
-tooltips and is meant to be reviewed and rewritten by the author before
-release; the wording is the teaching content of the application.
+The wording is the teaching content of the application, so it is the author's
+to write. Most steps now carry his text, applied as given; the remainder are
+still the first pass drafted from the tooltips and are awaiting his revision.
 """
 
 from __future__ import annotations
@@ -46,14 +46,11 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
-        tr("How much the reading asks of you"),
+        tr("Complexity level"),
         tr(
-            "The band says how far the practical goes: basic is direct "
-            "measurement, and each step beyond it puts more of the reading in "
-            "your interpretation rather than in the number. The fine controls "
-            "— filter cut-offs, fatigue thresholds, region of interest — are "
-            "not spread across the practicals; they all live in \"Free "
-            "analysis\", which offers everything and guides nothing."
+            "The coloured band shows the subjective level of complexity of "
+            "the analysis: basic, intermediate or advanced. There is also a "
+            "free analysis that gives control over the fine settings."
         ),
         lambda: win._lbl_nivel,
         tab=TAB_ACQ,
@@ -74,11 +71,12 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
-        tr("Connect the sensor"),
+        tr("Connecting the sensor"),
         tr(
-            "The board has to be switched on and the electrodes connected. "
-            "They go on the belly of the muscle, in line with the fibres, "
-            "with the reference on a bony point that does not contract."
+            "The board has to be switched on and the electrodes connected: "
+            "the positive and the negative go on the midline of the muscle, "
+            "while the reference goes on a neutral point, over a bone if "
+            "possible."
         ),
         lambda: adq._btn_conectar,
         tab=TAB_ACQ,
@@ -96,13 +94,13 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
 
     if mode_uses_acc(mode):
         steps.append(CoachStep(
-            tr("Where the accelerometer goes"),
+            tr("How to place the accelerometer"),
             tr(
-                "On the muscle it measures the mechanomyogram (MMG): the "
-                "transverse bulging of the fibres as they shorten, that is, "
-                "the mechanical counterpart of the electrical signal. On the "
-                "moving segment it measures the movement itself — its "
-                "acceleration, and from that velocity and tremor."
+                "There are two possibilities: on the muscle it allows the "
+                "mechanomyogram (MMG) to be measured, which runs in parallel "
+                "with the electrical signal; on the moving segment of the "
+                "joint it allows the movement, and the parameters associated "
+                "with it, to be measured."
             ),
             lambda: adq._box_acc,
             tab=TAB_ACQ,
@@ -120,12 +118,11 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
-        tr("Follow the recording from several devices"),
+        tr("Following the recording remotely"),
         tr(
-            "A read-only live view over the local network: the group can "
-            "watch the trace on their own phones while one person wears the "
-            "electrodes. Nobody installs anything — a link is opened, or the "
-            "QR code scanned."
+            "Every member of the group making the recording can watch the "
+            "trace on their own mobile device. This is done by scanning the "
+            "QR code the application generates."
         ),
         lambda: adq._box_aula,
         tab=TAB_ACQ,
@@ -144,41 +141,36 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
 
     if mode_uses_acc(mode):
         steps.append(CoachStep(
-            tr("Guided force-velocity"),
+            tr("Wizard for the force-velocity experiment"),
             tr(
-                "This wizard walks through one contraction per load. With "
-                "increasing loads the shortening velocity falls: that inverse "
-                "relation is the force-velocity curve, and the product of the "
-                "two gives the power, which peaks at intermediate loads."
+                "The step-by-step wizard guides you through the contractions "
+                "with different loads. With a greater load the velocity is "
+                "expected to be lower, and this defines an inverse relation "
+                "which is the force-velocity curve. The product of the two "
+                "gives the power, which is maximal at intermediate loads."
             ),
             lambda: adq._box_fv_guided,
             tab=TAB_ACQ,
         ))
         steps.append(CoachStep(
-            tr("Rehearse it before doing it"),
+            tr("Rehearsal of the force-velocity experiment"),
             tr(
-                "This is the longest procedure in the application, and it "
-                "runs on a timer with a subject already holding a weight — a "
-                "bad moment to find out what comes next. \"Rehearse\" plays "
-                "the whole thing with no hardware: the same prompts in the "
-                "same order, each one explained, ending in the study you "
-                "would get. It can be paused and replayed; the real one "
-                "cannot."
+                "As this is the longest and most complex procedure in the "
+                "application, a simulation is provided as a rehearsal, so "
+                "that what is going to be done live is better understood. It "
+                "can be followed step by step or watched as an animation, and "
+                "it can also be replayed to see it better."
             ),
             lambda: adq._btn_fv_rehearse,
             tab=TAB_ACQ,
         ))
 
     steps.append(CoachStep(
-        tr("Calibrate the maximum contraction"),
+        tr("Calibrating the contraction"),
         tr(
-            "A maximal voluntary contraction recorded now becomes the "
-            "reference the live load bars are expressed against. Without that "
-            "reference the amplitude stays in millivolts, and a millivolt "
-            "does not measure the muscle alone: it also depends on where the "
-            "electrodes were placed and how much skin and fat lie between them "
-            "and the fibres. That is why two recordings in millivolts cannot "
-            "be compared."
+            "A maximal voluntary contraction is asked for, and it becomes the "
+            "reference against which the live load bars and the measurements "
+            "are expressed, making contractions easier to compare."
         ),
         lambda: adq._btn_calibrar,
         tab=TAB_ACQ,
@@ -191,12 +183,13 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
     # there.
     if mode != MODE_PAIR:
         steps.append(CoachStep(
-        tr("The three basic panels"),
+        tr("The basic panels"),
             tr(
-                "Raw signal: the interference pattern of the motor units "
-                "firing. Normalised envelope: how activation changes over "
-                "time, which is what makes two efforts comparable. Power "
-                "spectrum: how that activity is distributed in frequency."
+                "Raw signal: the signal from the set of fibres that are "
+                "contracting. Normalised envelope: shows how activation "
+                "changes over time, which is what is compared between "
+                "efforts. Power spectrum: how the muscle activity is "
+                "distributed across the different frequencies recorded."
             ),
             lambda: ana._chk_paneles[0],
             tab=TAB_ANA,

@@ -1108,7 +1108,23 @@ _ES = {
     "Stop the recording before starting the guide.":
         "Hay que detener el registro antes de iniciar la guía.",
 
-    # ── Guided tour: teaching content (BORRADOR, pendiente de revisión) ─
+    # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    'Complexity level': 'Nivel de complejidad',
+    'The coloured band shows the subjective level of complexity of the analysis: basic, intermediate or advanced. There is also a free analysis that gives control over the fine settings.': 'La banda coloreada indica el nivel subjetivo de complejidad del análisis: básico, intermedio o avanzado. Hay un análisis libre que permite controlar los ajustes finos.',
+    'Connecting the sensor': 'Conexión del sensor',
+    'The board has to be switched on and the electrodes connected: the positive and the negative go on the midline of the muscle, while the reference goes on a neutral point, over a bone if possible.': 'La placa tiene que estar encendida y los electrodos conectados que se sitúan sobre la línea media del músculo positivo y negativo, mientras que el de referencia se coloca en un punto neutro, a ser posible sobre un hueso.',
+    'How to place the accelerometer': 'Cómo situar el acelerómetro',
+    'There are two possibilities: on the muscle it allows the mechanomyogram (MMG) to be measured, which runs in parallel with the electrical signal; on the moving segment of the joint it allows the movement, and the parameters associated with it, to be measured.': 'Hay dos posibilidades: sobre el músculo permite la medida del mecanomiograma (MMG), que irá en paralelo con la señal eléctrica; sobre el segmento móvil de la articulación permite medir el movimiento y los parámetros asociados a éste.',
+    'Following the recording remotely': 'Seguimiento del registro de forma remota',
+    'Every member of the group making the recording can watch the trace on their own mobile device. This is done by scanning the QR code the application generates.': 'Cada miembro del grupo que está realizando el registro puede ver el trazado en su dispositivo móvil. Este procedimiento se lleva a cabo capturando el código QR que genera la aplicación.',
+    'Wizard for the force-velocity experiment': 'Asistente para el experimento de fuerza-velocidad',
+    'The step-by-step wizard guides you through the contractions with different loads. With a greater load the velocity is expected to be lower, and this defines an inverse relation which is the force-velocity curve. The product of the two gives the power, which is maximal at intermediate loads.': 'El asistente paso a paso va guiando por las contracciones con diferentes cargas. Con mayor carga se espera que la velocidad sea menor y define una relación inversa que es la curva fuerza-velocidad. El producto de ambas proporciona la potencia, que es máxima con cargas intermedias.',
+    'Rehearsal of the force-velocity experiment': 'Ensayo del experimento fuerza-velocidad',
+    'As this is the longest and most complex procedure in the application, a simulation is provided as a rehearsal, so that what is going to be done live is better understood. It can be followed step by step or watched as an animation, and it can also be replayed to see it better.': 'Dado que es el procedimiento más largo y complejo de la aplicación se proporciona una simulación a modo de ensayo para comprender mejor lo que se va a hacer en vivo. Se puede ir paso a paso o ver como una animación y también se puede repetir para verlo mejor.',
+    'Calibrating the contraction': 'Calibración de la contracción',
+    'A maximal voluntary contraction is asked for, and it becomes the reference against which the live load bars and the measurements are expressed, making contractions easier to compare.': 'Se solicita una contracción voluntaria máxima que será la referencia respecto a la que se representan las barras de carga en vivo y las medidas, facilitando la comparación entre contracciones.',
+    'The basic panels': 'Paneles básicos',
+    'Raw signal: the signal from the set of fibres that are contracting. Normalised envelope: shows how activation changes over time, which is what is compared between efforts. Power spectrum: how the muscle activity is distributed across the different frequencies recorded.': 'Señal en bruto: señal del conjunto de las fibras que se están contrayendo. Envolvente normalizada: muestra cómo cambia la activación en el tiempo, que es lo que se compara entre esfuerzos. Espectro de potencia: cómo se reparte la actividad muscular entre las diferentes frecuencias registradas.',
     "Choose the practical first": "Elegir primero la práctica",
     "Everything else follows from this. Each mode records what that practical "
     "needs — one muscle, an agonist/antagonist pair, or a muscle plus the "
@@ -1126,17 +1142,6 @@ _ES = {
         "de interés— son comunes a los tres modos y no estorban hasta que se "
         "marca esta casilla.",
     "Offer this guide next time": "Ofrecer esta guía la próxima vez",
-    "Connect the sensor": "Conectar el sensor",
-    "Where the accelerometer goes": "Dónde va el acelerómetro",
-    "On the muscle it measures the mechanomyogram (MMG): the transverse bulging "
-    "of the fibres as they shorten, that is, the mechanical counterpart of "
-    "the electrical signal. On the moving segment it measures the movement "
-    "itself — its acceleration, and from that velocity and tremor.":
-        "Sobre el músculo mide el mecanomiograma (MMG): el abombamiento "
-        "transversal de las fibras al acortarse, es decir, la contrapartida "
-        "mecánica de la señal eléctrica. Sobre el segmento móvil mide el "
-        "movimiento mismo: su aceleración, y a partir de ella la velocidad y "
-        "el temblor.",
     "Start recording and ask for the contraction. Watch the live trace: at "
     "rest it should be a flat line with only baseline noise. A signal that "
     "never returns to baseline usually means a loose electrode or a poor "
@@ -1153,24 +1158,6 @@ _ES = {
         "un esfuerzo, un cambio de carga, el momento en que el sujeto refiere "
         "fatiga. Las marcas viajan dentro del EDF y permiten reencontrar cada "
         "fase durante el análisis.",
-    "Guided force-velocity": "Fuerza-velocidad guiada",
-    "This wizard walks through one contraction per load. With increasing "
-    "loads the shortening velocity falls: that inverse relation is the "
-    "force-velocity curve, and the product of the two gives the power, which "
-    "peaks at intermediate loads.":
-        "Este asistente guía una contracción por cada carga. Al aumentar la "
-        "carga cae la velocidad de acortamiento: esa relación inversa es la "
-        "curva fuerza-velocidad, y el producto de ambas da la potencia, que es "
-        "máxima con cargas intermedias.",
-    "The three basic panels": "Los tres paneles básicos",
-    "Raw signal: the interference pattern of the motor units firing. "
-    "Normalised envelope: how activation changes over time, which is what "
-    "makes two efforts comparable. Power spectrum: how that activity is "
-    "distributed in frequency.":
-        "Señal en bruto: el patrón de interferencia de las unidades motoras al "
-        "descargar. Envolvente normalizada: cómo cambia la activación en el "
-        "tiempo, que es lo que se compara entre esfuerzos. Espectro de "
-        "potencia: cómo se reparte esa actividad en frecuencia.",
     "Fatigue lives in the spectrum": "La fatiga está en el espectro",
     "As a sustained contraction fatigues the muscle, the conduction velocity "
     "of the fibres falls and the spectrum shifts towards low frequencies: the "
@@ -1204,22 +1191,12 @@ _ES = {
         'Dispositivos soportados por la aplicación',
     'The recording can be made with either of two devices: BITalino (Bluetooth) or Arduino (USB).':
         'El registro se puede hacer con uno cualquiera de dos dispositivos: BITalino (Bluetooth) o Arduino (USB).',
-    'The board has to be switched on and the electrodes connected. They go on the belly of the muscle, in line with the fibres, with the reference on a bony point that does not contract.':
-        'La placa tiene que estar encendida y los electrodos conectados. Van sobre el vientre del músculo, en la dirección de las fibras, con la referencia en un punto óseo que no se contraiga.',
     'Assign the labels':
         'Asignar etiquetas',
     'This name is written into the EDF file as the channel label, so the recording keeps the muscle and the channel identified. The anatomical name is the one to use.':
         'Este nombre se escribe en el fichero EDF como etiqueta del canal, de modo que el registro mantiene la identificación del músculo y del canal. Conviene usar el nombre anatómico.',
     'Recording':
         'Registro',
-    'Follow the recording from several devices':
-        'Seguir el registro de forma distribuida',
-    'A read-only live view over the local network: the group can watch the trace on their own phones while one person wears the electrodes. Nobody installs anything — a link is opened, or the QR code scanned.':
-        'Vista en vivo de solo lectura por la red local: el grupo puede ver el trazado en su propio móvil mientras una persona lleva los electrodos. Nadie instala nada: se abre un enlace, o se escanea el código QR.',
-    'Calibrate the maximum contraction':
-        'Calibrar el máximo de contracción',
-    'A maximal voluntary contraction recorded now becomes the reference the live load bars are expressed against. Without that reference the amplitude stays in millivolts, and a millivolt does not measure the muscle alone: it also depends on where the electrodes were placed and how much skin and fat lie between them and the fibres. That is why two recordings in millivolts cannot be compared.':
-        'Una contracción voluntaria máxima registrada ahora pasa a ser la referencia respecto a la que se expresan las barras de carga en vivo. Sin esa referencia la amplitud queda en milivoltios, y un milivoltio no mide solo al músculo: depende también de dónde se colocaron los electrodos y de cuánta piel y grasa hay entre ellos y las fibras. Por eso dos registros en milivoltios no se pueden comparar.',
     'Download the results: report and data':
         'Descargar resultados: informe y datos',
     "The report gathers the figures and the metrics into a PDF document. The CSV export saves the recording's data.":
@@ -1292,19 +1269,6 @@ _ES = {
     "1B. Raw EMG signal — {muscle}": "1B. Señal EMG en bruto — {muscle}",
     "Raw EMG signal of the second muscle, unfiltered (needs a 2nd channel).":
         "Señal EMG en bruto del segundo músculo, sin filtrar (necesita un 2º canal).",
-    "How much the reading asks of you": "Cuánto exige la lectura",
-    "The band says how far the practical goes: basic is direct measurement, "
-    "and each step beyond it puts more of the reading in your interpretation "
-    "rather than in the number. The fine controls — filter cut-offs, fatigue "
-    "thresholds, region of interest — are not spread across the practicals; "
-    "they all live in \"Free analysis\", which offers everything and guides "
-    "nothing.":
-        "La franja dice hasta dónde llega la práctica: básico es medida "
-        "directa, y cada escalón por encima pone más parte de la lectura en la "
-        "interpretación y menos en el número. Los controles finos —frecuencias "
-        "de corte, umbrales de fatiga, región de interés— no están repartidos "
-        "por las prácticas: viven todos en «Análisis libre», que lo ofrece todo "
-        "y no guía nada.",
 
     # El registro viaja entre pestañas.
     "Recording loaded for analysis: {path}":
@@ -1339,8 +1303,6 @@ _ES = {
 
     # ── Ensayo del asistente F-V (fv_rehearsal_dialog.py) ─────────
     'During the recording this panel appears over the plots, at this size:': 'Durante la grabación este panel aparece sobre las gráficas, con este tamaño:',
-    'Rehearse it before doing it': 'Ensáyelo antes de hacerlo',
-    'This is the longest procedure in the application, and it runs on a timer with a subject already holding a weight — a bad moment to find out what comes next. "Rehearse" plays the whole thing with no hardware: the same prompts in the same order, each one explained, ending in the study you would get. It can be paused and replayed; the real one cannot.': 'Es el procedimiento más largo de la aplicación, y corre con un temporizador mientras el sujeto ya sostiene un peso: mal momento para descubrir qué viene después. «Ensayar» lo reproduce entero sin hardware: los mismos avisos en el mismo orden, cada uno explicado, y termina en el estudio que se obtendría. Se puede pausar y repetir; el real no.',
     'Rehearse…': 'Ensayar…',
     'Play the whole guided procedure with no hardware: the same prompts in the same order over a synthetic recording, with an explanation of each step, ending in the force-velocity study.': 'Reproduce todo el procedimiento guiado sin hardware: los mismos avisos, en el mismo orden, sobre un registro sintético, con una explicación de cada paso y terminando en el estudio fuerza-velocidad.',
     'Rehearsal — guided force-velocity acquisition': 'Ensayo — adquisición guiada fuerza-velocidad',
