@@ -154,7 +154,7 @@ def _enlaces() -> list[Enlace]:
         ),
         Enlace(((145, 152), (145, 204)), modos=CON_ACC),
         Enlace(
-            ((260, 244), (349, 244)), tr("the loads"), (305, 232),
+            ((260, 244), (349, 244)), tr("loads"), (305, 232),
             modos=CON_ACC, discontinuo=True,
         ),
         Enlace(((470, 204), (470, 158)), modos=CON_ACC, discontinuo=True),
