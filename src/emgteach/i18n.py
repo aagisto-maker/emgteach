@@ -1337,5 +1337,39 @@ _ES = {
         "Hace falta un registro de referencia para expresar la señal en % CVM "
         "y poder leerla frente a los límites de Jonsson.",
 
+    # ── Mapa del recorrido (gui/mapa.py) ──────────────────────────
+    'connect · label · record': 'conectar · etiquetar · grabar',
+    'mark events': 'marcar sucesos',
+    'panels follow the practical': 'los paneles siguen a la práctica',
+    'window · fragments': 'ventana · fragmentos',
+    'signal as % of the maximum': 'la señal en % de la máxima',
+    'muscle load (Jonsson)': 'carga muscular (Jonsson)',
+    'F-V wizard': 'Asistente fuerza-velocidad',
+    'one contraction per load,': 'una contracción por carga,',
+    'marked with its weight': 'marcada con su peso',
+    'F-V study': 'Estudio fuerza-velocidad',
+    'load-velocity · power': 'carga-velocidad · potencia',
+    'recruitment': 'reclutamiento',
+    'Reference recording': 'Grabación de referencia',
+    'the maximal effort, unloaded': 'el esfuerzo máximo, sin carga',
+    'Two muscles?': '¿Dos músculos?',
+    'asks which, once': 'pregunta cuál, una vez',
+    'A reference?': '¿Hay referencia?',
+    'if not, offers this one': 'si no, ofrece este registro',
+    'travels by itself': 'viaja solo',
+    'travels by itself,': 'viaja solo,',
+    'and the muscle': 'y el músculo',
+    'the loads': 'las cargas',
+    'another pass, same tab': 'otra pasada, misma pestaña',
+    'it is the 100 %': 'es el 100 %',
+    'The recording travels from left to right': 'El registro avanza de izquierda a derecha',
+
+    # ── Diálogo del mapa ──────────────────────────────────────────
+    'Map': 'Mapa',
+    'Where you are in the process': 'Dónde estás en el proceso',
+    'Where you are': 'Dónde estás',
+    '{practical} — the lit path is the one this practical uses.': '{practical} — el camino iluminado es el que usa esta práctica.',
+    'The map for this practical has not been generated.': 'El mapa de esta práctica no está generado.',
+
     "page {n}": "página {n}",
 }

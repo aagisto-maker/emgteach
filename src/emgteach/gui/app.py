@@ -198,6 +198,14 @@ class MainWindow(QMainWindow):
         btn_tour.setToolTip(tr("Walk through the app and what it measures"))
         btn_tour.clicked.connect(self.start_tour)
 
+        # The map answers a different question from the tour: not "what does
+        # this control do" but "where am I in the process, and what is left".
+        btn_mapa = QToolButton()
+        btn_mapa.setText(tr("Map"))
+        btn_mapa.setAutoRaise(True)
+        btn_mapa.setToolTip(tr("Where you are in the process"))
+        btn_mapa.clicked.connect(self.show_mapa)
+
         btn_about = QToolButton()
         btn_about.setText("?")
         btn_about.setAutoRaise(True)
@@ -219,6 +227,7 @@ class MainWindow(QMainWindow):
         corner_lay.addWidget(self._combo_mode)
         corner_lay.addWidget(self._combo_lang)
         corner_lay.addWidget(btn_tour)
+        corner_lay.addWidget(btn_mapa)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
 
@@ -361,6 +370,14 @@ class MainWindow(QMainWindow):
         self._tab_cvm.reset()
         self._logger.clear()
         self._logger.append_log(tr("New session started."))
+
+    def show_mapa(self) -> None:
+        """Open the map at the practical and the tab currently in view."""
+        from emgteach.gui.widgets.mapa_dialog import MapaDialog
+
+        dlg = MapaDialog(self._mode(), self._tabs.currentIndex(), self)
+        dlg.show()          # modeless: it is for consulting while you work
+        self._mapa_dlg = dlg    # keep a reference or Qt collects it at once
 
     def _show_about(self) -> None:
         QMessageBox.about(
