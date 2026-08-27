@@ -182,9 +182,12 @@ class MvcTab(QWidget):
         self._btn_abrir = QPushButton(tr("Browse…"))
         self._btn_abrir.clicked.connect(self._seleccionar_edf_prueba)
         row_test.addWidget(self._btn_abrir)
-        ctrl.addLayout(row_test)
 
-        row_cvm = QHBoxLayout()
+        # The reference picker continues the same row: the two are the same
+        # kind of thing, and a row each pushed the panels further down for
+        # nothing.
+        row_cvm = row_test
+        row_cvm.addSpacing(16)
         # Caption kept as an attribute: the basic level drops the "(optional)"
         # because at that level a reference recording is compulsory.
         self._lbl_cvm = QLabel(tr("MVC reference EDF (optional):"))
@@ -199,7 +202,7 @@ class MvcTab(QWidget):
         self._btn_limpiar_cvm = QPushButton(tr("Remove"))
         self._btn_limpiar_cvm.clicked.connect(self._limpiar_cvm)
         row_cvm.addWidget(self._btn_limpiar_cvm)
-        ctrl.addLayout(row_cvm)
+        ctrl.addLayout(row_test)
 
         row_params = QHBoxLayout()
         row_params.addWidget(QLabel(tr("EMG channel:")))
@@ -256,12 +259,11 @@ class MvcTab(QWidget):
         self._btn_informe.clicked.connect(self._generar_informe)
         row_params.addWidget(self._btn_informe)
 
-        ctrl.addLayout(row_params)
-
-        # Which of the three panels to draw. The tab always drew all three,
-        # which is a lot of vertical space for a student who is after one of
-        # them — most often the last, the signal in % MVC.
-        row_paneles = QHBoxLayout()
+        # Which of the three panels to draw continues the same row. The tab
+        # always drew all three, which is a lot of vertical space for a student
+        # who is after one of them — most often the last, the signal in % MVC.
+        row_paneles = row_params
+        row_paneles.addSpacing(16)
         row_paneles.addWidget(QLabel(tr("Panels:")))
         self._chk_paneles: list[QCheckBox] = []
         for pid, nombre in _PANELES:
@@ -271,8 +273,7 @@ class MvcTab(QWidget):
             row_paneles.addWidget(chk)
             self._chk_paneles.append(chk)
         row_paneles.addStretch()
-        ctrl.addLayout(row_paneles)
-        root.addWidget(grp_ctrl)
+        ctrl.addLayout(row_params)
 
         # Event log for this tab. Kept short: what matters is that the
         # flat-channel and saturated-channel warnings are seen before the
@@ -280,9 +281,15 @@ class MvcTab(QWidget):
         grp_log = QGroupBox(tr("Event log"))
         log_layout = QVBoxLayout(grp_log)
         log_layout.setContentsMargins(4, 4, 4, 4)
-        self._local_log.setMaximumHeight(70)
         log_layout.addWidget(self._local_log)
-        root.addWidget(grp_log)
+
+        # Side by side with the controls rather than under them: stacked, the
+        # log cost the panels a strip of height across the whole width, and
+        # the controls left that width unused anyway.
+        cabecera = QHBoxLayout()
+        cabecera.addWidget(grp_ctrl, stretch=3)
+        cabecera.addWidget(grp_log, stretch=1)
+        root.addLayout(cabecera)
 
         # ── Progress bar + Cancel ──────────────────────────────────
         progress_row = QHBoxLayout()
@@ -670,6 +677,24 @@ class MvcTab(QWidget):
     # File-selection slots
     # ------------------------------------------------------------------
 
+    def adopt_recording(self, path: str) -> None:
+        """Take this recording as the one to normalise.
+
+        The reference file is left alone: it is a different recording by
+        definition — the maximal effort — and guessing it from the test file
+        would be wrong more often than right.
+        """
+        if not path or (self._worker is not None and self._worker.isRunning()):
+            return
+        self._edit_path.setText(path)
+        self._last_edf_dir = str(Path(path).parent)
+        self._populate_channels(path)
+        self._refresh_compute_enabled()
+        self._btn_guardar.setEnabled(False)
+        self._log(
+            tr("Recording loaded to normalise: {path}").format(path=Path(path).name)
+        )
+
     @Slot()
     def _seleccionar_edf_prueba(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -855,6 +880,10 @@ class MvcTab(QWidget):
         self._inicio_s = 0.0
         self._duracion_s = dur_ini
         self._time_range.set_total_duration(t_total)
+        # The envelope, not the raw trace: at the width of the bar a raw EMG
+        # is a solid block, while the envelope shows where the efforts are,
+        # which is what the window is being aimed at.
+        self._time_range.set_overview(result.get("emg_envelope"))
         self._time_range.set_range(self._inicio_s, self._duracion_s)
         self._time_range.setEnabled(True)
 

@@ -139,6 +139,14 @@ class MainWindow(QMainWindow):
         self._tab_ana = AnalysisTab(self._logger, settings, broadcast=self._broadcast)
         self._tab_cvm = MvcTab(self._logger, settings)
 
+        # What a student almost always wants is to analyse and normalise the
+        # recording they just made, so it travels between the tabs instead of
+        # being hunted for three times. Opening a file by hand in Analysis
+        # feeds the MVC tab the same way.
+        self._tab_adq.recording_saved.connect(self._tab_ana.adopt_recording)
+        self._tab_adq.recording_saved.connect(self._tab_cvm.adopt_recording)
+        self._tab_ana.file_opened.connect(self._tab_cvm.adopt_recording)
+
         # Shared styling: each tab's gray background (class selector) is only
         # painted if the widget has WA_StyledBackground.
         for tab in (self._tab_adq, self._tab_ana, self._tab_cvm):

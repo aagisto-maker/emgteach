@@ -30,7 +30,7 @@ except Exception:
     pass
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import QSettings, Qt, QTimer, Slot
+from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QFontMetrics
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -185,6 +185,10 @@ from emgteach.workers import AnalysisWorker
 
 
 class AnalysisTab(QWidget):
+    #: Emitted with the path of the EDF opened here, so the MVC tab can use
+    #: the same recording without being asked for it again.
+    file_opened = Signal(str)
+
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
         super().__init__(parent)
@@ -723,6 +727,27 @@ class AnalysisTab(QWidget):
     # Control slots
     # ------------------------------------------------------------------
 
+    def adopt_recording(self, path: str) -> None:
+        """Take the recording just made as the file to analyse.
+
+        Only fills it in — it does not run the analysis. Loading is cheap and
+        expected; computing is neither, and a run nobody asked for would fight
+        whatever the student was reading.
+        """
+        if not path or (self._worker is not None and self._worker.isRunning()):
+            return
+        self._edit_path.setText(path)
+        self._last_edf_dir = str(Path(path).parent)
+        self._populate_channels(path)
+        self._btn_analizar.setEnabled(True)
+        self._btn_fragmentos.setEnabled(True)
+        self._selected_segments = []
+        self._analysis_filter_kwargs = None
+        self._actualizar_etiqueta_fragmentos()
+        self._logger.append_log(
+            tr("Recording loaded for analysis: {path}").format(path=Path(path).name)
+        )
+
     @Slot()
     def _seleccionar_archivo(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -735,6 +760,7 @@ class AnalysisTab(QWidget):
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("analisis/last_dir", self._last_edf_dir)
             self._populate_channels(path)
+            self.file_opened.emit(path)
             self._btn_analizar.setEnabled(True)
             self._btn_fragmentos.setEnabled(True)
             # A new file invalidates any previous fragment selection and its

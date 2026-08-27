@@ -1306,5 +1306,11 @@ _ES = {
         "por las prácticas: viven todos en «Análisis libre», que lo ofrece todo "
         "y no guía nada.",
 
+    # El registro viaja entre pestañas.
+    "Recording loaded for analysis: {path}":
+        "Registro cargado para análisis: {path}",
+    "Recording loaded to normalise: {path}":
+        "Registro cargado para normalizar: {path}",
+
     "page {n}": "página {n}",
 }

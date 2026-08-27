@@ -35,7 +35,7 @@ from pathlib import Path
 
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtCore import QSettings, Qt, QTimer, Slot
+from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -170,6 +170,11 @@ _COMBO_ST = (
 
 
 class AcquisitionTab(QWidget):
+    #: Emitted with the path of the EDF just written. The other tabs pick it
+    #: up so the recording does not have to be hunted for three times: what a
+    #: student almost always wants is to analyse the one they just made.
+    recording_saved = Signal(str)
+
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
         super().__init__(parent)
@@ -2633,6 +2638,7 @@ class AcquisitionTab(QWidget):
         self._restaurar_controles()
         if edf_path:
             self._log(tr("Recording finished. File: {path}").format(path=edf_path))
+            self.recording_saved.emit(edf_path)
 
     def _restaurar_controles(self) -> None:
         self._btn_grabar.setChecked(False)
