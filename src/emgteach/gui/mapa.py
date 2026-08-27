@@ -14,7 +14,7 @@ keeps the wording in the package, where the i18n completeness test can see it.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from emgteach.i18n import get_language, tr
@@ -78,7 +78,10 @@ class Enlace:
     etiqueta_xy: tuple[float, float] | None = None
     modos: tuple[str, ...] = TODOS
     discontinuo: bool = False
-    lineas_etiqueta: tuple[str, ...] = field(default=())
+    #: Width the label may use, when it is not the gap the arrow crosses.
+    #: The two spine labels sit *above* the boxes rather than in the 95-unit
+    #: gap between them, where nothing constrains them but the drawing edge.
+    etiqueta_ancho: float | None = None
 
 
 def _nodos() -> list[Nodo]:
@@ -137,14 +140,21 @@ def _nodos() -> list[Nodo]:
 
 def _enlaces() -> list[Enlace]:
     return [
-        Enlace(((260, 106), (349, 106)), tr("travels by itself"), (305, 92)),
+        # The spine labels ride above the row of boxes, not in the gap between
+        # them: 95 units is not enough for a phrase, and shrinking one until
+        # it fits only makes it unreadable instead of cramped.
         Enlace(
-            ((585, 106), (674, 106)), "", (630, 80),
-            lineas_etiqueta=(tr("travels by itself,"), tr("and the muscle")),
+            ((260, 106), (349, 106)), tr("travels by itself"), (305, 52),
+            etiqueta_ancho=250,
+        ),
+        Enlace(
+            ((585, 106), (674, 106)),
+            tr("travels by itself, with the chosen muscle"), (630, 52),
+            etiqueta_ancho=250,
         ),
         Enlace(((145, 152), (145, 204)), modos=CON_ACC),
         Enlace(
-            ((260, 237), (349, 237)), tr("the loads"), (305, 250),
+            ((260, 244), (349, 244)), tr("the loads"), (305, 232),
             modos=CON_ACC, discontinuo=True,
         ),
         Enlace(((470, 204), (470, 158)), modos=CON_ACC, discontinuo=True),

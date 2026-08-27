@@ -80,3 +80,47 @@ class TestTheMapMatchesTheApplication:
         for n in NODOS():
             if n.id in ("fv_asis", "fv_est"):
                 assert set(n.modos) == {m for m in MODES if mode_uses_acc(m)}
+
+
+def test_no_label_has_to_be_shrunk_past_legibility() -> None:
+    """Every string on the map fits its box at a readable size.
+
+    The generator measures each string and shrinks it to fit, with a floor
+    below which it stops shrinking and simply overflows. That floor is where
+    the bug the user reported lives — text out of its box — and only a
+    translation can put a string there, which is exactly what nobody rereads.
+    So run the real drawing over both languages and all four practicals and
+    fail on anything that hit the floor.
+    """
+    import importlib.util
+
+    if importlib.util.find_spec("matplotlib") is None:
+        pytest.skip("the generator needs matplotlib; the images are committed")
+
+    import sys
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parent.parent / "tools"
+    sys.path.insert(0, str(raiz))
+    try:
+        import generar_mapa
+    finally:
+        sys.path.remove(str(raiz))
+
+    from emgteach.i18n import get_language, set_language
+
+    antes = get_language()
+    generar_mapa.APRETADOS.clear()
+    try:
+        for lang in IDIOMAS:
+            set_language(lang)
+            for mode in MODES:
+                # Station 0 exercises every box and arrow; the others differ
+                # only in which one is ringed.
+                generar_mapa.dibujar(mode, 0, None)
+    finally:
+        set_language(antes)
+
+    assert not generar_mapa.APRETADOS, (
+        "too long for their boxes: " + ", ".join(sorted(set(generar_mapa.APRETADOS)))
+    )
