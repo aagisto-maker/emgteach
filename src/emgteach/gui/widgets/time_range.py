@@ -2,10 +2,16 @@
 
 Shows the recording's total duration as a bar and lets the user visually
 select a sub-range [start, start+duration] by dragging with the mouse.
+
+The bar draws the whole signal behind the selection, so the part being looked
+at can be picked out by its shape. Without that it is an empty track: the only
+way to find a burst is to move the selection and see what appears, which is
+searching by trial and error.
 """
 
 from __future__ import annotations
 
+import numpy as np
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
@@ -15,7 +21,12 @@ class TimeRangeSelector(QWidget):
     range_changed = Signal(float, float)   # (start, duration) on mouse release
     range_preview = Signal(float, float)   # (start, duration) while dragging
 
-    _BAR_H    = 16   # px — height of the selection rectangle
+    #: Columns kept for the overview. Independent of the widget width, which
+    #: changes with the window; the paint step maps these onto whatever pixels
+    #: it has.
+    _OVERVIEW_COLS = 1500
+
+    _BAR_H    = 34   # px — height of the selection rectangle and the overview
     _SCALE_H  = 14   # px — height of the time scale
     _EDGE     = 7    # px — max width of each resize handle (capped to w/3)
     _MIN_GRAB = 18   # px — below this width the whole selection moves (no edge resize)
@@ -32,6 +43,10 @@ class TimeRangeSelector(QWidget):
         self._drag_start_x: int     = 0
         self._drag_start_inicio: float   = 0.0
         self._drag_start_duracion: float = 10.0
+
+        # (min, max) per column of the whole signal, or None while no
+        # recording is loaded — then the bar is drawn empty, as before.
+        self._overview: np.ndarray | None = None
 
         self.setFixedHeight(self._BAR_H + self._SCALE_H + 2)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -52,6 +67,63 @@ class TimeRangeSelector(QWidget):
 
     def get_range(self) -> tuple[float, float]:
         return self._inicio, self._duracion
+
+    def set_overview(self, signal) -> None:
+        """Give the bar the whole signal to draw behind the selection.
+
+        Reduced to a fixed number of columns of (min, max) rather than
+        resampled: a burst two samples wide has to survive into the overview,
+        and picking every Nth sample would drop it. Pass None to clear.
+        """
+        if signal is None:
+            self._overview = None
+            self.update()
+            return
+
+        arr = np.asarray(signal, dtype=np.float64).ravel()
+        arr = arr[np.isfinite(arr)]
+        if arr.size == 0:
+            self._overview = None
+            self.update()
+            return
+
+        cols = min(self._OVERVIEW_COLS, arr.size)
+        # Trim the tail that does not fill a whole column; at this resolution
+        # it is well under one pixel of the bar.
+        por_col = arr.size // cols
+        recorte = arr[: cols * por_col].reshape(cols, por_col)
+        self._overview = np.column_stack(
+            (recorte.min(axis=1), recorte.max(axis=1))
+        )
+        self.update()
+
+    def _paint_overview(self, p: QPainter, w: int, bh: int) -> None:
+        """Draw the signal inside the track, centred on its own mid-line."""
+        ov = self._overview
+        if ov is None or w <= 2:
+            return
+
+        lo, hi = float(ov[:, 0].min()), float(ov[:, 1].max())
+        # An envelope never goes below zero, so it reads as an area standing on
+        # the floor of the bar. A raw trace swings both ways and reads as a
+        # band about its own mid-line. Same drawing, different baseline.
+        unipolar = lo >= 0.0
+        base = (bh - 3) if unipolar else (bh - 1) / 2.0
+        medio = 0.0 if unipolar else (hi + lo) / 2.0
+        span = max(hi - medio, 1e-12) if unipolar else max((hi - lo) / 2.0, 1e-12)
+        escala = ((bh - 5) if unipolar else (bh - 5) / 2.0) / span
+
+        p.setPen(QPen(QColor("#8fa0b0"), 1))
+        cols = ov.shape[0]
+        for x in range(1, w - 1):
+            # Each pixel column covers a slice of the overview columns, so a
+            # narrow burst still shows up instead of being sampled past.
+            i0 = (x - 1) * cols // max(w - 2, 1)
+            i1 = max(i0 + 1, x * cols // max(w - 2, 1))
+            trozo = ov[i0:i1]
+            y_alto = base - (float(trozo[:, 1].max()) - medio) * escala
+            y_bajo = base if unipolar else base - (float(trozo[:, 0].min()) - medio) * escala
+            p.drawLine(x, int(y_alto), x, int(y_bajo))
 
     # ------------------------------------------------------------------ internal helpers
 
@@ -116,10 +188,14 @@ class TimeRangeSelector(QWidget):
         p.setBrush(QColor("#f5f5f5"))
         p.drawRect(0, 0, w - 1, bh - 1)
 
-        # Selection rectangle
+        # The whole signal, behind the selection: this is what makes the bar
+        # navigable instead of a blind scrollbar.
+        self._paint_overview(p, w, bh)
+
+        # Selection rectangle, translucent so the signal shows through it
         x1, x2 = self._rect_x1x2()
         fill = QColor("#1f77b4")
-        fill.setAlpha(100)
+        fill.setAlpha(70)
         p.setBrush(fill)
         p.setPen(QPen(QColor("#1f77b4"), 2))
         p.drawRect(x1, 1, x2 - x1, bh - 3)

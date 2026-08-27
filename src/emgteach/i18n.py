@@ -1242,5 +1242,38 @@ _ES = {
     "A": "A",
     "Error:": "Error:",
 
+    # Por qué no se puede pulsar «Calcular CVM» todavía.
+    "Select the recording to normalise.":
+        "Seleccionar el registro que se va a normalizar.",
+    "A reference recording is required to express the signal as % MVC and to "
+    "read it against the Jonsson limits. Tick \"Advanced options\" to "
+    "normalise without one.":
+        "Hace falta un registro de referencia para expresar la señal en % CVM "
+        "y poder leerla frente a los límites de Jonsson. Marcar «Opciones "
+        "avanzadas» para normalizar sin él.",
+
+    # Selección de paneles de la pestaña CVM.
+    "Panels:": "Paneles:",
+    "1. Filtered and rectified": "1. Filtrada y rectificada",
+    "2. Envelope and MVC": "2. Envolvente y CVM",
+    "3. Normalised (% MVC)": "3. Normalizada (% CVM)",
+
+    # Elegir músculo cuando el registro trae dos y la práctica estudia uno.
+    "Which muscle is being analysed?": "¿Qué músculo se analiza?",
+    "This recording has two muscles. This practical studies one at a time, so "
+    "every panel, metric and report will be about the channel chosen here.":
+        "Este registro tiene dos músculos. Esta práctica estudia uno cada vez, "
+        "así que todos los paneles, medidas e informes se referirán al canal "
+        "que se elija aquí.",
+    "Analysing {muscle}.": "Se analiza {muscle}.",
+    "Which muscle is being normalised?": "¿Qué músculo se normaliza?",
+    "This recording has two muscles. Normalisation is about one of them: the "
+    "reference amplitude, the load distribution and the report will all be "
+    "about the channel chosen here.":
+        "Este registro tiene dos músculos. La normalización es de uno de ellos: "
+        "la amplitud de referencia, la distribución de carga y el informe se "
+        "referirán al canal que se elija aquí.",
+    "Normalising {muscle}.": "Se normaliza {muscle}.",
+
     "page {n}": "página {n}",
 }

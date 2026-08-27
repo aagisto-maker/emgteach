@@ -335,3 +335,64 @@ def test_no_caption_is_left_behind(main_window, qapp, mode, advanced) -> None:
             stranded -= {"Warning", "Danger", "k:", "from", "to",
                          "Envelope cutoff frequency (Hz):"}
         assert not stranded, f"{mode}/advanced={advanced}: {sorted(stranded)}"
+
+
+# ── two muscles recorded, one practical that studies one ───────────────
+
+
+class TestChoosingWhichMuscle:
+    """A two-channel file in a one-muscle practical has to ask.
+
+    Taking the first channel silently is the failure this prevents: every
+    panel, metric and report would be about a muscle nobody picked, and
+    nothing on screen would say which one it was.
+    """
+
+    @staticmethod
+    def _capture(monkeypatch) -> list[dict]:
+        from PySide6.QtWidgets import QMessageBox
+
+        raised: list[dict] = []
+
+        def fake_exec(self):
+            raised.append({
+                "text": self.text(),
+                "buttons": [b.text() for b in self.buttons()],
+            })
+            return QMessageBox.StandardButton.NoButton
+
+        monkeypatch.setattr(QMessageBox, "exec", fake_exec)
+        return raised
+
+    @pytest.mark.parametrize("mode", [MODE_SINGLE, MODE_KINEMATICS])
+    def test_asks_and_names_the_muscles(
+        self, main_window, qapp, tmp_path, monkeypatch, mode
+    ) -> None:
+        raised = self._capture(monkeypatch)
+        set_mode(main_window, qapp, mode)
+        main_window._tab_ana._populate_channels(make_edf(tmp_path / "two.edf", 2))
+        qapp.processEvents()
+
+        assert len(raised) == 1
+        # The buttons carry the channel labels, which is why they are typed at
+        # recording time — not "EMG1"/"EMG2" as stored positions.
+        assert raised[0]["buttons"] == ["EMG1", "EMG2"]
+
+    def test_the_pair_practical_does_not_ask(
+        self, main_window, qapp, tmp_path, monkeypatch
+    ) -> None:
+        """There both muscles are the point, so there is nothing to choose."""
+        raised = self._capture(monkeypatch)
+        set_mode(main_window, qapp, MODE_PAIR)
+        main_window._tab_ana._populate_channels(make_edf(tmp_path / "two.edf", 2))
+        qapp.processEvents()
+        assert raised == []
+
+    def test_a_single_channel_file_does_not_ask(
+        self, main_window, qapp, tmp_path, monkeypatch
+    ) -> None:
+        raised = self._capture(monkeypatch)
+        set_mode(main_window, qapp, MODE_SINGLE)
+        main_window._tab_ana._populate_channels(make_edf(tmp_path / "one.edf", 1))
+        qapp.processEvents()
+        assert raised == []

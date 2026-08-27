@@ -17,6 +17,22 @@ import pytest
 pytestmark = pytest.mark.gui
 
 
+@pytest.fixture(autouse=True)
+def _answer_the_channel_question(monkeypatch):
+    """Loading a two-channel file now asks which muscle to work on.
+
+    These tests are about the channel wiring, not about the question, and a
+    modal with nobody in front of it hangs the run — which is exactly what it
+    did the first time this dialog was added. Leaving no button clicked makes
+    the code take its documented fallback, the first channel.
+    """
+    from PySide6.QtWidgets import QMessageBox
+
+    monkeypatch.setattr(
+        QMessageBox, "exec", lambda self: QMessageBox.StandardButton.NoButton
+    )
+
+
 def _write_edf(path: Path, channels: list[tuple[str, float, float, str]]) -> None:
     from pyedflib import highlevel
 

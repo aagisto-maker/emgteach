@@ -38,6 +38,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Slot
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -75,6 +76,14 @@ from emgteach.workers import MvcWorker
 # with a red ring on top (see _dibujar_apdf / the data panel).
 _LEVEL_COLORS = {"static": "#2E86C1", "median": "#E67E22", "peak": "#8E44AD"}
 _OUT_COLOR = "#cc0000"
+
+#: The three panels the tab can draw, in order. The identifier is the one the
+#: drawing code uses; the name is what the checkbox says.
+_PANELES: list[tuple[int, str]] = [
+    (0, "1. Filtered and rectified"),
+    (1, "2. Envelope and MVC"),
+    (2, "3. Normalised (% MVC)"),
+]
 
 # Available time-zoom factors (same as tab_analisis)
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
@@ -228,6 +237,15 @@ class MvcTab(QWidget):
         self._btn_calcular.clicked.connect(self._iniciar_calculo)
         row_params.addWidget(self._btn_calcular)
 
+        # A disabled button that does not say why is the worst of both: the
+        # tab looks broken rather than incomplete. This says what is missing,
+        # right next to the control that cannot be pressed.
+        self._lbl_calcular_bloqueado = QLabel()
+        self._lbl_calcular_bloqueado.setWordWrap(True)
+        self._lbl_calcular_bloqueado.setStyleSheet("color: #8a5000; font-size: 11px;")
+        self._lbl_calcular_bloqueado.setVisible(False)
+        row_params.addWidget(self._lbl_calcular_bloqueado, stretch=1)
+
         self._btn_guardar = QPushButton(tr("Save figure (PNG)"))
         self._btn_guardar.setEnabled(False)
         self._btn_guardar.clicked.connect(self._guardar_figura)
@@ -239,6 +257,21 @@ class MvcTab(QWidget):
         row_params.addWidget(self._btn_informe)
 
         ctrl.addLayout(row_params)
+
+        # Which of the three panels to draw. The tab always drew all three,
+        # which is a lot of vertical space for a student who is after one of
+        # them — most often the last, the signal in % MVC.
+        row_paneles = QHBoxLayout()
+        row_paneles.addWidget(QLabel(tr("Panels:")))
+        self._chk_paneles: list[QCheckBox] = []
+        for pid, nombre in _PANELES:
+            chk = QCheckBox(tr(nombre))
+            chk.setChecked(True)
+            chk.toggled.connect(self._on_panel_toggled)
+            row_paneles.addWidget(chk)
+            self._chk_paneles.append(chk)
+        row_paneles.addStretch()
+        ctrl.addLayout(row_paneles)
         root.addWidget(grp_ctrl)
 
         # Event log for this tab. Kept short: what matters is that the
@@ -611,12 +644,27 @@ class MvcTab(QWidget):
             )
 
     def _refresh_compute_enabled(self) -> None:
-        """Enable "Compute MVC" only when the current level has what it needs."""
+        """Enable "Compute MVC" only when the current level has what it needs,
+        and say out loud what is missing when it is not."""
         has_test = bool(self._edit_path.text().strip())
         has_ref = bool(self._edit_cvm_path.text().strip())
-        self._btn_calcular.setEnabled(
-            has_test and (has_ref or not self._reference_required())
-        )
+        listo = has_test and (has_ref or not self._reference_required())
+        self._btn_calcular.setEnabled(listo)
+
+        if listo:
+            motivo = ""
+        elif not has_test:
+            motivo = tr("Select the recording to normalise.")
+        else:
+            # The one case that looks like a fault rather than a missing step:
+            # everything is filled in except a file the basic level insists on.
+            motivo = tr(
+                "A reference recording is required to express the signal as "
+                "% MVC and to read it against the Jonsson limits. Tick "
+                "\"Advanced options\" to normalise without one."
+            )
+        self._lbl_calcular_bloqueado.setText(motivo)
+        self._lbl_calcular_bloqueado.setVisible(bool(motivo))
 
     # ------------------------------------------------------------------
     # File-selection slots
@@ -656,6 +704,12 @@ class MvcTab(QWidget):
         self._combo_canal.setCurrentIndex(idx if idx >= 0 else 0)
         self._combo_canal.blockSignals(False)
         self._combo_canal.setEnabled(len(labels) >= 2)
+
+        # Normalisation is about one muscle. With two in the file, taking the
+        # first without asking would put a reference amplitude, a load
+        # distribution and a PDF report against a muscle nobody chose.
+        if len(labels) >= 2:
+            self._ask_which_channel(labels)
 
         # Warn if a channel is flat (no signal) or saturated (bad contact).
         for label, status in assess_edf_channels(path):
@@ -873,6 +927,53 @@ class MvcTab(QWidget):
     # Drawing the 3 panels
     # ------------------------------------------------------------------
 
+    def _ask_which_channel(self, labels: list[str]) -> None:
+        """Two muscles recorded, one to normalise: let the student say which.
+
+        The buttons carry the channel labels themselves, so the choice is
+        between "Biceps" and "Triceps" rather than between EMG1 and EMG2 —
+        which is the whole reason the labels are typed at recording time.
+        """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle(tr("Which muscle is being normalised?"))
+        msg.setText(
+            tr(
+                "This recording has two muscles. Normalisation is about one of "
+                "them: the reference amplitude, the load distribution and the "
+                "report will all be about the channel chosen here."
+            )
+        )
+        botones = [msg.addButton(name, QMessageBox.ButtonRole.AcceptRole)
+                   for name in labels[:2]]
+        msg.setDefaultButton(botones[0])
+        msg.exec()
+
+        elegido = next(
+            (n for b, n in zip(botones, labels) if msg.clickedButton() is b),
+            labels[0],
+        )
+        idx = self._combo_canal.findText(elegido)
+        if idx >= 0:
+            self._combo_canal.setCurrentIndex(idx)
+        self._log(tr("Normalising {muscle}.").format(muscle=elegido))
+
+    def _paneles_activos(self) -> list[int]:
+        """Identifiers of the ticked panels, in display order.
+
+        Never empty: with nothing ticked the tab would draw a blank canvas and
+        look broken, so the first panel stands in.
+        """
+        activos = [pid for (pid, _), chk in zip(_PANELES, self._chk_paneles)
+                   if chk.isChecked()]
+        return activos or [_PANELES[0][0]]
+
+    @Slot()
+    def _on_panel_toggled(self) -> None:
+        """Redraw with the new selection, if there is anything to redraw."""
+        if self._last_result is not None:
+            self._dibujar_paneles(self._last_result)
+
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
 
@@ -883,59 +984,68 @@ class MvcTab(QWidget):
         inicio = self._inicio_s
         fin = inicio + self._duracion_s
 
-        axes = self._fig.subplots(3, 1, sharex=False)
-        self._axes_list = list(axes)
-
-        # Panel 1: filtered + rectified signal
-        ax = axes[0]
-        ax.plot(t_full, r["emg_filtered"][:n],
-                color="royalblue", lw=0.8, label=tr("Filtered EMG (20-450 Hz)"))
-        ax.plot(t_full, r["emg_rectified"][:n],
-                color="tomato", lw=0.8, alpha=0.8, label=tr("Rectified EMG"))
-        ax.set_xlim(inicio, fin)
-        ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
-        ax.set_ylabel(tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
-        ax.tick_params(labelsize=7)
-        ax.legend(loc="upper right", fontsize=7)
-        ax.grid(True, color="#DDDDDD", alpha=0.5)
-
-        # Panel 2: envelope + MVC line
-        ax = axes[1]
-        ax.plot(t_full, r["emg_envelope"][:n],
-                color="purple", lw=2.0, label=tr("LP envelope (zero-phase)"))
-        ax.axhline(r["mvc_amplitude_ref"], color="red", ls="--", lw=1.5,
-                   label=tr("MVC ref: {value:.4f} {units}").format(
-                       value=r["mvc_amplitude_ref"], units=r.get("dimension", "")))
-        ax.set_xlim(inicio, fin)
         # The suffix travels with the figure: it is saved as PNG and lands in
         # the report, and by then nothing else says the reference was faked.
         auto_suffix = tr(AUTO_SUFFIX) if r.get("mvc_is_auto") else ""
-        ax.set_title(
-            tr("2. Envelope and MVC reference amplitude") + auto_suffix, fontsize=9
-        )
-        ax.set_ylabel(tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
-        ax.tick_params(labelsize=7)
-        ax.legend(loc="upper right", fontsize=7)
-        ax.grid(True, color="#DDDDDD", alpha=0.5)
+
+        activos = self._paneles_activos()
+        creados = self._fig.subplots(len(activos), 1, sharex=False, squeeze=False)
+        axes = {pid: fila[0] for pid, fila in zip(activos, creados)}
+        self._axes_list = [axes[pid] for pid in activos]
+
+        # Panel 1: filtered + rectified signal
+        if 0 in axes:
+            ax = axes[0]
+            ax.plot(t_full, r["emg_filtered"][:n],
+                    color="royalblue", lw=0.8, label=tr("Filtered EMG (20-450 Hz)"))
+            ax.plot(t_full, r["emg_rectified"][:n],
+                    color="tomato", lw=0.8, alpha=0.8, label=tr("Rectified EMG"))
+            ax.set_xlim(inicio, fin)
+            ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
+            ax.set_ylabel(
+                tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.tick_params(labelsize=7)
+            ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True, color="#DDDDDD", alpha=0.5)
+
+        # Panel 2: envelope + MVC line
+        if 1 in axes:
+            ax = axes[1]
+            ax.plot(t_full, r["emg_envelope"][:n],
+                    color="purple", lw=2.0, label=tr("LP envelope (zero-phase)"))
+            ax.axhline(r["mvc_amplitude_ref"], color="red", ls="--", lw=1.5,
+                       label=tr("MVC ref: {value:.4f} {units}").format(
+                           value=r["mvc_amplitude_ref"], units=r.get("dimension", "")))
+            ax.set_xlim(inicio, fin)
+            ax.set_title(
+                tr("2. Envelope and MVC reference amplitude") + auto_suffix, fontsize=9
+            )
+            ax.set_ylabel(
+                tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.tick_params(labelsize=7)
+            ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True, color="#DDDDDD", alpha=0.5)
 
         # Panel 3: signal normalised % MVC
-        ax = axes[2]
-        ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25, color="darkorange")
-        ax.plot(t_full, r["emg_norm"][:n],
-                color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
-        ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7, label=tr("100 % MVC"))
-        ax.set_xlim(inicio, fin)
-        ax.set_title(
-            tr("3. EMG signal normalised to MVC (% MVC)") + auto_suffix, fontsize=9
-        )
-        ax.set_ylabel(tr("% MVC"), fontsize=8)
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
-        ax.set_ylim(0, r["ylim_max"])
-        ax.tick_params(labelsize=7)
-        ax.legend(loc="upper right", fontsize=7)
-        ax.grid(True, color="#DDDDDD", alpha=0.5)
+        if 2 in axes:
+            ax = axes[2]
+            ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25, color="darkorange")
+            ax.plot(t_full, r["emg_norm"][:n],
+                    color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
+            ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7,
+                       label=tr("100 % MVC"))
+            ax.set_xlim(inicio, fin)
+            ax.set_title(
+                tr("3. EMG signal normalised to MVC (% MVC)") + auto_suffix, fontsize=9
+            )
+            ax.set_ylabel(tr("% MVC"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_ylim(0, r["ylim_max"])
+            ax.tick_params(labelsize=7)
+            ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True, color="#DDDDDD", alpha=0.5)
 
         # Save the initial ylims and reset the accumulators
         self._y_initial_lims = {i: ax.get_ylim() for i, ax in enumerate(self._axes_list)}

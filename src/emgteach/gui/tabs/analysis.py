@@ -774,6 +774,11 @@ class AnalysisTab(QWidget):
         self._sync_compare_to_mode()
         if self._mode == MODE_PAIR and not has_two:
             self._warn_mode_mismatch(len(labels))
+        elif has_two and self._mode != MODE_PAIR:
+            # Two muscles in the file, a practical that studies one: without
+            # asking, the tab quietly takes the first channel and every panel,
+            # metric and report is about a muscle nobody chose.
+            self._ask_which_channel(labels)
 
         # Warn if any channel is flat (no signal) or saturated (bad contact).
         self._warn_channel_quality(path)
@@ -952,6 +957,10 @@ class AnalysisTab(QWidget):
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
         self._time_range.set_total_duration(duracion_total)
+        # The envelope, not the raw trace: at the width of the bar the raw
+        # interference pattern is a solid block, while the envelope shows
+        # where the efforts are, which is what the window is aimed at.
+        self._time_range.set_overview(result.get("emg_envelope"))
         # The window selector defaults to the whole recording; narrow it with
         # the minimap (or the ◀▶ / zoom controls) to inspect a segment.
         _dur_ini = duracion_total
@@ -2013,6 +2022,39 @@ class AnalysisTab(QWidget):
                 "at the top of the window, or open a recording made with two "
                 "channels."
             ),
+        )
+
+    def _ask_which_channel(self, labels: list[str]) -> None:
+        """Two muscles recorded, one to be analysed: let the student say which.
+
+        The buttons carry the channel labels themselves, so the choice is
+        between "Biceps" and "Triceps" rather than between EMG1 and EMG2 —
+        which is the whole reason the labels are typed at recording time.
+        """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle(tr("Which muscle is being analysed?"))
+        msg.setText(
+            tr(
+                "This recording has two muscles. This practical studies one at "
+                "a time, so every panel, metric and report will be about the "
+                "channel chosen here."
+            )
+        )
+        botones = [msg.addButton(name, QMessageBox.ButtonRole.AcceptRole)
+                   for name in labels[:2]]
+        msg.setDefaultButton(botones[0])
+        msg.exec()
+
+        elegido = next(
+            (n for b, n in zip(botones, labels) if msg.clickedButton() is b),
+            labels[0],
+        )
+        idx = self._combo_canal.findText(elegido)
+        if idx >= 0:
+            self._combo_canal.setCurrentIndex(idx)
+        self._logger.append_log(
+            tr("Analysing {muscle}.").format(muscle=elegido)
         )
 
     def _panel_is_offered(self, index: int, mode: str, advanced: bool) -> bool:
