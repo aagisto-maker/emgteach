@@ -33,16 +33,16 @@ from dataclasses import dataclass
 import numpy as np
 
 __all__ = [
-    "Cue",
+    "PHASE_DONE",
+    "PHASE_LIFT",
     "PHASE_MVC_CONTRACT",
     "PHASE_MVC_READY",
     "PHASE_MVC_REST",
-    "PHASE_DONE",
-    "PHASE_LIFT",
     "PHASE_PREPARE",
     "PHASE_REST",
-    "REHEARSAL_EMG_CHANNEL",
     "REHEARSAL_ACC_CHANNEL",
+    "REHEARSAL_EMG_CHANNEL",
+    "Cue",
     "cue_script",
     "synthetic_trial",
     "total_seconds",
@@ -249,7 +249,7 @@ def write_rehearsal_edf(trial: dict, path) -> str:
     """
     from emgteach.io import BufferedEdfWriter, ChannelInfo
 
-    fs = int(round(float(trial["fs"])))
+    fs = round(float(trial["fs"]))
     emg = np.asarray(trial["emg_raw"], dtype=np.float64)
     acc = np.asarray(trial["acc_raw"], dtype=np.float64)
     channels = [

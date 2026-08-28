@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -52,13 +52,13 @@ from emgteach.fv_rehearsal import (
     total_seconds,
     write_rehearsal_edf,
 )
-from emgteach.i18n import tr
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
+from emgteach.i18n import tr
 
 __all__ = ["ForceVelocityRehearsalDialog"]
 
 #: Wall-clock tick. The rehearsal's own clock advances by this times the speed
-#: multiplier, so the default ×4 turns a 48-second protocol into 12.
+#: multiplier, so the default ×2 turns a 48-second protocol into 24.
 _TICK_MS = 40
 
 #: Points kept for the plot. The recording is ~48 000 samples and is redrawn
@@ -175,7 +175,7 @@ class ForceVelocityRehearsalDialog(QDialog):
         self._loads = list(loads)
         self._t = 0.0
         self._cue_index = -1
-        self._speed = 4.0
+        self._speed = 2.0
         self._edf: str | None = None
 
         self._prepare_signals()
@@ -242,42 +242,37 @@ class ForceVelocityRehearsalDialog(QDialog):
         middle = QHBoxLayout()
         middle.setSpacing(10)
 
-        # -- the recording as it is made -------------------------------------
+        # -- the recording as it is made, with the cue panel over it ---------
+        self._canvas_host = QWidget()
+        host_lay = QVBoxLayout(self._canvas_host)
+        host_lay.setContentsMargins(0, 0, 0, 0)
         self._fig = Figure(figsize=(6.6, 4.2))
         self._fig.set_layout_engine("constrained")
         self._canvas = FigureCanvasQTAgg(self._fig)
+        host_lay.addWidget(self._canvas)
         self._ax_emg, self._ax_vel = self._fig.subplots(
             2, 1, sharex=True, height_ratios=[2, 1]
         )
         self._init_axes()
-        middle.addWidget(self._canvas, stretch=3)
+        middle.addWidget(self._canvas_host, stretch=4)
 
-        # -- the cue panel, and the log --------------------------------------
+        # The acquisition tab's own panel, floating over the plots exactly as
+        # it does during a real recording. It covers part of the trace, which
+        # is what the subject sees too; the trace is there to be read on the
+        # replay, and the panel can be got out of the way by pausing and
+        # stepping back.
+        self._overlay = MvcOverlay(self._canvas_host)
+
+        # -- event log -------------------------------------------------------
         right = QVBoxLayout()
         right.setSpacing(4)
-
-        # The acquisition tab's own panel, at its own size. During a real
-        # recording it floats over the plots; here it sits beside them,
-        # because the whole point of a rehearsal is to watch the prompt and
-        # what the signal does at the same time — which is exactly what the
-        # subject in front of the screen cannot do.
-        caption = QLabel(tr("During the recording this panel appears over the "
-                            "plots, at this size:"))
-        caption.setWordWrap(True)
-        caption.setStyleSheet("color:#4A5A68; font-size:10px;")
-        right.addWidget(caption)
-        self._overlay = MvcOverlay()
-        self._overlay.setFixedSize(MvcOverlay._W, MvcOverlay._H)
-        self._overlay.show()      # it hides itself by default
-        right.addWidget(self._overlay, alignment=Qt.AlignmentFlag.AlignHCenter)
-
-        right.addSpacing(6)
         right.addWidget(QLabel(tr("Event log")))
         self._log = QPlainTextEdit()
         self._log.setReadOnly(True)
         self._log.setStyleSheet("font-family: monospace; font-size: 10px;")
+        self._log.setMinimumWidth(250)
         right.addWidget(self._log, stretch=1)
-        middle.addLayout(right, stretch=2)
+        middle.addLayout(right, stretch=1)
         root.addLayout(middle, stretch=1)
 
         # -- narration -------------------------------------------------------
@@ -317,7 +312,10 @@ class ForceVelocityRehearsalDialog(QDialog):
         self._combo_speed = QComboBox()
         for mult, label in _SPEEDS:
             self._combo_speed.addItem(label, mult)
-        self._combo_speed.setCurrentIndex(2)          # ×4
+        # ×2. At ×4 the run is over before the narration of each
+        # phase has been read, which is the half that cannot be
+        # caught up with later.
+        self._combo_speed.setCurrentIndex(1)
         self._combo_speed.currentIndexChanged.connect(self._on_speed)
         self._combo_speed.setToolTip(tr(
             "×1 is the real duration of the protocol; the faster settings are "
@@ -492,6 +490,19 @@ class ForceVelocityRehearsalDialog(QDialog):
                 tr("Loads recorded"),
                 tr("{n} loads marked.\nStop recording, then open the "
                    "Force-velocity study.").format(n=len(self._loads)))
+        self._centre_overlay()
+
+    def _centre_overlay(self) -> None:
+        r = self._canvas_host.rect()
+        self._overlay.move(
+            r.center().x() - self._overlay.width() // 2,
+            r.center().y() - self._overlay.height() // 2,
+        )
+        self._overlay.raise_()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._centre_overlay()
 
     def _log_for(self, cue) -> None:
         """The lines the acquisition tab would write, at the same moments."""
@@ -536,6 +547,6 @@ class ForceVelocityRehearsalDialog(QDialog):
         dlg.show()
         self._study = dlg          # kept alive; it is modeless
 
-    def closeEvent(self, event) -> None:       # noqa: N802 — Qt's name
+    def closeEvent(self, event) -> None:
         self._timer.stop()
         super().closeEvent(event)

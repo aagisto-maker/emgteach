@@ -9,12 +9,13 @@ state machine and compares what it does to the script the rehearsal plays.
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import numpy as np
 import pytest
 
 from emgteach.fv_rehearsal import (
     PHASE_DONE,
-    PHASE_LIFT,
     PHASE_MVC_CONTRACT,
     PHASE_MVC_READY,
     PHASE_MVC_REST,
@@ -57,7 +58,7 @@ class TestTheScript:
 
     def test_the_cues_tile_the_run_without_gaps(self) -> None:
         cues = cue_script(LOADS, reps=2)
-        for a, b in zip(cues, cues[1:]):
+        for a, b in pairwise(cues):
             assert a.end == pytest.approx(b.start)
         assert total_seconds(cues) == pytest.approx(cues[-1].end)
 

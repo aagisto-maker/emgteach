@@ -74,7 +74,8 @@ class TestItPlays:
         assert not dlg._btn_study.isEnabled()
 
     def test_speed_only_changes_the_clock_not_the_script(self, dlg) -> None:
-        """×10 is for reviewing; it must not drop or merge steps."""
+        """The fastest setting is for reviewing; it must not drop or
+        merge steps."""
         before = [(c.phase, c.load) for c in dlg._cues]
         dlg._combo_speed.setCurrentIndex(3)
         assert dlg._speed == 10.0
@@ -110,7 +111,7 @@ class TestItEndsInTheRealStudy:
         dlg._open_study()
         assert dlg._edf is not None
         assert "EMG" in list_edf_channels(dlg._edf)
-        label, placement = find_edf_acc_channel(dlg._edf)
+        _label, placement = find_edf_acc_channel(dlg._edf)
         # On the moving segment: on the muscle the velocity would be ~0, which
         # is the mistake the plan dialog warns about — a rehearsal must not
         # demonstrate it.
@@ -161,7 +162,7 @@ class TestTheButtonInTheApp:
         renamed button turns that step into a panel pointing at nothing
         instead of an error. Only a test notices."""
         from emgteach.gui.tour import build_tour
-        from emgteach.modes import MODES, MODE_KINEMATICS
+        from emgteach.modes import MODE_KINEMATICS, MODES
 
         main_window._combo_mode.setCurrentIndex(MODES.index(MODE_KINEMATICS))
         qapp.processEvents()
