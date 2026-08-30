@@ -24,17 +24,40 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v1.1.0 adds an **assisted fragment editor** (curate the
-significant EMG fragments of a recording, with editable detection
-parameters and envelope-filter cut-offs applied to the analysis),
-**region-of-interest analysis**, **CSV export**, a **live signal-quality
-check** during recording, and an **ECG signal profile** alongside EMG.
-v1.0.0 reimplemented the BITalino backend over `pyserial` (no PyBluez)
-and shipped a standalone Windows executable. The package ships a Qt-free
-analytic core (io, dsp, fatigue, mvc, apda, profiles, selection, exports,
-reports, i18n), a Qt layer (workers + three-tab PySide6 GUI), and a test
-suite of **216 tests** passing on Linux and Windows across Python
-3.10–3.12. See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
+`emgteach` v2.0.0 adds a **kinematic dimension** through the BITalino
+accelerometer: guided force-velocity acquisition, a force-velocity study
+turning one recording of known loads into load-velocity, Hill, power and
+recruitment curves, EMG-vs-MMG, tremor and movement-vs-EMG analysis
+panels, a selectable accelerometer channel with a live diagnostic, and a
+channel-quality check when a recording is opened. v1.4.0 introduced the
+**classroom broadcast**: students follow the live session in their own
+phone browsers, with a per-session access code and a scan-to-join QR.
+v1.1.0 added an **assisted fragment editor**, **region-of-interest
+analysis**, **CSV export** and a **live signal-quality check**; v1.0.0
+reimplemented the BITalino backend over `pyserial` (no PyBluez) and
+shipped a standalone Windows executable.
+
+On this development branch the application is **configured by choosing
+the practical rather than by setting controls one at a time**: four
+practicals — one muscle, agonist/antagonist, muscle kinematics and a free
+analysis — fix the channel count and the accelerometer, and each tab
+offers only the measurements that suit the practical, with the fine
+controls reachable in the free analysis alone. It also gains a **guided
+tour** over the interface itself, a **map** of the route a recording
+takes, a **rehearsal** of the guided force-velocity procedure that runs
+with no hardware, and an **agonist/antagonist co-activation index**
+(Falconer-Winter) built on an MVC reference that now travels inside the
+EDF, so the two muscles are compared in % MVC rather than in
+millivolts. It corrects the BITalino front-end gain in the conversion to
+millivolts. See
+[`docs/NOVEDADES-rama-feat-ui-levels.md`](docs/NOVEDADES-rama-feat-ui-levels.md).
+
+The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
+coactivation, force_velocity, fv_rehearsal, profiles, selection, exports,
+reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
+test suite of **453 tests** passing on Linux and Windows across Python
+3.10–3.12. See
+[`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 ## Highlights
 
@@ -58,8 +81,6 @@ suite of **216 tests** passing on Linux and Windows across Python
   artefact characterised in [Agis-Torres (2026)](https://doi.org/10.5281/zenodo.20042878)
 - **Robust connectivity**: BITalino watchdog releases blocked
   Bluetooth reads in ~50 ms after disconnection
-- **Reproducible synthetic signals** for class assignments and CI
-  testing without hardware
 - **Open-source firmware** for the Arduino+MyoWare side, included in
   the repository
 

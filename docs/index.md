@@ -13,7 +13,7 @@ modules are migrated from the prototype.
 - **Getting started** — install on Windows, macOS, Linux
 - **Quickstart** — run the GUI, record a session, analyse it offline
 - **Hardware setup** — BITalino pairing, Arduino+MyoWare wiring
-- **Tutorial** — reproducible end-to-end session with synthetic data
+- **Tutorial** — an end-to-end session, from recording to report
 - **API reference** — auto-generated from docstrings via mkdocstrings
 - **Citing emgteach** — see [`CITATION.cff`](https://github.com/aagisto-maker/emgteach/blob/main/CITATION.cff)
 
