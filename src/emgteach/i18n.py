@@ -1110,6 +1110,15 @@ _ES = {
         "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    'Co-activation (Falconer-Winter)': 'Coactivación (Falconer-Winter)',
+    'Co-activation index': 'Índice de coactivación',
+    'Mean activation (% MVC)': 'Activación media (% CVM)',
+    'not reported — {name} below {floor:.0f} % MVC': 'no se informa — {name} por debajo del {floor:.0f} % de CVM',
+    'not reported — no MVC reference for both channels': 'no se informa — falta referencia de CVM en algún canal',
+    'not reported — window too short': 'no se informa — ventana demasiado corta',
+    'not reported — no activation above rest': 'no se informa — sin activación por encima del reposo',
+    'Whole recording — mark the phases for a meaningful value': 'Registro completo — marque las fases para obtener un valor con sentido',
+    'Window': 'Ventana',
     "Calibrate the MVC of both muscles while recording and the two envelopes are overlaid in % MVC — the only form in which two different muscles compare at all, since each one's millivolts depend on its own electrodes and on the skin and fat beneath them. Without that reference the panel stays in millivolts and says so. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-contraction, which holds the joint rigid and is typical of an unpractised or uncertain movement.": 'Calibre la CVM de los dos músculos mientras graba y las dos envolventes se superponen en % CVM, que es la única forma en que dos músculos distintos se comparan: los milivoltios de cada uno dependen de sus electrodos y de la piel y la grasa que hay debajo. Sin esa referencia el panel se queda en milivoltios y lo advierte. En un movimiento limpio el agonista se activa mientras el antagonista permanece casi silente; la activación simultánea es co-contracción, que mantiene rígida la articulación y es típica de un movimiento poco entrenado o inseguro.',
     '9. Overlaid envelopes (agonist/antagonist), % MVC': '9. Envolventes superpuestas (agonista/antagonista), % CVM',
     '9. Env. overlay (% MVC)': '9. Env. superp. (% CVM)',

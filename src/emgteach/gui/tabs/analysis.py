@@ -31,7 +31,7 @@ except Exception:
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QFontMetrics
+from PySide6.QtGui import QColor, QFontMetrics
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -41,6 +41,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -48,6 +49,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QTableWidget,
+    QTableWidgetItem,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -689,6 +692,34 @@ class AnalysisTab(QWidget):
         scroll.setWidgetResizable(True)
         root.addWidget(scroll, stretch=1)
 
+        # --- Co-activation table, directly under the panels ---------------
+        # Hidden unless the recording can actually support an index: two
+        # muscles, and an MVC reference for each. It is a table and not a
+        # single figure because the index is computed per marked phase — one
+        # number for a recording that mixes rest, flexion and grip would not
+        # be a measurement of anything.
+        self._box_coact = QGroupBox(tr("Co-activation (Falconer-Winter)"))
+        coact_v = QVBoxLayout(self._box_coact)
+        coact_v.setContentsMargins(6, 4, 6, 6)
+        coact_v.setSpacing(4)
+        self._lbl_coact_aviso = QLabel("")
+        self._lbl_coact_aviso.setWordWrap(True)
+        self._lbl_coact_aviso.setStyleSheet("color:#B0243A; font-size:11px;")
+        self._lbl_coact_aviso.setVisible(False)
+        coact_v.addWidget(self._lbl_coact_aviso)
+        self._tbl_coact = QTableWidget(0, 4)
+        self._tbl_coact.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._tbl_coact.verticalHeader().setVisible(False)
+        self._tbl_coact.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )
+        self._tbl_coact.setMaximumHeight(150)
+        coact_v.addWidget(self._tbl_coact)
+        self._box_coact.setVisible(False)
+        root.addWidget(self._box_coact)
+
         # Display-window navigator at the very bottom: the minimap takes ~80 %
         # of the width; a compact two-row cluster (start/duration labels on top,
         # scale buttons below) shares the row on the right. The mouse wheel over
@@ -992,8 +1023,53 @@ class AnalysisTab(QWidget):
         self._progress.setValue(value)
 
     @Slot(dict)
+    def _refresh_coactivation(self, result: dict) -> None:
+        """Fill the co-activation table, or hide it.
+
+        The two mean activations sit beside every index on purpose: a bare
+        86 % reads as "both muscles worked hard" when it may equally mean
+        "both were equally quiet", and in this practical the antagonist's mean
+        *is* the finding — the index only summarises it.
+        """
+        tabla = result.get("coactivation")
+        if not tabla:
+            self._box_coact.setVisible(False)
+            return
+
+        n1 = result.get("channel_name") or tr("Muscle {n}").format(n=1)
+        n2 = result.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+        cabecera = tr("Mean activation (% MVC)")
+        self._tbl_coact.setHorizontalHeaderLabels([
+            tr("Window"), f"{n1} — {cabecera}", f"{n2} — {cabecera}",
+            tr("Co-activation index"),
+        ])
+        self._tbl_coact.setRowCount(len(tabla))
+        for fila, res in enumerate(tabla):
+            valor = res.reason or f"{res.index:.0f} %"
+            celdas = [
+                res.label, f"{res.mean_1:.0f}", f"{res.mean_2:.0f}", valor,
+            ]
+            for col, texto in enumerate(celdas):
+                item = QTableWidgetItem(texto)
+                if col == 3 and res.index is None:
+                    item.setForeground(QColor("#8A6500"))
+                elif col == 3:
+                    font = item.font()
+                    font.setBold(True)
+                    item.setFont(font)
+                self._tbl_coact.setItem(fila, col, item)
+
+        sin_marcas = not result.get("coactivation_from_markers", True)
+        self._lbl_coact_aviso.setText(
+            tr("Whole recording — mark the phases for a meaningful value")
+            if sin_marcas else ""
+        )
+        self._lbl_coact_aviso.setVisible(sin_marcas)
+        self._box_coact.setVisible(True)
+
     def _on_result(self, result: dict) -> None:
         self._last_result = result
+        self._refresh_coactivation(result)
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)

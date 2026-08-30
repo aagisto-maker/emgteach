@@ -534,6 +534,50 @@ def build_session_report(
     story.append(_styled_table(metrics))
     story.append(Spacer(1, 0.4 * cm))
 
+    # Co-activation, when the recording can support it: two muscles, and an
+    # MVC reference for each. The two mean activations go beside every index,
+    # never the index alone — see emgteach.coactivation.
+    coact = result.get("coactivation")
+    if coact:
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(Paragraph(tr("Co-activation (Falconer-Winter)"), h2))
+        if not result.get("coactivation_from_markers", True):
+            story.append(Paragraph(
+                f"<font color='#B0243A'>"
+                f"{tr('Whole recording — mark the phases for a meaningful value')}"
+                f"</font>", normal
+            ))
+        cab = tr("Mean activation (% MVC)")
+        n1 = str(result.get("channel_name") or tr("Muscle {n}").format(n=1))
+        n2 = str(result.get("channel_name_2") or tr("Muscle {n}").format(n=2))
+        rows = [[tr("Window"), f"{n1} — {cab}", f"{n2} — {cab}",
+                 tr("Co-activation index")]]
+        for res in coact:
+            rows.append([
+                res.label,
+                f"{res.mean_1:.0f}",
+                f"{res.mean_2:.0f}",
+                res.reason or f"{res.index:.0f} %",
+            ])
+        tabla = Table(rows, hAlign="LEFT",
+                      colWidths=[4 * cm, 3.5 * cm, 3.5 * cm, 5 * cm])
+        tabla.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, _ROW_ALT]),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ]))
+        story.append(tabla)
+        story.append(Spacer(1, 0.4 * cm))
+    elif result.get("coactivation_reason"):
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(Paragraph(tr("Co-activation (Falconer-Winter)"), h2))
+        story.append(Paragraph(str(result["coactivation_reason"]), normal))
+        story.append(Spacer(1, 0.4 * cm))
+
     # Configuration used.
     story.append(Paragraph(tr("Configuration used"), h2))
     cfg = result.get("config", {})

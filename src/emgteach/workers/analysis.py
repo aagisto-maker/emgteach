@@ -12,6 +12,7 @@ import numpy as np
 from PySide6.QtCore import QThread, Signal
 from scipy.integrate import trapezoid
 
+from emgteach.coactivation import coactivation_by_window
 from emgteach.dsp import (
     compute_psd_mnf_mdf,
     compute_segments,
@@ -20,6 +21,7 @@ from emgteach.dsp import (
     process_offline,
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
+from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.i18n import tr
 from emgteach.io import (
     list_edf_channels,
@@ -237,6 +239,16 @@ class AnalysisWorker(QThread):
             # maximum, and dropping it would send the panel back to
             # millivolts for no good reason.
             mvc_refs = parse_mvc_ref_markers(markers)
+            # The MVC references and the force-velocity loads are facts about
+            # the session, not phases of it. Once read they are dropped, so
+            # they neither clutter every panel with a marker line nor open a
+            # window in the co-activation table — the student's own marks are
+            # what divide a recording into phases.
+            markers = [
+                m for m in markers
+                if not parse_mvc_ref_markers([m])
+                and not parse_fv_load_markers([m])
+            ]
             try:
                 emg_channels = list_edf_emg_channels(self._edf_path)
             except Exception:
@@ -477,6 +489,27 @@ class AnalysisWorker(QThread):
                     result["mvc_ref_2"] = _ref_for(
                         self._channel_name_2, emg_channels, mvc_refs
                     )
+                    # Co-activation needs both envelopes as a percentage of
+                    # *their own* muscle's maximum; without a reference for
+                    # each, the pair cannot be compared at all and no index is
+                    # computed rather than one being computed on millivolts.
+                    ref1, ref2 = result.get("mvc_ref"), result["mvc_ref_2"]
+                    if ref1 and ref2:
+                        table, from_marks = coactivation_by_window(
+                            proc["emg_envelope"] / float(ref1) * 100.0,
+                            proc2["emg_envelope"] / float(ref2) * 100.0,
+                            fs, markers,
+                            floor_pct=self._profile.coact_floor_pct,
+                            t0=float(times[0]) if len(times) else 0.0,
+                            name_1=self._channel_name or "",
+                            name_2=self._channel_name_2 or "",
+                        )
+                        result["coactivation"] = table
+                        result["coactivation_from_markers"] = from_marks
+                    else:
+                        result["coactivation_reason"] = tr(
+                            "not reported — no MVC reference for both channels"
+                        )
                     if not result["emg_contracted_2"]:
                         self.log.emit(tr(
                             "No contraction detected in «{name}»: its trace is "
