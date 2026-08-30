@@ -514,6 +514,32 @@ def read_edf_pyedflib(path: PathLike, channel_index: int = 0) -> dict[str, Any]:
     }
 
 
+def read_edf_markers(path: PathLike) -> list[tuple[float, str]]:
+    """Return an EDF+ file's annotations as ``(seconds, text)``.
+
+    Reads the annotation table alone, without loading a single sample: what a
+    tab needs when it is asking a file a question about the session — was an
+    MVC calibrated? which loads were used? — before deciding what to offer.
+    Returns an empty list for a file with no annotations, or one that cannot
+    be opened; the caller is asking, not requiring.
+    """
+    import pyedflib
+
+    try:
+        reader = pyedflib.EdfReader(str(path))
+    except Exception:
+        return []
+    try:
+        onsets, _, descriptions = reader.readAnnotations()
+    except Exception:  # pragma: no cover — defensive
+        return []
+    finally:
+        reader.close()
+    return [
+        (float(o), str(d)) for o, d in zip(onsets, descriptions, strict=False)
+    ]
+
+
 def list_edf_channels(path: PathLike) -> list[str]:
     """Return the channel labels of an EDF file (reads the header only).
 

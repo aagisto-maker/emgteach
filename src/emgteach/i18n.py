@@ -727,6 +727,17 @@ _ES = {
         "No se pudo cargar el archivo CVM ({error}). Se usa auto-normalización.",
     "auto (percentile {p:.0f} of the test signal)":
         "automática (percentil {p:.0f} de la señal de prueba)",
+    "calibration recorded in this file": "calibración grabada en este mismo fichero",
+    "MVC reference read from the file's own calibration: {value:.4f} {units}.":
+        "Referencia de CVM leída de la calibración del propio fichero: {value:.4f} {units}.",
+    "This recording carries its own MVC calibration ({n} channel(s)) — no reference file needed.":
+        "Este registro lleva su propia calibración de CVM ({n} canal(es)): no hace falta fichero de referencia.",
+    "Not needed — this recording carries its own calibration…":
+        "No hace falta: este registro lleva su propia calibración…",
+    "Muscle load computed over {n} selected fragment(s) ({d:.2f} s of {full:.2f} s).":
+        "Carga muscular calculada sobre {n} fragmento(s) seleccionado(s) ({d:.2f} s de {full:.2f} s).",
+    "Choose which parts of the recording the muscle load is measured over — leave out the calibration and any pause. The MVC reference is not affected: it comes from the calibration, wherever in the file that is.":
+        "Elija sobre qué partes del registro se mide la carga muscular: deje fuera la calibración y las pausas. La referencia de CVM no se ve afectada, sale de la calibración esté donde esté en el fichero.",
     "MVC reference amplitude: {value:.4f} {units} ({source})":
         "Amplitud CVM de referencia: {value:.4f} {units} ({source})",
     "Mean normalised activation: {value:.1f} % MVC":

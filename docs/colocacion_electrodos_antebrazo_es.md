@@ -151,6 +151,23 @@ El orden importa, porque la aplicación depende de él.
 6. Detenga y abra el registro en **Análisis**, con el modo *Contracción
    agonista / antagonista* y los dos canales.
 
+> **No hace falta grabar un EDF de calibración aparte.** Si calibra con la
+> grabación ya en marcha —el paso 2—, la referencia de cada músculo queda
+> escrita dentro del propio fichero como anotación (`MVC ref ch=1 value=…`), y
+> tanto **Análisis** como **Normalización CVM** la leen de ahí. En la pestaña de
+> normalización el selector de «EDF de referencia» pasa a ser opcional y el
+> aviso rojo de «no es %CVM real» desaparece.
+>
+> **Para el análisis de Jonsson, recorte.** La carga muscular es una propiedad
+> de *la tarea*, y un registro que empieza con tres esfuerzos máximos tiene un
+> APDF que describe esos esfuerzos: el P90 se va cerca del 100 % porque el
+> máximo está literalmente dentro, y los límites de Jonsson dicen «sobrecarga»
+> cuando lo que hubo fue una calibración. Use **«Seleccionar fragmentos…»** en la
+> pestaña de normalización para quedarse solo con el trabajo. En el registro del
+> 30 de agosto el pico pasa de **64,5 % a 31,8 % de CVM** al dejar fuera la
+> calibración —de rozar el límite de 70 a estar holgadamente dentro—, y la
+> referencia no cambia: sale de la anotación, esté donde esté en el fichero.
+
 Lo que debe salir: flexión y extensión con **«no se informa»** —no hay
 coactivación que medir en un movimiento recíproco— y la presa con un índice
 alto. Que las dos primeras filas no den número **es parte de la demostración**.

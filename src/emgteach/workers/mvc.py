@@ -3,9 +3,23 @@
 Loads one or two EDF files (the test signal and an optional MVC
 reference), runs the same offline DSP pipeline as the analysis tab,
 and normalises the test envelope against the MVC amplitude (95th
-percentile by default). When no separate MVC file is provided, the
-95th percentile of the test signal's own envelope is used as
-reference (didactic auto-normalisation).
+percentile by default).
+
+The reference is looked for in three places, in this order:
+
+1. a separate MVC recording, when one is chosen — an explicit decision by
+   the operator, so it wins;
+2. **the test file's own calibration**, written into the EDF as an
+   annotation by the acquisition wizard. A session that calibrates with the
+   recording already running carries its own maximum, and asking for a second
+   file to say what the first one already knows was busywork that ended in a
+   red "not a real %MVC" on a recording that had a perfectly real one;
+3. the 95th percentile of the test signal itself — didactic
+   auto-normalisation, flagged everywhere it appears because it is not %MVC.
+
+The muscle-load (Jonsson APDF) analysis is about the *task*, so the worker
+also accepts the fragments to keep: a recording that opens with three maximal
+calibration efforts has an APDF describing those efforts, not the work.
 """
 
 from __future__ import annotations
@@ -17,8 +31,14 @@ from emgteach.apda import compute_apdf
 from emgteach.dsp import detect_acquisition_problems, process_offline
 from emgteach.i18n import tr
 from emgteach.io import read_edf_pyedflib
-from emgteach.mvc import adaptive_ylim, compute_mvc, normalise_to_mvc
+from emgteach.mvc import (
+    adaptive_ylim,
+    compute_mvc,
+    normalise_to_mvc,
+    parse_mvc_ref_markers,
+)
 from emgteach.profiles import EMG_PROFILE, SignalProfile
+from emgteach.selection import Segment, normalise_segments, total_duration_s
 
 
 class MvcWorker(QThread):
@@ -51,6 +71,7 @@ class MvcWorker(QThread):
         mvc_percentile: float | None = None,
         channel_index: int = 0,
         profile: SignalProfile = EMG_PROFILE,
+        roi_segments: list[tuple[float, float]] | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
@@ -58,6 +79,9 @@ class MvcWorker(QThread):
         self._edf_path = edf_path
         self._mvc_path = mvc_path.strip()
         self._channel_index = int(channel_index)
+        self._roi_segments = (
+            [(float(a), float(b)) for a, b in roi_segments] if roi_segments else None
+        )
         self._f_low = float(f_low) if f_low is not None else profile.f_low
         self._f_high = float(f_high) if f_high is not None else profile.f_high
         self._f_notch = float(f_notch) if f_notch is not None else profile.f_notch
@@ -75,6 +99,45 @@ class MvcWorker(QThread):
         """``True`` once :meth:`stop` has been called."""
         return self._cancelled
 
+    def _recortar(self, emg_raw, fs: float, time_axis):
+        """Keep the selected fragments only, concatenated and re-based to 0.
+
+        Returns ``(None, None)`` after emitting :attr:`error` when the kept
+        time falls below the 1 s the DSP pipeline needs. Same rule and the same
+        wording as the analysis tab, because it is the same decision.
+        """
+        if not self._roi_segments:
+            return emg_raw, time_axis
+
+        duracion = float(time_axis[-1]) if time_axis.size else 0.0
+        segs = normalise_segments(
+            [Segment(a, b) for a, b in self._roi_segments], duracion
+        )
+        total = total_duration_s(segs)
+        if not segs or total < 1.0:
+            self.error.emit(
+                tr(
+                    "The selected fragments total {t:.2f} s, below the 1 s "
+                    "minimum required for analysis."
+                ).format(t=total)
+            )
+            return None, None
+
+        trozos = []
+        for s in segs:
+            i0 = max(0, min(round(s.start_s * fs), emg_raw.size))
+            i1 = max(i0, min(round(s.end_s * fs), emg_raw.size))
+            if i1 > i0:
+                trozos.append(emg_raw[i0:i1])
+        recortado = np.concatenate(trozos)
+        self.log.emit(
+            tr(
+                "Muscle load computed over {n} selected fragment(s) "
+                "({d:.2f} s of {full:.2f} s)."
+            ).format(n=len(segs), d=total, full=duracion)
+        )
+        return recortado, np.arange(recortado.size, dtype=np.float64) / fs
+
     def run(self) -> None:
         try:
             # 1) Load test EDF
@@ -84,12 +147,23 @@ class MvcWorker(QThread):
             fs = edf["sfreq"]
             dimension = edf["dimension"]
             time_axis = edf["tiempo"]
+            # Read before any trimming: the calibration is normally *outside*
+            # the fragments kept for the muscle-load analysis — that is the
+            # whole point of trimming — and it is still this muscle's maximum.
+            ref_en_fichero = parse_mvc_ref_markers(edf.get("markers", [])).get(
+                self._channel_index
+            )
 
             self.log.emit(
                 tr("Signal loaded — {fs:.0f} Hz — {dur:.1f} s — units: {units}").format(
                     fs=fs, dur=time_axis[-1], units=dimension
                 )
             )
+
+            # Keep only the selected fragments, concatenated into one signal.
+            emg_raw, time_axis = self._recortar(emg_raw, fs, time_axis)
+            if emg_raw is None:
+                return  # error already emitted
 
             n_plot = (
                 int(self._plot_duration_s * fs)
@@ -164,6 +238,19 @@ class MvcWorker(QThread):
                     mvc_source = tr(
                         "auto (percentile {p:.0f} of the test signal)"
                     ).format(p=self._percentile)
+            elif ref_en_fichero:
+                # The session calibrated with the recording already running, so
+                # the maximum is an annotation inside this very file. Nothing
+                # else to choose, and nothing auto about it.
+                mvc_amplitude_ref = float(ref_en_fichero)
+                mvc_source = tr("calibration recorded in this file")
+                mvc_is_auto = False
+                self.log.emit(
+                    tr(
+                        "MVC reference read from the file's own calibration: "
+                        "{value:.4f} {units}."
+                    ).format(value=mvc_amplitude_ref, units=dimension)
+                )
             else:
                 mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
                 mvc_source = tr(

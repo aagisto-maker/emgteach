@@ -58,6 +58,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
@@ -65,9 +66,15 @@ from emgteach.io import (
     assess_edf_channels,
     list_edf_channels,
     list_edf_emg_channels,
+    read_edf_markers,
 )
 from emgteach.modes import DEFAULT_MODE
-from emgteach.mvc import AUTO_COLOR, AUTO_LOAD_MSG, AUTO_SUFFIX
+from emgteach.mvc import (
+    AUTO_COLOR,
+    AUTO_LOAD_MSG,
+    AUTO_SUFFIX,
+    parse_mvc_ref_markers,
+)
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_mvc_report
 from emgteach.workers import MvcWorker
@@ -130,6 +137,12 @@ class MvcTab(QWidget):
         # Whether the user has accepted normalising against the test recording
         # itself. Per file: a new recording is a new decision.
         self._auto_aceptada: bool = False
+        # The references the test file carries in its own annotations, by
+        # channel index — written there by the acquisition wizard when the
+        # calibration was done with the recording already running.
+        self._refs_en_fichero: dict[int, float] = {}
+        # Fragments the muscle-load analysis is restricted to; empty = all.
+        self._selected_segments: list[tuple[float, float]] = []
 
         # Local logger, as the acquisition tab has. The shared LoggerWidget is
         # a single widget and Qt can only show it in one layout, which is the
@@ -226,6 +239,28 @@ class MvcTab(QWidget):
             )
         )
         row_params.addWidget(self._combo_canal)
+        self._combo_canal.currentIndexChanged.connect(self._on_canal_cambiado)
+
+        # Fragment selection. The muscle-load analysis is about the *task*, and
+        # a recording that opens with three maximal calibration efforts has an
+        # APDF describing those efforts: P90 lands near 100 % because the
+        # maximum really is in there, and the Jonsson limits then say the
+        # subject is overloaded when what they did was calibrate.
+        self._btn_fragmentos = QPushButton(tr("Select fragments…"))
+        self._btn_fragmentos.setEnabled(False)
+        self._btn_fragmentos.setToolTip(
+            tr(
+                "Choose which parts of the recording the muscle load is "
+                "measured over — leave out the calibration and any pause. The "
+                "MVC reference is not affected: it comes from the calibration, "
+                "wherever in the file that is."
+            )
+        )
+        self._btn_fragmentos.clicked.connect(self._editar_fragmentos)
+        row_params.addWidget(self._btn_fragmentos)
+        self._lbl_fragmentos = QLabel("")
+        self._lbl_fragmentos.setStyleSheet("font-size: 11px; color: #333333;")
+        row_params.addWidget(self._lbl_fragmentos)
 
         self._box_fenv = QWidget()
         fenv_l = QHBoxLayout(self._box_fenv)
@@ -664,8 +699,74 @@ class MvcTab(QWidget):
         """
         return not self._advanced
 
+    def _ref_del_fichero(self) -> float | None:
+        """This file's own reference for the channel now selected, if any."""
+        return self._refs_en_fichero.get(self._combo_canal.currentIndex())
+
+    @Slot()
+    def _on_canal_cambiado(self) -> None:
+        """The reference travels per channel, so the picker's state follows it:
+        a file may carry the flexor's maximum and not the extensor's."""
+        self._refresh_reference_hint()
+        self._refresh_compute_enabled()
+
+    def _leer_refs_del_fichero(self, path: str) -> None:
+        """Read the calibration the recording carries in its annotations."""
+        self._refs_en_fichero = {}
+        try:
+            markers = read_edf_markers(path)
+        except Exception:
+            return
+        self._refs_en_fichero = parse_mvc_ref_markers(markers)
+        if self._refs_en_fichero:
+            self._log(
+                tr(
+                    "This recording carries its own MVC calibration "
+                    "({n} channel(s)) — no reference file needed."
+                ).format(n=len(self._refs_en_fichero))
+            )
+
+    @Slot()
+    def _editar_fragmentos(self) -> None:
+        path = self._edit_path.text().strip()
+        if not path:
+            return
+        try:
+            dlg = FragmentSelectionDialog.from_edf(
+                path,
+                self._combo_canal.currentText().strip() or "EMG",
+                {"f_low": EMG_PROFILE.f_low, "f_high": EMG_PROFILE.f_high,
+                 "f_notch": EMG_PROFILE.f_notch, "f_env": self._spin_fenv.value()},
+                segments=self._selected_segments or None,
+                parent=self,
+            )
+        except Exception as exc:
+            self._err(tr("Could not open the fragment editor: {error}").format(error=exc))
+            return
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._selected_segments = dlg.selected_segments()
+            self._spin_fenv.setValue(dlg.filter_kwargs()["f_env"])
+            self._actualizar_etiqueta_fragmentos()
+
+    def _actualizar_etiqueta_fragmentos(self) -> None:
+        if not self._selected_segments:
+            self._lbl_fragmentos.setText("")
+            return
+        total = sum(b - a for a, b in self._selected_segments)
+        self._lbl_fragmentos.setText(
+            tr("{n} fragment(s) selected ({d:.1f} s)").format(
+                n=len(self._selected_segments), d=total
+            )
+        )
+
     def _refresh_reference_hint(self) -> None:
         """Label and placeholder for the reference picker follow the level."""
+        if self._ref_del_fichero():
+            self._lbl_cvm.setText(tr("MVC reference EDF (optional):"))
+            self._edit_cvm_path.setPlaceholderText(
+                tr("Not needed — this recording carries its own calibration…")
+            )
+            return
         if self._reference_required():
             self._lbl_cvm.setText(tr("MVC reference EDF:"))
             self._edit_cvm_path.setPlaceholderText(
@@ -681,10 +782,16 @@ class MvcTab(QWidget):
         """Enable "Compute MVC" only when the current level has what it needs,
         and say out loud what is missing when it is not."""
         has_test = bool(self._edit_path.text().strip())
-        has_ref = bool(self._edit_cvm_path.text().strip())
+        # A reference chosen by hand, or the one the recording brought with it:
+        # the second is not a lesser kind of maximum, it is the same
+        # calibration that would have been saved to a separate file.
+        has_ref = bool(self._edit_cvm_path.text().strip()) or bool(
+            self._ref_del_fichero()
+        )
         falta_ref = self._reference_required() and not has_ref
         listo = has_test and (has_ref or not falta_ref or self._auto_aceptada)
         self._btn_calcular.setEnabled(listo)
+        self._btn_fragmentos.setEnabled(has_test)
 
         if listo:
             motivo = ""
@@ -761,6 +868,9 @@ class MvcTab(QWidget):
         normalisation is computed for the selected channel — after changing it,
         press "Compute MVC" to recompute for that channel.
         """
+        self._leer_refs_del_fichero(path)
+        self._selected_segments = []      # a new recording, a new selection
+        self._actualizar_etiqueta_fragmentos()
         labels = list_edf_emg_channels(path) or list_edf_channels(path)
         if not labels:
             return
@@ -909,7 +1019,8 @@ class MvcTab(QWidget):
         # is about to be produced, so this is where a modal earns its keep.
         # The basic level never reaches it: there the button stays disabled
         # until a reference is chosen.
-        if not cvm_path and not self._reference_required():
+        if (not cvm_path and not self._reference_required()
+                and not self._ref_del_fichero()):
             if not self._confirmar_sin_referencia():
                 return
             cvm_path = self._edit_cvm_path.text().strip()
@@ -926,6 +1037,7 @@ class MvcTab(QWidget):
             mvc_path=cvm_path,
             f_env=f_env,
             channel_index=self._combo_canal.currentIndex(),
+            roi_segments=self._selected_segments or None,
             # The whole recording, not the worker's default first 10 s. The
             # numbers on this tab — mean % MVC, the Jonsson APDF — are computed
             # over the whole file, so a plot that stopped at 10 s described a
@@ -1565,7 +1677,13 @@ class MvcTab(QWidget):
         self._combo_canal.addItem("EMG")
         self._combo_canal.blockSignals(False)
 
+        self._refs_en_fichero = {}
+        self._selected_segments = []
+        self._actualizar_etiqueta_fragmentos()
+        self._refresh_reference_hint()
+
         self._btn_calcular.setEnabled(False)
+        self._btn_fragmentos.setEnabled(False)
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._progress.setVisible(False)
