@@ -131,12 +131,24 @@ class SignalProfile:
     # recording that spends a large share of its time above 100 % MVC.
     mvc_implausible_pct: float = 150.0     # % MVC
     mvc_implausible_share: float = 0.10    # of the analysed time
+    # -- are the two channels looking at two muscles? --
+    # While one muscle is calibrated the other one is never silent: it stabilises
+    # the joint, and some of its signal is the first muscle's, conducted through
+    # the tissue. On the bench, with the electrodes correctly sited over FCR and
+    # ECR, the resting channel reached 20-26 % of its own reference during the
+    # other muscle's maximum. Above this share the two channels are no longer
+    # telling two muscles apart — an electrode is mis-sited, too close to the
+    # other pair, or the subject is bracing the whole forearm.
+    mvc_crosstalk_pct: float = 50.0        # % of the other muscle's own reference
 
     # -- co-activation (Falconer-Winter) --
     # Below this mean activation the index measures the likeness of two
     # baselines rather than shared effort, so it is not reported at all.
-    # An estimate, not a measurement: check it against the real resting
-    # level of a forearm recording before trusting it.
+    # Measured on a forearm pair with both references maximal: a quiet window
+    # gave a mean of 0.2-0.8 % MVC above rest, an active one 19-30 %. The floor
+    # sits in a gap of about thirtyfold, which is why a round number is enough.
+    # (The muscles' own resting levels were 2 % MVC for the flexor and 4 % for
+    # the extensor, which is what the subtraction removes before this test.)
     coact_floor_pct: float = 5.0       # % MVC
     apda_warning_limit: float = 40.0   # % MVC — tiredness (warning) zone
     apda_danger_limit: float = 70.0    # % MVC — fatigue (danger) zone

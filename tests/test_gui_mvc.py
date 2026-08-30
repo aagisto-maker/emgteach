@@ -64,3 +64,50 @@ def test_compute_does_not_hang_and_fills_load_panel(qapp, tmp_path: Path) -> Non
     assert tab._d_static.text() != "—"          # load data panel filled
     assert "apdf" in tab._last_result
     tab.cleanup()
+
+
+def test_the_minimap_and_the_panels_speak_of_the_same_recording(
+    qapp, tmp_path: Path
+) -> None:
+    """The bar under the panels is the whole recording, not its first 10 s.
+
+    The worker's ``plot_duration_s`` defaults to 10 s and this tab never
+    overrode it, so on a 110 s forearm recording the panels could only ever
+    reach t = 10 s while the data panel reported a duration of 110 s — and
+    the minimap drew the whole 110 s envelope against an axis that ended at
+    10, which is what made the shape under the selection disagree with the
+    shape in the panels.
+    """
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.mvc import MvcTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    secs = 25                                   # longer than the old 10 s cap
+    edf = _make_edf(tmp_path / "long.edf", secs=secs)
+    tab = MvcTab(LoggerWidget(), QSettings("emgteach-test", "mvc"))
+    tab._edit_path.setText(edf)
+    tab._populate_channels(edf)
+
+    done: list = []
+    orig = tab._on_result
+    tab._on_result = lambda r: (orig(r), done.append(r))
+    tab._iniciar_calculo()
+
+    timer = QElapsedTimer()
+    timer.start()
+    while not done and timer.elapsed() < 20000:
+        qapp.processEvents()
+    assert done, "MvcWorker did not produce a result"
+
+    r = done[0]
+    # The plotted axis covers every sample the numbers were computed from.
+    assert r["n_plot"] == r["emg_norm"].size
+    assert r["t_plot"][-1] == pytest.approx(secs, abs=0.01)
+    # And the minimap is scaled to that same recording, so the envelope it
+    # draws lines up with the selection rectangle.
+    assert tab._duracion_total == pytest.approx(secs, abs=0.01)
+    assert tab._time_range._total == pytest.approx(secs, abs=0.01)
+    # It still opens on a window narrow enough to read a raw trace in.
+    assert tab._duracion_s == pytest.approx(10.0)
+    tab.cleanup()

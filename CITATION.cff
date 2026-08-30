@@ -66,7 +66,7 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.21440569
     description: "Version-specific DOI for emgteach v2.0.0"
-  # (History: v1.4.1 = 10.5281/zenodo.21362249; v1.3.0 = 10.5281/zenodo.21292858; v1.2.1 = 10.5281/zenodo.21289905; v1.2.0 = 10.5281/zenodo.21281048; v1.1.1 = 10.5281/zenodo.21197452; v1.1.0 = 10.5281/zenodo.21197169; v1.0.0 = 10.5281/zenodo.21002298.)
+  # (History: v1.4.1 = 10.5281/zenodo.21362249; v1.4.0 = 10.5281/zenodo.21361921; v1.3.0 = 10.5281/zenodo.21292858; v1.2.1 = 10.5281/zenodo.21289905; v1.2.0 = 10.5281/zenodo.21281048; v1.1.2 = 10.5281/zenodo.21203730; v1.1.1 = 10.5281/zenodo.21197452; v1.1.0 = 10.5281/zenodo.21197169; v1.0.0 = 10.5281/zenodo.21002298; v0.3.0 = 10.5281/zenodo.20723266; v0.1.0 = 10.5281/zenodo.20110846.)
 keywords:
   - electromyography
   - EMG

@@ -253,6 +253,11 @@ class AcquisitionTab(QWidget):
         self._mvc_cur_buf: list[float] = []                  # current rep envelope
         self._mvc_capture: list[list] = [[] for _ in range(MAX_CHANNELS)]
         self._mvc_rest_buf: list[float] = []
+        #: The *other* channels' envelope during the current repetition, and the
+        #: same accumulated per repetition. This is what tells a two-muscle
+        #: montage apart from two electrode pairs reading the same muscle.
+        self._mvc_cross_buf: dict[int, list[float]] = {}
+        self._mvc_cross: list[dict[int, list]] = [{} for _ in range(MAX_CHANNELS)]
         #: Channels whose calibration did not look like a maximum.
         self._mvc_no_maximas: list[str] = []
         self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
@@ -2027,6 +2032,7 @@ class AcquisitionTab(QWidget):
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_cross = [{} for _ in range(MAX_CHANNELS)]
         self._mvc_no_maximas = []
         self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_ref = [None] * MAX_CHANNELS
@@ -2124,6 +2130,7 @@ class AcquisitionTab(QWidget):
         self._mvc_phase = "ready"
         self._mvc_elapsed = 0.0
         self._mvc_cur_buf = []
+        self._mvc_cross_buf = {}
         self._mvc_peak = 0.0
 
     @Slot()
@@ -2158,6 +2165,7 @@ class AcquisitionTab(QWidget):
                 self._mvc_phase = "contract"
                 self._mvc_elapsed = 0.0
                 self._mvc_cur_buf = []
+                self._mvc_cross_buf = {}
                 self._mvc_peak = 0.0
                 self._mvc_cur = 0.0
         elif self._mvc_phase == "contract":
@@ -2229,17 +2237,29 @@ class AcquisitionTab(QWidget):
         ).format(muscle=name, ref=ref, ratio=ratio))
 
     def _mvc_feed(self, env: list) -> None:
-        """Accumulate the active muscle's envelope during its contraction."""
+        """Accumulate the active muscle's envelope during its contraction.
+
+        And the other channels' at the same time: what they read while this
+        muscle is at its maximum is the only measurement the session makes of
+        whether the montage is separating two muscles at all.
+        """
         c = self._mvc_muscle
         if c < len(env) and env[c].size:
             self._mvc_cur_buf.extend(env[c].tolist())
             self._mvc_cur = float(np.mean(env[c]))
             self._mvc_peak = max(self._mvc_peak, float(np.max(env[c])))
+        for k in range(min(len(env), self._n_channels)):
+            if k != c and env[k].size:
+                self._mvc_cross_buf.setdefault(k, []).extend(env[k].tolist())
 
     def _mvc_finish_rep(self) -> None:
         self._mvc_capture[self._mvc_muscle].append(
             np.asarray(self._mvc_cur_buf, dtype=float)
         )
+        for k, muestras in self._mvc_cross_buf.items():
+            self._mvc_cross[self._mvc_muscle].setdefault(k, []).append(
+                np.asarray(muestras, dtype=float)
+            )
         self._mvc_rep += 1
         if self._mvc_rep < self._mvc_reps:
             self._mvc_phase = "rest"          # rest, then repeat this muscle
@@ -2291,6 +2311,40 @@ class AcquisitionTab(QWidget):
         for c in range(self._n_channels):
             self._write_mvc_ref_marker(c)
 
+    def _mvc_crosstalk(self) -> list[tuple[str, str, float]]:
+        """How much each channel read while a *different* muscle was calibrated.
+
+        One entry per ordered pair, ``(muscle calibrated, other channel,
+        % of that other channel's own reference)``, measured exactly the way
+        the reference itself was: strongest sustained window, best of the
+        repetitions. Comparing an instantaneous peak against a sustained
+        reference would inflate the number by itself.
+
+        The figure answers the question the two live bars cannot: whether the
+        second channel is following its own muscle or the first one's. It is
+        never zero — a maximal effort recruits the antagonist to hold the joint
+        — so it is reported as a measurement and only warned about above
+        ``mvc_crosstalk_pct``.
+        """
+        window = max(1, round(self._profile.mvc_peak_window_s * FS))
+        labels = self._active_labels()
+
+        def name(i: int) -> str:
+            return labels[i] if i < len(labels) else str(i + 1)
+
+        out: list[tuple[str, str, float]] = []
+        for c in range(self._n_channels):
+            for k, reps in sorted(self._mvc_cross[c].items()):
+                ref_k = self._mvc_ref[k]
+                if not ref_k or k >= self._n_channels:
+                    continue
+                nivel = mvc_from_reps(
+                    reps, self._profile.mvc_percentile, window_samples=window,
+                )
+                if nivel > 0:
+                    out.append((name(c), name(k), 100.0 * nivel / ref_k))
+        return out
+
     def _mvc_finish_all(self) -> None:
         self._mvc_timer.stop()
         self._mvc_active = False
@@ -2312,6 +2366,20 @@ class AcquisitionTab(QWidget):
                 )
             )
             self._log(tr("MVC calibrated: {summary}").format(summary=summary))
+
+            cruce = self._mvc_crosstalk()
+            for activo, otro, pct in cruce:
+                self._log(tr(
+                    "Channel separation — while «{muscle}» was at maximum, "
+                    "«{other}» reached {pct:.0f} % of its own reference."
+                ).format(muscle=activo, other=otro, pct=pct))
+            juntos = [
+                tr("{other} at {pct:.0f} % during {muscle}").format(
+                    other=otro, muscle=activo, pct=pct)
+                for activo, otro, pct in cruce
+                if pct >= self._profile.mvc_crosstalk_pct
+            ]
+
             weak = [name for name in self._mvc_no_maximas if name]
             if weak:
                 # The one result nobody must scroll past. A reference that is
@@ -2325,6 +2393,19 @@ class AcquisitionTab(QWidget):
                 self._mvc_overlay.show_done(tr("Calibration too weak"), warning)
                 self._bcast_calib(
                     True, "done", tr("Calibration too weak"), warning
+                )
+            elif juntos:
+                # Both references are maximal, so the calibration is not the
+                # problem — the montage is. Two channels this alike measure one
+                # muscle twice, and every later comparison between them, the
+                # co-activation index included, is built on that.
+                warning = tr(
+                    "{pairs}. Move the electrode pairs further apart, over the "
+                    "belly of each muscle, and support the forearm."
+                ).format(pairs=" · ".join(juntos))
+                self._mvc_overlay.show_done(tr("Channels not separated"), warning)
+                self._bcast_calib(
+                    True, "done", tr("Channels not separated"), warning
                 )
             else:
                 self._mvc_overlay.show_done(
@@ -2661,6 +2742,7 @@ class AcquisitionTab(QWidget):
         self._fv_cancel()
         self._mvc_ref = [None] * MAX_CHANNELS
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_cross = [{} for _ in range(MAX_CHANNELS)]
         self._mvc_no_maximas = []
         for c in range(MAX_CHANNELS):
             self._online[c].reset()

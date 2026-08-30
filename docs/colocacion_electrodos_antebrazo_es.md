@@ -157,17 +157,58 @@ alto. Que las dos primeras filas no den número **es parte de la demostración**
 
 ---
 
-## 5. Dato que hace falta medir
+## 5. Separar un músculo del otro: hasta dónde se puede
 
-`coact_floor_pct` vale hoy **5 % de CVM** y es una estimación, no una medida.
-Con una ventana de reposo marcada, la tabla da la activación media de cada canal
-en esa ventana: **ese es el número**. Si el reposo real se sitúa por encima del
-5 %, el umbral no protege de nada y hay que subirlo en
-`profiles.SignalProfile`.
+Es la dificultad que aparece en cuanto la calibración deja de fallar. Durante la
+máxima de un músculo **el otro canal nunca está callado**, y no es un defecto del
+montaje: parte es coactivación real —el antagonista sujeta la articulación
+mientras el agonista tira— y parte es la señal del primer músculo conducida por
+el tejido hasta el segundo par de electrodos. Con dos canales bipolares **las dos
+cosas son inseparables**, así que no hay montaje que las quite.
 
-De la misma sesión salen los otros datos que pide el artículo: cuánto sube el
-extensor en %CVM durante la presa comparado con el flexor, y cuánto se tarda en
-el montaje completo desde piel limpia hasta primera traza válida.
+Medido en la sesión del 30 de agosto, con las dos referencias ya máximas (47 y 28
+veces su nivel de reposo):
+
+| | mientras el otro estaba al máximo |
+|---|---|
+| ECR durante la calibración del FCR | **21 %** de la referencia del propio ECR |
+| FCR durante la calibración del ECR | **20 %** de la referencia del propio FCR |
+| correlación de las dos envolventes, durante la calibración | r = **+0,79** |
+| la misma correlación, en el registro de trabajo | r = **+0,07** |
+
+Esos ~20 % son el suelo del método, y no contaminan las referencias: cada músculo
+llega en su turno cinco veces más alto que lo que el otro le induce. La
+correlación es la parte instructiva: **solo aparece durante la máxima**. En el
+trabajo posterior los dos músculos van cada uno a lo suyo, que es exactamente lo
+que el índice de coactivación mide después.
+
+Desde esta versión el asistente lo mide y lo escribe en el registro de eventos al
+terminar de calibrar («Separación entre canales…»). Si algún par supera el **50 %**
+—`mvc_crosstalk_pct` en `profiles.SignalProfile`— el panel grande termina en
+**«Canales sin separar»**: eso ya no es coactivación, son dos pares de electrodos
+leyendo el mismo músculo, y todo lo que se compare luego entre esos dos canales
+está midiendo lo mismo dos veces.
+
+**Si salta el aviso:** separe más los dos pares (la distancia entre el flexor y el
+extensor radial se gana hacia el borde cubital y hacia el dorsal, no hacia el
+centro del antebrazo), compruebe que cada par está sobre el vientre del músculo y
+no sobre la masa común proximal, y apoye el antebrazo entero.
+
+### Suelo del índice de coactivación — ya medido
+
+`coact_floor_pct` vale **5 % de CVM** y ha dejado de ser una estimación. En ese
+mismo registro, y con el reposo de cada músculo ya restado:
+
+- ventana quieta: media de **0,2 % (FCR)** y **0,8 % (ECR)** sobre reposo;
+- ventana activa: media de **19–30 %** en los dos.
+
+El umbral cae en un hueco de un factor treinta, así que el número redondo sobra.
+Los niveles de reposo, en unidades de cada músculo, fueron 2 % de CVM el flexor y
+4 % el extensor.
+
+Siguen faltando para el artículo: cuánto sube el extensor en %CVM durante la presa
+comparado con el flexor, y cuánto se tarda en el montaje completo desde piel
+limpia hasta primera traza válida.
 
 ---
 

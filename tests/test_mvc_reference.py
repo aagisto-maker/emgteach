@@ -392,3 +392,110 @@ class TestBestOfThreeAndTheFinalPanel:
         assert tab._mvc_no_maximas
         tab.reset()
         assert not tab._mvc_no_maximas
+
+
+class TestAreTheTwoChannelsSeeingTwoMuscles:
+    """«Es difícil separar ECR de FCR en la calibración» — the fourth session.
+
+    Both references came out maximal that day (47 and 28 times their resting
+    levels), so the difficulty was not a weak contraction: it was that the two
+    channels rose and fell together. Measured on that recording, the resting
+    channel reached 20-26 % of its own reference while the other muscle was at
+    its maximum, and the two envelopes correlated at r = +0.79 throughout the
+    calibration — against r = +0.07 over the working recording that followed.
+
+    So the antagonist is never silent during a maximal effort: it holds the
+    joint, and part of what its electrodes read is the other muscle's signal
+    conducted through the tissue. Neither is separable from two bipolar
+    channels, and neither is a fault. What the wizard can do is measure how
+    far above that floor the pair goes, and say so when the two channels stop
+    telling two muscles apart.
+    """
+
+    @pytest.fixture
+    def tab(self, qapp):
+        from PySide6.QtCore import QSettings
+
+        from emgteach.gui.tabs.acquisition import AcquisitionTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+
+        widget = AcquisitionTab(LoggerWidget(), QSettings("emgteach-test", "xt"))
+        widget._n_channels = 2
+        yield widget
+        widget.close()
+
+    @staticmethod
+    def _cross(tab, level: float) -> None:
+        """Channel 1 held at *level* while channel 0 was being calibrated."""
+        tab._mvc_cross[0][1] = [np.full(4000, level)]
+
+    def test_the_other_channel_is_recorded_during_the_contraction(
+        self, tab
+    ) -> None:
+        """Nothing can be measured that was not kept: the wizard used to
+        accumulate only the muscle it was calibrating."""
+        tab._mvc_muscle = 0
+        tab._mvc_reps = 2          # so finishing rep 1 does not end the wizard
+        env = [np.full(100, 0.10), np.full(100, 0.02)]
+        tab._mvc_feed(env)
+        tab._mvc_feed(env)
+        tab._mvc_finish_rep()
+        assert tab._mvc_cross[0][1][0].size == 200
+        assert float(tab._mvc_cross[0][1][0].mean()) == pytest.approx(0.02)
+
+    def test_the_figure_is_a_share_of_the_other_muscles_own_reference(
+        self, tab
+    ) -> None:
+        """The bench pair: 0.036 mV on the extensor against its own 0.171."""
+        tab._mvc_ref[0], tab._mvc_ref[1] = 0.0979, 0.1712
+        self._cross(tab, 0.036)
+        cruce = tab._mvc_crosstalk()
+        assert len(cruce) == 1
+        _, _, pct = cruce[0]
+        assert pct == pytest.approx(21.0, abs=1.0)
+
+    def test_a_normal_montage_ends_on_ready(self, tab) -> None:
+        """21 % is what a correctly placed pair does. It must not be
+        an alarm, or the alarm means nothing when it matters."""
+        tab._mvc_ref[0], tab._mvc_ref[1] = 0.0979, 0.1712
+        self._cross(tab, 0.036)
+        tab._mvc_finish_all()
+        assert "not separated" not in tab._mvc_overlay._title.lower()
+        assert "sin separar" not in tab._mvc_overlay._title.lower()
+
+    def test_two_pairs_on_one_muscle_end_on_the_panel(self, tab) -> None:
+        """Both electrode pairs over the flexor: the second channel follows
+        the first one to within a tenth, and every later comparison between
+        them — the co-activation index above all — measures nothing."""
+        tab._mvc_ref[0], tab._mvc_ref[1] = 0.0979, 0.1712
+        self._cross(tab, 0.15)                     # 88 % of the other reference
+        tab._mvc_finish_all()
+        assert (
+            "not separated" in tab._mvc_overlay._title.lower()
+            or "sin separar" in tab._mvc_overlay._title.lower()
+        )
+        assert tab._mvc_overlay._subtitle
+
+    def test_a_reference_that_is_not_a_maximum_still_wins_the_panel(
+        self, tab
+    ) -> None:
+        """Both faults at once. The weak reference is the one that corrupts
+        every later percentage, so it is the one the operator must read."""
+        tab._mvc_ref[0], tab._mvc_ref[1] = 0.0979, 0.1712
+        self._cross(tab, 0.15)
+        tab._mvc_rest_buf = list(_envelope(0.031, 3000))
+        tab._mvc_check_is_a_maximum(0, 0.0286)
+        tab._mvc_finish_all()
+        assert (
+            "weak" in tab._mvc_overlay._title.lower()
+            or "floja" in tab._mvc_overlay._title.lower()
+        )
+
+    def test_one_channel_measures_nothing(self, tab) -> None:
+        """A single sensor has no other channel to compare against."""
+        tab._n_channels = 1
+        tab._mvc_ref[0] = 0.0979
+        assert tab._mvc_crosstalk() == []
+
+    def test_the_threshold_lives_in_the_profile(self) -> None:
+        assert EMG_PROFILE.mvc_crosstalk_pct == 50.0

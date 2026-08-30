@@ -88,6 +88,11 @@ _PANELES: list[tuple[int, str]] = [
 # Available time-zoom factors (same as tab_analisis)
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
+#: Width of the time window the panels open on, in seconds. The panels show a
+#: raw trace, which needs a few seconds of width to be legible; the whole
+#: recording is always reachable from the minimap.
+_DUR_INICIAL_S = 10.0
+
 _BTN_ST = (
     "QToolButton { font-size: 9px; padding: 0px; border: 1px solid #aaa; "
     "border-radius: 2px; background: #f5f5f5; }"
@@ -921,6 +926,13 @@ class MvcTab(QWidget):
             mvc_path=cvm_path,
             f_env=f_env,
             channel_index=self._combo_canal.currentIndex(),
+            # The whole recording, not the worker's default first 10 s. The
+            # numbers on this tab — mean % MVC, the Jonsson APDF — are computed
+            # over the whole file, so a plot that stopped at 10 s described a
+            # recording the operator could not see, and the minimap below drew
+            # the whole signal against an axis that ended at 10 s: the shape
+            # under the selection was never the shape in the panels.
+            plot_duration_s=0,
         )
         self._worker.result_ready.connect(self._on_result)
         self._worker.log.connect(self._log)
@@ -958,10 +970,13 @@ class MvcTab(QWidget):
         self._btn_informe.setEnabled(True)
         self._actualizar_resumen(result)
 
-        # Initialise the time window: 1/3 of the (plotted) duration.
+        # Initialise the time window. The minimap now spans the whole recording,
+        # which can be minutes long, and a raw trace opened at that width is a
+        # solid block: open on the first 10 s (or the whole file, if shorter)
+        # and let the bar below say where that sits in the recording.
         t_total = float(result["t_plot"][-1]) if len(result["t_plot"]) > 0 else 60.0
         self._duracion_total = t_total
-        dur_ini = t_total / 3.0
+        dur_ini = min(t_total, _DUR_INICIAL_S)
         self._inicio_s = 0.0
         self._duracion_s = dur_ini
         self._time_range.set_total_duration(t_total)
