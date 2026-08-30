@@ -20,7 +20,14 @@ from emgteach.dsp import (
     detect_onsets,
     process_offline,
 )
-from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
+from emgteach.fatigue import (
+    FATIGUE,
+    NO_FATIGUE,
+    active_segments,
+    fatigue_verdict,
+    fit_mdf_vs_time,
+    fit_rms_vs_mdf,
+)
 from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -399,12 +406,38 @@ class AnalysisWorker(QThread):
             if self._cancelled:
                 return
 
-            # 6) Fatigue fit: linear MDF-vs-time regression (primary index)
+            # 6) Fatigue fit: linear MDF-vs-time regression (primary index).
+            # Fitted over the segments where the muscle was working, not over
+            # the whole selection: the median frequency of a resting segment is
+            # the median frequency of the amplifier, and mixing the two
+            # populations manufactures a slope out of nothing. The curves are
+            # still drawn across every segment.
             self.log.emit(tr("Fitting MDF-vs-time regression…"))
-            fat_time = fit_mdf_vs_time(segs["t_seg"], segs["mdf_seg"])
-            fat_rms = fit_rms_vs_mdf(segs["mdf_seg"], segs["rms_seg"])
+            activos = active_segments(
+                segs["rms_seg"], self._profile.fatigue_active_ratio
+            )
+            n_activos = int(np.count_nonzero(activos))
+            if n_activos < activos.size:
+                self.log.emit(
+                    tr(
+                        "MDF trend fitted over {n} of {total} segments "
+                        "(the rest were below the contraction threshold)."
+                    ).format(n=n_activos, total=int(activos.size))
+                )
+            fat_time = fit_mdf_vs_time(
+                segs["t_seg"][activos], segs["mdf_seg"][activos],
+                t_eval=segs["t_seg"],
+            )
+            fat_rms = fit_rms_vs_mdf(
+                segs["mdf_seg"][activos], segs["rms_seg"][activos]
+            )
+            verdict = fatigue_verdict(
+                fat_time["slope_sign"], fat_time["r_squared"], n_activos,
+                min_r2=self._profile.fatigue_min_r2,
+                min_segments=self._profile.fatigue_min_segments,
+            )
 
-            if fat_time["slope_sign"] < 0:
+            if verdict == FATIGUE:
                 self.log.emit(
                     tr(
                         "Fatigue trend: MDF slope {slope:.3f} Hz/s "
@@ -415,7 +448,7 @@ class AnalysisWorker(QThread):
                         r2=fat_time["r_squared"],
                     )
                 )
-            elif fat_time["slope_sign"] > 0:
+            elif verdict == NO_FATIGUE:
                 self.log.emit(
                     tr(
                         "No fatigue: MDF slope {slope:+.3f} Hz/s "
@@ -423,7 +456,19 @@ class AnalysisWorker(QThread):
                     ).format(slope=fat_time["slope"], r2=fat_time["r_squared"])
                 )
             else:
-                self.log.emit(tr("MDF trend undefined (signal too short or constant)."))
+                # Not "no fatigue": the recording does not answer the question.
+                # Saying so is the whole point — a line drawn through a cloud
+                # of resting segments used to come out as a red verdict.
+                self.log.emit(
+                    tr(
+                        "MDF trend not conclusive: slope {slope:+.3f} Hz/s but "
+                        "R²={r2:.2f} over {n} segment(s). Fatigue needs a "
+                        "contraction held long enough for the trend to show."
+                    ).format(
+                        slope=fat_time["slope"], r2=fat_time["r_squared"],
+                        n=n_activos,
+                    )
+                )
             self.progress.emit(90)
 
             # 7) Pack result
@@ -467,6 +512,8 @@ class AnalysisWorker(QThread):
                 "fat_slope_sign": fat_time["slope_sign"],
                 "fat_r_squared": fat_time["r_squared"],
                 "fat_pct_decline": fat_time["pct_decline"],
+                "fat_verdict": verdict,
+                "fat_n_seg": n_activos,
                 "fat_slope_per_min": fat_time["slope_per_min"],
                 "rms_mdf_range": fat_rms["mdf_range"],
                 "rms_mdf_fitted": fat_rms["fitted"],

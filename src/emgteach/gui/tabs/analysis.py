@@ -169,6 +169,7 @@ _PANEL_TOOLTIPS = {
 
 from emgteach.broadcast import BroadcastServer
 from emgteach.exports import write_analysis_csv
+from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
@@ -1158,7 +1159,11 @@ class AnalysisTab(QWidget):
             "rms": round(float(r.get("rms_global", 0.0)), 3),
             "iemg": round(float(r.get("iemg", 0.0)), 1),
             "duration": round(float(r.get("duration", 0.0)), 1),
-            "fatigue": int(r.get("fat_slope_sign", 0)),
+            # Same three states as the summary label, in the wire format the
+            # phones already speak: -1 fatigue, +1 none, 0 not conclusive.
+            "fatigue": {FATIGUE: -1, NO_FATIGUE: 1}.get(
+                r.get("fat_verdict", INCONCLUSIVE), 0
+            ),
         })
 
     def _bcast_download(self, kind: str, path: str, data: bytes,
@@ -1189,16 +1194,21 @@ class AnalysisTab(QWidget):
         self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
         self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
 
-        sign = r["fat_slope_sign"]
         decline = r.get("fat_pct_decline", 0.0)
-        if sign < 0:
+        veredicto = r.get("fat_verdict", INCONCLUSIVE)
+        if veredicto == FATIGUE:
             texto = tr("Fatigue: DETECTED (MDF −{decline:.1f}%)").format(decline=decline)
             color = "#cc0000"
-        elif sign > 0:
+        elif veredicto == NO_FATIGUE:
             texto = tr("Fatigue: Not detected (MDF stable or increasing)")
             color = "#007700"
         else:
-            texto = tr("Fatigue: Undetermined (insufficient signal)")
+            # Not the same as "no fatigue", and it must not be read as one: the
+            # recording does not answer the question. It says the fit, because
+            # a bare "undetermined" gives the operator nothing to act on.
+            texto = tr("Fatigue: not conclusive (trend does not fit, R²={r2:.2f})").format(
+                r2=r2
+            )
             color = "#885500"
         self._lbl_fatiga.setText(texto)
         self._lbl_fatiga.setStyleSheet(f"font-size: 9px; padding: 0 4px; color: {color};")

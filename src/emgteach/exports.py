@@ -22,6 +22,7 @@ from __future__ import annotations
 import csv
 from typing import TYPE_CHECKING, Any
 
+from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.i18n import tr
 
 if TYPE_CHECKING:
@@ -32,12 +33,12 @@ __all__ = ["write_analysis_csv"]
 
 
 def _fatigue_verdict(result: Mapping[str, Any]) -> str:
-    sign = int(result.get("fat_slope_sign", 0))
-    if sign < 0:
+    verdict = result.get("fat_verdict", INCONCLUSIVE)
+    if verdict == FATIGUE:
         return tr("fatigue (MDF decreasing)")
-    if sign > 0:
+    if verdict == NO_FATIGUE:
         return tr("no fatigue (MDF stable/increasing)")
-    return tr("undetermined")
+    return tr("not conclusive (the MDF trend does not fit)")
 
 
 def write_analysis_csv(

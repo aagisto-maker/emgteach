@@ -40,6 +40,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.i18n import tr
 from emgteach.mvc import (
     AUTO_COLOR,
@@ -103,20 +104,24 @@ def _app_version() -> str:
 
 
 def _fatigue_text(result: Mapping[str, Any]) -> str:
-    sign = int(result.get("fat_slope_sign", 0))
     slope = float(result.get("mdf_slope", 0.0))
     r2 = float(result.get("fat_r_squared", 0.0))
     decline = float(result.get("fat_pct_decline", 0.0))
-    if sign < 0:
+    verdict = result.get("fat_verdict", INCONCLUSIVE)
+    if verdict == FATIGUE:
         return tr(
             "Yes — MDF falls {slope:+.2f} Hz/s "
             "({decline:.1f}% decline, R²={r2:.2f})"
         ).format(slope=slope, decline=decline, r2=r2)
-    if sign > 0:
+    if verdict == NO_FATIGUE:
         return tr(
             "No — MDF stable or rising ({slope:+.2f} Hz/s, R²={r2:.2f})"
         ).format(slope=slope, r2=r2)
-    return tr("Undetermined (short or constant signal)")
+    # The report is what the student hands in, so this cannot read as "no".
+    return tr(
+        "Not conclusive — the trend does not fit ({slope:+.2f} Hz/s, R²={r2:.2f}). "
+        "Fatigue needs a contraction held long enough for the trend to show."
+    ).format(slope=slope, r2=r2)
 
 
 def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:

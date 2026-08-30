@@ -34,6 +34,7 @@ def analysis_result() -> dict:
         "mdf": 88.1,
         "iemg": 1.234,
         "fat_slope_sign": -1,
+        "fat_verdict": "fatigue",
         "mdf_slope": -0.42,
         "fs": fs,
         "config": {
@@ -103,6 +104,7 @@ class TestBuildSessionReport:
     ) -> None:
         result = dict(analysis_result)
         result["fat_slope_sign"] = 0
+        result["fat_verdict"] = "inconclusive"
         out = tmp_path / "informe_nofat.pdf"
         build_session_report(out, result)
         assert out.exists()

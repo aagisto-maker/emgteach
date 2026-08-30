@@ -541,8 +541,6 @@ _ES = {
     "Polynomial fatigue fit (degree 2)…": "Ajuste polinómico de fatiga (grado 2)…",
     "No fatigue (MDF increases or stays stable).":
         "Sin fatiga (la MDF aumenta o se mantiene estable).",
-    "MDF trend undefined (signal too short or constant).":
-        "Tendencia de MDF indeterminada (señal demasiado corta o constante).",
     "Analysis parameters": "Parámetros de análisis",
     "EDF file:": "Archivo EDF:",
     "Select an EDF file…": "Seleccionar un archivo EDF…",
@@ -712,10 +710,10 @@ _ES = {
     # Progress bar + fatigue summary (analysis tab).
     "Ready": "Listo",
     "Analysing…  %p%": "Analizando…  %p%",
+    "Fatigue: not conclusive (trend does not fit, R²={r2:.2f})":
+        "Fatiga: no concluyente (la tendencia no ajusta, R²={r2:.2f})",
     "Fatigue: Not detected (MDF stable or increasing)":
         "Fatiga: No detectada (MDF estable o crece)",
-    "Fatigue: Undetermined (insufficient signal)":
-        "Fatiga: Indeterminada (Señal insuficiente)",
 
     # --- MVC worker / GUI ---
     "Signal loaded — {fs:.0f} Hz — {dur:.1f} s — units: {units}":
@@ -839,7 +837,8 @@ _ES = {
         "Trama del BITalino corrupta (error de CRC) — conexión perdida.",
 
     # --- PDF report ---
-    "Undetermined (short or constant signal)": "Indeterminada (señal corta o constante)",
+    "Not conclusive — the trend does not fit ({slope:+.2f} Hz/s, R²={r2:.2f}). Fatigue needs a contraction held long enough for the trend to show.":
+        "No concluyente: la tendencia no ajusta ({slope:+.2f} Hz/s, R²={r2:.2f}). La fatiga necesita una contracción mantenida el tiempo suficiente para que la tendencia se vea.",
     "Filtered (mV)": "Filtrada (mV)",
     "EMG signal — channel «{name}»": "Señal EMG — canal «{name}»",
     "Envelope (mV)": "Envolvente (mV)",
@@ -886,7 +885,7 @@ _ES = {
     "Saturation: {pct:.0f}% at rails — lower gain":
         "Saturación: {pct:.0f}% en los extremos — baja la ganancia",
     # -- CSV export (exports.py) --
-    "undetermined": "indeterminada",
+    "not conclusive (the MDF trend does not fit)": "no concluyente (la tendencia de MDF no ajusta)",
     "fatigue (MDF decreasing)": "fatiga (MDF decreciente)",
     "no fatigue (MDF stable/increasing)": "sin fatiga (MDF estable/creciente)",
     "whole recording": "registro completo",
@@ -927,6 +926,10 @@ _ES = {
         "Región de interés: {a:.2f}-{b:.2f} s ({d:.2f} s).",
     "Analysing {n} selected fragments ({d:.2f} s of {full:.2f} s).":
         "Analizando {n} fragmentos seleccionados ({d:.2f} s de {full:.2f} s).",
+    "MDF trend fitted over {n} of {total} segments (the rest were below the contraction threshold).":
+        "Tendencia de MDF ajustada sobre {n} de {total} segmentos (el resto quedaba por debajo del umbral de contracción).",
+    "MDF trend not conclusive: slope {slope:+.3f} Hz/s but R²={r2:.2f} over {n} segment(s). Fatigue needs a contraction held long enough for the trend to show.":
+        "Tendencia de MDF no concluyente: pendiente {slope:+.3f} Hz/s pero R²={r2:.2f} sobre {n} segmento(s). La fatiga necesita una contracción mantenida el tiempo suficiente para que la tendencia se vea.",
     "No fatigue: MDF slope {slope:+.3f} Hz/s (R²={r2:.2f}).":
         "Sin fatiga: pendiente MDF {slope:+.3f} Hz/s (R²={r2:.2f}).",
     # -- acquisition tab (protocol / markers) --

@@ -154,6 +154,18 @@ class SignalProfile:
     apda_danger_limit: float = 70.0    # % MVC — fatigue (danger) zone
     apda_calib_s: float = 4.0          # s — quick MVC-calibration duration
 
+    # -- fatigue verdict (MDF-vs-time regression) --
+    # The median frequency of a resting segment is amplifier noise, and mixing
+    # those into the regression is what let an intermittent forearm recording
+    # report a 26 % MDF decline. Only segments reaching this share of the
+    # selection's own strong-segment RMS are fitted…
+    fatigue_active_ratio: float = 0.30
+    # …and the trend is only called a trend when the line explains this much of
+    # the variance. That same recording, fitted through its active segments,
+    # gave R² = 0.08.
+    fatigue_min_r2: float = 0.30
+    fatigue_min_segments: int = 4
+
     # -- automatic onset detection (baseline + k*SD threshold) --
     onset_k: float = 3.0
     onset_baseline_s: float = 1.0

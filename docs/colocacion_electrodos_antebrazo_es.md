@@ -155,6 +155,17 @@ Lo que debe salir: flexión y extensión con **«no se informa»** —no hay
 coactivación que medir en un movimiento recíproco— y la presa con un índice
 alto. Que las dos primeras filas no den número **es parte de la demostración**.
 
+> **La fatiga no se mide en esta práctica.** El indicador de fatiga es la
+> pendiente de la frecuencia mediana, y solo significa algo sobre una
+> contracción *mantenida*. En un protocolo intermitente como este, la mitad de
+> los segmentos son reposo —cuya frecuencia mediana es la del amplificador, muy
+> por encima de la de una contracción— y mezclarlos fabrica una pendiente de la
+> nada: el registro del 30 de agosto salía con «Fatiga: DETECTADA, MDF −26,4 %»
+> sin que nada se hubiera fatigado. Desde esta versión el ajuste se hace solo
+> sobre los segmentos en que el músculo trabaja y el veredicto exige que la
+> recta explique algo (R² ≥ 0,30); en un registro intermitente lo normal es leer
+> **«Fatiga: no concluyente»**, y eso es la respuesta correcta.
+
 ---
 
 ## 5. Separar un músculo del otro: hasta dónde se puede

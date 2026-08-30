@@ -26,6 +26,7 @@ def _result() -> dict:
         "fat_r_squared": 0.87,
         "fat_pct_decline": 12.3,
         "fat_slope_sign": -1,
+        "fat_verdict": "fatigue",   # R2 0.87: the fit backs the slope
         "t_seg": np.array([0.0, 0.5, 1.0]),
         "rms_seg": np.array([0.10, 0.12, 0.11]),
         "mdf_seg": np.array([100.0, 95.0, 90.0]),
