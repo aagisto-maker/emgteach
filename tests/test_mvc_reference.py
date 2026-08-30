@@ -326,3 +326,69 @@ class TestJudgingAReferenceFairly:
 
         short = _envelope(0.02, 100)
         assert np.array_equal(_sustained(short, FS, 0.5), short)
+
+
+@pytest.mark.gui
+class TestBestOfThreeAndTheFinalPanel:
+    """Two things the third bench session exposed.
+
+    The flexor calibration came out right that day — 38 times its resting
+    level, with the recording's strongest half-second reaching 111 % of it,
+    which is what a correct MVC looks like. The extensor did not: its
+    reference landed *below* its own resting level. One attempt per muscle
+    leaves nothing to fall back on when that happens, and the warning that
+    said so scrolled out of the event log unseen.
+    """
+
+    @pytest.fixture
+    def tab(self, qapp):
+        from PySide6.QtCore import QSettings
+
+        from emgteach.gui.tabs.acquisition import AcquisitionTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+
+        widget = AcquisitionTab(LoggerWidget(), QSettings("emgteach-test", "b3"))
+        yield widget
+        widget.close()
+
+    def test_best_of_three_is_offered_in_every_practical(self, tab) -> None:
+        """It was behind the advanced flag, so the agonist/antagonist
+        practical — the one that needs two good references — could not reach
+        it at all."""
+        from emgteach.modes import MODES
+
+        for mode in MODES:
+            tab.apply_mode(mode, False)
+            assert not tab._chk_mvc_best3.isHidden(), mode
+
+    def test_a_weak_calibration_ends_on_the_panel_not_only_in_the_log(
+        self, tab
+    ) -> None:
+        """The real extensor figures: a reference of 0.0286 mV over a resting
+        level of about 0.031 — the "maximum" was weaker than rest."""
+        tab._mvc_rest_buf = list(_envelope(0.031, 3000))
+        tab._mvc_check_is_a_maximum(0, 0.0286)
+        tab._mvc_ref[0] = 0.0286
+        tab._mvc_finish_all()
+        assert "weak" in tab._mvc_overlay._title.lower() or (
+            "floja" in tab._mvc_overlay._title.lower()
+        )
+        assert tab._mvc_overlay._subtitle
+
+    def test_a_good_calibration_still_ends_on_ready(self, tab) -> None:
+        """It must not shout at a session that went well: the flexor of that
+        same recording reached 20 times its resting level."""
+        tab._mvc_rest_buf = list(_envelope(0.005, 3000))
+        tab._mvc_check_is_a_maximum(0, 0.0999)
+        tab._mvc_ref[0] = 0.0999
+        tab._mvc_finish_all()
+        assert "weak" not in tab._mvc_overlay._title.lower()
+        assert "floja" not in tab._mvc_overlay._title.lower()
+
+    def test_the_verdict_is_cleared_between_calibrations(self, tab) -> None:
+        """A second attempt must not inherit the first one's complaint."""
+        tab._mvc_rest_buf = list(_envelope(0.031, 3000))
+        tab._mvc_check_is_a_maximum(0, 0.0286)
+        assert tab._mvc_no_maximas
+        tab.reset()
+        assert not tab._mvc_no_maximas

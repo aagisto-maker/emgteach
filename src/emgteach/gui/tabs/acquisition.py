@@ -253,6 +253,8 @@ class AcquisitionTab(QWidget):
         self._mvc_cur_buf: list[float] = []                  # current rep envelope
         self._mvc_capture: list[list] = [[] for _ in range(MAX_CHANNELS)]
         self._mvc_rest_buf: list[float] = []
+        #: Channels whose calibration did not look like a maximum.
+        self._mvc_no_maximas: list[str] = []
         self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_timer = QTimer(self)
         self._mvc_timer.setInterval(MVC_TICK_MS)
@@ -2025,6 +2027,7 @@ class AcquisitionTab(QWidget):
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_no_maximas = []
         self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_ref = [None] * MAX_CHANNELS
         self._set_thresholds_enabled(False)
@@ -2216,12 +2219,14 @@ class AcquisitionTab(QWidget):
         ratio = ref / nivel if nivel > 0 else float("inf")
         if ratio >= self._profile.mvc_min_rest_ratio:
             return
+        labels = self._active_labels()
+        name = labels[c] if c < len(labels) else str(c + 1)
+        self._mvc_no_maximas.append(name)
         self._log(tr(
             "⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× "
             "its resting level. That is not a maximal contraction — every % MVC "
             "from now on will be too high by that factor. Calibrate again."
-        ).format(muscle=self._active_labels()[c] if c < len(self._active_labels())
-                 else str(c + 1), ref=ref, ratio=ratio))
+        ).format(muscle=name, ref=ref, ratio=ratio))
 
     def _mvc_feed(self, env: list) -> None:
         """Accumulate the active muscle's envelope during its contraction."""
@@ -2307,11 +2312,27 @@ class AcquisitionTab(QWidget):
                 )
             )
             self._log(tr("MVC calibrated: {summary}").format(summary=summary))
-            self._mvc_overlay.show_done(
-                tr("MVC ready"),
-                tr("{summary}\nYou can start recording.").format(summary=summary),
-            )
-            self._bcast_calib(True, "done", tr("MVC ready"), summary)
+            weak = [name for name in self._mvc_no_maximas if name]
+            if weak:
+                # The one result nobody must scroll past. A reference that is
+                # not a maximum makes every later percentage wrong by the same
+                # factor, and the event log moves on within seconds — so it
+                # ends on the panel the operator is already looking at.
+                warning = tr(
+                    "{muscles}: this is not a maximum. Calibrate again against "
+                    "a resistance the joint cannot move."
+                ).format(muscles=" · ".join(weak))
+                self._mvc_overlay.show_done(tr("Calibration too weak"), warning)
+                self._bcast_calib(
+                    True, "done", tr("Calibration too weak"), warning
+                )
+            else:
+                self._mvc_overlay.show_done(
+                    tr("MVC ready"),
+                    tr("{summary}\nYou can start recording.").format(
+                        summary=summary),
+                )
+                self._bcast_calib(True, "done", tr("MVC ready"), summary)
         else:
             self._mvc_info(tr("Calibration failed (no signal)."))
             self._mvc_overlay.show_done(
@@ -2640,6 +2661,7 @@ class AcquisitionTab(QWidget):
         self._fv_cancel()
         self._mvc_ref = [None] * MAX_CHANNELS
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_no_maximas = []
         for c in range(MAX_CHANNELS):
             self._online[c].reset()
             self._load_bars[c].reset()
@@ -3039,9 +3061,14 @@ class AcquisitionTab(QWidget):
         # than one extra widget.
         self._box_autoonset.setVisible(advanced or self._chk_auto.isChecked())
         self._box_thr.setVisible(advanced)
-        # "Best of 3" shares its row with "Calibrate MVC", which stays visible;
-        # it carries its own caption, so hiding it alone leaves nothing behind.
-        self._chk_mvc_best3.setVisible(advanced)
+        # "Best of 3" is offered in every practical. Repeating the maximum and
+        # keeping the strongest is not a refinement — it is how a maximum is
+        # measured at all: the first maximal effort of a session is genuinely
+        # submaximal, and a single attempt has nothing to fall back on when it
+        # goes wrong. On the bench a single-rep extensor calibration came out
+        # *below* its own resting level, while the flexor, warmed up, reached
+        # 38 times rest in the same session.
+        self._chk_mvc_best3.setVisible(True)
 
     def _apply_mode_channels(self, mode: str) -> None:
         """Make the recording match the mode: channel count and accelerometer.

@@ -138,12 +138,21 @@ def test_accelerometer_wiring_travels_with_the_accelerometer(
 def test_fine_controls_belong_to_the_free_mode(main_window, qapp, mode) -> None:
     """A practical that offered a filter cut-off would be asking the student to
     decide it in the middle of a physiology exercise, which is a different
-    lesson from the one it is teaching."""
+    lesson from the one it is teaching.
+
+    Two things have left this list since it was written, both because the
+    bench showed they were not refinements at all: **"Best of 3"**, which is
+    how a maximum is measured rather than a nicety — one attempt has nothing
+    to fall back on, and a bad reference silently corrupts every percentage
+    after it — and the **fragment editor**, since keeping the part of a
+    recording that came out well is hygiene. The numeric region boxes stay,
+    because they ask for two figures the student does not have.
+    """
     adq, ana, cvm = (
         main_window._tab_adq, main_window._tab_ana, main_window._tab_cvm
     )
     boxes = [
-        adq._box_thr, adq._box_autoonset, adq._chk_mvc_best3,
+        adq._box_thr, adq._box_autoonset,
         ana._box_fenv, ana._box_roi, cvm._box_fenv,
     ]
     set_mode(main_window, qapp, mode)

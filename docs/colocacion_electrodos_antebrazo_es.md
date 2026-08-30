@@ -131,6 +131,17 @@ El orden importa, porque la aplicación depende de él.
    > calibración salió diez veces menor que las contracciones posteriores del
    > mismo registro, y el análisis daba picos del 1509 % de CVM.
    >
+   > **Marque «Mejor de 3»** antes de calibrar: repite cada músculo tres veces
+   > y se queda con la más fuerte. La primera contracción máxima de una sesión
+   > es genuinamente submáxima, y con un solo intento no hay nada a lo que
+   > recurrir cuando sale mal.
+   >
+   > **Antebrazo apoyado del todo, mano en reposo, antes de la cuenta atrás.**
+   > Si la mano queda al aire, los extensores ya están trabajando para
+   > sostenerla: en la sesión del 30 de agosto el reposo del extensor durante
+   > su propia cuenta atrás era seis veces el del flexor, y su «máxima» acabó
+   > por debajo de ese reposo.
+   >
    > **Comprobación inmediata:** después de calibrar, pida una contracción
    > fuerte cualquiera. Si la barra de carga en vivo pasa de 100 %, la
    > calibración no fue máxima — repítala.

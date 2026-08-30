@@ -1108,6 +1108,8 @@ _ES = {
         "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    'Calibration too weak': 'Calibración demasiado floja',
+    '{muscles}: this is not a maximum. Calibrate again against a resistance the joint cannot move.': '{muscles}: esto no es una máxima. Calibre de nuevo contra una resistencia que la articulación no pueda mover.',
     'Push as hard as you can when the count reaches 0 — against a fixed resistance, without letting the joint move': 'Empuje todo lo que pueda cuando la cuenta llegue a 0, contra una resistencia fija y sin dejar que la articulación se mueva',
     "The reference has to be made against something that does not give way — a fixed object, or the operator's hand — with the joint held still. This is the force-velocity relationship at work: with nothing to push against, the muscle shortens at its fastest and therefore develops its least force, so it recruits few motor units. A maximum performed in mid-air is submaximal by construction, and every percentage that follows comes out too high in the same proportion.": 'La referencia hay que hacerla contra algo que no ceda —un objeto fijo o la mano del operador— y con la articulación quieta. Es la relación fuerza-velocidad en acción: sin nada contra lo que empujar, el músculo se acorta a su máxima velocidad y por tanto desarrolla su fuerza mínima, así que recluta pocas unidades motoras. Una máxima hecha en el aire es submáxima por construcción, y todos los porcentajes posteriores salen altos en la misma proporción.',
     "% of this recording's own maximum": '% del máximo del propio registro',
