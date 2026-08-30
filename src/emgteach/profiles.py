@@ -118,6 +118,16 @@ class SignalProfile:
     # to flag the "mean activation" readout, not part of the APDF computation.
     apda_mean_limit: float = 10.0
     # Online (real-time) muscle-load monitoring during acquisition.
+    # -- is this "maximum" a maximum? --
+    # A calibration that barely rises above the muscle's own resting level did
+    # not capture a maximal contraction, and every later % MVC is then wrong by
+    # the same factor. Warn below this ratio of reference to resting level.
+    mvc_min_rest_ratio: float = 5.0
+    # And after the fact: a reference that is not a maximum shows up as a
+    # recording that spends a large share of its time above 100 % MVC.
+    mvc_implausible_pct: float = 150.0     # % MVC
+    mvc_implausible_share: float = 0.10    # of the analysed time
+
     # -- co-activation (Falconer-Winter) --
     # Below this mean activation the index measures the likeness of two
     # baselines rather than shared effort, so it is not reported at all.

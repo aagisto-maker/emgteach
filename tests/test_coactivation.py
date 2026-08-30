@@ -337,3 +337,96 @@ class TestTheTableInTheApplication:
             assert not tab._lbl_coact_aviso.isHidden()
         finally:
             tab.cleanup()
+
+
+@pytest.mark.gui
+class TestAutomaticMarkersAreNotPhases:
+    """Found on the first real session: with auto-onset on, every burst wrote
+    a marker, and the table grew one row per burst — seventeen of them in a
+    56-second recording, each looking like a measured condition.
+
+    Automatic onsets are events the program found. Phases are what the
+    operator declared by pressing MARK.
+    """
+
+    @staticmethod
+    def _analyse(qapp, monkeypatch, edf):
+        import sys
+        from pathlib import Path as _P
+
+        sys.path.insert(0, str(_P(__file__).parent))
+        from test_units import _run_analysis
+
+        return _run_analysis(qapp, monkeypatch, edf)
+
+    def _edf_with(self, path, marks) -> str:
+        from emgteach.io import BufferedEdfWriter, ChannelInfo
+        from emgteach.mvc import mvc_ref_marker
+
+        fs, secs = 1000, 20
+        n = fs * secs
+        t = np.arange(n) / fs
+        rng = np.random.default_rng(4)
+
+        def phase(a, b):
+            return ((t >= a) & (t < b)).astype(float)
+
+        c1 = rng.normal(0, 1, n) * (0.4 * phase(4, 9) + 0.35 * phase(13, 18))
+        c2 = rng.normal(0, 1, n) * (0.05 * phase(4, 9) + 0.30 * phase(13, 18))
+        c1 += rng.normal(0, 0.004, n)
+        c2 += rng.normal(0, 0.004, n)
+        chans = [ChannelInfo("FCR", dimension="mV", sample_frequency=fs),
+                 ChannelInfo("ECR", dimension="mV", sample_frequency=fs)]
+        with BufferedEdfWriter(str(path), channels=chans) as w:
+            for i in range(0, n, fs):
+                w.add_samples(c1[i:i + fs], c2[i:i + fs])
+            w.add_annotation(0.5, mvc_ref_marker(0, 0.45))
+            w.add_annotation(0.6, mvc_ref_marker(1, 0.34))
+            for at, label in marks:
+                w.add_annotation(at, label)
+        return str(path)
+
+    def test_auto_onsets_do_not_open_windows(
+        self, qapp, monkeypatch, tmp_path
+    ) -> None:
+        edf = self._edf_with(tmp_path / "auto.edf", [
+            (4.1, "Onset (auto) — FCR"), (4.6, "Onset (auto) — FCR"),
+            (13.2, "Onset (auto) — ECR"), (13.9, "Onset (auto) — FCR"),
+        ])
+        tab, r = self._analyse(qapp, monkeypatch, edf)
+        try:
+            # No operator phases: one row for the whole span, and the warning.
+            assert r["coactivation_from_markers"] is False
+            assert len(r["coactivation"]) == 1
+        finally:
+            tab.cleanup()
+
+    def test_the_operators_own_marks_still_open_windows(
+        self, qapp, monkeypatch, tmp_path
+    ) -> None:
+        """The exclusion must be surgical: it drops what the program wrote,
+        not what the operator did."""
+        edf = self._edf_with(tmp_path / "mixed.edf", [
+            (4.0, "Flexion"), (4.6, "Onset (auto) — FCR"),
+            (13.0, "Grip"), (13.9, "Onset (auto) — FCR"),
+        ])
+        tab, r = self._analyse(qapp, monkeypatch, edf)
+        try:
+            assert r["coactivation_from_markers"] is True
+            assert [row.label for row in r["coactivation"]] == ["Flexion", "Grip"]
+        finally:
+            tab.cleanup()
+
+    def test_the_spanish_label_is_excluded_too(
+        self, qapp, monkeypatch, tmp_path
+    ) -> None:
+        """A file recorded in Spanish carries «Inicio (auto)»; both languages
+        share the "(auto)" the exclusion keys on."""
+        edf = self._edf_with(tmp_path / "es.edf", [
+            (4.1, "Inicio (auto) — FCR"), (13.2, "Inicio (auto) — ECR"),
+        ])
+        tab, r = self._analyse(qapp, monkeypatch, edf)
+        try:
+            assert r["coactivation_from_markers"] is False
+        finally:
+            tab.cleanup()

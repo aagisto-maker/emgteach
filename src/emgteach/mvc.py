@@ -325,10 +325,17 @@ def overlay_curves(result) -> tuple[OverlayCurve, OverlayCurve | None]:
     if in_pct:
         title = tr("9. Overlaid envelopes (agonist/antagonist), % MVC")
         ylabel = tr("Activation (% MVC)")
-        first = OverlayCurve(env1 / float(ref1) * 100.0, ylabel, title)
+        # A reference that was never a maximum still divides cleanly; what it
+        # produces is an axis running to several hundred per cent. Say it on
+        # the figure, because the figure is what gets copied into the report.
+        aviso = tr(
+            "These values are not real % MVC: the calibration did not capture "
+            "a maximum. Calibrate again with a genuinely maximal contraction."
+        ) if result.get("mvc_implausible") else ""
+        first = OverlayCurve(env1 / float(ref1) * 100.0, ylabel, title, aviso)
         second = (
             None if env2 is None
-            else OverlayCurve(env2 / float(ref2) * 100.0, ylabel, title)
+            else OverlayCurve(env2 / float(ref2) * 100.0, ylabel, title, aviso)
         )
         return first, second
 

@@ -251,6 +251,7 @@ class AcquisitionTab(QWidget):
         self._mvc_cur = 0.0           # current (recent) effort of the contraction
         self._mvc_cur_buf: list[float] = []                  # current rep envelope
         self._mvc_capture: list[list] = [[] for _ in range(MAX_CHANNELS)]
+        self._mvc_rest_buf: list[float] = []
         self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_timer = QTimer(self)
         self._mvc_timer.setInterval(MVC_TICK_MS)
@@ -2078,6 +2079,12 @@ class AcquisitionTab(QWidget):
         if self._mvc_active:
             if self._mvc_phase == "contract":
                 self._mvc_feed(env)
+            elif self._mvc_phase == "ready":
+                # The countdown is rest by construction, so it costs nothing to
+                # measure what this muscle looks like when it is doing nothing.
+                # Without that there is no way to tell a maximal contraction
+                # from a distracted one: both are just a number of millivolts.
+                self._mvc_rest_feed(env)
             return
         if self._fv_active:
             if self._fv_phase == "mvc_contract":
@@ -2125,6 +2132,8 @@ class AcquisitionTab(QWidget):
             else ""
         )
         if self._mvc_phase == "ready":
+            if self._mvc_elapsed <= MVC_TICK_MS / 1000.0:
+                self._mvc_rest_buf = []      # one baseline per repetition
             count = max(1, int(np.ceil(MVC_READY_S - self._mvc_elapsed)))
             self._mvc_overlay.show_ready(
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
@@ -2180,6 +2189,37 @@ class AcquisitionTab(QWidget):
             if self._mvc_elapsed >= MVC_REST_S:
                 self._mvc_enter_ready()
 
+    def _mvc_rest_feed(self, env: list) -> None:
+        """Accumulate the active muscle's envelope while it is at rest."""
+        c = self._mvc_muscle
+        if c < len(env) and env[c].size:
+            self._mvc_rest_buf.extend(env[c].tolist())
+
+    def _mvc_check_is_a_maximum(self, c: int, ref: float) -> None:
+        """Say so when the calibration did not capture a maximal contraction.
+
+        A reference only a little above the muscle's own resting level is not a
+        maximum, and it is not a harmless one: every later % MVC is wrong by
+        the same factor, the live load bars sit in the red from the first
+        contraction, and the analysis reports several hundred per cent. The
+        wizard cannot know whether the subject pushed, but it can compare what
+        it captured against what the same muscle looked like doing nothing a
+        few seconds earlier.
+        """
+        rest = np.asarray(self._mvc_rest_buf, dtype=float)
+        if not rest.size or ref <= 0:
+            return
+        nivel = float(np.percentile(rest, 95))
+        ratio = ref / nivel if nivel > 0 else float("inf")
+        if ratio >= self._profile.mvc_min_rest_ratio:
+            return
+        self._log(tr(
+            "⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× "
+            "its resting level. That is not a maximal contraction — every % MVC "
+            "from now on will be too high by that factor. Calibrate again."
+        ).format(muscle=self._active_labels()[c] if c < len(self._active_labels())
+                 else str(c + 1), ref=ref, ratio=ratio))
+
     def _mvc_feed(self, env: list) -> None:
         """Accumulate the active muscle's envelope during its contraction."""
         c = self._mvc_muscle
@@ -2213,6 +2253,7 @@ class AcquisitionTab(QWidget):
             window_samples=window,
         )
         self._mvc_ref[c] = ref if ref > 0 else None
+        self._mvc_check_is_a_maximum(c, ref)
         self._online[c].reset()
         self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
         self._write_mvc_ref_marker(c)

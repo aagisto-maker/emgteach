@@ -1110,6 +1110,11 @@ _ES = {
         "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    '⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.': '⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.',
+    '⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.': '⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.',
+    '⚠ «{name}» is above {limit:.0f} % MVC for {share:.0f} % of the recording, peaking at {peak:.0f} %. The calibration did not capture a maximum, so every percentage here is too high.': '⚠ «{name}» está por encima del {limit:.0f} % de CVM durante el {share:.0f} % del registro, con un pico del {peak:.0f} %. La calibración no captó una máxima, así que todos los porcentajes de aquí salen altos.',
+    'These values are not real % MVC: the calibration did not capture a maximum. Calibrate again with a genuinely maximal contraction.': 'Estos valores no son % de CVM reales: la calibración no captó una máxima. Calibre de nuevo con una contracción verdaderamente máxima.',
+    'No contraction detected in «{name}»: it never left its baseline.': 'No se detecta contracción en «{name}»: no sale de su línea base.',
     'Co-activation (Falconer-Winter)': 'Coactivación (Falconer-Winter)',
     'Co-activation index': 'Índice de coactivación',
     'Mean activation (% MVC)': 'Activación media (% CVM)',
@@ -1123,7 +1128,6 @@ _ES = {
     '9. Overlaid envelopes (agonist/antagonist), % MVC': '9. Envolventes superpuestas (agonista/antagonista), % CVM',
     '9. Env. overlay (% MVC)': '9. Env. superp. (% CVM)',
     'Millivolts are not comparable between two muscles. Calibrate MVC while recording to compare them.': 'Los milivoltios no son comparables entre dos músculos. Calibre la CVM mientras graba para poder compararlos.',
-    'No contraction detected in «{name}»: its trace is baseline noise, drawn magnified by the normalisation.': 'No se detecta contracción en «{name}»: su trazo es ruido de base, dibujado ampliado por la normalización.',
     'Complexity level': 'Nivel de complejidad',
     'The coloured band shows the subjective level of complexity of the analysis: basic, intermediate or advanced. There is also a free analysis that gives control over the fine settings.': 'La banda coloreada indica el nivel subjetivo de complejidad del análisis: básico, intermedio o avanzado. Hay un análisis libre que permite controlar los ajustes finos.',
     'Connecting the sensor': 'Conexión del sensor',

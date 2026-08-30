@@ -57,6 +57,28 @@ def _contracted(envelope, fs: float, profile) -> bool:
         return False
 
 
+def _baseline_is_usable(envelope, fs: float, profile) -> bool:
+    """Could a resting baseline be measured at all?
+
+    The onset detector takes its baseline from the opening second, so a
+    recording that starts with the muscle already working has no baseline to
+    take: the threshold comes out above everything that follows and nothing is
+    ever detected. That looks identical to a muscle that stayed silent, and
+    saying so would be a false statement about the subject rather than about
+    the recording — so the two are told apart here.
+
+    The test is self-evident: a threshold higher than the recording's own
+    maximum cannot be a resting threshold.
+    """
+    env = np.asarray(envelope, dtype=np.float64)
+    n_base = int(profile.onset_baseline_s * fs)
+    if env.size < n_base + 2 or n_base < 2:
+        return False
+    base = env[:n_base]
+    umbral = float(np.mean(base) + profile.onset_k * np.std(base))
+    return umbral < float(np.max(env))
+
+
 def _ref_for(channel_name, emg_channels, refs):
     """The MVC reference belonging to a channel, or None.
 
@@ -404,6 +426,8 @@ class AnalysisWorker(QThread):
                 "emg_envelope_normalised": proc["emg_envelope_normalised"],
                 "emg_contracted": _contracted(
                     proc["emg_envelope"], fs, self._profile),
+                "emg_baseline_usable": _baseline_is_usable(
+                    proc["emg_envelope"], fs, self._profile),
                 # {channel_index_0based: reference_mV}; empty when the
                 # recording carries no calibration.
                 "mvc_refs": mvc_refs,
@@ -495,10 +519,17 @@ class AnalysisWorker(QThread):
                     # computed rather than one being computed on millivolts.
                     ref1, ref2 = result.get("mvc_ref"), result["mvc_ref_2"]
                     if ref1 and ref2:
+                        # Automatic onset markers are events the program found,
+                        # not phases the operator declared. Left in, a recording
+                        # with auto-onset on produces one table row per burst —
+                        # dozens of them — and each row looks like a result.
+                        fases = [
+                            m for m in markers if "(auto)" not in str(m[1])
+                        ]
                         table, from_marks = coactivation_by_window(
                             proc["emg_envelope"] / float(ref1) * 100.0,
                             proc2["emg_envelope"] / float(ref2) * 100.0,
-                            fs, markers,
+                            fs, fases,
                             floor_pct=self._profile.coact_floor_pct,
                             t0=float(times[0]) if len(times) else 0.0,
                             name_1=self._channel_name or "",
@@ -506,16 +537,57 @@ class AnalysisWorker(QThread):
                         )
                         result["coactivation"] = table
                         result["coactivation_from_markers"] = from_marks
+
+                    # A reference that was never a maximum shows up as a
+                    # recording that spends much of its time above 100 % MVC.
+                    # Worth saying wherever the file is opened, including the
+                    # ones already on disk.
+                    for ref, env, name in (
+                        (ref1, proc["emg_envelope"], self._channel_name),
+                        (ref2, proc2["emg_envelope"], self._channel_name_2),
+                    ):
+                        if not ref:
+                            continue
+                        pct = np.asarray(env, dtype=np.float64) / float(ref) * 100.0
+                        share = float(np.mean(
+                            pct > self._profile.mvc_implausible_pct))
+                        if share > self._profile.mvc_implausible_share:
+                            result["mvc_implausible"] = max(
+                                share, result.get("mvc_implausible", 0.0))
+                            self.log.emit(tr(
+                                "⚠ «{name}» is above {limit:.0f} % MVC for "
+                                "{share:.0f} % of the recording, peaking at "
+                                "{peak:.0f} %. The calibration did not capture a "
+                                "maximum, so every percentage here is too high."
+                            ).format(name=name,
+                                     limit=self._profile.mvc_implausible_pct,
+                                     share=share * 100.0, peak=float(pct.max())))
                     else:
                         result["coactivation_reason"] = tr(
                             "not reported — no MVC reference for both channels"
                         )
-                    if not result["emg_contracted_2"]:
-                        self.log.emit(tr(
-                            "No contraction detected in «{name}»: its trace is "
-                            "baseline noise, drawn magnified by the "
-                            "normalisation."
-                        ).format(name=self._channel_name_2))
+                    result["emg_baseline_usable_2"] = _baseline_is_usable(
+                        proc2["emg_envelope"], fs, self._profile
+                    )
+                    for usable, contracted, name in (
+                        (result["emg_baseline_usable"],
+                         result["emg_contracted"], self._channel_name),
+                        (result["emg_baseline_usable_2"],
+                         result["emg_contracted_2"], self._channel_name_2),
+                    ):
+                        if not usable:
+                            self.log.emit(tr(
+                                "⚠ «{name}»: the recording starts with the "
+                                "muscle already active, so no resting baseline "
+                                "could be measured and contraction onsets were "
+                                "not detected. Record a couple of quiet seconds "
+                                "before the first contraction."
+                            ).format(name=name))
+                        elif not contracted:
+                            self.log.emit(tr(
+                                "No contraction detected in «{name}»: it never "
+                                "left its baseline."
+                            ).format(name=name))
                     result["channel_name_2"] = self._channel_name_2
                     self.log.emit(
                         tr("2nd channel «{name}» overlaid.").format(
