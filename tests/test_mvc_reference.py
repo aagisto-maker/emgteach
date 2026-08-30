@@ -55,8 +55,8 @@ class TestWasThereABaselineAtAll:
         """
         n = int(FS * 20)
         env = _envelope(0.003, n)
-        soltando = np.linspace(0.075, 0.0, int(FS * 1.0))
-        env[: soltando.size] += soltando
+        letting_go = np.linspace(0.075, 0.0, int(FS * 1.0))
+        env[: letting_go.size] += letting_go
         env[int(FS * 6):int(FS * 9)] += 0.035         # a real contraction
         assert _baseline_is_usable(env, FS, EMG_PROFILE) is False
 
@@ -83,59 +83,54 @@ class TestWasThereABaselineAtAll:
 class TestTheCalibrationIsComparedWithRest:
     """The prevention half: said at the bench, while it can still be redone."""
 
-    @staticmethod
-    def _tab(qapp):
+    @pytest.fixture
+    def tab(self, qapp):
         from PySide6.QtCore import QSettings
 
         from emgteach.gui.tabs.acquisition import AcquisitionTab
         from emgteach.gui.widgets.logger import LoggerWidget
 
-        return AcquisitionTab(LoggerWidget(), QSettings("emgteach-test", "mvcref"))
+        widget = AcquisitionTab(
+            LoggerWidget(), QSettings("emgteach-test", "mvcref")
+        )
+        yield widget
+        widget.close()
 
     @pytest.mark.gui
-    def test_a_reference_close_to_rest_is_called_out(self, qapp) -> None:
-        """The real numbers: a reference of 0.015 mV over a resting level of
-        0.005 is three times rest, not a maximal contraction."""
-        tab = self._tab(qapp)
-        try:
-            tab._mvc_rest_buf = list(_envelope(0.005, 3000))
-            antes = tab._logger.toPlainText()
-            tab._mvc_check_is_a_maximum(0, 0.015)
-            nuevo = tab._logger.toPlainText()[len(antes):]
-            assert "⚠" in nuevo
-            assert "0.015" in nuevo or "0,015" in nuevo
-        finally:
-            tab.close()
+    def test_a_reference_close_to_rest_is_called_out(self, tab) -> None:
+        """The real numbers from the first session: a reference of 0.015 mV
+        over a resting level of 0.005 is three times rest, not a maximum."""
+        tab._mvc_rest_buf = list(_envelope(0.005, 3000))
+        before = tab._logger.toPlainText()
+        tab._mvc_check_is_a_maximum(0, 0.015)
+        added = tab._logger.toPlainText()[len(before):]
+        assert "⚠" in added
+        assert "0.015" in added or "0,015" in added
 
     @pytest.mark.gui
-    def test_a_genuine_maximum_passes_in_silence(self, qapp) -> None:
-        """It must not cry wolf: a real MVC is many times the resting level."""
-        tab = self._tab(qapp)
-        try:
-            tab._mvc_rest_buf = list(_envelope(0.005, 3000))
-            antes = tab._logger.toPlainText()
-            tab._mvc_check_is_a_maximum(0, 0.40)
-            assert tab._logger.toPlainText() == antes
-        finally:
-            tab.close()
+    def test_a_genuine_maximum_passes_in_silence(self, tab) -> None:
+        """It must not cry wolf. In the second session, with the calibration
+        made against a resistance, the reference came out 19 times the resting
+        level — and nothing was said, correctly."""
+        tab._mvc_rest_buf = list(_envelope(0.005, 3000))
+        before = tab._logger.toPlainText()
+        tab._mvc_check_is_a_maximum(0, 0.40)
+        assert tab._logger.toPlainText() == before
 
     @pytest.mark.gui
-    def test_with_no_baseline_captured_it_says_nothing(self, qapp) -> None:
+    def test_with_no_baseline_captured_it_says_nothing(self, tab) -> None:
         """Better silent than guessing: without a rest sample there is nothing
         to compare against."""
-        tab = self._tab(qapp)
-        try:
-            tab._mvc_rest_buf = []
-            antes = tab._logger.toPlainText()
-            tab._mvc_check_is_a_maximum(0, 0.015)
-            assert tab._logger.toPlainText() == antes
-        finally:
-            tab.close()
+        tab._mvc_rest_buf = []
+        before = tab._logger.toPlainText()
+        tab._mvc_check_is_a_maximum(0, 0.015)
+        assert tab._logger.toPlainText() == before
 
-    def test_the_ratio_lives_in_the_profile(self) -> None:
+    def test_the_thresholds_live_in_the_profile(self) -> None:
         """Tunable against real forearm data, like the co-activation floor."""
         assert EMG_PROFILE.mvc_min_rest_ratio == pytest.approx(5.0)
         assert EMG_PROFILE.mvc_implausible_pct == pytest.approx(150.0)
+        assert EMG_PROFILE.mvc_peak_window_s == pytest.approx(0.5)
 
 
 @pytest.mark.gui
@@ -149,28 +144,6 @@ class TestAcceptingTheThirdWay:
     """
 
     @staticmethod
-    def _tab(qapp, edf):
-        from PySide6.QtCore import QSettings
-        from PySide6.QtWidgets import QMessageBox
-
-        from emgteach.gui.tabs.mvc import MvcTab
-        from emgteach.gui.widgets.logger import LoggerWidget
-        from emgteach.modes import MODE_PAIR
-
-        def click_destructive(self):
-            for b in self.buttons():
-                if self.buttonRole(b) == QMessageBox.ButtonRole.DestructiveRole:
-                    b.click()
-                    return 0
-            return 0
-
-        QMessageBox.exec = click_destructive
-        tab = MvcTab(LoggerWidget(), QSettings("emgteach-test", "third"))
-        tab.apply_mode(MODE_PAIR, False)
-        tab.adopt_recording(str(edf))
-        return tab
-
-    @staticmethod
     def _edf(path):
         from emgteach.io import BufferedEdfWriter, ChannelInfo
 
@@ -179,58 +152,177 @@ class TestAcceptingTheThirdWay:
         t = np.arange(n) / fs
         rng = np.random.default_rng(2)
         burst = ((t > 3) & (t < 6)).astype(float) + 0.05
-        sig = rng.normal(0, 0.3, n) * burst
+        signal = rng.normal(0, 0.3, n) * burst
         with BufferedEdfWriter(
             str(path),
             channels=[ChannelInfo("EMG", dimension="mV", sample_frequency=fs)],
-        ) as w:
+        ) as writer:
             for i in range(0, n, fs):
-                w.add_samples(sig[i:i + fs])
+                writer.add_samples(signal[i:i + fs])
         return str(path)
 
-    def test_accepting_computes_without_a_second_press(
-        self, qapp, tmp_path
-    ) -> None:
-        from PySide6.QtCore import QElapsedTimer
+    @pytest.fixture
+    def accepted(self, qapp, tmp_path):
+        """A tab that has been told "use this recording", and its result."""
+        from PySide6.QtCore import QElapsedTimer, QSettings
+        from PySide6.QtWidgets import QMessageBox
 
-        tab = self._tab(qapp, self._edf(tmp_path / "solo.edf"))
-        try:
-            done: list = []
-            original = tab._on_result
-            tab._on_result = lambda r: (original(r), done.append(r))
-            tab._ofrecer_auto_normalizacion()
-            timer = QElapsedTimer()
-            timer.start()
-            while not done and timer.elapsed() < 30000:
-                qapp.processEvents()
-            assert done, "accepting produced no result"
-            assert done[0]["mvc_is_auto"] is True
-        finally:
-            tab.cleanup()
+        from emgteach.gui.tabs.mvc import MvcTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+        from emgteach.modes import MODE_PAIR
+
+        def click_destructive(self):
+            for button in self.buttons():
+                role = self.buttonRole(button)
+                if role == QMessageBox.ButtonRole.DestructiveRole:
+                    button.click()
+                    return 0
+            return 0
+
+        QMessageBox.exec = click_destructive
+        tab = MvcTab(LoggerWidget(), QSettings("emgteach-test", "third"))
+        tab.apply_mode(MODE_PAIR, False)
+        tab.adopt_recording(self._edf(tmp_path / "solo.edf"))
+
+        done: list = []
+        original = tab._on_result
+        tab._on_result = lambda r: (original(r), done.append(r))
+        tab._ofrecer_auto_normalizacion()
+        timer = QElapsedTimer()
+        timer.start()
+        while not done and timer.elapsed() < 30000:
+            qapp.processEvents()
+
+        yield tab, done
+        qapp.processEvents()
+        tab.cleanup()
+
+    def test_accepting_computes_without_a_second_press(self, accepted) -> None:
+        _tab, done = accepted
+        assert done, "accepting produced no result"
+        assert done[0]["mvc_is_auto"] is True
 
     def test_the_distribution_is_drawn_but_the_limits_are_not(
-        self, qapp, tmp_path
+        self, accepted
     ) -> None:
         """The shape is a fair description of the recording; the Jonsson
         comparison is not, and drawing it painted everything red."""
-        from PySide6.QtCore import QElapsedTimer
+        tab, done = accepted
+        assert done
+        ax = tab._apdf_fig.axes[0]
+        assert ax.get_lines(), "the distribution was not drawn"
+        assert "%" in ax.get_xlabel()
+        assert "MVC" not in ax.get_xlabel()
+        assert "Jonsson" not in ax.get_title()
 
-        tab = self._tab(qapp, self._edf(tmp_path / "solo.edf"))
-        try:
-            done: list = []
-            original = tab._on_result
-            tab._on_result = lambda r: (original(r), done.append(r))
-            tab._ofrecer_auto_normalizacion()
-            timer = QElapsedTimer()
-            timer.start()
-            while not done and timer.elapsed() < 30000:
-                qapp.processEvents()
-            assert done
-            ax = tab._apdf_fig.axes[0]
-            assert ax.get_lines(), "the distribution was not drawn"
-            # Its own maximum, not % MVC, and no limit markers.
-            assert "%" in ax.get_xlabel()
-            assert "MVC" not in ax.get_xlabel()
-            assert "Jonsson" not in ax.get_title()
-        finally:
-            tab.cleanup()
+
+class TestTheAmplitudeArrows:
+    """The ▲▼ sidebar changes the amplitude; it does not pan.
+
+    Reported from the bench: in the MVC tab the arrows moved the trace up and
+    down instead of making it taller. The zoom held the *midpoint* of the view
+    fixed, and panels 2 and 3 carry non-negative signals drawn from zero — so
+    halving the range about its midpoint lifted the floor off zero and slid the
+    trace upwards. The analysis tab had always scaled about zero.
+    """
+
+    @pytest.fixture
+    def zoom(self, qapp):
+        """A tab and a bare axes to zoom.
+
+        The backend is left alone: switching it here would invalidate the Qt
+        canvas of any tab already built in this session, and a plain Figure
+        needs no backend to hold an axes.
+
+        ``_y_zoom`` ends in ``draw_idle()``, which schedules the redraw on the
+        event loop; tearing the tab down with that still pending fires it on a
+        canvas that has just been deleted, so the queue is drained first.
+        """
+        from matplotlib.figure import Figure
+        from PySide6.QtCore import QSettings
+
+        from emgteach.gui.tabs.mvc import MvcTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+
+        tab = MvcTab(LoggerWidget(), QSettings("emgteach-test", "zoom"))
+        yield tab, Figure().subplots()
+        qapp.processEvents()
+        tab.cleanup()
+
+    @pytest.mark.gui
+    def test_a_non_negative_axis_keeps_its_floor_at_zero(self, zoom) -> None:
+        """The envelope and the % MVC start at zero and cannot go below it."""
+        tab, ax = zoom
+        for limits in ((0.0, 0.10), (0.0, 150.0)):
+            ax.set_ylim(*limits)
+            tab._y_accum = {}
+            tab._y_zoom(0, ax, True)
+            bottom, top = ax.get_ylim()
+            assert bottom == pytest.approx(0.0), limits
+            assert top == pytest.approx(limits[1] / 1.5), limits
+
+    @pytest.mark.gui
+    def test_zooming_out_also_keeps_the_floor(self, zoom) -> None:
+        tab, ax = zoom
+        ax.set_ylim(0.0, 0.10)
+        tab._y_accum = {}
+        tab._y_zoom(0, ax, False)
+        bottom, top = ax.get_ylim()
+        assert bottom == pytest.approx(0.0)
+        assert top == pytest.approx(0.15)
+
+    @pytest.mark.gui
+    def test_a_bipolar_axis_scales_symmetrically(self, zoom) -> None:
+        """The raw and filtered traces swing either side of zero, and zero is
+        still the anchor — there it happens to be the midpoint too."""
+        tab, ax = zoom
+        ax.set_ylim(-0.5, 0.5)
+        tab._y_accum = {}
+        tab._y_zoom(0, ax, True)
+        bottom, top = ax.get_ylim()
+        assert bottom == pytest.approx(-1 / 3, abs=1e-3)
+        assert top == pytest.approx(1 / 3, abs=1e-3)
+
+    @pytest.mark.gui
+    def test_the_trace_grows_rather_than_moves(self, zoom) -> None:
+        """Stated as the symptom rather than the mechanism: a fixed value sits
+        at a *higher fraction* of the axis after zooming in, and the bottom of
+        the view does not move."""
+        tab, ax = zoom
+        ax.set_ylim(0.0, 0.10)
+        value = 0.03
+        before = (value - 0.0) / 0.10
+        tab._y_accum = {}
+        tab._y_zoom(0, ax, True)
+        bottom, top = ax.get_ylim()
+        assert (value - bottom) / (top - bottom) > before
+        assert bottom == pytest.approx(0.0)
+
+
+class TestJudgingAReferenceFairly:
+    """What is compared against the reference is measured the same way."""
+
+    def test_the_running_mean_matches_the_reference_statistic(self) -> None:
+        """The reference is the strongest 0.5 s the subject held, so a
+        recording is judged by its own strongest 0.5 s and not by an
+        instantaneous peak. On the second bench recording that difference
+        alone turned an honest 234 % into an alarming 384 %.
+        """
+        from emgteach.mvc import mvc_peak_hold
+        from emgteach.workers.analysis import _sustained
+
+        rng = np.random.default_rng(9)
+        n = int(FS * 10)
+        env = np.abs(rng.normal(0.02, 0.004, n))
+        env[int(FS * 4):int(FS * 4.2)] += 0.4          # a brief spike
+        sustained = _sustained(env, FS, 0.5)
+        assert sustained.max() < env.max() / 2, "the spike survived the mean"
+        assert sustained.max() == pytest.approx(
+            mvc_peak_hold(env, int(0.5 * FS)), rel=1e-9
+        ), "the two ways of measuring the same thing disagree"
+
+    def test_a_short_recording_is_returned_untouched(self) -> None:
+        from emgteach.workers.analysis import _sustained
+
+        short = _envelope(0.02, 100)
+        assert np.array_equal(_sustained(short, FS, 0.5), short)

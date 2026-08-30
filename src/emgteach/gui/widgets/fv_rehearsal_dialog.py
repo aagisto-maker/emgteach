@@ -213,14 +213,14 @@ class ForceVelocityRehearsalDialog(QDialog):
 
         # The MVC reference the wizard would compute, from the same window and
         # the same function it uses — so the log line shows a real number.
-        from emgteach.gui.tabs.acquisition import MVC_PEAK_WINDOW_S
         from emgteach.mvc import mvc_from_reps
+        from emgteach.profiles import EMG_PROFILE
 
         mvc = next(c for c in self._cues if c.phase == PHASE_MVC_CONTRACT)
         seg = env[int(mvc.start * fs):int(mvc.end * fs)]
         self._mvc_ref = float(
             mvc_from_reps([seg], 100.0, window_samples=max(
-                1, round(MVC_PEAK_WINDOW_S * fs)))
+                1, round(EMG_PROFILE.mvc_peak_window_s * fs)))
         ) if seg.size else 0.0
 
     # -- construction --------------------------------------------------------

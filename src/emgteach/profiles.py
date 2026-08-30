@@ -123,6 +123,10 @@ class SignalProfile:
     # not capture a maximal contraction, and every later % MVC is then wrong by
     # the same factor. Warn below this ratio of reference to resting level.
     mvc_min_rest_ratio: float = 5.0
+    # The reference is the strongest window the subject actually held, not
+    # an instantaneous peak. Anything compared against it has to be
+    # measured the same way or the comparison inflates by itself.
+    mvc_peak_window_s: float = 0.5
     # And after the fact: a reference that is not a maximum shows up as a
     # recording that spends a large share of its time above 100 % MVC.
     mvc_implausible_pct: float = 150.0     # % MVC

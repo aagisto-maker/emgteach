@@ -1293,26 +1293,30 @@ class MvcTab(QWidget):
             self._y_scale_sidebar_layout.addWidget(slot, stretch=1)
 
     def _y_zoom(self, panel_idx: int, ax, zoom_in: bool) -> None:
-        """Adjust the Y range of panel `panel_idx` by a factor of ×1.5."""
+        """Change the amplitude of panel ``panel_idx`` by ×1.5.
+
+        Anchored on **zero**, not on the middle of the current view. These
+        signals sit on a baseline of zero — an envelope and a % MVC cannot be
+        negative — so scaling about the midpoint lifts the floor off zero and
+        the trace appears to *move up* rather than grow, which is exactly what
+        it did. The analysis tab always scaled about zero; this one did not.
+        """
         factor = 1.5
         accum = self._y_accum.get(panel_idx, 1.0)
-        if zoom_in:
-            new_accum = accum / factor
-            if new_accum < 0.01:
-                return
-            ymin, ymax = ax.get_ylim()
-            centro = (ymin + ymax) / 2
-            half = (ymax - ymin) / 2 / factor
-            ax.set_ylim(centro - half, centro + half)
+        escala = 1.0 / factor if zoom_in else factor
+        nuevo = accum * escala
+        if not 0.01 <= nuevo <= 100.0:
+            return
+        ymin, ymax = ax.get_ylim()
+        if ymin <= 0.0 <= ymax:
+            ax.set_ylim(ymin * escala, ymax * escala)
         else:
-            new_accum = accum * factor
-            if new_accum > 100.0:
-                return
-            ymin, ymax = ax.get_ylim()
-            centro = (ymin + ymax) / 2
-            half = (ymax - ymin) / 2 * factor
-            ax.set_ylim(centro - half, centro + half)
-        self._y_accum[panel_idx] = new_accum
+            # A window that does not straddle zero has no baseline to hold, so
+            # its own centre is the only sensible anchor.
+            centro = (ymin + ymax) / 2.0
+            media = (ymax - ymin) / 2.0 * escala
+            ax.set_ylim(centro - media, centro + media)
+        self._y_accum[panel_idx] = nuevo
         self._canvas.draw_idle()
 
     def _on_scroll_zoom(self, event) -> None:

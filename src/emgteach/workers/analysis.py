@@ -57,6 +57,22 @@ def _contracted(envelope, fs: float, profile) -> bool:
         return False
 
 
+def _sustained(envelope, fs: float, window_s: float):
+    """The envelope as a running mean over ``window_s`` seconds.
+
+    The MVC reference is the strongest window of that length the subject
+    actually held (:func:`emgteach.mvc.mvc_peak_hold`). Comparing an
+    instantaneous envelope against it inflates the ratio for free, so anything
+    that judges a recording against the reference smooths the same way first.
+    """
+    env = np.asarray(envelope, dtype=np.float64)
+    w = max(1, round(window_s * fs))
+    if env.size < w:
+        return env
+    csum = np.cumsum(np.insert(env, 0, 0.0))
+    return (csum[w:] - csum[:-w]) / w
+
+
 def _baseline_is_usable(envelope, fs: float, profile) -> bool:
     """Could a resting baseline be measured at all?
 
@@ -548,7 +564,15 @@ class AnalysisWorker(QThread):
                     ):
                         if not ref:
                             continue
-                        pct = np.asarray(env, dtype=np.float64) / float(ref) * 100.0
+                        # Like with like: the reference is the strongest
+                        # 0.5 s the subject held, so what is compared against
+                        # it is the same running mean and not the
+                        # instantaneous envelope. On the bench recording that
+                        # difference alone accounted for a peak of 384 % where
+                        # the honest figure was 234 %.
+                        pct = _sustained(
+                            env, fs, self._profile.mvc_peak_window_s
+                        ) / float(ref) * 100.0
                         share = float(np.mean(
                             pct > self._profile.mvc_implausible_pct))
                         if share > self._profile.mvc_implausible_share:

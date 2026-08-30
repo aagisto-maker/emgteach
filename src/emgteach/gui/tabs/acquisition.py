@@ -93,7 +93,8 @@ MAX_MARKER_LINES = 40
 MVC_TICK_MS = 100   # state-machine tick
 MVC_READY_S = 3.0   # "get ready" countdown before each contraction
 MVC_REST_S = 2.0    # relax pause between reps / muscles
-MVC_PEAK_WINDOW_S = 0.5   # strongest-sustained window used for the MVC reference
+# The strongest-sustained window now lives in SignalProfile, so the
+# acquisition and the analysis judge a reference by the same measure.
 
 # Guided force-velocity: the opening MVC maximum is a *sustained* effort (a few
 # seconds to reach the true maximum), whereas each loaded rep is a *quick lift*
@@ -2249,7 +2250,7 @@ class AcquisitionTab(QWidget):
             self._mvc_finish_all()
 
     def _mvc_compute_muscle(self, c: int) -> None:
-        window = max(1, round(MVC_PEAK_WINDOW_S * FS))
+        window = max(1, round(self._profile.mvc_peak_window_s * FS))
         ref = mvc_from_reps(
             self._mvc_capture[c], self._profile.mvc_percentile,
             window_samples=window,
@@ -2532,7 +2533,7 @@ class AcquisitionTab(QWidget):
         """Set the MVC reference from the guided maximum contraction."""
         if not self._fv_mvc_buf:
             return
-        window = max(1, round(MVC_PEAK_WINDOW_S * FS))
+        window = max(1, round(self._profile.mvc_peak_window_s * FS))
         ref = mvc_from_reps(
             [np.asarray(self._fv_mvc_buf, dtype=float)],
             self._profile.mvc_percentile, window_samples=window,
