@@ -16,6 +16,7 @@ from emgteach.dsp import (
     compute_psd_mnf_mdf,
     compute_segments,
     detect_acquisition_problems,
+    detect_onsets,
     process_offline,
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
@@ -23,6 +24,32 @@ from emgteach.i18n import tr
 from emgteach.io import list_edf_channels, read_edf_mne, read_edf_pyedflib
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
+
+
+def _contracted(envelope, fs: float, profile) -> bool:
+    """Did this muscle actually contract, by the application's own definition?
+
+    Normalising a channel to its own maximum is what makes two muscles
+    comparable — but only if that maximum *is* a contraction. A muscle that
+    stayed silent has no maximum, so dividing by its largest noise peak
+    magnifies baseline noise until it fills the axis and reads as
+    co-contraction: precisely the wrong conclusion, and the one a clean
+    single-direction movement would produce.
+
+    The test is the app's own onset detector rather than a threshold invented
+    here, so "a contraction happened" means the same thing everywhere in the
+    program.
+    """
+    try:
+        return bool(detect_onsets(
+            envelope, fs,
+            k=profile.onset_k,
+            baseline_s=profile.onset_baseline_s,
+            refractory_s=profile.onset_refractory_s,
+            min_duration_s=profile.onset_min_duration_s,
+        ))
+    except Exception:      # a span too short to hold a baseline
+        return False
 
 
 class AnalysisWorker(QThread):
@@ -336,6 +363,8 @@ class AnalysisWorker(QThread):
                 "emg_envelope": proc["emg_envelope"],
                 "rms_sliding": proc["rms_sliding"],
                 "emg_envelope_normalised": proc["emg_envelope_normalised"],
+                "emg_contracted": _contracted(
+                    proc["emg_envelope"], fs, self._profile),
                 # plot axis
                 "t_plot": t_plot,
                 "n_plot": n_plot,
@@ -411,6 +440,15 @@ class AnalysisWorker(QThread):
                     result["emg_envelope_normalised_2"] = (
                         proc2["emg_envelope_normalised"]
                     )
+                    result["emg_contracted_2"] = _contracted(
+                        proc2["emg_envelope"], fs, self._profile
+                    )
+                    if not result["emg_contracted_2"]:
+                        self.log.emit(tr(
+                            "No contraction detected in «{name}»: its trace is "
+                            "baseline noise, drawn magnified by the "
+                            "normalisation."
+                        ).format(name=self._channel_name_2))
                     result["channel_name_2"] = self._channel_name_2
                     self.log.emit(
                         tr("2nd channel «{name}» overlaid.").format(

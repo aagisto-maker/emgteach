@@ -1359,13 +1359,27 @@ class AnalysisTab(QWidget):
             # co-contraction. What the question actually asks is *when* each
             # muscle is active, and how hard relative to its own effort, and
             # that is exactly what survives normalisation.
+            # A channel that never contracted has no maximum to divide by, so
+            # its baseline noise arrives magnified to full height. That is the
+            # correct *finding* — the muscle stayed silent — but a solid line
+            # at full scale states the opposite, so it is drawn as what it is:
+            # faint, dashed, and named.
+            def _dibujar(env, colour, nombre, contrajo) -> None:
+                if contrajo:
+                    ax.plot(times, env, color=colour, lw=1.8, label=nombre)
+                else:
+                    ax.plot(times, env, color="#9AA6B2", lw=1.0, ls=(0, (4, 3)),
+                            alpha=0.85,
+                            label=tr("{name} — no contraction (baseline noise)")
+                            .format(name=nombre))
+
             lbl1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
-            ax.plot(times, r["emg_envelope_normalised"], color="#4169E1",
-                    lw=1.8, label=lbl1)
+            _dibujar(r["emg_envelope_normalised"], "#4169E1", lbl1,
+                     r.get("emg_contracted", True))
             env2 = r.get("emg_envelope_normalised_2")
             if env2 is not None:
                 lbl2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-                ax.plot(times, env2, color="#D62728", lw=1.8, label=lbl2)
+                _dibujar(env2, "#D62728", lbl2, r.get("emg_contracted_2", True))
             else:
                 ax.text(
                     0.5, 0.5,

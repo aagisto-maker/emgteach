@@ -44,9 +44,13 @@ def _two_channel_edf(path: Path, fs: int = 1000, secs: int = 10) -> str:
     n = fs * secs
     t = np.arange(n) / fs
     rng = np.random.default_rng(7)
-    burst = (np.sin(2 * np.pi * 0.25 * t) ** 2)
+    # A quiet lead-in: the onset detector takes its baseline from the first
+    # second, and a recording that starts mid-contraction has no baseline to
+    # take — which is also true of a real one.
+    quiet = (t >= 1.5).astype(float)
+    burst = (np.sin(2 * np.pi * 0.25 * (t - 1.5)) ** 2) * quiet
     agonist = rng.normal(0.0, 0.60, n) * burst
-    antagonist = rng.normal(0.0, 0.06, n) * (1.0 - burst)
+    antagonist = rng.normal(0.0, 0.06, n) * (1.0 - burst) * quiet
     chans = [
         ChannelInfo("Biceps", dimension="mV", sample_frequency=fs),
         ChannelInfo("Triceps", dimension="mV", sample_frequency=fs),
@@ -181,5 +185,84 @@ class TestEveryPanelAgrees:
                 "axes that look like a ratio but name a unit: "
                 + "; ".join(offenders)
             )
+        finally:
+            tab.cleanup()
+
+
+def _silent_antagonist_edf(path: Path, fs: int = 1000, secs: int = 10) -> str:
+    """One muscle working, the other genuinely silent.
+
+    What a clean single-direction movement produces, and the case that breaks
+    normalisation: the silent channel has no maximum, so dividing by its
+    largest noise peak sends baseline noise to full height.
+    """
+    n = fs * secs
+    t = np.arange(n) / fs
+    rng = np.random.default_rng(11)
+    quiet = (t >= 1.5).astype(float)
+    burst = (np.sin(2 * np.pi * 0.25 * (t - 1.5)) ** 2) * quiet
+    agonist = rng.normal(0.0, 0.60, n) * burst
+    antagonist = rng.normal(0.0, 0.004, n)          # baseline only
+    chans = [
+        ChannelInfo("Flexor", dimension="mV", sample_frequency=fs),
+        ChannelInfo("Extensor", dimension="mV", sample_frequency=fs),
+    ]
+    with BufferedEdfWriter(str(path), channels=chans) as w:
+        for i in range(0, n, fs):
+            w.add_samples(agonist[i:i + fs], antagonist[i:i + fs])
+    return str(path)
+
+
+class TestASilentMuscleIsNotDrawnAsActive:
+    """Normalising to a channel's own maximum assumes it *has* one.
+
+    A muscle that never contracted has only noise, and dividing by its largest
+    noise peak magnifies that noise to full scale — which reads as
+    co-contraction, the exact opposite of the finding. The panel has to say
+    "silent", not draw a full-height wiggle.
+    """
+
+    def test_the_worker_reports_which_channels_contracted(
+        self, qapp, monkeypatch, tmp_path: Path
+    ) -> None:
+        edf = _silent_antagonist_edf(tmp_path / "silent.edf")
+        tab, r = _run_analysis(qapp, monkeypatch, edf)
+        try:
+            assert r["emg_contracted"] is True
+            assert r["emg_contracted_2"] is False
+        finally:
+            tab.cleanup()
+
+    def test_both_are_reported_active_when_both_work(
+        self, qapp, monkeypatch, tmp_path: Path
+    ) -> None:
+        """The guard must not fire on the normal alternating protocol."""
+        edf = _two_channel_edf(tmp_path / "pair.edf")
+        tab, r = _run_analysis(qapp, monkeypatch, edf)
+        try:
+            assert r["emg_contracted"] is True
+            assert r["emg_contracted_2"] is True
+        finally:
+            tab.cleanup()
+
+    def test_the_silent_muscle_is_drawn_as_silent(
+        self, qapp, monkeypatch, tmp_path: Path
+    ) -> None:
+        edf = _silent_antagonist_edf(tmp_path / "silent.edf")
+        tab, _r = _run_analysis(qapp, monkeypatch, edf)
+        try:
+            ax = next(ax for ax in tab._fig.axes
+                      if "agonist" in ax.get_title().lower())
+            etiquetas = [ln.get_label() for ln in ax.get_lines()]
+            dicho = [e for e in etiquetas if "Extensor" in str(e)]
+            assert dicho, f"the silent channel is not named: {etiquetas}"
+            assert "contraction" in str(dicho[0]) or "contracc" in str(dicho[0]), (
+                f"the legend does not say it stayed silent: {dicho[0]!r}"
+            )
+            # Dashed, so it does not read as a signal at a glance.
+            silenciosa = next(
+                ln for ln in ax.get_lines() if "Extensor" in str(ln.get_label())
+            )
+            assert silenciosa.get_linestyle() not in ("-", "solid")
         finally:
             tab.cleanup()

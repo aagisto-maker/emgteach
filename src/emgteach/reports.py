@@ -281,12 +281,26 @@ def _draw_analysis_panel(
     elif idx == 8:
         # Each muscle against its own maximum — see the same panel in the
         # analysis tab for why two muscles must never share a millivolt axis.
-        ax.plot(times, r["emg_envelope_normalised"], color="#4169E1", lw=1.6,
-                label=str(r.get("channel_name") or tr("Muscle {n}").format(n=1)))
+        # A silent channel is drawn faint and dashed: with no maximum of its
+        # own to divide by, its baseline noise arrives at full height, and a
+        # solid line would report co-contraction that did not happen.
+        def _trazo(env, colour, nombre, contrajo):
+            if contrajo:
+                ax.plot(times, env, color=colour, lw=1.6, label=nombre)
+            else:
+                ax.plot(times, env, color="#9AA6B2", lw=1.0, ls=(0, (4, 3)),
+                        alpha=0.85,
+                        label=tr("{name} — no contraction (baseline noise)")
+                        .format(name=nombre))
+
+        _trazo(r["emg_envelope_normalised"], "#4169E1",
+               str(r.get("channel_name") or tr("Muscle {n}").format(n=1)),
+               r.get("emg_contracted", True))
         env2 = r.get("emg_envelope_normalised_2")
         if env2 is not None:
-            ax.plot(times, env2, color="#D62728", lw=1.6,
-                    label=str(r.get("channel_name_2") or tr("Muscle {n}").format(n=2)))
+            _trazo(env2, "#D62728",
+                   str(r.get("channel_name_2") or tr("Muscle {n}").format(n=2)),
+                   r.get("emg_contracted_2", True))
         ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)

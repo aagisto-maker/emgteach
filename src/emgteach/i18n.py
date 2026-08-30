@@ -1110,6 +1110,8 @@ _ES = {
         "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    '{name} — no contraction (baseline noise)': '{name} — sin contracción (ruido de base)',
+    'No contraction detected in «{name}»: its trace is baseline noise, drawn magnified by the normalisation.': 'No se detecta contracción en «{name}»: su trazo es ruido de base, dibujado ampliado por la normalización.',
     "The two envelopes are overlaid against each muscle's own maximum, not in millivolts: each muscle has its own electrodes and its own layer of skin and fat, so their millivolts do not compare. What does compare is when each one is active and how hard for itself. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-contraction, which holds the joint rigid and is typical of an unpractised or uncertain movement.": 'Las dos envolventes se superponen frente al máximo de cada músculo, no en milivoltios: cada músculo tiene sus electrodos y su capa de piel y grasa, así que sus milivoltios no se comparan. Lo que sí se compara es cuándo se activa cada uno y con qué intensidad respecto de sí mismo. En un movimiento limpio el agonista se activa mientras el antagonista permanece casi silente; la activación simultánea es co-contracción, que mantiene rígida la articulación y es típica de un movimiento poco entrenado o inseguro.',
     'each ÷ its own maximum': 'cada uno ÷ su propio máximo',
     'Complexity level': 'Nivel de complejidad',
