@@ -490,8 +490,6 @@ _ES = {
     " (rep {i}/{n})": " (rep {i}/{n})",
     "Get ready — {label}{rep}: {n}": "Prepárese — {label}{rep}: {n}",
     "Get ready — {label}{rep}": "Prepárese — {label}{rep}",
-    "Maximum contraction when the count reaches 0":
-        "Contracción máxima cuando la cuenta llegue a 0",
     "Contract {label} at maximum!{rep}": "¡Contraiga {label} al máximo!{rep}",
     "Next muscle: {label}": "Siguiente músculo: {label}",
     "Get ready for the next repetition": "Prepárese para la siguiente repetición",
@@ -1110,6 +1108,10 @@ _ES = {
         "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    'Push as hard as you can when the count reaches 0 — against a fixed resistance, without letting the joint move': 'Empuje todo lo que pueda cuando la cuenta llegue a 0, contra una resistencia fija y sin dejar que la articulación se mueva',
+    "The reference has to be made against something that does not give way — a fixed object, or the operator's hand — with the joint held still. This is the force-velocity relationship at work: with nothing to push against, the muscle shortens at its fastest and therefore develops its least force, so it recruits few motor units. A maximum performed in mid-air is submaximal by construction, and every percentage that follows comes out too high in the same proportion.": 'La referencia hay que hacerla contra algo que no ceda —un objeto fijo o la mano del operador— y con la articulación quieta. Es la relación fuerza-velocidad en acción: sin nada contra lo que empujar, el músculo se acorta a su máxima velocidad y por tanto desarrolla su fuerza mínima, así que recluta pocas unidades motoras. Una máxima hecha en el aire es submáxima por construcción, y todos los porcentajes posteriores salen altos en la misma proporción.',
+    "% of this recording's own maximum": '% del máximo del propio registro',
+    'Distribution of effort over time': 'Reparto del esfuerzo en el tiempo',
     '⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.': '⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.',
     '⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.': '⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.',
     '⚠ «{name}» is above {limit:.0f} % MVC for {share:.0f} % of the recording, peaking at {peak:.0f} %. The calibration did not capture a maximum, so every percentage here is too high.': '⚠ «{name}» está por encima del {limit:.0f} % de CVM durante el {share:.0f} % del registro, con un pico del {peak:.0f} %. La calibración no captó una máxima, así que todos los porcentajes de aquí salen altos.',

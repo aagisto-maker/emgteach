@@ -2138,7 +2138,8 @@ class AcquisitionTab(QWidget):
             self._mvc_overlay.show_ready(
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 count,
-                tr("Maximum contraction when the count reaches 0"),
+                tr("Push as hard as you can when the count reaches 0 — against a "
+                   "fixed resistance, without letting the joint move"),
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
@@ -2146,7 +2147,8 @@ class AcquisitionTab(QWidget):
             self._bcast_calib(
                 True, "ready",
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
-                tr("Maximum contraction when the count reaches 0"), count=count,
+                tr("Push as hard as you can when the count reaches 0 — against a "
+                   "fixed resistance, without letting the joint move"), count=count,
             )
             if self._mvc_elapsed >= MVC_READY_S:
                 self._mvc_phase = "contract"

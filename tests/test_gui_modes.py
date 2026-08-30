@@ -464,3 +464,28 @@ def test_no_caption_is_left_behind(main_window, qapp, mode) -> None:
             stranded -= {"Warning", "Danger", "k:", "from", "to",
                          "Envelope cutoff frequency (Hz):"}
         assert not stranded, f"{mode}: {sorted(stranded)}"
+
+
+@pytest.mark.gui
+def test_trimming_a_recording_is_offered_in_every_practical(qapp) -> None:
+    """Keeping the part that came out well is hygiene, not a fine adjustment.
+
+    A first attempt in a teaching laboratory arrives with a movement artefact,
+    a loose electrode or a false start more often than not. The numeric
+    "from"/"to" boxes stay advanced — they ask for two figures the student does
+    not have — but the editor, which shows the recording and lets them point,
+    belongs in every practical.
+    """
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.analysis import AnalysisTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+    from emgteach.modes import MODES
+
+    for mode in MODES:
+        tab = AnalysisTab(LoggerWidget(), QSettings("emgteach-test", "frag"))
+        try:
+            tab.apply_mode(mode, False)
+            assert not tab._box_fragmentos.isHidden(), mode
+        finally:
+            tab.cleanup()

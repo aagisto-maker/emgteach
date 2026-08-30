@@ -394,8 +394,19 @@ class AnalysisTab(QWidget):
         row_roi.addWidget(self._spin_roi_end)
         self._chk_roi.toggled.connect(self._spin_roi_start.setEnabled)
         self._chk_roi.toggled.connect(self._spin_roi_end.setEnabled)
-        row_roi.addSpacing(12)
-        # Assisted multi-fragment selection (auto-suggested, user-edited).
+        row_roi.addStretch()
+
+        # The fragment editor sits in its own container, offered in every
+        # practical. Keeping the part of a recording that came out well is not
+        # a fine adjustment: a first attempt in a teaching laboratory arrives
+        # with movement artefacts, a loose electrode or a false start more
+        # often than not, and throwing that away is hygiene rather than
+        # expertise. The numeric "from"/"to" boxes above stay a fine control:
+        # they ask for two figures the student does not have, where the editor
+        # shows the recording and lets them point.
+        self._box_fragmentos = QWidget()
+        row_frag = QHBoxLayout(self._box_fragmentos)
+        row_frag.setContentsMargins(0, 0, 0, 0)
         self._btn_fragmentos = QPushButton(tr("Select fragments…"))
         self._btn_fragmentos.setToolTip(
             tr(
@@ -405,15 +416,17 @@ class AnalysisTab(QWidget):
         )
         self._btn_fragmentos.setEnabled(False)
         self._btn_fragmentos.clicked.connect(self._editar_fragmentos)
-        row_roi.addWidget(self._btn_fragmentos)
+        row_frag.addWidget(self._btn_fragmentos)
         self._lbl_fragmentos = QLabel("")
-        row_roi.addWidget(self._lbl_fragmentos)
+        row_frag.addWidget(self._lbl_fragmentos)
+        row_frag.addStretch()
         self._selected_segments: list[tuple[float, float]] = []
         # Filter cut-offs chosen in the fragment editor; when set they drive
         # the actual analysis (not just detection). None = use the tab defaults.
         self._analysis_filter_kwargs: dict[str, float] | None = None
         row_roi.addStretch()
         ctrl.addWidget(self._box_roi)
+        ctrl.addWidget(self._box_fragmentos)
 
         # Log to the right of the parameters
         grp_log_top = QGroupBox(tr("Event log"))
@@ -2142,6 +2155,8 @@ class AnalysisTab(QWidget):
         # Shared by every mode: fine control.
         self._box_fenv.setVisible(advanced)
         self._box_roi.setVisible(advanced)
+        # Offered in every practical; see where it is built.
+        self._box_fragmentos.setVisible(True)
 
         self._sync_compare_to_mode()
         self._apply_panel_visibility(mode, advanced)

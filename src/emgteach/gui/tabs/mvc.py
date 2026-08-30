@@ -580,6 +580,16 @@ class MvcTab(QWidget):
                 "them in between."
             ),
             tr(
+                "The reference has to be made against something that does not "
+                "give way — a fixed object, or the operator's hand — with the "
+                "joint held still. This is the force-velocity relationship at "
+                "work: with nothing to push against, the muscle shortens at "
+                "its fastest and therefore develops its least force, so it "
+                "recruits few motor units. A maximum performed in mid-air is "
+                "submaximal by construction, and every percentage that follows "
+                "comes out too high in the same proportion."
+            ),
+            tr(
                 "Without a reference recording this tab can still work, but the "
                 "percentages it produces are not percentages of MVC and the "
                 "muscle-load limits do not apply to them."
@@ -840,6 +850,11 @@ class MvcTab(QWidget):
                 tr("Normalising against the recording itself — shape only, "
                    "not % MVC.")
             )
+            self._refresh_compute_enabled()
+            # Saying yes *is* the decision. Leaving the result behind a second
+            # button reads as the answer having been ignored.
+            self._iniciar_calculo()
+            return
         self._refresh_compute_enabled()
 
     def _confirmar_sin_referencia(self) -> bool:
@@ -1172,25 +1187,33 @@ class MvcTab(QWidget):
         self._apdf_fig.clear()
         ax = self._apdf_fig.add_subplot(111)
 
-        # Against an auto-normalised reference the Jonsson limits mean nothing
-        # — a sustained contraction exceeds them by construction — so the
-        # curve is not drawn at all rather than drawn with a caveat.
+        # Against an auto-normalised reference the *distribution* is still a
+        # fair description of the recording — how its time is spread across
+        # effort levels, which is the shape the offer promises. What means
+        # nothing is the comparison with Jonsson's limits: a sustained
+        # contraction exceeds them by construction, and drawing them turned a
+        # whole recording red and looked like a finding. So the curve is drawn
+        # and the limits are not.
+        apdf = r["apdf"]
         if r.get("mvc_is_auto"):
-            ax.text(0.5, 0.5, tr(AUTO_LOAD_MSG), ha="center", va="center",
-                    fontsize=9, color="#666666", wrap=True,
-                    transform=ax.transAxes)
-            ax.set_xticks([])
-            ax.set_yticks([])
-            for spine in ax.spines.values():
-                spine.set_visible(False)
+            ax.plot(apdf.load, apdf.cumulative, color="#7A8894", lw=1.8)
+            for prob in (10, 50, 90):
+                ax.axhline(prob, color="#E4E4E4", ls=":", lw=0.7)
+            ax.set_xlabel(tr("% of this recording's own maximum"), fontsize=8)
+            ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
+            ax.set_ylim(0, 100)
             ax.set_title(
-                tr("Muscle-load distribution (APDF, Jonsson)") + tr(AUTO_SUFFIX),
+                tr("Distribution of effort over time") + tr(AUTO_SUFFIX),
                 fontsize=9,
             )
+            ax.text(0.5, 0.06, tr(AUTO_LOAD_MSG), ha="center", va="bottom",
+                    fontsize=8, color=AUTO_COLOR, wrap=True,
+                    transform=ax.transAxes)
+            ax.grid(True, color="#DDDDDD", alpha=0.5)
+            ax.tick_params(labelsize=7)
             self._apdf_canvas.draw_idle()
             return
 
-        apdf = r["apdf"]
         ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.8)
         for prob in (10, 50, 90):
             ax.axhline(prob, color="#cccccc", ls=":", lw=0.7)

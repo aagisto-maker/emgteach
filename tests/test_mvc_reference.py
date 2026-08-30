@@ -136,3 +136,101 @@ class TestTheCalibrationIsComparedWithRest:
         """Tunable against real forearm data, like the co-activation floor."""
         assert EMG_PROFILE.mvc_min_rest_ratio == pytest.approx(5.0)
         assert EMG_PROFILE.mvc_implausible_pct == pytest.approx(150.0)
+
+
+@pytest.mark.gui
+class TestAcceptingTheThirdWay:
+    """Saying yes to "use this recording itself" has to *do* it.
+
+    Reported from the bench as "I tell it yes and it does not do it": the flag
+    was set and the button enabled, but the result stayed behind a second press
+    of Compute, and the load distribution was withheld entirely. Agreeing to a
+    known-imperfect option is a decision, not a request for another dialogue.
+    """
+
+    @staticmethod
+    def _tab(qapp, edf):
+        from PySide6.QtCore import QSettings
+        from PySide6.QtWidgets import QMessageBox
+
+        from emgteach.gui.tabs.mvc import MvcTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+        from emgteach.modes import MODE_PAIR
+
+        def click_destructive(self):
+            for b in self.buttons():
+                if self.buttonRole(b) == QMessageBox.ButtonRole.DestructiveRole:
+                    b.click()
+                    return 0
+            return 0
+
+        QMessageBox.exec = click_destructive
+        tab = MvcTab(LoggerWidget(), QSettings("emgteach-test", "third"))
+        tab.apply_mode(MODE_PAIR, False)
+        tab.adopt_recording(str(edf))
+        return tab
+
+    @staticmethod
+    def _edf(path):
+        from emgteach.io import BufferedEdfWriter, ChannelInfo
+
+        fs, secs = 1000, 12
+        n = fs * secs
+        t = np.arange(n) / fs
+        rng = np.random.default_rng(2)
+        burst = ((t > 3) & (t < 6)).astype(float) + 0.05
+        sig = rng.normal(0, 0.3, n) * burst
+        with BufferedEdfWriter(
+            str(path),
+            channels=[ChannelInfo("EMG", dimension="mV", sample_frequency=fs)],
+        ) as w:
+            for i in range(0, n, fs):
+                w.add_samples(sig[i:i + fs])
+        return str(path)
+
+    def test_accepting_computes_without_a_second_press(
+        self, qapp, tmp_path
+    ) -> None:
+        from PySide6.QtCore import QElapsedTimer
+
+        tab = self._tab(qapp, self._edf(tmp_path / "solo.edf"))
+        try:
+            done: list = []
+            original = tab._on_result
+            tab._on_result = lambda r: (original(r), done.append(r))
+            tab._ofrecer_auto_normalizacion()
+            timer = QElapsedTimer()
+            timer.start()
+            while not done and timer.elapsed() < 30000:
+                qapp.processEvents()
+            assert done, "accepting produced no result"
+            assert done[0]["mvc_is_auto"] is True
+        finally:
+            tab.cleanup()
+
+    def test_the_distribution_is_drawn_but_the_limits_are_not(
+        self, qapp, tmp_path
+    ) -> None:
+        """The shape is a fair description of the recording; the Jonsson
+        comparison is not, and drawing it painted everything red."""
+        from PySide6.QtCore import QElapsedTimer
+
+        tab = self._tab(qapp, self._edf(tmp_path / "solo.edf"))
+        try:
+            done: list = []
+            original = tab._on_result
+            tab._on_result = lambda r: (original(r), done.append(r))
+            tab._ofrecer_auto_normalizacion()
+            timer = QElapsedTimer()
+            timer.start()
+            while not done and timer.elapsed() < 30000:
+                qapp.processEvents()
+            assert done
+            ax = tab._apdf_fig.axes[0]
+            assert ax.get_lines(), "the distribution was not drawn"
+            # Its own maximum, not % MVC, and no limit markers.
+            assert "%" in ax.get_xlabel()
+            assert "MVC" not in ax.get_xlabel()
+            assert "Jonsson" not in ax.get_title()
+        finally:
+            tab.cleanup()

@@ -111,9 +111,29 @@ El orden importa, porque la aplicación depende de él.
    inicios toma su línea base del primer segundo, y el índice de coactivación
    resta el nivel de reposo. Un registro que empieza con el sujeto ya
    contrayendo no tiene línea base que tomar.
-2. **Calibre la CVM de los dos músculos, con la grabación en marcha.** Flexión
-   máxima resistida para el canal 1, extensión máxima resistida para el canal 2.
-   Sin las dos referencias el panel 9 se queda en milivoltios y no hay índice.
+2. **Calibre la CVM de los dos músculos, con la grabación en marcha.** Sin las
+   dos referencias el panel 9 se queda en milivoltios y no hay índice.
+
+   > ⚠️ **Contra resistencia, y sin que la muñeca se mueva.** Es el error que
+   > más estropea la práctica, y no se nota hasta el análisis.
+   >
+   > - **Canal 1 (flexores):** antebrazo supinado sobre la mesa. El operador
+   >   sujeta la palma; el sujeto intenta flexionar la muñeca contra esa mano.
+   >   La muñeca no se mueve.
+   > - **Canal 2 (extensores):** antebrazo pronado sobre la mesa. El operador
+   >   sujeta el dorso de la mano; el sujeto intenta extender contra ella.
+   >
+   > **Por qué importa tanto**, y es la propia fisiología de la asignatura: sin
+   > nada contra lo que empujar, el músculo se acorta a su velocidad máxima y
+   > por la relación fuerza-velocidad desarrolla su fuerza mínima, así que
+   > recluta pocas unidades motoras. Una «máxima» hecha en el aire es
+   > **submáxima por construcción**. En la primera sesión de banco la
+   > calibración salió diez veces menor que las contracciones posteriores del
+   > mismo registro, y el análisis daba picos del 1509 % de CVM.
+   >
+   > **Comprobación inmediata:** después de calibrar, pida una contracción
+   > fuerte cualquiera. Si la barra de carga en vivo pasa de 100 %, la
+   > calibración no fue máxima — repítala.
 3. **Marque «Flexión»** (tecla **M**) y haga varias flexiones de muñeca.
 4. **Marque «Extensión»** y haga varias extensiones.
 5. **Marque «Presa»** y mantenga una presa firme unos segundos.
