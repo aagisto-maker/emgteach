@@ -296,34 +296,34 @@ _ES = {
     "automatically.":
         "Indicar las cargas conocidas (kg) que levantará el sujeto, de menor a "
         "mayor. El asistente guía primero una CVM máxima (sin carga) y luego, "
-        "para cada carga, indica un levantamiento rápido («¡Levanta!» → "
-        "«¡Relaja!», sin mantener), marcando cada uno para que el estudio "
+        "para cada carga, indica un levantamiento rápido («¡Levante!» → "
+        "«¡Relaje!», sin mantener), marcando cada uno para que el estudio "
         "fuerza-velocidad lea las cargas automáticamente.",
     # Config label next to the guided-F-V button (reps · loads).
     "{reps}× · loads: {loads} kg": "{reps}× · cargas: {loads} kg",
     "(loads not set)": "(cargas sin definir)",
     # Guided-F-V wizard prompts (MVC maximum first, then per-load contractions).
     "Get ready — maximum contraction (no load)":
-        "Prepárate — contracción máxima (sin carga)",
-    "Contract at maximum when it reaches 0":
-        "Contraiga al máximo al llegar a 0",
+        "Prepárese — contracción máxima (sin carga)",
+    "Contract at maximum when the count reaches 0":
+        "Contraiga al máximo cuando la cuenta llegue a 0",
     "Get ready — maximum (no load): {n}":
-        "Prepárate — máxima (sin carga): {n}",
+        "Prepárese — máxima (sin carga): {n}",
     "Contract at maximum! (no load)": "¡Contraiga al máximo! (sin carga)",
     "Contract at maximum! ({s:.0f} s)": "¡Contraiga al máximo! ({s:.0f} s)",
     "Relax — now the loads, lightest first":
-        "Relaja — ahora las cargas, de menor a mayor",
-    "Relax — the loads come next…": "Relaja — ahora vienen las cargas…",
+        "Relaje — ahora las cargas, de menor a mayor",
+    "Relax — the loads come next…": "Relaje — ahora vienen las cargas…",
     " (load {i}/{n}, rep {r}/{rn})": " (carga {i}/{n}, rep {r}/{rn})",
-    "Prepare {kg:g} kg{prog}": "Prepara {kg:g} kg{prog}",
-    "Prepare {kg:g} kg{prog}: {n}": "Prepara {kg:g} kg{prog}: {n}",
-    "Lift {kg:g} kg when it reaches 0":
-        "Levanta {kg:g} kg al llegar a 0",
-    "Lift {kg:g} kg!": "¡Levanta {kg:g} kg!",
-    "Lift {kg:g} kg — then relax": "Levanta {kg:g} kg — luego relaja",
+    "Prepare {kg:g} kg{prog}": "Prepare {kg:g} kg{prog}",
+    "Prepare {kg:g} kg{prog}: {n}": "Prepare {kg:g} kg{prog}: {n}",
+    "Lift {kg:g} kg when the count reaches 0":
+        "Levante {kg:g} kg cuando la cuenta llegue a 0",
+    "Lift {kg:g} kg!": "¡Levante {kg:g} kg!",
+    "Lift {kg:g} kg — then relax": "Levante {kg:g} kg — luego relaje",
     "Relax — another rep of {kg:g} kg":
-        "Relaja — otra repetición de {kg:g} kg",
-    "Relax — change to {kg:g} kg": "Relaja — cambia a {kg:g} kg",
+        "Relaje — otra repetición de {kg:g} kg",
+    "Relax — change to {kg:g} kg": "Relaje — cambie a {kg:g} kg",
     "F-V: MVC reference {ref:.2f} mV.":
         "F-V: referencia CVM {ref:.2f} mV.",
     "Force-velocity: contraction with {kg:g} kg.":
@@ -488,12 +488,13 @@ _ES = {
         "(más fiable). Si no, una sola contracción por músculo.",
     "Muscle {n}": "Músculo {n}",
     " (rep {i}/{n})": " (rep {i}/{n})",
-    "Get ready — {label}{rep}: {n}": "Prepárate — {label}{rep}: {n}",
-    "Get ready — {label}{rep}": "Prepárate — {label}{rep}",
-    "Maximum contraction when it reaches 0": "Contracción máxima al llegar a 0",
+    "Get ready — {label}{rep}: {n}": "Prepárese — {label}{rep}: {n}",
+    "Get ready — {label}{rep}": "Prepárese — {label}{rep}",
+    "Maximum contraction when the count reaches 0":
+        "Contracción máxima cuando la cuenta llegue a 0",
     "Contract {label} at maximum!{rep}": "¡Contraiga {label} al máximo!{rep}",
     "Next muscle: {label}": "Siguiente músculo: {label}",
-    "Get ready for the next repetition": "Prepárate para la siguiente repetición",
+    "Get ready for the next repetition": "Prepárese para la siguiente repetición",
     "MVC ready": "CVM listo",
     "{summary}\nYou can start recording.": "{summary}\nYa se puede empezar a grabar.",
     "Calibration failed": "Calibración fallida",
@@ -501,11 +502,11 @@ _ES = {
     "Contract {label} as hard as you can!  ({s:.0f} s)  "
     "peak {pk:.2f} mV":
         "¡Contraiga {label} todo lo que pueda!  ({s:.0f} s)  pico {pk:.2f} mV",
-    "Relax…": "Relaja…",
-    "Relax": "Relaja",
+    "Relax…": "Relaje…",
+    "Relax": "Relaje",
     "Effort {pct:.0f} %": "Esfuerzo {pct:.0f} %",
-    "Push as hard as you can until it reaches 0":
-        "Empuje todo lo que pueda hasta llegar a 0",
+    "Contract as hard as you can until the count reaches 0":
+        "Contraiga al máximo hasta que la cuenta llegue a 0",
     "MVC ready — {summary}. You can start recording.":
         "CVM listo — {summary}. Ya se puede empezar a grabar.",
     "MVC calibrated: {summary}": "CVM calibrado: {summary}",
@@ -1109,6 +1110,8 @@ _ES = {
         "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    "The two envelopes are overlaid against each muscle's own maximum, not in millivolts: each muscle has its own electrodes and its own layer of skin and fat, so their millivolts do not compare. What does compare is when each one is active and how hard for itself. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-contraction, which holds the joint rigid and is typical of an unpractised or uncertain movement.": 'Las dos envolventes se superponen frente al máximo de cada músculo, no en milivoltios: cada músculo tiene sus electrodos y su capa de piel y grasa, así que sus milivoltios no se comparan. Lo que sí se compara es cuándo se activa cada uno y con qué intensidad respecto de sí mismo. En un movimiento limpio el agonista se activa mientras el antagonista permanece casi silente; la activación simultánea es co-contracción, que mantiene rígida la articulación y es típica de un movimiento poco entrenado o inseguro.',
+    'each ÷ its own maximum': 'cada uno ÷ su propio máximo',
     'Complexity level': 'Nivel de complejidad',
     'The coloured band shows the subjective level of complexity of the analysis: basic, intermediate or advanced. There is also a free analysis that gives control over the fine settings.': 'La banda coloreada indica el nivel subjetivo de complejidad del análisis: básico, intermedio o avanzado. Hay un análisis libre que permite controlar los ajustes finos.',
     'Connecting the sensor': 'Conexión del sensor',
@@ -1201,8 +1204,6 @@ _ES = {
         'Descargar resultados: informe y datos',
     "The report gathers the figures and the metrics into a PDF document. The CSV export saves the recording's data.":
         'El informe reúne las figuras y las métricas en un documento PDF. Exportar CSV permite guardar los datos del registro.',
-    'With two channels the envelopes can be overlaid. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-contraction, which holds the joint rigid and is typical of an unpractised or uncertain movement.':
-        'Con dos canales se pueden superponer las envolventes. En un movimiento limpio el agonista se activa mientras el antagonista permanece casi silente; la activación simultánea es co-contracción, que mantiene rígida la articulación y es típica de un movimiento poco entrenado o inseguro.',
     'A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working.':
         'Una amplitud bruta no se puede comparar entre dos personas, ni entre dos sesiones de la misma persona: depende de los electrodos, de la piel y de la grasa que hay debajo. Expresar cada valor como porcentaje de la contracción máxima cancela todo eso, porque las dos amplitudes comparten los mismos electrodos y la misma piel: lo que queda es cuánto está trabajando el músculo.',
     'Once the signal is in % MVC, the distribution of load over time can be read against the Jonsson limits: the static level (P10) is the load the muscle stays above 90 % of the time, the background tension it hardly ever lets go of, and the level most associated with sustained-effort discomfort.':
@@ -1276,10 +1277,10 @@ _ES = {
     "Recording loaded to normalise: {path}":
         "Registro cargado para normalizar: {path}",
 
-    # Normalizar contra el propio registro, ofrecido con su advertencia.
+    # Normalizar frente al propio registro, ofrecido con su advertencia.
     "Use this recording": "Usar este registro",
     "Normalise against this recording itself?":
-        "¿Normalizar contra el propio registro?",
+        "¿Normalizar frente al propio registro?",
     "The signal will be divided by the 95th percentile of itself, so the "
     "strongest moment of this recording becomes 100 % — whatever the muscle "
     "can really do. Two recordings normalised this way cannot be compared "
@@ -1295,7 +1296,7 @@ _ES = {
         "cuándo trabajó más el músculo y cuándo aflojó.",
     "Use it, showing the shape only": "Usarlo, solo para ver la forma",
     "Normalising against the recording itself — shape only, not % MVC.":
-        "Normalizando contra el propio registro: solo la forma, no % CVM.",
+        "Normalizando frente al propio registro: solo la forma, no % CVM.",
     "A reference recording is required to express the signal as % MVC and to "
     "read it against the Jonsson limits.":
         "Hace falta un registro de referencia para expresar la señal en % CVM "
@@ -1352,8 +1353,8 @@ _ES = {
     'asks which, once': 'pregunta cuál, una vez',
     'A reference?': '¿Hay referencia?',
     'if not, offers this one': 'si no, ofrece este registro',
-    'travels by itself': 'viaja solo',
-    'travels by itself, with the chosen muscle': 'viaja solo, con el músculo elegido',
+    'goes by itself': 'va solo',
+    'goes by itself, with the chosen muscle': 'va solo, con el músculo elegido',
     'loads': 'cargas',
     'another pass, same tab': 'otra pasada, misma pestaña',
     'it is the 100 %': 'es el 100 %',

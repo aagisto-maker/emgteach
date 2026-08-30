@@ -1350,9 +1350,19 @@ class AnalysisTab(QWidget):
         # --- Overlaid envelopes (agonist/antagonist) ---
         if _OVERLAY_PID in ax_map:
             ax = ax_map[_OVERLAY_PID]
+            # Each muscle against its own maximum, never millivolts. This is
+            # the one panel that puts two *different* muscles on one axis, and
+            # their millivolts are not comparable: the amplitude depends on
+            # where each pair of electrodes sits and how much skin and fat lie
+            # between them and the fibres — the very reason the MVC tab
+            # exists. Read in mV, a thicker biceps would look like
+            # co-contraction. What the question actually asks is *when* each
+            # muscle is active, and how hard relative to its own effort, and
+            # that is exactly what survives normalisation.
             lbl1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
-            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8, label=lbl1)
-            env2 = r.get("emg_envelope_2")
+            ax.plot(times, r["emg_envelope_normalised"], color="#4169E1",
+                    lw=1.8, label=lbl1)
+            env2 = r.get("emg_envelope_normalised_2")
             if env2 is not None:
                 lbl2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
                 ax.plot(times, env2, color="#D62728", lw=1.8, label=lbl2)
@@ -1364,11 +1374,13 @@ class AnalysisTab(QWidget):
                     fontsize=8, color="#888888",
                 )
             ax.set_title(tr("9. Overlaid envelopes (agonist/antagonist)"), fontsize=9)
-            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
+            ax.set_ylim(0, 1.15)
             ax.tick_params(labelsize=7)
-            ax.legend(loc="upper right", fontsize=7)
+            ax.legend(loc="upper right", fontsize=7,
+                      title=tr("each ÷ its own maximum"), title_fontsize=7)
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 

@@ -40,23 +40,37 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 
 ## Preparación común (antes de cada práctica)
 
+0. **Elegir la práctica.** En el desplegable de la esquina superior derecha, antes
+   que nada. Fija el número de canales y el uso del acelerómetro, y las tres
+   pestañas se configuran a partir de esa elección.
+
+   | Práctica del guion | Modo |
+   |---|---|
+   | 1, 2, 4 y 5 | Contracción de un músculo |
+   | 3 | Contracción agonista / antagonista |
+
+   La casilla contigua, **«Opciones avanzadas»**, muestra los controles finos
+   comunes a los tres modos: cortes de filtro, umbrales de aviso, región de interés
+   y detección automática de inicio. Sin ella, la caja de conexión del dispositivo
+   solo aparece mientras no haya ninguno guardado.
+
 1. **Colocación de electrodos.** Limpiar la piel sobre el vientre del músculo;
    colocar dos electrodos activos alineados con las fibras y uno de **referencia**
    en una zona neutra (prominencia ósea cercana).
 2. **Conexión.** Abrir emgteach → pestaña **Adquisición**. Elegir el dispositivo
-   (BITalino/Arduino), introducir la **MAC**/**puerto**, la **carpeta de destino**
-   y el **número de canales**. Pulsar **Conectar** (el **LED** debe pasar a
-   amarillo).
+   (BITalino/Arduino), introducir la **MAC**/**puerto** y la **carpeta de destino**.
+   Pulsar **Conectar** (el **LED** debe pasar a amarillo). El número de canales ya
+   no se elige aquí: lo fija el modo.
 3. **Prueba.** Pulsar **Iniciar grabación**; pedir una contracción breve y
-   comprobar que las tres gráficas (en bruto, filtrada, envolvente) responden.
-   **Detener** y descartar si hay mucho artefacto (recolocar electrodos).
+   comprobar que las dos gráficas (en bruto y envolvente) responden. **Detener** y
+   descartar si hay mucho artefacto (recolocar electrodos).
 
 [Figura sugerida: foto de la colocación de electrodos y captura de la pestaña de
 Adquisición con el LED en verde durante una contracción.]
 
 ---
 
-## Seguir la sesión desde el móvil (modo aula)
+## Seguir la sesión desde el móvil (seguimiento en móviles)
 
 En una práctica en grupo, **una sola persona maneja el equipo** (el ordenador con el
 BITalino) y **el resto sigue la sesión en el navegador del móvil**, sin instalar
@@ -64,13 +78,15 @@ nada. Así todo el grupo ve la misma señal en tiempo real y cada uno puede guar
 datos en su propio teléfono.
 
 **Para quien maneja el equipo (operador/a):**
-1. En la pestaña **Adquisición**, marca la casilla **«Difundir a móviles (modo
-   aula)»**.
-2. Aparece una dirección del tipo **`http://192.168.x.x:8137`**. Dila en voz alta o
-   escríbela en la pizarra. El ordenador y los móviles deben estar en **la misma red
-   Wi‑Fi**.
-3. Graba con normalidad: la señal, la calibración de CVM y las marcas se envían solas
-   a los móviles conectados.
+1. En la pestaña **Adquisición**, marcar la casilla **«Difundir a móviles (en
+   laboratorio)»**. Está a la vista en los tres modos, sin necesidad de opciones
+   avanzadas.
+2. Aparece una dirección del tipo **`http://192.168.x.x:8070`**. Se comparte con el
+   botón **«Copiar enlace»** o mostrando el **QR**. El ordenador y los móviles deben
+   estar en **la misma red Wi‑Fi**.
+3. Grabar con normalidad: la señal, la calibración de CVM y las marcas se envían
+   solas a los móviles conectados. Cada activación genera un **código de sesión**
+   nuevo, de modo que los enlaces de una práctica anterior dejan de valer.
 
 **Para quien sigue desde el móvil (seguidores):**
 1. Conecta el móvil a **la misma red Wi‑Fi** que el ordenador.
@@ -164,15 +180,24 @@ datos.]
 estabilizar la articulación. Con dos canales se visualiza esta coordinación.
 
 **Procedimiento.**
-1. Configurar **2 canales** (p. ej. **bíceps** = canal 1, **tríceps** = canal 2),
-   con sus etiquetas. Iniciar grabación.
+1. Elegir el modo **Contracción agonista / antagonista**, que pone el registro en
+   dos canales. Etiquetarlos (p. ej. **bíceps** = canal 1, **tríceps** = canal 2) e
+   iniciar grabación.
 2. Realizar **flexiones y extensiones** del codo de forma controlada (isométricas
    alternas o movimientos lentos). Marcar las fases.
-3. Observar en vivo las gráficas **apiladas** (en bruto/filtrada) y la **envolvente
-   superpuesta** (azul/rojo). Detener y revisar en **Análisis** cada canal.
+3. Observar en vivo la gráfica de señal en bruto **apilada**, un carril por canal, y
+   la **envolvente superpuesta** (azul/rojo). Detener y revisar en **Análisis** cada
+   canal: con un archivo de dos canales, el panel **9. Envolventes superpuestas** se
+   activa solo.
 
 **Datos a recoger.** Para una flexión y una extensión, anotar qué canal domina y
 si hay coactivación del otro.
+
+> El panel 9 dibuja cada músculo frente a **su propio máximo**, no en milivoltios.
+> Los milivoltios de dos músculos distintos no se comparan: dependen de dónde
+> quedaron sus electrodos y de cuánta piel y grasa hay debajo. Aquí «dominar»
+> significa, por tanto, *estar más cerca de su propio máximo*, no tener más
+> amplitud — si no, un bíceps más grueso parecería coactivación.
 
 **Cuestiones.**
 - ¿En la flexión, se activa algo el tríceps? ¿Qué función tendría esa coactivación?
@@ -229,8 +254,11 @@ permite comparar. El **método de Jonsson (APDF)** resume la carga en tres nivel
 **estático (P10)**, **mediano (P50)** y **pico (P90)**, con límites recomendados;
 superarlos de forma sostenida se asocia a fatiga y riesgo musculoesquelético.
 
-**Parte A — Offline (pestaña CVM).**
+**Parte A — Desconectado (pestaña CVM).**
 1. Registrar una **CVM de referencia**: contracción máxima de ~3–5 s (guardar EDF).
+   Es obligatoria: sin ella la pestaña no calcula, salvo con las opciones avanzadas
+   marcadas, y un resultado auto‑normalizado no se puede leer frente a los límites de
+   Jonsson.
 2. Registrar una **tarea** representativa (p. ej. sostener un peso, una postura de
    trabajo) durante un tiempo (guardar EDF).
 3. En la pestaña **CVM**, cargar el **EDF de la tarea** y el **EDF de CVM** de
@@ -253,7 +281,7 @@ superarlos de forma sostenida se asocia a fatiga y riesgo musculoesquelético.
 **Cuestiones.**
 - ¿Qué nivel(es) superan su límite recomendado? ¿Qué implicación ergonómica tiene?
 - ¿Coincide la impresión del **monitor en vivo** (zonas de color) con el análisis
-  APDF offline?
+  APDF desconectado?
 - ¿Qué intervención propondrías si la carga estática es alta de forma sostenida?
 
 [Figura sugerida: gráfico APDF con los tres niveles y el panel de datos; captura del
@@ -267,7 +295,7 @@ Para cada práctica, entregar:
 
 1. **Identificación**: nombre/grupo, músculo(s) estudiado(s), dispositivo.
 2. **Capturas/figuras** de los paneles relevantes (o el **informe PDF** generado
-   por la app; en modo aula puede descargarse en el propio móvil).
+   por la app; con la difusión activa puede descargarse en el propio móvil).
 3. **Tablas de datos** cumplimentadas.
 4. **Respuestas razonadas** a las cuestiones.
 5. **Conclusión** breve relacionando lo observado con el fundamento fisiológico.

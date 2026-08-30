@@ -171,6 +171,12 @@ stabilise the joint. Two channels let you visualise this coordination.
 **Data to record.** For one flexion and one extension, note which channel dominates
 and whether the other co‑activates.
 
+> Panel 9 draws each muscle against **its own maximum**, not in millivolts. The
+> millivolts of two different muscles do not compare: they depend on where each
+> pair of electrodes ended up and how much skin and fat lies beneath. Here
+> "dominates" therefore means *closer to its own maximum*, not larger in
+> amplitude — a thicker biceps would otherwise look like co‑activation.
+
 **Questions.**
 - During flexion, does the triceps activate at all? What would that co‑activation
   be for?

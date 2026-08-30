@@ -279,16 +279,20 @@ def _draw_analysis_panel(
         ax.set_ylabel("RMS (mV)", fontsize=8)
         ax.legend(fontsize=7)
     elif idx == 8:
-        ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.6,
+        # Each muscle against its own maximum — see the same panel in the
+        # analysis tab for why two muscles must never share a millivolt axis.
+        ax.plot(times, r["emg_envelope_normalised"], color="#4169E1", lw=1.6,
                 label=str(r.get("channel_name") or tr("Muscle {n}").format(n=1)))
-        env2 = r.get("emg_envelope_2")
+        env2 = r.get("emg_envelope_normalised_2")
         if env2 is not None:
             ax.plot(times, env2, color="#D62728", lw=1.6,
                     label=str(r.get("channel_name_2") or tr("Muscle {n}").format(n=2)))
-        ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+        ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
-        ax.legend(loc="upper right", fontsize=7)
+        ax.set_ylim(0, 1.15)
+        ax.legend(loc="upper right", fontsize=7,
+                  title=tr("each ÷ its own maximum"), title_fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 9:
         emg_lbl = r.get("channel_name") or "EMG"
