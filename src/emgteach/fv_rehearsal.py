@@ -156,7 +156,7 @@ def _hill_velocity(load: float, f0: float) -> float:
 
 
 def _activation(load: float, f0: float) -> float:
-    """Envelope amplitude against load — Henneman's size principle.
+    """Envelope amplitude versus load — Henneman's size principle.
 
     Roughly linear in load with a non-zero intercept: even the lightest lift
     recruits something, and the relation does not pass through the origin.

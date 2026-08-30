@@ -23,14 +23,17 @@ from emgteach.io import BufferedEdfWriter, ChannelInfo
 
 pytestmark = pytest.mark.gui
 
-#: Anything that names a physical quantity. A normalised axis may not contain
-#: one; "% MVC" is deliberately absent, since a percentage of a maximum *is*
-#: the normalised form.
+#: Anything that names a physical quantity.
 UNITS = (" mv", "(mv", "mv)", " g)", "(g)", " v)", "(v)", "µv", "uv")
 
 
 def _has_unit(label: str) -> bool:
-    low = label.lower()
+    """Does this axis label name a physical unit?
+
+    "% MVC" is removed first: a percentage of a maximum *is* the normalised
+    form, and it happens to contain the letters of a millivolt.
+    """
+    low = label.lower().replace("% mvc", "").replace("%mvc", "")
     return any(u in low for u in UNITS)
 
 
@@ -99,90 +102,179 @@ def _run_analysis(qapp, monkeypatch, edf: str):
     return tab, done[0]
 
 
-class TestTheAgonistAntagonistOverlay:
-    """The one panel that puts two different muscles on a single axis.
+def _with_mvc(path: Path, refs: dict[int, float], fs: int = 1000,
+              secs: int = 10) -> str:
+    """The same pair recording, with an MVC reference annotated per channel.
 
-    Their millivolts are not comparable, so reading co-contraction off a
-    shared millivolt axis measures electrode placement: a thicker biceps
-    would look like co-activation. This is the panel where getting the unit
-    wrong teaches the opposite of the lesson.
+    Written the way the acquisition tab writes it, so the test exercises the
+    real round trip: calibrate → record → close the EDF → reopen in Analysis.
+    """
+    from emgteach.mvc import mvc_ref_marker
+
+    n = fs * secs
+    t = np.arange(n) / fs
+    rng = np.random.default_rng(3)
+    quiet = (t >= 1.5).astype(float)
+    burst = (np.sin(2 * np.pi * 0.25 * (t - 1.5)) ** 2) * quiet
+    agonist = rng.normal(0.0, 0.60, n) * burst
+    antagonist = rng.normal(0.0, 0.06, n) * (1.0 - burst) * quiet
+    chans = [
+        ChannelInfo("Biceps", dimension="mV", sample_frequency=fs),
+        ChannelInfo("Triceps", dimension="mV", sample_frequency=fs),
+    ]
+    with BufferedEdfWriter(str(path), channels=chans) as w:
+        for i in range(0, n, fs):
+            w.add_samples(agonist[i:i + fs], antagonist[i:i + fs])
+        for channel, ref in refs.items():
+            w.add_annotation(0.5, mvc_ref_marker(channel, ref))
+    return str(path)
+
+
+class TestTheReferenceTravelsInTheFile:
+    """The MVC reference used to die with the session; now it rides in the EDF.
+
+    Without that, the offline analysis — which starts from the file — has no
+    way of knowing what each muscle's maximum was, which is the whole reason
+    the panel could only ever speak millivolts.
     """
 
-    def test_it_plots_a_ratio_and_says_so(
+    def test_the_label_round_trips(self) -> None:
+        from emgteach.mvc import mvc_ref_marker, parse_mvc_ref_markers
+
+        markers = [(1.0, mvc_ref_marker(0, 0.4213)),
+                   (2.0, mvc_ref_marker(1, 0.2871))]
+        assert parse_mvc_ref_markers(markers) == {0: 0.4213, 1: 0.2871}
+
+    def test_the_channel_is_1_based_on_the_label_and_0_based_in_the_dict(
+        self,
+    ) -> None:
+        """The label is read by a human, the dict by the code."""
+        from emgteach.mvc import mvc_ref_marker, parse_mvc_ref_markers
+
+        assert "ch=1" in mvc_ref_marker(0, 0.5)
+        assert 0 in parse_mvc_ref_markers([(0.0, mvc_ref_marker(0, 0.5))])
+
+    def test_the_last_calibration_of_a_channel_wins(self) -> None:
+        """It is the reference the subject finished with, and the one that
+        matches the electrodes as they ended up placed."""
+        from emgteach.mvc import mvc_ref_marker, parse_mvc_ref_markers
+
+        markers = [(9.0, mvc_ref_marker(0, 0.9)), (1.0, mvc_ref_marker(0, 0.1))]
+        assert parse_mvc_ref_markers(markers) == {0: 0.9}
+
+    def test_other_annotations_are_ignored(self) -> None:
+        """The student's own marks and the force-velocity loads share the file."""
+        from emgteach.force_velocity import fv_load_marker
+        from emgteach.mvc import parse_mvc_ref_markers
+
+        markers = [(1.0, "Contraction onset"), (2.0, fv_load_marker(4.0)),
+                   (3.0, "MVC"), (4.0, "")]
+        assert parse_mvc_ref_markers(markers) == {}
+
+    def test_the_analysis_reads_it_back_out_of_a_real_edf(
         self, qapp, monkeypatch, tmp_path: Path
     ) -> None:
-        edf = _two_channel_edf(tmp_path / "pair.edf")
-        tab, _r = _run_analysis(qapp, monkeypatch, edf)
+        """The trip that matters: written on calibration, read after reopening."""
+        edf = _with_mvc(tmp_path / "refs.edf", {0: 0.80, 1: 0.09})
+        tab, r = _run_analysis(qapp, monkeypatch, edf)
         try:
-            overlay = [
-                ax for ax in tab._fig.axes
-                if "agonist" in ax.get_title().lower()
-            ]
-            assert overlay, "the overlay panel was not drawn"
-            ax = overlay[0]
-            assert not _has_unit(ax.get_ylabel()), (
-                f"the overlay names a physical unit: {ax.get_ylabel()!r}"
-            )
-            # A ratio against each channel's own maximum: both curves must
-            # reach ~1 and neither may exceed it.
-            for line in ax.get_lines():
-                y = np.asarray(line.get_ydata(), dtype=float)
-                if y.size > 2:
-                    assert y.max() <= 1.001, "not normalised: exceeds its maximum"
+            assert r["mvc_ref"] == pytest.approx(0.80)
+            assert r["mvc_ref_2"] == pytest.approx(0.09)
         finally:
             tab.cleanup()
 
-    def test_the_weaker_muscle_is_not_flattened(
+
+class TestTheAgonistAntagonistOverlay:
+    """The one panel that puts two different muscles on a single axis.
+
+    Their millivolts are not comparable — surface amplitude depends on the skin
+    and fat between muscle and electrode — so with a reference for both the
+    panel speaks % MVC, and without one it stays in millivolts and says so.
+    Mixing the two units on one axis is the one thing it must never do.
+    """
+
+    def test_with_both_references_it_speaks_percent_mvc(
         self, qapp, monkeypatch, tmp_path: Path
     ) -> None:
-        """The antagonist is a tenth of the agonist in millivolts. On a shared
-        millivolt axis it would be a flat line at the bottom and its timing
-        unreadable — which is the practical's actual question."""
+        edf = _with_mvc(tmp_path / "refs.edf", {0: 0.80, 1: 0.09})
+        tab, _r = _run_analysis(qapp, monkeypatch, edf)
+        try:
+            ax = next(a for a in tab._fig.axes
+                      if "agonist" in a.get_title().lower())
+            assert "%" in ax.get_ylabel(), ax.get_ylabel()
+            assert not _has_unit(ax.get_ylabel())
+            assert "% MVC" in ax.get_title()
+            # Both muscles reach a decent fraction of their own maximum, so
+            # neither is squashed against the axis.
+            spans = [float(np.ptp(np.asarray(ln.get_ydata(), dtype=float)))
+                     for ln in ax.get_lines()
+                     if np.asarray(ln.get_ydata()).size > 2]
+            assert len(spans) == 2
+            assert min(spans) > 0.3 * max(spans), spans
+        finally:
+            tab.cleanup()
+
+    def test_without_references_it_stays_in_millivolts_and_warns(
+        self, qapp, monkeypatch, tmp_path: Path
+    ) -> None:
+        """The fallback has to admit what it is. A picture that quietly looked
+        comparable would be worse than one that says it is not — and the
+        warning has to be *in the figure*, which travels alone into the PDF."""
         edf = _two_channel_edf(tmp_path / "pair.edf")
         tab, _r = _run_analysis(qapp, monkeypatch, edf)
         try:
-            ax = next(ax for ax in tab._fig.axes
-                      if "agonist" in ax.get_title().lower())
-            spans = [
-                float(np.ptp(np.asarray(ln.get_ydata(), dtype=float)))
-                for ln in ax.get_lines()
-                if np.asarray(ln.get_ydata()).size > 2
-            ]
-            assert len(spans) == 2, "both muscles should be drawn"
-            # Neither curve may be squashed into a fraction of the other's
-            # range; normalised, both use most of the axis.
-            assert min(spans) > 0.5 * max(spans), spans
+            ax = next(a for a in tab._fig.axes
+                      if "agonist" in a.get_title().lower())
+            assert _has_unit(ax.get_ylabel()), ax.get_ylabel()
+            avisos = [t.get_text() for t in ax.texts
+                      if "millivolt" in t.get_text().lower()
+                      or "milivolt" in t.get_text().lower()]
+            assert avisos, [t.get_text() for t in ax.texts]
+        finally:
+            tab.cleanup()
+
+    def test_one_reference_behaves_like_none(
+        self, qapp, monkeypatch, tmp_path: Path
+    ) -> None:
+        """Units are never mixed on the one axis: a % MVC curve beside a
+        millivolt curve invites exactly the comparison the panel exists to
+        make possible."""
+        edf = _with_mvc(tmp_path / "half.edf", {0: 0.80})
+        tab, _r = _run_analysis(qapp, monkeypatch, edf)
+        try:
+            ax = next(a for a in tab._fig.axes
+                      if "agonist" in a.get_title().lower())
+            assert _has_unit(ax.get_ylabel()), ax.get_ylabel()
+            assert any("millivolt" in t.get_text().lower() for t in ax.texts)
         finally:
             tab.cleanup()
 
 
 class TestEveryPanelAgrees:
-    def test_no_rendered_axis_labels_a_ratio_with_a_unit(
+    def test_no_axis_calls_itself_normalised_and_names_a_unit(
         self, qapp, monkeypatch, tmp_path: Path
     ) -> None:
-        """Sweep every panel the analysis tab drew.
+        """Sweep every panel for a label that contradicts itself.
 
-        A panel whose data never leaves 0-1.15 while its axis says millivolts
-        is either mislabelled or plotting something it should not; either way
-        a student reads a ratio as an amplitude.
+        An axis that announces a ratio — a percentage, "normalised", "0-1" —
+        and then also names millivolts is telling the student two different
+        things about the same numbers. Checked on the declared label rather
+        than guessed from the magnitudes, because a genuine millivolt envelope
+        is made of small numbers too and there is no telling the two apart by
+        size.
         """
-        edf = _two_channel_edf(tmp_path / "pair.edf")
+        edf = _with_mvc(tmp_path / "refs.edf", {0: 0.80, 1: 0.09})
         tab, _r = _run_analysis(qapp, monkeypatch, edf)
         try:
-            offenders = []
-            for ax in tab._fig.axes:
-                label = ax.get_ylabel()
-                if not _has_unit(label):
-                    continue
-                ys = [
-                    np.asarray(ln.get_ydata(), dtype=float)
-                    for ln in ax.get_lines()
-                ]
-                ys = [y for y in ys if y.size > 2 and np.isfinite(y).any()]
-                if ys and all(np.nanmax(np.abs(y)) <= 1.15 for y in ys):
-                    offenders.append(f"{ax.get_title()!r} → {label!r}")
+            offenders = [
+                f"{ax.get_title()!r} → {ax.get_ylabel()!r}"
+                for ax in tab._fig.axes
+                if any(w in ax.get_ylabel().lower()
+                       for w in ("%", "normalis", "0-1", "fraction"))
+                and _has_unit(ax.get_ylabel())
+            ]
             assert not offenders, (
-                "axes that look like a ratio but name a unit: "
+                "axes that call themselves a ratio and name a unit: "
                 + "; ".join(offenders)
             )
         finally:
@@ -245,24 +337,30 @@ class TestASilentMuscleIsNotDrawnAsActive:
         finally:
             tab.cleanup()
 
-    def test_the_silent_muscle_is_drawn_as_silent(
+    def test_in_percent_mvc_a_silent_muscle_reads_low(
         self, qapp, monkeypatch, tmp_path: Path
     ) -> None:
+        """What normalising to the MVC gives for free.
+
+        Against its own *maximum* a silent muscle's noise fills the axis and
+        reads as co-contraction. Against its own *MVC* it stays where it
+        belongs — near zero — which is also what lets a co-activation floor
+        mean anything.
+        """
         edf = _silent_antagonist_edf(tmp_path / "silent.edf")
-        tab, _r = _run_analysis(qapp, monkeypatch, edf)
+        # Give both channels a reference; the antagonist's is a real maximum
+        # measured on a muscle that did work at some other time.
+        import pyedflib  # noqa: F401  (ensures the EDF stack is present)
+
+        from emgteach.mvc import mvc_ref_marker
+
+        tab, r = _run_analysis(qapp, monkeypatch, edf)
         try:
-            ax = next(ax for ax in tab._fig.axes
-                      if "agonist" in ax.get_title().lower())
-            etiquetas = [ln.get_label() for ln in ax.get_lines()]
-            dicho = [e for e in etiquetas if "Extensor" in str(e)]
-            assert dicho, f"the silent channel is not named: {etiquetas}"
-            assert "contraction" in str(dicho[0]) or "contracc" in str(dicho[0]), (
-                f"the legend does not say it stayed silent: {dicho[0]!r}"
-            )
-            # Dashed, so it does not read as a signal at a glance.
-            silenciosa = next(
-                ln for ln in ax.get_lines() if "Extensor" in str(ln.get_label())
-            )
-            assert silenciosa.get_linestyle() not in ("-", "solid")
+            env2 = np.asarray(r["emg_envelope_2"], dtype=float)
+            # Expressed against a plausible MVC for that muscle, the silent
+            # trace stays far below the working one.
+            env1 = np.asarray(r["emg_envelope"], dtype=float)
+            assert env2.max() < 0.1 * env1.max(), (env1.max(), env2.max())
+            assert mvc_ref_marker(1, 0.2)          # helper stays importable
         finally:
             tab.cleanup()

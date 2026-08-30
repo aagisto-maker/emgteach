@@ -145,7 +145,7 @@ class MvcOverlay(QFrame):
         return tr("Effort {pct:.0f} %").format(pct=self._effort * 100)
 
     def _hint_contract(self) -> str:
-        return tr("Push as hard as you can until it reaches 0")
+        return tr("Contract as hard as you can until the count reaches 0")
 
     def _relax_word(self) -> str:
         return tr("Relax")

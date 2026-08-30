@@ -72,7 +72,7 @@ from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import RecordingMetadata
 from emgteach.modes import mode_channels, mode_forces_setup, mode_uses_acc
-from emgteach.mvc import mvc_from_reps
+from emgteach.mvc import mvc_from_reps, mvc_ref_marker
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
 
@@ -1554,6 +1554,7 @@ class AcquisitionTab(QWidget):
         self._worker.finished_ok.connect(self._on_finished)
         self._worker.marker_added.connect(self._on_marker_added)
         self._worker.start()
+        self._write_pending_mvc_ref_markers()
         self._render_timer.start()
         # The watchdog starts in _on_data_ready after the first sample is read;
         # not here, so it does not fire during device.open() (can take ~3 s).
@@ -2128,7 +2129,7 @@ class AcquisitionTab(QWidget):
             self._mvc_overlay.show_ready(
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 count,
-                tr("Maximum contraction when it reaches 0"),
+                tr("Maximum contraction when the count reaches 0"),
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
@@ -2136,7 +2137,7 @@ class AcquisitionTab(QWidget):
             self._bcast_calib(
                 True, "ready",
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
-                tr("Maximum contraction when it reaches 0"), count=count,
+                tr("Maximum contraction when the count reaches 0"), count=count,
             )
             if self._mvc_elapsed >= MVC_READY_S:
                 self._mvc_phase = "contract"
@@ -2214,6 +2215,32 @@ class AcquisitionTab(QWidget):
         self._mvc_ref[c] = ref if ref > 0 else None
         self._online[c].reset()
         self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
+        self._write_mvc_ref_marker(c)
+
+    def _write_mvc_ref_marker(self, c: int) -> None:
+        """Carry this channel's MVC reference into the EDF as an annotation.
+
+        Without it the reference lives only in memory and dies with the
+        session, so the offline analysis — which starts from the file — has no
+        way of knowing what each muscle's maximum was, and can only fall back
+        to millivolts. Same device as the guided force-velocity wizard uses for
+        its loads.
+        """
+        ref = self._mvc_ref[c]
+        if ref and self._worker and self._worker.isRunning():
+            self._worker.add_marker(mvc_ref_marker(c, float(ref)))
+
+    def _write_pending_mvc_ref_markers(self) -> None:
+        """Write every reference calibrated *before* the recording started.
+
+        Calibrating first and recording afterwards is a normal order of work —
+        the wizard even enables the record button when it finishes — and in
+        that order there was no open file to annotate. Dumping the known
+        references as the recording opens is what keeps that path from
+        producing a file the analysis cannot read in % MVC.
+        """
+        for c in range(self._n_channels):
+            self._write_mvc_ref_marker(c)
 
     def _mvc_finish_all(self) -> None:
         self._mvc_timer.stop()
@@ -2383,7 +2410,7 @@ class AcquisitionTab(QWidget):
             self._mvc_overlay.show_ready(
                 tr("Get ready — maximum contraction (no load)"),
                 count,
-                tr("Contract at maximum when it reaches 0"),
+                tr("Contract at maximum when the count reaches 0"),
             )
             self._fv_info(
                 tr("Get ready — maximum (no load): {n}").format(n=count)
@@ -2424,7 +2451,7 @@ class AcquisitionTab(QWidget):
             self._mvc_overlay.show_ready(
                 tr("Prepare {kg:g} kg{prog}").format(kg=kg, prog=self._fv_progress()),
                 count,
-                tr("Lift {kg:g} kg when it reaches 0").format(kg=kg),
+                tr("Lift {kg:g} kg when the count reaches 0").format(kg=kg),
             )
             self._fv_info(tr("Prepare {kg:g} kg{prog}: {n}").format(
                 kg=kg, prog=self._fv_progress(), n=count))

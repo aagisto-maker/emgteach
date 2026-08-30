@@ -457,7 +457,7 @@ class ForceVelocityRehearsalDialog(QDialog):
         if cue.phase == PHASE_MVC_READY:
             self._overlay.show_ready(
                 tr("Get ready — maximum contraction (no load)"), count,
-                tr("Contract at maximum when it reaches 0"))
+                tr("Contract at maximum when the count reaches 0"))
         elif cue.phase == PHASE_MVC_CONTRACT:
             # The effort bar follows the synthetic envelope, so it rises and
             # settles the way a real maximum does.
@@ -474,7 +474,7 @@ class ForceVelocityRehearsalDialog(QDialog):
         elif cue.phase == PHASE_PREPARE:
             self._overlay.show_ready(
                 tr("Prepare {kg:g} kg{prog}").format(kg=kg, prog=prog), count,
-                tr("Lift {kg:g} kg when it reaches 0").format(kg=kg))
+                tr("Lift {kg:g} kg when the count reaches 0").format(kg=kg))
         elif cue.phase == PHASE_LIFT:
             self._overlay.show_action(
                 tr("Lift {kg:g} kg!").format(kg=kg), prog.strip())

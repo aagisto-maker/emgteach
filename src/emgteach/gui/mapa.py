@@ -144,12 +144,12 @@ def _enlaces() -> list[Enlace]:
         # them: 95 units is not enough for a phrase, and shrinking one until
         # it fits only makes it unreadable instead of cramped.
         Enlace(
-            ((260, 106), (349, 106)), tr("travels by itself"), (305, 52),
+            ((260, 106), (349, 106)), tr("goes by itself"), (305, 52),
             etiqueta_ancho=250,
         ),
         Enlace(
             ((585, 106), (674, 106)),
-            tr("travels by itself, with the chosen muscle"), (630, 52),
+            tr("goes by itself, with the chosen muscle"), (630, 52),
             etiqueta_ancho=250,
         ),
         Enlace(((145, 152), (145, 204)), modos=CON_ACC),

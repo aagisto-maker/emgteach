@@ -371,7 +371,7 @@ velocity** drops and the recruitment pattern changes. Electrically, this shows u
 as a **shift of the spectrum toward lower frequencies** (*spectral compression*) —
 i.e. **MNF and MDF decrease over time**.
 
-- The program estimates fatigue by fitting **MDF against time** (panel 6 of
+- The program estimates fatigue by fitting **MDF versus time** (panel 6 of
   Analysis) and looking at its **slope**:
   - **Negative** slope (MDF falls) → **fatigue detected**.
   - Flat or positive slope → **no fatigue**.

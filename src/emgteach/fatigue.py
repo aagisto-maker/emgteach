@@ -4,7 +4,7 @@ The classical surface-EMG fatigue indicator is the **descent of the
 median frequency (MDF) over the duration of a sustained contraction**:
 as motor units fatigue, conduction velocity decreases and the power
 spectrum shifts towards lower frequencies. A polynomial fit of MDF
-against time captures both monotonic and convex/concave trends.
+versus time captures both monotonic and convex/concave trends.
 
 A second function fits RMS against MDF in the force-fatigue plane,
 giving the well-known triangular trajectory of a fatiguing
@@ -35,7 +35,7 @@ def fit_mdf_vs_time(
     mdf_seg: FloatArray | np.ndarray,
     degree: int = 2,
 ) -> dict[str, Any]:
-    """Fatigue trend of the median frequency (MDF) against time.
+    """Fatigue trend of the median frequency (MDF) versus time.
 
     The primary, quantitative fatigue index is the **slope of a linear
     least-squares regression of MDF on time**. A negative slope (MDF

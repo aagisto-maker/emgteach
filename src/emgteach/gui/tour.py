@@ -211,15 +211,16 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         steps.append(CoachStep(
             tr("Agonist and antagonist"),
             tr(
-                "The two envelopes are overlaid against each muscle's own "
-                "maximum, not in millivolts: each muscle has its own "
-                "electrodes and its own layer of skin and fat, so their "
-                "millivolts do not compare. What does compare is when each "
-                "one is active and how hard for itself. In a clean movement "
-                "the agonist activates while the antagonist stays nearly "
-                "silent; simultaneous activation is co-contraction, which "
-                "holds the joint rigid and is typical of an unpractised or "
-                "uncertain movement."
+                "Calibrate the MVC of both muscles while recording and the "
+                "two envelopes are overlaid in % MVC — the only form in "
+                "which two different muscles compare at all, since each "
+                "one's millivolts depend on its own electrodes and on the "
+                "skin and fat beneath them. Without that reference the "
+                "panel stays in millivolts and says so. In a clean "
+                "movement the agonist activates while the antagonist stays "
+                "nearly silent; simultaneous activation is co-contraction, "
+                "which holds the joint rigid and is typical of an "
+                "unpractised or uncertain movement."
             ),
             lambda: ana._box_compare,
             tab=TAB_ANA,

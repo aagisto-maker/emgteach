@@ -14,11 +14,15 @@ are conventionally reported.
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import numpy.typing as npt
 
     FloatArray = npt.NDArray[np.float64]
@@ -28,11 +32,15 @@ __all__ = [
     "AUTO_COLOR",
     "AUTO_LOAD_MSG",
     "AUTO_SUFFIX",
+    "OverlayCurve",
     "adaptive_ylim",
     "compute_mvc",
     "mvc_from_reps",
     "mvc_peak_hold",
+    "mvc_ref_marker",
     "normalise_to_mvc",
+    "overlay_curves",
+    "parse_mvc_ref_markers",
 ]
 
 # Wording used wherever an auto-normalised result is marked — on screen and in
@@ -221,3 +229,117 @@ def adaptive_ylim(
     if visible.size == 0:
         return 110.0
     return max(110.0, float(visible.max()) * (1.0 + margin))
+
+
+# ---------------------------------------------------------------------------
+# The MVC reference, carried inside the recording
+# ---------------------------------------------------------------------------
+# EDF annotation written by the MVC-calibration wizard, one per muscle, e.g.
+# "MVC ref ch=1 value=0.4213 mV". The analysis tab reads them back so each
+# channel can be expressed as a percentage of *its own* maximum.
+#
+# The reference used to live only in memory, which is why the offline analysis
+# could not use it: it was lost when the application closed, and the analysis
+# tab starts from the file. Writing it as an annotation is the same solution
+# the guided force-velocity wizard already uses for its loads
+# (:func:`emgteach.force_velocity.fv_load_marker`), and it fits the design rule
+# that the EDF carries the raw signal plus the facts of the session, with
+# everything else recomputed.
+_MVC_REF_RE = re.compile(
+    r"MVC\s+ref\s+ch=\s*(\d+)\s+value=\s*([0-9]*\.?[0-9]+)", re.IGNORECASE
+)
+
+
+def mvc_ref_marker(channel_index: int, ref_mv: float) -> str:
+    """The EDF annotation label for one channel's MVC reference.
+
+    ``channel_index`` is 0-based; the label carries it 1-based, which is how
+    the channels are numbered on screen.
+    """
+    return f"MVC ref ch={channel_index + 1} value={ref_mv:.6g} mV"
+
+
+def parse_mvc_ref_markers(
+    markers: Iterable[tuple[float, str]],
+) -> dict[int, float]:
+    """Read ``{channel_index_0based: reference_mV}`` back from EDF annotations.
+
+    Annotations that are not MVC references — the student's own marks, the
+    force-velocity loads — are ignored. If a channel was calibrated more than
+    once in the same recording the **last** one wins: that is the reference the
+    subject finished with, and the one that matches the electrodes as they
+    ended up placed.
+    """
+    refs: dict[int, float] = {}
+    for _onset, desc in sorted(markers, key=lambda m: float(m[0])):
+        match = _MVC_REF_RE.search(str(desc))
+        if not match:
+            continue
+        channel = int(match.group(1)) - 1
+        value = float(match.group(2))
+        if channel >= 0 and value > 0:
+            refs[channel] = value
+    return refs
+
+
+@dataclass(frozen=True)
+class OverlayCurve:
+    """One curve of the agonist/antagonist panel, with the axis it belongs on.
+
+    The unit is decided once, here, for the screen and the PDF alike: the
+    figure in the report is the one the student hands in, so the two must not
+    be able to disagree about what the axis means.
+    """
+
+    data: FloatArray
+    ylabel: str
+    title: str
+    #: Empty unless the panel had to fall back to millivolts.
+    warning: str = ""
+
+
+def overlay_curves(result) -> tuple[OverlayCurve, OverlayCurve | None]:
+    """The two curves of the overlaid-envelopes panel, in the right unit.
+
+    With an MVC reference for **both** muscles the envelopes become percentages
+    of each muscle's own maximum, which is the only form in which two different
+    muscles can be compared at all. Without them the panel stays in millivolts
+    and says so in the figure: a fallback that quietly looked comparable would
+    be worse than one that admits it is not.
+
+    Units are never mixed on the one axis — a reference for only one of the two
+    channels is treated as none, because a % MVC curve beside a millivolt curve
+    invites exactly the comparison the panel exists to make possible.
+    """
+    from emgteach.i18n import tr
+
+    env1 = np.asarray(result["emg_envelope"], dtype=np.float64)
+    raw2 = result.get("emg_envelope_2")
+    env2 = None if raw2 is None else np.asarray(raw2, dtype=np.float64)
+    ref1 = result.get("mvc_ref")
+    ref2 = result.get("mvc_ref_2")
+
+    comparing = env2 is not None
+    in_pct = bool(ref1) and (bool(ref2) or not comparing)
+
+    if in_pct:
+        title = tr("9. Overlaid envelopes (agonist/antagonist), % MVC")
+        ylabel = tr("Activation (% MVC)")
+        first = OverlayCurve(env1 / float(ref1) * 100.0, ylabel, title)
+        second = (
+            None if env2 is None
+            else OverlayCurve(env2 / float(ref2) * 100.0, ylabel, title)
+        )
+        return first, second
+
+    title = tr("9. Overlaid envelopes (agonist/antagonist)")
+    ylabel = tr("Amplitude ({units})").format(units=result.get("dimension", "mV"))
+    warning = tr(
+        "Millivolts are not comparable between two muscles. Calibrate MVC "
+        "while recording to compare them."
+    ) if comparing else ""
+    first = OverlayCurve(env1, ylabel, title, warning)
+    second = (
+        None if env2 is None else OverlayCurve(env2, ylabel, title, warning)
+    )
+    return first, second

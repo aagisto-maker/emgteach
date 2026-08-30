@@ -41,7 +41,12 @@ from reportlab.platypus import (
 )
 
 from emgteach.i18n import tr
-from emgteach.mvc import AUTO_COLOR, AUTO_LOAD_MSG, AUTO_SUFFIX
+from emgteach.mvc import (
+    AUTO_COLOR,
+    AUTO_LOAD_MSG,
+    AUTO_SUFFIX,
+    overlay_curves,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -168,6 +173,7 @@ _PANEL_REPORT_TITLES = {
     5: "6. RMS amplitude over time",
     6: "7. Fatigue: median frequency (MDF) vs time",
     7: "8. Amplitude (RMS) vs median frequency (MDF)",
+    # 8 is titled by overlay_curves(), which also picks its unit.
     8: "9. Overlaid envelopes (agonist/antagonist)",
     9: "10. EMG vs MMG (electrical vs mechanical)",
     10: "11. Tremor — accelerometer spectrum",
@@ -281,32 +287,25 @@ def _draw_analysis_panel(
     elif idx == 8:
         # Each muscle against its own maximum — see the same panel in the
         # analysis tab for why two muscles must never share a millivolt axis.
-        # A silent channel is drawn faint and dashed: with no maximum of its
-        # own to divide by, its baseline noise arrives at full height, and a
-        # solid line would report co-contraction that did not happen.
-        def _trazo(env, colour, nombre, contrajo):
-            if contrajo:
-                ax.plot(times, env, color=colour, lw=1.6, label=nombre)
-            else:
-                ax.plot(times, env, color="#9AA6B2", lw=1.0, ls=(0, (4, 3)),
-                        alpha=0.85,
-                        label=tr("{name} — no contraction (baseline noise)")
-                        .format(name=nombre))
-
-        _trazo(r["emg_envelope_normalised"], "#4169E1",
-               str(r.get("channel_name") or tr("Muscle {n}").format(n=1)),
-               r.get("emg_contracted", True))
-        env2 = r.get("emg_envelope_normalised_2")
-        if env2 is not None:
-            _trazo(env2, "#D62728",
-                   str(r.get("channel_name_2") or tr("Muscle {n}").format(n=2)),
-                   r.get("emg_contracted_2", True))
-        ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
+        # Same rule as the screen, decided in one place: this is the figure
+        # the student hands in, so it must not be able to disagree with the
+        # panel it was read from.
+        curve1, curve2 = overlay_curves(r)
+        ax.plot(times, curve1.data, color="#4169E1", lw=1.6,
+                label=str(r.get("channel_name") or tr("Muscle {n}").format(n=1)))
+        if curve2 is not None:
+            ax.plot(times, curve2.data, color="#D62728", lw=1.6,
+                    label=str(r.get("channel_name_2")
+                              or tr("Muscle {n}").format(n=2)))
+        ax.set_ylabel(curve1.ylabel, fontsize=8)
+        if curve1.warning:
+            ax.set_title(ax.get_title(), pad=16)
+            ax.text(0.5, 1.005, curve1.warning, transform=ax.transAxes,
+                    ha="center", va="bottom", fontsize=6.5,
+                    color="#B0243A")
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
-        ax.set_ylim(0, 1.15)
-        ax.legend(loc="upper right", fontsize=7,
-                  title=tr("each ÷ its own maximum"), title_fontsize=7)
+        ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 9:
         emg_lbl = r.get("channel_name") or "EMG"

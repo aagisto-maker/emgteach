@@ -21,7 +21,13 @@ from emgteach.dsp import (
 )
 from emgteach.fatigue import fit_mdf_vs_time, fit_rms_vs_mdf
 from emgteach.i18n import tr
-from emgteach.io import list_edf_channels, read_edf_mne, read_edf_pyedflib
+from emgteach.io import (
+    list_edf_channels,
+    list_edf_emg_channels,
+    read_edf_mne,
+    read_edf_pyedflib,
+)
+from emgteach.mvc import parse_mvc_ref_markers
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
 
@@ -29,12 +35,9 @@ from emgteach.selection import Segment, normalise_segments, total_duration_s
 def _contracted(envelope, fs: float, profile) -> bool:
     """Did this muscle actually contract, by the application's own definition?
 
-    Normalising a channel to its own maximum is what makes two muscles
-    comparable — but only if that maximum *is* a contraction. A muscle that
-    stayed silent has no maximum, so dividing by its largest noise peak
-    magnifies baseline noise until it fills the axis and reads as
-    co-contraction: precisely the wrong conclusion, and the one a clean
-    single-direction movement would produce.
+    Reported so the event log can say when a channel never left its baseline —
+    a muscle that stayed silent is a finding, and one worth naming rather than
+    leaving the reader to infer from a flat line.
 
     The test is the app's own onset detector rather than a threshold invented
     here, so "a contraction happened" means the same thing everywhere in the
@@ -50,6 +53,21 @@ def _contracted(envelope, fs: float, profile) -> bool:
         ))
     except Exception:      # a span too short to hold a baseline
         return False
+
+
+def _ref_for(channel_name, emg_channels, refs):
+    """The MVC reference belonging to a channel, or None.
+
+    The wizard numbers muscles by their position among the recording's EMG
+    channels — which is the order they were labelled in — so that position is
+    what maps a channel name back to its annotation.
+    """
+    if not channel_name or not refs:
+        return None
+    try:
+        return refs.get(list(emg_channels).index(channel_name))
+    except ValueError:
+        return None
 
 
 class AnalysisWorker(QThread):
@@ -214,6 +232,15 @@ class AnalysisWorker(QThread):
             fs = edf["sfreq"]
             times = edf["times"]
             markers = edf.get("markers", [])
+            # Read before any fragment trimming: a calibration made
+            # outside the analysed span is still this muscle's
+            # maximum, and dropping it would send the panel back to
+            # millivolts for no good reason.
+            mvc_refs = parse_mvc_ref_markers(markers)
+            try:
+                emg_channels = list_edf_emg_channels(self._edf_path)
+            except Exception:
+                emg_channels = []
 
             # 1b) Restrict to the selected fragment(s), if requested. The kept
             # fragments are concatenated into one continuous signal; everything
@@ -365,6 +392,10 @@ class AnalysisWorker(QThread):
                 "emg_envelope_normalised": proc["emg_envelope_normalised"],
                 "emg_contracted": _contracted(
                     proc["emg_envelope"], fs, self._profile),
+                # {channel_index_0based: reference_mV}; empty when the
+                # recording carries no calibration.
+                "mvc_refs": mvc_refs,
+                "mvc_ref": _ref_for(self._channel_name, emg_channels, mvc_refs),
                 # plot axis
                 "t_plot": t_plot,
                 "n_plot": n_plot,
@@ -442,6 +473,9 @@ class AnalysisWorker(QThread):
                     )
                     result["emg_contracted_2"] = _contracted(
                         proc2["emg_envelope"], fs, self._profile
+                    )
+                    result["mvc_ref_2"] = _ref_for(
+                        self._channel_name_2, emg_channels, mvc_refs
                     )
                     if not result["emg_contracted_2"]:
                         self.log.emit(tr(

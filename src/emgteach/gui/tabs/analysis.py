@@ -179,6 +179,7 @@ from emgteach.io import (
     read_edf_metadata,
 )
 from emgteach.modes import DEFAULT_MODE, MODE_FREE, MODE_PAIR, mode_uses_acc
+from emgteach.mvc import overlay_curves
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
@@ -1350,36 +1351,19 @@ class AnalysisTab(QWidget):
         # --- Overlaid envelopes (agonist/antagonist) ---
         if _OVERLAY_PID in ax_map:
             ax = ax_map[_OVERLAY_PID]
-            # Each muscle against its own maximum, never millivolts. This is
-            # the one panel that puts two *different* muscles on one axis, and
-            # their millivolts are not comparable: the amplitude depends on
-            # where each pair of electrodes sits and how much skin and fat lie
-            # between them and the fibres — the very reason the MVC tab
-            # exists. Read in mV, a thicker biceps would look like
-            # co-contraction. What the question actually asks is *when* each
-            # muscle is active, and how hard relative to its own effort, and
-            # that is exactly what survives normalisation.
-            # A channel that never contracted has no maximum to divide by, so
-            # its baseline noise arrives magnified to full height. That is the
-            # correct *finding* — the muscle stayed silent — but a solid line
-            # at full scale states the opposite, so it is drawn as what it is:
-            # faint, dashed, and named.
-            def _dibujar(env, colour, nombre, contrajo) -> None:
-                if contrajo:
-                    ax.plot(times, env, color=colour, lw=1.8, label=nombre)
-                else:
-                    ax.plot(times, env, color="#9AA6B2", lw=1.0, ls=(0, (4, 3)),
-                            alpha=0.85,
-                            label=tr("{name} — no contraction (baseline noise)")
-                            .format(name=nombre))
-
+            # The one panel that puts two *different* muscles on a single axis.
+            # Their millivolts are not comparable — surface amplitude depends
+            # on the skin and fat between muscle and electrode, so a biceps can
+            # sit above a triceps by anatomy rather than by activation — so the
+            # two are drawn in % MVC whenever the recording carries a reference
+            # for both. That is the case worth reaching, and the one the MVC
+            # calibration exists to make possible.
+            env1, env2 = overlay_curves(r)
             lbl1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
-            _dibujar(r["emg_envelope_normalised"], "#4169E1", lbl1,
-                     r.get("emg_contracted", True))
-            env2 = r.get("emg_envelope_normalised_2")
+            ax.plot(times, env1.data, color="#4169E1", lw=1.8, label=lbl1)
             if env2 is not None:
                 lbl2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-                _dibujar(env2, "#D62728", lbl2, r.get("emg_contracted_2", True))
+                ax.plot(times, env2.data, color="#D62728", lw=1.8, label=lbl2)
             else:
                 ax.text(
                     0.5, 0.5,
@@ -1387,14 +1371,20 @@ class AnalysisTab(QWidget):
                     transform=ax.transAxes, ha="center", va="center",
                     fontsize=8, color="#888888",
                 )
-            ax.set_title(tr("9. Overlaid envelopes (agonist/antagonist)"), fontsize=9)
-            ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
+            # Extra pad so the fallback warning fits between title and axes.
+            ax.set_title(env1.title, fontsize=9,
+                         pad=16 if env1.warning else 6)
+            ax.set_ylabel(env1.ylabel, fontsize=8)
+            if env1.warning:
+                # In the figure, not in a tooltip: the figure travels on its
+                # own inside the PDF the student hands in.
+                ax.text(0.5, 1.005, env1.warning, transform=ax.transAxes,
+                        ha="center", va="bottom", fontsize=7,
+                        color="#B0243A")
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
-            ax.set_ylim(0, 1.15)
             ax.tick_params(labelsize=7)
-            ax.legend(loc="upper right", fontsize=7,
-                      title=tr("each ÷ its own maximum"), title_fontsize=7)
+            ax.legend(loc="upper right", fontsize=7)
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 

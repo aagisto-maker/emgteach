@@ -37,7 +37,7 @@ Niveles: **Insuficiente (0–4)** · **Suficiente (5–6)** · **Notable (7–8)
 - **Suficiente.** Mayoría de datos recogidos; algunas marcas/tablas incompletas.
 - **Notable.** Datos completos; eventos correctamente marcados (manual/automático).
 - **Sobresaliente.** Datos completos y bien organizados; marcas precisas y
-  significativas; uso adecuado del informe PDF como evidencia.
+  significativas; uso adecuado del informe PDF.
 
 ### 3. Uso de la aplicación y análisis (20 %)
 
@@ -46,8 +46,10 @@ Niveles: **Insuficiente (0–4)** · **Suficiente (5–6)** · **Notable (7–8)
 - **Suficiente.** Usa los paneles/métricas básicos con ayuda.
 - **Notable.** Selecciona los paneles apropiados (RMS, PSD, MDF, APDF) y lee bien
   las métricas; usa adecuadamente el navegador/rango temporal.
-- **Sobresaliente.** Uso fluido y autónomo; elige el análisis adecuado para cada
-  cuestión; aplica correctamente la normalización (% CVM) y el análisis de carga.
+- **Sobresaliente.** Uso fluido y autónomo; configura la aplicación en el **modo**
+  que corresponde a la práctica; elige el análisis adecuado para cada cuestión;
+  aplica correctamente la normalización (% CVM) y el análisis de carga, con un
+  registro de referencia propio.
 
 ### 4. Interpretación fisiológica (30 %)
 
@@ -66,7 +68,7 @@ Niveles: **Insuficiente (0–4)** · **Suficiente (5–6)** · **Notable (7–8)
 - **Notable.** Informe claro y bien estructurado; figuras/tablas relevantes;
   conclusiones coherentes.
 - **Sobresaliente.** Informe profesional; figuras bien elegidas (o informes PDF);
-  lenguaje preciso; conclusiones perspicaces.
+  lenguaje preciso; conclusiones bien fundamentadas.
 
 ## Hoja de puntuación (por alumno/a o grupo)
 

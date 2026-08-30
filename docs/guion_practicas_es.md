@@ -193,11 +193,13 @@ estabilizar la articulación. Con dos canales se visualiza esta coordinación.
 **Datos a recoger.** Para una flexión y una extensión, anotar qué canal domina y
 si hay coactivación del otro.
 
-> El panel 9 dibuja cada músculo frente a **su propio máximo**, no en milivoltios.
-> Los milivoltios de dos músculos distintos no se comparan: dependen de dónde
-> quedaron sus electrodos y de cuánta piel y grasa hay debajo. Aquí «dominar»
-> significa, por tanto, *estar más cerca de su propio máximo*, no tener más
-> amplitud — si no, un bíceps más grueso parecería coactivación.
+> **Calibre la CVM de los dos músculos mientras graba.** El panel 9 los dibuja
+> entonces en **% CVM**, que es la única forma en que dos músculos distintos se
+> comparan: sus milivoltios dependen de dónde quedaron los electrodos y de cuánta
+> piel y grasa hay debajo, así que un bíceps más grueso parecería coactivación.
+> Sin las dos referencias el panel se queda en milivoltios y lo advierte sobre la
+> propia figura. Aquí «dominar» significa, por tanto, *un porcentaje mayor de su
+> propio máximo*, no más amplitud.
 
 **Cuestiones.**
 - ¿En la flexión, se activa algo el tríceps? ¿Qué función tendría esa coactivación?
