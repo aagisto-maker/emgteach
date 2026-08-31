@@ -272,9 +272,16 @@ the metrics table).]
 Expresses the signal as a **percentage of MVC** and assesses **muscular load**.
 
 **Inputs**
-- **Test EDF** (the task to normalise) and, optionally, an **MVC reference EDF** (a
-  maximum contraction recorded separately). If none is given, **auto‑normalisation**
-  is used (the test signal itself as reference).
+- **The session's EDF**, and nothing else. The session marks its own
+  calibration, so the maximum is inside the file being opened.
+- The analysed span defaults to the **recording phase**: the calibration and the
+  pause fall outside it without anyone trimming by eye. The fragment editor is
+  still there to look at one effort inside that phase.
+- **No calibration, no % MVC and no muscle load.** Auto‑normalisation — dividing
+  the signal by its own 95th percentile — has been removed: a task always
+  reaches about 100 % of itself, so the Jonsson limits reported an overloaded
+  subject whatever the subject did. What does not need a reference — the signal
+  and its envelope — is still drawn.
 
 **The 3 time‑series panels**
 1. **Filtered and rectified** signal.

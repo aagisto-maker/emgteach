@@ -740,10 +740,6 @@ _ES = {
         "La contracción máxima contra la que se mide cada % de CVM de este registro, y de dónde sale.",
     "MVC reference read from the file's own calibration: {value:.4f} {units}.":
         "Referencia de CVM leída de la calibración del propio fichero: {value:.4f} {units}.",
-    "This recording carries its own MVC calibration ({n} channel(s)) — no reference file needed.":
-        "Este registro lleva su propia calibración de CVM ({n} canal(es)): no hace falta fichero de referencia.",
-    "Not needed — this recording carries its own calibration…":
-        "No hace falta: este registro lleva su propia calibración…",
     "Muscle load computed over {n} selected fragment(s) ({d:.2f} s of {full:.2f} s).":
         "Carga muscular calculada sobre {n} fragmento(s) seleccionado(s) ({d:.2f} s de {full:.2f} s).",
     "Choose which parts of the recording the muscle load is measured over — leave out the calibration and any pause. The MVC reference is not affected: it comes from the calibration, wherever in the file that is.":
@@ -755,8 +751,6 @@ _ES = {
     "MVC normalisation parameters": "Parámetros de normalización CVM",
     "Test EDF:": "EDF de prueba:",
     "Select the EDF file to normalise…": "Seleccionar el archivo EDF a normalizar…",
-    "MVC reference EDF (optional):": "EDF de referencia CVM (opcional):",
-    "Leave empty for auto-normalisation…": "Dejar vacío para auto-normalización…",
     "Remove": "Quitar",
     "EMG channel of the EDF to normalise. Filled with the channels "
     "of the test file when you select it.":
@@ -775,7 +769,6 @@ _ES = {
     "Activation (% MVC)": "Activación (% CVM)",
     "100 % MVC": "100 % CVM",
     "Select test EDF": "Seleccionar EDF de prueba",
-    "Select MVC reference EDF": "Seleccionar EDF de referencia CVM",
     # -- muscle-load analysis (Jonsson APDF) --
     "Static": "Estático",
     "Median": "Mediano",
@@ -971,6 +964,18 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    '2. Envelope (no calibration in this recording)': '2. Envolvente (este registro no trae calibración)',
+    '3. Signal as % MVC — not available': '3. Señal en % CVM — no disponible',
+    'Muscle load computed over the recording phase ({d:.2f} s of {full:.2f} s); the calibration and the pause are outside it.': 'Carga muscular calculada sobre la fase de registro ({d:.2f} s de {full:.2f} s); la calibración y la pausa quedan fuera.',
+    'MVC reference amplitude: {value:.4f} {units}': 'Amplitud de referencia de CVM: {value:.4f} {units}',
+    'This recording carries no calibration, so there is no maximum to express it as a percentage of: no % MVC and no muscle-load analysis. The signal and its envelope do not depend on a reference and are drawn as usual.': 'Este registro no trae calibración, así que no hay un máximo del que expresar porcentajes: ni % CVM ni análisis de carga muscular. La señal y su envolvente no dependen de una referencia y se dibujan como siempre.',
+    'This recording marks its own calibration ({n} repetition(s)); the reference is recomputed from it.': 'Este registro marca su propia calibración ({n} repetición(es)); la referencia se recalcula a partir de ella.',
+    'This recording carries a calibration recorded with it ({n} channel(s)).': 'Este registro trae una calibración grabada con él ({n} canal(es)).',
+    'No calibration': 'Sin calibración',
+    'This recording has no maximal effort in it, so there is no maximum to express the signal as a percentage of: no % MVC and no muscle-load analysis. The signal and its envelope are drawn as usual. Record the session again with the guided flow, which calibrates without stopping the recording.': 'Este registro no lleva dentro ningún esfuerzo máximo, así que no hay un máximo del que expresar porcentajes: ni % CVM ni análisis de carga muscular. La señal y su envolvente se dibujan como siempre. Vuelve a grabar la sesión con el flujo guiado, que calibra sin parar el registro.',
+    'none': 'ninguna',
+    'Reference from:': 'Referencia tomada de:',
+    'Muscle load needs a maximum to be a percentage of, and this recording carries no calibration. Record the session again with the guided flow, which calibrates without stopping the recording.': 'La carga muscular necesita un máximo del que ser porcentaje, y este registro no trae calibración. Vuelve a grabar la sesión con el flujo guiado, que calibra sin parar el registro.',
     'The recording could not be shown for review: {err}': 'No se pudo mostrar el registro para revisarlo: {err}',
     'Recording just finished (review)': 'Registro recién terminado (revisión)',
     'Envelope of the recording (review)': 'Envolvente del registro (revisión)',
@@ -1114,11 +1119,6 @@ _ES = {
     "I understand, continue": "Entendido, continuar",
 
     # ── MVC reference picker ───────────────────────────────────────────
-    "MVC reference EDF:": "EDF de referencia CVM:",
-    "Required at this interface level — select a reference recording…":
-        "Obligatorio en este nivel de interfaz: seleccionar un registro de "
-        "referencia…",
-
     # ── Auto-normalisation confirmation ────────────────────────────────
     "No MVC reference recording selected":
         "No se ha seleccionado registro de referencia CVM",
@@ -1138,14 +1138,11 @@ _ES = {
     "Continue without reference": "Continuar sin referencia",
 
     # ── Auto-normalisation marking (screen and report) ─────────────────
-    "auto (not a real %MVC)": "automática (no es %CVM real)",
     "Muscle-load analysis requires an MVC reference recording. Select one to "
     "interpret these values as muscle load limits.":
         "El análisis de carga muscular requiere un registro de referencia CVM. "
         "Hay que seleccionar uno para interpretar estos valores como límites de carga "
         "muscular.",
-    " (auto-normalised, not %MVC)": " (auto-normalizada, no es %CVM)",
-
     # ── Guided tour: chrome ────────────────────────────────────────────
     "Guide": "Guía",
     "Walk through the app and what it measures":
@@ -1312,8 +1309,8 @@ _ES = {
         'Descargar resultados: informe y datos',
     "The report gathers the figures and the metrics into a PDF document. The CSV export saves the recording's data.":
         'El informe reúne las figuras y las métricas en un documento PDF. Exportar CSV permite guardar los datos del registro.',
-    'A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working.':
-        'Una amplitud bruta no se puede comparar entre dos personas, ni entre dos sesiones de la misma persona: depende de los electrodos, de la piel y de la grasa que hay debajo. Expresar cada valor como porcentaje de la contracción máxima cancela todo eso, porque las dos amplitudes comparten los mismos electrodos y la misma piel: lo que queda es cuánto está trabajando el músculo.',
+    'A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working. The maximum is inside the recording: the session calibrates without stopping, so nothing else has to be chosen here.':
+        'Una amplitud bruta no se puede comparar entre dos personas, ni entre dos sesiones de la misma persona: depende de los electrodos, de la piel y de la grasa que hay debajo. Expresar cada valor como porcentaje de la contracción máxima cancela todo eso, porque las dos amplitudes comparten los mismos electrodos y la misma piel: lo que queda es cuánto está trabajando el músculo. El máximo está dentro del registro: la sesión calibra sin parar, así que aquí no hay nada más que elegir.',
     'Once the signal is in % MVC, the distribution of load over time can be read against the Jonsson limits: the static level (P10) is the load the muscle stays above 90 % of the time, the background tension it hardly ever lets go of, and the level most associated with sustained-effort discomfort.':
         'Una vez la señal está en % CVM, la distribución de la carga en el tiempo se puede leer frente a los límites de Jonsson: el nivel estático (P10) es la carga que el músculo supera el 90 % del tiempo, la tensión de fondo que casi nunca llega a relajar, y el nivel más asociado a las molestias por esfuerzo mantenido.',
     'Broadcast to phones (in the laboratory)':
@@ -1386,7 +1383,6 @@ _ES = {
         "Registro cargado para normalizar: {path}",
 
     # Normalizar frente al propio registro, ofrecido con su advertencia.
-    "Use this recording": "Usar este registro",
     "Normalise against this recording itself?":
         "¿Normalizar frente al propio registro?",
     "The signal will be divided by the 95th percentile of itself, so the "

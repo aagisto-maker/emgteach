@@ -262,9 +262,11 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             "value as a percentage of the maximal contraction cancels all of "
             "that out, because the two amplitudes share the same electrodes "
             "and the same skin: what is left is how hard the muscle is "
-            "working."
+            "working. The maximum is inside the recording: the session "
+            "calibrates without stopping, so nothing else has to be chosen "
+            "here."
         ),
-        lambda: cvm._edit_cvm_path,
+        lambda: cvm._edit_path,
         tab=TAB_MVC,
         on_enter=cvm._dismiss_entry_screen,
     ))

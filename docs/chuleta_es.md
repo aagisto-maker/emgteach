@@ -46,9 +46,10 @@ de gráficos y de rango temporal). Siempre **1A. En bruto**, **2. Env. norm.** y
 **10 · 11 · 12** (acelerómetro).
 
 ### Normalizar y carga (CVM)
-**EDF de prueba** + **EDF de referencia CVM** → paneles + **gráfico APDF** + panel de
-datos → **informe PDF**. La referencia es obligatoria salvo con las opciones
-avanzadas marcadas.
+**El EDF de la sesión** → paneles + **gráfico APDF** + panel de datos → **informe
+PDF**. No se pide ningún segundo archivo: la referencia sale de la calibración
+que el propio registro lleva marcada, y la carga se mide sobre la **fase de
+registro**, no sobre el fichero entero.
 
 ---
 
@@ -68,8 +69,9 @@ avanzadas marcadas.
 | **Mediano** | P50 | Carga de trabajo típica | ≤ ~14 % |
 | **Pico** | P90 | Esfuerzos altos recurrentes | ≤ ~70 % |
 
-🔴 **En rojo** = supera su límite. ⚠️ Sin registro de referencia CVM estos tres
-niveles no se pueden leer, y el gráfico APDF no se dibuja.
+🔴 **En rojo** = supera su límite. ⚠️ Sin calibración en el registro no hay
+máximo del que ser porcentaje: no se calculan ni el % CVM ni estos tres
+niveles, y el gráfico APDF no se dibuja. La señal y su envolvente sí.
 
 ### Problemas rápidos
 - **Sin señal / línea plana** → contacto de electrodos, referencia, canal correcto.

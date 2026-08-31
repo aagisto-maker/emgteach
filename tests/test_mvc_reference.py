@@ -134,86 +134,39 @@ class TestTheCalibrationIsComparedWithRest:
 
 
 @pytest.mark.gui
-class TestAcceptingTheThirdWay:
-    """Saying yes to "use this recording itself" has to *do* it.
+class TestThereIsNoThirdWay:
+    """"Use this recording itself" is gone, and with it its whole dialogue.
 
-    Reported from the bench as "I tell it yes and it does not do it": the flag
-    was set and the button enabled, but the result stayed behind a second press
-    of Compute, and the load distribution was withheld entirely. Agreeing to a
-    known-imperfect option is a decision, not a request for another dialogue.
+    It existed so that someone who had already recorded without a maximal
+    effort could still get *something*. What they got was a number for every
+    panel, each wrong in the same direction: dividing a recording by its own
+    95th percentile makes its loudest moment 100 % whatever the muscle can do,
+    so the Jonsson limits reported an overloaded subject regardless. A failure
+    mode that has to be sign-posted in five places is a failure mode to
+    delete.
+
+    What is *not* deleted is panel 2's "normalised to its own maximum": the
+    same arithmetic under an honest name, correct for the time course of one
+    channel. What went is its use as a reference for muscle load.
     """
 
-    @staticmethod
-    def _edf(path):
-        from emgteach.io import BufferedEdfWriter, ChannelInfo
-
-        fs, secs = 1000, 12
-        n = fs * secs
-        t = np.arange(n) / fs
-        rng = np.random.default_rng(2)
-        burst = ((t > 3) & (t < 6)).astype(float) + 0.05
-        signal = rng.normal(0, 0.3, n) * burst
-        with BufferedEdfWriter(
-            str(path),
-            channels=[ChannelInfo("EMG", dimension="mV", sample_frequency=fs)],
-        ) as writer:
-            for i in range(0, n, fs):
-                writer.add_samples(signal[i:i + fs])
-        return str(path)
-
-    @pytest.fixture
-    def accepted(self, qapp, tmp_path):
-        """A tab that has been told "use this recording", and its result."""
-        from PySide6.QtCore import QElapsedTimer, QSettings
-        from PySide6.QtWidgets import QMessageBox
-
+    def test_the_offer_and_its_dialogue_are_gone(self) -> None:
         from emgteach.gui.tabs.mvc import MvcTab
-        from emgteach.gui.widgets.logger import LoggerWidget
-        from emgteach.modes import MODE_PAIR
 
-        def click_destructive(self):
-            for button in self.buttons():
-                role = self.buttonRole(button)
-                if role == QMessageBox.ButtonRole.DestructiveRole:
-                    button.click()
-                    return 0
-            return 0
+        for nombre in ("_ofrecer_auto_normalizacion", "_confirmar_sin_referencia",
+                       "_seleccionar_edf_cvm", "_limpiar_cvm",
+                       "_reference_required"):
+            assert not hasattr(MvcTab, nombre), nombre
 
-        QMessageBox.exec = click_destructive
-        tab = MvcTab(LoggerWidget(), QSettings("emgteach-test", "third"))
-        tab.apply_mode(MODE_PAIR, False)
-        tab.adopt_recording(self._edf(tmp_path / "solo.edf"))
+    def test_the_worker_takes_no_second_file(self) -> None:
+        """The reference comes out of the session. There is nowhere else to
+        look, so there is no parameter to pass."""
+        import inspect
 
-        done: list = []
-        original = tab._on_result
-        tab._on_result = lambda r: (original(r), done.append(r))
-        tab._ofrecer_auto_normalizacion()
-        timer = QElapsedTimer()
-        timer.start()
-        while not done and timer.elapsed() < 30000:
-            qapp.processEvents()
+        from emgteach.workers.mvc import MvcWorker
 
-        yield tab, done
-        qapp.processEvents()
-        tab.cleanup()
+        assert "mvc_path" not in inspect.signature(MvcWorker.__init__).parameters
 
-    def test_accepting_computes_without_a_second_press(self, accepted) -> None:
-        _tab, done = accepted
-        assert done, "accepting produced no result"
-        assert done[0]["mvc_is_auto"] is True
-
-    def test_the_distribution_is_drawn_but_the_limits_are_not(
-        self, accepted
-    ) -> None:
-        """The shape is a fair description of the recording; the Jonsson
-        comparison is not, and drawing it painted everything red."""
-        tab, done = accepted
-        assert done
-        ax = tab._apdf_fig.axes[0]
-        assert ax.get_lines(), "the distribution was not drawn"
-        assert "%" in ax.get_xlabel()
-        assert "MVC" not in ax.get_xlabel()
-        assert "Jonsson" not in ax.get_title()
 
 
 class TestTheAmplitudeArrows:

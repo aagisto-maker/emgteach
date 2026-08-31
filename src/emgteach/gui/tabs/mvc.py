@@ -71,9 +71,13 @@ from emgteach.io import (
 from emgteach.modes import DEFAULT_MODE
 from emgteach.mvc import (
     AUTO_COLOR,
-    AUTO_LOAD_MSG,
-    AUTO_SUFFIX,
+    NO_LOAD_MSG,
     parse_mvc_ref_markers,
+)
+from emgteach.phases import (
+    NO_CALIBRATION,
+    parse_phase_markers,
+    reference_source_text,
 )
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_mvc_report
@@ -127,7 +131,6 @@ class MvcTab(QWidget):
         self._worker: MvcWorker | None = None
         self._last_result: dict | None = None
         self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
-        self._last_cvm_dir: str = self._settings.value("cvm/last_cvm_dir", ".")
         # Recording mode and fine-control flag, and whether the explanatory
         # entry screen has already been shown in this session (once per
         # student, reset by "New session").
@@ -136,7 +139,11 @@ class MvcTab(QWidget):
         self._entry_shown: bool = False
         # Whether the user has accepted normalising against the test recording
         # itself. Per file: a new recording is a new decision.
-        self._auto_aceptada: bool = False
+        #: The phases the open recording carries, read from its
+        #: annotations without loading a sample. What the tab needs it
+        #: for is to say, before anything is computed, whether there will
+        #: be a % MVC at all.
+        self._fases_en_fichero = parse_phase_markers([])
         # The references the test file carries in its own annotations, by
         # channel index — written there by the acquisition wizard when the
         # calibration was done with the recording already running.
@@ -204,25 +211,12 @@ class MvcTab(QWidget):
         self._btn_abrir.clicked.connect(self._seleccionar_edf_prueba)
         row_test.addWidget(self._btn_abrir)
 
-        # The reference picker continues the same row: the two are the same
-        # kind of thing, and a row each pushed the panels further down for
-        # nothing.
-        row_cvm = row_test
-        row_cvm.addSpacing(16)
-        # Caption kept as an attribute: the basic level drops the "(optional)"
-        # because at that level a reference recording is compulsory.
-        self._lbl_cvm = QLabel(tr("MVC reference EDF (optional):"))
-        row_cvm.addWidget(self._lbl_cvm)
-        self._edit_cvm_path = QLineEdit()
-        self._edit_cvm_path.setPlaceholderText(tr("Leave empty for auto-normalisation…"))
-        self._edit_cvm_path.setReadOnly(True)
-        row_cvm.addWidget(self._edit_cvm_path)
-        self._btn_abrir_cvm = QPushButton(tr("Browse…"))
-        self._btn_abrir_cvm.clicked.connect(self._seleccionar_edf_cvm)
-        row_cvm.addWidget(self._btn_abrir_cvm)
-        self._btn_limpiar_cvm = QPushButton(tr("Remove"))
-        self._btn_limpiar_cvm.clicked.connect(self._limpiar_cvm)
-        row_cvm.addWidget(self._btn_limpiar_cvm)
+        # There is no second file to ask for. The session marks its own
+        # calibration, so the maximum is inside the recording being opened;
+        # asking for a reference was asking the operator to answer a question
+        # the file already answers, and it let the two tabs disagree — the
+        # analysis recomputing from the spans while this one used whatever
+        # file happened to be in the box.
         ctrl.addLayout(row_test)
 
         row_params = QHBoxLayout()
@@ -295,15 +289,6 @@ class MvcTab(QWidget):
         )
         self._lbl_calcular_bloqueado.setVisible(False)
         row_params.addWidget(self._lbl_calcular_bloqueado)
-
-        # The way out for someone who has already recorded and has no maximal
-        # effort to compare against. It is a worse measurement, not a
-        # forbidden one, so it is offered rather than hidden — but it says
-        # what it costs before it is taken.
-        self._btn_usar_mismo = QPushButton(tr("Use this recording"))
-        self._btn_usar_mismo.setVisible(False)
-        self._btn_usar_mismo.clicked.connect(self._ofrecer_auto_normalizacion)
-        row_params.addWidget(self._btn_usar_mismo)
 
         self._btn_guardar = QPushButton(tr("Save figure (PNG)"))
         self._btn_guardar.setEnabled(False)
@@ -683,55 +668,57 @@ class MvcTab(QWidget):
         The mode is kept anyway: with two muscles there are two channels to
         normalise, which the channel picker already handles one at a time.
 
-        The advanced flag does two things: it reveals the cut-off control, and
-        it decides whether auto-normalisation is on offer at all — see
-        _reference_required.
+        The advanced flag reveals the cut-off control and nothing else. It
+        used to decide whether auto-normalisation was on offer; there is no
+        auto-normalisation to offer.
         """
         self._mode = mode
         self._advanced = advanced
         self._box_fenv.setVisible(advanced)
-        self._refresh_reference_hint()
         self._refresh_compute_enabled()
 
-    def _reference_required(self) -> bool:
-        """Whether an MVC reference file is compulsory right now.
+    def _tiene_calibracion(self) -> bool:
+        """Whether the open recording can give this channel a maximum.
 
-        Auto-normalisation divides the signal by the 95th percentile of
-        itself, which makes the Jonsson load limits meaningless: a sustained
-        contraction exceeds them by construction, so the tab paints a whole
-        recording red and it looks like a finding. That trap is worth keeping
-        for someone who knows what it is for, and worth removing otherwise —
-        the shape of the signal is already in the Analysis tab, honestly
-        labelled as normalised to its own maximum.
+        Either it marks the calibration — and then the reference is recomputed
+        from those spans — or it carries the cached annotation of a session
+        recorded before that flow. Asked per channel, because a file may hold
+        the flexor's calibration and not the extensor's.
         """
-        return not self._advanced
-
-    def _ref_del_fichero(self) -> float | None:
-        """This file's own reference for the channel now selected, if any."""
-        return self._refs_en_fichero.get(self._combo_canal.currentIndex())
+        canal = self._combo_canal.currentIndex()
+        return bool(self._fases_en_fichero.reps_for(canal)
+                    or self._refs_en_fichero.get(canal))
 
     @Slot()
     def _on_canal_cambiado(self) -> None:
-        """The reference travels per channel, so the picker's state follows it:
-        a file may carry the flexor's maximum and not the extensor's."""
-        self._refresh_reference_hint()
+        """The calibration travels per channel, so the warning follows it."""
         self._refresh_compute_enabled()
 
     def _leer_refs_del_fichero(self, path: str) -> None:
-        """Read the calibration the recording carries in its annotations."""
+        """Read what the recording says about its own calibration.
+
+        Annotations only — :func:`read_edf_markers` loads no samples — so this
+        runs on picking the file, long before anything is computed, and the
+        tab can say up front whether there will be a % MVC.
+        """
         self._refs_en_fichero = {}
+        self._fases_en_fichero = parse_phase_markers([])
         try:
             markers = read_edf_markers(path)
         except Exception:
             return
         self._refs_en_fichero = parse_mvc_ref_markers(markers)
-        if self._refs_en_fichero:
-            self._log(
-                tr(
-                    "This recording carries its own MVC calibration "
-                    "({n} channel(s)) — no reference file needed."
-                ).format(n=len(self._refs_en_fichero))
-            )
+        self._fases_en_fichero = parse_phase_markers(markers)
+        if self._fases_en_fichero.cal_reps:
+            self._log(tr(
+                "This recording marks its own calibration "
+                "({n} repetition(s)); the reference is recomputed from it."
+            ).format(n=len(self._fases_en_fichero.cal_reps)))
+        elif self._refs_en_fichero:
+            self._log(tr(
+                "This recording carries a calibration recorded with it "
+                "({n} channel(s))."
+            ).format(n=len(self._refs_en_fichero)))
 
     @Slot()
     def _editar_fragmentos(self) -> None:
@@ -766,63 +753,37 @@ class MvcTab(QWidget):
             )
         )
 
-    def _refresh_reference_hint(self) -> None:
-        """Label and placeholder for the reference picker follow the level."""
-        if self._ref_del_fichero():
-            self._lbl_cvm.setText(tr("MVC reference EDF (optional):"))
-            self._edit_cvm_path.setPlaceholderText(
-                tr("Not needed — this recording carries its own calibration…")
-            )
-            return
-        if self._reference_required():
-            self._lbl_cvm.setText(tr("MVC reference EDF:"))
-            self._edit_cvm_path.setPlaceholderText(
-                tr("Required at this interface level — select a reference recording…")
-            )
-        else:
-            self._lbl_cvm.setText(tr("MVC reference EDF (optional):"))
-            self._edit_cvm_path.setPlaceholderText(
-                tr("Leave empty for auto-normalisation…")
-            )
-
     def _refresh_compute_enabled(self) -> None:
-        """Enable "Compute MVC" only when the current level has what it needs,
-        and say out loud what is missing when it is not."""
+        """Enable "Compute MVC", and say what this recording will not give.
+
+        A file with no calibration is still worth computing: the signal and
+        its envelope do not depend on a reference, and they are two of the
+        three panels. What it will not give is the % MVC and the muscle load,
+        and that is said here rather than discovered after pressing.
+        """
         has_test = bool(self._edit_path.text().strip())
-        # A reference chosen by hand, or the one the recording brought with it:
-        # the second is not a lesser kind of maximum, it is the same
-        # calibration that would have been saved to a separate file.
-        has_ref = bool(self._edit_cvm_path.text().strip()) or bool(
-            self._ref_del_fichero()
-        )
-        falta_ref = self._reference_required() and not has_ref
-        listo = has_test and (has_ref or not falta_ref or self._auto_aceptada)
-        self._btn_calcular.setEnabled(listo)
+        self._btn_calcular.setEnabled(has_test)
         self._btn_fragmentos.setEnabled(has_test)
 
         # Short on the row, whole in the tooltip: what is missing has to be
         # readable at a glance, and why it matters has to be readable at all.
-        if listo:
-            motivo = detalle = ""
-        elif not has_test:
+        if not has_test:
             motivo = tr("No recording")
             detalle = tr("Select the recording to normalise.")
-        else:
-            # The one case that looks like a fault rather than a missing step:
-            # everything is filled in except a file this practical insists on.
-            motivo = tr("Reference needed")
+        elif not self._tiene_calibracion():
+            motivo = tr("No calibration")
             detalle = tr(
-                "A reference recording is required to express the signal as "
-                "% MVC and to read it against the Jonsson limits."
+                "This recording has no maximal effort in it, so there is no "
+                "maximum to express the signal as a percentage of: no % MVC "
+                "and no muscle-load analysis. The signal and its envelope are "
+                "drawn as usual. Record the session again with the guided "
+                "flow, which calibrates without stopping the recording."
             )
+        else:
+            motivo = detalle = ""
         self._lbl_calcular_bloqueado.setText(motivo)
         self._lbl_calcular_bloqueado.setToolTip(detalle)
         self._lbl_calcular_bloqueado.setVisible(bool(motivo))
-        # Offered only where it is the missing piece, and only once: after it
-        # is accepted the button has nothing left to offer.
-        self._btn_usar_mismo.setVisible(
-            has_test and falta_ref and not self._auto_aceptada
-        )
 
     # ------------------------------------------------------------------
     # File-selection slots
@@ -836,15 +797,11 @@ class MvcTab(QWidget):
         muscle from the one being analysed is possible but is never what the
         two-questions-in-a-row flow was offering.
 
-        The reference file is left alone: it is a different recording by
-        definition — the maximal effort — and guessing it from the test file
-        would be wrong more often than right.
         """
         if not path or (self._worker is not None and self._worker.isRunning()):
             return
         self._edit_path.setText(path)
         self._last_edf_dir = str(Path(path).parent)
-        self._auto_aceptada = False      # a new recording is a new decision
         self._populate_channels(path, ask=not channel)
         if channel:
             idx = self._combo_canal.findText(channel)
@@ -866,7 +823,6 @@ class MvcTab(QWidget):
             self._edit_path.setText(path)
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("cvm/last_edf_dir", self._last_edf_dir)
-            self._auto_aceptada = False  # a new recording is a new decision
             self._populate_channels(path)
             self._refresh_compute_enabled()
             self._btn_guardar.setEnabled(False)
@@ -916,127 +872,23 @@ class MvcTab(QWidget):
                     )
                 )
 
-    @Slot()
-    def _seleccionar_edf_cvm(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(
-            self, tr("Select MVC reference EDF"),
-            self._last_cvm_dir, tr("EDF files (*.edf *.EDF)"),
-        )
-        if path:
-            self._edit_cvm_path.setText(path)
-            self._last_cvm_dir = str(Path(path).parent)
-            self._settings.setValue("cvm/last_cvm_dir", self._last_cvm_dir)
-            self._refresh_compute_enabled()
 
-    @Slot()
-    def _limpiar_cvm(self) -> None:
-        self._edit_cvm_path.clear()
-        self._refresh_compute_enabled()
 
     # ------------------------------------------------------------------
     # Launch computation
     # ------------------------------------------------------------------
 
-    @Slot()
-    def _ofrecer_auto_normalizacion(self) -> None:
-        """Offer the test recording as its own reference, and say what it costs.
 
-        The number stops being a percentage of anything measured: the signal is
-        divided by a percentile of itself, so the loudest part of *this*
-        recording becomes 100 % whatever the muscle can actually do. The shape
-        over time survives, which is what makes it worth offering at all.
-        """
-        msg = QMessageBox(self)
-        msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setWindowTitle(tr("Normalise against this recording itself?"))
-        msg.setText(
-            tr(
-                "The signal will be divided by the 95th percentile of itself, "
-                "so the strongest moment of this recording becomes 100 % — "
-                "whatever the muscle can really do. Two recordings normalised "
-                "this way cannot be compared with each other, and the Jonsson "
-                "load limits do not apply: a sustained contraction exceeds "
-                "them by construction.\n\nWhat does survive is the shape over "
-                "time: when the muscle worked harder and when it let go."
-            )
-        )
-        btn_si = msg.addButton(
-            tr("Use it, showing the shape only"), QMessageBox.ButtonRole.DestructiveRole
-        )
-        btn_ref = msg.addButton(
-            tr("Choose a reference recording"), QMessageBox.ButtonRole.AcceptRole
-        )
-        msg.setDefaultButton(btn_ref)
-        msg.exec()
-
-        if msg.clickedButton() is btn_ref:
-            self._seleccionar_edf_cvm()
-        elif msg.clickedButton() is btn_si:
-            self._auto_aceptada = True
-            self._log(
-                tr("Normalising against the recording itself — shape only, "
-                   "not % MVC.")
-            )
-            self._refresh_compute_enabled()
-            # Saying yes *is* the decision. Leaving the result behind a second
-            # button reads as the answer having been ignored.
-            self._iniciar_calculo()
-            return
-        self._refresh_compute_enabled()
-
-    def _confirmar_sin_referencia(self) -> bool:
-        """Ask before auto-normalising. True to go ahead with the computation.
-
-        The safe option is the default and it *fixes* the problem rather than
-        just describing it: picking a reference here feeds straight back into
-        the file picker.
-        """
-        msg = QMessageBox(self)
-        msg.setIcon(QMessageBox.Icon.Question)
-        msg.setWindowTitle(tr("No MVC reference recording selected"))
-        msg.setText(
-            tr(
-                "The signal will be normalised to the 95th percentile of "
-                "itself. The values will be shown as \"% MVC\", but they are "
-                "not percentages of maximum voluntary contraction, and the "
-                "Jonsson muscle-load limits (P10, P50, P90) do not apply: a "
-                "sustained contraction will exceed them by construction."
-            )
-            + "\n\n"
-            + tr("Use this only to see the shape of the signal.")
-        )
-        btn_choose = msg.addButton(
-            tr("Choose a reference recording"), QMessageBox.ButtonRole.AcceptRole
-        )
-        btn_continue = msg.addButton(
-            tr("Continue without reference"), QMessageBox.ButtonRole.DestructiveRole
-        )
-        msg.setDefaultButton(btn_choose)
-        msg.exec()
-
-        if msg.clickedButton() is btn_choose:
-            self._seleccionar_edf_cvm()
-            # Only carry on if they actually picked one; cancelling the picker
-            # means they never confirmed auto-normalisation.
-            return bool(self._edit_cvm_path.text().strip())
-        return msg.clickedButton() is btn_continue
 
     @Slot()
     def _iniciar_calculo(self) -> None:
         path = self._edit_path.text().strip()
-        cvm_path = self._edit_cvm_path.text().strip()
         f_env = self._spin_fenv.value()
 
-        # Computing without a reference is the one moment a misleading number
-        # is about to be produced, so this is where a modal earns its keep.
-        # The basic level never reaches it: there the button stays disabled
-        # until a reference is chosen.
-        if (not cvm_path and not self._reference_required()
-                and not self._ref_del_fichero()):
-            if not self._confirmar_sin_referencia():
-                return
-            cvm_path = self._edit_cvm_path.text().strip()
-
+        # There used to be a modal here, asking whether to normalise against
+        # the recording itself. It was the last thing standing between the
+        # student and a set of numbers that were wrong in a way no wording
+        # could fix; the route is gone, so the question is too.
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
         self._btn_cancelar.setVisible(True)
@@ -1046,7 +898,6 @@ class MvcTab(QWidget):
 
         self._worker = MvcWorker(
             edf_path=path,
-            mvc_path=cvm_path,
             f_env=f_env,
             channel_index=self._combo_canal.currentIndex(),
             roi_segments=self._selected_segments or None,
@@ -1134,30 +985,36 @@ class MvcTab(QWidget):
 
     def _actualizar_resumen(self, r: dict) -> None:
         dim = r.get("dimension", "")
+        ref = r.get("mvc_amplitude_ref")
         self._d_file.setText(f"<b>{tr('File:')}</b> {Path(r['edf_path']).name}")
         self._d_cvm_ref.setText(
-            f"<b>{tr('MVC reference:')}</b> {r['mvc_amplitude_ref']:.4f} {dim}")
-        is_auto = bool(r.get("mvc_is_auto", False))
-        if is_auto:
-            self._d_source.setText(
-                f"<span style='color:{AUTO_COLOR}'><b>{tr('MVC source:')}</b> "
-                f"{tr('auto (not a real %MVC)')}</span>"
-            )
-        else:
-            self._d_source.setText(f"<b>{tr('MVC source:')}</b> {r['mvc_source']}")
+            f"<b>{tr('MVC reference:')}</b> {ref:.4f} {dim}" if ref
+            else f"<span style='color:{AUTO_COLOR}'><b>"
+                 f"{tr('MVC reference:')}</b> {tr('none')}</span>"
+        )
+        # The provenance is worded from a token, never branched on translated
+        # text — the same rule the analysis tab follows, and the reason the
+        # old ``mvc_is_auto`` flag had to exist beside a translated sentence.
+        self._d_source.setText(
+            f"<b>{tr('Reference from:')}</b> "
+            f"{reference_source_text(r.get('mvc_ref_source', NO_CALIBRATION), int(r.get('cal_reps_n', 0)))}"
+        )
         dur = float(r["tiempo"][-1]) if len(r.get("tiempo", [])) else 0.0
         self._d_duration.setText(f"<b>{tr('Duration:')}</b> {dur:.1f} s")
 
-        self._d_mean.setText(self._metric_html(
-            tr("Mean activation:"), float(r.get("mean_norm", 0.0)),
-            EMG_PROFILE.apda_mean_limit, tr("average activation over the task")))
+        self._d_mean.setText(
+            "" if r.get("mean_norm") is None else self._metric_html(
+                tr("Mean activation:"), float(r["mean_norm"]),
+                EMG_PROFILE.apda_mean_limit,
+                tr("average activation over the task"))
+        )
 
-        if is_auto:
+        if r.get("apdf") is None:
             # Better no number than a number with a footnote: the number is
             # what gets copied into the notebook, the footnote is not.
             self._d_static.setText(
                 f"<span style='color:#777777; font-size:11px'>"
-                f"{tr(AUTO_LOAD_MSG)}</span>"
+                f"{tr(NO_LOAD_MSG)}</span>"
             )
             self._d_median.setText("")
             self._d_peak.setText("")
@@ -1237,10 +1094,7 @@ class MvcTab(QWidget):
         inicio = self._inicio_s
         fin = inicio + self._duracion_s
 
-        # The suffix travels with the figure: it is saved as PNG and lands in
-        # the report, and by then nothing else says the reference was faked.
-        auto_suffix = tr(AUTO_SUFFIX) if r.get("mvc_is_auto") else ""
-
+        ref = r.get("mvc_amplitude_ref")
         activos = self._paneles_activos()
         creados = self._fig.subplots(len(activos), 1, sharex=False, squeeze=False)
         axes = {pid: fila[0] for pid, fila in zip(activos, creados)}
@@ -1267,12 +1121,15 @@ class MvcTab(QWidget):
             ax = axes[1]
             ax.plot(t_full, r["emg_envelope"][:n],
                     color="purple", lw=2.0, label=tr("LP envelope (zero-phase)"))
-            ax.axhline(r["mvc_amplitude_ref"], color="red", ls="--", lw=1.5,
-                       label=tr("MVC ref: {value:.4f} {units}").format(
-                           value=r["mvc_amplitude_ref"], units=r.get("dimension", "")))
+            if ref:
+                ax.axhline(ref, color="red", ls="--", lw=1.5,
+                           label=tr("MVC ref: {value:.4f} {units}").format(
+                               value=ref, units=r.get("dimension", "")))
             ax.set_xlim(inicio, fin)
             ax.set_title(
-                tr("2. Envelope and MVC reference amplitude") + auto_suffix, fontsize=9
+                tr("2. Envelope and MVC reference amplitude") if ref
+                else tr("2. Envelope (no calibration in this recording)"),
+                fontsize=9,
             )
             ax.set_ylabel(
                 tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
@@ -1284,21 +1141,33 @@ class MvcTab(QWidget):
         # Panel 3: signal normalised % MVC
         if 2 in axes:
             ax = axes[2]
-            ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25, color="darkorange")
-            ax.plot(t_full, r["emg_norm"][:n],
-                    color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
-            ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7,
-                       label=tr("100 % MVC"))
-            ax.set_xlim(inicio, fin)
-            ax.set_title(
-                tr("3. EMG signal normalised to MVC (% MVC)") + auto_suffix, fontsize=9
-            )
-            ax.set_ylabel(tr("% MVC"), fontsize=8)
-            ax.set_xlabel(tr("Time (s)"), fontsize=8)
-            ax.set_ylim(0, r["ylim_max"])
-            ax.tick_params(labelsize=7)
-            ax.legend(loc="upper right", fontsize=7)
-            ax.grid(True, color="#DDDDDD", alpha=0.5)
+            if r.get("emg_norm") is None:
+                # The panel keeps its place rather than vanishing: a tab that
+                # silently shows two panels where it showed three teaches
+                # nothing, and the student who forgot to calibrate needs to
+                # read why, not to wonder what happened.
+                ax.text(0.5, 0.5, tr(NO_LOAD_MSG), ha="center", va="center",
+                        fontsize=9, color=AUTO_COLOR, wrap=True,
+                        transform=ax.transAxes)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title(tr("3. Signal as % MVC — not available"), fontsize=9)
+            else:
+                ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25,
+                                color="darkorange")
+                ax.plot(t_full, r["emg_norm"][:n],
+                        color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
+                ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7,
+                           label=tr("100 % MVC"))
+                ax.set_xlim(inicio, fin)
+                ax.set_title(
+                    tr("3. EMG signal normalised to MVC (% MVC)"), fontsize=9)
+                ax.set_ylabel(tr("% MVC"), fontsize=8)
+                ax.set_xlabel(tr("Time (s)"), fontsize=8)
+                ax.set_ylim(0, r["ylim_max"])
+                ax.tick_params(labelsize=7)
+                ax.legend(loc="upper right", fontsize=7)
+                ax.grid(True, color="#DDDDDD", alpha=0.5)
 
         # Save the initial ylims and reset the accumulators
         self._y_initial_lims = {i: ax.get_ylim() for i, ax in enumerate(self._axes_list)}
@@ -1326,30 +1195,17 @@ class MvcTab(QWidget):
         self._apdf_fig.clear()
         ax = self._apdf_fig.add_subplot(111)
 
-        # Against an auto-normalised reference the *distribution* is still a
-        # fair description of the recording — how its time is spread across
-        # effort levels, which is the shape the offer promises. What means
-        # nothing is the comparison with Jonsson's limits: a sustained
-        # contraction exceeds them by construction, and drawing them turned a
-        # whole recording red and looked like a finding. So the curve is drawn
-        # and the limits are not.
-        apdf = r["apdf"]
-        if r.get("mvc_is_auto"):
-            ax.plot(apdf.load, apdf.cumulative, color="#7A8894", lw=1.8)
-            for prob in (10, 50, 90):
-                ax.axhline(prob, color="#E4E4E4", ls=":", lw=0.7)
-            ax.set_xlabel(tr("% of this recording's own maximum"), fontsize=8)
-            ax.set_ylabel(tr("Cumulative % of time"), fontsize=8)
-            ax.set_ylim(0, 100)
-            ax.set_title(
-                tr("Distribution of effort over time") + tr(AUTO_SUFFIX),
-                fontsize=9,
-            )
-            ax.text(0.5, 0.06, tr(AUTO_LOAD_MSG), ha="center", va="bottom",
+        apdf = r.get("apdf")
+        if apdf is None:
+            # No curve at all, not a grey one. The APDF's x axis is "% MVC";
+            # without a maximum there is no axis to draw it against, and a
+            # distribution against the recording's own peak is a different
+            # quantity wearing this one's chart.
+            ax.text(0.5, 0.5, tr(NO_LOAD_MSG), ha="center", va="center",
                     fontsize=8, color=AUTO_COLOR, wrap=True,
                     transform=ax.transAxes)
-            ax.grid(True, color="#DDDDDD", alpha=0.5)
-            ax.tick_params(labelsize=7)
+            ax.set_xticks([])
+            ax.set_yticks([])
             self._apdf_canvas.draw_idle()
             return
 
@@ -1646,8 +1502,6 @@ class MvcTab(QWidget):
 
     def _set_controles_habilitados(self, habilitado: bool) -> None:
         self._btn_abrir.setEnabled(habilitado)
-        self._btn_abrir_cvm.setEnabled(habilitado)
-        self._btn_limpiar_cvm.setEnabled(habilitado)
         if habilitado:
             self._refresh_compute_enabled()
         else:
@@ -1682,7 +1536,6 @@ class MvcTab(QWidget):
             self._show_entry_screen()
 
         self._edit_path.clear()
-        self._edit_cvm_path.clear()
         self._spin_fenv.setValue(5.0)
         self._combo_canal.blockSignals(True)
         self._combo_canal.clear()
@@ -1690,9 +1543,9 @@ class MvcTab(QWidget):
         self._combo_canal.blockSignals(False)
 
         self._refs_en_fichero = {}
+        self._fases_en_fichero = parse_phase_markers([])
         self._selected_segments = []
         self._actualizar_etiqueta_fragmentos()
-        self._refresh_reference_hint()
 
         self._btn_calcular.setEnabled(False)
         self._btn_fragmentos.setEnabled(False)

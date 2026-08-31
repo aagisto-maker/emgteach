@@ -436,13 +436,18 @@ de la pestaña, en dos selectores de archivo, en el botón de calcular y en los 
 de las gráficas, y no se expandía en ninguno.
 
 **Entradas**
-- **EDF de prueba** (la tarea a normalizar) y **EDF de referencia CVM** (una
-  contracción máxima registrada aparte, con los mismos electrodos y sin
-  despegarlos entre uno y otro).
-- La referencia es **obligatoria** salvo que estén marcadas las opciones
-  avanzadas. Solo entonces se ofrece la **auto‑normalización**, y con una
-  confirmación antes de calcular cuya opción por defecto es elegir un archivo de
-  referencia.
+- **El EDF de la sesión**, y nada más. La sesión marca su propia calibración,
+  así que el máximo está dentro del archivo que se abre: preguntar por un
+  segundo archivo era pedir al operador que respondiera algo que el fichero ya
+  responde, y dejaba que las dos pestañas discreparan.
+- El tramo analizado es, por defecto, la **fase de registro**: la calibración y
+  la pausa quedan fuera sin que nadie los recorte a ojo. El editor de fragmentos
+  sigue estando para mirar un esfuerzo concreto dentro de esa fase.
+- **Sin calibración no hay % CVM ni carga muscular.** La antigua
+  auto‑normalización —dividir la señal por su propio percentil 95— se ha
+  retirado: una tarea llega siempre a ~100 % de sí misma, así que los límites de
+  Jonsson declaraban sobrecarga hiciera lo que hiciera el sujeto. Lo que no
+  depende de una referencia —la señal y su envolvente— se sigue dibujando.
 
 **Los 3 paneles temporales**
 1. Señal **filtrada y rectificada**.

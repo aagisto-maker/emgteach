@@ -30,8 +30,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AUTO_COLOR",
-    "AUTO_LOAD_MSG",
-    "AUTO_SUFFIX",
+    "NO_LOAD_MSG",
     "OverlayCurve",
     "adaptive_ylim",
     "compute_mvc",
@@ -43,14 +42,20 @@ __all__ = [
     "parse_mvc_ref_markers",
 ]
 
-# Wording used wherever an auto-normalised result is marked — on screen and in
+# Wording used wherever a missing calibration is reported — on screen and in
 # the PDF report alike. Kept here, in one place, so the two never drift apart
 # and so a single i18n entry covers both.
 AUTO_COLOR = "#cc0000"
-AUTO_SUFFIX = " (auto-normalised, not %MVC)"
-AUTO_LOAD_MSG = (
-    "Muscle-load analysis requires an MVC reference recording. Select one to "
-    "interpret these values as muscle load limits."
+#: Said where the muscle-load figures would have been. It names the cause and
+#: the cure, and it no longer offers a way out: auto-normalisation against the
+#: recording's own maximum used to be that way out, and it produced a number
+#: for every panel that was wrong in the same direction — a task reaches about
+#: 100 % of itself, so the Jonsson limits reported an overloaded subject
+#: whatever the subject did.
+NO_LOAD_MSG = (
+    "Muscle load needs a maximum to be a percentage of, and this recording "
+    "carries no calibration. Record the session again with the guided flow, "
+    "which calibrates without stopping the recording."
 )
 
 

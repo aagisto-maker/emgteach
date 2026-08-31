@@ -1,24 +1,35 @@
 """Background worker for MVC (Maximum Voluntary Contraction) normalisation.
 
-Loads one or two EDF files (the test signal and an optional MVC
-reference), runs the same offline DSP pipeline as the analysis tab,
-and normalises the test envelope against the MVC amplitude (95th
-percentile by default).
+Loads one EDF — the session — runs the same offline DSP pipeline as the
+analysis tab, and expresses its envelope as a percentage of the maximum the
+subject actually produced.
 
-The reference is looked for in three places, in this order:
+**One file, and the reference comes out of it.** The session marks its own
+calibration (:mod:`emgteach.phases`), so the reference is recomputed from
+those spans; a recording made before that flow falls back to the cached
+``MVC ref`` annotation. Nothing is asked of the operator, and there is no
+third place to look.
 
-1. a separate MVC recording, when one is chosen — an explicit decision by
-   the operator, so it wins;
-2. **the test file's own calibration**, written into the EDF as an
-   annotation by the acquisition wizard. A session that calibrates with the
-   recording already running carries its own maximum, and asking for a second
-   file to say what the first one already knows was busywork that ended in a
-   red "not a real %MVC" on a recording that had a perfectly real one;
-3. the 95th percentile of the test signal itself — didactic
-   auto-normalisation, flagged everywhere it appears because it is not %MVC.
+There used to be two more routes and both are gone:
 
-The muscle-load (Jonsson APDF) analysis is about the *task*, so the worker
-also accepts the fragments to keep: a recording that opens with three maximal
+* **A separate reference recording, chosen by hand.** It answered a question
+  the file already answers, and it made the two tabs disagree — the analysis
+  recomputing from the spans while this one used whatever file was in the
+  box.
+* **Auto-normalisation against the test signal itself.** Dividing a recording
+  by its own 95th percentile always yields something near 100 %, so the
+  Jonsson limits then say the subject is overloaded whatever they did. It was
+  labelled rather than removed, in red, everywhere it appeared; a failure mode
+  that has to be sign-posted in five places is a failure mode to delete. Note
+  what is *not* removed: panel 2's "normalised to its own maximum" is the same
+  arithmetic under an honest name, and for the time course of one channel it
+  is correct. What goes is its use as a **reference for muscle load**.
+
+Without a calibration, then, there is no % MVC and no APDF — and the signal
+and its envelope are still drawn, because those do not depend on a reference.
+
+The muscle-load analysis is about the *task*, so the analysed span defaults to
+the session's ``REC`` phase: a recording that opens with three maximal
 calibration efforts has an APDF describing those efforts, not the work.
 """
 
@@ -33,9 +44,12 @@ from emgteach.i18n import tr
 from emgteach.io import read_edf_pyedflib
 from emgteach.mvc import (
     adaptive_ylim,
-    compute_mvc,
     normalise_to_mvc,
     parse_mvc_ref_markers,
+)
+from emgteach.phases import (
+    mvc_reference,
+    parse_phase_markers,
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
@@ -62,7 +76,6 @@ class MvcWorker(QThread):
     def __init__(
         self,
         edf_path: str,
-        mvc_path: str = "",
         f_low: float | None = None,
         f_high: float | None = None,
         f_notch: float | None = None,
@@ -77,7 +90,6 @@ class MvcWorker(QThread):
         super().__init__(parent)
         self._profile = profile
         self._edf_path = edf_path
-        self._mvc_path = mvc_path.strip()
         self._channel_index = int(channel_index)
         self._roi_segments = (
             [(float(a), float(b)) for a, b in roi_segments] if roi_segments else None
@@ -99,20 +111,26 @@ class MvcWorker(QThread):
         """``True`` once :meth:`stop` has been called."""
         return self._cancelled
 
-    def _recortar(self, emg_raw, fs: float, time_axis):
+    def _recortar(self, emg_raw, fs: float, time_axis, *, por_defecto=None):
         """Keep the selected fragments only, concatenated and re-based to 0.
+
+        ``por_defecto`` is the span to use when nothing was chosen — the
+        session's recording phase. Falling back to the whole file is right only
+        for a recording that has no phases marked, which is every file made
+        before the guided flow.
 
         Returns ``(None, None)`` after emitting :attr:`error` when the kept
         time falls below the 1 s the DSP pipeline needs. Same rule and the same
         wording as the analysis tab, because it is the same decision.
         """
-        if not self._roi_segments:
+        tramos = self._roi_segments or (
+            [por_defecto] if por_defecto is not None else None
+        )
+        if not tramos:
             return emg_raw, time_axis
 
         duracion = float(time_axis[-1]) if time_axis.size else 0.0
-        segs = normalise_segments(
-            [Segment(a, b) for a, b in self._roi_segments], duracion
-        )
+        segs = normalise_segments([Segment(a, b) for a, b in tramos], duracion)
         total = total_duration_s(segs)
         if not segs or total < 1.0:
             self.error.emit(
@@ -130,12 +148,21 @@ class MvcWorker(QThread):
             if i1 > i0:
                 trozos.append(emg_raw[i0:i1])
         recortado = np.concatenate(trozos)
-        self.log.emit(
-            tr(
-                "Muscle load computed over {n} selected fragment(s) "
-                "({d:.2f} s of {full:.2f} s)."
-            ).format(n=len(segs), d=total, full=duracion)
-        )
+        if self._roi_segments:
+            self.log.emit(
+                tr(
+                    "Muscle load computed over {n} selected fragment(s) "
+                    "({d:.2f} s of {full:.2f} s)."
+                ).format(n=len(segs), d=total, full=duracion)
+            )
+        else:
+            self.log.emit(
+                tr(
+                    "Muscle load computed over the recording phase "
+                    "({d:.2f} s of {full:.2f} s); the calibration and the "
+                    "pause are outside it."
+                ).format(d=total, full=duracion)
+            )
         return recortado, np.arange(recortado.size, dtype=np.float64) / fs
 
     def run(self) -> None:
@@ -147,12 +174,10 @@ class MvcWorker(QThread):
             fs = edf["sfreq"]
             dimension = edf["dimension"]
             time_axis = edf["tiempo"]
-            # Read before any trimming: the calibration is normally *outside*
-            # the fragments kept for the muscle-load analysis — that is the
-            # whole point of trimming — and it is still this muscle's maximum.
-            ref_en_fichero = parse_mvc_ref_markers(edf.get("markers", [])).get(
-                self._channel_index
-            )
+            marcas = edf.get("markers", [])
+            fases = parse_phase_markers(marcas)
+            cacheadas = parse_mvc_ref_markers(marcas)
+            duracion_total = float(time_axis[-1]) if time_axis.size else 0.0
 
             self.log.emit(
                 tr("Signal loaded — {fs:.0f} Hz — {dur:.1f} s — units: {units}").format(
@@ -160,8 +185,35 @@ class MvcWorker(QThread):
                 )
             )
 
+            # The reference is measured on the whole recording, before any
+            # trimming: the calibration lies *outside* the analysed span by
+            # design — that is what the two-phase session is for — and it is
+            # still this muscle's maximum. One extra pass of the DSP, and only
+            # when there are spans in the file to measure.
+            env_calibracion = None
+            if fases.cal_reps:
+                env_calibracion = process_offline(
+                    emg_raw, fs,
+                    f_low=self._f_low, f_high=self._f_high,
+                    f_notch=self._f_notch, f_env=self._f_env,
+                )["emg_envelope"]
+            mvc_amplitude_ref, mvc_ref_source = mvc_reference(
+                self._channel_index,
+                phases=fases, envelope=env_calibracion, fs=fs,
+                cached=cacheadas, percentile=self._percentile,
+                window_s=self._profile.mvc_peak_window_s,
+            )
+            if self._cancelled:
+                return
+
             # Keep only the selected fragments, concatenated into one signal.
-            emg_raw, time_axis = self._recortar(emg_raw, fs, time_axis)
+            # With none chosen the session's own recording phase is the answer:
+            # the application knows where the calibration was, so separating it
+            # from the work is not left to the operator's eye.
+            emg_raw, time_axis = self._recortar(
+                emg_raw, fs, time_axis,
+                por_defecto=fases.rec_span(duracion_total),
+            )
             if emg_raw is None:
                 return  # error already emitted
 
@@ -192,98 +244,47 @@ class MvcWorker(QThread):
             if self._cancelled:
                 return
 
-            # 4) MVC reference
-            mvc_amplitude_ref: float
-            mvc_source: str
-            # Whether the reference is the test signal itself. Reported as a
-            # flag rather than inferred from mvc_source, which is translated:
-            # the interface has to mark these results and must not depend on
-            # the wording of a particular language.
-            mvc_is_auto: bool = True
-
-            if self._mvc_path:
-                try:
-                    self.log.emit(tr("Loading MVC file: {path}").format(path=self._mvc_path))
-                    mvc_edf = read_edf_pyedflib(self._mvc_path, self._channel_index)
-                    mvc_fs = mvc_edf["sfreq"]
-
-                    diag_mvc = detect_acquisition_problems(mvc_edf["emg_raw"], mvc_fs)
-                    for warning in diag_mvc["warnings"]:
-                        self.log.emit(warning)
-
-                    self.log.emit(tr("Processing MVC signal…"))
-                    mvc_proc = process_offline(
-                        mvc_edf["emg_raw"],
-                        mvc_fs,
-                        f_low=self._f_low,
-                        f_high=self._f_high,
-                        f_notch=self._f_notch,
-                        f_env=self._f_env,
+            # 4) Normalise, when there is a maximum to normalise against.
+            #
+            # There is no fallback. Dividing the recording by its own 95th
+            # percentile would produce a number for every panel, and every one
+            # of them would be wrong in the same direction: a task always
+            # reaches about 100 % of itself, so the Jonsson limits would report
+            # an overloaded subject whatever they did.
+            emg_norm = None
+            apdf = None
+            mean_norm = None
+            ylim_max = None
+            if mvc_amplitude_ref:
+                self.log.emit(
+                    tr("MVC reference amplitude: {value:.4f} {units}").format(
+                        value=mvc_amplitude_ref, units=dimension
                     )
-                    mvc_amplitude_ref = compute_mvc(
-                        mvc_proc["emg_envelope"], self._percentile
-                    )
-                    mvc_source = tr(
-                        "external MVC file (percentile {p:.0f})"
-                    ).format(p=self._percentile)
-                    mvc_is_auto = False
-                except Exception as exc:
-                    self.log.emit(
-                        tr(
-                            "Could not load the MVC file ({error}). "
-                            "Falling back to auto-normalisation."
-                        ).format(error=exc)
-                    )
-                    mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
-                    mvc_source = tr(
-                        "auto (percentile {p:.0f} of the test signal)"
-                    ).format(p=self._percentile)
-            elif ref_en_fichero:
-                # The session calibrated with the recording already running, so
-                # the maximum is an annotation inside this very file. Nothing
-                # else to choose, and nothing auto about it.
-                mvc_amplitude_ref = float(ref_en_fichero)
-                mvc_source = tr("calibration recorded in this file")
-                mvc_is_auto = False
+                )
+                emg_norm = normalise_to_mvc(emg_envelope, mvc_amplitude_ref)
+                ylim_max = adaptive_ylim(emg_norm, n_plot)
+                mean_norm = float(np.mean(emg_norm))
+                self.log.emit(
+                    tr("Mean normalised activation: {value:.1f} % MVC")
+                    .format(value=mean_norm)
+                )
+                apdf = compute_apdf(emg_norm, **self._profile.apda_kwargs())
                 self.log.emit(
                     tr(
-                        "MVC reference read from the file's own calibration: "
-                        "{value:.4f} {units}."
-                    ).format(value=mvc_amplitude_ref, units=dimension)
+                        "Muscle load (Jonsson) — static {st:.1f} %, "
+                        "median {md:.1f} %, peak {pk:.1f} % MVC"
+                    ).format(
+                        st=apdf.static.value, md=apdf.median.value,
+                        pk=apdf.peak.value
+                    )
                 )
             else:
-                mvc_amplitude_ref = compute_mvc(emg_envelope, self._percentile)
-                mvc_source = tr(
-                    "auto (percentile {p:.0f} of the test signal)"
-                ).format(p=self._percentile)
-
-            self.log.emit(
-                tr("MVC reference amplitude: {value:.4f} {units} ({source})").format(
-                    value=mvc_amplitude_ref, units=dimension, source=mvc_source
-                )
-            )
-            if self._cancelled:
-                return
-
-            # 5) Normalise
-            emg_norm = normalise_to_mvc(emg_envelope, mvc_amplitude_ref)
-            ylim_max = adaptive_ylim(emg_norm, n_plot)
-
-            mean_norm = float(np.mean(emg_norm))
-            self.log.emit(
-                tr("Mean normalised activation: {value:.1f} % MVC").format(value=mean_norm)
-            )
-
-            # Muscle-load analysis (Jonsson APDF) over the whole recording.
-            apdf = compute_apdf(emg_norm, **self._profile.apda_kwargs())
-            self.log.emit(
-                tr(
-                    "Muscle load (Jonsson) — static {st:.1f} %, "
-                    "median {md:.1f} %, peak {pk:.1f} % MVC"
-                ).format(
-                    st=apdf.static.value, md=apdf.median.value, pk=apdf.peak.value
-                )
-            )
+                self.log.emit(tr(
+                    "This recording carries no calibration, so there is no "
+                    "maximum to express it as a percentage of: no % MVC and "
+                    "no muscle-load analysis. The signal and its envelope do "
+                    "not depend on a reference and are drawn as usual."
+                ))
 
             result = {
                 "emg_raw": emg_raw,
@@ -297,8 +298,16 @@ class MvcWorker(QThread):
                 "n_plot": n_plot,
                 "tiempo": time_axis,
                 "mvc_amplitude_ref": mvc_amplitude_ref,
-                "mvc_source": mvc_source,
-                "mvc_is_auto": mvc_is_auto,
+                #: Where the reference came from, as a token from
+                #: emgteach.phases. The interface branches on this and words it
+                #: with reference_source_text(); it must never branch on
+                #: translated text. It replaces the old ``mvc_source``
+                #: sentence and the ``mvc_is_auto`` flag that had to be carried
+                #: beside it precisely because that sentence was translated.
+                "mvc_ref_source": mvc_ref_source,
+                #: How many calibration repetitions the file holds for this
+                #: channel, so the provenance can say "(3 repetitions)".
+                "cal_reps_n": len(fases.reps_for(self._channel_index)),
                 "ylim_max": ylim_max,
                 "dimension": dimension,
                 "fs": fs,

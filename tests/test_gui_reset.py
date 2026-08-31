@@ -55,7 +55,6 @@ def test_mvc_reset(qapp) -> None:
     tab = MvcTab(LoggerWidget(), settings)
 
     tab._edit_path.setText("foo.edf")
-    tab._edit_cvm_path.setText("ref.edf")
     tab._last_result = {"sentinel": 1}
     tab._btn_informe.setEnabled(True)
     tab._btn_guardar.setEnabled(True)
@@ -64,7 +63,6 @@ def test_mvc_reset(qapp) -> None:
 
     assert tab._last_result is None
     assert tab._edit_path.text() == ""
-    assert tab._edit_cvm_path.text() == ""
     assert not tab._btn_informe.isEnabled()
     assert not tab._btn_guardar.isEnabled()
     assert tab._d_file.text() == "—"

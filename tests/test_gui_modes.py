@@ -385,30 +385,21 @@ class TestChoosingWhichMuscle:
 # ── normalisation ──────────────────────────────────────────────────────
 
 
-def test_auto_normalisation_belongs_to_the_free_mode(main_window, qapp) -> None:
-    """Auto-normalisation divides the signal by a percentile of itself, which
-    makes the Jonsson limits meaningless. Worth keeping for someone who knows
-    what it is for; worth removing from a practical."""
+def test_the_missing_calibration_is_named_in_every_mode(main_window, qapp) -> None:
+    """It used to depend on the practical: the basic levels disabled Compute
+    until a reference file was chosen and the free one let auto-normalisation
+    through. Neither exists now — the maximum is inside the recording — so the
+    answer is the same everywhere, and it is a warning rather than a lock: two
+    of the three panels need no reference at all."""
     cvm = main_window._tab_cvm
     cvm._edit_path.setText("recording.edf")
-    cvm._edit_cvm_path.clear()
 
-    set_mode(main_window, qapp, MODE_SINGLE)
-    cvm._refresh_compute_enabled()
-    assert not cvm._btn_calcular.isEnabled()
-    # And it says why, rather than leaving a dead button on screen.
-    assert shown(cvm._lbl_calcular_bloqueado)
-    assert cvm._lbl_calcular_bloqueado.text()
-
-    cvm._edit_cvm_path.setText("reference.edf")
-    cvm._refresh_compute_enabled()
-    assert cvm._btn_calcular.isEnabled()
-    assert not shown(cvm._lbl_calcular_bloqueado)
-
-    cvm._edit_cvm_path.clear()
-    set_mode(main_window, qapp, MODE_FREE)
-    cvm._refresh_compute_enabled()
-    assert cvm._btn_calcular.isEnabled()
+    for mode in (MODE_SINGLE, MODE_FREE):
+        set_mode(main_window, qapp, mode)
+        cvm._refresh_compute_enabled()
+        assert cvm._btn_calcular.isEnabled()
+        assert shown(cvm._lbl_calcular_bloqueado)
+        assert cvm._lbl_calcular_bloqueado.toolTip()
 
 
 class TestMvcPanelSelection:

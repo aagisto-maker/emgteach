@@ -44,10 +44,10 @@ from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.i18n import tr
 from emgteach.mvc import (
     AUTO_COLOR,
-    AUTO_LOAD_MSG,
-    AUTO_SUFFIX,
+    NO_LOAD_MSG,
     overlay_curves,
 )
+from emgteach.phases import NO_CALIBRATION, reference_source_text
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -643,7 +643,9 @@ def _render_mvc_figure(
     FigureCanvasAgg(fig)
     axes = fig.subplots(4, 1)
 
-    n = int(result.get("n_plot", len(result["emg_norm"])))
+    ref = result.get("mvc_amplitude_ref")
+    norm = result.get("emg_norm")
+    n = int(result.get("n_plot", len(result["emg_envelope"])))
     t = result["t_plot"]
     dim = result.get("dimension", "")
 
@@ -661,13 +663,12 @@ def _render_mvc_figure(
     ax = axes[1]
     ax.plot(t, result["emg_envelope"][:n], color="purple", lw=1.5,
             label=tr("LP envelope (zero-phase)"))
-    ax.axhline(float(result["mvc_amplitude_ref"]), color="red", ls="--", lw=1.2)
-    # The report is what the student hands in, so an auto-normalised reference
-    # has to be flagged here too, not only on screen.
-    is_auto = bool(result.get("mvc_is_auto", False))
-    auto_suffix = tr(AUTO_SUFFIX) if is_auto else ""
+    if ref:
+        ax.axhline(float(ref), color="red", ls="--", lw=1.2)
     ax.set_title(
-        tr("2. Envelope and MVC reference amplitude") + auto_suffix, fontsize=9
+        tr("2. Envelope and MVC reference amplitude") if ref
+        else tr("2. Envelope (no calibration in this recording)"),
+        fontsize=9,
     )
     ax.set_ylabel(tr("Amplitude ({units})").format(units=dim), fontsize=8)
     ax.legend(loc="upper right", fontsize=6)
@@ -675,41 +676,45 @@ def _render_mvc_figure(
     ax.tick_params(labelsize=7)
 
     ax = axes[2]
-    ax.fill_between(t, result["emg_norm"][:n], alpha=0.25, color="darkorange")
-    ax.plot(t, result["emg_norm"][:n], color="darkorange", lw=1.5)
-    ax.axhline(100.0, color="red", ls=":", lw=1.0)
-    ax.set_title(
-        tr("3. EMG signal normalised to MVC (% MVC)") + auto_suffix, fontsize=9
-    )
-    ax.set_ylabel(tr("% MVC"), fontsize=8)
-    ax.set_xlabel(tr("Time (s)"), fontsize=8)
-    ax.grid(True, color="#DDDDDD", alpha=0.5)
-    ax.tick_params(labelsize=7)
+    # The report is what the student hands in. A panel that quietly vanished
+    # would leave them holding a document that does not say what is missing.
+    if norm is None:
+        ax.text(0.5, 0.5, tr(NO_LOAD_MSG), ha="center", va="center",
+                fontsize=8, color="#666666", wrap=True, transform=ax.transAxes)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title(tr("3. Signal as % MVC — not available"), fontsize=9)
+    else:
+        ax.fill_between(t, norm[:n], alpha=0.25, color="darkorange")
+        ax.plot(t, norm[:n], color="darkorange", lw=1.5)
+        ax.axhline(100.0, color="red", ls=":", lw=1.0)
+        ax.set_title(
+            tr("3. EMG signal normalised to MVC (% MVC)"), fontsize=9)
+        ax.set_ylabel(tr("% MVC"), fontsize=8)
+        ax.set_xlabel(tr("Time (s)"), fontsize=8)
+        ax.grid(True, color="#DDDDDD", alpha=0.5)
+        ax.tick_params(labelsize=7)
 
     if x_range is not None:
         for tax in (axes[0], axes[1], axes[2]):
             tax.set_xlim(*x_range)
 
     ax = axes[3]
-    if is_auto:
-        # Same reasoning as on screen: against a reference taken from the
-        # signal itself the Jonsson limits are not interpretable, so the
-        # curve is left out rather than printed with a caveat.
-        ax.text(0.5, 0.5, tr(AUTO_LOAD_MSG), ha="center", va="center",
+    apdf = result.get("apdf")
+    if apdf is None:
+        ax.text(0.5, 0.5, tr(NO_LOAD_MSG), ha="center", va="center",
                 fontsize=8, color="#666666", wrap=True, transform=ax.transAxes)
         ax.set_xticks([])
         ax.set_yticks([])
         for spine in ax.spines.values():
             spine.set_visible(False)
         ax.set_title(
-            tr("Muscle-load distribution (APDF, Jonsson)") + auto_suffix, fontsize=9
-        )
+            tr("Muscle-load distribution (APDF, Jonsson)"), fontsize=9)
         buf = BytesIO()
         fig.savefig(buf, format="png")
         buf.seek(0)
         return buf
 
-    apdf = result["apdf"]
     ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.5)
     for lvl, prob, name in (
         (apdf.static, 10, tr("Static")),
@@ -797,41 +802,44 @@ def build_mvc_report(
 
     dim = result.get("dimension", "")
     duration = float(result["tiempo"][-1]) if len(result.get("tiempo", [])) else 0.0
-    apdf = result["apdf"]
+    apdf = result.get("apdf")
+    ref = result.get("mvc_amplitude_ref")
 
     def _level_cell(lvl: Any) -> str:
         status = tr("exceeds limit") if lvl.exceeds else tr("within limit")
         return f"{lvl.value:.0f} % MVC  (≤ {lvl.limit:.0f} %) — {status}"
 
-    is_auto = bool(result.get("mvc_is_auto", False))
-
     story.append(PageBreak())
     story.append(Paragraph(tr("Metrics"), h2))
     metrics = [
         [tr("Metric"), tr("Value")],
-        [tr("MVC reference:"), f"{float(result.get('mvc_amplitude_ref', 0.0)):.4f} {dim}"],
+        [tr("MVC reference:"), f"{ref:.4f} {dim}" if ref else tr("none")],
         [
-            tr("MVC source:"),
-            tr("auto (not a real %MVC)") if is_auto
-            else str(result.get("mvc_source", "")),
+            tr("Reference from:"),
+            reference_source_text(
+                str(result.get("mvc_ref_source", NO_CALIBRATION)),
+                int(result.get("cal_reps_n", 0)),
+            ),
         ],
-        [tr("Mean activation:"), f"{float(result.get('mean_norm', 0.0)):.1f} % MVC"],
+        [tr("Mean activation:"),
+         "—" if result.get("mean_norm") is None
+         else f"{float(result['mean_norm']):.1f} % MVC"],
         [tr("Duration"), f"{duration:.1f} s"],
     ]
-    # An auto-normalised reference makes the three load levels uninterpretable,
-    # so the report leaves them out and says why, instead of printing verdicts
-    # against limits that do not apply to these numbers.
-    if not is_auto:
+    # Without a reference the three load levels do not exist, so the report
+    # says so instead of printing verdicts against limits computed from
+    # nothing.
+    if apdf is not None:
         metrics += [
             [f"{tr('Static')} (P10)", _level_cell(apdf.static)],
             [f"{tr('Median')} (P50)", _level_cell(apdf.median)],
             [f"{tr('Peak')} (P90)", _level_cell(apdf.peak)],
         ]
     story.append(_styled_table(metrics))
-    if is_auto:
+    if apdf is None:
         story.append(Spacer(1, 0.3 * cm))
         story.append(Paragraph(
-            f"<font color='{AUTO_COLOR}'>{tr(AUTO_LOAD_MSG)}</font>", normal
+            f"<font color='{AUTO_COLOR}'>{tr(NO_LOAD_MSG)}</font>", normal
         ))
 
     def _footer(canvas: Any, doc: Any) -> None:

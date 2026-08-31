@@ -102,7 +102,7 @@ def test_the_minimap_and_the_panels_speak_of_the_same_recording(
 
     r = done[0]
     # The plotted axis covers every sample the numbers were computed from.
-    assert r["n_plot"] == r["emg_norm"].size
+    assert r["n_plot"] == r["emg_envelope"].size
     assert r["t_plot"][-1] == pytest.approx(secs, abs=0.01)
     # And the minimap is scaled to that same recording, so the envelope it
     # draws lines up with the selection rectangle.
@@ -169,41 +169,58 @@ def _tab(edf: str):
 def test_the_recordings_own_calibration_is_the_reference(qapp, tmp_path: Path) -> None:
     """It used to ask for a second file to say what the first one already knew,
     and print "auto (not a real %MVC)" in red over a perfectly real one."""
+    from emgteach.phases import FROM_CACHE
+
     tab = _tab(_calibrated_edf(tmp_path / "calibrado.edf"))
     r = _run(tab, qapp)
     assert r["mvc_amplitude_ref"] == pytest.approx(0.70)
-    assert r["mvc_is_auto"] is False
+    # A token, never a translated sentence: the interface branches on this.
+    assert r["mvc_ref_source"] == FROM_CACHE
     tab.cleanup()
 
 
-def test_a_file_without_a_calibration_still_falls_back_to_auto(
+def test_without_a_calibration_there_is_no_percentage_and_no_load(
     qapp, tmp_path: Path
 ) -> None:
-    """The flag has to keep meaning something: a recording with no maximum in
-    it is still auto-normalised, and still says so."""
+    """There used to be a third way — divide the recording by its own 95th
+    percentile — and it produced a number for every panel that was wrong in
+    the same direction: a task reaches about 100 % of itself, so the Jonsson
+    limits reported an overloaded subject whatever the subject did.
+
+    What survives is what does not need a maximum: the signal and its
+    envelope.
+    """
+    from emgteach.phases import NO_CALIBRATION
+
     tab = _tab(_make_edf(tmp_path / "sin_calibrar.edf"))
-    tab._auto_aceptada = True          # the operator accepted the trade-off
     r = _run(tab, qapp)
-    assert r["mvc_is_auto"] is True
+    assert r["mvc_amplitude_ref"] is None
+    assert r["mvc_ref_source"] == NO_CALIBRATION
+    assert r["emg_norm"] is None
+    assert r["apdf"] is None
+    assert r["emg_envelope"].size
     tab.cleanup()
 
 
-def test_the_compute_button_no_longer_demands_a_second_file(
+def test_the_compute_button_says_what_the_recording_will_not_give(
     qapp, tmp_path: Path
 ) -> None:
-    """At the practical levels the button waits for a reference recording. A
-    file that carries its own is that reference."""
+    """It is enabled either way — two of the three panels need no reference —
+    but a recording with no calibration says so before it is pressed, not
+    after."""
     from emgteach.modes import MODE_PAIR
 
     tab = _tab(_calibrated_edf(tmp_path / "calibrado.edf"))
-    tab.apply_mode(MODE_PAIR, False)   # advanced off: a reference is required
+    tab.apply_mode(MODE_PAIR, False)
     assert tab._btn_calcular.isEnabled()
-    assert not tab._btn_usar_mismo.isVisible()
+    assert not tab._lbl_calcular_bloqueado.isVisible()
     tab.cleanup()
 
     sin = _tab(_make_edf(tmp_path / "pelado.edf"))
     sin.apply_mode(MODE_PAIR, False)
-    assert not sin._btn_calcular.isEnabled()
+    assert sin._btn_calcular.isEnabled()
+    assert sin._lbl_calcular_bloqueado.text()
+    assert sin._lbl_calcular_bloqueado.toolTip()
     sin.cleanup()
 
 
