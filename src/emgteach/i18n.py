@@ -1129,6 +1129,15 @@ _ES = {
         "Hay que detener el registro antes de iniciar la guía.",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
+    # -- la sesión en dos fases (phases.py / acquisition.py) --
+    'Get ready to record': 'Prepárese para grabar',
+    'Get ready to record: {n}': 'Prepárese para grabar: {n}',
+    'The recording starts when the count reaches 0. The calibration is already saved.':
+        'El registro empieza cuando la cuenta llegue a 0. La calibración ya está guardada.',
+    'Recording — the calibration is behind you.':
+        'Grabando: la calibración ya queda atrás.',
+    'Recording phase started. Everything before this point — the calibration and this pause — stays out of the analysis.':
+        'Empieza la fase de registro. Todo lo anterior —la calibración y esta pausa— queda fuera del análisis.',
     'Calibration too weak': 'Calibración demasiado floja',
     '{muscles}: this is not a maximum. Calibrate again against a resistance the joint cannot move.': '{muscles}: esto no es una máxima. Calibre de nuevo contra una resistencia que la articulación no pueda mover.',
     'Push as hard as you can when the count reaches 0 — against a fixed resistance, without letting the joint move': 'Empuje todo lo que pueda cuando la cuenta llegue a 0, contra una resistencia fija y sin dejar que la articulación se mueva',

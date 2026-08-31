@@ -71,8 +71,19 @@ from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import RecordingMetadata
-from emgteach.modes import mode_channels, mode_forces_setup, mode_uses_acc
+from emgteach.modes import (
+    mode_channels,
+    mode_forces_setup,
+    mode_requires_calibration,
+    mode_uses_acc,
+)
 from emgteach.mvc import mvc_from_reps, mvc_ref_marker
+from emgteach.phases import (
+    cal_end_marker,
+    cal_start_marker,
+    prep_start_marker,
+    rec_start_marker,
+)
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
 
@@ -264,6 +275,25 @@ class AcquisitionTab(QWidget):
         self._mvc_timer = QTimer(self)
         self._mvc_timer.setInterval(MVC_TICK_MS)
         self._mvc_timer.timeout.connect(self._mvc_tick)
+
+        # The two-phase session. When the practical needs a calibration the
+        # record button runs the whole flow — calibration, a preparation pause,
+        # then the recording proper — and the acquisition never stops in
+        # between, so the file is continuous and the phases are annotations in
+        # it. `_mvc_flow_auto` is what tells the wizard it is part of that flow
+        # rather than a calibration someone asked for in the middle of a
+        # recording; only the flow writes PREP/REC, because only in the flow is
+        # the calibration at the start of the file.
+        self._mvc_flow_auto = False
+        self._mvc_flow_pending = False    # start it on the first block of data
+        #: Between the phases: the calibration is done and the pause has been
+        #: scheduled but has not begun. A state of its own because the hand-over
+        #: is deferred a couple of seconds so the verdict panel can be read.
+        self._prep_pending = False
+        self._prep_elapsed = 0.0
+        self._prep_timer = QTimer(self)
+        self._prep_timer.setInterval(MVC_TICK_MS)
+        self._prep_timer.timeout.connect(self._prep_tick)
         # Floating guide drawn over the plots during the wizard.
         self._mvc_overlay = MvcOverlay(self)
 
@@ -1583,7 +1613,18 @@ class AcquisitionTab(QWidget):
         self._load_timer.start()
         self._log(tr("Press M to quickly add a marker with the selected label."))
 
+        # Armed here and fired on the first block of data: the device can take
+        # seconds to open, and a countdown that starts before the samples do
+        # measures no resting level to judge the calibration against.
+        self._mvc_flow_pending = self._flow_needs_calibration()
+
     def _detener_grabacion(self) -> None:
+        # A session stopped in the middle of its own flow leaves a CAL span
+        # with no end, which the reader drops: half a maximal effort is not
+        # a maximal effort.
+        self._mvc_flow_pending = False
+        self._prep_pending = False
+        self._prep_timer.stop()
         self._watchdog_timer.stop()
         self._render_timer.stop()
         self._stop_load_monitor()
@@ -1609,6 +1650,12 @@ class AcquisitionTab(QWidget):
         # does not fire during device.open(), which can take up to 3 s on Arduino).
         if not self._watchdog_timer.isActive():
             self._watchdog_timer.start()
+        # Samples are flowing, so the session's opening phase can begin. Armed
+        # in _iniciar_grabacion; fired here so the wizard's first countdown has
+        # a real resting level to measure.
+        if self._mvc_flow_pending:
+            self._mvc_flow_pending = False
+            self._iniciar_calibracion(auto_flow=True)
         # data_ready carries one array per channel; append each to its buffer.
         # The filtered trace is still emitted by the worker (it feeds the
         # envelope) but is no longer displayed, so it is not buffered here.
@@ -2022,12 +2069,24 @@ class AcquisitionTab(QWidget):
 
     @Slot()
     def _on_calibrar(self) -> None:
-        """Launch the guided, per-muscle MVC-calibration wizard."""
+        """The «Calibrate MVC» button: a calibration asked for on its own."""
+        self._iniciar_calibracion(auto_flow=False)
+
+    def _iniciar_calibracion(self, *, auto_flow: bool = False) -> None:
+        """Launch the guided, per-muscle MVC-calibration wizard.
+
+        ``auto_flow`` marks the calibration as the opening phase of a session
+        started from the record button. Only then do the preparation pause and
+        the ``REC start`` annotation follow it: a calibration run in the middle
+        of a recording sits in the middle of the file, and saying the recording
+        starts *there* would throw away everything before it.
+        """
         if not (self._worker and self._worker.isRunning()):
             return
         if self._mvc_active or self._fv_active:
             return
         self._mvc_active = True
+        self._mvc_flow_auto = auto_flow
         self._mvc_reps = 3 if self._chk_mvc_best3.isChecked() else 1
         self._mvc_muscle = 0
         self._mvc_rep = 0
@@ -2168,6 +2227,12 @@ class AcquisitionTab(QWidget):
                 self._mvc_cross_buf = {}
                 self._mvc_peak = 0.0
                 self._mvc_cur = 0.0
+                # The span opens here and closes in _mvc_finish_rep. Between
+                # the two is the effort itself, which is what the analysis has
+                # to be able to recompute the reference from.
+                self._write_phase_marker(
+                    cal_start_marker(self._mvc_muscle, self._mvc_rep + 1)
+                )
         elif self._mvc_phase == "contract":
             secs_left = max(0.0, self._profile.apda_calib_s - self._mvc_elapsed)
             progress = min(1.0, self._mvc_elapsed / self._profile.apda_calib_s)
@@ -2253,6 +2318,12 @@ class AcquisitionTab(QWidget):
                 self._mvc_cross_buf.setdefault(k, []).extend(env[k].tolist())
 
     def _mvc_finish_rep(self) -> None:
+        # Closed before anything else: a span with no end is dropped when the
+        # file is read back, which is exactly right for a recording stopped
+        # mid-effort but would be wrong for one that finished.
+        self._write_phase_marker(
+            cal_end_marker(self._mvc_muscle, self._mvc_rep + 1)
+        )
         self._mvc_capture[self._mvc_muscle].append(
             np.asarray(self._mvc_cur_buf, dtype=float)
         )
@@ -2285,6 +2356,73 @@ class AcquisitionTab(QWidget):
         self._online[c].reset()
         self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
         self._write_mvc_ref_marker(c)
+
+    def _flow_needs_calibration(self) -> bool:
+        """Whether pressing record has to run the calibration first.
+
+        A practical that compares two muscles has nothing to compare without
+        both references, so the record button runs the whole session rather
+        than leaving the calibration to be remembered. Already calibrated in
+        this session and it does not run again: the references are still good
+        and a second one would only cost the subject three more maximal
+        efforts, which is the fastest way to make the next contraction weaker.
+        """
+        return (
+            mode_requires_calibration(self._mode)
+            and not any(self._mvc_ref[: self._n_channels])
+        )
+
+    def _write_phase_marker(self, label: str) -> None:
+        """Write a phase annotation, if there is an open recording to write to.
+
+        Calibrating without recording is still allowed — the reference lands
+        in the next file as a cached ``MVC ref`` — and then there is no span
+        to mark. Silently doing nothing is the right answer: the phases
+        describe a file, and in that case there is no file yet.
+        """
+        if self._worker and self._worker.isRunning():
+            self._worker.add_marker(label)
+
+    def _mvc_enter_prep(self) -> None:
+        """Between the two phases: a countdown, recorded but not analysed.
+
+        The acquisition is deliberately not stopped here. Stopping would force
+        the file to represent a gap — which EDF+ handles badly — or two
+        files to be written and then merged. A few seconds of signal nobody
+        looks at costs some kilobytes and saves all of that.
+        """
+        self._prep_pending = False
+        if not (self._worker and self._worker.isRunning()):
+            self._mvc_overlay.hide_overlay()
+            self._bcast_calib(False)
+            return
+        self._worker.add_marker(prep_start_marker())
+        self._prep_elapsed = 0.0
+        self._prep_timer.start()
+
+    @Slot()
+    def _prep_tick(self) -> None:
+        total = self._profile.prep_countdown_s
+        self._prep_elapsed += MVC_TICK_MS / 1000.0
+        cuenta = max(1, int(np.ceil(total - self._prep_elapsed)))
+        titulo = tr("Get ready to record")
+        detalle = tr("The recording starts when the count reaches 0. "
+                     "The calibration is already saved.")
+        self._mvc_overlay.show_ready(titulo, cuenta, detalle)
+        self._mvc_info(tr("Get ready to record: {n}").format(n=cuenta))
+        self._bcast_calib(True, "prep", titulo, detalle, count=cuenta)
+        if self._prep_elapsed < total:
+            return
+
+        self._prep_timer.stop()
+        self._worker.add_marker(rec_start_marker())
+        self._mvc_overlay.hide_overlay()
+        self._bcast_calib(False)
+        self._mvc_info(tr("Recording — the calibration is behind you."))
+        self._log(tr(
+            "Recording phase started. Everything before this point — the "
+            "calibration and this pause — stays out of the analysis."
+        ))
 
     def _write_mvc_ref_marker(self, c: int) -> None:
         """Carry this channel's MVC reference into the EDF as an annotation.
@@ -2423,13 +2561,26 @@ class AcquisitionTab(QWidget):
                 True, "done", tr("Calibration failed"),
                 tr("No signal — check the electrodes."),
             )
+        if self._mvc_flow_auto and self._worker and self._worker.isRunning():
+            # The session continues into its second phase. The verdict panel
+            # gets a couple of seconds to be read first — it is the one
+            # place a weak calibration is reported — then the countdown.
+            self._mvc_flow_auto = False
+            self._prep_pending = True
+            QTimer.singleShot(2000, self._mvc_enter_prep)
+            return
+
         QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
         QTimer.singleShot(5000, lambda: self._bcast_calib(False))
 
     def _mvc_cancel(self) -> None:
         """Abort the wizard (e.g. on stop/disconnect)."""
         self._mvc_timer.stop()
+        self._prep_timer.stop()
         self._mvc_active = False
+        self._mvc_flow_auto = False
+        self._mvc_flow_pending = False
+        self._prep_pending = False
         self._mvc_phase = ""
         self._mvc_overlay.hide_overlay()
         self._update_fv_button()

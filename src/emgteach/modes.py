@@ -38,6 +38,7 @@ __all__ = [
     "mode_complexity_label",
     "mode_forces_setup",
     "mode_label",
+    "mode_requires_calibration",
     "mode_shows_fine_controls",
     "mode_uses_acc",
     "normalise_mode",
@@ -105,6 +106,19 @@ def mode_forces_setup(mode: str) -> bool:
     where the user put them.
     """
     return normalise_mode(mode) != MODE_FREE
+
+
+def mode_requires_calibration(mode: str) -> bool:
+    """Whether pressing record has to run the calibration first.
+
+    Only the agonist/antagonist practical: comparing two muscles is comparing
+    two percentages of two different maxima, so without both references there
+    is nothing to compare and the co-activation index cannot be computed at
+    all. The others *offer* calibration — the button is there and the wizard
+    writes its phases the same way — but a recording without it still says
+    something, so it is not imposed.
+    """
+    return normalise_mode(mode) == MODE_PAIR
 
 
 def mode_shows_fine_controls(mode: str) -> bool:

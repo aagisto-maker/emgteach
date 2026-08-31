@@ -153,6 +153,12 @@ class SignalProfile:
     apda_warning_limit: float = 40.0   # % MVC — tiredness (warning) zone
     apda_danger_limit: float = 70.0    # % MVC — fatigue (danger) zone
     apda_calib_s: float = 4.0          # s — quick MVC-calibration duration
+    # -- the pause between the two phases of a session --
+    # The acquisition does not stop: the file stays continuous and EDF+ never
+    # has to represent a gap. These seconds are recorded, marked PREP, and
+    # excluded from every analysis — a few kilobytes of disk against the whole
+    # complexity of a discontinuous recording.
+    prep_countdown_s: float = 5.0
 
     # -- fatigue verdict (MDF-vs-time regression) --
     # The median frequency of a resting segment is amplifier noise, and mixing
