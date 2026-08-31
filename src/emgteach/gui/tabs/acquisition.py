@@ -1625,6 +1625,10 @@ class AcquisitionTab(QWidget):
                 "Starting the session — the calibration begins as soon as the "
                 "signal arrives."
             ))
+            self._log(tr(
+                "This practical calibrates first: waiting for the signal to "
+                "start the session."
+            ))
 
     def _detener_grabacion(self) -> None:
         # A session stopped in the middle of its own flow leaves a CAL span
@@ -1660,8 +1664,14 @@ class AcquisitionTab(QWidget):
         # Samples are flowing, so the session's opening phase can begin. Armed
         # in _iniciar_grabacion; fired here so the wizard's first countdown has
         # a real resting level to measure.
-        if self._mvc_flow_pending:
-            self._mvc_flow_pending = False
+        #
+        # The flag is cleared by _iniciar_calibracion once it is past its
+        # guards, not here. Clearing it before the call spends the session's
+        # one chance on an attempt that may bounce — and when it did, the
+        # recording came back with no calibration at all and the button left
+        # disabled, which is a worse state than either outcome. Retrying on
+        # the next block costs nothing: this runs ten times a second.
+        if self._mvc_flow_pending and not self._mvc_active:
             self._iniciar_calibracion(auto_flow=True)
         # data_ready carries one array per channel; append each to its buffer.
         # The filtered trace is still emitted by the worker (it feeds the
@@ -2089,8 +2099,14 @@ class AcquisitionTab(QWidget):
         starts *there* would throw away everything before it.
         """
         if not (self._worker and self._worker.isRunning()):
+            if not auto_flow:
+                self._log(tr(
+                    "The calibration needs a recording in progress."
+                ))
             return
         if self._mvc_active or self._fv_active:
+            if not auto_flow:
+                self._log(tr("Another guided procedure is already running."))
             return
         self._mvc_active = True
         # Pressing «Calibrate MVC» while the session flow is armed is the
@@ -2116,6 +2132,11 @@ class AcquisitionTab(QWidget):
         self._update_fv_button()          # disabled while the MVC wizard runs
         for bar in self._load_bars:
             bar.reset()
+        self._log(
+            tr("Calibration started as the session's opening phase.")
+            if self._mvc_flow_auto
+            else tr("Calibration started on its own.")
+        )
         self._reposition_mvc_overlay()
         self._mvc_enter_warmup()
         self._mvc_timer.start()

@@ -1135,6 +1135,15 @@ _ES = {
     # -- la sesión en dos fases (phases.py / acquisition.py) --
     'Starting the session — the calibration begins as soon as the signal arrives.':
         'Empieza la sesión: la calibración arranca en cuanto llegue la señal.',
+    'This practical calibrates first: waiting for the signal to start the session.':
+        'Esta práctica calibra primero: esperando la señal para empezar la sesión.',
+    'The calibration needs a recording in progress.':
+        'La calibración necesita una grabación en marcha.',
+    'Another guided procedure is already running.':
+        'Ya hay otro procedimiento guiado en marcha.',
+    "Calibration started as the session's opening phase.":
+        'Calibración iniciada como fase de apertura de la sesión.',
+    'Calibration started on its own.': 'Calibración iniciada por su cuenta.',
     'Get ready to record': 'Prepárese para grabar',
     'Warm up first': 'Caliente primero',
     'Warming up: {n}': 'Calentando: {n}',

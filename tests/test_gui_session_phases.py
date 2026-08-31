@@ -13,6 +13,7 @@ recording that looks perfect and analyses as if it had never been calibrated.
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from emgteach.modes import MODE_FREE, MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE
@@ -37,6 +38,10 @@ class _FakeWorker:
     def stop(self) -> None:
         """The tab stops the worker when the recording ends; nothing to do here."""
 
+    def is_streaming(self) -> bool:
+        """Feeding a block starts the tab's watchdog, which asks this."""
+        return True
+
 
 @pytest.fixture
 def tab(qapp):
@@ -49,7 +54,21 @@ def tab(qapp):
     widget._n_channels = 1
     widget._worker = _FakeWorker()
     yield widget
+    # Feeding a block starts the watchdog, and the timers outlive the widget in
+    # the shared QApplication: left running they raise in *other* tests' teardown.
+    widget._watchdog_timer.stop()
+    widget._mvc_timer.stop()
+    widget._prep_timer.stop()
+    widget._load_timer.stop()
     widget.close()
+
+
+def _bloque(n: int = 100) -> dict:
+    """One block of data as the worker emits it: quiet, two channels."""
+    return {
+        "raw_mv": [np.zeros(n), np.zeros(n)],
+        "envelope": [np.full(n, 0.004), np.full(n, 0.004)],
+    }
 
 
 def _una_repeticion(tab) -> None:
@@ -314,3 +333,61 @@ class TestTheButtonCannotBeatTheFlow:
         _una_repeticion(tab)
         assert not tab._mvc_flow_auto
         assert "PREP start" not in tab._worker.markers
+
+
+class TestTheArmedSessionSurvivesABouncedAttempt:
+    """The flag used to be spent before the attempt, not after it.
+
+    ``_on_data_ready`` cleared ``_mvc_flow_pending`` and *then* called the
+    wizard; if the call bounced off one of its guards the session's one chance
+    was gone, and the recording came back with no calibration at all and the
+    Calibrate button left disabled — a worse state than either outcome, and
+    silent. It is cleared by the wizard now, once it is past the guards, and
+    the attempt is retried on the next block; that runs ten times a second.
+    """
+
+    def test_a_block_that_bounces_leaves_it_armed(self, tab) -> None:
+        """Through the real path: this is where the flag used to be spent."""
+        tab._fv_active = True                   # a guided procedure is running
+        tab._mvc_flow_pending = True
+        tab._on_data_ready(_bloque())
+        assert tab._mvc_flow_pending, "the armed session was spent on a bounce"
+        assert "WARMUP start" not in tab._worker.markers
+        tab._fv_active = False
+
+    def test_and_the_next_block_starts_it(self, tab) -> None:
+        tab._fv_active = True
+        tab._mvc_flow_pending = True
+        tab._on_data_ready(_bloque())           # bounces
+        tab._fv_active = False
+        tab._on_data_ready(_bloque())           # the retry
+        assert not tab._mvc_flow_pending
+        assert "WARMUP start" in tab._worker.markers
+
+    def test_a_block_with_the_flow_armed_starts_the_session(self, tab) -> None:
+        tab._mvc_flow_pending = True
+        tab._on_data_ready(_bloque())
+        assert tab._mvc_flow_auto
+        assert tab._mvc_phase == "warmup"
+
+    def test_a_block_with_nothing_armed_starts_nothing(self, tab) -> None:
+        tab._mvc_flow_pending = False
+        tab._on_data_ready(_bloque())
+        assert not tab._mvc_active
+        assert tab._worker.markers == []
+
+    def test_and_the_retry_then_takes(self, tab) -> None:
+        """The point of keeping it: the next block starts the session."""
+        tab._worker = None
+        tab._mvc_flow_pending = True
+        tab._iniciar_calibracion(auto_flow=True)      # bounces
+        tab._worker = _FakeWorker()                   # the device is up now
+        tab._iniciar_calibracion(auto_flow=True)      # the retry
+        assert not tab._mvc_flow_pending
+        assert tab._mvc_flow_auto
+        assert "WARMUP start" in tab._worker.markers
+
+    def test_a_successful_start_clears_it(self, tab) -> None:
+        tab._mvc_flow_pending = True
+        tab._iniciar_calibracion(auto_flow=True)
+        assert not tab._mvc_flow_pending
