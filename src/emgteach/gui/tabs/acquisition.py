@@ -72,10 +72,12 @@ from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import RecordingMetadata
 from emgteach.modes import (
+    DEFAULT_MODE,
     mode_channels,
     mode_forces_setup,
     mode_requires_calibration,
     mode_uses_acc,
+    normalise_mode,
 )
 from emgteach.mvc import mvc_from_reps, mvc_ref_marker
 from emgteach.phases import (
@@ -288,6 +290,11 @@ class AcquisitionTab(QWidget):
         # rather than a calibration someone asked for in the middle of a
         # recording; only the flow writes PREP/REC, because only in the flow is
         # the calibration at the start of the file.
+        #
+        #: The practical this tab is set up for. apply_mode keeps it up to date,
+        #: but it has to exist before anyone calls that — and _flow_needs_
+        #: calibration reads it on every press of the record button.
+        self._mode = DEFAULT_MODE
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False    # start it on the first block of data
         #: Blocks of data seen while the flow was armed and could not start.
@@ -3374,6 +3381,14 @@ class AcquisitionTab(QWidget):
         way to show or change it, so the labels and load bars claimed two
         muscles while the rest of the tab behaved as if there were one.
         """
+        # Kept, not merely acted on: the session flow asks which practical is
+        # running on every press of the record button, long after this call.
+        # It was read and never stored, so _flow_needs_calibration raised
+        # AttributeError inside a Qt slot — which prints to stderr and is
+        # invisible in the running app — and aborted the rest of
+        # _iniciar_grabacion in silence. Four bench recordings came back with
+        # no calibration because of this one missing assignment.
+        self._mode = normalise_mode(mode)
         self._apply_mode_channels(mode)
 
         # A fresh install has no saved port, so the connection row is revealed

@@ -217,11 +217,16 @@ class TestThePauseBetweenThePhases:
 
 class TestWhenTheRecordButtonRunsTheWholeSession:
     def test_only_the_practical_that_compares_two_muscles(self, tab) -> None:
+        """Through apply_mode, the way the application does it.
+
+        This used to assign ``tab._mode`` itself — which *created* the
+        attribute the application never set, so the test passed on a build
+        where every press of the record button raised."""
         for mode, espera in (
             (MODE_PAIR, True), (MODE_SINGLE, False),
             (MODE_KINEMATICS, False), (MODE_FREE, False),
         ):
-            tab._mode = mode
+            tab.apply_mode(mode, False)
             tab._mvc_ref = [None] * 8
             assert tab._flow_needs_calibration() is espera, mode
 
@@ -230,7 +235,7 @@ class TestWhenTheRecordButtonRunsTheWholeSession:
     ) -> None:
         """Three more maximal efforts is the fastest way to make the next
         contraction weaker."""
-        tab._mode = MODE_PAIR
+        tab.apply_mode(MODE_PAIR, False)
         tab._mvc_ref = [None] * 8
         assert tab._flow_needs_calibration()
         tab._mvc_ref[0] = 0.12
@@ -239,8 +244,7 @@ class TestWhenTheRecordButtonRunsTheWholeSession:
     def test_a_reference_on_a_channel_this_practical_does_not_use_does_not_count(
         self, tab
     ) -> None:
-        tab._mode = MODE_PAIR
-        tab._n_channels = 2
+        tab.apply_mode(MODE_PAIR, False)
         tab._mvc_ref = [None] * 8
         tab._mvc_ref[5] = 0.12          # left over from another set-up
         assert tab._flow_needs_calibration()
@@ -438,3 +442,44 @@ class TestFailingToStartIsNotADeadEnd:
         tab._btn_calibrar.setEnabled(True)
         tab._detener_grabacion()
         assert not tab._btn_calibrar.isEnabled()
+
+
+class TestTheTabRemembersWhichPracticalItIs:
+    """The one missing assignment that cost four bench recordings.
+
+    ``_flow_needs_calibration`` read ``self._mode`` and nothing ever set it, so
+    every press of the record button raised AttributeError inside a Qt slot —
+    printed to stderr, invisible in the running application — and aborted the
+    rest of the start-up: no arming, no calibration, and the Calibrate button
+    left disabled with no way to enable it.
+
+    The tests that were meant to cover this assigned ``tab._mode`` themselves,
+    which *created* the attribute. They passed on an application that could not
+    record. A test may set what the operator sets; it must never set what the
+    application is supposed to set.
+    """
+
+    def test_a_fresh_tab_already_knows_its_practical(self, tab) -> None:
+        from emgteach.modes import MODES
+
+        assert tab._mode in MODES
+
+    def test_asking_before_apply_mode_does_not_raise(self, tab) -> None:
+        tab._flow_needs_calibration()          # must not raise
+
+    def test_apply_mode_is_what_keeps_it_up_to_date(self, tab) -> None:
+        from emgteach.modes import MODES
+
+        for mode in MODES:
+            tab.apply_mode(mode, False)
+            assert tab._mode == mode
+
+    def test_starting_a_recording_gets_as_far_as_arming_the_flow(
+        self, tab
+    ) -> None:
+        """What actually broke: the arming lines never ran, so nothing after
+        them in _iniciar_grabacion ran either."""
+        tab.apply_mode(MODE_PAIR, False)
+        tab._mvc_ref = [None] * 8
+        assert tab._flow_needs_calibration()
+        assert tab._mvc_flow_tries == 0
