@@ -32,6 +32,7 @@ from __future__ import annotations
 from collections import deque
 from datetime import datetime
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 import pyqtgraph as pg
@@ -65,12 +66,17 @@ from emgteach.devices import (
     ArduinoDevice,
     create_device,
 )
-from emgteach.dsp import LiveQualityMonitor
+from emgteach.dsp import LiveQualityMonitor, process_offline
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
-from emgteach.io import RecordingMetadata
+from emgteach.io import (
+    RecordingMetadata,
+    list_edf_channels,
+    list_edf_emg_channels,
+    read_edf_mne,
+)
 from emgteach.modes import (
     DEFAULT_MODE,
     mode_channels,
@@ -81,8 +87,14 @@ from emgteach.modes import (
 )
 from emgteach.mvc import mvc_from_reps, mvc_ref_marker
 from emgteach.phases import (
+    CALIBRATION,
+    PREPARATION,
+    RECORDING,
+    WARMUP,
     cal_end_marker,
     cal_start_marker,
+    parse_phase_markers,
+    phase_spans,
     prep_start_marker,
     rec_start_marker,
     warmup_start_marker,
@@ -229,6 +241,12 @@ class AcquisitionTab(QWidget):
         # trace's current level. >1 zooms in.
         self._acc_zoom = 1.0
         self._new_data = False  # flag: there is new data to draw
+        #: True while the plots show a finished recording instead of the
+        #: live stream. The live refresh is a no-op then: it would redraw
+        #: the ring buffer over the session on the next frame.
+        self._revisando = False
+        #: The pyqtgraph items the review added, to take back out again.
+        self._revision_items: list = []
 
         # Events for drawing live lines: (time_s, label). The total number of
         # acquired samples places each marker within the sliding window.
@@ -1609,6 +1627,7 @@ class AcquisitionTab(QWidget):
         self._worker.marker_added.connect(self._on_marker_added)
         self._worker.start()
         self._write_pending_mvc_ref_markers()
+        self._salir_revision()
         self._render_timer.start()
         # The watchdog starts in _on_data_ready after the first sample is read;
         # not here, so it does not fire during device.open() (can take ~3 s).
@@ -1775,6 +1794,10 @@ class AcquisitionTab(QWidget):
     def _refresh_plots(self, force: bool = False) -> None:
         """Called every 33 ms by _render_timer. Draws only if there is new data
         (or if `force`, e.g. when changing the stacking gain)."""
+        if self._revisando:
+            # A finished recording is on the plots. The ring buffer holds
+            # its last 30 seconds and would quietly replace it.
+            return
         if not self._new_data and not force:
             return
         self._new_data = False
@@ -1816,6 +1839,162 @@ class AcquisitionTab(QWidget):
                     line.show()
                 elif line.isVisible():
                     line.hide()
+
+    # ------------------------------------------------------------------
+    # Review: the finished recording, on the plots that recorded it
+    # ------------------------------------------------------------------
+
+    #: One colour per kind of stretch. Muted on purpose — these sit *behind*
+    #: the trace, and a shading that competes with the signal defeats the
+    #: point of showing the signal.
+    _COLORES_FASE: ClassVar[dict[str, tuple[int, int, int, int]]] = {
+        WARMUP: (150, 150, 150, 45),
+        CALIBRATION: (230, 126, 34, 55),
+        PREPARATION: (120, 160, 200, 40),
+        RECORDING: (60, 160, 90, 40),
+    }
+
+    def _mostrar_registro(self, edf_path: str) -> None:
+        """Put the recording that has just finished on the plots, whole.
+
+        Asked for from the bench: after stopping, being able to scroll back
+        over what was just recorded without leaving the tab. The live plots
+        show a thirty-second ring buffer, so the session is read back from the
+        EDF rather than kept in memory — the file is the record of truth, it
+        is already written and closed, and what is reviewed is then exactly
+        what was saved, annotations included, instead of a parallel copy that
+        could disagree with it.
+
+        A failure here loses the review and nothing else: the recording is on
+        disk and the analysis tab is untouched.
+        """
+        try:
+            nombres = list_edf_emg_channels(edf_path)
+            if not nombres:
+                return
+            señales = [read_edf_mne(edf_path, n) for n in nombres[:MAX_CHANNELS]]
+            fs = float(señales[0]["sfreq"])
+            if fs <= 0:
+                return
+        except Exception as exc:
+            self._log(tr("The recording could not be shown for review: {err}")
+                      .format(err=exc))
+            return
+
+        self._salir_revision()
+        self._revisando = True
+
+        n = len(señales[0]["emg_raw"])
+        t = np.arange(n) / fs
+        duracion = n / fs
+        apilado = self._is_stacked(0)
+        pico_raw = 0.0
+        pico_env = 0.0
+        for c, datos in enumerate(señales):
+            crudo = np.asarray(datos["emg_raw"], dtype=np.float64)
+            try:
+                sobre = process_offline(crudo, fs)["emg_envelope"]
+            except Exception:
+                sobre = np.abs(crudo)
+            pico_raw = max(pico_raw, float(np.max(np.abs(crudo))) if crudo.size else 0.0)
+            pico_env = max(pico_env, float(np.max(sobre)) if sobre.size else 0.0)
+            if apilado:
+                crudo = self._lane_baseline(0, c) + self._y_gain[0] * crudo
+            self._curves_raw[c].setData(t, crudo)
+            self._curves_env[c].setData(t, sobre)
+        for c in range(len(señales), MAX_CHANNELS):
+            self._curves_raw[c].setData([], [])
+            self._curves_env[c].setData([], [])
+
+        # The accelerometer, when the session recorded one. Read by index
+        # because it is not an EMG channel and carries its own units.
+        if self._acc_enabled:
+            try:
+                todos = list_edf_channels(edf_path)
+                acc = next((c for c in todos if c not in nombres), None)
+                if acc is not None:
+                    from emgteach.io import read_edf_pyedflib
+                    self._curve_acc.setData(
+                        t, np.asarray(read_edf_pyedflib(
+                            edf_path, todos.index(acc))["signal"],
+                            dtype=np.float64)[:n])
+            except Exception:
+                self._curve_acc.setData([], [])
+
+        # A whole session is far more points than a live window; let pyqtgraph
+        # decimate it for drawing, keeping the peaks, or panning crawls.
+        for pw in (self._plot_raw, self._plot_env):
+            pw.setDownsampling(auto=True, mode="peak")
+            pw.setClipToView(True)
+            pw.setXRange(0.0, duracion, padding=0.01)
+        if not apilado and pico_raw > 0:
+            self._plot_raw.setYRange(-1.15 * pico_raw, 1.15 * pico_raw, padding=0)
+        if pico_env > 0:
+            self._plot_env.setYRange(0.0, 1.15 * pico_env, padding=0)
+
+        for pool in self._marker_lines:
+            for line in pool:
+                line.hide()
+
+        tramos = phase_spans(
+            parse_phase_markers(señales[0].get("markers", [])),
+            duracion, channel_names=dict(enumerate(nombres)),
+        )
+        alto = 1.15 * pico_env if pico_env > 0 else 1.0
+        for tramo in tramos:
+            for pw in (self._plot_raw, self._plot_env):
+                region = pg.LinearRegionItem(
+                    values=(tramo.start_s, tramo.end_s), movable=False,
+                    brush=pg.mkBrush(self._COLORES_FASE.get(
+                        tramo.kind, (150, 150, 150, 40))),
+                    pen=pg.mkPen(None),
+                )
+                region.setZValue(-10)      # behind the trace, always
+                pw.addItem(region, ignoreBounds=True)
+                self._revision_items.append((pw, region))
+            texto = tramo.label or self._nombre_fase(tramo.kind)
+            etiqueta = pg.TextItem(texto, anchor=(0, 0), color=(90, 90, 90))
+            etiqueta.setPos(tramo.start_s, alto)
+            self._plot_env.addItem(etiqueta, ignoreBounds=True)
+            self._revision_items.append((self._plot_env, etiqueta))
+
+        self._plot_raw.setTitle(tr("Recording just finished (review)"))
+        self._plot_env.setTitle(tr("Envelope of the recording (review)"))
+        self._log(tr(
+            "Reviewing the recording: {dur:.1f} s. Drag to scroll, wheel to "
+            "zoom. It goes back to live on the next recording."
+        ).format(dur=duracion))
+
+    def _nombre_fase(self, kind: str) -> str:
+        """The word for a stretch of the session, for its label on the plot."""
+        return {
+            WARMUP: tr("warm-up"),
+            CALIBRATION: tr("calibration"),
+            PREPARATION: tr("get ready"),
+            RECORDING: tr("recording"),
+        }.get(kind, "")
+
+    def _salir_revision(self) -> None:
+        """Back to the live view: take the session and its shading off."""
+        for pw, item in self._revision_items:
+            try:
+                pw.removeItem(item)
+            except Exception:      # the plot was already torn down
+                pass
+        self._revision_items.clear()
+        if not self._revisando:
+            return
+        self._revisando = False
+        for pw in (self._plot_raw, self._plot_env):
+            pw.setDownsampling(auto=False)
+            pw.setClipToView(False)
+        self._plot_raw.setTitle(tr("Raw EMG signal (mV)"))
+        self._plot_env.setTitle(
+            tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
+        )
+        self._reset_all_scales()
+        self._new_data = True
+        self._refresh_plots(force=True)
 
     def _apply_acc_range(self) -> None:
         """Set the live ACC plot's Y range: the full ±1 g by default, or — when
@@ -3112,6 +3291,7 @@ class AcquisitionTab(QWidget):
         if edf_path:
             self._log(tr("Recording finished. File: {path}").format(path=edf_path))
             self.recording_saved.emit(edf_path)
+            self._mostrar_registro(edf_path)
 
     def _restaurar_controles(self) -> None:
         self._btn_grabar.setChecked(False)
@@ -3350,6 +3530,7 @@ class AcquisitionTab(QWidget):
         """
         if self.is_recording():
             return
+        self._salir_revision()
         self._reset_buffers()
         self._marker_events.clear()
         self._list_markers.clear()

@@ -449,3 +449,90 @@ def reference_source_text(source: str, n_reps: int = 0) -> str:
     if source == FROM_CACHE:
         return tr("calibration as recorded (repetitions not stored)")
     return tr("no calibration")
+
+
+#: The kinds of stretch a two-phase session is made of. Tokens, not sentences:
+#: the interface picks a colour and a wording for each, and neither belongs
+#: here — the same lesson as the reference-provenance tokens above.
+WARMUP = "warmup"
+CALIBRATION = "calibration"
+PREPARATION = "preparation"
+RECORDING = "recording"
+
+
+@dataclass(frozen=True)
+class PhaseSpan:
+    """One named stretch of the session, in file time."""
+
+    start_s: float
+    end_s: float
+    kind: str
+    #: The muscle and repetition for a calibration effort; empty otherwise.
+    label: str = ""
+
+    @property
+    def duration_s(self) -> float:
+        return max(0.0, self.end_s - self.start_s)
+
+
+def phase_spans(
+    phases: SessionPhases,
+    total_duration_s: float,
+    *,
+    channel_names: dict[int, str] | None = None,
+) -> tuple[PhaseSpan, ...]:
+    """The session divided into the stretches it was actually made of.
+
+    What this is for: after a recording, seeing your own session laid out —
+    where the warm-up ended, which second each maximal effort occupied, where
+    the pause was, where the analysed part begins. The file knows all of it
+    and until now only the analysis could read it back.
+
+    The rest between calibration efforts is deliberately left out. Shading it
+    would fill the picture edge to edge and the efforts would stop standing
+    out, which is the one thing the drawing is for; an unshaded gap between
+    two marked efforts reads as rest without having to say so.
+
+    Spans come back sorted by start time and clipped to the recording.
+    """
+    nombres = channel_names or {}
+    fin = max(0.0, float(total_duration_s))
+    spans: list[PhaseSpan] = []
+
+    primera_cal = min(
+        (r.start_s for r in phases.cal_reps), default=None)
+    if phases.warmup_start_s is not None:
+        # It runs until there is something else to do: the first maximal
+        # effort, or the pause when the practical needs no calibration.
+        acaba = primera_cal
+        if acaba is None:
+            acaba = phases.prep_start_s
+        if acaba is None:
+            acaba = phases.rec_start_s
+        if acaba is not None and acaba > phases.warmup_start_s:
+            spans.append(PhaseSpan(
+                phases.warmup_start_s, acaba, WARMUP))
+
+    for r in phases.cal_reps:
+        if r.end_s > r.start_s:
+            nombre = nombres.get(r.channel_index, str(r.channel_index + 1))
+            spans.append(PhaseSpan(
+                r.start_s, r.end_s, CALIBRATION, f"{nombre} {r.rep}"))
+
+    if phases.prep_start_s is not None:
+        acaba = phases.rec_start_s if phases.rec_start_s is not None else fin
+        if acaba > phases.prep_start_s:
+            spans.append(PhaseSpan(
+                phases.prep_start_s, acaba, PREPARATION))
+
+    if phases.rec_start_s is not None and fin > phases.rec_start_s:
+        spans.append(PhaseSpan(phases.rec_start_s, fin, RECORDING))
+
+    recortados = [
+        PhaseSpan(max(0.0, sp.start_s), min(fin, sp.end_s), sp.kind, sp.label)
+        for sp in spans
+    ]
+    return tuple(sorted(
+        (sp for sp in recortados if sp.end_s > sp.start_s),
+        key=lambda sp: sp.start_s,
+    ))
