@@ -189,6 +189,59 @@ class TestTheAnalysisHonoursTheSelection:
         assert rara["mvc_ref"] == pytest.approx(entera["mvc_ref"])
 
 
+class TestTheButtonInTheTab:
+    """A grey control that says nothing about why is a bench session lost.
+
+    These go through :meth:`AnalysisTab._on_result` rather than calling the
+    helper, because the question is whether the *wiring* lights the button on
+    a real analysis of a real file — which is the thing that cannot be checked
+    from the outside once the app is running.
+    """
+
+    def _tab(self, qapp, edf: str):
+        from PySide6.QtCore import QSettings
+
+        from emgteach.gui.tabs.analysis import AnalysisTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+
+        ajustes = QSettings("emgteach-test", "cal-reps")
+        ajustes.clear()
+        registro = LoggerWidget()
+        tab = AnalysisTab(registro, ajustes)
+        tab._edit_path.setText(edf)
+        return tab, registro
+
+    def test_it_lights_on_a_session_that_carries_a_calibration(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        edf = _sesion(tmp_path / "sesion.edf")
+        tab, registro = self._tab(qapp, edf)
+        assert not tab._btn_reps.isEnabled()
+        tab._on_result(_analizar(qapp, edf))
+        assert tab._btn_reps.isEnabled()
+        assert "3" in registro.toPlainText()
+
+    def test_it_stays_off_and_says_why_on_a_recording_without_one(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """Every file recorded before the guided flow, which is most of them
+        on the teacher's disk."""
+        edf = _sesion(tmp_path / "vieja.edf", con_fases=False, con_cache=False)
+        tab, registro = self._tab(qapp, edf)
+        tab._on_result(_analizar(qapp, edf))
+        assert not tab._btn_reps.isEnabled()
+        assert registro.toPlainText().strip()
+
+    def test_the_log_names_the_channels_and_counts_the_repetitions(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        edf = _sesion(tmp_path / "sesion.edf")
+        tab, registro = self._tab(qapp, edf)
+        tab._on_result(_analizar(qapp, edf))
+        texto = registro.toPlainText()
+        assert "FCR" in texto and "ECR" in texto
+
+
 class TestTheDialog:
     def _dlg(self, qapp, keep=None):
         from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog

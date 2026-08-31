@@ -1000,6 +1000,35 @@ class AnalysisTab(QWidget):
             nombres = []
         return dict(enumerate(nombres))
 
+    def _diagnostico_repeticiones(self, r: dict) -> None:
+        """Say out loud what the file brought, every time it is analysed.
+
+        A control that is simply grey says nothing about why. This is the same
+        lesson the acquisition wizard taught: deducing the cause of a disabled
+        button from the outside costs bench sessions, and one line in the log
+        settles it. It is also useful in its own right — "this recording
+        carries no calibration" is a fact the operator wants at the moment of
+        opening the file, not after hunting for a missing panel.
+        """
+        valores = r.get("cal_rep_values") or {}
+        etiquetas = self._labels_por_canal()
+        if not valores:
+            self._logger.append_log(tr(
+                "This recording carries no calibration spans, so the "
+                "repetition list stays off. Only sessions recorded with the "
+                "guided flow have them."
+            ))
+            return
+        detalle = ", ".join(
+            tr("{name}: {n} repetition(s)").format(
+                name=etiquetas.get(c, str(c + 1)), n=len(v))
+            for c, v in sorted(valores.items())
+        )
+        self._logger.append_log(tr(
+            "Calibration in the file — {detail}. The repetition list is "
+            "available."
+        ).format(detail=detalle))
+
     def _actualizar_etiqueta_reps(self) -> None:
         """Say when the reference is no longer the whole calibration."""
         valores = (self._last_result or {}).get("cal_rep_values") or {}
@@ -1279,6 +1308,7 @@ class AnalysisTab(QWidget):
         self._actualizar_procedencia_cvm(r)
         self._btn_reps.setEnabled(bool(r.get("cal_rep_values")))
         self._actualizar_etiqueta_reps()
+        self._diagnostico_repeticiones(r)
 
         decline = r.get("fat_pct_decline", 0.0)
         veredicto = r.get("fat_verdict", INCONCLUSIVE)

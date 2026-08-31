@@ -971,6 +971,9 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    'This recording carries no calibration spans, so the repetition list stays off. Only sessions recorded with the guided flow have them.': 'Este registro no trae tramos de calibración, así que la lista de repeticiones queda apagada. Solo las sesiones grabadas con el flujo guiado los llevan.',
+    '{name}: {n} repetition(s)': '{name}: {n} repetición(es)',
+    'Calibration in the file — {detail}. The repetition list is available.': 'Calibración en el fichero: {detail}. La lista de repeticiones está disponible.',
     'Calibration repetitions…': 'Repeticiones de la calibración…',
     'Keep or discard the maximal efforts the reference is computed from. Discarding one moves the reference and every % MVC with it — which is what makes a weak repetition worth spotting.': 'Conservar o descartar los esfuerzos máximos con los que se calcula la referencia. Descartar uno mueve la referencia y con ella todos los % CVM: por eso merece la pena localizar una repetición floja.',
     '{n} repetition(s) discarded': '{n} repetición(es) descartada(s)',
