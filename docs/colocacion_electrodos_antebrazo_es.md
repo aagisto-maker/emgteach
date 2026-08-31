@@ -114,14 +114,44 @@ El orden importa, porque la aplicación depende de él.
 2. **Calibre la CVM de los dos músculos, con la grabación en marcha.** Sin las
    dos referencias el panel 9 se queda en milivoltios y no hay índice.
 
-   > ⚠️ **Contra resistencia, y sin que la muñeca se mueva.** Es el error que
-   > más estropea la práctica, y no se nota hasta el análisis.
+   > ⚠️ **Contra el canto inferior de la mesa, no contra una mano.** Es el error
+   > que más estropea la práctica, y no se nota hasta el análisis.
    >
-   > - **Canal 1 (flexores):** antebrazo supinado sobre la mesa. El operador
-   >   sujeta la palma; el sujeto intenta flexionar la muñeca contra esa mano.
-   >   La muñeca no se mueve.
-   > - **Canal 2 (extensores):** antebrazo pronado sobre la mesa. El operador
-   >   sujeta el dorso de la mano; el sujeto intenta extender contra ella.
+   > Las dos maniobras son la misma postura con el antebrazo girado, y las dos
+   > empujan **hacia arriba contra la cara inferior del tablero**:
+   >
+   > - **Canal 1 (flexores):** siéntese cerca, antebrazo **supinado** apoyado,
+   >   la mano metida bajo el borde de la mesa con la **palma hacia arriba**.
+   >   Empuje la palma contra el tablero. Muñeca en neutro.
+   > - **Canal 2 (extensores):** lo mismo con el antebrazo **pronado**, el
+   >   **dorso** de la mano contra el tablero. Empiece con la muñeca en unos
+   >   **20° de flexión**: con la muñeca ya extendida el ECR está acortado y por
+   >   relación longitud-tensión da su fuerza mínima.
+   >
+   > En los dos casos el contacto va sobre los **metacarpianos 2.º y 3.º**, no
+   > sobre los dedos —si va sobre los dedos se está midiendo el extensor de los
+   > dedos—, con los **dedos relajados y algo flexionados**, y **rampa de ~2 s**
+   > hasta el máximo, manteniendo hasta el final de la cuenta.
+   >
+   > **Por qué la mesa y no una mano** (comprobado en el banco el 31 de agosto:
+   > «noto una mejor y mayor contracción en isométrica contra la mesa»):
+   >
+   > 1. **Una mano cede.** El tablero no. Lo que ceda deja que la articulación
+   >    se mueva, y ahí entra la relación fuerza-velocidad.
+   > 2. **Una mano no puede con un flexor de muñeca.** Son fuertes; el
+   >    «límite» acaba siendo la fuerza del operador, no la del sujeto.
+   > 3. **Sujetarse uno mismo reparte el esfuerzo.** Es una tarea bilateral, y
+   >    la fuerza máxima de dos miembros a la vez es menor que la suma de las
+   >    dos por separado (déficit bilateral, del orden del 5-25 %). Además el
+   >    otro brazo tiene que estabilizarse, y eso resta impulso al que se mide.
+   >
+   > Es también lo que resuelve el «**la extensión isométrica no va**» de esa
+   > misma sesión: con la mano apoyada plana sobre la mesa no hay nada contra lo
+   > que empujar hacia arriba, y el sujeto acaba haciendo un gesto en vez de un
+   > esfuerzo mantenido. Las tres repeticiones del extensor pasaron solo el
+   > 6-15 % de su ventana por encima de la mitad de su pico, frente al 75-76 %
+   > de las del flexor. La aplicación ya lo detecta y avisa: **«El esfuerzo no
+   > se mantuvo»**.
    >
    > **Por qué importa tanto**, y es la propia fisiología de la asignatura: sin
    > nada contra lo que empujar, el músculo se acorta a su velocidad máxima y
@@ -135,6 +165,13 @@ El orden importa, porque la aplicación depende de él.
    > y se queda con la más fuerte. La primera contracción máxima de una sesión
    > es genuinamente submáxima, y con un solo intento no hay nada a lo que
    > recurrir cuando sale mal.
+   >
+   > **Y no se salte el calentamiento.** Desde esta versión la calibración abre
+   > con 10 s pidiendo dos o tres contracciones suaves de cada músculo; hágalas.
+   > «Mejor de 3» no basta por sí solo: el 31 de agosto las tres repeticiones
+   > del flexor salieron al 57 %, 68 % y 100 % unas de otras —**todavía
+   > subiendo en la tercera**—, así que la mejor de las tres seguía sin ser una
+   > máxima.
    >
    > **Antebrazo apoyado del todo, mano en reposo, antes de la cuenta atrás.**
    > Si la mano queda al aire, los extensores ya están trabajando para

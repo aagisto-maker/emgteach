@@ -620,14 +620,17 @@ class MvcTab(QWidget):
                 "them in between."
             ),
             tr(
-                "The reference has to be made against something that does not "
-                "give way — a fixed object, or the operator's hand — with the "
-                "joint held still. This is the force-velocity relationship at "
-                "work: with nothing to push against, the muscle shortens at "
-                "its fastest and therefore develops its least force, so it "
-                "recruits few motor units. A maximum performed in mid-air is "
-                "submaximal by construction, and every percentage that follows "
-                "comes out too high in the same proportion."
+                "The reference has to be made against something that cannot "
+                "move — the underside of a table, a fixed bar — with the joint "
+                "held still. Not a hand, and least of all the subject's own "
+                "other hand: a hand yields, and holding oneself splits the "
+                "effort between two limbs, which produces less force than "
+                "either would alone. This is the force-velocity relationship "
+                "at work: whatever the muscle is allowed to shorten against, "
+                "it shortens faster and therefore develops less force, so it "
+                "recruits fewer motor units. A maximum performed in mid-air "
+                "is submaximal by construction, and every percentage that "
+                "follows comes out too high in the same proportion."
             ),
             tr(
                 "Without a reference recording this tab can still work, but the "
