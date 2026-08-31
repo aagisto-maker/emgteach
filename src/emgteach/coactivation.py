@@ -110,6 +110,39 @@ def _above_rest(envelope, rest: float) -> FloatArray:
     return np.clip(arr, 0.0, None)
 
 
+#: How much quiet to leave after the last activity when the final window is
+#: closed at the end of the effort. Enough not to clip the release of a
+#: contraction, short enough that the pause does not dilute the mean.
+_COLA_S = 0.5
+
+
+def _fin_de_la_actividad(
+    a1: FloatArray, a2: FloatArray, fs: float, floor_pct: float
+) -> int | None:
+    """The last sample where either muscle was working, plus a short tail.
+
+    Every marked window is closed by the *next* mark — the operator saying
+    where that phase ended — except the last one, which runs to wherever the
+    recording happened to be stopped. A student who marks the sustained grip
+    and then rests before pressing stop gets that rest inside the window: it
+    pulls the mean down and can push it under the floor, so the phase they did
+    perform is reported as "not measured".
+
+    "The last time either muscle was above the floor" rather than "the first
+    time both fall below it": the envelope dips between bursts of an
+    intermittent effort, and cutting at the first dip would end the window in
+    the middle of the work.
+
+    Returns ``None`` when nothing rises above the floor, so the window is left
+    alone — a window with no activity in it has a reason of its own to give,
+    and trimming it to nothing would replace that reason with a worse one.
+    """
+    activo = np.flatnonzero((a1 > floor_pct) | (a2 > floor_pct))
+    if not activo.size:
+        return None
+    return int(activo[-1]) + max(1, round(_COLA_S * float(fs)))
+
+
 def coactivation_index(
     env_1_pct_mvc,
     env_2_pct_mvc,
@@ -186,11 +219,17 @@ def coactivation_by_window(
 ) -> tuple[list[CoactivationResult], bool]:
     """One index per marked window, and whether the windows came from markers.
 
-    Each marker opens a window that runs to the next one, or to the end. With
-    no markers the whole analysed span is reported as a single window and the
-    second return value is ``False``, which the interface turns into a visible
-    warning: an index over a recording that mixes rest, flexion and grip is
-    not a measurement of anything.
+    Each marker opens a window that runs to the next one. The **last** one is
+    closed at the end of the activity instead of at the end of the recording —
+    see :func:`_fin_de_la_actividad` — because nothing else closes it and the
+    quiet before the stop button is not part of the phase.
+
+    With no markers the whole analysed span is reported as a single window and
+    the second return value is ``False``, which the interface turns into a
+    visible warning: an index over a recording that mixes rest, flexion and
+    grip is not a measurement of anything. That window is deliberately *not*
+    trimmed — it is already labelled as not a measurement, and tidying it
+    would only make it look like one.
     """
     e1 = np.asarray(env_1_pct_mvc, dtype=np.float64)
     e2 = np.asarray(env_2_pct_mvc, dtype=np.float64)
@@ -210,13 +249,23 @@ def coactivation_by_window(
             name_1=name_1, name_2=name_2,
         )], False
 
+    a1, a2 = _above_rest(e1, rest_1), _above_rest(e2, rest_2)
     bounds = [t for t, _ in marks] + [duration]
     out: list[CoactivationResult] = []
     for i, (start, lbl) in enumerate(marks):
         end = bounds[i + 1]
         i0, i1 = round(start * fs), round(end * fs)
-        if i1 - i0 < 2:
-            continue
+        if i == len(marks) - 1:
+            # Only the last one: every other window is closed by the operator's
+            # next mark, which is a statement about the session. This one was
+            # closed by whenever they reached for the stop button.
+            fin = _fin_de_la_actividad(a1[i0:i1], a2[i0:i1], fs, floor_pct)
+            if fin is not None:
+                i1 = min(i1, i0 + fin)
+                end = i1 / float(fs)
+        # A window too short to measure still gets its row. Dropping it left
+        # the student who marked something looking at a table that does not
+        # mention it, which reads as the mark not having been registered.
         out.append(coactivation_index(
             e1[i0:i1], e2[i0:i1], fs, floor_pct=floor_pct,
             rest_1=rest_1, rest_2=rest_2,

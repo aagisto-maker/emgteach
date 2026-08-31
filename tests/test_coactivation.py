@@ -202,6 +202,117 @@ class TestPerWindow:
         assert [r.label for r in table] == ["Extension"]
 
 
+class TestTheLastWindowEndsWithTheEffort:
+    """Every marked window is closed by the operator's next mark — except the
+    last, which ran to wherever the recording happened to be stopped.
+
+    A student who marks the sustained grip, holds it, and then rests before
+    reaching for the stop button got that rest inside the window. It pulls the
+    mean down and can push it under the floor, so the one phase the practical
+    is *about* came back as "not reported".
+    """
+
+    @staticmethod
+    def _grip_then_rest(rest_s: float = 70.0, nivel: float = 12.0):
+        """Ten seconds of a shared grip, then a long quiet tail.
+
+        Twelve per cent MVC is an ordinary sustained grip, and seventy seconds
+        of quiet is what a student leaves while writing down a reading before
+        remembering to stop. Diluted over the eighty, the mean lands at 1.5 % —
+        under the five-per-cent floor, so the effort is reported as not
+        measured.
+        """
+        total = 10.0 + rest_s
+        t = _t(total)
+        agarre = (t < 10.0).astype(float)
+        base = 1.0
+        a = base + nivel * agarre
+        b = base + (nivel - 2.0) * agarre
+        return a, b, [(0.0, "Grip")]
+
+    def test_the_pause_after_it_is_not_counted(self) -> None:
+        """The phase the practical is about came back as "not reported"."""
+        a, b, marks = self._grip_then_rest()
+        (fila,), _ = coactivation_by_window(a, b, FS, marks)
+        assert fila.index is not None, fila.reason
+        assert fila.index > 50.0
+
+    def test_the_window_says_where_it_really_ended(self) -> None:
+        """Not a hidden trim: the table shows these seconds."""
+        a, b, marks = self._grip_then_rest()
+        (fila,), _ = coactivation_by_window(a, b, FS, marks)
+        assert fila.window_s[1] == pytest.approx(10.5, abs=0.2)
+
+    def test_the_means_are_the_efforts_and_not_the_pauses(self) -> None:
+        a, b, marks = self._grip_then_rest()
+        (fila,), _ = coactivation_by_window(a, b, FS, marks)
+        # Ten seconds at twelve above rest, diluted by seventy of quiet,
+        # reads 1.5 instead of about twelve.
+        assert fila.mean_1 > 10.0
+
+    def test_an_intermittent_effort_is_not_cut_at_its_first_dip(self) -> None:
+        """The envelope of repeated contractions falls to rest between them,
+        so "the first time both drop below the floor" would end the window in
+        the middle of the work."""
+        t = _t(20.0)
+        rafagas = np.zeros(t.size)
+        for inicio in (0.0, 3.0, 6.0, 9.0):
+            rafagas[(t >= inicio) & (t < inicio + 1.0)] = 1.0
+        a = 1.0 + 40.0 * rafagas
+        b = 1.0 + 35.0 * rafagas
+        (fila,), _ = coactivation_by_window(a, b, FS, [(0.0, "Grip")])
+        assert fila.window_s[1] > 10.0
+
+    def test_a_window_closed_by_the_next_mark_is_left_alone(self) -> None:
+        """That boundary is the operator saying where the phase ended, and it
+        is not this function's business to move it."""
+        t = _t(20.0)
+        primero = (t < 4.0).astype(float)
+        ultimo = (t >= 10.0).astype(float)
+        a = 1.0 + 40.0 * primero + 40.0 * ultimo
+        b = 1.0 + 35.0 * primero + 35.0 * ultimo
+        table, _ = coactivation_by_window(
+            a, b, FS, [(0.0, "Flexion"), (10.0, "Grip")])
+        # The first window holds four seconds of effort and six of quiet, and
+        # keeps all ten.
+        assert table[0].window_s == pytest.approx((0.0, 10.0))
+
+    def test_a_window_with_no_activity_keeps_its_own_reason(self) -> None:
+        """Trimming it to nothing would replace "below the floor" — which
+        names the finding — with "window too short", which does not."""
+        n = int(FS * 12)
+        a, b = _rest(n), _rest(n, seed=1)
+        (fila,), _ = coactivation_by_window(a, b, FS, [(0.0, "Grip")])
+        assert fila.index is None
+        assert "short" not in (fila.reason or "").lower()
+
+
+class TestAMarkedWindowAlwaysGetsARow:
+    """It used to be dropped when it was shorter than two samples.
+
+    The student marked something and the table did not mention it, which reads
+    as the mark not having been registered at all — a fault in the recording
+    rather than in the marking.
+    """
+
+    def test_a_mark_at_the_very_end_is_still_a_row(self) -> None:
+        t = _t(12.0)
+        a = 1.0 + 40.0 * (t < 8.0).astype(float)
+        b = 1.0 + 35.0 * (t < 8.0).astype(float)
+        marks = [(0.0, "Grip"), (12.0 - 0.5 / FS, "Late")]
+        table, _ = coactivation_by_window(a, b, FS, marks)
+        assert [r.label for r in table] == ["Grip", "Late"]
+
+    def test_and_it_says_why_there_is_no_number(self) -> None:
+        t = _t(12.0)
+        a = 1.0 + 40.0 * (t < 8.0).astype(float)
+        b = 1.0 + 35.0 * (t < 8.0).astype(float)
+        marks = [(0.0, "Grip"), (12.0 - 0.5 / FS, "Late")]
+        table, _ = coactivation_by_window(a, b, FS, marks)
+        assert table[-1].index is None
+        assert table[-1].reason
+
+
 class TestItIsWiredIn:
     def test_the_floor_lives_in_the_signal_profile(self) -> None:
         """Beside the Jonsson limits, not hard-coded in the maths — it has to

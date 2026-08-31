@@ -225,6 +225,20 @@ Lo que debe salir: flexión y extensión con **«no se informa»** —no hay
 coactivación que medir en un movimiento recíproco— y la presa con un índice
 alto. Que las dos primeras filas no den número **es parte de la demostración**.
 
+> **La última ventana se cierra donde acaba el esfuerzo, no donde se paró el
+> registro.** Cada ventana marcada la cierra la marca siguiente; la última no
+> tiene ninguna detrás, así que se cerraba con el botón de parar. Si el alumno
+> mantiene la presa y luego se queda quieto mientras apunta la lectura, ese
+> reposo entraba dentro: baja la media y puede hundirla por debajo del suelo
+> del 5 %, de modo que la fase que sí hizo salía como «no se informa». Ahora se
+> corta medio segundo después de la última actividad, y la tabla muestra los
+> segundos de cada ventana para que se vea dónde acabó de verdad.
+>
+> Se corta por la **última** vez que alguno de los dos músculos supera el
+> suelo, no por la primera vez que ambos bajan: la envolvente de un esfuerzo
+> intermitente cae al reposo entre ráfaga y ráfaga, y cortar en el primer valle
+> terminaría la ventana en mitad del trabajo.
+
 > **La fatiga no se mide en esta práctica.** El indicador de fatiga es la
 > pendiente de la frecuencia mediana, y solo significa algo sobre una
 > contracción *mantenida*. En un protocolo intermitente como este, la mitad de

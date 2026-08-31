@@ -559,7 +559,11 @@ def build_session_report(
                  tr("Co-activation index")]]
         for res in coact:
             rows.append([
-                res.label,
+                # With its seconds: the last window is closed at the
+                # end of the effort rather than at the end of the
+                # recording, and the report is what gets handed in.
+                f"{res.label}  ({res.window_s[0]:.1f}–"  # noqa: RUF001
+                f"{res.window_s[1]:.1f} s)".strip(),
                 f"{res.mean_1:.0f}",
                 f"{res.mean_2:.0f}",
                 res.reason or f"{res.index:.0f} %",

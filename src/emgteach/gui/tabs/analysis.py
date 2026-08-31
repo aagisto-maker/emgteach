@@ -1215,8 +1215,17 @@ class AnalysisTab(QWidget):
         self._tbl_coact.setRowCount(len(tabla))
         for fila, res in enumerate(tabla):
             valor = res.reason or f"{res.index:.0f} %"
+            # The seconds beside the name, because the window is not always
+            # what the marks imply: the last one is closed at the end of the
+            # effort rather than at the end of the recording, and a table that
+            # showed only "Grip" would hide that it was measured over eleven
+            # seconds and not twenty-six.
+            ini, fin = res.window_s
+            ventana = res.label
+            if fin > ini:
+                ventana = f"{res.label}  ({ini:.1f}–{fin:.1f} s)".strip()
             celdas = [
-                res.label, f"{res.mean_1:.0f}", f"{res.mean_2:.0f}", valor,
+                ventana, f"{res.mean_1:.0f}", f"{res.mean_2:.0f}", valor,
             ]
             for col, texto in enumerate(celdas):
                 item = QTableWidgetItem(texto)
