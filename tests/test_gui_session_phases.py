@@ -391,3 +391,50 @@ class TestTheArmedSessionSurvivesABouncedAttempt:
         tab._mvc_flow_pending = True
         tab._iniciar_calibracion(auto_flow=True)
         assert not tab._mvc_flow_pending
+
+
+class TestFailingToStartIsNotADeadEnd:
+    """Three bench sessions in a row came back with no calibration at all.
+
+    Each had a different cause, but they shared a shape: the flow armed, did
+    not start, and left «Calibrate MVC» disabled — so there was no calibration
+    and no way to ask for one, during the recording or after it. A convenience
+    that can take the feature away is worse than no convenience.
+    """
+
+    def test_it_gives_up_and_hands_the_button_back(self, tab) -> None:
+        from emgteach.gui.tabs.acquisition import MVC_FLOW_MAX_TRIES
+
+        tab._fv_active = True                    # something keeps bouncing it
+        tab._mvc_flow_pending = True
+        tab._btn_calibrar.setEnabled(False)
+        for _ in range(MVC_FLOW_MAX_TRIES + 1):
+            tab._on_data_ready(_bloque())
+        assert not tab._mvc_flow_pending
+        assert tab._btn_calibrar.isEnabled(), "no way left to calibrate"
+        tab._fv_active = False
+
+    def test_it_does_not_give_up_too_soon(self, tab) -> None:
+        """Three seconds of data, not three blocks: a device that opens slowly
+        must not cost the session its calibration."""
+        from emgteach.gui.tabs.acquisition import MVC_FLOW_MAX_TRIES
+
+        assert MVC_FLOW_MAX_TRIES >= 20
+        tab._fv_active = True
+        tab._mvc_flow_pending = True
+        for _ in range(MVC_FLOW_MAX_TRIES - 1):
+            tab._on_data_ready(_bloque())
+        assert tab._mvc_flow_pending, "gave up before the device could settle"
+        tab._fv_active = False
+
+    def test_the_counter_starts_fresh_each_recording(self, tab) -> None:
+        tab._mvc_flow_tries = 99
+        tab._detener_grabacion()
+        assert tab._mvc_flow_tries == 0
+
+    def test_stopping_leaves_no_calibrate_button_to_press(self, tab) -> None:
+        """It needs a recording in progress, so it follows the recording
+        instead of being left wherever the flow put it."""
+        tab._btn_calibrar.setEnabled(True)
+        tab._detener_grabacion()
+        assert not tab._btn_calibrar.isEnabled()

@@ -105,6 +105,9 @@ MAX_MARKER_LINES = 40
 MVC_TICK_MS = 100   # state-machine tick
 MVC_READY_S = 3.0   # "get ready" countdown before each contraction
 MVC_REST_S = 2.0    # relax pause between reps / muscles
+#: Blocks of data (~10 per second) the armed session flow keeps trying for
+#: before handing the calibration back to the operator.
+MVC_FLOW_MAX_TRIES = 30
 # The strongest-sustained window now lives in SignalProfile, so the
 # acquisition and the analysis judge a reference by the same measure.
 
@@ -287,6 +290,10 @@ class AcquisitionTab(QWidget):
         # the calibration at the start of the file.
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False    # start it on the first block of data
+        #: Blocks of data seen while the flow was armed and could not start.
+        #: The flow is a convenience; failing to run it must never leave the
+        #: session with no way to calibrate at all.
+        self._mvc_flow_tries = 0
         #: The calibration's verdict, carried into the preparation countdown.
         #: A weak calibration is the one result nobody must scroll past, and
         #: the countdown is what is on screen for the next five seconds.
@@ -1617,7 +1624,20 @@ class AcquisitionTab(QWidget):
         # seconds to open, and a countdown that starts before the samples do
         # measures no resting level to judge the calibration against.
         self._mvc_flow_pending = self._flow_needs_calibration()
+        self._mvc_flow_tries = 0
         self._btn_calibrar.setEnabled(not self._mvc_flow_pending)
+        # Said out loud, with the three things the answer depends on. Three
+        # bench sessions came back with no calibration and no way to tell,
+        # from the file alone, whether the flow had declined to arm or armed
+        # and failed to start. One line here separates them.
+        self._log(tr(
+            "Session flow: practical={mode}, {n} channel(s), references={refs} "
+            "→ calibrate first: {yes}."
+        ).format(
+            mode=self._mode, n=self._n_channels,
+            refs=sum(1 for r in self._mvc_ref[: self._n_channels] if r),
+            yes=self._mvc_flow_pending,
+        ))
         if self._mvc_flow_pending:
             # Those seconds are the whole reason the button used to be
             # pressed by hand: say what is happening in them.
@@ -1635,6 +1655,10 @@ class AcquisitionTab(QWidget):
         # with no end, which the reader drops: half a maximal effort is not
         # a maximal effort.
         self._mvc_flow_pending = False
+        self._mvc_flow_tries = 0
+        # Calibrating needs a recording in progress, so the button follows
+        # the recording rather than being left wherever the flow put it.
+        self._btn_calibrar.setEnabled(False)
         self._prep_timer.stop()
         self._watchdog_timer.stop()
         self._render_timer.stop()
@@ -1673,6 +1697,21 @@ class AcquisitionTab(QWidget):
         # the next block costs nothing: this runs ten times a second.
         if self._mvc_flow_pending and not self._mvc_active:
             self._iniciar_calibracion(auto_flow=True)
+            if self._mvc_flow_pending:
+                # It bounced. Retrying is nearly free, but not for ever: an
+                # armed flow that never starts used to leave the Calibrate
+                # button disabled with no calibration and no way to ask for
+                # one, which is a worse outcome than either.
+                self._mvc_flow_tries += 1
+                if self._mvc_flow_tries >= MVC_FLOW_MAX_TRIES:
+                    self._mvc_flow_pending = False
+                    self._btn_calibrar.setEnabled(True)
+                    self._mvc_info("")
+                    self._log(tr(
+                        "The session could not start the calibration on its "
+                        "own. Press «Calibrate MVC» when you are ready — the "
+                        "phases will be written just the same."
+                    ))
         # data_ready carries one array per channel; append each to its buffer.
         # The filtered trace is still emitted by the worker (it feeds the
         # envelope) but is no longer displayed, so it is not buffered here.

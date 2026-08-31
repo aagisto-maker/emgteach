@@ -1144,6 +1144,12 @@ _ES = {
     "Calibration started as the session's opening phase.":
         'Calibración iniciada como fase de apertura de la sesión.',
     'Calibration started on its own.': 'Calibración iniciada por su cuenta.',
+    'The session could not start the calibration on its own. Press «Calibrate MVC» when you are ready — the phases will be written just the same.':
+        'La sesión no ha podido arrancar la calibración por su cuenta. Pulse «Calibrar CVM» cuando esté listo: las fases se escriben igual.',
+    'Session flow: practical={mode}, {n} channel(s), references={refs} → calibrate first: {yes}.':
+        'Flujo de sesión: práctica={mode}, {n} canal(es), referencias={refs} → calibrar primero: {yes}.',
+    'No recording': 'Sin registro',
+    'Reference needed': 'Falta la referencia',
     'Get ready to record': 'Prepárese para grabar',
     'Warm up first': 'Caliente primero',
     'Warming up: {n}': 'Calentando: {n}',

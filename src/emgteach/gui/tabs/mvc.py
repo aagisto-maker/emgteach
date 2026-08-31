@@ -284,13 +284,17 @@ class MvcTab(QWidget):
         row_params.addWidget(self._btn_calcular)
 
         # A disabled button that does not say why is the worst of both: the
-        # tab looks broken rather than incomplete. This says what is missing,
-        # right next to the control that cannot be pressed.
+        # tab looks broken rather than incomplete. So it says what is missing,
+        # right next to the control that cannot be pressed — but in three or
+        # four words. The full sentence used to sit here in a wrapping label
+        # that took a stretch of the row and squeezed every button beside it
+        # out of shape; it is the tooltip now, one hover away.
         self._lbl_calcular_bloqueado = QLabel()
-        self._lbl_calcular_bloqueado.setWordWrap(True)
-        self._lbl_calcular_bloqueado.setStyleSheet("color: #8a5000; font-size: 11px;")
+        self._lbl_calcular_bloqueado.setStyleSheet(
+            "color: #8a5000; font-size: 11px; padding: 0 4px;"
+        )
         self._lbl_calcular_bloqueado.setVisible(False)
-        row_params.addWidget(self._lbl_calcular_bloqueado, stretch=1)
+        row_params.addWidget(self._lbl_calcular_bloqueado)
 
         # The way out for someone who has already recorded and has no maximal
         # effort to compare against. It is a worse measurement, not a
@@ -796,18 +800,23 @@ class MvcTab(QWidget):
         self._btn_calcular.setEnabled(listo)
         self._btn_fragmentos.setEnabled(has_test)
 
+        # Short on the row, whole in the tooltip: what is missing has to be
+        # readable at a glance, and why it matters has to be readable at all.
         if listo:
-            motivo = ""
+            motivo = detalle = ""
         elif not has_test:
-            motivo = tr("Select the recording to normalise.")
+            motivo = tr("No recording")
+            detalle = tr("Select the recording to normalise.")
         else:
             # The one case that looks like a fault rather than a missing step:
             # everything is filled in except a file this practical insists on.
-            motivo = tr(
+            motivo = tr("Reference needed")
+            detalle = tr(
                 "A reference recording is required to express the signal as "
                 "% MVC and to read it against the Jonsson limits."
             )
         self._lbl_calcular_bloqueado.setText(motivo)
+        self._lbl_calcular_bloqueado.setToolTip(detalle)
         self._lbl_calcular_bloqueado.setVisible(bool(motivo))
         # Offered only where it is the missing piece, and only once: after it
         # is accepted the button has nothing left to offer.
