@@ -77,12 +77,13 @@ from emgteach.modes import (
     mode_requires_calibration,
     mode_uses_acc,
 )
-from emgteach.mvc import mvc_from_reps, mvc_ref_marker
+from emgteach.mvc import held_fraction, mvc_from_reps, mvc_ref_marker
 from emgteach.phases import (
     cal_end_marker,
     cal_start_marker,
     prep_start_marker,
     rec_start_marker,
+    warmup_start_marker,
 )
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
@@ -271,6 +272,8 @@ class AcquisitionTab(QWidget):
         self._mvc_cross: list[dict[int, list]] = [{} for _ in range(MAX_CHANNELS)]
         #: Channels whose calibration did not look like a maximum.
         self._mvc_no_maximas: list[str] = []
+        #: Channels whose calibration was a movement rather than a hold.
+        self._mvc_no_sostenidas: list[str] = []
         self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_timer = QTimer(self)
         self._mvc_timer.setInterval(MVC_TICK_MS)
@@ -2092,6 +2095,7 @@ class AcquisitionTab(QWidget):
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
         self._mvc_cross = [{} for _ in range(MAX_CHANNELS)]
         self._mvc_no_maximas = []
+        self._mvc_no_sostenidas = []
         self._mvc_raw_peak = [0.0] * MAX_CHANNELS   # for post-calibration autoscale
         self._mvc_ref = [None] * MAX_CHANNELS
         self._set_thresholds_enabled(False)
@@ -2101,7 +2105,7 @@ class AcquisitionTab(QWidget):
         for bar in self._load_bars:
             bar.reset()
         self._reposition_mvc_overlay()
-        self._mvc_enter_ready()
+        self._mvc_enter_warmup()
         self._mvc_timer.start()
 
     def _set_thresholds_enabled(self, enabled: bool) -> None:
@@ -2184,6 +2188,20 @@ class AcquisitionTab(QWidget):
         c = self._mvc_muscle
         return labels[c] if c < len(labels) else tr("Muscle {n}").format(n=c + 1)
 
+    def _mvc_enter_warmup(self) -> None:
+        """A few easy contractions before the first maximal one.
+
+        The first maximal effort of a session is genuinely submaximal, and
+        best-of-three cannot rescue it: on the bench the three flexor
+        repetitions came out at 57 %, 68 % and 100 % of each other, still
+        rising at the third, so the best of them was still not a maximum.
+        Recorded and marked rather than waited out off the clock — the
+        acquisition never stops, and the file stays continuous.
+        """
+        self._mvc_phase = "warmup"
+        self._mvc_elapsed = 0.0
+        self._write_phase_marker(warmup_start_marker())
+
     def _mvc_enter_ready(self) -> None:
         self._mvc_phase = "ready"
         self._mvc_elapsed = 0.0
@@ -2200,6 +2218,21 @@ class AcquisitionTab(QWidget):
             if self._mvc_reps > 1
             else ""
         )
+        if self._mvc_phase == "warmup":
+            total = self._profile.warmup_s
+            cuenta = max(1, int(np.ceil(total - self._mvc_elapsed)))
+            titulo = tr("Warm up first")
+            detalle = tr(
+                "Two or three easy contractions of each muscle. The first "
+                "maximal effort of a session is never the strongest one."
+            )
+            self._mvc_overlay.show_ready(titulo, cuenta, detalle)
+            self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
+            self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
+            if self._mvc_elapsed >= total:
+                self._mvc_enter_ready()
+            return
+
         if self._mvc_phase == "ready":
             if self._mvc_elapsed <= MVC_TICK_MS / 1000.0:
                 self._mvc_rest_buf = []      # one baseline per repetition
@@ -2300,6 +2333,39 @@ class AcquisitionTab(QWidget):
             "from now on will be too high by that factor. Calibrate again."
         ).format(muscle=name, ref=ref, ratio=ratio))
 
+    def _mvc_check_was_held(self, c: int) -> None:
+        """Say so when the reference came from a movement, not a hold.
+
+        The existing check asks whether the calibration rose far enough above
+        rest; a brief maximal-looking burst passes it easily. This one asks
+        the other question: was the effort *held*. An isotonic contraction is
+        submaximal by the force-velocity relationship — the muscle shortens,
+        so it develops less force and recruits fewer motor units — and the
+        reference statistic, the strongest sustained half-second, under-reads
+        a brief burst on top of that. The reference is then too low twice
+        over and every % MVC after it too high.
+
+        Judged on the repetition the reference actually came from, since that
+        is the one that set the yardstick.
+        """
+        reps = [r for r in self._mvc_capture[c] if len(r)]
+        if not reps:
+            return
+        window = max(1, round(self._profile.mvc_peak_window_s * FS))
+        mejor = max(reps, key=lambda r: mvc_from_reps(
+            [r], self._profile.mvc_percentile, window_samples=window))
+        fraccion = held_fraction(mejor)
+        if fraccion >= self._profile.mvc_min_held_fraction:
+            return
+        labels = self._active_labels()
+        name = labels[c] if c < len(labels) else str(c + 1)
+        self._mvc_no_sostenidas.append(name)
+        self._log(tr(
+            "⚠ «{muscle}»: the effort was held for only {pct:.0f} % of the "
+            "window. That is a movement, not a maximal contraction held "
+            "against a resistance, and the reference it gives is too low."
+        ).format(muscle=name, pct=100.0 * fraccion))
+
     def _mvc_feed(self, env: list) -> None:
         """Accumulate the active muscle's envelope during its contraction.
 
@@ -2352,6 +2418,7 @@ class AcquisitionTab(QWidget):
         )
         self._mvc_ref[c] = ref if ref > 0 else None
         self._mvc_check_is_a_maximum(c, ref)
+        self._mvc_check_was_held(c)
         self._online[c].reset()
         self._load_bars[c].set_value(0.0, active=bool(self._mvc_ref[c]))
         self._write_mvc_ref_marker(c)
@@ -2493,6 +2560,7 @@ class AcquisitionTab(QWidget):
         self._mvc_phase = "done"
         ok = [c for c in range(self._n_channels) if self._mvc_ref[c]]
         self._prep_aviso = ""
+        sueltas = [name for name in self._mvc_no_sostenidas if name]
         self._btn_calibrar.setEnabled(True)
         self._update_fv_button()          # re-enabled once the MVC wizard ends
         if self._worker and self._worker.isRunning():
@@ -2537,6 +2605,20 @@ class AcquisitionTab(QWidget):
                 self._mvc_overlay.show_done(tr("Calibration too weak"), warning)
                 self._bcast_calib(
                     True, "done", tr("Calibration too weak"), warning
+                )
+            elif sueltas:
+                # Second in severity only to a reference below rest: this one
+                # is a real maximum of the wrong kind of contraction, so it
+                # looks right everywhere except in the numbers it scales.
+                warning = tr(
+                    "{muscles}: that was a movement, not a held contraction. "
+                    "Resist so the joint cannot move, and hold to the end of "
+                    "the count."
+                ).format(muscles=" · ".join(sueltas))
+                self._prep_aviso = warning
+                self._mvc_overlay.show_done(tr("The effort was not held"), warning)
+                self._bcast_calib(
+                    True, "done", tr("The effort was not held"), warning
                 )
             elif juntos:
                 # Both references are maximal, so the calibration is not the
@@ -2904,6 +2986,7 @@ class AcquisitionTab(QWidget):
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
         self._mvc_cross = [{} for _ in range(MAX_CHANNELS)]
         self._mvc_no_maximas = []
+        self._mvc_no_sostenidas = []
         for c in range(MAX_CHANNELS):
             self._online[c].reset()
             self._load_bars[c].reset()

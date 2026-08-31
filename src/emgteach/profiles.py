@@ -140,6 +140,17 @@ class SignalProfile:
     # telling two muscles apart — an electrode is mis-sited, too close to the
     # other pair, or the subject is bracing the whole forearm.
     mvc_crosstalk_pct: float = 50.0        # % of the other muscle's own reference
+    # -- was the effort held, or was it a movement? --
+    # Fraction of the calibration window the envelope spends above half its
+    # own peak. A held maximal contraction plateaus; a movement is a brief
+    # burst. Measured on the same forearm pair: the flexor's held
+    # repetitions gave 0.75-0.76 and the extensor's, done as movements,
+    # 0.06-0.15. The threshold sits in that gap, which is a factor of five
+    # wide. It matters because an isotonic contraction is submaximal by the
+    # force-velocity relationship, and because the reference statistic —
+    # the strongest sustained half-second — under-reads a brief burst on
+    # top of that.
+    mvc_min_held_fraction: float = 0.40
 
     # -- co-activation (Falconer-Winter) --
     # Below this mean activation the index measures the likeness of two
@@ -159,6 +170,13 @@ class SignalProfile:
     # excluded from every analysis — a few kilobytes of disk against the whole
     # complexity of a discontinuous recording.
     prep_countdown_s: float = 5.0
+    # -- warming up before the first maximal effort --
+    # The first maximal contraction of a session is genuinely submaximal:
+    # on the bench the three flexor repetitions came out 57 %, 68 % and
+    # 100 % of each other, still rising at the third, so best-of-three had
+    # nothing better to fall back on. Recorded and marked like the pause,
+    # and out of the analysis for the same reason.
+    warmup_s: float = 10.0
 
     # -- fatigue verdict (MDF-vs-time regression) --
     # The median frequency of a resting segment is amplifier noise, and mixing

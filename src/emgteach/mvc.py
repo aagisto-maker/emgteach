@@ -126,6 +126,35 @@ def mvc_peak_hold(
     return value
 
 
+def held_fraction(emg_envelope, floor: float = 0.5) -> float:
+    """How much of a calibration window the effort was actually held.
+
+    The fraction of the window whose envelope sits above *floor* of that
+    window's own peak. A maximal contraction held against a resistance
+    plateaus and scores high; a movement — the subject extending the wrist
+    rather than pushing against something that does not give way — is a brief
+    burst and scores low.
+
+    The distinction is not cosmetic. An isotonic contraction is submaximal by
+    the force-velocity relationship: the muscle shortens, so it develops less
+    force and recruits fewer motor units. And the reference itself is the
+    strongest *sustained* half-second, a statistic built for a plateau, which
+    under-reads a brief burst a second time. A reference taken from movements
+    is therefore too low twice over, and every % MVC after it too high.
+
+    Self-scaling on purpose: it asks about the shape of the effort, not its
+    size, so a weak muscle held properly still scores high.
+    """
+    env = np.asarray(emg_envelope, dtype=np.float64)
+    env = env[np.isfinite(env)]
+    if env.size == 0:
+        return 0.0
+    pico = float(np.max(env))
+    if pico <= 0.0:
+        return 0.0
+    return float(np.mean(env > floor * pico))
+
+
 def mvc_from_reps(
     reps: list,
     percentile: float = 95.0,

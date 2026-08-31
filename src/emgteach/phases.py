@@ -79,11 +79,13 @@ __all__ = [
     "reference_source_text",
     "slice_reps",
     "strip_phase_markers",
+    "warmup_start_marker",
 ]
 
 _CAL_RE = re.compile(
     r"CAL\s+(start|end)\s+ch=\s*(\d+)\s+rep=\s*(\d+)", re.IGNORECASE
 )
+_WARMUP_RE = re.compile(r"WARMUP\s+start", re.IGNORECASE)
 _PREP_RE = re.compile(r"PREP\s+start", re.IGNORECASE)
 _REC_RE = re.compile(r"REC\s+start", re.IGNORECASE)
 
@@ -117,6 +119,17 @@ def cal_end_marker(channel_index: int, rep: int) -> str:
     return f"CAL end ch={channel_index + 1} rep={rep}"
 
 
+def warmup_start_marker() -> str:
+    """Annotation opening the warm-up that precedes the calibration.
+
+    The first maximal effort of a session is submaximal, so the wizard
+    asks for a few easy contractions first. Recorded rather than waited
+    out off the clock, for the same reason the pause is: the acquisition
+    never stops, and the file stays continuous.
+    """
+    return "WARMUP start"
+
+
 def prep_start_marker() -> str:
     """Annotation opening the preparation pause between the two phases."""
     return "PREP start"
@@ -136,7 +149,10 @@ def is_phase_marker(description: str) -> bool:
     """Whether an annotation is one of this module's, rather than a student's mark."""
     text = str(description)
     return bool(
-        _CAL_RE.search(text) or _PREP_RE.search(text) or _REC_RE.search(text)
+        _CAL_RE.search(text)
+        or _WARMUP_RE.search(text)
+        or _PREP_RE.search(text)
+        or _REC_RE.search(text)
     )
 
 
@@ -175,6 +191,7 @@ class SessionPhases:
     cal_reps: tuple[CalRep, ...] = ()
     prep_start_s: float | None = None
     rec_start_s: float | None = None
+    warmup_start_s: float | None = None
 
     @property
     def has_phases(self) -> bool:
@@ -221,6 +238,7 @@ def parse_phase_markers(
     """
     reps: list[CalRep] = []
     abiertas: dict[tuple[int, int], float] = {}
+    warmup: float | None = None
     prep: float | None = None
     rec: float | None = None
 
@@ -243,13 +261,15 @@ def parse_phase_markers(
                     reps.append(CalRep(channel, numero, inicio, t))
             continue
 
-        if _PREP_RE.search(text):
+        if _WARMUP_RE.search(text):
+            warmup = t
+        elif _PREP_RE.search(text):
             prep = t
         elif _REC_RE.search(text):
             rec = t
 
     reps.sort(key=lambda r: (r.channel_index, r.rep, r.start_s))
-    return SessionPhases(tuple(reps), prep, rec)
+    return SessionPhases(tuple(reps), prep, rec, warmup)
 
 
 # ---------------------------------------------------------------------------

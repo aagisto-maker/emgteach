@@ -1134,6 +1134,15 @@ _ES = {
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
     # -- la sesión en dos fases (phases.py / acquisition.py) --
     'Get ready to record': 'Prepárese para grabar',
+    'Warm up first': 'Caliente primero',
+    'Warming up: {n}': 'Calentando: {n}',
+    'Two or three easy contractions of each muscle. The first maximal effort of a session is never the strongest one.':
+        'Dos o tres contracciones suaves de cada músculo. La primera máxima de una sesión nunca es la más fuerte.',
+    'The effort was not held': 'El esfuerzo no se mantuvo',
+    '{muscles}: that was a movement, not a held contraction. Resist so the joint cannot move, and hold to the end of the count.':
+        '{muscles}: eso fue un movimiento, no una contracción mantenida. Resista de modo que la articulación no se mueva, y aguante hasta el final de la cuenta.',
+    '⚠ «{muscle}»: the effort was held for only {pct:.0f} % of the window. That is a movement, not a maximal contraction held against a resistance, and the reference it gives is too low.':
+        '⚠ «{muscle}»: el esfuerzo se mantuvo solo el {pct:.0f} % de la ventana. Eso es un movimiento, no una contracción máxima mantenida contra una resistencia, y la referencia que da sale baja.',
     'The recording ended before the preparation phase could start, so this file has no recording phase marked.':
         'El registro terminó antes de que pudiera empezar la fase de preparación, así que este fichero no lleva marcada la fase de registro.',
     'Get ready to record: {n}': 'Prepárese para grabar: {n}',

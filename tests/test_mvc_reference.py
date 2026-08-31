@@ -499,3 +499,65 @@ class TestAreTheTwoChannelsSeeingTwoMuscles:
 
     def test_the_threshold_lives_in_the_profile(self) -> None:
         assert EMG_PROFILE.mvc_crosstalk_pct == 50.0
+
+
+def _meseta(n: int = 4000, subida: int = 400) -> np.ndarray:
+    """A held effort: it ramps up, stays there, and ramps down."""
+    e = np.full(n, 0.12)
+    e[:subida] = np.linspace(0.0, 0.12, subida)
+    e[-subida:] = np.linspace(0.12, 0.0, subida)
+    return e
+
+
+def _gesto(n: int = 4000, ancho: int = 500) -> np.ndarray:
+    """A movement: one brief burst inside the same window."""
+    e = np.full(n, 0.004)
+    centro = n // 2
+    e[centro - ancho // 2 : centro + ancho // 2] = 0.12
+    return e
+
+
+class TestWasTheEffortHeldOrWasItAMovement:
+    """The fourth thing a calibration can get wrong, and the quietest.
+
+    «El flexor necesita hacer la contracción isométrica, pero el extensor
+    funciona si se hace como movimiento isotónico» — and the recording agreed:
+    the flexor's repetitions spent 76 % and 75 % of their window above half
+    their own peak, the extensor's 6 %, 8 % and 15 %.
+
+    It matters twice. An isotonic contraction is submaximal by the
+    force-velocity relationship, and the reference statistic — the strongest
+    sustained half-second — under-reads a brief burst on top of that. The
+    existing rest-ratio check passes a burst without blinking.
+    """
+
+    def test_a_held_effort_scores_high(self) -> None:
+        from emgteach.mvc import held_fraction
+
+        assert held_fraction(_meseta()) > 0.7
+
+    def test_a_movement_scores_low(self) -> None:
+        from emgteach.mvc import held_fraction
+
+        assert held_fraction(_gesto()) < 0.2
+
+    def test_the_threshold_sits_in_the_gap_between_them(self) -> None:
+        from emgteach.mvc import held_fraction
+
+        assert held_fraction(_gesto()) < EMG_PROFILE.mvc_min_held_fraction
+        assert held_fraction(_meseta()) > EMG_PROFILE.mvc_min_held_fraction
+
+    def test_it_asks_about_shape_not_size(self) -> None:
+        """A weak muscle held properly must still pass: the measure is
+        self-scaling, so it never punishes a small signal."""
+        from emgteach.mvc import held_fraction
+
+        assert held_fraction(_meseta() * 0.05) == pytest.approx(
+            held_fraction(_meseta())
+        )
+
+    def test_an_empty_or_flat_window_scores_zero(self) -> None:
+        from emgteach.mvc import held_fraction
+
+        assert held_fraction([]) == 0.0
+        assert held_fraction(np.zeros(100)) == 0.0

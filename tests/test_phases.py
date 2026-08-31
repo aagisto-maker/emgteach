@@ -33,6 +33,7 @@ from emgteach.phases import (
     reference_source_text,
     slice_reps,
     strip_phase_markers,
+    warmup_start_marker,
 )
 
 FS = 1000.0
@@ -315,3 +316,43 @@ class TestTheProvenanceIsShownNotInferred:
         for exactly this reason: the interface must branch on the token, so it
         keeps working in Spanish."""
         assert FROM_REPS != reference_source_text(FROM_REPS)
+
+
+class TestTheWarmUpIsAPhaseToo:
+    """It is signal, it is in the file, and nobody analyses it — like the pause.
+
+    A few easy contractions before the first maximal one, because the first
+    maximal effort of a session is submaximal and best-of-three cannot rescue
+    it: on the bench the three flexor repetitions came out 57 %, 68 % and
+    100 % of each other, still rising at the third.
+    """
+
+    def test_it_is_read_back(self) -> None:
+        p = parse_phase_markers([
+            (0.5, warmup_start_marker()),
+            (10.5, cal_start_marker(0, 1)),
+            (14.5, cal_end_marker(0, 1)),
+        ])
+        assert p.warmup_start_s == pytest.approx(0.5)
+        assert len(p.cal_reps) == 1
+
+    def test_it_does_not_reach_the_panels(self) -> None:
+        limpios = strip_phase_markers([
+            (0.5, warmup_start_marker()), (1.0, "Grip"),
+        ])
+        assert [d for _t, d in limpios] == ["Grip"]
+
+    def test_a_session_without_one_is_still_a_session(self) -> None:
+        """Every recording made before this change, and every calibration the
+        operator asked for on its own."""
+        p = parse_phase_markers(_markers())
+        assert p.warmup_start_s is None
+        assert p.has_phases
+
+    def test_it_comes_before_the_first_repetition(self) -> None:
+        p = parse_phase_markers([
+            (0.5, warmup_start_marker()),
+            (10.5, cal_start_marker(0, 1)),
+            (14.5, cal_end_marker(0, 1)),
+        ])
+        assert p.warmup_start_s < min(r.start_s for r in p.cal_reps)

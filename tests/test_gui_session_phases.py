@@ -13,6 +13,7 @@ recording that looks perfect and analyses as if it had never been calibrated.
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from emgteach.modes import MODE_FREE, MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE
@@ -241,3 +242,110 @@ class TestWhenTheRecordButtonRunsTheWholeSession:
         assert not tab._mvc_flow_auto
         assert not tab._mvc_flow_pending
         assert not tab._prep_timer.isActive()
+
+
+class TestWarmingUpBeforeTheFirstMaximum:
+    """The auto flow took away the window the operator used to have.
+
+    Before, you connected, recorded, did a few contractions and then pressed
+    Calibrate. Now the record button starts the countdown, and the bench showed
+    what that costs: the flexor's three repetitions came out 57 %, 68 % and
+    100 % of each other, still rising at the third.
+    """
+
+    def test_a_calibration_opens_with_the_warm_up(self, tab) -> None:
+        tab._iniciar_calibracion(auto_flow=True)
+        assert tab._mvc_phase == "warmup"
+        assert "WARMUP start" in tab._worker.markers
+
+    def test_a_calibration_asked_for_on_its_own_warms_up_too(self, tab) -> None:
+        """The reason is physiological, not procedural: it does not depend on
+        which button started the wizard."""
+        tab._iniciar_calibracion(auto_flow=False)
+        assert tab._mvc_phase == "warmup"
+
+    def test_it_gives_way_to_the_first_countdown(self, tab) -> None:
+        from emgteach.gui.tabs.acquisition import MVC_TICK_MS
+
+        tab._iniciar_calibracion(auto_flow=True)
+        pasos = int(EMG_PROFILE.warmup_s / (MVC_TICK_MS / 1000.0)) + 2
+        for _ in range(pasos):
+            if tab._mvc_phase != "warmup":
+                break
+            tab._mvc_tick()
+        assert tab._mvc_phase == "ready"
+
+    def test_it_comes_before_the_first_span(self, tab) -> None:
+        tab._iniciar_calibracion(auto_flow=True)
+        _una_repeticion(tab)
+        m = tab._worker.markers
+        assert m.index("WARMUP start") < m.index("CAL start ch=1 rep=1")
+
+    def test_how_long_it_lasts_lives_in_the_profile(self, tab) -> None:
+        assert EMG_PROFILE.warmup_s == 10.0
+
+
+class TestAMovementIsNotAMaximalContraction:
+    """The check the rest-ratio one cannot make."""
+
+    @staticmethod
+    def _calibrar_con(tab, envolvente) -> None:
+        """Through the real path, not straight to the check.
+
+        Calling _mvc_check_was_held() directly would keep passing on an
+        application that had stopped calling it — which is the failure that
+        matters, since the check is silent when it is happy.
+        """
+        tab._iniciar_calibracion(auto_flow=False)
+        tab._mvc_capture[0] = [np.asarray(envolvente, dtype=float)]
+        tab._mvc_compute_muscle(0)
+
+    def test_a_movement_is_called_out(self, tab) -> None:
+        import numpy as np
+
+        e = np.full(4000, 0.004)
+        e[1750:2250] = 0.12                    # one brief burst
+        self._calibrar_con(tab, e)
+        assert tab._mvc_no_sostenidas
+
+    def test_a_held_effort_passes_in_silence(self, tab) -> None:
+        import numpy as np
+
+        e = np.full(4000, 0.12)
+        e[:400] = np.linspace(0.0, 0.12, 400)
+        e[-400:] = np.linspace(0.12, 0.0, 400)
+        self._calibrar_con(tab, e)
+        assert not tab._mvc_no_sostenidas
+
+    def test_it_ends_on_the_panel_not_only_in_the_log(self, tab) -> None:
+        import numpy as np
+
+        e = np.full(4000, 0.004)
+        e[1750:2250] = 0.12
+        self._calibrar_con(tab, e)
+        tab._mvc_ref[0] = 0.12
+        tab._mvc_finish_all()
+        titulo = tab._mvc_overlay._title.lower()
+        assert "not held" in titulo or "no se mantuvo" in titulo
+
+    def test_a_reference_below_rest_still_wins_the_panel(self, tab) -> None:
+        """Both faults at once. A reference under the muscle's own resting
+        level corrupts every percentage by a larger factor, so it is the one
+        the operator has to read."""
+        import numpy as np
+
+        e = np.full(4000, 0.004)
+        e[1750:2250] = 0.0286
+        tab._mvc_rest_buf = list(_envelope_ruidosa(0.031, 3000))
+        self._calibrar_con(tab, e)        # both checks run in here
+        assert tab._mvc_no_maximas and tab._mvc_no_sostenidas
+        tab._mvc_finish_all()
+        titulo = tab._mvc_overlay._title.lower()
+        assert "weak" in titulo or "floja" in titulo
+
+
+def _envelope_ruidosa(mean: float, n: int, seed: int = 0):
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    return np.abs(rng.normal(mean, mean * 0.25, n)) + mean * 0.5
