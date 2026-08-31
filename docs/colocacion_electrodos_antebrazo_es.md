@@ -124,9 +124,17 @@ El orden importa, porque la aplicación depende de él.
    >   la mano metida bajo el borde de la mesa con la **palma hacia arriba**.
    >   Empuje la palma contra el tablero. Muñeca en neutro.
    > - **Canal 2 (extensores):** lo mismo con el antebrazo **pronado**, el
-   >   **dorso** de la mano contra el tablero. Empiece con la muñeca en unos
-   >   **20° de flexión**: con la muñeca ya extendida el ECR está acortado y por
-   >   relación longitud-tensión da su fuerza mínima.
+   >   **dorso** de la mano contra el tablero.
+   >
+   > **Los 20° valen para los dos, y son críticos** (comprobado en el banco el
+   > 31 de agosto: «la posición del brazo es crítica, tanto para FCR como ECR el
+   > brazo tiene que estar como a unos 20°»). Es relación longitud-tensión: cada
+   > músculo debe partir **ligeramente estirado**, es decir, unos 20° hacia el
+   > lado contrario al de su propia acción —el flexor arranca con la muñeca en
+   > ~20° de **extensión**, el extensor con ~20° de **flexión**—. Desde neutro,
+   > y peor aún desde el lado de su acción, el músculo está acortado y da su
+   > fuerza mínima. En esa sesión el flexor pasó de 0,074 a 0,120 mV y sus tres
+   > repeticiones dejaron de subir.
    >
    > En los dos casos el contacto va sobre los **metacarpianos 2.º y 3.º**, no
    > sobre los dedos —si va sobre los dedos se está midiendo el extensor de los

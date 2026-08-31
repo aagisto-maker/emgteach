@@ -170,6 +170,7 @@ _PANEL_TOOLTIPS = {
 from emgteach.broadcast import BroadcastServer
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
+from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
@@ -421,8 +422,27 @@ class AnalysisTab(QWidget):
         row_frag.addWidget(self._btn_fragmentos)
         self._lbl_fragmentos = QLabel("")
         row_frag.addWidget(self._lbl_fragmentos)
+
+        # Beside the fragment editor, and deliberately not part of it: the
+        # recording is continuous signal and the calibration is a handful of
+        # discrete efforts. Two editions, two tools.
+        self._btn_reps = QPushButton(tr("Calibration repetitions…"))
+        self._btn_reps.setEnabled(False)
+        self._btn_reps.setToolTip(tr(
+            "Keep or discard the maximal efforts the reference is computed "
+            "from. Discarding one moves the reference and every % MVC with "
+            "it — which is what makes a weak repetition worth spotting."
+        ))
+        self._btn_reps.clicked.connect(self._editar_repeticiones)
+        row_frag.addWidget(self._btn_reps)
+        self._lbl_reps = QLabel("")
+        self._lbl_reps.setStyleSheet("font-size: 11px; color: #8a5000;")
+        row_frag.addWidget(self._lbl_reps)
         row_frag.addStretch()
         self._selected_segments: list[tuple[float, float]] = []
+        #: Calibration repetitions kept, by channel index. Empty means all
+        #: of them, which is what a recording starts as.
+        self._cal_keep: dict[int, set[int]] = {}
         # Filter cut-offs chosen in the fragment editor; when set they drive
         # the actual analysis (not just detection). None = use the tab defaults.
         self._analysis_filter_kwargs: dict[str, float] | None = None
@@ -942,6 +962,56 @@ class AnalysisTab(QWidget):
             self._spin_fenv.setValue(self._analysis_filter_kwargs["f_env"])
             self._actualizar_etiqueta_fragmentos()
 
+    @Slot()
+    def _editar_repeticiones(self) -> None:
+        """Offer the calibration efforts to keep or discard, then re-analyse.
+
+        Re-analysing is not optional politeness: the reference is the yardstick
+        for every % MVC on screen, so leaving the old panels up beside a new
+        selection would show two answers to the same question.
+        """
+        r = self._last_result or {}
+        valores = r.get("cal_rep_values") or {}
+        if not valores:
+            return
+        etiquetas = self._labels_por_canal()
+        inverso = {n: i for i, n in etiquetas.items()}
+        refs = {}
+        for nombre, clave in ((r.get("channel_name"), "mvc_ref"),
+                              (r.get("channel_name_2"), "mvc_ref_2")):
+            canal = inverso.get(str(nombre or "").strip())
+            if canal is not None and r.get(clave):
+                refs[canal] = float(r[clave])
+        dlg = CalibrationRepsDialog(
+            valores, etiquetas, references=refs,
+            keep=self._cal_keep or None, parent=self,
+        )
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        self._cal_keep = dlg.keep()
+        self._actualizar_etiqueta_reps()
+        self._iniciar_analisis()
+
+    def _labels_por_canal(self) -> dict[int, str]:
+        """Channel index to the name the recording gave it."""
+        try:
+            nombres = list_edf_emg_channels(self._edit_path.text().strip())
+        except Exception:
+            nombres = []
+        return dict(enumerate(nombres))
+
+    def _actualizar_etiqueta_reps(self) -> None:
+        """Say when the reference is no longer the whole calibration."""
+        valores = (self._last_result or {}).get("cal_rep_values") or {}
+        descartadas = sum(
+            len(v) - len(self._cal_keep.get(c, {x.rep for x in v}))
+            for c, v in valores.items()
+        )
+        self._lbl_reps.setText(
+            "" if not descartadas
+            else tr("{n} repetition(s) discarded").format(n=descartadas)
+        )
+
     def _actualizar_etiqueta_fragmentos(self) -> None:
         n = len(self._selected_segments)
         if n == 0:
@@ -1006,6 +1076,7 @@ class AnalysisTab(QWidget):
             f_notch=f_notch,
             f_env=f_env,
             plot_duration_s=0,
+            cal_keep=self._cal_keep or None,
             roi_start_s=roi_start,
             roi_end_s=roi_end,
             roi_segments=roi_segments,
@@ -1206,6 +1277,8 @@ class AnalysisTab(QWidget):
         self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
         self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
         self._actualizar_procedencia_cvm(r)
+        self._btn_reps.setEnabled(bool(r.get("cal_rep_values")))
+        self._actualizar_etiqueta_reps()
 
         decline = r.get("fat_pct_decline", 0.0)
         veredicto = r.get("fat_verdict", INCONCLUSIVE)

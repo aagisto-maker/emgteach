@@ -41,6 +41,7 @@ from emgteach.phases import (
     NO_CALIBRATION,
     mvc_reference,
     parse_phase_markers,
+    rep_values,
     strip_phase_markers,
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
@@ -178,7 +179,7 @@ def _channel_position(channel_name, emg_channels) -> int | None:
 
 
 def _ref_for(channel_name, emg_channels, *, phases, envelope, fs, cached,
-             profile):
+             profile, keep=None):
     """``(reference_mV, source_token)`` for a named channel.
 
     Delegates the decision to :func:`emgteach.phases.mvc_reference`, which is
@@ -190,11 +191,23 @@ def _ref_for(channel_name, emg_channels, *, phases, envelope, fs, cached,
     idx = _channel_position(channel_name, emg_channels)
     if idx is None:
         return None, NO_CALIBRATION
-    return mvc_reference(
-        idx, phases=phases, envelope=envelope, fs=fs, cached=cached,
-        percentile=profile.mvc_percentile,
-        window_s=profile.mvc_peak_window_s,
-    )
+    seleccion = None if keep is None else keep.get(idx)
+    try:
+        return mvc_reference(
+            idx, phases=phases, envelope=envelope, fs=fs, cached=cached,
+            percentile=profile.mvc_percentile,
+            window_s=profile.mvc_peak_window_s, keep=seleccion,
+        )
+    except ValueError:
+        # Every repetition of this channel unticked. The interface does not
+        # allow it, but a stale selection can outlive the file it was made
+        # on — and answering with the whole calibration is a smaller lie
+        # than answering with none of it.
+        return mvc_reference(
+            idx, phases=phases, envelope=envelope, fs=fs, cached=cached,
+            percentile=profile.mvc_percentile,
+            window_s=profile.mvc_peak_window_s,
+        )
 
 
 class AnalysisWorker(QThread):
@@ -222,6 +235,7 @@ class AnalysisWorker(QThread):
         edf_path: str,
         channel_name: str | None = None,
         channel_name_2: str | None = None,
+        cal_keep: dict[int, set[int]] | None = None,
         acc_channel: str | None = None,
         acc_placement: str = "unknown",
         f_low: float | None = None,
@@ -254,6 +268,11 @@ class AnalysisWorker(QThread):
         )
         # Optional second channel: its envelope is overlaid (agonist/antagonist).
         self._channel_name_2 = channel_name_2
+        #: Calibration repetitions to keep, by channel index. ``None`` keeps
+        #: them all, which is what every recording starts as. Discarding one
+        #: moves the reference and, with it, every % MVC in the analysis —
+        #: that is the point of offering the choice.
+        self._cal_keep = dict(cal_keep) if cal_keep else None
         # Optional accelerometer channel: enables the MMG and tremor panels.
         self._acc_channel = acc_channel
         self._acc_placement = acc_placement
@@ -578,6 +597,7 @@ class AnalysisWorker(QThread):
             self.progress.emit(90)
 
             # 7) Pack result
+            idx_1 = _channel_position(self._channel_name, emg_channels)
             # The preparation pause, if this session has one: signal that is
             # in the file, outside the analysed span, and quiet by design.
             # Exactly what a resting baseline needs to be — but its *end*, not
@@ -591,7 +611,7 @@ class AnalysisWorker(QThread):
             ref_1, fuente_1 = _ref_for(
                 self._channel_name, emg_channels, phases=phases,
                 envelope=env_calibracion, fs=fs, cached=mvc_refs,
-                profile=self._profile,
+                profile=self._profile, keep=self._cal_keep,
             )
             rms_global = float(np.sqrt(np.mean(proc["emg_filtered"] ** 2)))
             iemg = float(trapezoid(proc["emg_rectified"], dx=1.0 / fs))
@@ -628,6 +648,17 @@ class AnalysisWorker(QThread):
                     c: phases.reps_for(c) for c in phases.channels()
                 },
                 "rec_start_s": phases.rec_start_s,
+                #: What each repetition was worth, in the order performed,
+                #: so the analysis tab can offer them to keep or discard.
+                "cal_rep_values": (
+                    {idx_1: rep_values(
+                        idx_1, phases=phases, envelope=env_calibracion,
+                        fs=fs, percentile=self._profile.mvc_percentile,
+                        window_s=self._profile.mvc_peak_window_s)}
+                    if idx_1 is not None and env_calibracion is not None
+                    else {}
+                ),
+                "cal_keep": self._cal_keep,
                 # plot axis
                 "t_plot": t_plot,
                 "n_plot": n_plot,
@@ -728,10 +759,28 @@ class AnalysisWorker(QThread):
                     ref_2, fuente_2 = _ref_for(
                         self._channel_name_2, emg_channels, phases=phases,
                         envelope=env_calibracion_2, fs=fs, cached=mvc_refs,
-                        profile=self._profile,
+                        profile=self._profile, keep=self._cal_keep,
                     )
                     result["mvc_ref_2"] = ref_2
                     result["mvc_ref_source_2"] = fuente_2
+                    # Both envelopes are in hand here, which is what the
+                    # per-repetition cross-talk needs: what the *other* muscle
+                    # reached while this one was at its maximum.
+                    result["cal_rep_values"] = {
+                        i: rep_values(
+                            i, phases=phases, envelope=env, fs=fs,
+                            percentile=self._profile.mvc_percentile,
+                            window_s=self._profile.mvc_peak_window_s,
+                            other_envelope=otro_env, other_reference=otra_ref,
+                        )
+                        for i, env, otro_env, otra_ref in (
+                            (_channel_position(self._channel_name, emg_channels),
+                             env_calibracion, env_calibracion_2, ref_2),
+                            (_channel_position(self._channel_name_2, emg_channels),
+                             env_calibracion_2, env_calibracion, ref_1),
+                        )
+                        if i is not None and env is not None
+                    }
                     # Co-activation needs both envelopes as a percentage of
                     # *their own* muscle's maximum; without a reference for
                     # each, the pair cannot be compared at all and no index is
@@ -789,7 +838,15 @@ class AnalysisWorker(QThread):
                             ).format(name=name,
                                      limit=self._profile.mvc_implausible_pct,
                                      share=share * 100.0, peak=float(pct.max())))
-                    else:
+
+                    # An ``else`` here would belong to the ``for`` above, not
+                    # to the ``if ref1 and ref2`` it was written under, and a
+                    # ``for … else`` runs whenever the loop is not broken out
+                    # of — which is always. The reason was being recorded on
+                    # every recording, including the ones that do have an
+                    # index; only the ``elif`` in the report kept it off the
+                    # page.
+                    if not (ref1 and ref2):
                         result["coactivation_reason"] = tr(
                             "not reported — no MVC reference for both channels"
                         )

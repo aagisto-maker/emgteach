@@ -971,6 +971,19 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    'Calibration repetitions…': 'Repeticiones de la calibración…',
+    'Keep or discard the maximal efforts the reference is computed from. Discarding one moves the reference and every % MVC with it — which is what makes a weak repetition worth spotting.': 'Conservar o descartar los esfuerzos máximos con los que se calcula la referencia. Descartar uno mueve la referencia y con ella todos los % CVM: por eso merece la pena localizar una repetición floja.',
+    '{n} repetition(s) discarded': '{n} repetición(es) descartada(s)',
+    'Calibration repetitions': 'Repeticiones de la calibración',
+    'Each maximal effort the wizard recorded. Unticking one leaves it out of the reference — and out of every % MVC computed from it.': 'Cada esfuerzo máximo que registró el asistente. Al desmarcar uno queda fuera de la referencia, y por tanto de todos los % CVM que se calculan con ella.',
+    'rep {n}': 'rep. {n}',
+    '{pct:.0f} % of the best': '{pct:.0f} % de la mejor',
+    'other muscle at {pct:.0f} %': 'el otro músculo al {pct:.0f} %',
+    "What the other channel reached during this effort, as a share of its own reference. Some of it is the antagonist steadying the joint and some is this muscle's own signal conducted through the tissue; neither can be separated from two bipolar channels, and around 20 % is normal.": 'Lo que alcanzó el otro canal durante este esfuerzo, como porcentaje de su propia referencia. Una parte es el antagonista estabilizando la articulación y otra es la señal de este mismo músculo conducida por el tejido; con dos canales bipolares no se pueden separar, y en torno al 20 % es normal.',
+    'Keep at least one repetition: a channel with none is not a calibration with a smaller reference, it is no calibration.': 'Conserva al menos una repetición: un canal sin ninguna no es una calibración con una referencia menor, es no haber calibrado.',
+    'unchanged': 'sin cambios',
+    'was {before:.4f} mV, {pct:+.0f} %': 'antes {before:.4f} mV, {pct:+.0f} %',
+    'Reference with this selection: {value:.4f} mV — {change}': 'Referencia con esta selección: {value:.4f} mV — {change}',
     "Open the assisted editor to keep the significant fragments and discard the rest. Takes precedence over the region above.":
         "Abre el editor asistido para conservar los fragmentos significativos y descartar "
         "el resto. Tiene prioridad sobre la región de arriba.",

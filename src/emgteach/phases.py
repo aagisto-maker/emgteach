@@ -68,6 +68,7 @@ __all__ = [
     "FROM_REPS",
     "NO_CALIBRATION",
     "CalRep",
+    "RepValue",
     "SessionPhases",
     "cal_end_marker",
     "cal_start_marker",
@@ -77,6 +78,7 @@ __all__ = [
     "prep_start_marker",
     "rec_start_marker",
     "reference_source_text",
+    "rep_values",
     "slice_reps",
     "strip_phase_markers",
     "warmup_start_marker",
@@ -300,6 +302,64 @@ def slice_reps(
         if i1 > i0:
             out.append(env[i0:i1])
     return out
+
+
+@dataclass(frozen=True)
+class RepValue:
+    """One calibration repetition, as the analysis tab offers it for keeping.
+
+    ``value_mv`` is measured exactly as the reference is — strongest sustained
+    window — so the largest of them *is* the reference when every repetition is
+    kept, and the arithmetic the student sees adds up.
+
+    ``crosstalk_pct`` is what the *other* channel reached during this effort, as
+    a share of its own reference. It belongs beside the value because the two
+    answer different halves of "was this repetition any good": a weak one and a
+    contaminated one both deserve discarding, and only one of them is visible
+    in the number.
+    """
+
+    rep: int
+    value_mv: float
+    crosstalk_pct: float | None = None
+
+
+def rep_values(
+    channel_index: int,
+    *,
+    phases: SessionPhases,
+    envelope,
+    fs: float,
+    percentile: float = 95.0,
+    window_s: float = 0.5,
+    other_envelope=None,
+    other_reference: float | None = None,
+) -> tuple[RepValue, ...]:
+    """What each of this channel's calibration repetitions was worth.
+
+    Returns them in the order they were performed, which is the order that
+    makes a rising profile — a subject still warming up at the third attempt —
+    visible at a glance.
+    """
+    reps = phases.reps_for(channel_index)
+    if not reps or envelope is None or fs <= 0:
+        return ()
+    ventana = max(1, round(float(window_s) * float(fs)))
+    trozos = slice_reps(envelope, fs, reps)
+    cruzados = (
+        slice_reps(other_envelope, fs, reps)
+        if other_envelope is not None and other_reference
+        else [None] * len(trozos)
+    )
+    salida: list[RepValue] = []
+    for r, propio, ajeno in zip(reps, trozos, cruzados, strict=False):
+        valor = mvc_from_reps([propio], percentile, window_samples=ventana)
+        cruce = None
+        if ajeno is not None and ajeno.size:
+            nivel = mvc_from_reps([ajeno], percentile, window_samples=ventana)
+            cruce = 100.0 * nivel / float(other_reference)
+        salida.append(RepValue(r.rep, float(valor), cruce))
+    return tuple(salida)
 
 
 def mvc_reference(
