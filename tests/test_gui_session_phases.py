@@ -99,9 +99,8 @@ class TestTheCalibrationIsDelimitedInTheFile:
     def test_the_labels_are_the_ones_the_reader_parses(self, tab) -> None:
         """The whole point. Times are synthesised here — the worker stamps them
         in the real thing — so what is checked is the wording."""
-        tab._iniciar_calibracion(auto_flow=False)
+        tab._iniciar_calibracion(auto_flow=True)
         _una_repeticion(tab)
-        tab._mvc_enter_prep()
         _correr_la_cuenta_atras(tab)
 
         marcas = [(float(i), m) for i, m in enumerate(tab._worker.markers)]
@@ -128,9 +127,6 @@ class TestThePauseBetweenThePhases:
     def test_the_flow_marks_the_pause_and_then_the_recording(self, tab) -> None:
         tab._iniciar_calibracion(auto_flow=True)
         _una_repeticion(tab)
-        # _mvc_finish_all defers the pause by two seconds so the verdict panel
-        # can be read; the test does not wait for the clock.
-        tab._mvc_enter_prep()
         assert "PREP start" in tab._worker.markers
         assert "REC start" not in tab._worker.markers   # not yet
         _correr_la_cuenta_atras(tab)
@@ -139,7 +135,6 @@ class TestThePauseBetweenThePhases:
     def test_the_pause_comes_after_every_calibration_span(self, tab) -> None:
         tab._iniciar_calibracion(auto_flow=True)
         _una_repeticion(tab)
-        tab._mvc_enter_prep()
         _correr_la_cuenta_atras(tab)
         m = tab._worker.markers
         assert m.index("PREP start") > m.index("CAL end ch=1 rep=1")
@@ -152,31 +147,45 @@ class TestThePauseBetweenThePhases:
         the file. Writing ``REC start`` there would throw away everything
         before it, which is most of the recording.
 
-        The hand-over is deferred a couple of seconds so the verdict panel can
-        be read, so what is checked is the decision — ``_prep_pending`` — and
-        not whether a timer has fired yet."""
+        """
         tab._iniciar_calibracion(auto_flow=False)
         _una_repeticion(tab)
-        assert not tab._prep_pending
         assert "PREP start" not in tab._worker.markers
         assert "REC start" not in tab._worker.markers
 
     def test_the_flow_does_hand_over(self, tab) -> None:
         """The other half of the same decision: without this, the test above
-        would pass on an application that never starts the second phase."""
+        would pass on an application that never starts the second phase.
+
+        It used to be deferred two seconds on a timer so the verdict panel
+        could be read. On the bench that hand-over simply did not happen, and
+        the recording came back with its calibration marked and no recording
+        phase at all. It is a direct call now, and this is what says so."""
         tab._iniciar_calibracion(auto_flow=True)
         _una_repeticion(tab)
-        assert tab._prep_pending
-        tab._mvc_enter_prep()
-        assert not tab._prep_pending
+        assert "PREP start" in tab._worker.markers
+        assert tab._prep_timer.isActive()
 
     def test_the_countdown_lasts_what_the_profile_says(self, tab) -> None:
         assert EMG_PROFILE.prep_countdown_s == 5.0
 
+    def test_a_weak_calibration_is_still_read_during_the_countdown(
+        self, tab
+    ) -> None:
+        """The verdict used to get two seconds of its own before the pause.
+        Now it rides in the countdown, which is on screen five times longer —
+        losing it in the hand-over would hide the one result nobody must
+        scroll past."""
+        tab._mvc_rest_buf = [0.031] * 3000
+        tab._iniciar_calibracion(auto_flow=True)
+        _una_repeticion(tab)
+        assert tab._prep_aviso, "the weak-calibration verdict was dropped"
+        tab._prep_tick()
+        assert tab._mvc_overlay._subtitle == tab._prep_aviso
+
     def test_stopping_mid_pause_writes_no_start(self, tab) -> None:
         tab._iniciar_calibracion(auto_flow=True)
         _una_repeticion(tab)
-        tab._mvc_enter_prep()
         tab._detener_grabacion()
         assert "REC start" not in tab._worker.markers
         assert not tab._prep_timer.isActive()
@@ -231,5 +240,4 @@ class TestWhenTheRecordButtonRunsTheWholeSession:
         tab._mvc_cancel()
         assert not tab._mvc_flow_auto
         assert not tab._mvc_flow_pending
-        assert not tab._prep_pending
         assert not tab._prep_timer.isActive()

@@ -286,10 +286,10 @@ class AcquisitionTab(QWidget):
         # the calibration at the start of the file.
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False    # start it on the first block of data
-        #: Between the phases: the calibration is done and the pause has been
-        #: scheduled but has not begun. A state of its own because the hand-over
-        #: is deferred a couple of seconds so the verdict panel can be read.
-        self._prep_pending = False
+        #: The calibration's verdict, carried into the preparation countdown.
+        #: A weak calibration is the one result nobody must scroll past, and
+        #: the countdown is what is on screen for the next five seconds.
+        self._prep_aviso = ""
         self._prep_elapsed = 0.0
         self._prep_timer = QTimer(self)
         self._prep_timer.setInterval(MVC_TICK_MS)
@@ -1623,7 +1623,6 @@ class AcquisitionTab(QWidget):
         # with no end, which the reader drops: half a maximal effort is not
         # a maximal effort.
         self._mvc_flow_pending = False
-        self._prep_pending = False
         self._prep_timer.stop()
         self._watchdog_timer.stop()
         self._render_timer.stop()
@@ -2391,8 +2390,11 @@ class AcquisitionTab(QWidget):
         files to be written and then merged. A few seconds of signal nobody
         looks at costs some kilobytes and saves all of that.
         """
-        self._prep_pending = False
         if not (self._worker and self._worker.isRunning()):
+            self._log(tr(
+                "The recording ended before the preparation phase could "
+                "start, so this file has no recording phase marked."
+            ))
             self._mvc_overlay.hide_overlay()
             self._bcast_calib(False)
             return
@@ -2406,8 +2408,10 @@ class AcquisitionTab(QWidget):
         self._prep_elapsed += MVC_TICK_MS / 1000.0
         cuenta = max(1, int(np.ceil(total - self._prep_elapsed)))
         titulo = tr("Get ready to record")
-        detalle = tr("The recording starts when the count reaches 0. "
-                     "The calibration is already saved.")
+        detalle = self._prep_aviso or tr(
+            "The recording starts when the count reaches 0. "
+            "The calibration is already saved."
+        )
         self._mvc_overlay.show_ready(titulo, cuenta, detalle)
         self._mvc_info(tr("Get ready to record: {n}").format(n=cuenta))
         self._bcast_calib(True, "prep", titulo, detalle, count=cuenta)
@@ -2488,6 +2492,7 @@ class AcquisitionTab(QWidget):
         self._mvc_active = False
         self._mvc_phase = "done"
         ok = [c for c in range(self._n_channels) if self._mvc_ref[c]]
+        self._prep_aviso = ""
         self._btn_calibrar.setEnabled(True)
         self._update_fv_button()          # re-enabled once the MVC wizard ends
         if self._worker and self._worker.isRunning():
@@ -2528,6 +2533,7 @@ class AcquisitionTab(QWidget):
                     "{muscles}: this is not a maximum. Calibrate again against "
                     "a resistance the joint cannot move."
                 ).format(muscles=" · ".join(weak))
+                self._prep_aviso = warning
                 self._mvc_overlay.show_done(tr("Calibration too weak"), warning)
                 self._bcast_calib(
                     True, "done", tr("Calibration too weak"), warning
@@ -2541,6 +2547,7 @@ class AcquisitionTab(QWidget):
                     "{pairs}. Move the electrode pairs further apart, over the "
                     "belly of each muscle, and support the forearm."
                 ).format(pairs=" · ".join(juntos))
+                self._prep_aviso = warning
                 self._mvc_overlay.show_done(tr("Channels not separated"), warning)
                 self._bcast_calib(
                     True, "done", tr("Channels not separated"), warning
@@ -2562,12 +2569,15 @@ class AcquisitionTab(QWidget):
                 tr("No signal — check the electrodes."),
             )
         if self._mvc_flow_auto and self._worker and self._worker.isRunning():
-            # The session continues into its second phase. The verdict panel
-            # gets a couple of seconds to be read first — it is the one
-            # place a weak calibration is reported — then the countdown.
+            # The session continues into its second phase, and it does so
+            # here rather than on a timer two seconds from now. A deferred
+            # hand-over is one more thing that can fail to happen — on the
+            # bench it did, leaving a file with its calibration marked and no
+            # recording phase at all — and it bought nothing: the verdict is
+            # carried into the countdown, which is on screen far longer than
+            # the two seconds it used to get on its own.
             self._mvc_flow_auto = False
-            self._prep_pending = True
-            QTimer.singleShot(2000, self._mvc_enter_prep)
+            self._mvc_enter_prep()
             return
 
         QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
@@ -2580,7 +2590,6 @@ class AcquisitionTab(QWidget):
         self._mvc_active = False
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False
-        self._prep_pending = False
         self._mvc_phase = ""
         self._mvc_overlay.hide_overlay()
         self._update_fv_button()

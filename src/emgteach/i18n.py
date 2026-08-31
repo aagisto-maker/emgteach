@@ -1134,6 +1134,8 @@ _ES = {
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
     # -- la sesión en dos fases (phases.py / acquisition.py) --
     'Get ready to record': 'Prepárese para grabar',
+    'The recording ended before the preparation phase could start, so this file has no recording phase marked.':
+        'El registro terminó antes de que pudiera empezar la fase de preparación, así que este fichero no lleva marcada la fase de registro.',
     'Get ready to record: {n}': 'Prepárese para grabar: {n}',
     'The recording starts when the count reaches 0. The calibration is already saved.':
         'El registro empieza cuando la cuenta llegue a 0. La calibración ya está guardada.',
