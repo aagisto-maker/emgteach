@@ -728,6 +728,13 @@ _ES = {
     "auto (percentile {p:.0f} of the test signal)":
         "automática (percentil {p:.0f} de la señal de prueba)",
     "calibration recorded in this file": "calibración grabada en este mismo fichero",
+    # -- procedencia de la referencia de CVM (phases.py) --
+    "calibration in this recording": "calibración de este registro",
+    "calibration in this recording ({n} repetition(s))":
+        "calibración de este registro ({n} repetición/ones)",
+    "calibration as recorded (repetitions not stored)":
+        "calibración tal como se grabó (no se guardaron las repeticiones)",
+    "no calibration": "sin calibración",
     "MVC reference read from the file's own calibration: {value:.4f} {units}.":
         "Referencia de CVM leída de la calibración del propio fichero: {value:.4f} {units}.",
     "This recording carries its own MVC calibration ({n} channel(s)) — no reference file needed.":
