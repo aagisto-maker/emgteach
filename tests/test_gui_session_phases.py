@@ -13,7 +13,6 @@ recording that looks perfect and analyses as if it had never been calibrated.
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from emgteach.modes import MODE_FREE, MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE
@@ -285,67 +284,33 @@ class TestWarmingUpBeforeTheFirstMaximum:
         assert EMG_PROFILE.warmup_s == 10.0
 
 
-class TestAMovementIsNotAMaximalContraction:
-    """The check the rest-ratio one cannot make."""
+class TestTheButtonCannotBeatTheFlow:
+    """The record button arms the session; the device then takes seconds to
+    open, and nothing visible happens in the meantime. Pressing «Calibrate MVC»
+    in that gap is the natural thing to do — and it used to win: the wizard ran
+    as a plain calibration, the armed flow was swallowed by the "already
+    running" guard, and the file came back with its calibration marked and no
+    recording phase at all. Which is precisely what the flow exists to write.
+    """
 
-    @staticmethod
-    def _calibrar_con(tab, envolvente) -> None:
-        """Through the real path, not straight to the check.
+    def test_a_manual_press_adopts_the_armed_flow(self, tab) -> None:
+        tab._mvc_flow_pending = True
+        tab._on_calibrar()                      # the button, not the flow
+        assert tab._mvc_flow_auto, "the armed session was dropped"
+        assert not tab._mvc_flow_pending
 
-        Calling _mvc_check_was_held() directly would keep passing on an
-        application that had stopped calling it — which is the failure that
-        matters, since the check is silent when it is happy.
-        """
-        tab._iniciar_calibracion(auto_flow=False)
-        tab._mvc_capture[0] = [np.asarray(envolvente, dtype=float)]
-        tab._mvc_compute_muscle(0)
+    def test_and_then_the_phases_are_written(self, tab) -> None:
+        """The point of adopting it: the outcome no longer depends on who won."""
+        tab._mvc_flow_pending = True
+        tab._on_calibrar()
+        _una_repeticion(tab)
+        assert "PREP start" in tab._worker.markers
 
-    def test_a_movement_is_called_out(self, tab) -> None:
-        import numpy as np
-
-        e = np.full(4000, 0.004)
-        e[1750:2250] = 0.12                    # one brief burst
-        self._calibrar_con(tab, e)
-        assert tab._mvc_no_sostenidas
-
-    def test_a_held_effort_passes_in_silence(self, tab) -> None:
-        import numpy as np
-
-        e = np.full(4000, 0.12)
-        e[:400] = np.linspace(0.0, 0.12, 400)
-        e[-400:] = np.linspace(0.12, 0.0, 400)
-        self._calibrar_con(tab, e)
-        assert not tab._mvc_no_sostenidas
-
-    def test_it_ends_on_the_panel_not_only_in_the_log(self, tab) -> None:
-        import numpy as np
-
-        e = np.full(4000, 0.004)
-        e[1750:2250] = 0.12
-        self._calibrar_con(tab, e)
-        tab._mvc_ref[0] = 0.12
-        tab._mvc_finish_all()
-        titulo = tab._mvc_overlay._title.lower()
-        assert "not held" in titulo or "no se mantuvo" in titulo
-
-    def test_a_reference_below_rest_still_wins_the_panel(self, tab) -> None:
-        """Both faults at once. A reference under the muscle's own resting
-        level corrupts every percentage by a larger factor, so it is the one
-        the operator has to read."""
-        import numpy as np
-
-        e = np.full(4000, 0.004)
-        e[1750:2250] = 0.0286
-        tab._mvc_rest_buf = list(_envelope_ruidosa(0.031, 3000))
-        self._calibrar_con(tab, e)        # both checks run in here
-        assert tab._mvc_no_maximas and tab._mvc_no_sostenidas
-        tab._mvc_finish_all()
-        titulo = tab._mvc_overlay._title.lower()
-        assert "weak" in titulo or "floja" in titulo
-
-
-def _envelope_ruidosa(mean: float, n: int, seed: int = 0):
-    import numpy as np
-
-    rng = np.random.default_rng(seed)
-    return np.abs(rng.normal(mean, mean * 0.25, n)) + mean * 0.5
+    def test_a_press_with_nothing_armed_stays_a_plain_calibration(self, tab) -> None:
+        """A calibration asked for in the middle of a recording still must not
+        move the start of the analysed span."""
+        tab._mvc_flow_pending = False
+        tab._on_calibrar()
+        _una_repeticion(tab)
+        assert not tab._mvc_flow_auto
+        assert "PREP start" not in tab._worker.markers

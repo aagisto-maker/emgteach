@@ -150,8 +150,16 @@ El orden importa, porque la aplicación depende de él.
    > que empujar hacia arriba, y el sujeto acaba haciendo un gesto en vez de un
    > esfuerzo mantenido. Las tres repeticiones del extensor pasaron solo el
    > 6-15 % de su ventana por encima de la mitad de su pico, frente al 75-76 %
-   > de las del flexor. La aplicación ya lo detecta y avisa: **«El esfuerzo no
-   > se mantuvo»**.
+   > de las del flexor.
+   >
+   > *(La aplicación llegó a avisar de esto y el aviso se retiró: en la sesión
+   > siguiente, ya contra la mesa, saltaba sobre la mejor calibración de la
+   > serie. Una contracción máxima mantenida cuatro segundos decae —fatiga
+   > dentro del propio esfuerzo— y esa medida la castigaba igual que a un
+   > gesto. La diferencia de forma es real y vale para leer una traza a ojo,
+   > pero no sirve de umbral automático. Una referencia demasiado baja se sigue
+   > detectando después, en el análisis, cuando el registro pasa mucho tiempo
+   > por encima del 150 % de CVM.)*
    >
    > **Por qué importa tanto**, y es la propia fisiología de la asignatura: sin
    > nada contra lo que empujar, el músculo se acorta a su velocidad máxima y

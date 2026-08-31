@@ -140,17 +140,14 @@ class SignalProfile:
     # telling two muscles apart — an electrode is mis-sited, too close to the
     # other pair, or the subject is bracing the whole forearm.
     mvc_crosstalk_pct: float = 50.0        # % of the other muscle's own reference
-    # -- was the effort held, or was it a movement? --
-    # Fraction of the calibration window the envelope spends above half its
-    # own peak. A held maximal contraction plateaus; a movement is a brief
-    # burst. Measured on the same forearm pair: the flexor's held
-    # repetitions gave 0.75-0.76 and the extensor's, done as movements,
-    # 0.06-0.15. The threshold sits in that gap, which is a factor of five
-    # wide. It matters because an isotonic contraction is submaximal by the
-    # force-velocity relationship, and because the reference statistic —
-    # the strongest sustained half-second — under-reads a brief burst on
-    # top of that.
-    mvc_min_held_fraction: float = 0.40
+    # (A "was the effort held?" check lived here and was withdrawn. It
+    # measured the share of the window above half the window's own peak,
+    # which separated one bench session cleanly — and then fired on the
+    # best calibration of the next one. A maximal contraction held for
+    # four seconds decays, which that measure punishes exactly as it
+    # punishes a brief movement; no threshold separated the two sessions
+    # at any floor. A reference that is too low is still caught after the
+    # fact by mvc_implausible_pct, which is where the evidence for it is.)
 
     # -- co-activation (Falconer-Winter) --
     # Below this mean activation the index measures the likeness of two
