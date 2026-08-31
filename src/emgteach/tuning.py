@@ -323,13 +323,14 @@ def build_tuned_edf(
     meta = RecordingMetadata(
         student_name=original.student_code or "",
         student_code=original.student_code,
-        # The protocol is copied through untouched. EDF+ gives equipment,
-        # technician and recording_additional eighty characters *between
-        # them*, and on a real recording they are nearly spent — the device
-        # string alone is twenty-eight. Marking the derivation there truncated
-        # the protocol instead of fitting beside it: "agonist/antagonist"
-        # came back as "ag". The patient field has its own eighty and this
-        # file uses almost none of them, so the mark goes there.
+        # The protocol is copied through untouched. Equipment, technician and
+        # recording_additional share EDF_RECORDING_IDENT_BUDGET characters
+        # *between them*, and on a real recording they are nearly spent — the
+        # device string alone is twenty-eight of thirty-nine. Marking the
+        # derivation there truncated the protocol instead of fitting beside
+        # it: "agonist/antagonist" came back as "ag". The patient block has
+        # its own, roomier budget and this file uses almost none of it, so
+        # the mark goes there.
         protocol=original.protocol,
         patient_additional=f"{DERIVED_PREFIX} from {src.name}"[:80],
         technician=original.technician,

@@ -21,9 +21,9 @@ import numpy as np
 import pytest
 from PySide6.QtCore import QCoreApplication, QEventLoop, QTimer
 
-from emgteach import SignalProfile
+from emgteach import RecordingMetadata, SignalProfile
 from emgteach.devices import AcquisitionDevice
-from emgteach.io import read_edf_pyedflib
+from emgteach.io import read_edf_metadata, read_edf_pyedflib
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
 pytestmark = pytest.mark.gui
@@ -471,6 +471,39 @@ class TestAcquisitionWorker:
         assert any("auto" in label.lower() for label in labels), (
             f"automatic marker missing; got {labels}"
         )
+
+    def test_a_shortened_header_reaches_the_acquisition_log(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """The EDF+ identification block does not hold a real device string
+        and a real protocol at once (:data:`EDF_RECORDING_IDENT_BUDGET`), so
+        the equipment is shortened. The bench has to be told while it can
+        still do something about it — silence here is the whole defect.
+        """
+        device = _FakeDevice(fs=1000)
+        worker = AcquisitionWorker(
+            device=device,
+            save_dir=str(tmp_path),
+            n_per_read=100,
+            metadata=RecordingMetadata(
+                protocol="agonist/antagonist",
+                equipment="BITalino (98:D3:91:FE:44:E4)",
+            ),
+        )
+        lines: list[str] = []
+        worker.log.connect(lines.append)
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        QTimer.singleShot(150, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        assert edf_paths and edf_paths[0], "Worker did not emit finished_ok"
+        assert any("BITalino" in line for line in lines), (
+            f"the header was shortened in silence; log was {lines}"
+        )
+        assert read_edf_metadata(edf_paths[0]).protocol == "agonist/antagonist"
 
 
 # ---------------------------------------------------------------------------

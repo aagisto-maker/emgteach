@@ -112,6 +112,23 @@ _ES = {
     "Warning — annotation error: {error}": "Aviso — error de anotación: {error}",
     "EDF file saved: {path}": "Archivo EDF guardado: {path}",
     "Warning — EDF close error: {error}": "Aviso — error al cerrar el EDF: {error}",
+    # -- EDF+ identification header: what did not fit, said out loud --
+    "Warning — the EDF+ header shares {budget} characters between equipment, "
+    "supervisor and protocol. Equipment shortened from \"{was}\" to \"{now}\" "
+    "so the protocol \"{protocol}\" is saved whole.":
+        "Aviso — la cabecera EDF+ reparte {budget} caracteres entre equipo, "
+        "supervisor y protocolo. Se ha acortado el equipo de «{was}» a "
+        "«{now}» para guardar entero el protocolo «{protocol}».",
+    "Warning — supervisor shortened to \"{now}\" so the protocol "
+    "\"{protocol}\" is saved whole.":
+        "Aviso — se ha acortado el supervisor a «{now}» para guardar entero "
+        "el protocolo «{protocol}».",
+    "Warning — the protocol is {length} characters and the EDF+ header has "
+    "room for {budget}; it will be saved cut short as \"{kept}\". Shorten it "
+    "to keep it whole.":
+        "Aviso — el protocolo tiene {length} caracteres y en la cabecera EDF+ "
+        "caben {budget}; se guardará recortado como «{kept}». Acórtalo para "
+        "conservarlo entero.",
     "sensor_labels has {n} entries but the device reports {m} channel(s).":
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",

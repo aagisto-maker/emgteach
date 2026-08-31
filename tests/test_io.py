@@ -26,6 +26,7 @@ from emgteach import (
     read_edf_pyedflib,
     write_edf_block,
 )
+from emgteach.io import EDF_RECORDING_IDENT_BUDGET
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -398,3 +399,116 @@ class TestRecordingMetadata:
     def test_is_empty(self) -> None:
         assert RecordingMetadata().is_empty()
         assert not RecordingMetadata(student_name="x").is_empty()
+
+
+# ---------------------------------------------------------------------------
+# The recording-identification budget
+# ---------------------------------------------------------------------------
+
+
+class TestTheProtocolIsNeverTheFieldThatGivesWay:
+    """What the EDF+ recording block does when four fields want eighty chars.
+
+    Measured on ``C:\\Records\\emg_2026-08-31_19-33.edf``: the app wrote the
+    protocol ``"agonist/antagonist"`` and ``getRecordingAdditional()`` gave
+    back ``"agonist/ant"``. The device string, twenty-eight characters of
+    ``"BITalino (98:D3:91:FE:44:E4)"``, had eaten the budget, and pyedflib —
+    whose guard scores that header at 69 of 80 and stays quiet — never said
+    so. Same family as the buffered-write corruption the module documents
+    (Agis-Torres 2026): the file is valid, the loss is silent, and nobody
+    finds out until a marking pile has protocols that name no practice.
+    """
+
+    #: The header as the bench actually wrote it.
+    EQUIPMENT = "BITalino (98:D3:91:FE:44:E4)"
+    PROTOCOL = "agonist/antagonist"
+
+    def _write(self, out_path: str, metadata: RecordingMetadata) -> list[str]:
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        sig = np.zeros(2 * FS, dtype=np.float64)
+        with BufferedEdfWriter(out_path, channels=[ch], metadata=metadata) as w:
+            w.add_samples(sig)
+            notices = list(w.header_notices)
+        return notices
+
+    def test_the_protocol_comes_back_whole(self, out_path: str) -> None:
+        """The regression itself: write the measured header, read it back."""
+        self._write(
+            out_path,
+            RecordingMetadata(
+                student_name="Ada Lovelace",
+                student_code="A123",
+                protocol=self.PROTOCOL,
+                equipment=self.EQUIPMENT,
+            ),
+        )
+        assert read_edf_metadata(out_path).protocol == self.PROTOCOL
+
+    def test_the_equipment_still_names_the_bench(self, out_path: str) -> None:
+        """Shortened, not dropped: the device and the tail of its MAC stay,
+        which is what tells one bench from the next one along."""
+        self._write(
+            out_path,
+            RecordingMetadata(protocol=self.PROTOCOL, equipment=self.EQUIPMENT),
+        )
+        equipment = read_edf_metadata(out_path).equipment
+        assert equipment.startswith("BITalino")
+        assert equipment.endswith("44:E4")
+
+    def test_the_shortening_is_said_out_loud(self, out_path: str) -> None:
+        """Trimming is a decision; making it in silence is the bug."""
+        notices = self._write(
+            out_path,
+            RecordingMetadata(protocol=self.PROTOCOL, equipment=self.EQUIPMENT),
+        )
+        assert notices, "the header was trimmed and nothing was logged"
+        assert any("BITalino" in n for n in notices), notices
+
+    def test_a_header_that_fits_is_left_alone(self, out_path: str) -> None:
+        """No shortening, and nothing logged, when there is room for all."""
+        notices = self._write(
+            out_path,
+            RecordingMetadata(protocol="iso 30 s", equipment="BITalino"),
+        )
+        meta = read_edf_metadata(out_path)
+        assert meta.equipment == "BITalino"
+        assert meta.protocol == "iso 30 s"
+        assert notices == []
+
+    def test_a_protocol_too_long_on_its_own_is_reported(
+        self, out_path: str
+    ) -> None:
+        """The one case nothing can save. It still must not pass in silence."""
+        protocol = "agonist/antagonist co-activation, elbow, three loads"
+        notices = self._write(
+            out_path,
+            RecordingMetadata(protocol=protocol, equipment=self.EQUIPMENT),
+        )
+        assert notices, "the protocol was truncated and nothing was logged"
+        assert any(str(len(protocol)) in n for n in notices), notices
+        # Everything that could be given up, was: the protocol keeps the
+        # whole budget, so what survives is as much of it as EDF+ allows.
+        assert read_edf_metadata(out_path).protocol == protocol[
+            :EDF_RECORDING_IDENT_BUDGET
+        ]
+
+    def test_the_budget_is_what_the_writer_actually_enforces(
+        self, out_path: str
+    ) -> None:
+        """The constant is measured, not read off the specification, so it is
+        pinned here: a pyedflib that changes the arithmetic fails this test
+        rather than quietly starting to truncate protocols again."""
+        equipment = "E" * EDF_RECORDING_IDENT_BUDGET
+        protocol = "P"
+        self._write(
+            out_path,
+            # Straight to the writer, past the fitting step, to ask edflib
+            # itself where it cuts.
+            RecordingMetadata(protocol="", equipment=equipment),
+        )
+        assert read_edf_metadata(out_path).equipment == equipment
+        self._write(out_path, RecordingMetadata(protocol=protocol, equipment=equipment))
+        meta = read_edf_metadata(out_path)
+        assert len(meta.equipment) + len(meta.protocol) <= (
+            EDF_RECORDING_IDENT_BUDGET
+        )
