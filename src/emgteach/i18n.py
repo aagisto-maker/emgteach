@@ -735,6 +735,9 @@ _ES = {
     "calibration as recorded (repetitions not stored)":
         "calibración tal como se grabó (no se guardaron las repeticiones)",
     "no calibration": "sin calibración",
+    "MVC:": "CVM:",
+    "The maximal contraction every % MVC on this recording is measured against, and where it came from.":
+        "La contracción máxima contra la que se mide cada % de CVM de este registro, y de dónde sale.",
     "MVC reference read from the file's own calibration: {value:.4f} {units}.":
         "Referencia de CVM leída de la calibración del propio fichero: {value:.4f} {units}.",
     "This recording carries its own MVC calibration ({n} channel(s)) — no reference file needed.":

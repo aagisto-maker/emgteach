@@ -184,6 +184,7 @@ from emgteach.io import (
 )
 from emgteach.modes import DEFAULT_MODE, MODE_FREE, MODE_PAIR, mode_uses_acc
 from emgteach.mvc import overlay_curves
+from emgteach.phases import NO_CALIBRATION, reference_source_text
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.workers import AnalysisWorker
@@ -638,6 +639,11 @@ class AnalysisTab(QWidget):
             tr("Integral of the rectified EMG — total muscle activation.")
         )
         self._lbl_duracion = QLabel(f"{tr('Duration:')} —")
+        # Where the yardstick came from. Shown beside the numbers it scales,
+        # because a reference the student cannot trace is the same trap as an
+        # auto-normalised one, only quieter. This is what replaces the old
+        # "MVC source:" field.
+        self._lbl_cvm = QLabel(f"{tr('MVC:')} —")
         self._lbl_archivo = QLabel("")
 
         # Didactic tooltips: what each summary metric means.
@@ -652,15 +658,21 @@ class AnalysisTab(QWidget):
             tr("Global RMS amplitude: mean intensity of the activation.")
         )
         self._lbl_duracion.setToolTip(tr("Analysed signal duration."))
+        self._lbl_cvm.setToolTip(
+            tr("The maximal contraction every % MVC on this recording is "
+               "measured against, and where it came from.")
+        )
         self._lbl_archivo.setToolTip(tr("Analysed EDF file."))
 
         for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga, self._lbl_pendiente,
-                    self._lbl_rms_global, self._lbl_iemg, self._lbl_duracion, self._lbl_archivo):
+                    self._lbl_rms_global, self._lbl_iemg, self._lbl_duracion,
+                    self._lbl_cvm, self._lbl_archivo):
             lbl.setStyleSheet(_st)
 
         for lbl in (self._lbl_mnf, _sep(), self._lbl_mdf, _sep(), self._lbl_fatiga, _sep(),
                     self._lbl_pendiente, _sep(), self._lbl_rms_global, _sep(),
-                    self._lbl_iemg, _sep(), self._lbl_duracion, _sep(), self._lbl_archivo):
+                    self._lbl_iemg, _sep(), self._lbl_duracion, _sep(),
+                    self._lbl_cvm, _sep(), self._lbl_archivo):
             resumen_row.addWidget(lbl)
         resumen_row.addStretch()
 
@@ -1193,6 +1205,7 @@ class AnalysisTab(QWidget):
         self._lbl_rms_global.setText(f"{tr('Global RMS:')}{r.get('rms_global', 0.0):.2f} mV")
         self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
         self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
+        self._actualizar_procedencia_cvm(r)
 
         decline = r.get("fat_pct_decline", 0.0)
         veredicto = r.get("fat_verdict", INCONCLUSIVE)
@@ -1212,6 +1225,29 @@ class AnalysisTab(QWidget):
             color = "#885500"
         self._lbl_fatiga.setText(texto)
         self._lbl_fatiga.setStyleSheet(f"font-size: 9px; padding: 0 4px; color: {color};")
+
+    def _actualizar_procedencia_cvm(self, r: dict) -> None:
+        """The reference and where it came from, in the summary bar.
+
+        Amber rather than red when there is none: a recording with no
+        calibration is not a fault, it is a recording that cannot answer the
+        questions that need one — and saying which is the point.
+        """
+        ref = r.get("mvc_ref")
+        fuente = r.get("mvc_ref_source", NO_CALIBRATION)
+        n_reps = len(r.get("cal_reps", {}).get(0, ()) or ())
+        if ref:
+            self._lbl_cvm.setText(
+                f"{tr('MVC:')}{ref:.3f} mV — {reference_source_text(fuente, n_reps)}"
+            )
+            self._lbl_cvm.setStyleSheet("font-size: 11px; padding: 0 6px;")
+            return
+        self._lbl_cvm.setText(
+            f"{tr('MVC:')}{reference_source_text(NO_CALIBRATION)}"
+        )
+        self._lbl_cvm.setStyleSheet(
+            "font-size: 11px; padding: 0 6px; color: #8a5000;"
+        )
 
     # ------------------------------------------------------------------
     # Drawing the 7 panels (replicates analisis_emg_completo.py)

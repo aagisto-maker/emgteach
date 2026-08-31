@@ -37,6 +37,12 @@ from emgteach.io import (
     read_edf_pyedflib,
 )
 from emgteach.mvc import parse_mvc_ref_markers
+from emgteach.phases import (
+    NO_CALIBRATION,
+    mvc_reference,
+    parse_phase_markers,
+    strip_phase_markers,
+)
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
 
@@ -102,19 +108,39 @@ def _baseline_is_usable(envelope, fs: float, profile) -> bool:
     return umbral < float(np.max(env))
 
 
-def _ref_for(channel_name, emg_channels, refs):
-    """The MVC reference belonging to a channel, or None.
+def _channel_position(channel_name, emg_channels) -> int | None:
+    """Where a channel sits among the recording's EMG channels, or ``None``.
 
-    The wizard numbers muscles by their position among the recording's EMG
-    channels — which is the order they were labelled in — so that position is
-    what maps a channel name back to its annotation.
+    The wizard numbers muscles by that position — which is the order they
+    were labelled in — so it is what maps a channel name back to its
+    annotations, both the ``CAL`` spans and the cached ``MVC ref``.
     """
-    if not channel_name or not refs:
+    if not channel_name:
         return None
     try:
-        return refs.get(list(emg_channels).index(channel_name))
+        return list(emg_channels).index(channel_name)
     except ValueError:
         return None
+
+
+def _ref_for(channel_name, emg_channels, *, phases, envelope, fs, cached,
+             profile):
+    """``(reference_mV, source_token)`` for a named channel.
+
+    Delegates the decision to :func:`emgteach.phases.mvc_reference`, which is
+    the one place that ranks a reference recomputed from the calibration spans
+    above the value cached in the annotation. Passing the *untrimmed* envelope
+    matters: the calibration sits outside the analysed span by design, so an
+    envelope of the analysed span alone would have nothing to measure.
+    """
+    idx = _channel_position(channel_name, emg_channels)
+    if idx is None:
+        return None, NO_CALIBRATION
+    return mvc_reference(
+        idx, phases=phases, envelope=envelope, fs=fs, cached=cached,
+        percentile=profile.mvc_percentile,
+        window_s=profile.mvc_peak_window_s,
+    )
 
 
 class AnalysisWorker(QThread):
@@ -226,7 +252,8 @@ class AnalysisWorker(QThread):
         return i0, i1, start_s, end_s
 
     def _resolve_segments(
-        self, n_samples: int, fs: float, full_duration: float
+        self, n_samples: int, fs: float, full_duration: float,
+        default_span: tuple[float, float] | None = None,
     ) -> list[tuple[int, int, float, float]] | None:
         """Resolve the analysis fragments into ordered sample-index windows.
 
@@ -245,6 +272,12 @@ class AnalysisWorker(QThread):
             start = self._roi_start_s if self._roi_start_s is not None else 0.0
             end = self._roi_end_s if self._roi_end_s is not None else full_duration
             requested = [(start, end)]
+        elif default_span is not None:
+            # A two-phase recording analyses its recording phase. The
+            # calibration and the preparation pause are before it and drop
+            # out here, with no separate notion of excluded regions to keep
+            # in step with anything.
+            requested = [default_span]
         else:
             return [(0, n_samples, 0.0, full_duration)]
 
@@ -284,20 +317,36 @@ class AnalysisWorker(QThread):
             # maximum, and dropping it would send the panel back to
             # millivolts for no good reason.
             mvc_refs = parse_mvc_ref_markers(markers)
+            # The shape of the session, read before anything is trimmed: the
+            # calibration lies outside the analysed span on purpose.
+            phases = parse_phase_markers(markers)
             # The MVC references and the force-velocity loads are facts about
             # the session, not phases of it. Once read they are dropped, so
             # they neither clutter every panel with a marker line nor open a
             # window in the co-activation table — the student's own marks are
             # what divide a recording into phases.
-            markers = [
+            markers = strip_phase_markers([
                 m for m in markers
                 if not parse_mvc_ref_markers([m])
                 and not parse_fv_load_markers([m])
-            ]
+            ])
             try:
                 emg_channels = list_edf_emg_channels(self._edf_path)
             except Exception:
                 emg_channels = []
+
+            # The calibration spans are in file time and lie outside the
+            # analysed span by design, so the reference is recomputed from an
+            # envelope of the *whole* recording. One extra pass of the DSP,
+            # and only when there is a calibration in the file to measure.
+            env_calibracion = None
+            if phases.cal_reps:
+                env_calibracion = process_offline(
+                    emg_raw, fs,
+                    f_low=self._f_low, f_high=self._f_high,
+                    f_notch=self._f_notch, f_env=self._f_env,
+                    rms_window_ms=self._rms_window_ms,
+                )["emg_envelope"]
 
             # 1b) Restrict to the selected fragment(s), if requested. The kept
             # fragments are concatenated into one continuous signal; everything
@@ -306,7 +355,10 @@ class AnalysisWorker(QThread):
             # in discarded fragments are dropped). The kept windows are recorded
             # in the result so the report states them explicitly.
             full_duration = float(times[-1])
-            bounds = self._resolve_segments(len(emg_raw), fs, full_duration)
+            bounds = self._resolve_segments(
+                len(emg_raw), fs, full_duration,
+                default_span=phases.rec_span(full_duration),
+            )
             if bounds is None:
                 return  # error already emitted
             kept_segments = [(s, e) for (_, _, s, e) in bounds]
@@ -472,6 +524,11 @@ class AnalysisWorker(QThread):
             self.progress.emit(90)
 
             # 7) Pack result
+            ref_1, fuente_1 = _ref_for(
+                self._channel_name, emg_channels, phases=phases,
+                envelope=env_calibracion, fs=fs, cached=mvc_refs,
+                profile=self._profile,
+            )
             rms_global = float(np.sqrt(np.mean(proc["emg_filtered"] ** 2)))
             iemg = float(trapezoid(proc["emg_rectified"], dx=1.0 / fs))
             # Primary fatigue index: slope of the linear MDF-vs-time regression.
@@ -492,7 +549,19 @@ class AnalysisWorker(QThread):
                 # {channel_index_0based: reference_mV}; empty when the
                 # recording carries no calibration.
                 "mvc_refs": mvc_refs,
-                "mvc_ref": _ref_for(self._channel_name, emg_channels, mvc_refs),
+                "mvc_ref": ref_1,
+                #: Where that reference came from, as a token from
+                #: emgteach.phases. The interface branches on this and words
+                #: it with reference_source_text(); it must never branch on
+                #: translated text.
+                "mvc_ref_source": fuente_1,
+                #: The calibration repetitions the file carries, per channel
+                #: index. Empty for a recording made before the two-phase
+                #: flow, which is exactly when they cannot be edited.
+                "cal_reps": {
+                    c: phases.reps_for(c) for c in phases.channels()
+                },
+                "rec_start_s": phases.rec_start_s,
                 # plot axis
                 "t_plot": t_plot,
                 "n_plot": n_plot,
@@ -552,6 +621,18 @@ class AnalysisWorker(QThread):
                 try:
                     edf2 = read_edf_mne(self._edf_path, self._channel_name_2)
                     emg_raw_2 = edf2["emg_raw"]
+                    # Same reasoning as the first channel: the calibration is
+                    # outside the analysed span, so its envelope is taken
+                    # before the trimming.
+                    env_calibracion_2 = (
+                        process_offline(
+                            emg_raw_2, fs,
+                            f_low=self._f_low, f_high=self._f_high,
+                            f_notch=self._f_notch, f_env=self._f_env,
+                            rms_window_ms=self._rms_window_ms,
+                        )["emg_envelope"]
+                        if phases.cal_reps else None
+                    )
                     if not is_whole:
                         emg_raw_2 = np.concatenate(
                             [emg_raw_2[i0:i1] for (i0, i1, _, _) in bounds]
@@ -573,9 +654,13 @@ class AnalysisWorker(QThread):
                     result["emg_contracted_2"] = _contracted(
                         proc2["emg_envelope"], fs, self._profile
                     )
-                    result["mvc_ref_2"] = _ref_for(
-                        self._channel_name_2, emg_channels, mvc_refs
+                    ref_2, fuente_2 = _ref_for(
+                        self._channel_name_2, emg_channels, phases=phases,
+                        envelope=env_calibracion_2, fs=fs, cached=mvc_refs,
+                        profile=self._profile,
                     )
+                    result["mvc_ref_2"] = ref_2
+                    result["mvc_ref_source_2"] = fuente_2
                     # Co-activation needs both envelopes as a percentage of
                     # *their own* muscle's maximum; without a reference for
                     # each, the pair cannot be compared at all and no index is
