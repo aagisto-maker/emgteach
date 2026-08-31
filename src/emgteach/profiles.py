@@ -214,7 +214,11 @@ class SignalProfile:
     ylim_filtered: tuple[float, float] = (-0.8, 0.8)
     ylim_envelope: tuple[float, float] = (0.0, 0.5)
 
-    # -- UI marker vocabulary (user-facing, Spanish) --
+    # -- UI marker vocabulary (user-facing) --
+    # No longer offered while recording: the picker beside the MARK button
+    # went with it, because the recording runs faster than anyone can label
+    # it. The vocabulary stays because the naming it serves moves *after* the
+    # recording, over a signal the student can see.
     marker_presets: tuple[str, ...] = (
         "Contraction onset",
         "Contraction end",

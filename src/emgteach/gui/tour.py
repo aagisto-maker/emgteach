@@ -128,14 +128,17 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         tab=TAB_ACQ,
     ))
     steps.append(CoachStep(
-        tr("Mark what happens"),
+        tr("Marks are put on by themselves"),
         tr(
-            "Press MARK to timestamp an event — the start of an effort, a "
-            "change of load, the moment the subject reports fatigue. The "
-            "marks travel inside the EDF, so each phase can be found again "
-            "during the analysis."
+            "With this ticked the application timestamps each contraction "
+            "onset as it finds it — the threshold is the resting level plus "
+            "k standard deviations, and k is the knob beside it. The marks "
+            "travel inside the EDF, so each effort can be found again during "
+            "the analysis. Unticked, nothing is written: marking by hand "
+            "during a recording asks the operator to keep up with a signal "
+            "that does not wait."
         ),
-        lambda: adq._btn_marcar,
+        lambda: adq._box_autoonset,
         tab=TAB_ACQ,
     ))
 

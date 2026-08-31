@@ -411,7 +411,6 @@ _ES = {
     "Rest": "Reposo",
     "Other…": "Otro…",
     "Other": "Otro",
-    "MARK": "MARCAR",
     "Auto-onset": "Auto-inicio",
     "Automatically marks the contraction onset when the envelope "
     "exceeds the threshold (baseline + k·SD of the resting period).":
@@ -459,8 +458,6 @@ _ES = {
     "Device disconnected.": "Dispositivo desconectado.",
     "Press M to quickly add a marker with the selected label.":
         "Pulsar M para marcar rápidamente con la etiqueta seleccionada.",
-    "Custom marker": "Marcador personalizado",
-    "Description (max. 60 characters):": "Descripción (máx. 60 caracteres):",
     "Marker added: t={t:.1f} s — {label}": "Marca añadida: t={t:.1f} s — {label}",
     "Recording finished. File: {path}": "Grabación finalizada. Archivo: {path}",
     "No data from the device — connection not established.":
@@ -951,12 +948,8 @@ _ES = {
     "e.g. Isometric contraction 30 s": "p. ej. Contracción isométrica 30 s",
     "Live signal quality: saturation or a flat (disconnected) signal.":
         "Calidad de señal en vivo: saturación o señal plana (desconectada).",
-    "Markers recorded so far. Select one and press Delete to remove it.":
-        "Marcadores registrados hasta ahora. Seleccionar uno y pulsar Supr para eliminarlo.",
     "Delete": "Eliminar",
-    "Delete the selected marker.": "Elimina el marcador seleccionado.",
     "Protocol:": "Protocolo:",
-    "Marker deleted: t={t:.1f} s — {label}": "Marcador eliminado: t={t:.1f} s — {label}",
     # -- analysis tab (region / fragments / CSV) --
     "Export CSV": "Exportar CSV",
     "Analyse only a region:": "Analizar solo una región:",
@@ -964,6 +957,9 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    'The most recent onsets detected. They all travel in the EDF.': 'Los últimos inicios detectados. Todos viajan dentro del EDF.',
+    'Marks are put on by themselves': 'Las marcas se ponen solas',
+    'With this ticked the application timestamps each contraction onset as it finds it — the threshold is the resting level plus k standard deviations, and k is the knob beside it. The marks travel inside the EDF, so each effort can be found again during the analysis. Unticked, nothing is written: marking by hand during a recording asks the operator to keep up with a signal that does not wait.': 'Con esto marcado la aplicación pone la hora de cada inicio de contracción según lo encuentra: el umbral es el nivel de reposo más k desviaciones típicas, y k es el mando de al lado. Las marcas viajan dentro del EDF, así que cada esfuerzo se vuelve a encontrar en el análisis. Sin marcar, no se escribe ninguna: marcar a mano durante un registro es pedirle al operador que siga el ritmo de una señal que no espera.',
     '2. Envelope (no calibration in this recording)': '2. Envolvente (este registro no trae calibración)',
     '3. Signal as % MVC — not available': '3. Señal en % CVM — no disponible',
     'Muscle load computed over the recording phase ({d:.2f} s of {full:.2f} s); the calibration and the pause are outside it.': 'Carga muscular calculada sobre la fase de registro ({d:.2f} s de {full:.2f} s); la calibración y la pausa quedan fuera.',
@@ -1258,7 +1254,6 @@ _ES = {
         "en reposo debe ser una línea plana con solo ruido de base. Una señal "
         "que nunca vuelve a la línea de base suele indicar un electrodo suelto "
         "o mal contacto, no un músculo tónico.",
-    "Mark what happens": "Marcar lo que ocurre",
     "Press MARK to timestamp an event — the start of an effort, a change of "
     "load, the moment the subject reports fatigue. The marks travel inside "
     "the EDF, so each phase can be found again during the analysis.":

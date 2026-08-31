@@ -197,6 +197,34 @@ class TestTheReviewOnTheAcquisitionTab:
         assert not tab._revision_items
         assert self._extension(tab) != pytest.approx(DURACION, abs=0.5)
 
+    def test_the_next_recording_gets_its_own_axis_back(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """Reported from the bench: after a new session the recording was
+        "advancing over an empty canvas, very small".
+
+        Showing the session sets an explicit X range, and in pyqtgraph that
+        *turns auto-range off*. The live view has no range of its own — it
+        relies on auto-range to follow its sliding window — so the next
+        recording drew its five seconds inside the previous session's forty.
+        """
+        pytest.importorskip("mne")
+        tab = self._tab(qapp)
+        tab._on_finished(_sesion(tmp_path / "sesion.edf"))
+        tab.reset()
+
+        # One live window's worth of data, as the worker would deliver it.
+        for c in range(2):
+            tab._buf_raw[c].extend(np.zeros(tab._n_visible))
+            tab._buf_env[c].extend(np.zeros(tab._n_visible))
+        tab._new_data = True
+        tab._refresh_plots(force=True)
+        qapp.processEvents()
+
+        izq, der = tab._plot_raw.getViewBox().viewRange()[0]
+        assert der - izq < DURACION / 2, (
+            "the live window is still drawn inside the session's axis")
+
     def test_a_file_it_cannot_read_loses_the_review_and_nothing_else(
         self, qapp, tmp_path: Path
     ) -> None:

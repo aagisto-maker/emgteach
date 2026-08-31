@@ -37,8 +37,9 @@ from typing import ClassVar
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut
+from PySide6.QtGui import QGuiApplication, QPixmap
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QCheckBox,
     QComboBox,
     QDialog,
@@ -46,7 +47,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -795,7 +795,20 @@ class AcquisitionTab(QWidget):
         self._led_idle_timer.timeout.connect(lambda: self._set_led("idle"))
         self._set_led("off")
 
-        # — Event markers (controls row + editable list) —
+        # — Event markers —
+        #
+        # Marking by hand during the recording is gone. It was never used on
+        # the bench: the recording runs faster than anyone can label it, and
+        # the honest place to name a stretch is afterwards, over a signal you
+        # can see. What is left is the detection the application does by
+        # itself — a checkbox and its threshold — and a short list of what it
+        # has found, so the operator can see it working without reading the
+        # log. With the box unticked no marks are written at all.
+        #
+        # The row that went: the preset label combo, the MARK button, the
+        # Delete button and the M shortcut. Four controls and a scrolling list
+        # for a feature nobody pressed, in the tab where vertical space is
+        # worth the most: it is the one with the live plots in it.
         grp_markers = QGroupBox(tr("Event markers"))
         markers_outer = QVBoxLayout(grp_markers)
         markers_outer.setContentsMargins(6, 3, 6, 3)
@@ -803,23 +816,6 @@ class AcquisitionTab(QWidget):
         markers_layout = QHBoxLayout()
         markers_layout.setSpacing(6)
 
-        self._combo_etiqueta = QComboBox()
-        for etiq in self._profile.marker_presets:
-            self._combo_etiqueta.addItem(tr(etiq))
-        self._combo_etiqueta.setEnabled(False)
-        markers_layout.addWidget(self._combo_etiqueta, stretch=1)
-
-        self._btn_marcar = QPushButton(tr("MARK"))
-        self._btn_marcar.setMinimumHeight(30)
-        self._btn_marcar.setStyleSheet("font-size: 12px; font-weight: bold;")
-        self._btn_marcar.setEnabled(False)
-        self._btn_marcar.clicked.connect(self._on_marcar)
-        markers_layout.addWidget(self._btn_marcar)
-
-        # Automatic contraction-onset detection (compact, inline). Added
-        # markers are reflected in the "Event log". Held in a named container so
-        # the basic level hides the checkbox, the "k:" label and the spin box
-        # together, leaving the manual MARK controls untouched.
         self._box_autoonset = QWidget()
         auto_l = QHBoxLayout(self._box_autoonset)
         auto_l.setContentsMargins(0, 0, 0, 0)
@@ -858,37 +854,27 @@ class AcquisitionTab(QWidget):
         self._spin_k.setEnabled(self._chk_auto.isChecked())
         auto_l.addWidget(self._spin_k)
         markers_layout.addWidget(self._box_autoonset)
+        markers_layout.addStretch()
         markers_outer.addLayout(markers_layout)
 
-        # Editable marker list: every marker added (manual or automatic) shows
-        # here while recording, and can be deleted before it is written to the
-        # EDF at stop — the fix for a mistaken MARK press.
-        list_row = QHBoxLayout()
-        list_row.setSpacing(6)
+        # The last two onsets found, so the detection is visibly working
+        # without going to the log for it. Two lines: it is a sign of life,
+        # not a table — the whole list is in the recording, and the analysis
+        # is where it gets read.
         self._list_markers = QListWidget()
-        self._list_markers.setMaximumHeight(72)
+        self._list_markers.setFixedHeight(44)
+        self._list_markers.setSelectionMode(
+            QAbstractItemView.SelectionMode.NoSelection
+        )
+        self._list_markers.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._list_markers.setToolTip(
-            tr("Markers recorded so far. Select one and press Delete to remove it.")
+            tr("The most recent onsets detected. They all travel in the EDF.")
         )
-        self._list_markers.itemSelectionChanged.connect(
-            self._on_marker_selection_changed
-        )
-        list_row.addWidget(self._list_markers, stretch=1)
-        self._btn_borrar_marca = QPushButton(tr("Delete"))
-        self._btn_borrar_marca.setEnabled(False)
-        self._btn_borrar_marca.setToolTip(tr("Delete the selected marker."))
-        self._btn_borrar_marca.clicked.connect(self._on_borrar_marcador)
-        list_row.addWidget(self._btn_borrar_marca)
-        markers_outer.addLayout(list_row)
+        markers_outer.addWidget(self._list_markers)
 
         row_actions.addWidget(grp_markers, stretch=1)
 
         root.addLayout(row_actions)
-
-        # Keyboard shortcut M
-        self._shortcut_m = QShortcut(QKeySequence("M"), self)
-        self._shortcut_m.setEnabled(False)
-        self._shortcut_m.activated.connect(self._on_marcar_rapido)
 
         # ── Plots + scale controls ──────────────────────────────
         grp_plots = QGroupBox(tr("Real-time EMG signal"))
@@ -1545,7 +1531,6 @@ class AcquisitionTab(QWidget):
         self._reset_buffers()
         self._marker_events.clear()
         self._list_markers.clear()
-        self._btn_borrar_marca.setEnabled(False)
         self._total_samples = 0
         for pool in self._marker_lines:
             for line in pool:
@@ -1636,9 +1621,6 @@ class AcquisitionTab(QWidget):
         self._btn_conectar.setEnabled(False)
         self._lbl_estado.setText(tr("Status: recording…"))
         self._bcast_status(True)
-        self._combo_etiqueta.setEnabled(True)
-        self._btn_marcar.setEnabled(True)
-        self._shortcut_m.setEnabled(True)
         self._set_auto_controls_enabled(False)
         # Live muscle-load monitor: ready to calibrate while recording.
         self._reset_load_monitor()
@@ -1696,9 +1678,6 @@ class AcquisitionTab(QWidget):
         self._btn_grabar.setChecked(False)
         self._btn_conectar.setEnabled(True)
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
-        self._combo_etiqueta.setEnabled(False)
-        self._btn_marcar.setEnabled(False)
-        self._shortcut_m.setEnabled(False)
         self._set_auto_controls_enabled(True)
 
     # ------------------------------------------------------------------
@@ -1988,6 +1967,13 @@ class AcquisitionTab(QWidget):
         for pw in (self._plot_raw, self._plot_env):
             pw.setDownsampling(auto=False)
             pw.setClipToView(False)
+            # Setting an explicit X range to show the session *turns auto-range
+            # off*, and the live view has no range of its own — it relies on
+            # auto-range to follow the sliding window. Left off, the next
+            # recording drew its five seconds inside the ninety-two of the
+            # session before it: a sliver of signal creeping across an empty
+            # canvas. Reported from the bench in exactly those words.
+            pw.enableAutoRange(axis="x")
         self._plot_raw.setTitle(tr("Raw EMG signal (mV)"))
         self._plot_env.setTitle(
             tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
@@ -1995,6 +1981,12 @@ class AcquisitionTab(QWidget):
         self._reset_all_scales()
         self._new_data = True
         self._refresh_plots(force=True)
+        # Re-enabling auto-range only says the axis *may* refit; pyqtgraph
+        # queues the recomputation and, coming out of an explicit range, it
+        # never arrives on its own. Without this the view stayed at the
+        # session's ninety-two seconds however much live data went in.
+        for pw in (self._plot_raw, self._plot_env):
+            pw.getViewBox().updateAutoRange()
 
     def _apply_acc_range(self) -> None:
         """Set the live ACC plot's Y range: the full ±1 g by default, or — when
@@ -3216,28 +3208,7 @@ class AcquisitionTab(QWidget):
     # Markers
     # ------------------------------------------------------------------
 
-    @Slot()
-    def _on_marcar(self) -> None:
-        etiqueta = self._combo_etiqueta.currentText()
-        if etiqueta == tr("Other…"):
-            text, ok = QInputDialog.getText(
-                self, tr("Custom marker"),
-                tr("Description (max. 60 characters):"),
-            )
-            if not ok or not text.strip():
-                return
-            etiqueta = text.strip()[:60].replace("\n", " ")
-        if self._worker and self._worker.isRunning():
-            self._worker.add_marker(etiqueta)
 
-    @Slot()
-    def _on_marcar_rapido(self) -> None:
-        if not self._worker or not self._worker.isRunning():
-            return
-        etiqueta = self._combo_etiqueta.currentText()
-        if etiqueta == tr("Other…"):
-            etiqueta = tr("Other")
-        self._worker.add_marker(etiqueta)
 
     @Slot(float, str)
     def _on_marker_added(self, tiempo: float, etiqueta: str) -> None:
@@ -3253,32 +3224,13 @@ class AcquisitionTab(QWidget):
         item = QListWidgetItem(f"t={tiempo:.1f} s — {etiqueta}")
         item.setData(Qt.ItemDataRole.UserRole, (float(tiempo), etiqueta))
         self._list_markers.addItem(item)
-        self._list_markers.scrollToBottom()
+        # Two lines, so the oldest goes as the newest arrives. A list that
+        # grows all recording long is a table nobody reads while recording,
+        # and it was pushing the plots down the window to say it.
+        while self._list_markers.count() > 2:
+            self._list_markers.takeItem(0)
 
-    @Slot()
-    def _on_marker_selection_changed(self) -> None:
-        recording = bool(self._worker and self._worker.isRunning())
-        self._btn_borrar_marca.setEnabled(
-            recording and self._list_markers.currentItem() is not None
-        )
 
-    @Slot()
-    def _on_borrar_marcador(self) -> None:
-        item = self._list_markers.currentItem()
-        if item is None or not (self._worker and self._worker.isRunning()):
-            return
-        tiempo, etiqueta = item.data(Qt.ItemDataRole.UserRole)
-        if not self._worker.remove_marker(tiempo, etiqueta):
-            return
-        # Drop it from the live-plot events (first matching entry).
-        for i, (t, lbl) in enumerate(self._marker_events):
-            if lbl == etiqueta and abs(t - tiempo) < 1e-6:
-                del self._marker_events[i]
-                break
-        self._list_markers.takeItem(self._list_markers.row(item))
-        self._log(
-            tr("Marker deleted: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta)
-        )
 
     @Slot(str)
     def _on_error(self, msg: str) -> None:
@@ -3298,10 +3250,6 @@ class AcquisitionTab(QWidget):
         self._btn_grabar.setText(tr("Start recording"))
         self._btn_conectar.setEnabled(True)
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
-        self._combo_etiqueta.setEnabled(False)
-        self._btn_marcar.setEnabled(False)
-        self._btn_borrar_marca.setEnabled(False)
-        self._shortcut_m.setEnabled(False)
         self._set_auto_controls_enabled(True)
         self._stop_load_monitor()
         self._quality_monitor = None
@@ -3534,7 +3482,6 @@ class AcquisitionTab(QWidget):
         self._reset_buffers()
         self._marker_events.clear()
         self._list_markers.clear()
-        self._btn_borrar_marca.setEnabled(False)
         self._total_samples = 0
         for pool in self._marker_lines:
             for line in pool:
@@ -3598,11 +3545,12 @@ class AcquisitionTab(QWidget):
         # for, not a fine adjustment, so it is offered at every level.
         self._box_aula.setVisible(True)
 
-        # Shared by every mode: fine control.
-        # One exception — something still running stays visible even when the
-        # flag is off, because automatic markers nobody asked for are worse
-        # than one extra widget.
-        self._box_autoonset.setVisible(advanced or self._chk_auto.isChecked())
+        # Offered at every level, and not as a fine adjustment: it is the only
+        # thing left in the Event markers box now that marking by hand is
+        # gone, and hiding it in the practicals would leave an empty box and a
+        # recording with no marks in it at all. Marks are not a refinement —
+        # the analysis finds each effort by them.
+        self._box_autoonset.setVisible(True)
         self._box_thr.setVisible(advanced)
         # "Best of 3" is offered in every practical. Repeating the maximum and
         # keeping the strongest is not a refinement — it is how a maximum is

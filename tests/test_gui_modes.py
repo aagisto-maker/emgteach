@@ -151,14 +151,17 @@ def test_fine_controls_belong_to_the_free_mode(main_window, qapp, mode) -> None:
     adq, ana, cvm = (
         main_window._tab_adq, main_window._tab_ana, main_window._tab_cvm
     )
-    boxes = [
-        adq._box_thr, adq._box_autoonset,
-        ana._box_fenv, ana._box_roi, cvm._box_fenv,
-    ]
+    boxes = [adq._box_thr, ana._box_fenv, ana._box_roi, cvm._box_fenv]
     set_mode(main_window, qapp, mode)
     esperado = mode_shows_fine_controls(mode)
     assert esperado is (mode == MODE_FREE)
     assert all(shown(b) is esperado for b in boxes)
+    # Automatic onsets are not among them any more. They used to be hidden in
+    # the practicals, which was defensible while there was a MARK button
+    # beside them; with manual marking gone it would leave an empty box and a
+    # recording with no marks in it at all, and the analysis finds each effort
+    # by those marks.
+    assert shown(adq._box_autoonset)
 
 
 def test_the_advanced_tick_is_gone(main_window) -> None:
@@ -460,8 +463,10 @@ def test_no_caption_is_left_behind(main_window, qapp, mode) -> None:
             stranded -= {"Accelerometer:", "ACC ch:"}
         if shown(main_window._tab_ana._box_compare):
             stranded.discard("Compared with:")
+        # "k:" belongs to the auto-onset control, which is on at every level.
+        stranded.discard("k:")
         if mode_shows_fine_controls(mode):
-            stranded -= {"Warning", "Danger", "k:", "from", "to",
+            stranded -= {"Warning", "Danger", "from", "to",
                          "Envelope cutoff frequency (Hz):"}
         assert not stranded, f"{mode}: {sorted(stranded)}"
 
