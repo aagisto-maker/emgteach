@@ -806,38 +806,6 @@ class AnalysisWorker(QThread):
                         result["coactivation"] = table
                         result["coactivation_from_markers"] = from_marks
 
-                    # A reference that was never a maximum shows up as a
-                    # recording that spends much of its time above 100 % MVC.
-                    # Worth saying wherever the file is opened, including the
-                    # ones already on disk.
-                    for ref, env, name in (
-                        (ref1, proc["emg_envelope"], self._channel_name),
-                        (ref2, proc2["emg_envelope"], self._channel_name_2),
-                    ):
-                        if not ref:
-                            continue
-                        # Like with like: the reference is the strongest
-                        # 0.5 s the subject held, so what is compared against
-                        # it is the same running mean and not the
-                        # instantaneous envelope. On the bench recording that
-                        # difference alone accounted for a peak of 384 % where
-                        # the honest figure was 234 %.
-                        pct = _sustained(
-                            env, fs, self._profile.mvc_peak_window_s
-                        ) / float(ref) * 100.0
-                        share = float(np.mean(
-                            pct > self._profile.mvc_implausible_pct))
-                        if share > self._profile.mvc_implausible_share:
-                            result["mvc_implausible"] = max(
-                                share, result.get("mvc_implausible", 0.0))
-                            self.log.emit(tr(
-                                "⚠ «{name}» is above {limit:.0f} % MVC for "
-                                "{share:.0f} % of the recording, peaking at "
-                                "{peak:.0f} %. The calibration did not capture a "
-                                "maximum, so every percentage here is too high."
-                            ).format(name=name,
-                                     limit=self._profile.mvc_implausible_pct,
-                                     share=share * 100.0, peak=float(pct.max())))
 
                     # An ``else`` here would belong to the ``for`` above, not
                     # to the ``if ref1 and ref2`` it was written under, and a
@@ -884,6 +852,43 @@ class AnalysisWorker(QThread):
                         tr("Could not analyse the 2nd channel «{name}»: {err}")
                         .format(name=self._channel_name_2, err=exc)
                     )
+
+            # A reference that was never a maximum: the task beats it. The
+            # reference *is* the strongest half second of a maximal effort, so
+            # this is a definition rather than a heuristic, and it holds for
+            # one channel as well as for two — which is why it lives out here
+            # and not inside the pair. It lived inside it until a single-muscle
+            # practical went through with a calibration a third of what the
+            # muscle produced and nothing was said.
+            for ref, env, name in (
+                (result.get("mvc_ref"), result.get("emg_envelope"),
+                 self._channel_name),
+                (result.get("mvc_ref_2"), result.get("emg_envelope_2"),
+                 self._channel_name_2),
+            ):
+                if not ref or env is None:
+                    continue
+                # Like with like: the reference is the strongest 0.5 s the
+                # subject held, so what is compared against it is the same
+                # running mean and not the instantaneous envelope. On the bench
+                # that difference alone accounted for a peak of 384 % where the
+                # honest figure was 234 %.
+                pct = _sustained(
+                    env, fs, self._profile.mvc_peak_window_s
+                ) / float(ref) * 100.0
+                pico = float(pct.max())
+                if pico > self._profile.mvc_implausible_pct:
+                    result["mvc_implausible"] = max(
+                        pico, result.get("mvc_implausible", 0.0))
+                    self.log.emit(tr(
+                        "⚠ «{name}» reaches {peak:.0f} % MVC, and spends "
+                        "{share:.0f} % of the recording above {limit:.0f} %. "
+                        "The calibration did not capture a maximum — the task "
+                        "beat it — so every percentage here is too high."
+                    ).format(name=name, peak=pico,
+                             limit=self._profile.mvc_implausible_pct,
+                             share=100.0 * float(np.mean(
+                                 pct > self._profile.mvc_implausible_pct))))
 
             # Optional accelerometer channel: the MMG (mechanical) envelope and
             # the tremor spectrum. A failure only drops the ACC panels.

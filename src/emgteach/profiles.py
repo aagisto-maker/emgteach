@@ -127,10 +127,22 @@ class SignalProfile:
     # an instantaneous peak. Anything compared against it has to be
     # measured the same way or the comparison inflates by itself.
     mvc_peak_window_s: float = 0.5
-    # And after the fact: a reference that is not a maximum shows up as a
-    # recording that spends a large share of its time above 100 % MVC.
-    mvc_implausible_pct: float = 150.0     # % MVC
-    mvc_implausible_share: float = 0.10    # of the analysed time
+    # And after the fact, by definition: the reference IS the strongest half
+    # second of a maximal effort, so if the task beats it the effort was not
+    # maximal. What is compared is the task's own strongest half second,
+    # measured the same way.
+    #
+    # The margin is not fitted, it sits in a gap. Across 21 bench recordings,
+    # every session whose calibration was sound peaked at 91-124 % of its own
+    # reference, and every session with a bad one peaked at 179-1308 %.
+    # Nothing landed in between.
+    mvc_implausible_pct: float = 150.0     # % MVC, on the peak
+    # (A second condition — "and for more than 10 % of the analysed time" —
+    # was removed. It is strictly stronger than the peak test at the same
+    # threshold, so it never fired alone, and it silenced the cases that
+    # matter most: a burst task with a three-fold submaximal calibration
+    # spends only 3 % of its time up there. Six of the twenty-one recordings
+    # were bad and quiet enough to slip through.)
     # -- are the two channels looking at two muscles? --
     # While one muscle is calibrated the other one is never silent: it stabilises
     # the joint, and some of its signal is the first muscle's, conducted through
