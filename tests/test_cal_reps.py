@@ -232,6 +232,37 @@ class TestTheButtonInTheTab:
         assert not tab._btn_reps.isEnabled()
         assert registro.toPlainText().strip()
 
+    def test_a_disabled_button_says_why_it_is_disabled(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """Three states, three different sentences.
+
+        It shares its row with «Select fragments…», which lights as soon as a
+        file is chosen; this one needs the analysis, because what the dialog
+        offers is what each effort was *worth* and that is measured, not
+        stored. The asymmetry reads as a fault unless the button explains it —
+        as it did to the one person who had already been told.
+        """
+        edf = _sesion(tmp_path / "sesion.edf")
+        tab, _ = self._tab(qapp, edf)
+
+        sin_analizar = tab._btn_reps.toolTip()
+        assert not tab._btn_reps.isEnabled()
+        assert sin_analizar
+
+        vieja = _sesion(tmp_path / "vieja.edf", con_fases=False,
+                        con_cache=False)
+        tab._edit_path.setText(vieja)
+        tab._on_result(_analizar(qapp, vieja))
+        sin_calibracion = tab._btn_reps.toolTip()
+        assert not tab._btn_reps.isEnabled()
+        assert sin_calibracion != sin_analizar
+
+        tab._edit_path.setText(edf)
+        tab._on_result(_analizar(qapp, edf))
+        assert tab._btn_reps.isEnabled()
+        assert tab._btn_reps.toolTip() not in (sin_analizar, sin_calibracion)
+
     def test_the_log_names_the_channels_and_counts_the_repetitions(
         self, qapp, tmp_path: Path
     ) -> None:

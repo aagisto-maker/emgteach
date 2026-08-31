@@ -428,12 +428,8 @@ class AnalysisTab(QWidget):
         # discrete efforts. Two editions, two tools.
         self._btn_reps = QPushButton(tr("Calibration repetitions…"))
         self._btn_reps.setEnabled(False)
-        self._btn_reps.setToolTip(tr(
-            "Keep or discard the maximal efforts the reference is computed "
-            "from. Discarding one moves the reference and every % MVC with "
-            "it — which is what makes a weak repetition worth spotting."
-        ))
         self._btn_reps.clicked.connect(self._editar_repeticiones)
+        self._actualizar_ayuda_reps()
         row_frag.addWidget(self._btn_reps)
         self._lbl_reps = QLabel("")
         self._lbl_reps.setStyleSheet("font-size: 11px; color: #8a5000;")
@@ -1000,6 +996,34 @@ class AnalysisTab(QWidget):
             nombres = []
         return dict(enumerate(nombres))
 
+    def _actualizar_ayuda_reps(self) -> None:
+        """Explain the button's state, including — above all — when it is off.
+
+        It sits next to «Select fragments…», which lights as soon as a file is
+        chosen, and the asymmetry reads as a fault: the repetitions come from
+        the *analysis* of the file, not from the file, because what the dialog
+        offers is what each effort was worth and that is measured, not stored.
+        A disabled control that does not say why is a question the operator
+        has to answer by guessing.
+        """
+        if self._btn_reps.isEnabled():
+            self._btn_reps.setToolTip(tr(
+                "Keep or discard the maximal efforts the reference is "
+                "computed from. Discarding one moves the reference and every "
+                "% MVC with it — which is what makes a weak repetition worth "
+                "spotting."
+            ))
+        elif self._last_result is None:
+            self._btn_reps.setToolTip(tr(
+                "Analyse the recording first: what each maximal effort was "
+                "worth is measured from the signal, not stored in the file."
+            ))
+        else:
+            self._btn_reps.setToolTip(tr(
+                "This recording carries no calibration. Only sessions "
+                "recorded with the guided flow mark their maximal efforts."
+            ))
+
     def _diagnostico_repeticiones(self, r: dict) -> None:
         """Say out loud what the file brought, every time it is analysed.
 
@@ -1308,6 +1332,7 @@ class AnalysisTab(QWidget):
         self._actualizar_procedencia_cvm(r)
         self._btn_reps.setEnabled(bool(r.get("cal_rep_values")))
         self._actualizar_etiqueta_reps()
+        self._actualizar_ayuda_reps()
         self._diagnostico_repeticiones(r)
 
         decline = r.get("fat_pct_decline", 0.0)
@@ -2254,6 +2279,9 @@ class AnalysisTab(QWidget):
 
         self._btn_analizar.setEnabled(False)
         self._btn_fragmentos.setEnabled(False)
+        self._btn_reps.setEnabled(False)
+        self._cal_keep = {}
+        self._actualizar_ayuda_reps()
         self._selected_segments = []
         self._analysis_filter_kwargs = None
         self._actualizar_etiqueta_fragmentos()
