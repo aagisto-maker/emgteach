@@ -501,3 +501,66 @@ class TestAreTheTwoChannelsSeeingTwoMuscles:
         assert EMG_PROFILE.mvc_crosstalk_pct == 50.0
 
 
+class TestTheRestingBaselineComesFromThePause:
+    """The two-phase flow created the very problem the baseline check warns of.
+
+    The analysed span starts at ``REC start``, and the countdown that precedes
+    it tells the subject the recording is beginning — so they begin. On the
+    first complete session the extensor's opening second measured 41 µV against
+    17 µV during the preparation pause, and the threshold it gave (171 µV) sat
+    above the recording's own maximum (130 µV): nothing was ever detected, and
+    the application told the student to "record a couple of quiet seconds
+    before the first contraction" — which the application itself had just made
+    impossible by deciding where the recording starts.
+
+    The pause is the answer, and it is already in the file: quiet by design,
+    outside the analysed span, and the same length every time.
+    """
+
+    @staticmethod
+    def _tramo(inicio_activo: bool) -> np.ndarray:
+        """The analysed span, shaped like the real one.
+
+        Resting level 30 µV and a contraction reaching about 130 µV — the
+        extensor's own figures. When the subject starts at the countdown the
+        opening second holds the *ramp* into the first contraction, which is
+        what makes its spread, and therefore the threshold, so large.
+        """
+        env = _envelope(0.0295, int(FS * 20), seed=4)
+        env[int(FS * 4):int(FS * 7)] += 0.10
+        if inicio_activo:
+            arranque = np.linspace(0.0, 0.10, int(FS * 1.0))
+            env[: arranque.size] += arranque
+        return env
+
+    def test_an_active_opening_second_defeats_the_old_test(self) -> None:
+        """The fixture has to reproduce the failure, or the next test proves
+        nothing."""
+        assert _baseline_is_usable(self._tramo(True), FS, EMG_PROFILE) is False
+
+    def test_the_pause_rescues_it(self) -> None:
+        pausa = _envelope(0.0165, int(FS * 5), seed=5)
+        assert _baseline_is_usable(
+            self._tramo(True), FS, EMG_PROFILE, baseline=pausa
+        ) is True
+
+    def test_a_pause_that_was_not_quiet_is_not_rescued(self) -> None:
+        """It must not paper over a subject who kept working through the
+        countdown: then there really is no baseline in the file."""
+        pausa = _envelope(0.09, int(FS * 5), seed=6)
+        assert _baseline_is_usable(
+            self._tramo(True), FS, EMG_PROFILE, baseline=pausa
+        ) is False
+
+    def test_without_a_pause_nothing_changes(self) -> None:
+        """Every recording made before the two-phase flow still takes its
+        baseline from the opening second."""
+        assert _baseline_is_usable(self._tramo(False), FS, EMG_PROFILE) is True
+        assert _baseline_is_usable(
+            self._tramo(False), FS, EMG_PROFILE, baseline=None
+        ) is True
+
+    def test_a_pause_too_short_to_measure_is_ignored(self) -> None:
+        assert _baseline_is_usable(
+            self._tramo(False), FS, EMG_PROFILE, baseline=np.array([0.01])
+        ) is True

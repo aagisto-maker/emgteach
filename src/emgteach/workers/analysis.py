@@ -86,7 +86,7 @@ def _sustained(envelope, fs: float, window_s: float):
     return (csum[w:] - csum[:-w]) / w
 
 
-def _baseline_is_usable(envelope, fs: float, profile) -> bool:
+def _baseline_is_usable(envelope, fs: float, profile, baseline=None) -> bool:
     """Could a resting baseline be measured at all?
 
     The onset detector takes its baseline from the opening second, so a
@@ -98,12 +98,27 @@ def _baseline_is_usable(envelope, fs: float, profile) -> bool:
 
     The test is self-evident: a threshold higher than the recording's own
     maximum cannot be a resting threshold.
+
+    ``baseline`` is a stretch known to be at rest — the preparation pause of
+    a two-phase session, which is quiet by construction. Given one, the
+    threshold comes from it instead of from the opening second of the
+    analysed span, which in that model is precisely *not* quiet: the
+    countdown tells the subject the recording is starting, so they start.
+    Measured on the first complete session, the extensor's opening second
+    was 41 µV against 17 µV during the pause, and the threshold it gave
+    (171 µV) sat above the recording's own maximum (130 µV) — so nothing was
+    ever detected, and the application told the student to do something it
+    had itself made impossible.
     """
     env = np.asarray(envelope, dtype=np.float64)
     n_base = int(profile.onset_baseline_s * fs)
     if env.size < n_base + 2 or n_base < 2:
         return False
-    base = env[:n_base]
+    base = (
+        np.asarray(baseline, dtype=np.float64)
+        if baseline is not None and np.asarray(baseline).size >= 2
+        else env[:n_base]
+    )
     umbral = float(np.mean(base) + profile.onset_k * np.std(base))
     return umbral < float(np.max(env))
 
@@ -524,6 +539,17 @@ class AnalysisWorker(QThread):
             self.progress.emit(90)
 
             # 7) Pack result
+            # The preparation pause, if this session has one: signal that is
+            # in the file, outside the analysed span, and quiet by design.
+            # Exactly what a resting baseline needs to be.
+            env_pausa = None
+            if (env_calibracion is not None
+                    and phases.prep_start_s is not None
+                    and phases.rec_start_s is not None):
+                i0 = max(0, round(phases.prep_start_s * fs))
+                i1 = min(env_calibracion.size, round(phases.rec_start_s * fs))
+                if i1 > i0:
+                    env_pausa = env_calibracion[i0:i1]
             ref_1, fuente_1 = _ref_for(
                 self._channel_name, emg_channels, phases=phases,
                 envelope=env_calibracion, fs=fs, cached=mvc_refs,
@@ -545,7 +571,8 @@ class AnalysisWorker(QThread):
                 "emg_contracted": _contracted(
                     proc["emg_envelope"], fs, self._profile),
                 "emg_baseline_usable": _baseline_is_usable(
-                    proc["emg_envelope"], fs, self._profile),
+                    proc["emg_envelope"], fs, self._profile,
+                    baseline=env_pausa),
                 # {channel_index_0based: reference_mV}; empty when the
                 # recording carries no calibration.
                 "mvc_refs": mvc_refs,
@@ -722,8 +749,20 @@ class AnalysisWorker(QThread):
                         result["coactivation_reason"] = tr(
                             "not reported — no MVC reference for both channels"
                         )
+                    # Same pause, second channel: it is the same stretch of
+                    # time, on a signal that was processed the same way.
+                    env_pausa_2 = None
+                    if (env_calibracion_2 is not None
+                            and phases.prep_start_s is not None
+                            and phases.rec_start_s is not None):
+                        j0 = max(0, round(phases.prep_start_s * fs))
+                        j1 = min(env_calibracion_2.size,
+                                 round(phases.rec_start_s * fs))
+                        if j1 > j0:
+                            env_pausa_2 = env_calibracion_2[j0:j1]
                     result["emg_baseline_usable_2"] = _baseline_is_usable(
-                        proc2["emg_envelope"], fs, self._profile
+                        proc2["emg_envelope"], fs, self._profile,
+                        baseline=env_pausa_2,
                     )
                     for usable, contracted, name in (
                         (result["emg_baseline_usable"],

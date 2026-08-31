@@ -59,7 +59,8 @@ REC_S = 39.0
 REF_RANCIA = 0.011
 
 
-def _canal(amplitudes) -> np.ndarray:
+def _canal(amplitudes, arranca_activo: bool = False,
+           pausa_ruidosa: bool = False) -> np.ndarray:
     t = np.arange(DURACION * FS) / FS
     portadora = np.sin(2 * np.pi * 80 * t)
     amp = np.full(t.size, 0.01)
@@ -68,16 +69,34 @@ def _canal(amplitudes) -> np.ndarray:
     # a couple of bursts in the recording phase, well below the maxima
     for a, b in ((42.0, 46.0), (50.0, 54.0)):
         amp[int(a * FS) : int(b * FS)] = 0.30
+    if arranca_activo:
+        # The subject starts the moment the countdown ends, which is what the
+        # countdown told them to do. The opening second of the analysed span
+        # then holds the ramp into the first contraction.
+        i0 = int(REC_S * FS)
+        rampa = np.linspace(0.01, 0.30, int(1.0 * FS))
+        amp[i0 : i0 + rampa.size] = rampa
+        amp[i0 + rampa.size : int((REC_S + 3.0) * FS)] = 0.30
+    if pausa_ruidosa:
+        # The subject kept working through the countdown. Then there really
+        # is no rest in the file, and saying so is the right answer.
+        amp[int(PREP_S * FS) : int(REC_S * FS)] = 0.30
     return portadora * amp
 
 
-def _sesion(path: Path, *, con_fases: bool = True, con_cache: bool = True) -> str:
+def _sesion(path: Path, *, con_fases: bool = True, con_cache: bool = True,
+            arranca_activo: bool = False, pausa_ruidosa: bool = False) -> str:
     canales = [
         ChannelInfo("FCR", dimension="mV", sample_frequency=FS),
         ChannelInfo("ECR", dimension="mV", sample_frequency=FS),
     ]
     with BufferedEdfWriter(str(path), channels=canales) as w:
-        w.add_samples(_canal(CAL[0]), _canal(CAL[1]))   # one block per channel
+        w.add_samples(                                   # one block per channel
+            _canal(CAL[0], arranca_activo=arranca_activo,
+                   pausa_ruidosa=pausa_ruidosa),
+            _canal(CAL[1], arranca_activo=arranca_activo,
+                   pausa_ruidosa=pausa_ruidosa),
+        )
         if con_fases:
             for canal, reps in CAL.items():
                 for i, (a, b, _amp) in enumerate(reps, start=1):
@@ -235,3 +254,45 @@ class TestThePhasesAreNotEventsInTheRecording:
         assert "Grip" in marcas
         # written at t=44 in the file, which is 5 s into the recording phase
         assert marcas["Grip"] == pytest.approx(44.0 - REC_S, abs=0.2)
+
+
+class TestTheBaselineComesFromThePause:
+    """The flow creates the problem the baseline check exists to warn about.
+
+    The analysed span begins at ``REC start``, and the countdown before it
+    tells the subject the recording is starting — so they start. The opening
+    second then holds the ramp into the first contraction, its spread is large,
+    and the resting threshold lands above everything that follows: nothing is
+    detected, and the application advises "record a couple of quiet seconds
+    first", which it has itself made impossible.
+
+    The preparation pause is quiet by design and already in the file.
+    """
+
+    def test_a_session_that_starts_working_at_once_still_has_a_baseline(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        r = _analizar(
+            qapp, _sesion(tmp_path / "arranca.edf", arranca_activo=True)
+        )
+        assert r["emg_baseline_usable"] is True
+        assert r["emg_baseline_usable_2"] is True
+
+    def test_a_pause_that_was_not_quiet_rescues_nothing(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """The other half. Without it the test above would pass on a change
+        that simply stopped reporting the problem: if the subject worked
+        through the countdown there is no rest anywhere in the file, and
+        saying so is the right answer."""
+        r = _analizar(
+            qapp,
+            _sesion(tmp_path / "sin_pausa.edf", arranca_activo=True,
+                    pausa_ruidosa=True),
+        )
+        assert r["emg_baseline_usable"] is False
+
+    def test_a_quiet_start_is_fine_either_way(self, qapp, tmp_path: Path) -> None:
+        assert _analizar(
+            qapp, _sesion(tmp_path / "sesion.edf")
+        )["emg_baseline_usable"] is True
