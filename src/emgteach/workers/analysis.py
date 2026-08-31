@@ -47,27 +47,66 @@ from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
 
 
-def _contracted(envelope, fs: float, profile) -> bool:
+def _cola_de_la_pausa(envelope, fs: float, phases, profile):
+    """The resting stretch a two-phase session leaves for the taking, or None.
+
+    The last ``onset_baseline_s`` of the preparation pause. The end and not the
+    whole of it: the pause begins as the subject lets go of the third maximal
+    contraction, and the tail of a maximal effort is not a resting level. Taking
+    the quietest window anywhere in the pause would bias the threshold low by
+    construction; taking the end asks the plainest question there is — what was
+    this muscle doing in the second before the recording started.
+    """
+    if envelope is None or phases.prep_start_s is None or phases.rec_start_s is None:
+        return None
+    env = np.asarray(envelope, dtype=np.float64)
+    i0 = max(0, round(phases.prep_start_s * fs))
+    i1 = min(env.size, round(phases.rec_start_s * fs))
+    n_base = max(2, int(profile.onset_baseline_s * fs))
+    if i1 - i0 < n_base:
+        return None
+    return env[i1 - n_base:i1]
+
+
+def _contracted(envelope, fs: float, profile, baseline=None) -> bool:
     """Did this muscle actually contract, by the application's own definition?
 
     Reported so the event log can say when a channel never left its baseline —
     a muscle that stayed silent is a finding, and one worth naming rather than
-    leaving the reader to infer from a flat line.
+    leaving the reader to infer from a flat line. Which is exactly why it must
+    not be said wrongly: it is a statement about the subject's arm.
 
     The test is the app's own onset detector rather than a threshold invented
     here, so "a contraction happened" means the same thing everywhere in the
-    program.
+    program. But the detector takes its baseline from the opening second of
+    whatever it is given, and in a two-phase session that second is *not*
+    quiet — the countdown tells the subject the recording is starting. So the
+    preparation pause is glued in front, the detector finds its rest there, and
+    only onsets that land in the analysed span are counted. On the session that
+    found this, the extensor reached 151 µV against a threshold of 78 and was
+    still reported as never having left its baseline.
     """
+    env = np.asarray(envelope, dtype=np.float64)
+    desplazamiento = 0.0
+    if baseline is not None:
+        base = np.asarray(baseline, dtype=np.float64)
+        if base.size >= int(profile.onset_baseline_s * fs):
+            env = np.concatenate([base, env])
+            desplazamiento = base.size / float(fs)
     try:
-        return bool(detect_onsets(
-            envelope, fs,
+        inicios = detect_onsets(
+            env, fs,
             k=profile.onset_k,
             baseline_s=profile.onset_baseline_s,
             refractory_s=profile.onset_refractory_s,
             min_duration_s=profile.onset_min_duration_s,
-        ))
+        )
     except Exception:      # a span too short to hold a baseline
         return False
+    # The join between the pause and the recording is itself a step, and when
+    # the subject starts at the countdown that step *is* the first onset —
+    # which is the right answer, not an artefact.
+    return any(float(t) >= desplazamiento for t in inicios)
 
 
 def _sustained(envelope, fs: float, window_s: float):
@@ -541,15 +580,14 @@ class AnalysisWorker(QThread):
             # 7) Pack result
             # The preparation pause, if this session has one: signal that is
             # in the file, outside the analysed span, and quiet by design.
-            # Exactly what a resting baseline needs to be.
-            env_pausa = None
-            if (env_calibracion is not None
-                    and phases.prep_start_s is not None
-                    and phases.rec_start_s is not None):
-                i0 = max(0, round(phases.prep_start_s * fs))
-                i1 = min(env_calibracion.size, round(phases.rec_start_s * fs))
-                if i1 > i0:
-                    env_pausa = env_calibracion[i0:i1]
+            # Exactly what a resting baseline needs to be — but its *end*, not
+            # its beginning: the pause opens on the subject letting go of the
+            # last maximal effort, and that tail is not rest. On the session
+            # that showed it, the extensor's first second of pause measured
+            # 47 µV with a spread of 34, and its last second 6.9 µV with 0.9.
+            env_pausa = _cola_de_la_pausa(
+                env_calibracion, fs, phases, self._profile
+            )
             ref_1, fuente_1 = _ref_for(
                 self._channel_name, emg_channels, phases=phases,
                 envelope=env_calibracion, fs=fs, cached=mvc_refs,
@@ -569,7 +607,8 @@ class AnalysisWorker(QThread):
                 "rms_sliding": proc["rms_sliding"],
                 "emg_envelope_normalised": proc["emg_envelope_normalised"],
                 "emg_contracted": _contracted(
-                    proc["emg_envelope"], fs, self._profile),
+                    proc["emg_envelope"], fs, self._profile,
+                    baseline=env_pausa),
                 "emg_baseline_usable": _baseline_is_usable(
                     proc["emg_envelope"], fs, self._profile,
                     baseline=env_pausa),
@@ -678,8 +717,13 @@ class AnalysisWorker(QThread):
                     result["emg_envelope_normalised_2"] = (
                         proc2["emg_envelope_normalised"]
                     )
+                    # Same stretch of time, second channel.
+                    env_pausa_2 = _cola_de_la_pausa(
+                        env_calibracion_2, fs, phases, self._profile
+                    )
                     result["emg_contracted_2"] = _contracted(
-                        proc2["emg_envelope"], fs, self._profile
+                        proc2["emg_envelope"], fs, self._profile,
+                        baseline=env_pausa_2,
                     )
                     ref_2, fuente_2 = _ref_for(
                         self._channel_name_2, emg_channels, phases=phases,
@@ -749,17 +793,6 @@ class AnalysisWorker(QThread):
                         result["coactivation_reason"] = tr(
                             "not reported — no MVC reference for both channels"
                         )
-                    # Same pause, second channel: it is the same stretch of
-                    # time, on a signal that was processed the same way.
-                    env_pausa_2 = None
-                    if (env_calibracion_2 is not None
-                            and phases.prep_start_s is not None
-                            and phases.rec_start_s is not None):
-                        j0 = max(0, round(phases.prep_start_s * fs))
-                        j1 = min(env_calibracion_2.size,
-                                 round(phases.rec_start_s * fs))
-                        if j1 > j0:
-                            env_pausa_2 = env_calibracion_2[j0:j1]
                     result["emg_baseline_usable_2"] = _baseline_is_usable(
                         proc2["emg_envelope"], fs, self._profile,
                         baseline=env_pausa_2,

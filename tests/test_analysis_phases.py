@@ -77,6 +77,12 @@ def _canal(amplitudes, arranca_activo: bool = False,
         rampa = np.linspace(0.01, 0.30, int(1.0 * FS))
         amp[i0 : i0 + rampa.size] = rampa
         amp[i0 + rampa.size : int((REC_S + 3.0) * FS)] = 0.30
+    else:
+        # A real pause opens on the subject letting go of the third maximal
+        # contraction: its first second is the tail of that effort, not
+        # rest. Only its end is quiet.
+        cola = np.linspace(0.60, 0.01, int(1.2 * FS))
+        amp[int(PREP_S * FS) : int(PREP_S * FS) + cola.size] = cola
     if pausa_ruidosa:
         # The subject kept working through the countdown. Then there really
         # is no rest in the file, and saying so is the right answer.
@@ -296,3 +302,84 @@ class TestTheBaselineComesFromThePause:
         assert _analizar(
             qapp, _sesion(tmp_path / "sesion.edf")
         )["emg_baseline_usable"] is True
+
+
+class TestSayingAMuscleNeverContracted:
+    """It is a statement about the subject's arm, so it must not be wrong.
+
+    ``_contracted`` runs the application's own onset detector, which takes its
+    baseline from the opening second of what it is given. In a two-phase
+    session that second is the ramp into the first contraction, so the
+    threshold lands above everything and the extensor — which plainly reached
+    106 %MVC — was reported as never having left its baseline.
+
+    The pause supplies the rest, but only its **end** does: a pause opens on
+    the subject letting go of the last maximal effort. On the session that
+    showed it, the extensor's first second of pause measured 47 µV with a
+    spread of 34 and its last second 6.9 µV with 0.9 — a threshold of 149 µV
+    against one of 10.
+    """
+
+    def test_a_muscle_that_worked_is_not_called_silent(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        r = _analizar(
+            qapp, _sesion(tmp_path / "arranca.edf", arranca_activo=True)
+        )
+        assert r["emg_contracted"] is True
+        assert r["emg_contracted_2"] is True
+
+    def test_a_muscle_that_really_stayed_silent_is_still_named(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """The finding this exists to report has to survive the fix."""
+        from emgteach.workers.analysis import _contracted
+
+        quieto = _envelope_plano(0.004, int(FS * 20))
+        assert _contracted(quieto, FS, EMG_PROFILE) is False
+        assert _contracted(
+            quieto, FS, EMG_PROFILE, baseline=_envelope_plano(0.004, FS)
+        ) is False
+
+    def test_the_baseline_is_the_end_of_the_pause_not_all_of_it(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """The decision, stated on its own. The fixture's pause opens with the
+        tail of a maximal effort; handing that to the detector would put the
+        threshold above the recording all over again."""
+        from emgteach.io import read_edf_mne
+        from emgteach.workers.analysis import _cola_de_la_pausa
+
+        edf = _sesion(tmp_path / "arranca.edf", arranca_activo=True)
+        datos = read_edf_mne(edf, "ECR")
+        env = process_offline(datos["emg_raw"], datos["sfreq"])["emg_envelope"]
+        fases = parse_phase_markers(datos.get("markers", []))
+        cola = _cola_de_la_pausa(env, datos["sfreq"], fases, EMG_PROFILE)
+
+        entera = env[
+            round(PREP_S * datos["sfreq"]) : round(REC_S * datos["sfreq"])
+        ]
+        assert cola.size < entera.size
+        assert cola.mean() < entera.mean(), "the tail is not the quiet part"
+
+    def test_a_recording_with_no_pause_is_unchanged(self) -> None:
+        from emgteach.phases import SessionPhases
+        from emgteach.workers.analysis import _cola_de_la_pausa
+
+        assert _cola_de_la_pausa(
+            np.zeros(10_000), FS, SessionPhases(), EMG_PROFILE
+        ) is None
+
+    def test_a_pause_too_short_to_hold_a_baseline_is_declined(self) -> None:
+        from emgteach.phases import SessionPhases
+        from emgteach.workers.analysis import _cola_de_la_pausa
+
+        fases = SessionPhases(prep_start_s=10.0, rec_start_s=10.2)
+        assert _cola_de_la_pausa(
+            np.zeros(20_000), FS, fases, EMG_PROFILE
+        ) is None
+
+
+def _envelope_plano(media: float, n: int, semilla: int = 7) -> np.ndarray:
+    rng = np.random.default_rng(semilla)
+    return np.abs(rng.normal(media, media * 0.2, n))
