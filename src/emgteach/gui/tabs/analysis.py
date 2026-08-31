@@ -188,6 +188,7 @@ from emgteach.mvc import overlay_curves
 from emgteach.phases import NO_CALIBRATION, reference_source_text
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
+from emgteach.tuning import build_tuned_edf, tuned_path
 from emgteach.workers import AnalysisWorker
 
 
@@ -263,6 +264,22 @@ class AnalysisTab(QWidget):
         self._btn_csv.setEnabled(False)
         self._btn_csv.clicked.connect(self._exportar_csv)
         row_file.addWidget(self._btn_csv)
+
+        # Beside the exports, because that is what it is: the recording
+        # written out with the decisions taken on screen inside it. Until
+        # now those decisions — which repetitions count, which stretch is
+        # the task — lived only in this tab, so the same file opened
+        # anywhere else told a different story.
+        self._btn_afinado = QPushButton(tr("Save tuned EDF…"))
+        self._btn_afinado.setEnabled(False)
+        self._btn_afinado.setToolTip(tr(
+            "Write a new recording carrying the current selection: the "
+            "calibration repetitions kept and the fragments of the task. "
+            "The original is never touched, and the new file says where "
+            "it came from."
+        ))
+        self._btn_afinado.clicked.connect(self._guardar_afinado)
+        row_file.addWidget(self._btn_afinado)
         # Force-velocity study (needs an accelerometer channel in the file).
         self._btn_fv = QPushButton(tr("Force-velocity study…"))
         self._btn_fv.setEnabled(False)
@@ -851,6 +868,7 @@ class AnalysisTab(QWidget):
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
             self._btn_csv.setEnabled(False)
+            self._btn_afinado.setEnabled(False)
             self._progress.setValue(0)
             self._progress.setFormat(tr("Ready"))
 
@@ -1108,6 +1126,7 @@ class AnalysisTab(QWidget):
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)
+        self._btn_afinado.setEnabled(False)
         self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
         self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
         self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
@@ -1225,6 +1244,7 @@ class AnalysisTab(QWidget):
         self._btn_guardar.setEnabled(True)
         self._btn_informe.setEnabled(True)
         self._btn_csv.setEnabled(True)
+        self._btn_afinado.setEnabled(True)
         self._btn_redibujar.setEnabled(True)
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
@@ -1853,6 +1873,60 @@ class AnalysisTab(QWidget):
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
 
     @Slot()
+    def _guardar_afinado(self) -> None:
+        """Write the recording out with this analysis's decisions inside it.
+
+        The name is proposed rather than asked for, and it never lands on the
+        original: tuning throws signal away, so its input has to stay
+        recoverable. The dialogue is still shown, because where a file goes is
+        the operator's decision — but the default answer is the safe one.
+        """
+        origen = self._edit_path.text().strip()
+        r = self._last_result or {}
+        if not origen or not r:
+            return
+        propuesta = tuned_path(origen)
+        destino, _ = QFileDialog.getSaveFileName(
+            self, tr("Save tuned recording"), str(propuesta),
+            tr("EDF files (*.edf *.EDF)"),
+        )
+        if not destino:
+            return
+        if Path(destino).resolve() == Path(origen).resolve():
+            self._err(tr(
+                "The tuned recording cannot replace the one it comes from: "
+                "tuning discards signal, so its source has to stay."
+            ))
+            return
+        etiquetas = self._labels_por_canal()
+        inverso = {n: i for i, n in etiquetas.items()}
+        refs = {}
+        for nombre, clave in ((r.get("channel_name"), "mvc_ref"),
+                              (r.get("channel_name_2"), "mvc_ref_2")):
+            canal = inverso.get(str(nombre or "").strip())
+            if canal is not None and r.get(clave):
+                refs[canal] = float(r[clave])
+        try:
+            resumen = build_tuned_edf(
+                origen, destino,
+                keep=self._cal_keep or None,
+                fragments=self._selected_segments or None,
+                references=refs or None,
+                when=datetime.now(),
+            )
+        except Exception as exc:
+            self._err(tr("Could not write the tuned recording: {err}")
+                      .format(err=exc))
+            return
+        self._logger.append_log(tr(
+            "Tuned recording saved: {name} — {kept}/{total} calibration "
+            "repetition(s), {secs:.1f} s of {full:.1f} s of the task. The "
+            "original is untouched."
+        ).format(name=Path(destino).name, kept=resumen.reps_kept,
+                 total=resumen.reps_total, secs=resumen.kept_s,
+                 full=resumen.full_s))
+
+    @Slot()
     def _exportar_csv(self) -> None:
         if self._last_result is None:
             return
@@ -2288,6 +2362,7 @@ class AnalysisTab(QWidget):
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)
+        self._btn_afinado.setEnabled(False)
         self._btn_redibujar.setEnabled(False)
 
         self._reset_summary_labels()

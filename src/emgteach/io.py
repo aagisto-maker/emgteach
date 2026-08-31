@@ -130,6 +130,13 @@ class RecordingMetadata:
         Supervisor/technician -> EDF ``technician``.
     equipment : str
         Acquisition device description -> EDF ``equipment``.
+    patient_additional : str
+        Free note in the *patient* identification field -> EDF
+        ``patient_additional``. Its own eighty characters, separate from the
+        eighty that ``recording_additional``, ``technician`` and ``equipment``
+        share between them — which on a real recording are nearly spent, so a
+        note appended there truncates the protocol instead of fitting beside
+        it. This is where a derived file says it is derived.
     start_datetime : datetime, optional
         Recording start timestamp -> EDF ``startdatetime``. When ``None``
         pyedflib uses the current time.
@@ -140,6 +147,7 @@ class RecordingMetadata:
     protocol: str = ""
     technician: str = ""
     equipment: str = ""
+    patient_additional: str = ""
     start_datetime: datetime | None = None
 
     def is_empty(self) -> bool:
@@ -151,6 +159,7 @@ class RecordingMetadata:
                 self.protocol,
                 self.technician,
                 self.equipment,
+                self.patient_additional,
                 self.start_datetime is not None,
             )
         )
@@ -166,6 +175,7 @@ class RecordingMetadata:
             "setPatientName": self.student_name,
             "setPatientCode": self.student_code,
             "setRecordingAdditional": self.protocol,
+            "setPatientAdditional": self.patient_additional,
             "setTechnician": self.technician,
             "setEquipment": self.equipment,
         }
@@ -700,6 +710,10 @@ def read_edf_metadata(path: PathLike) -> RecordingMetadata:
             student_name=str(reader.getPatientName() or ""),
             student_code=str(reader.getPatientCode() or ""),
             protocol=str(reader.getRecordingAdditional() or ""),
+            # The getter, not the ``patient_additional`` attribute beside it:
+            # that one is the raw eighty-byte field, and it comes back as the
+            # repr of a padded bytes object.
+            patient_additional=str(reader.getPatientAdditional() or "").strip(),
             technician=str(reader.getTechnician() or ""),
             equipment=str(reader.getEquipment() or ""),
             start_datetime=start_dt,
