@@ -446,7 +446,6 @@ def build_session_report(
     generated_at: datetime = meta.get("generated_at") or datetime.now()
     version: str = meta.get("version") or _app_version()
     commit = meta.get("commit", git_commit_hash())
-    student = str(meta.get("student", "")).strip()
     student_code = str(meta.get("student_code", "")).strip()
     protocol = str(meta.get("protocol", "")).strip()
     device = str(meta.get("device", "")).strip()
@@ -461,14 +460,12 @@ def build_session_report(
     story: list[Any] = []
     story.append(Paragraph(tr("EMG recording and analysis report"), title_style))
 
-    who = ""
-    if student:
-        who = tr("Student: {name}").format(name=student)
-        if student_code:
-            who += f" ({student_code})"
+    # The code alone. The report is what gets handed in and marked, and a
+    # name on it is a name in every copy of it.
     header_lines = [tr("Generated on: {dt:%Y-%m-%d %H:%M}").format(dt=generated_at)]
-    if who:
-        header_lines.append(who)
+    if student_code:
+        header_lines.append(
+            tr("Student code: {code}").format(code=student_code))
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
@@ -773,7 +770,6 @@ def build_mvc_report(
     generated_at: datetime = meta.get("generated_at") or datetime.now()
     version: str = meta.get("version") or _app_version()
     commit = meta.get("commit", git_commit_hash())
-    student = str(meta.get("student", "")).strip()
     student_code = str(meta.get("student_code", "")).strip()
     protocol = str(meta.get("protocol", "")).strip()
 
@@ -788,11 +784,9 @@ def build_mvc_report(
     story.append(Paragraph(tr("MVC normalisation and muscle-load report"), title_style))
 
     header_lines = [tr("Generated on: {dt:%Y-%m-%d %H:%M}").format(dt=generated_at)]
-    if student:
-        who = tr("Student: {name}").format(name=student)
-        if student_code:
-            who += f" ({student_code})"
-        header_lines.append(who)
+    if student_code:
+        header_lines.append(
+            tr("Student code: {code}").format(code=student_code))
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))

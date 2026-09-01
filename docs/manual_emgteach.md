@@ -234,7 +234,9 @@ Analyses a saved EDF recording in depth.
 **Parameters**
 - Selection of the **EDF file** and the **channel** to analyse.
 - **Envelope cutoff frequency** (editable).
-- Optional **student** name and **code** (for the report).
+- Optional **student code** (for the report). The name is deliberately
+  not asked for: a recording carries its header wherever it goes, and a
+  code identifies the student to whoever needs it and to nobody else.
 
 **The 8 analysis panels** (selectable) and their meaning:
 

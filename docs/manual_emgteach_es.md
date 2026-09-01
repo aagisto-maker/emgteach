@@ -373,7 +373,9 @@ Analiza en profundidad un registro EDF ya guardado.
 - Selección del **archivo EDF** y del **canal** a analizar.
 - **Frecuencia de corte de la envolvente** y **región de interés**, entre las
   opciones avanzadas.
-- Datos opcionales de **alumno/a** y **código** (para el informe).
+- **Código de alumno/a**, opcional (para el informe). El nombre no se pide a
+  propósito: un registro lleva su cabecera a donde vaya, y un código
+  identifica al alumno ante quien tiene que identificarlo y ante nadie más.
 
 **Los doce paneles de análisis** y su significado. Los tres primeros son el núcleo
 docente y se ofrecen siempre; los cinco siguientes valen para cualquier práctica y

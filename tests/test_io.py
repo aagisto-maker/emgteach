@@ -512,3 +512,36 @@ class TestTheProtocolIsNeverTheFieldThatGivesWay:
         assert len(meta.equipment) + len(meta.protocol) <= (
             EDF_RECORDING_IDENT_BUDGET
         )
+
+
+@pytest.mark.parametrize("campo", ["student_name", "student_code"])
+def test_the_recording_carries_the_code_and_not_the_name(tmp_path, campo) -> None:
+    """What the acquisition tab writes, checked at the file.
+
+    The student's name used to go into ``patientname``, so every recording
+    carried it out of the laboratory — into the marking pile, into whatever
+    gets shared with a colleague, into an archive. The tab no longer asks for
+    it; both header fields carry the code, because EDF+ writes 'X' into an
+    empty patientname and a patient block reading 'X' beside a code says less
+    than one that says the code twice.
+    """
+    pytest.importorskip("pyedflib")
+    import numpy as np
+
+    from emgteach.io import (
+        BufferedEdfWriter,
+        ChannelInfo,
+        RecordingMetadata,
+        read_edf_metadata,
+    )
+
+    destino = tmp_path / "sesion.edf"
+    meta = RecordingMetadata(student_name="A1", student_code="A1")
+    with BufferedEdfWriter(
+        str(destino),
+        channels=[ChannelInfo("Muscle", dimension="mV", sample_frequency=1000)],
+        metadata=meta,
+    ) as w:
+        w.add_samples(np.zeros(2000))
+    leido = read_edf_metadata(destino)
+    assert getattr(leido, campo) == "A1"

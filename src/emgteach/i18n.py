@@ -609,7 +609,6 @@ _ES = {
         "Canal EMG del EDF a analizar. Se rellena con los canales del archivo "
         "al seleccionarlo (p. ej. agonista/antagonista).",
     "Envelope cutoff frequency (Hz):": "Frec. corte envolvente (Hz):",
-    "Student:": "Alumno/a:",
     "Code:": "Código:",
     "Panels to show": "Paneles a mostrar",
     "1A. Raw": "1A. En bruto",
@@ -882,7 +881,6 @@ _ES = {
     "8. Amplitude (RMS) vs median frequency (MDF)":
         "8. Amplitud (RMS) vs frecuencia mediana (MDF)",
     "EMG recording and analysis report": "Informe de registro y análisis de EMG",
-    "Student: {name}": "Alumno/a: {name}",
     "Generated on: {dt:%Y-%m-%d %H:%M}": "Fecha de generación: {dt:%Y-%m-%d %H:%M}",
     "File: {name}": "Archivo: {name}",
     "Graphs": "Gráficos",
@@ -961,7 +959,6 @@ _ES = {
     "No fatigue: MDF slope {slope:+.3f} Hz/s (R²={r2:.2f}).":
         "Sin fatiga: pendiente MDF {slope:+.3f} Hz/s (R²={r2:.2f}).",
     # -- acquisition tab (protocol / markers) --
-    "Name": "Nombre",
     "e.g. Isometric contraction 30 s": "p. ej. Contracción isométrica 30 s",
     "Live signal quality: saturation or a flat (disconnected) signal.":
         "Calidad de señal en vivo: saturación o señal plana (desconectada).",
@@ -974,6 +971,8 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    'Student code:': 'Código de alumno/a:',
+    'Student code: {code}': 'Código de alumno/a: {code}',
     'Basic analysis': 'Análisis básico',
     'Intermediate analysis': 'Análisis intermedio',
     'Advanced analysis': 'Análisis avanzado',

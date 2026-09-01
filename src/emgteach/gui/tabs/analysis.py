@@ -363,15 +363,10 @@ class AnalysisTab(QWidget):
         )
         fenv_l.addWidget(self._spin_fenv)
         row_params.addWidget(self._box_fenv)
-        row_params.addWidget(QLabel(tr("Student:")))
-        self._edit_student = QLineEdit()
-        self._edit_student.setFixedWidth(150)
-        self._edit_student.setText(self._settings.value("analisis/student", ""))
-        self._edit_student.textChanged.connect(
-            lambda v: self._settings.setValue("analisis/student", v)
-        )
-        row_params.addWidget(self._edit_student)
-        row_params.addWidget(QLabel(tr("Code:")))
+        # See the acquisition tab: the code identifies the student to whoever
+        # needs it and nobody else, and the report is the document that
+        # circulates.
+        row_params.addWidget(QLabel(tr("Student code:")))
         self._edit_student_code = QLineEdit()
         self._edit_student_code.setFixedWidth(90)
         self._edit_student_code.setText(
@@ -952,8 +947,8 @@ class AnalysisTab(QWidget):
         # time, without clobbering anything the user already typed here.
         meta = read_edf_metadata(path)
         self._edf_protocol = meta.protocol
-        if meta.student_name and not self._edit_student.text().strip():
-            self._edit_student.setText(meta.student_name)
+        if meta.student_code and not self._edit_student_code.text().strip():
+            self._edit_student_code.setText(meta.student_code)
         if meta.student_code and not self._edit_student_code.text().strip():
             self._edit_student_code.setText(meta.student_code)
 
@@ -2115,7 +2110,6 @@ class AnalysisTab(QWidget):
             ruta += ".pdf"
         out = Path(ruta)
         meta = {
-            "student": self._edit_student.text().strip(),
             "student_code": self._edit_student_code.text().strip(),
             "protocol": getattr(self, "_edf_protocol", ""),
         }
@@ -2372,7 +2366,6 @@ class AnalysisTab(QWidget):
         self._edit_path.clear()
         # Clearing the student fields also clears their persisted QSettings
         # values (textChanged is wired to setValue).
-        self._edit_student.clear()
         self._edit_student_code.clear()
         self._spin_fenv.setValue(5.0)
         self._combo_canal.blockSignals(True)

@@ -668,15 +668,13 @@ class AcquisitionTab(QWidget):
         # Row 4: session identification written to the EDF+ header.
         meta_row = QHBoxLayout()
         meta_row.setSpacing(6)
-        meta_row.addWidget(QLabel(tr("Student:")))
-        self._edit_student = QLineEdit()
-        self._edit_student.setPlaceholderText(tr("Name"))
-        self._edit_student.setText(self._settings.value("adquisicion/student", ""))
-        self._edit_student.textChanged.connect(
-            lambda v: self._settings.setValue("adquisicion/student", v)
-        )
-        meta_row.addWidget(self._edit_student, stretch=2)
-        meta_row.addWidget(QLabel(tr("Code:")))
+        # The code, and only the code. The name used to be asked for here and
+        # written into the EDF header as ``patientname``, which meant every
+        # recording carried it out of the laboratory — into the marking pile,
+        # into whatever is shared with a colleague, into an archive. A code
+        # identifies the student for whoever needs to, and identifies nobody
+        # for whoever does not.
+        meta_row.addWidget(QLabel(tr("Student code:")))
         self._edit_student_code = QLineEdit()
         self._edit_student_code.setFixedWidth(90)
         self._edit_student_code.setText(
@@ -1617,7 +1615,10 @@ class AcquisitionTab(QWidget):
         self._settings.setValue("adquisicion/auto_detect", self._chk_auto.isChecked())
         self._settings.setValue("adquisicion/onset_k", self._spin_k.value())
         metadata = RecordingMetadata(
-            student_name=self._edit_student.text().strip(),
+            # Both fields carry the code: EDF+ writes 'X' into an empty
+            # patientname, and a file whose patient block is 'X' with a
+            # code beside it says less than one that says the code twice.
+            student_name=self._edit_student_code.text().strip(),
             student_code=self._edit_student_code.text().strip(),
             protocol=mode_protocol(self._mode),
             equipment=device.name,
