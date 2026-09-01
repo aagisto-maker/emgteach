@@ -123,3 +123,69 @@ def test_min_duration_param_filters_short_fragments(qapp: QCoreApplication) -> N
     # No burst is 2 s long -> falls back to the whole-recording proposal.
     assert dlg._table.rowCount() == 1
     dlg.deleteLater()
+
+
+class TestTheEditorStaysInsideTheRecordingPhase:
+    """A two-phase session is mostly *not* the task.
+
+    Run over the whole file, the automatic suggestion proposed the six maximal
+    efforts of the calibration as fragments of the work: they are the most
+    active signal in the recording, so they win every activity test there is.
+    On the bench session of 1 September, nine of the ten fragments it offered
+    were the warm-up and the calibration.
+
+    Which is the one decision this application exists to take out of the
+    operator's hands — it knows exactly where the calibration was — arriving
+    back as a suggestion.
+    """
+
+    SPAN = (6.0, 10.0)
+
+    def _dlg(self, **kw):
+        return FragmentSelectionDialog(
+            _burst_signal(), FS, FILTER_KWARGS, span=self.SPAN, **kw)
+
+    def test_nothing_is_suggested_outside_it(self, qapp) -> None:
+        """The signal has two bursts, at 2-3.5 s and at 6-7.5 s, and the span
+        holds the second. One row, not two.
+
+        Counted on the table rather than on ``selected_segments()``: the spin
+        boxes clamp to the span, so a fragment proposed at 2 s comes back
+        reading 6 s and the check passes over a suggestion that never should
+        have been made.
+        """
+        dlg = self._dlg()
+        assert dlg._table.rowCount() == 1, [
+            (dlg._row_widgets[i]["start"].value(),
+             dlg._row_widgets[i]["end"].value())
+            for i in range(dlg._table.rowCount())
+        ]
+        a, b = self.SPAN
+        for ini, fin in dlg.selected_segments():
+            assert ini >= a - 1e-6 and fin <= b + 1e-6, (ini, fin)
+        dlg.deleteLater()
+
+    def test_the_bounds_cannot_be_dragged_out_of_it(self, qapp) -> None:
+        """The suggestion is a starting point; the operator edits it, and the
+        edit has the same limits the suggestion had."""
+        dlg = self._dlg(segments=[(7.0, 8.0)])
+        spin = dlg._row_widgets[0]["start"]
+        spin.setValue(0.0)
+        assert spin.value() >= self.SPAN[0]
+        dlg.deleteLater()
+
+    def test_a_new_fragment_lands_inside_it(self, qapp) -> None:
+        """It used to be centred on the file, which in a two-phase session
+        puts it in the middle of the calibration."""
+        dlg = self._dlg(segments=[(7.0, 8.0)])
+        dlg._add_fragment()
+        ini, fin = dlg.selected_segments()[-1]
+        assert ini >= self.SPAN[0] and fin <= self.SPAN[1]
+        dlg.deleteLater()
+
+    def test_without_a_span_the_whole_file_is_offered(self, qapp) -> None:
+        """Every recording made before the guided flow has no phases to
+        restrict to, and its whole length is the task."""
+        dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+        assert any(ini < self.SPAN[0] for ini, _fin in dlg.selected_segments())
+        dlg.deleteLater()

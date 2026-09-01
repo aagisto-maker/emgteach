@@ -93,6 +93,7 @@ class FragmentSelectionDialog(QDialog):
         filter_kwargs: dict[str, float],
         segments: list[tuple[float, float]] | None = None,
         labels: list[str] | None = None,
+        span: tuple[float, float] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -106,6 +107,16 @@ class FragmentSelectionDialog(QDialog):
         self._f_notch = float(filter_kwargs.get("f_notch", 50.0))
         self._f_env = float(filter_kwargs.get("f_env", 5.0))
         self._full_duration = len(self._raw) / self._fs
+        # The stretch this editor is allowed to work in. In a two-phase
+        # session that is the recording phase: the calibration is signal
+        # too, and the automatic suggestion found its six maximal efforts
+        # and offered them as fragments of the task — which is the one
+        # decision the application exists to take out of the operator's
+        # hands, arriving back as a suggestion.
+        self._span = (
+            (max(0.0, float(span[0])), min(self._full_duration, float(span[1])))
+            if span else (0.0, self._full_duration)
+        )
         self._row_widgets: list[dict[str, Any]] = []
 
         # Envelope for the preview (downsampled when drawing).
@@ -144,6 +155,7 @@ class FragmentSelectionDialog(QDialog):
         filter_kwargs: dict[str, float],
         segments: list[tuple[float, float]] | None = None,
         labels: list[str] | None = None,
+        span: tuple[float, float] | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one channel from an EDF file."""
@@ -156,6 +168,7 @@ class FragmentSelectionDialog(QDialog):
             filter_kwargs,
             segments=segments,
             labels=labels,
+            span=span,
             parent=parent,
         )
 
@@ -388,7 +401,7 @@ class FragmentSelectionDialog(QDialog):
 
     def _make_spin(self, value: float) -> QDoubleSpinBox:
         spin = QDoubleSpinBox()
-        spin.setRange(0.0, max(self._full_duration, value))
+        spin.setRange(self._span[0], max(self._span[1], value))
         spin.setDecimals(2)
         spin.setSingleStep(0.1)
         spin.setValue(value)
@@ -433,10 +446,20 @@ class FragmentSelectionDialog(QDialog):
         self._refresh_derived()
 
     def _auto_suggest(self) -> None:
+        """Propose the active stretches — inside the span, and only there.
+
+        Run over the whole file it proposed the calibration's maximal efforts
+        as fragments of the task: they are the most active signal in the
+        recording, so they win every activity test there is. Which is exactly
+        the decision this application takes out of the operator's hands, and
+        it was arriving back as a suggestion.
+        """
         # Sync the filter cut-offs first so preview and detection agree.
         self._recompute_envelope()
+        a, b = self._span
+        i0, i1 = round(a * self._fs), round(b * self._fs)
         segs = suggest_significant_segments(
-            self._raw,
+            self._raw[i0:i1],
             self._fs,
             f_low=self._f_low,
             f_high=self._f_high,
@@ -446,13 +469,19 @@ class FragmentSelectionDialog(QDialog):
             min_duration_s=self._spin_min_dur.value(),
             merge_gap_s=self._spin_merge_gap.value(),
         )
-        self._set_rows(segs)
+        # Back into the file's own clock: the worker crops by these numbers.
+        self._set_rows([
+            Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
+            for x in segs
+        ])
 
     def _add_fragment(self) -> None:
-        # A 1 s fragment centred on the recording, ready to be dragged.
-        mid = self._full_duration / 2.0
-        a = max(0.0, mid - 0.5)
-        b = min(self._full_duration, a + 1.0)
+        # A 1 s fragment centred on the span, ready to be dragged. Centred on
+        # the *file* it landed in the calibration, which is not a place the
+        # editor is allowed to reach any more.
+        mid = (self._span[0] + self._span[1]) / 2.0
+        a = max(self._span[0], mid - 0.5)
+        b = min(self._span[1], a + 1.0)
         self._append_row(Segment(a, b, reason="manual"), keep=True)
         self._refresh_derived()
 
@@ -496,7 +525,7 @@ class FragmentSelectionDialog(QDialog):
         )
         for seg in kept:
             self._ax.axvspan(seg.start_s, seg.end_s, color="#4CAF50", alpha=0.25)
-        self._ax.set_xlim(0.0, max(self._full_duration, 1e-6))
+        self._ax.set_xlim(self._span[0], max(self._span[1], self._span[0] + 1e-6))
         self._ax.set_xlabel(tr("Time (s)"))
         self._ax.set_ylabel(tr("Envelope (mV)"))
         self._canvas.draw_idle()

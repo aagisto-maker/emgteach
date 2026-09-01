@@ -33,6 +33,7 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QColor, QFontMetrics
 from PySide6.QtWidgets import (
+    QAbstractScrollArea,
     QCheckBox,
     QComboBox,
     QDialog,
@@ -181,6 +182,7 @@ from emgteach.io import (
     find_edf_acc_channel,
     list_edf_channels,
     list_edf_emg_channels,
+    read_edf_markers,
     read_edf_metadata,
 )
 from emgteach.modes import (
@@ -190,7 +192,11 @@ from emgteach.modes import (
     mode_uses_acc,
 )
 from emgteach.mvc import overlay_curves
-from emgteach.phases import NO_CALIBRATION, reference_source_text
+from emgteach.phases import (
+    NO_CALIBRATION,
+    parse_phase_markers,
+    reference_source_text,
+)
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.tuning import build_tuned_edf, tuned_path
@@ -778,7 +784,14 @@ class AnalysisTab(QWidget):
         self._tbl_coact.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
         )
-        self._tbl_coact.setMaximumHeight(150)
+        # Sized to what it holds, not to a fixed 150 px. The practical
+        # produces three rows at most and usually one, and the rest of that
+        # height was blank table taking room the raw traces needed: with two
+        # muscles there are two of those to fit.
+        self._tbl_coact.setSizeAdjustPolicy(
+            QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self._tbl_coact.verticalHeader().setVisible(False)
+        self._ajustar_alto_coact()
         coact_v.addWidget(self._tbl_coact)
         self._box_coact.setVisible(False)
         root.addWidget(self._box_coact)
@@ -969,6 +982,10 @@ class AnalysisTab(QWidget):
                 path, canal, filter_kwargs,
                 segments=self._selected_segments or None,
                 labels=self._segment_labels or None,
+                # The recording phase, so the editor cannot reach into the
+                # calibration and offer its maximal efforts as fragments of
+                # the task.
+                span=self._tramo_de_registro(path),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -1014,6 +1031,18 @@ class AnalysisTab(QWidget):
         self._cal_keep = dlg.keep()
         self._actualizar_etiqueta_reps()
         self._iniciar_analisis()
+
+    def _tramo_de_registro(self, path: str) -> tuple[float, float] | None:
+        """The session's recording phase, or ``None`` for a file without one.
+
+        Read from the annotations alone — no samples — so it costs nothing to
+        ask before opening a dialogue.
+        """
+        try:
+            fases = parse_phase_markers(read_edf_markers(path))
+            return fases.rec_span(edf_duration(path))
+        except Exception:
+            return None
 
     def _labels_por_canal(self) -> dict[int, str]:
         """Channel index to the name the recording gave it."""
@@ -1257,7 +1286,19 @@ class AnalysisTab(QWidget):
             if sin_marcas else ""
         )
         self._lbl_coact_aviso.setVisible(sin_marcas)
+        self._ajustar_alto_coact()
         self._box_coact.setVisible(True)
+
+    def _ajustar_alto_coact(self) -> None:
+        """Make the table exactly as tall as its rows, header included."""
+        filas = self._tbl_coact.rowCount()
+        alto = self._tbl_coact.horizontalHeader().height() + 4
+        for i in range(filas):
+            alto += self._tbl_coact.rowHeight(i)
+        # A floor so an empty table is not a sliver, and a ceiling so a
+        # recording marked into many phases scrolls instead of pushing the
+        # panels off the window.
+        self._tbl_coact.setFixedHeight(max(38, min(alto, 150)))
 
     def _on_result(self, result: dict) -> None:
         self._last_result = result

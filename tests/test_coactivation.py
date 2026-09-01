@@ -541,3 +541,32 @@ class TestAutomaticMarkersAreNotPhases:
             assert r["coactivation_from_markers"] is False
         finally:
             tab.cleanup()
+
+
+@pytest.mark.gui
+def test_the_table_is_as_tall_as_its_rows(qapp, tmp_path) -> None:
+    """It had a fixed 150 px whatever it held.
+
+    The practical produces three rows at most and usually one, so most of that
+    height was blank table taking room the raw traces needed — and with two
+    muscles there are two of those to fit.
+    """
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.analysis import AnalysisTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    ajustes = QSettings("emgteach-test", "coact-alto")
+    ajustes.clear()
+    tab = AnalysisTab(LoggerWidget(), ajustes)
+    tab.show()
+    qapp.processEvents()
+    try:
+        vacia = tab._tbl_coact.height()
+        tab._tbl_coact.setRowCount(3)
+        tab._ajustar_alto_coact()
+        tres = tab._tbl_coact.height()
+        assert tres > vacia, "three rows do not make it taller than none"
+        assert tres <= 150, "it grew past the ceiling that keeps it on screen"
+    finally:
+        tab.cleanup()

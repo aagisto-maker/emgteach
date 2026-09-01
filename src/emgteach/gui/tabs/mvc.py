@@ -732,6 +732,10 @@ class MvcTab(QWidget):
                 {"f_low": EMG_PROFILE.f_low, "f_high": EMG_PROFILE.f_high,
                  "f_notch": EMG_PROFILE.f_notch, "f_env": self._spin_fenv.value()},
                 segments=self._selected_segments or None,
+                # Same as the analysis tab: the calibration is the most active
+                # signal in the file, so an editor allowed to see it proposes
+                # its maximal efforts as fragments of the task.
+                span=self._tramo_de_registro(path),
                 parent=self,
             )
         except Exception as exc:
@@ -741,6 +745,15 @@ class MvcTab(QWidget):
             self._selected_segments = dlg.selected_segments()
             self._spin_fenv.setValue(dlg.filter_kwargs()["f_env"])
             self._actualizar_etiqueta_fragmentos()
+
+    def _tramo_de_registro(self, path: str) -> tuple[float, float] | None:
+        """The session's recording phase, from the annotations alone."""
+        from emgteach.io import edf_duration
+
+        try:
+            return self._fases_en_fichero.rec_span(edf_duration(path))
+        except Exception:
+            return None
 
     def _actualizar_etiqueta_fragmentos(self) -> None:
         if not self._selected_segments:
