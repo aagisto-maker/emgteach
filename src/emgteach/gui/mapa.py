@@ -119,7 +119,7 @@ def _nodos() -> list[Nodo]:
         Nodo(
             "ref", 355, 322, 230, 56,
             tr("Reference recording"),
-            (tr("the maximal effort, unloaded"),),
+            (tr("maximal effort, unloaded"),),
         ),
         Nodo(
             "q_musculo", 470, 424, 186, 58,

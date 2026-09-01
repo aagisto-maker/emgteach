@@ -2229,9 +2229,10 @@ class AcquisitionTab(QWidget):
         # on the hardware would put it out of reach exactly when it is useful.
         self._btn_fv_rehearse = QPushButton(tr("Rehearse…"))
         self._btn_fv_rehearse.setToolTip(
-            tr("Play the whole guided procedure with no hardware: the same "
-               "prompts in the same order over a synthetic recording, with an "
-               "explanation of each step, ending in the force-velocity study.")
+            tr("It emulates the entire guided procedure with the same "
+               "warnings, in the same order, with a synthetic record. Each "
+               "step is explained and ends with the simulated "
+               "force-velocity study.")
         )
         self._btn_fv_rehearse.clicked.connect(self._on_fv_rehearse)
         fv_row.addWidget(self._btn_fv_rehearse)

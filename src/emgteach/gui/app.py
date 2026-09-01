@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
         for mode in MODES:
             self._combo_mode.addItem(mode_label(mode), mode)
         self._combo_mode.setCurrentIndex(MODES.index(self._mode()))
-        self._combo_mode.setToolTip(tr("Which practical the app is set up for"))
+        self._combo_mode.setToolTip(tr("Practical the app is set up for"))
         self._combo_mode.currentIndexChanged.connect(self._on_mode_changed)
 
         # The level of detail is a property of the practical, not a second
@@ -195,7 +195,7 @@ class MainWindow(QMainWindow):
         btn_tour = QToolButton()
         btn_tour.setText(tr("Guide"))
         btn_tour.setAutoRaise(True)
-        btn_tour.setToolTip(tr("Walk through the app and what it measures"))
+        btn_tour.setToolTip(tr("App and measures tour"))
         btn_tour.clicked.connect(self.start_tour)
 
         # The map answers a different question from the tour: not "what does
@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
         btn_mapa = QToolButton()
         btn_mapa.setText(tr("Map"))
         btn_mapa.setAutoRaise(True)
-        btn_mapa.setToolTip(tr("Where you are in the process"))
+        btn_mapa.setToolTip(tr("Location in the process"))
         btn_mapa.clicked.connect(self.show_mapa)
 
         btn_about = QToolButton()
@@ -273,7 +273,7 @@ class MainWindow(QMainWindow):
                 "of the application, press Yes."
             )
         )
-        chk = QCheckBox(tr("Offer this guide next time"))
+        chk = QCheckBox(tr("Show this guide next time"))
         chk.setChecked(True)
         msg.setCheckBox(chk)
         msg.setStandardButtons(
@@ -292,7 +292,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 tr("Guide"),
-                tr("Stop the recording before starting the guide."),
+                tr("Stop the recording before starting the guide"),
             )
             return
         self._coach.start(build_tour(self), on_tab=self._tabs.setCurrentIndex)

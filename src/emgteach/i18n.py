@@ -1090,8 +1090,8 @@ _ES = {
     "Single-muscle contraction": "Contracción de un músculo",
     "Agonist / antagonist contraction": "Contracción agonista / antagonista",
     "Muscle kinematics": "Cinemática muscular",
-    "Which practical the app is set up for":
-        "Práctica para la que está configurada la aplicación",
+    "Practical the app is set up for":
+        "Práctica para la que la aplicación está configurada",
     "Advanced options": "Opciones avanzadas",
     "Show the fine controls shared by every mode":
         "Muestra los controles finos comunes a todos los modos",
@@ -1108,9 +1108,9 @@ _ES = {
         "Este registro tiene {n} canal(es) de EMG, y el modo agonista / "
         "antagonista necesita dos.",
     "Choose \"Single-muscle contraction\" or \"Muscle kinematics\" at the top "
-    "of the window, or open a recording made with two channels.":
+    "of the window, or open a two channels recording.":
         "Elija «Contracción de un músculo» o «Cinemática muscular» en la parte "
-        "superior de la ventana, o abra un registro hecho con dos canales.",
+        "superior de la ventana, o abra un registro con dos canales.",
 
     # ── MVC entry screen ───────────────────────────────────────────────
     "Normalising to maximum voluntary contraction (MVC)":
@@ -1168,15 +1168,15 @@ _ES = {
         "muscular.",
     # ── Guided tour: chrome ────────────────────────────────────────────
     "Guide": "Guía",
-    "Walk through the app and what it measures":
-        "Recorrido por la aplicación y por lo que mide",
+    "App and measures tour":
+        "Recorrido por la aplicación y medidas",
     "Skip": "Saltar",
     "Back": "Atrás",
     "Next": "Siguiente",
     "Finish": "Terminar",
     "Step {i} of {n}": "Paso {i} de {n}",
-    "Stop the recording before starting the guide.":
-        "Hay que detener el registro antes de iniciar la guía.",
+    "Stop the recording before starting the guide":
+        "Detener el registro antes de iniciar la guía",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
     # -- la sesión en dos fases (phases.py / acquisition.py) --
@@ -1272,7 +1272,7 @@ _ES = {
         "Los controles finos —frecuencias de corte, umbrales de fatiga, región "
         "de interés— son comunes a los tres modos y no estorban hasta que se "
         "marca esta casilla.",
-    "Offer this guide next time": "Ofrecer esta guía la próxima vez",
+    "Show this guide next time": "Mostrar la guía la próxima vez",
     "Start recording and ask for the contraction. Watch the live trace: at "
     "rest it should be a flat line with only baseline noise. A signal that "
     "never returns to baseline usually means a loose electrode or a poor "
@@ -1421,8 +1421,14 @@ _ES = {
     # ── Ensayo del asistente F-V (fv_rehearsal_dialog.py) ─────────
     'During the recording this panel appears over the plots, at this size:': 'Durante la grabación este panel aparece sobre las gráficas, con este tamaño:',
     'Rehearse…': 'Ensayar…',
-    'Play the whole guided procedure with no hardware: the same prompts in the same order over a synthetic recording, with an explanation of each step, ending in the force-velocity study.': 'Reproduce todo el procedimiento guiado sin hardware: los mismos avisos, en el mismo orden, sobre un registro sintético, con una explicación de cada paso y terminando en el estudio fuerza-velocidad.',
-    'Rehearsal — guided force-velocity acquisition': 'Ensayo — adquisición guiada fuerza-velocidad',
+    "It emulates the entire guided procedure with the same warnings, in the "
+    "same order, with a synthetic record. Each step is explained and ends "
+    "with the simulated force-velocity study.":
+        "Emula todo el procedimiento guiado con los mismos avisos, en el mismo "
+        "orden, con un registro sintético. Se explica cada paso y termina con "
+        "el estudio fuerza-velocidad simulado.",
+    "Rehearsal — guided force-velocity acquisition":
+        "Ensayo — adquisición guiada fuerza-velocidad",
     'No hardware and no subject: the prompts, in the order and at the speed the wizard will show them. Loads: {loads} kg.': 'Sin hardware y sin sujeto: los avisos, en el orden y a la velocidad con que los mostrará el asistente. Cargas: {loads} kg.',
     'Play': 'Reproducir',
     'Pause': 'Pausa',
@@ -1464,7 +1470,7 @@ _ES = {
     'load-velocity · power': 'carga-velocidad · potencia',
     'recruitment': 'reclutamiento',
     'Reference recording': 'Grabación de referencia',
-    'the maximal effort, unloaded': 'el esfuerzo máximo, sin carga',
+    "maximal effort, unloaded": "esfuerzo máximo sin carga",
     'Two muscles?': '¿Dos músculos?',
     'asks which, once': 'pregunta cuál, una vez',
     'A reference?': '¿Hay referencia?',
@@ -1478,8 +1484,8 @@ _ES = {
 
     # ── Diálogo del mapa ──────────────────────────────────────────
     'Map': 'Mapa',
-    'Where you are in the process': 'Dónde estás en el proceso',
-    'Where you are': 'Dónde estás',
+    "Location in the process": "Ubicación en el proceso",
+    "Where you are": "Ubicación actual",
     '{practical} — the lit path is the one this practical uses.': '{practical} — el camino iluminado es el que usa esta práctica.',
     'The map for this practical has not been generated.': 'El mapa de esta práctica no está generado.',
 

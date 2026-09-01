@@ -2470,9 +2470,9 @@ class AnalysisTab(QWidget):
             msg
             + "\n\n"
             + tr(
-                "Choose \"Single-muscle contraction\" or \"Muscle kinematics\" "
-                "at the top of the window, or open a recording made with two "
-                "channels."
+                "Choose \"Single-muscle contraction\" or \"Muscle "
+                "kinematics\" at the top of the window, or open a two "
+                "channels recording."
             ),
         )
 
