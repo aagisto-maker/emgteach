@@ -6,6 +6,10 @@ This module provides:
   buffer-then-flush pattern of Agis-Torres (2026) [1]_, which avoids
   the silent file-corruption pitfall that occurs when sub-record device
   blocks are written individually with ``pyedflib.EdfWriter.writeSamples``.
+- :class:`RecordingMetadata`, the EDF+ identification header, fitted to
+  :data:`EDF_RECORDING_IDENT_BUDGET` before it is written. The same family
+  of defect one level up: the header block silently drops whatever runs past
+  its budget, and the protocol is the field at the end of the queue.
 - Two reader functions (:func:`read_edf_mne` and
   :func:`read_edf_pyedflib`) that return a uniform dictionary so the
   rest of the package does not depend on which reader is used.
@@ -24,13 +28,15 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+from emgteach.i18n import tr
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -41,6 +47,7 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "EDF_RECORDING_IDENT_BUDGET",
     "BufferedEdfWriter",
     "ChannelInfo",
     "RecordingMetadata",
@@ -56,6 +63,60 @@ __all__ = [
     "read_edf_pyedflib",
     "write_edf_block",
 ]
+
+
+# ---------------------------------------------------------------------------
+# The EDF+ recording-identification budget
+# ---------------------------------------------------------------------------
+
+#: Characters the EDF+ *recording* identification block leaves for
+#: ``admincode``, ``technician``, ``equipment`` and ``recording_additional``
+#: between them — measured against the writer, not read off the specification.
+#:
+#: EDF+ gives the block eighty bytes, and pyedflib warns when the four values
+#: plus ``"Startdate dd-MMM-yyyy"`` pass that mark. The underlying edflib is
+#: stricter: it composes the field as ``Startdate dd-MMM-yyyy <admincode>
+#: <technician> <equipment> <recording_additional>`` and stops at sixty-four,
+#: leaving thirty-nine characters for the four values and cutting whatever
+#: runs past — ``recording_additional`` last in the queue, so first to lose.
+#:
+#: Measured on ``emg_2026-08-31_19-33.edf`` (pyedflib 0.1.42): equipment
+#: ``"BITalino (98:D3:91:FE:44:E4)"`` (28) plus protocol
+#: ``"agonist/antagonist"`` (18) is 46 against a budget of 39, and
+#: ``getRecordingAdditional()`` returned the 39 - 28 = 11 characters that fit,
+#: ``"agonist/ant"``. pyedflib said nothing: its own formula scored that same
+#: header at 69 of 80.
+#:
+#: Which is the failure mode this module already exists to document. The
+#: buffered-write pitfall of Agis-Torres (2026) [1]_ corrupts a recording
+#: without raising; this truncates a header without raising. Both produce a
+#: file that opens cleanly and answers wrongly, and both are found late — a
+#: protocol that no longer names the practice is noticed at marking, weeks
+#: after the bench is gone.
+EDF_RECORDING_IDENT_BUDGET = 39
+
+#: Characters of a device identifier kept when the equipment string has to be
+#: shortened. Five is the tail of a MAC address (``"44:E4"``) or of a serial
+#: port — enough to tell one bench from the next, which is all the field is
+#: read for once the recording is over.
+EQUIPMENT_ID_TAIL = 5
+
+
+def _compact_equipment(equipment: str) -> str:
+    """Reduce a device string to its name plus the tail of its identifier.
+
+    ``"BITalino (98:D3:91:FE:44:E4)"`` becomes ``"BITalino 44:E4"``: half the
+    characters, and still the answer to "which bench was this?". Device names
+    are built as ``"<name> (<identifier>)"`` by every backend
+    (:mod:`emgteach.devices`), so the parenthesis is what gets squeezed.
+    Returns the string unchanged when there is no parenthesised part to
+    squeeze — the caller then falls back to a plain cut.
+    """
+    head, sep, rest = equipment.partition("(")
+    if not sep:
+        return equipment
+    identifier = rest.rstrip().removesuffix(")").strip()
+    return f"{head.strip()} {identifier[-EQUIPMENT_ID_TAIL:]}".strip()
 
 
 # ---------------------------------------------------------------------------
@@ -125,18 +186,23 @@ class RecordingMetadata:
         Student's code/ID -> EDF ``patientcode``.
     protocol : str
         Protocol description (e.g. "Isometric biceps, 30 s") ->
-        EDF ``recording_additional``.
+        EDF ``recording_additional``. Last in the recording block and so the
+        first the writer cuts; :meth:`fit_to_edf_budget` is what stops that.
     technician : str
         Supervisor/technician -> EDF ``technician``.
     equipment : str
-        Acquisition device description -> EDF ``equipment``.
+        Acquisition device description -> EDF ``equipment``. Shares
+        :data:`EDF_RECORDING_IDENT_BUDGET` characters with ``technician`` and
+        ``protocol``, and a real device string spends most of them on its own:
+        ``"BITalino (98:D3:91:FE:44:E4)"`` is twenty-eight of thirty-nine.
     patient_additional : str
         Free note in the *patient* identification field -> EDF
-        ``patient_additional``. Its own eighty characters, separate from the
-        eighty that ``recording_additional``, ``technician`` and ``equipment``
-        share between them — which on a real recording are nearly spent, so a
-        note appended there truncates the protocol instead of fitting beside
-        it. This is where a derived file says it is derived.
+        ``patient_additional``. A separate block with its own budget, and a
+        far roomier one — seventy-one characters shared with
+        ``student_name`` and ``student_code``, of which a session uses a
+        handful. A note appended to the *recording* block instead would come
+        out of the protocol's thirty-nine. This is where a derived file says
+        it is derived.
     start_datetime : datetime, optional
         Recording start timestamp -> EDF ``startdatetime``. When ``None``
         pyedflib uses the current time.
@@ -164,20 +230,107 @@ class RecordingMetadata:
             )
         )
 
-    def apply_to(self, writer: Any) -> None:
+    def fit_to_edf_budget(self) -> tuple[RecordingMetadata, list[str]]:
+        """Return these fields shortened to fit EDF+, and what that cost.
+
+        ``technician``, ``equipment`` and ``protocol`` share
+        :data:`EDF_RECORDING_IDENT_BUDGET` characters; past that the writer
+        cuts the protocol, silently. So the decision is taken here instead,
+        explicitly, and always the same way: **the protocol is never the field
+        that gives way.** It is what names the practice, and it is the one
+        thing that cannot be recovered from anywhere else — the device is on
+        the bench and the supervisor signed the sheet, but "which exercise was
+        this?" only the header answers.
+
+        What gives way, in order: the equipment string is compacted to its
+        name plus the tail of its identifier, then cut, then the technician is
+        cut. Each step is reported. The ``patient_*`` fields are untouched —
+        they live in their own eighty-character block, with room to spare.
+
+        Returns
+        -------
+        (metadata, notices)
+            A copy with whatever had to be shortened, and one line per
+            shortening, ready for an acquisition log. ``notices`` is empty
+            when everything fitted, which is the ordinary case.
+        """
+        notices: list[str] = []
+        technician, equipment = self.technician, self.equipment
+        spare = EDF_RECORDING_IDENT_BUDGET - len(self.protocol)
+
+        if spare < 0:
+            # Nothing can be given up on the protocol's behalf: it overruns
+            # the whole block on its own. Hand it every character there is and
+            # say plainly that it will still be cut.
+            notices.append(
+                tr(
+                    "Warning — the protocol is {length} characters and the "
+                    "EDF+ header has room for {budget}; it will be saved cut "
+                    "short as \"{kept}\". Shorten it to keep it whole."
+                ).format(
+                    length=len(self.protocol),
+                    budget=EDF_RECORDING_IDENT_BUDGET,
+                    kept=self.protocol[:EDF_RECORDING_IDENT_BUDGET],
+                )
+            )
+            return replace(self, technician="", equipment=""), notices
+
+        if len(technician) + len(equipment) <= spare:
+            return self, notices
+
+        # The equipment goes first: shortened, it still names the bench.
+        shortened = _compact_equipment(equipment)
+        if len(technician) + len(shortened) > spare:
+            shortened = shortened[: max(0, spare - len(technician))]
+        if shortened != equipment:
+            notices.append(
+                tr(
+                    "Warning — the EDF+ header shares {budget} characters "
+                    "between equipment, supervisor and protocol. Equipment "
+                    "shortened from \"{was}\" to \"{now}\" so the protocol "
+                    "\"{protocol}\" is saved whole."
+                ).format(
+                    budget=EDF_RECORDING_IDENT_BUDGET,
+                    was=equipment,
+                    now=shortened,
+                    protocol=self.protocol,
+                )
+            )
+            equipment = shortened
+
+        # Only reachable when the supervisor's name alone overruns what the
+        # protocol left: by now the equipment is down to nothing.
+        if len(technician) + len(equipment) > spare:
+            technician = technician[: max(0, spare - len(equipment))]
+            notices.append(
+                tr(
+                    "Warning — supervisor shortened to \"{now}\" so the "
+                    "protocol \"{protocol}\" is saved whole."
+                ).format(now=technician, protocol=self.protocol)
+            )
+
+        return replace(self, technician=technician, equipment=equipment), notices
+
+    def apply_to(self, writer: Any) -> list[str]:
         """Push the non-empty fields onto a ``pyedflib.EdfWriter``.
 
         Must be called before any sample is written (header is fixed once
         data records begin). Unknown setters are ignored defensively so a
         pyedflib version lacking one does not abort a recording.
+
+        Fields are fitted to the EDF+ budget first
+        (:meth:`fit_to_edf_budget`); the returned lines say what that cost,
+        and are meant for the acquisition log. Trimming a header is a fair
+        decision to have to make — making it without saying so is the bug.
         """
+        fitted, notices = self.fit_to_edf_budget()
         setters = {
-            "setPatientName": self.student_name,
-            "setPatientCode": self.student_code,
-            "setRecordingAdditional": self.protocol,
-            "setPatientAdditional": self.patient_additional,
-            "setTechnician": self.technician,
-            "setEquipment": self.equipment,
+            "setPatientName": fitted.student_name,
+            "setPatientCode": fitted.student_code,
+            "setRecordingAdditional": fitted.protocol,
+            "setPatientAdditional": fitted.patient_additional,
+            "setTechnician": fitted.technician,
+            "setEquipment": fitted.equipment,
         }
         for name, value in setters.items():
             if value and hasattr(writer, name):
@@ -185,11 +338,12 @@ class RecordingMetadata:
                     getattr(writer, name)(value)
                 except Exception:  # pragma: no cover — defensive
                     pass
-        if self.start_datetime is not None and hasattr(writer, "setStartdatetime"):
+        if fitted.start_datetime is not None and hasattr(writer, "setStartdatetime"):
             try:
-                writer.setStartdatetime(self.start_datetime)
+                writer.setStartdatetime(fitted.start_datetime)
             except Exception:  # pragma: no cover — defensive
                 pass
+        return notices
 
 
 # ---------------------------------------------------------------------------
@@ -255,6 +409,12 @@ class BufferedEdfWriter:
     path: PathLike
     channels: Sequence[ChannelInfo]
     metadata: RecordingMetadata | None = None
+    #: What fitting the identification header to EDF+ cost, one line per
+    #: field shortened (see :meth:`RecordingMetadata.fit_to_edf_budget`).
+    #: Empty unless something had to give. Callers with a log — the
+    #: acquisition worker — are expected to show these: the budget is real,
+    #: the trimming is fine, doing it in silence is what is not.
+    header_notices: list[str] = field(default_factory=list, init=False)
     _writer: Any = field(default=None, init=False, repr=False)
     _buffers: list[FloatArray] = field(default_factory=list, init=False, repr=False)
     _fs: int = field(default=0, init=False, repr=False)
@@ -281,7 +441,7 @@ class BufferedEdfWriter:
 
         # EDF+ identification header (student, protocol, ...) before any data.
         if self.metadata is not None and not self.metadata.is_empty():
-            self.metadata.apply_to(self._writer)
+            self.header_notices = self.metadata.apply_to(self._writer)
 
         # One pending-samples buffer per channel
         self._buffers = [np.array([], dtype=np.float64) for _ in self.channels]
