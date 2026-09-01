@@ -302,14 +302,12 @@ class TestTheEditorOffersTheName:
         text explained a column that is not there."""
         def texto(d) -> str:
             from PySide6.QtWidgets import QLabel
-            return " ".join(
-                w.text() for w in d.findChildren(QLabel) if "fragment" in w.text()
-                or "fragmento" in w.text()
-            )
+            # The explanation is the longest label in the dialogue.
+            return max((w.text() for w in d.findChildren(QLabel)), key=len)
 
         con = texto(dlg(segments=[(22.0, 27.0)], naming=True))
         sin = texto(dlg(segments=[(22.0, 27.0)], naming=False))
-        assert len(sin) < len(con) / 2
+        assert sin in con and len(sin) < len(con)
 
 
 class TestTheNamesSurviveInTheTunedFile:

@@ -68,61 +68,46 @@ def test_preloaded_segments_are_used(qapp: QCoreApplication) -> None:
     dlg.deleteLater()
 
 
-def test_default_detection_params_match_core(qapp: QCoreApplication) -> None:
-    import inspect
+class TestTheStudentCannotChangeTheAnalysisFromHere:
+    """The eight settings this dialogue used to carry are gone.
 
-    from emgteach.selection import suggest_significant_segments
+    It is opened by students, to throw away a repetition that went wrong. It
+    used to greet them with a band-pass, a notch, an envelope cut-off and three
+    detection parameters — concepts none of which can be set by someone who
+    does not already know what they do, and two of which had a second copy in
+    the tab behind. A student who came in to delete a row could change the
+    analysis without knowing it.
+    """
 
-    params = inspect.signature(suggest_significant_segments).parameters
-    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
-    assert dlg._spin_k.value() == params["k"].default
-    assert dlg._spin_min_dur.value() == params["min_duration_s"].default
-    assert dlg._spin_merge_gap.value() == params["merge_gap_s"].default
-    dlg.deleteLater()
+    def test_no_settings_are_offered(self, qapp: QCoreApplication) -> None:
+        from PySide6.QtWidgets import QDoubleSpinBox
 
+        dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+        # The only spin boxes left are the two per row, which are the start and
+        # end of a fragment — the part he liked.
+        fuera_de_la_tabla = [
+            w for w in dlg.findChildren(QDoubleSpinBox)
+            if not any(w is r["start"] or w is r["end"] for r in dlg._row_widgets)
+        ]
+        assert fuera_de_la_tabla == []
+        dlg.deleteLater()
 
-def test_filter_cutoffs_default_to_passed_kwargs(qapp: QCoreApplication) -> None:
-    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
-    assert dlg._spin_flow.value() == FILTER_KWARGS["f_low"]
-    assert dlg._spin_fhigh.value() == FILTER_KWARGS["f_high"]
-    assert dlg._spin_fnotch.value() == FILTER_KWARGS["f_notch"]
-    assert dlg._spin_fenv.value() == FILTER_KWARGS["f_env"]
-    dlg.deleteLater()
+    def test_the_cut_offs_pass_straight_through(
+        self, qapp: QCoreApplication
+    ) -> None:
+        """What comes back is what went in. The tab behind owns the filters."""
+        dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+        assert dlg.filter_kwargs() == FILTER_KWARGS
+        dlg.deleteLater()
 
-
-def test_filter_kwargs_reflects_edits(qapp: QCoreApplication) -> None:
-    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
-    dlg._spin_flow.setValue(15.0)
-    dlg._spin_fenv.setValue(3.0)
-    fk = dlg.filter_kwargs()
-    assert fk["f_low"] == 15.0
-    assert fk["f_env"] == 3.0
-    assert fk["f_high"] == FILTER_KWARGS["f_high"]
-    dlg.deleteLater()
-
-
-def test_editing_a_cutoff_recomputes_without_crashing(qapp: QCoreApplication) -> None:
-    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
-    dlg._spin_fenv.setValue(2.0)
-    dlg._recompute_envelope()  # what editingFinished would trigger
-    assert dlg._f_env == 2.0
-    # A still-valid selection must survive the recompute.
-    dlg._auto_suggest()
-    assert dlg._table.rowCount() >= 1
-    dlg.deleteLater()
-
-
-def test_min_duration_param_filters_short_fragments(qapp: QCoreApplication) -> None:
-    # Two 1.5 s bursts survive a 1 s minimum but not a 2 s minimum.
-    dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
-    dlg._spin_min_dur.setValue(1.0)
-    dlg._auto_suggest()
-    assert dlg._table.rowCount() == 2
-    dlg._spin_min_dur.setValue(2.0)
-    dlg._auto_suggest()
-    # No burst is 2 s long -> falls back to the whole-recording proposal.
-    assert dlg._table.rowCount() == 1
-    dlg.deleteLater()
+    def test_the_proposal_still_uses_the_core_defaults(
+        self, qapp: QCoreApplication
+    ) -> None:
+        """Removing the controls must not have changed what is proposed."""
+        dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+        dlg._auto_suggest()
+        assert dlg._table.rowCount() == 2  # the two bursts of _burst_signal
+        dlg.deleteLater()
 
 
 class TestTheEditorStaysInsideTheRecordingPhase:

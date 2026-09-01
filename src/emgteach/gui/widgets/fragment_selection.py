@@ -46,25 +46,12 @@ from emgteach.selection import (
     total_duration_s,
 )
 
-# Default detection parameters shown in the dialog, read straight from the core
-# function so the two never drift apart.
+# Detection parameters, read straight from the core function so the two never
+# drift apart. They are no longer editable here: see _build_ui.
 _suggest_defaults = inspect.signature(suggest_significant_segments).parameters
 _DEFAULT_K = float(_suggest_defaults["k"].default)
 _DEFAULT_MIN_DURATION_S = float(_suggest_defaults["min_duration_s"].default)
 _DEFAULT_MERGE_GAP_S = float(_suggest_defaults["merge_gap_s"].default)
-
-# Translatable labels for the segment "reason" codes emitted by the detector
-# (emgteach.selection): shown in the table's "Reason" column.
-_REASON_KEYS = {
-    "activity": "activity",
-    "whole": "Whole recording",
-    "manual": "manual",
-}
-
-
-def _reason_text(reason: str) -> str:
-    """Human-readable, translated label for a segment reason code."""
-    return tr(_REASON_KEYS.get(reason, reason)) if reason else ""
 
 
 class FragmentSelectionDialog(QDialog):
@@ -184,27 +171,26 @@ class FragmentSelectionDialog(QDialog):
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        # One paragraph on what the editor does; the second only where naming
-        # leads anywhere. Most sessions never open this dialogue at all, and a
-        # secondary tool that greets you with a wall of prose reads as a step
-        # of the practical rather than the escape hatch it is.
+        # What it is for, in the words a student would use, and when not to
+        # bother. This dialogue is used by students and most sessions never
+        # open it: it earns two short paragraphs, not a lecture.
         texto = tr(
-            "The app suggests the informative fragments (active periods), one "
-            "per contraction. Adjust, add or remove them; only the checked "
-            "fragments are analysed. You decide the final selection."
+            "Each row is one contraction found in the recording. Uncheck the "
+            "ones not worth analysing — a movement done wrong, a tug on the "
+            "cable, an effort that never got going — and only the rest is "
+            "analysed, joined up as if it had been recorded in one go.\n\n"
+            "If they are all good there is nothing to do here: cancel, and "
+            "the whole recording is analysed. To move where one begins or "
+            "ends, change its seconds with the mouse wheel, the arrows, or by "
+            "typing."
         )
         if self._naming:
             texto += "\n\n" + tr(
-                "Name a fragment with the manoeuvre, not the muscle: in "
-                "«Flexion» both channels are recorded, the flexor as agonist "
-                "and the extensor as antagonist, and that pair is what the "
-                "co-activation table measures. Give consecutive fragments the "
-                "same name and they become one window of that table — six "
-                "efforts named «Flexion» are six samples of one condition, not "
-                "six conditions. Nothing can name them for you: the detector "
-                "finds where a contraction started, not which manoeuvre it "
-                "was. That is read off the trace, and reading it is the "
-                "exercise."
+                "With two muscles each row can also be named with the "
+                "manoeuvre — «Flexion», «Grip». The name says which movement "
+                "was being made, not which muscle contracted, and it is what "
+                "tells the co-activation table which of the two is the "
+                "agonist. Consecutive rows with the same name count as one."
             )
         info = QLabel(texto)
         info.setWordWrap(True)
@@ -217,16 +203,18 @@ class FragmentSelectionDialog(QDialog):
         root.addWidget(self._canvas, stretch=1)
 
         # Fragment table.
-        self._table = QTableWidget(0, 6)
+        # No «Reason» column: it said «activity» / «manual» / «whole
+        # recording», which is where a row came from, not anything the
+        # student can act on.
+        self._table = QTableWidget(0, 5)
         self._table.setHorizontalHeaderLabels([
             tr("Keep"), tr("Start (s)"), tr("End (s)"), tr("Duration (s)"),
-            tr("Manoeuvre"), tr("Reason"),
+            tr("Manoeuvre"),
         ])
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         header = self._table.horizontalHeader()
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
         if not self._naming:
             # Hidden rather than removed: the column indices are wired into the
             # row builder and the readers, and one practical having a column
@@ -234,104 +222,22 @@ class FragmentSelectionDialog(QDialog):
             self._table.setColumnHidden(4, True)
         root.addWidget(self._table, stretch=1)
 
-        # Envelope-filter cut-offs used to detect activity and draw the preview.
-        filter_row = QHBoxLayout()
-        filter_row.addWidget(QLabel(tr("Envelope filter (Hz):")))
-        filter_row.addWidget(QLabel(tr("band")))
-        self._spin_flow = QDoubleSpinBox()
-        self._spin_flow.setRange(0.1, 100.0)
-        self._spin_flow.setDecimals(1)
-        self._spin_flow.setSingleStep(0.5)
-        self._spin_flow.setValue(self._f_low)
-        self._spin_flow.setFixedWidth(70)
-        self._spin_flow.setToolTip(tr("Band-pass low cut-off (Hz)."))
-        filter_row.addWidget(self._spin_flow)
-        filter_row.addWidget(QLabel("–"))
-        self._spin_fhigh = QDoubleSpinBox()
-        self._spin_fhigh.setRange(10.0, 1000.0)
-        self._spin_fhigh.setDecimals(1)
-        self._spin_fhigh.setSingleStep(5.0)
-        self._spin_fhigh.setValue(self._f_high)
-        self._spin_fhigh.setFixedWidth(78)
-        self._spin_fhigh.setToolTip(tr("Band-pass high cut-off (Hz)."))
-        filter_row.addWidget(self._spin_fhigh)
-        filter_row.addWidget(QLabel(tr("notch")))
-        self._spin_fnotch = QDoubleSpinBox()
-        self._spin_fnotch.setRange(10.0, 100.0)
-        self._spin_fnotch.setDecimals(1)
-        self._spin_fnotch.setSingleStep(1.0)
-        self._spin_fnotch.setValue(self._f_notch)
-        self._spin_fnotch.setFixedWidth(70)
-        self._spin_fnotch.setToolTip(tr("Mains-notch frequency (Hz), usually 50 or 60."))
-        filter_row.addWidget(self._spin_fnotch)
-        filter_row.addWidget(QLabel(tr("envelope")))
-        self._spin_fenv = QDoubleSpinBox()
-        self._spin_fenv.setRange(1.0, 20.0)
-        self._spin_fenv.setDecimals(1)
-        self._spin_fenv.setSingleStep(0.5)
-        self._spin_fenv.setValue(self._f_env)
-        self._spin_fenv.setFixedWidth(70)
-        self._spin_fenv.setToolTip(
-            tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
-        )
-        filter_row.addWidget(self._spin_fenv)
-        filter_row.addStretch()
-        root.addLayout(filter_row)
-        # Recompute the envelope/preview when a cut-off is committed.
-        for spin in (
-            self._spin_flow,
-            self._spin_fhigh,
-            self._spin_fnotch,
-            self._spin_fenv,
-        ):
-            spin.editingFinished.connect(self._recompute_envelope)
-
-        # Detection parameters for the automatic proposal (editable defaults).
-        params_row = QHBoxLayout()
-        params_row.addWidget(QLabel(tr("Detection:")))
-        params_row.addWidget(QLabel(tr("sensitivity k")))
-        self._spin_k = QDoubleSpinBox()
-        self._spin_k.setRange(0.5, 10.0)
-        self._spin_k.setSingleStep(0.5)
-        self._spin_k.setValue(_DEFAULT_K)
-        self._spin_k.setFixedWidth(70)
-        self._spin_k.setToolTip(
-            tr(
-                "Threshold in robust standard deviations above the resting "
-                "baseline. Lower = more sensitive (keeps weaker activity)."
-            )
-        )
-        params_row.addWidget(self._spin_k)
-        params_row.addWidget(QLabel(tr("min. duration")))
-        self._spin_min_dur = QDoubleSpinBox()
-        self._spin_min_dur.setRange(0.1, 10.0)
-        self._spin_min_dur.setSingleStep(0.1)
-        self._spin_min_dur.setValue(_DEFAULT_MIN_DURATION_S)
-        self._spin_min_dur.setSuffix(" s")
-        self._spin_min_dur.setFixedWidth(84)
-        self._spin_min_dur.setToolTip(
-            tr("Shortest fragment kept; briefer active periods are discarded.")
-        )
-        params_row.addWidget(self._spin_min_dur)
-        params_row.addWidget(QLabel(tr("merge gap")))
-        self._spin_merge_gap = QDoubleSpinBox()
-        self._spin_merge_gap.setRange(0.0, 5.0)
-        self._spin_merge_gap.setSingleStep(0.1)
-        self._spin_merge_gap.setValue(_DEFAULT_MERGE_GAP_S)
-        self._spin_merge_gap.setSuffix(" s")
-        self._spin_merge_gap.setFixedWidth(84)
-        self._spin_merge_gap.setToolTip(
-            tr("Active periods separated by less than this are merged into one.")
-        )
-        params_row.addWidget(self._spin_merge_gap)
-        params_row.addStretch()
-        root.addLayout(params_row)
+        # The envelope cut-offs and the detection parameters used to live
+        # here, eight spin boxes of them. They are gone. Band and notch are
+        # the profile's and are not set anywhere else in the program; the
+        # envelope smoothing belongs to the tab that opened this dialogue,
+        # and having a second copy meant a student who came in to delete a
+        # row could change the analysis without knowing it. The three
+        # detection numbers — sensitivity, minimum duration, merge gap —
+        # cannot be set by anyone who does not already know what they do,
+        # and the recourse when the proposal is wrong is the one that needs
+        # no explanation: drag the seconds, add a row, delete a row.
 
         # Action buttons.
         btn_row = QHBoxLayout()
-        self._btn_auto = QPushButton(tr("Auto-suggest"))
+        self._btn_auto = QPushButton(tr("Start over"))
         self._btn_auto.setToolTip(
-            tr("Re-run the automatic fragment proposal with the parameters above.")
+            tr("Discard the changes and go back to what the app proposed.")
         )
         self._btn_auto.clicked.connect(self._auto_suggest)
         btn_row.addWidget(self._btn_auto)
@@ -416,10 +322,6 @@ class FragmentSelectionDialog(QDialog):
         ))
         self._table.setCellWidget(row, 4, combo_nombre)
 
-        reason_item = QTableWidgetItem(_reason_text(seg.reason))
-        reason_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-        self._table.setItem(row, 5, reason_item)
-
         self._row_widgets.append({
             "keep": chk, "start": spin_start, "end": spin_end,
             "dur": dur_item, "label": combo_nombre,
@@ -448,29 +350,6 @@ class FragmentSelectionDialog(QDialog):
 
     # -- actions -------------------------------------------------------------
 
-    def _recompute_envelope(self) -> None:
-        """Recompute the preview envelope from the current filter cut-offs.
-
-        Invalid bands (e.g. ``f_low >= f_high``) are ignored: the previous
-        envelope is kept so a half-typed value never crashes the dialog.
-        """
-        self._f_low = self._spin_flow.value()
-        self._f_high = self._spin_fhigh.value()
-        self._f_notch = self._spin_fnotch.value()
-        self._f_env = self._spin_fenv.value()
-        try:
-            self._env = process_offline(
-                self._raw,
-                self._fs,
-                f_low=self._f_low,
-                f_high=self._f_high,
-                f_notch=self._f_notch,
-                f_env=self._f_env,
-            )["emg_envelope"]
-        except Exception:  # pragma: no cover — invalid interim cut-offs
-            return
-        self._refresh_derived()
-
     def _auto_suggest(self) -> None:
         """Propose the active stretches — inside the span, and only there.
 
@@ -480,8 +359,6 @@ class FragmentSelectionDialog(QDialog):
         the decision this application takes out of the operator's hands, and
         it was arriving back as a suggestion.
         """
-        # Sync the filter cut-offs first so preview and detection agree.
-        self._recompute_envelope()
         a, b = self._span
         i0, i1 = round(a * self._fs), round(b * self._fs)
         segs = suggest_significant_segments(
@@ -491,9 +368,9 @@ class FragmentSelectionDialog(QDialog):
             f_high=self._f_high,
             f_notch=self._f_notch,
             f_env=self._f_env,
-            k=self._spin_k.value(),
-            min_duration_s=self._spin_min_dur.value(),
-            merge_gap_s=self._spin_merge_gap.value(),
+            k=_DEFAULT_K,
+            min_duration_s=_DEFAULT_MIN_DURATION_S,
+            merge_gap_s=_DEFAULT_MERGE_GAP_S,
         )
         # Back into the file's own clock: the worker crops by these numbers.
         self._set_rows([
@@ -566,10 +443,10 @@ class FragmentSelectionDialog(QDialog):
         actual analysis so it matches what was seen here.
         """
         return {
-            "f_low": self._spin_flow.value(),
-            "f_high": self._spin_fhigh.value(),
-            "f_notch": self._spin_fnotch.value(),
-            "f_env": self._spin_fenv.value(),
+            "f_low": self._f_low,
+            "f_high": self._f_high,
+            "f_notch": self._f_notch,
+            "f_env": self._f_env,
         }
 
     def named_segments(self) -> list[tuple[float, float, str]]:
