@@ -124,6 +124,12 @@ def _compact_equipment(equipment: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+#: How many EDF+ annotation signals to allocate. Each holds roughly five
+#: annotations per second; see BufferedEdfWriter.__post_init__ for why this is
+#: not one.
+_ANNOTATION_SIGNALS = 4
+
+
 @dataclass(frozen=True)
 class ChannelInfo:
     """Metadata for a single EDF+ channel.
@@ -437,6 +443,16 @@ class BufferedEdfWriter:
         self._writer = pyedflib.EdfWriter(
             str(self.path), n, file_type=pyedflib.FILETYPE_EDFPLUS
         )
+        # EDF+ stores annotations inside the data records, so their capacity is
+        # a *rate*, not a total: with the single annotation signal pyedflib
+        # allocates by default, roughly five annotations per second survive and
+        # the rest are dropped without an error — the same silent-loss family as
+        # the buffered-write defect. A two-phase session can put four marks in
+        # one second (the end of a calibration repetition, the next start, a
+        # phase change), one short of the cliff; a derived file that rewrites
+        # them all is well past it. Four signals lift the ceiling to about
+        # twenty per second.
+        self._writer.set_number_of_annotation_signals(_ANNOTATION_SIGNALS)
         self._writer.setSignalHeaders([ch.to_pyedflib_header() for ch in self.channels])
 
         # EDF+ identification header (student, protocol, ...) before any data.

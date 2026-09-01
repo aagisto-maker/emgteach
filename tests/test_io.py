@@ -338,6 +338,26 @@ class TestAnnotationRoundTrip:
         labels = [desc for _onset, desc in result["markers"]]
         assert "inicio contracción" in labels
 
+    def test_a_crowded_second_keeps_every_annotation(self, out_path: str) -> None:
+        """Twelve marks inside one second must all come back.
+
+        EDF+ keeps annotations inside the data records, so their capacity is a
+        rate: with pyedflib's default single annotation signal only about five
+        per second survive and the rest vanish without an error. A real session
+        crossed that line — the derived file lost ``PREP start`` and
+        ``REC start`` — which is the same silent loss as the buffered-write
+        defect, in a different header field.
+        """
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        escritas = [f"m{i:02d}" for i in range(12)]
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(np.zeros(3 * FS, dtype=np.float64))
+            for i, texto in enumerate(escritas):
+                writer.add_annotation(1.0 + i * 0.05, texto)
+
+        leidas = [desc for _onset, desc in read_edf_pyedflib(out_path)["markers"]]
+        assert [t for t in escritas if t not in leidas] == []
+
 
 class TestPhysicalRangeNoClipping:
     """The device-aware physical range must let a wide Arduino signal survive
