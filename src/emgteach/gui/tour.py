@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 from emgteach.gui.widgets.coach import CoachStep
 from emgteach.i18n import tr
-from emgteach.modes import MODE_PAIR, mode_uses_acc
+from emgteach.modes import MODE_PAIR, mode_fixed_labels, mode_uses_acc
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from emgteach.gui.app import MainWindow
@@ -81,16 +81,20 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         lambda: adq._btn_conectar,
         tab=TAB_ACQ,
     ))
-    steps.append(CoachStep(
-        tr("Assign the labels"),
-        tr(
-            "This name is written into the EDF file as the channel label, so "
-            "the recording keeps the muscle and the channel identified. The "
-            "anatomical name is the one to use."
-        ),
-        lambda: adq._edit_labels[0],
-        tab=TAB_ACQ,
-    ))
+    # Only where there is a name to assign: the kinematics practical fixes its
+    # own channel names, so the row is not on screen and a step pointing at it
+    # would have nothing to point at.
+    if not mode_fixed_labels(mode):
+        steps.append(CoachStep(
+            tr("Assign the labels"),
+            tr(
+                "This name is written into the EDF file as the channel label, "
+                "so the recording keeps the muscle and the channel identified. "
+                "The anatomical name is the one to use."
+            ),
+            lambda: adq._edit_labels[0],
+            tab=TAB_ACQ,
+        ))
 
     if mode_uses_acc(mode):
         steps.append(CoachStep(

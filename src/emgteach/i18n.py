@@ -974,6 +974,7 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    "Muscle": "Músculo",
     'Advanced analysis — muscle kinematics': 'Análisis avanzado — cinemática muscular',
     '{n} named': '{n} con nombre',
     'What it is': 'Qué es',

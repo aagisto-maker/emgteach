@@ -71,6 +71,23 @@ def _tr_keys() -> dict[str, str]:
     return found
 
 
+def test_the_names_a_practical_imposes_are_translated() -> None:
+    """Channel names fixed by a practical reach ``tr()`` as a variable.
+
+    The scan above only sees literals, so a name held as data — here, and the
+    marker presets in ``SignalProfile`` — slips past it and shows in English
+    to a Spanish-speaking student. Which is the exact failure that test was
+    written for, arriving by a door it cannot watch.
+    """
+    from emgteach.modes import MODES, mode_fixed_labels
+
+    faltan = [
+        name for mode in MODES for name in mode_fixed_labels(mode)
+        if name not in i18n._ES
+    ]
+    assert not faltan, f"sin traducción al español: {faltan}"
+
+
 def test_every_translatable_string_has_a_spanish_entry() -> None:
     """No tr() literal may fall back to English in the Spanish interface.
 

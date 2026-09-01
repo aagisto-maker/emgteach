@@ -80,6 +80,8 @@ from emgteach.io import (
 from emgteach.modes import (
     DEFAULT_MODE,
     mode_channels,
+    mode_fixed_labels,
+    mode_protocol,
     mode_requires_calibration,
     mode_uses_acc,
     normalise_mode,
@@ -551,7 +553,13 @@ class AcquisitionTab(QWidget):
         nchan_l.addWidget(self._combo_n_channels)
         ch_row.addWidget(self._box_nchan)
 
-        ch_row.addWidget(QLabel(tr("Labels:")))
+        # Named container: a practical that fixes its channel names hides the
+        # whole thing, caption included, rather than leaving "Labels:" over an
+        # empty stretch of row.
+        self._box_labels = QWidget()
+        labels_row = QHBoxLayout(self._box_labels)
+        labels_row.setContentsMargins(0, 0, 0, 0)
+        labels_row.addWidget(QLabel(tr("Labels:")))
         self._edit_labels: list[QLineEdit] = []
         for i in range(MAX_CHANNELS):
             edit = QLineEdit()
@@ -573,7 +581,8 @@ class AcquisitionTab(QWidget):
             edit.setMinimumWidth(130)
             edit.textChanged.connect(self._on_label_changed)
             self._edit_labels.append(edit)
-            ch_row.addWidget(edit, stretch=1)
+            labels_row.addWidget(edit, stretch=1)
+        ch_row.addWidget(self._box_labels, stretch=1)
         # Whole accelerometer block in one container, shown only by the
         # kinematics mode. Its caption is a plain label so that hiding the
         # container takes it along.
@@ -677,14 +686,11 @@ class AcquisitionTab(QWidget):
             lambda v: self._settings.setValue("adquisicion/student_code", v)
         )
         meta_row.addWidget(self._edit_student_code)
-        meta_row.addWidget(QLabel(tr("Protocol:")))
-        self._edit_protocol = QLineEdit()
-        self._edit_protocol.setPlaceholderText(tr("e.g. Isometric contraction 30 s"))
-        self._edit_protocol.setText(self._settings.value("adquisicion/protocol", ""))
-        self._edit_protocol.textChanged.connect(
-            lambda v: self._settings.setValue("adquisicion/protocol", v)
-        )
-        meta_row.addWidget(self._edit_protocol, stretch=3)
+        # No protocol field. It asked the operator to type what the
+        # application already knew — the practical is chosen at the top of the
+        # window — and let the header disagree with the mode it was recorded
+        # in. It is written from the mode now; see modes.mode_protocol().
+        meta_row.addStretch()
         cfg_outer.addLayout(meta_row)
 
         # Row 5: classroom broadcast — students follow on their phone browser.
@@ -1587,7 +1593,7 @@ class AcquisitionTab(QWidget):
         metadata = RecordingMetadata(
             student_name=self._edit_student.text().strip(),
             student_code=self._edit_student_code.text().strip(),
-            protocol=self._edit_protocol.text().strip(),
+            protocol=mode_protocol(self._mode),
             equipment=device.name,
         )
         # Live quality check against the device's true physical rails.
@@ -3518,13 +3524,25 @@ class AcquisitionTab(QWidget):
         self._mode = normalise_mode(mode)
         self._apply_mode_channels(mode)
 
-        # A fresh install has no saved port, so the connection row is revealed
-        # even without the advanced flag — otherwise a new user could not
-        # connect anything and the app would look broken.
+        # Which device, and where it is plugged in, is offered in every
+        # practical. It used to be a fine control, on the reasoning that a
+        # laboratory is set up once — but the practicals are where the app is
+        # actually used, and sending someone to a different mode to change a
+        # COM port is sending them away from the exercise to fix the tool.
         port = str(self._settings.value("adquisicion/port", "") or "").strip()
-        first_setup = not advanced and not port
-        self._box_device.setVisible(advanced or first_setup)
+        first_setup = not port
+        self._box_device.setVisible(True)
         self._lbl_first_setup.setVisible(first_setup)
+
+        # Channel names the practical imposes. The kinematics one relates the
+        # EMG of a muscle to the movement of its segment, so both roles are
+        # fixed and only "which muscle" is open — and that is the name the
+        # student writes on their sheet, not in the header.
+        fijas = mode_fixed_labels(mode)
+        for i, edit in enumerate(self._edit_labels):
+            if i < len(fijas):
+                edit.setText(tr(fijas[i]))
+        self._box_labels.setVisible(not fijas)
 
         # Belongs to the kinematics practical, not to the fine controls.
         uses_acc = mode_uses_acc(mode)

@@ -50,7 +50,9 @@ __all__ = [
     "mode_complexity",
     "mode_complexity_colour",
     "mode_complexity_label",
+    "mode_fixed_labels",
     "mode_label",
+    "mode_protocol",
     "mode_requires_calibration",
     "mode_shows_fine_controls",
     "mode_uses_acc",
@@ -73,7 +75,7 @@ DEFAULT_MODE = MODE_SINGLE
 
 # EMG channels each mode records. The accelerometer, where used, is a further
 # channel and is not counted here.
-_CHANNELS = {MODE_SINGLE: 1, MODE_PAIR: 2, MODE_KINEMATICS: 2}
+_CHANNELS = {MODE_SINGLE: 1, MODE_PAIR: 2, MODE_KINEMATICS: 1}
 
 # Only the kinematics practical records the accelerometer. Whether it sits on
 # the muscle (MMG) or on the moving segment (tremor, force-velocity) stays a
@@ -103,8 +105,44 @@ def normalise_mode(value: object) -> str:
     return value if value in MODES else DEFAULT_MODE
 
 
+#: What the EDF calls each channel, per practical. Fixed where the practical
+#: fixes them: the kinematics one relates the EMG of *a* muscle to the movement
+#: of the segment it drives, so "which muscle" is the only open question and the
+#: roles are not. The other two record muscles the operator chooses and names.
+_FIXED_LABELS = {MODE_KINEMATICS: ("Muscle",)}
+
+
 def mode_channels(mode: str) -> int:
     return _CHANNELS.get(normalise_mode(mode), 1)
+
+
+def mode_fixed_labels(mode: str) -> tuple[str, ...]:
+    """Channel names this practical imposes, or ``()`` when it names none.
+
+    Offering a text box for a name that cannot sensibly be anything else is
+    asking a question with one answer — and inviting a recording whose header
+    disagrees with what the practical was.
+    """
+    return _FIXED_LABELS.get(normalise_mode(mode), ())
+
+
+def mode_protocol(mode: str) -> str:
+    """What the EDF header records this recording as.
+
+    Written from the practical instead of typed. It used to be a free-text
+    field beside the student's name, which asked the operator to name what the
+    application already knew, and let the header disagree with the mode it was
+    recorded in.
+
+    Deliberately **not** translated: the header outlives the session and is
+    read by whoever opens the file later, so a Spanish recording and an English
+    one describing the same practical have to say the same thing.
+    """
+    return {
+        MODE_SINGLE: "single-muscle contraction",
+        MODE_PAIR: "agonist/antagonist contraction",
+        MODE_KINEMATICS: "muscle kinematics",
+    }[normalise_mode(mode)]
 
 
 def mode_uses_acc(mode: str) -> bool:
