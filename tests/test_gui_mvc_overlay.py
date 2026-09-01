@@ -114,15 +114,44 @@ class TestNoMessageLeavesThePanel:
             _x, y, _w, alto = overlay.message_rect()
             assert y + alto <= overlay.height(), f"{modo}: {texto[:40]!r}"
 
-    def test_a_long_message_makes_the_panel_taller(self, overlay) -> None:
-        """The mechanism, stated on its own: without it the fix is a coat of
-        paint and the next long string overflows again."""
+    #: A message that needs several lines at the panel's width.
+    _LARGO = ("A message long enough to need several lines once it is wrapped "
+              "at the width of this panel, which a single-line strip could "
+              "never have shown without running off both of its edges.")
+
+    def test_the_panel_follows_what_the_text_measures(
+        self, overlay, monkeypatch
+    ) -> None:
+        """The mechanism, stated without depending on the platform's fonts.
+
+        Asserting it through a real string made this test a statement about
+        the machine's font metrics rather than about the widget: on a Linux
+        runner with no fonts installed the long message measured under the
+        panel's own floor, both heights came out at 210, and the suite failed
+        for a reason that had nothing to do with the code. What the widget
+        promises is that the height follows the measurement — so the
+        measurement is the thing to control.
+        """
         overlay.show_done("MVC ready", "Short.")
         corto = overlay.height()
-        overlay.show_done("MVC ready", "A message long enough to need "
-                          "several lines once it is wrapped at the width of "
-                          "this panel, which a single-line strip could never "
-                          "have shown without running off both of its edges.")
+        monkeypatch.setattr(
+            type(overlay), "text_height", lambda self, text=None: 400)
+        overlay.show_done("MVC ready", self._LARGO)
+        assert overlay.height() > corto
+        assert overlay.height() >= 400
+
+    def test_a_long_message_makes_the_panel_taller(self, overlay) -> None:
+        """And the same thing end to end, wherever text can be measured.
+
+        Skipped rather than weakened where it cannot: a machine with no fonts
+        cannot tell a long message from a short one, and a test that quietly
+        passed there would be claiming something it never checked.
+        """
+        if overlay.text_height(self._LARGO) <= overlay.text_height("Short."):
+            pytest.skip("this Qt has no fonts: text cannot be measured")
+        overlay.show_done("MVC ready", "Short.")
+        corto = overlay.height()
+        overlay.show_done("MVC ready", self._LARGO)
         assert overlay.height() > corto
 
     def test_a_short_message_does_not_shrink_it_below_its_floor(

@@ -13,7 +13,6 @@ import re
 from pathlib import Path
 
 import pytest
-import tomllib
 
 import emgteach
 
@@ -51,10 +50,17 @@ def test_the_supported_python_versions_match_the_packaging(
 ) -> None:
     """A stale version claim in the README sent people to install the wrong
     Python once already, over an extra that had not existed for months."""
-    pyproject = tomllib.loads(
-        (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    )
-    requires = pyproject["project"]["requires-python"]
+    # Read with a regular expression rather than a TOML parser: ``tomllib``
+    # is standard library only from 3.11, and this repository supports 3.10 —
+    # so the test that guards the supported-version claim was itself the one
+    # thing that could not run on the lowest version it guards. One scalar is
+    # not worth a dependency, and a format change fails the assertion below
+    # rather than passing quietly.
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    match_req = re.search(
+        r'^\s*requires-python\s*=\s*"([^"]+)"', pyproject, re.MULTILINE)
+    assert match_req, "pyproject.toml no longer declares requires-python"
+    requires = match_req.group(1)
     floor = re.search(r">=\s*3\.(\d+)", requires)
     ceiling = re.search(r"<\s*3\.(\d+)", requires)
     assert floor and ceiling, requires
