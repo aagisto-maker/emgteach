@@ -183,7 +183,12 @@ from emgteach.io import (
     list_edf_emg_channels,
     read_edf_metadata,
 )
-from emgteach.modes import DEFAULT_MODE, MODE_FREE, MODE_PAIR, mode_uses_acc
+from emgteach.modes import (
+    DEFAULT_MODE,
+    MODE_KINEMATICS,
+    MODE_PAIR,
+    mode_uses_acc,
+)
 from emgteach.mvc import overlay_curves
 from emgteach.phases import NO_CALIBRATION, reference_source_text
 from emgteach.profiles import EMG_PROFILE
@@ -2518,7 +2523,7 @@ class AnalysisTab(QWidget):
         level; the rest belong to one practical each.
         """
         pid = self._panel_pids[index]
-        if mode == MODE_FREE:
+        if mode == MODE_KINEMATICS:
             return True                      # everything: that is what it is for
         if mode == MODE_PAIR:
             return pid in (0, _RAW2_PID, _OVERLAY_PID)

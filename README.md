@@ -38,11 +38,11 @@ reimplemented the BITalino backend over `pyserial` (no PyBluez) and
 shipped a standalone Windows executable.
 
 On this development branch the application is **configured by choosing
-the practical rather than by setting controls one at a time**: four
-practicals — one muscle, agonist/antagonist, muscle kinematics and a free
-analysis — fix the channel count and the accelerometer, and each tab
-offers only the measurements that suit the practical, with the fine
-controls reachable in the free analysis alone. It also gains a **guided
+the practical rather than by setting controls one at a time**: three
+practicals — one muscle, agonist/antagonist and muscle kinematics — fix
+the channel count and the accelerometer, and each tab offers only the
+measurements that suit the practical, with the fine controls reachable in
+the kinematics practical alone, which is advanced by its own nature. It also gains a **guided
 tour** over the interface itself, a **map** of the route a recording
 takes, a **rehearsal** of the guided force-velocity procedure that runs
 with no hardware, and an **agonist/antagonist co-activation index**
@@ -55,7 +55,7 @@ millivolts. See
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **714 tests** passing on Linux and Windows across Python
+test suite of **700 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 

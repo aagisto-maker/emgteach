@@ -80,7 +80,6 @@ from emgteach.io import (
 from emgteach.modes import (
     DEFAULT_MODE,
     mode_channels,
-    mode_forces_setup,
     mode_requires_calibration,
     mode_uses_acc,
     normalise_mode,
@@ -3567,11 +3566,18 @@ class AcquisitionTab(QWidget):
         Driven through the existing widgets so their slots run and the plots,
         legend, load bars and broadcast configuration all follow.
         """
-        if not mode_forces_setup(mode):
-            # The free mode offers everything and imposes nothing: whatever the
-            # user set stays set.
-            return
-
+        # Every practical does this, including the kinematics one. It used
+        # to be the exception, as the "free analysis" mode that imposed
+        # nothing — but the channel selector is hidden in every mode on
+        # purpose, so "whatever the user set stays set" meant a channel count
+        # that nothing on screen could show or change. That is the state this
+        # module exists to make unreachable.
+        #
+        # Imposing is not locking: this *sets* the widgets when the practical
+        # is chosen and leaves them editable, and the accelerometer's own
+        # checkbox stays on screen. Choosing the kinematics practical arrives
+        # with the accelerometer on, which is what makes it kinematics, and
+        # unticking it afterwards is still the operator's to do.
         wanted = mode_channels(mode)
         if self._combo_n_channels.currentIndex() != wanted - 1:
             self._combo_n_channels.setCurrentIndex(wanted - 1)

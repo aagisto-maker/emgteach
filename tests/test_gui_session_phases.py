@@ -16,7 +16,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from emgteach.modes import MODE_FREE, MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE
+from emgteach.modes import MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE
 from emgteach.phases import parse_phase_markers
 from emgteach.profiles import EMG_PROFILE
 
@@ -224,7 +224,7 @@ class TestWhenTheRecordButtonRunsTheWholeSession:
         where every press of the record button raised."""
         for mode, espera in (
             (MODE_PAIR, True), (MODE_SINGLE, False),
-            (MODE_KINEMATICS, False), (MODE_FREE, False),
+            (MODE_KINEMATICS, False),
         ):
             tab.apply_mode(mode, False)
             tab._mvc_ref = [None] * 8

@@ -17,8 +17,23 @@ from the mode makes that state unreachable.
 the user had to hold both in mind to know why a control was or was not on
 screen. Each practical now carries its own level, and the fine controls —
 filter cut-offs, region of interest, fatigue thresholds, onset detection —
-live in a fourth mode of their own, :data:`MODE_FREE`, which exists so that
-nothing is lost and nothing is on by default.
+belong to :data:`MODE_KINEMATICS`, the one practical advanced enough to need
+them.
+
+**There were two kinematics practicals and only one of them was a practical.**
+A restricted one — a single muscle, the accelerometer, no fine controls — and a
+"free analysis" that recorded the accelerometer too, with two muscles and every
+control on screen. The second was a superset of the first, so all the first
+contributed was *removal*; and "free analysis" named none of what it did. It
+was not free analysis at all: it was a kinematics with options, which is what
+the practical needs to be, since deriving a force-velocity curve from a
+movement is an advanced exercise by its own nature and the reader is already
+past the point where a hidden filter cut-off protects them.
+
+So there are three practicals, and the third is named for what it measures.
+Its stored setting is still ``"kinematics"``, and a session saved under the old
+``"free"`` is read as the same thing — the two collapsed into one, and nobody
+should be thrown back to the single-muscle default for having chosen either.
 """
 
 from __future__ import annotations
@@ -28,7 +43,6 @@ from emgteach.i18n import tr
 __all__ = [
     "DEFAULT_MODE",
     "MODES",
-    "MODE_FREE",
     "MODE_KINEMATICS",
     "MODE_PAIR",
     "MODE_SINGLE",
@@ -36,7 +50,6 @@ __all__ = [
     "mode_complexity",
     "mode_complexity_colour",
     "mode_complexity_label",
-    "mode_forces_setup",
     "mode_label",
     "mode_requires_calibration",
     "mode_shows_fine_controls",
@@ -46,24 +59,26 @@ __all__ = [
 
 MODE_SINGLE = "single"
 MODE_PAIR = "pair"
+#: Movement and the force-velocity relationship, with every control on screen.
+#: See the note above on why there is one of these and not two.
 MODE_KINEMATICS = "kinematics"
-#: Everything on offer, for someone who knows what they are looking for. Not a
-#: practical: it makes no teaching claim about what to record or read.
-MODE_FREE = "free"
 
-MODES: tuple[str, ...] = (MODE_SINGLE, MODE_PAIR, MODE_KINEMATICS, MODE_FREE)
+#: What the setting said while this practical was called "free analysis". Read
+#: as :data:`MODE_KINEMATICS` so an installation that had it selected opens on
+#: the same practical instead of falling back to the default.
+_LEGACY_FREE = "free"
+
+MODES: tuple[str, ...] = (MODE_SINGLE, MODE_PAIR, MODE_KINEMATICS)
 DEFAULT_MODE = MODE_SINGLE
 
 # EMG channels each mode records. The accelerometer, where used, is a further
 # channel and is not counted here.
-_CHANNELS = {MODE_SINGLE: 1, MODE_PAIR: 2, MODE_KINEMATICS: 1, MODE_FREE: 2}
+_CHANNELS = {MODE_SINGLE: 1, MODE_PAIR: 2, MODE_KINEMATICS: 2}
 
-# Only kinematics and the free mode record the accelerometer. Whether it sits
-# on the muscle (MMG) or on the moving segment (tremor, force-velocity) stays a
+# Only the kinematics practical records the accelerometer. Whether it sits on
+# the muscle (MMG) or on the moving segment (tremor, force-velocity) stays a
 # choice inside the mode, since both are the same practical set-up.
-_USES_ACC = {
-    MODE_SINGLE: False, MODE_PAIR: False, MODE_KINEMATICS: True, MODE_FREE: True,
-}
+_USES_ACC = {MODE_SINGLE: False, MODE_PAIR: False, MODE_KINEMATICS: True}
 
 #: How much the practical asks of the reader, for the band across the top. The
 #: point is not to rank the practicals but to warn: the further down this list,
@@ -72,19 +87,19 @@ _COMPLEXITY = {
     MODE_SINGLE: "basic",
     MODE_PAIR: "intermediate",
     MODE_KINEMATICS: "advanced",
-    MODE_FREE: "free",
 }
 
 _COMPLEXITY_COLOURS = {
     "basic": "#2E7D32",         # green
     "intermediate": "#E67E22",  # amber
     "advanced": "#8E44AD",      # purple
-    "free": "#5D6D7E",          # slate — deliberately not on the same scale
 }
 
 
 def normalise_mode(value: object) -> str:
     """Coerce a stored setting to a valid mode, falling back to the default."""
+    if value == _LEGACY_FREE:
+        return MODE_KINEMATICS
     return value if value in MODES else DEFAULT_MODE
 
 
@@ -94,18 +109,6 @@ def mode_channels(mode: str) -> int:
 
 def mode_uses_acc(mode: str) -> bool:
     return _USES_ACC.get(normalise_mode(mode), False)
-
-
-def mode_forces_setup(mode: str) -> bool:
-    """Whether the mode imposes its channel count and accelerometer.
-
-    A practical does: choosing it *is* choosing what to record, and letting the
-    two disagree is the bug this module exists to prevent. The free mode does
-    not — imposing a set-up on the mode whose whole point is that nothing is
-    imposed would be a contradiction. It shows every control and leaves them
-    where the user put them.
-    """
-    return normalise_mode(mode) != MODE_FREE
 
 
 def mode_requires_calibration(mode: str) -> bool:
@@ -124,15 +127,16 @@ def mode_requires_calibration(mode: str) -> bool:
 def mode_shows_fine_controls(mode: str) -> bool:
     """Whether this mode puts the fine controls on screen.
 
-    Only the free mode does. A practical that offered them would be asking the
+    Only the kinematics practical does. The other two would be asking the
     student to decide a filter cut-off in the middle of a physiology exercise,
-    which is a different lesson from the one it is teaching.
+    which is a different lesson from the one they are teaching; a reader
+    deriving a force-velocity curve is already past that point.
     """
-    return normalise_mode(mode) == MODE_FREE
+    return normalise_mode(mode) == MODE_KINEMATICS
 
 
 def mode_complexity(mode: str) -> str:
-    """Identifier of the complexity level: basic, intermediate, advanced, free."""
+    """Identifier of the complexity level: basic, intermediate or advanced."""
     return _COMPLEXITY[normalise_mode(mode)]
 
 
@@ -146,8 +150,7 @@ def mode_complexity_label(mode: str) -> str:
     return {
         "basic": tr("Basic analysis — direct measurements"),
         "intermediate": tr("Intermediate analysis — comparison between muscles"),
-        "advanced": tr("Advanced analysis — derived quantities"),
-        "free": tr("Free analysis — every control, no guidance"),
+        "advanced": tr("Advanced analysis — muscle kinematics"),
     }[mode_complexity(mode)]
 
 
@@ -160,5 +163,4 @@ def mode_label(mode: str) -> str:
         # the segment. The force-velocity curve derived from it is kinetic,
         # but what the sensor reads is kinematic.
         MODE_KINEMATICS: tr("Muscle kinematics"),
-        MODE_FREE: tr("Free analysis"),
     }[normalise_mode(mode)]

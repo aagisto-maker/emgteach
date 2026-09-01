@@ -19,7 +19,6 @@ from pathlib import Path
 
 from emgteach.i18n import get_language, tr
 from emgteach.modes import (
-    MODE_FREE,
     MODE_KINEMATICS,
     MODE_PAIR,
     MODE_SINGLE,
@@ -44,9 +43,9 @@ MAPA_DIR = Path(__file__).resolve().parent.parent / "resources" / "mapa"
 #: is the tab index the application already uses.
 ESTACIONES = (0, 1, 2)
 
-TODOS = (MODE_SINGLE, MODE_PAIR, MODE_KINEMATICS, MODE_FREE)
-CON_ACC = (MODE_KINEMATICS, MODE_FREE)
-UN_MUSCULO = (MODE_SINGLE, MODE_KINEMATICS, MODE_FREE)
+TODOS = (MODE_SINGLE, MODE_PAIR, MODE_KINEMATICS)
+CON_ACC = (MODE_KINEMATICS,)
+UN_MUSCULO = (MODE_SINGLE,)
 
 
 @dataclass(frozen=True)

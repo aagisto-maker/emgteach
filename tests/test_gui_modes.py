@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 from emgteach.modes import (
-    MODE_FREE,
     MODE_KINEMATICS,
     MODE_PAIR,
     MODE_SINGLE,
@@ -154,7 +153,7 @@ def test_fine_controls_belong_to_the_free_mode(main_window, qapp, mode) -> None:
     boxes = [adq._box_thr, ana._box_fenv, ana._box_roi, cvm._box_fenv]
     set_mode(main_window, qapp, mode)
     esperado = mode_shows_fine_controls(mode)
-    assert esperado is (mode == MODE_FREE)
+    assert esperado is (mode == MODE_KINEMATICS)
     assert all(shown(b) is esperado for b in boxes)
     # Automatic onsets are not among them any more. They used to be hidden in
     # the practicals, which was defensible while there was a MARK button
@@ -190,7 +189,7 @@ class TestComplexityBand:
 
     def test_every_mode_has_its_own_level(self, main_window, qapp) -> None:
         niveles = {mode_complexity(m) for m in MODES}
-        assert niveles == {"basic", "intermediate", "advanced", "free"}
+        assert niveles == {"basic", "intermediate", "advanced"}
 
     @pytest.mark.parametrize("mode", MODES)
     def test_the_band_follows_the_mode(self, main_window, qapp, mode) -> None:
@@ -205,12 +204,15 @@ class TestComplexityBand:
             "basic", "intermediate", "advanced",
         ]
 
-    def test_the_free_mode_is_off_that_scale(self) -> None:
-        """It is not harder than kinematics, it is a different kind of thing —
-        so it does not get a colour from the same ramp."""
-        assert mode_complexity(MODE_FREE) == "free"
-        practicas = {mode_complexity_colour(m) for m in PRACTICALS}
-        assert mode_complexity_colour(MODE_FREE) not in practicas
+    def test_every_mode_is_a_practical_on_the_scale(self) -> None:
+        """There used to be a fourth mode off this ramp — "free analysis",
+        which recorded the accelerometer and two muscles and showed every
+        control. It was a superset of the kinematics practical, so all the
+        restricted one contributed was removal, and the name described none of
+        what it did. One practical, on the scale, named for what it measures."""
+        assert set(MODES) == set(PRACTICALS)
+        colores = {mode_complexity_colour(m) for m in MODES}
+        assert len(colores) == len(MODES)
 
 
 # ── analysis offers what the practical needs ───────────────────────────
@@ -227,7 +229,6 @@ def panels_offered(ana) -> set[int]:
 
 def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
     from emgteach.gui.tabs.analysis import (
-        _ACC_PIDS,
         _CORE_PIDS,
         _OVERLAY_PID,
         _RAW2_PID,
@@ -243,11 +244,9 @@ def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
     set_mode(main_window, qapp, MODE_PAIR)
     assert panels_offered(ana) == {0, _RAW2_PID, _OVERLAY_PID}
 
+    # The kinematics practical is the one place nothing is withheld: it
+    # carries the accelerometer panels and the fine controls alike.
     set_mode(main_window, qapp, MODE_KINEMATICS)
-    assert panels_offered(ana) == set(_CORE_PIDS) | set(_ACC_PIDS)
-
-    # The free mode is the one place nothing is withheld.
-    set_mode(main_window, qapp, MODE_FREE)
     assert panels_offered(ana) == set(ana._panel_pids)
 
 
@@ -397,7 +396,7 @@ def test_the_missing_calibration_is_named_in_every_mode(main_window, qapp) -> No
     cvm = main_window._tab_cvm
     cvm._edit_path.setText("recording.edf")
 
-    for mode in (MODE_SINGLE, MODE_FREE):
+    for mode in (MODE_SINGLE, MODE_KINEMATICS):
         set_mode(main_window, qapp, mode)
         cvm._refresh_compute_enabled()
         assert cvm._btn_calcular.isEnabled()
