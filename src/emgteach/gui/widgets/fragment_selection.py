@@ -23,6 +23,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
+    QComboBox,
     QDialog,
     QDoubleSpinBox,
     QHBoxLayout,
@@ -37,6 +38,7 @@ from PySide6.QtWidgets import (
 
 from emgteach.dsp import process_offline
 from emgteach.i18n import tr
+from emgteach.profiles import EMG_PROFILE
 from emgteach.selection import (
     Segment,
     normalise_segments,
@@ -90,6 +92,7 @@ class FragmentSelectionDialog(QDialog):
         fs: float,
         filter_kwargs: dict[str, float],
         segments: list[tuple[float, float]] | None = None,
+        labels: list[str] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -122,9 +125,12 @@ class FragmentSelectionDialog(QDialog):
         self._build_ui()
 
         if segments:
-            self._set_rows(
-                [Segment(a, b, reason="manual") for a, b in segments]
-            )
+            nombres = labels or []
+            self._set_rows([
+                Segment(a, b, reason="manual",
+                        label=nombres[i] if i < len(nombres) else "")
+                for i, (a, b) in enumerate(segments)
+            ])
         else:
             self._auto_suggest()
 
@@ -137,6 +143,7 @@ class FragmentSelectionDialog(QDialog):
         channel_name: str,
         filter_kwargs: dict[str, float],
         segments: list[tuple[float, float]] | None = None,
+        labels: list[str] | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one channel from an EDF file."""
@@ -148,6 +155,7 @@ class FragmentSelectionDialog(QDialog):
             float(edf["sfreq"]),
             filter_kwargs,
             segments=segments,
+            labels=labels,
             parent=parent,
         )
 
@@ -158,7 +166,12 @@ class FragmentSelectionDialog(QDialog):
             tr(
                 "The app suggests the informative fragments (active periods). "
                 "Adjust, add or remove them; only the checked fragments are "
-                "analysed. You decide the final selection."
+                "analysed. You decide the final selection.\n\n"
+                "Naming a fragment — «Grip», «Flexion» — makes it a window of "
+                "the co-activation table. Nothing can name it for you: the "
+                "detector finds where a contraction started, not which "
+                "manoeuvre it was. That is read off the trace, and reading it "
+                "is the exercise."
             )
         )
         info.setWordWrap(True)
@@ -171,14 +184,16 @@ class FragmentSelectionDialog(QDialog):
         root.addWidget(self._canvas, stretch=1)
 
         # Fragment table.
-        self._table = QTableWidget(0, 5)
-        self._table.setHorizontalHeaderLabels(
-            [tr("Keep"), tr("Start (s)"), tr("End (s)"), tr("Duration (s)"), tr("Reason")]
-        )
+        self._table = QTableWidget(0, 6)
+        self._table.setHorizontalHeaderLabels([
+            tr("Keep"), tr("Start (s)"), tr("End (s)"), tr("Duration (s)"),
+            tr("What it is"), tr("Reason"),
+        ])
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         header = self._table.horizontalHeader()
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
         root.addWidget(self._table, stretch=1)
 
         # Envelope-filter cut-offs used to detect activity and draw the preview.
@@ -343,13 +358,33 @@ class FragmentSelectionDialog(QDialog):
         dur_item = QTableWidgetItem(f"{seg.duration_s:.2f}")
         dur_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
         self._table.setItem(row, 3, dur_item)
+
+        # Editable, with the practical's own vocabulary already in it. The
+        # presets are the ones the MARK button used to offer: they stopped
+        # being live labels and became suggestions here, which is where the
+        # naming moved to.
+        combo_nombre = QComboBox()
+        combo_nombre.setEditable(True)
+        combo_nombre.addItem("")
+        for preset in EMG_PROFILE.marker_presets:
+            if preset != "Other…":
+                combo_nombre.addItem(tr(preset))
+        combo_nombre.setCurrentText(seg.label)
+        combo_nombre.setToolTip(tr(
+            "Leave it empty for a fragment that is only signal worth "
+            "keeping. Name it and it becomes a window of the co-activation "
+            "table."
+        ))
+        self._table.setCellWidget(row, 4, combo_nombre)
+
         reason_item = QTableWidgetItem(_reason_text(seg.reason))
         reason_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-        self._table.setItem(row, 4, reason_item)
+        self._table.setItem(row, 5, reason_item)
 
-        self._row_widgets.append(
-            {"keep": chk, "start": spin_start, "end": spin_end, "dur": dur_item}
-        )
+        self._row_widgets.append({
+            "keep": chk, "start": spin_start, "end": spin_end,
+            "dur": dur_item, "label": combo_nombre,
+        })
 
     def _make_spin(self, value: float) -> QDoubleSpinBox:
         spin = QDoubleSpinBox()
@@ -368,7 +403,8 @@ class FragmentSelectionDialog(QDialog):
             a = w["start"].value()  # type: ignore[attr-defined]
             b = w["end"].value()  # type: ignore[attr-defined]
             if b > a:
-                segs.append(Segment(a, b))
+                nombre = w["label"].currentText().strip()  # type: ignore[attr-defined]
+                segs.append(Segment(a, b, label=nombre))
         return segs
 
     # -- actions -------------------------------------------------------------
@@ -480,6 +516,28 @@ class FragmentSelectionDialog(QDialog):
             "f_notch": self._spin_fnotch.value(),
             "f_env": self._spin_fenv.value(),
         }
+
+    def named_segments(self) -> list[tuple[float, float, str]]:
+        """The kept fragments with their names, in order.
+
+        The companion of :meth:`selected_segments`, which stays as it was: the
+        analysis crops by the pairs and reads the co-activation windows off the
+        names, and most callers only care about one of the two.
+        """
+        kept = normalise_segments(
+            self._current_segments(only_kept=True), self._full_duration
+        )
+        return [(s.start_s, s.end_s, s.label) for s in kept]
+
+    def labels(self) -> list[str]:
+        """Just the names, aligned with :meth:`selected_segments`."""
+        pares = self.selected_segments()
+        nombrados = self.named_segments()
+        if len(pares) != len(nombrados):
+            # selected_segments() collapses "the whole recording" to an empty
+            # list; there is then nothing to align names to.
+            return []
+        return [n for _a, _b, n in nombrados]
 
     def selected_segments(self) -> list[tuple[float, float]]:
         """Return the checked fragments as normalised ``(start, end)`` tuples.

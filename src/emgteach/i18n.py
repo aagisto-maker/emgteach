@@ -974,6 +974,10 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    '{n} named': '{n} con nombre',
+    'What it is': 'Qué es',
+    'The app suggests the informative fragments (active periods). Adjust, add or remove them; only the checked fragments are analysed. You decide the final selection.\n\nNaming a fragment — «Grip», «Flexion» — makes it a window of the co-activation table. Nothing can name it for you: the detector finds where a contraction started, not which manoeuvre it was. That is read off the trace, and reading it is the exercise.': 'La aplicación propone los fragmentos informativos (periodos activos). Ajústalos, añade o quita; solo se analizan los marcados. La selección final la decides tú.\n\nPonerle nombre a un fragmento —«Presa», «Flexión»— lo convierte en una ventana de la tabla de coactivación. Nadie puede nombrarlo por ti: el detector encuentra dónde empezó una contracción, no qué maniobra era. Eso se lee en la traza, y leerlo es el ejercicio.',
+    'Leave it empty for a fragment that is only signal worth keeping. Name it and it becomes a window of the co-activation table.': 'Déjalo vacío si el fragmento es solo señal que merece la pena conservar. Ponle nombre y pasa a ser una ventana de la tabla de coactivación.',
     'Save tuned EDF…': 'Guardar EDF afinado…',
     'Write a new recording carrying the current selection: the calibration repetitions kept and the fragments of the task. The original is never touched, and the new file says where it came from.': 'Escribe un registro nuevo con la selección vigente: las repeticiones de calibración conservadas y los fragmentos de la tarea. El original no se toca nunca, y el fichero nuevo dice de dónde viene.',
     'Save tuned recording': 'Guardar el registro afinado',
@@ -1039,10 +1043,6 @@ _ES = {
     "Cancelling…": "Cancelando…",
     # -- fragment-selection widget --
     "Select analysis fragments": "Seleccionar fragmentos de análisis",
-    "The app suggests the informative fragments (active periods). Adjust, add or remove them; only the checked fragments are analysed. You decide the final selection.":
-        "La app sugiere los fragmentos informativos (periodos activos). Se pueden "
-        "ajustar, añadir o quitar; solo se analizan los fragmentos marcados. La "
-        "selección final la decide el alumno.",
     "Band-pass low cut-off (Hz).": "Frecuencia de corte baja del paso-banda (Hz).",
     "Band-pass high cut-off (Hz).": "Frecuencia de corte alta del paso-banda (Hz).",
     "Mains-notch frequency (Hz), usually 50 or 60.":

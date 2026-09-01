@@ -453,6 +453,10 @@ class AnalysisTab(QWidget):
         row_frag.addWidget(self._lbl_reps)
         row_frag.addStretch()
         self._selected_segments: list[tuple[float, float]] = []
+        #: What the operator calls each fragment, aligned with the list
+        #: above. A named fragment is a window of the co-activation table;
+        #: an unnamed one is only signal worth keeping.
+        self._segment_labels: list[str] = []
         #: Calibration repetitions kept, by channel index. Empty means all
         #: of them, which is what a recording starts as.
         self._cal_keep: dict[int, set[int]] = {}
@@ -839,6 +843,7 @@ class AnalysisTab(QWidget):
         self._btn_analizar.setEnabled(True)
         self._btn_fragmentos.setEnabled(True)
         self._selected_segments = []
+        self._segment_labels = []
         self._analysis_filter_kwargs = None
         self._actualizar_etiqueta_fragmentos()
         self._logger.append_log(
@@ -863,6 +868,7 @@ class AnalysisTab(QWidget):
             # A new file invalidates any previous fragment selection and its
             # associated filter cut-offs.
             self._selected_segments = []
+            self._segment_labels = []
             self._analysis_filter_kwargs = None
             self._actualizar_etiqueta_fragmentos()
             self._btn_guardar.setEnabled(False)
@@ -960,7 +966,9 @@ class AnalysisTab(QWidget):
             filter_kwargs["f_env"] = self._spin_fenv.value()
         try:
             dlg = FragmentSelectionDialog.from_edf(
-                path, canal, filter_kwargs, segments=self._selected_segments or None,
+                path, canal, filter_kwargs,
+                segments=self._selected_segments or None,
+                labels=self._segment_labels or None,
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -970,6 +978,7 @@ class AnalysisTab(QWidget):
             return
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self._selected_segments = dlg.selected_segments()
+            self._segment_labels = dlg.labels()
             # Adopt the cut-offs tuned in the editor for the actual analysis so
             # what was previewed is what gets analysed. Reflect f_env in the tab.
             self._analysis_filter_kwargs = dlg.filter_kwargs()
@@ -1089,9 +1098,12 @@ class AnalysisTab(QWidget):
             self._lbl_fragmentos.setText("")
         else:
             total = sum(b - a for a, b in self._selected_segments)
-            self._lbl_fragmentos.setText(
-                tr("{n} fragment(s) selected ({d:.1f} s)").format(n=n, d=total)
-            )
+            texto = tr("{n} fragment(s) selected ({d:.1f} s)").format(
+                n=n, d=total)
+            nombrados = sum(1 for x in self._segment_labels if x)
+            if nombrados:
+                texto += "  " + tr("{n} named").format(n=nombrados)
+            self._lbl_fragmentos.setText(texto)
             # A fragment selection overrides the single-region control.
             self._chk_roi.setChecked(False)
 
@@ -1133,6 +1145,7 @@ class AnalysisTab(QWidget):
 
         roi_start = roi_end = None
         roi_segments = self._selected_segments or None
+        roi_labels = self._segment_labels if roi_segments else None
         if roi_segments is None and self._chk_roi.isChecked():
             roi_start = self._spin_roi_start.value()
             roi_end = self._spin_roi_end.value()
@@ -1149,6 +1162,7 @@ class AnalysisTab(QWidget):
             f_env=f_env,
             plot_duration_s=0,
             cal_keep=self._cal_keep or None,
+            roi_labels=roi_labels or None,
             roi_start_s=roi_start,
             roi_end_s=roi_end,
             roi_segments=roi_segments,
@@ -1920,6 +1934,7 @@ class AnalysisTab(QWidget):
                 origen, destino,
                 keep=self._cal_keep or None,
                 fragments=self._selected_segments or None,
+                fragment_labels=self._segment_labels or None,
                 references=refs or None,
                 when=datetime.now(),
             )
@@ -2366,6 +2381,7 @@ class AnalysisTab(QWidget):
         self._cal_keep = {}
         self._actualizar_ayuda_reps()
         self._selected_segments = []
+        self._segment_labels = []
         self._analysis_filter_kwargs = None
         self._actualizar_etiqueta_fragmentos()
         self._btn_guardar.setEnabled(False)

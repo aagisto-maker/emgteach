@@ -236,6 +236,7 @@ class AnalysisWorker(QThread):
         channel_name: str | None = None,
         channel_name_2: str | None = None,
         cal_keep: dict[int, set[int]] | None = None,
+        roi_labels: list[str] | None = None,
         acc_channel: str | None = None,
         acc_placement: str = "unknown",
         f_low: float | None = None,
@@ -273,6 +274,12 @@ class AnalysisWorker(QThread):
         #: moves the reference and, with it, every % MVC in the analysis —
         #: that is the point of offering the choice.
         self._cal_keep = dict(cal_keep) if cal_keep else None
+        #: What the operator calls each fragment, in the same order as
+        #: ``roi_segments``. A named fragment becomes a window of the
+        #: co-activation table; an unnamed one is only signal worth
+        #: keeping. No algorithm can supply these — the onset detector
+        #: says a contraction started, not that this window is the grip.
+        self._roi_labels = list(roi_labels) if roi_labels else None
         # Optional accelerometer channel: enables the MMG and tremor panels.
         self._acc_channel = acc_channel
         self._acc_placement = acc_placement
@@ -327,7 +334,7 @@ class AnalysisWorker(QThread):
     def _resolve_segments(
         self, n_samples: int, fs: float, full_duration: float,
         default_span: tuple[float, float] | None = None,
-    ) -> list[tuple[int, int, float, float]] | None:
+    ) -> list[tuple[int, int, float, float, str]] | None:
         """Resolve the analysis fragments into ordered sample-index windows.
 
         Precedence: an explicit multi-fragment ``roi_segments`` list, else the
@@ -337,26 +344,30 @@ class AnalysisWorker(QThread):
         reflective-padding minimum); otherwise :attr:`error` is emitted and
         ``None`` is returned.
 
-        Returns ``[(i0, i1, start_s, end_s), ...]`` in chronological order.
+        Returns ``[(i0, i1, start_s, end_s, label), ...]`` in chronological
+        order. The label travels with the fragment through the merging, so
+        a name given in the editor survives whatever tidying happens here.
         """
+        etiquetas = self._roi_labels or []
         if self._roi_segments:
-            requested = self._roi_segments
+            requested = [
+                Segment(a, b, label=etiquetas[i] if i < len(etiquetas) else "")
+                for i, (a, b) in enumerate(self._roi_segments)
+            ]
         elif self._roi_start_s is not None or self._roi_end_s is not None:
             start = self._roi_start_s if self._roi_start_s is not None else 0.0
             end = self._roi_end_s if self._roi_end_s is not None else full_duration
-            requested = [(start, end)]
+            requested = [Segment(start, end)]
         elif default_span is not None:
             # A two-phase recording analyses its recording phase. The
             # calibration and the preparation pause are before it and drop
             # out here, with no separate notion of excluded regions to keep
             # in step with anything.
-            requested = [default_span]
+            requested = [Segment(*default_span)]
         else:
-            return [(0, n_samples, 0.0, full_duration)]
+            return [(0, n_samples, 0.0, full_duration, "")]
 
-        segs = normalise_segments(
-            [Segment(a, b) for a, b in requested], full_duration
-        )
+        segs = normalise_segments(requested, full_duration)
         total = total_duration_s(segs)
         if not segs or total < 1.0:
             self.error.emit(
@@ -367,12 +378,12 @@ class AnalysisWorker(QThread):
             )
             return None
 
-        bounds: list[tuple[int, int, float, float]] = []
+        bounds: list[tuple[int, int, float, float, str]] = []
         for s in segs:
             i0 = max(0, min(round(s.start_s * fs), n_samples))
             i1 = max(i0, min(round(s.end_s * fs), n_samples))
             if i1 > i0:
-                bounds.append((i0, i1, s.start_s, s.end_s))
+                bounds.append((i0, i1, s.start_s, s.end_s, s.label))
         return bounds
 
     def run(self) -> None:
@@ -434,18 +445,26 @@ class AnalysisWorker(QThread):
             )
             if bounds is None:
                 return  # error already emitted
-            kept_segments = [(s, e) for (_, _, s, e) in bounds]
+            kept_segments = [(s, e) for (_, _, s, e, _lbl) in bounds]
             is_whole = (
                 len(bounds) == 1
                 and bounds[0][0] == 0
                 and bounds[0][1] == len(emg_raw)
             )
             if not is_whole:
-                emg_raw = np.concatenate([emg_raw[i0:i1] for (i0, i1, _, _) in bounds])
+                emg_raw = np.concatenate(
+                    [emg_raw[i0:i1] for (i0, i1, _, _, _) in bounds])
                 times = np.arange(len(emg_raw), dtype=np.float64) / fs
                 new_markers: list[tuple[float, str]] = []
                 offset = 0.0
-                for i0, i1, seg_a, seg_b in bounds:
+                for i0, i1, seg_a, seg_b, nombre in bounds:
+                    # A named fragment opens a window of the co-activation
+                    # table, at its own start in the concatenated timeline.
+                    # This is the whole mechanism: the operator says "this one
+                    # is the grip" over a trace they can see, and the table
+                    # that could only ever say "whole recording" gets its rows.
+                    if nombre:
+                        new_markers.append((offset, nombre))
                     for t, label in markers:
                         if seg_a <= t < seg_b:
                             new_markers.append((offset + (t - seg_a), label))
@@ -732,7 +751,7 @@ class AnalysisWorker(QThread):
                     )
                     if not is_whole:
                         emg_raw_2 = np.concatenate(
-                            [emg_raw_2[i0:i1] for (i0, i1, _, _) in bounds]
+                            [emg_raw_2[i0:i1] for (i0, i1, _, _, _) in bounds]
                         )
                     proc2 = process_offline(
                         emg_raw_2, fs,
@@ -911,7 +930,7 @@ class AnalysisWorker(QThread):
                     )["emg_raw"]
                     if not is_whole:
                         acc_raw = np.concatenate(
-                            [acc_raw[i0:i1] for (i0, i1, _, _) in bounds]
+                            [acc_raw[i0:i1] for (i0, i1, _, _, _) in bounds]
                         )
                     mmg_env = mmg_envelope(acc_raw, fs)
                     move_env = movement_envelope(acc_raw, fs)

@@ -226,6 +226,7 @@ def build_tuned_edf(
     *,
     keep: dict[int, set[int]] | None = None,
     fragments: Sequence[tuple[float, float]] | None = None,
+    fragment_labels: Sequence[str] | None = None,
     references: dict[int, float] | None = None,
     when: datetime | None = None,
 ) -> TunedSummary:
@@ -240,6 +241,12 @@ def build_tuned_edf(
     fragments
         Stretches of the recording phase to keep, in file time. ``None`` keeps
         the whole phase.
+    fragment_labels
+        What the operator calls each of them, in the same order. A named
+        fragment is written as an annotation at its own start, which is what
+        makes it a window of the co-activation table when the file is reopened
+        — the naming survives the session it was done in, and the derived file
+        opens with its table already filled.
     references
         The recomputed reference per channel, written as a fresh ``MVC ref``
         annotation so the cached value agrees with the spans that are left.
@@ -344,6 +351,15 @@ def build_tuned_edf(
             w.add_samples(*[s[i : i + bloque] for s in recortadas])
         for linea in resumen.as_annotations(momento):
             w.add_annotation(0.0, linea)
+        # The names, at the start of their own fragment in the derived file's
+        # timeline — which is where the gaps have already been closed up.
+        nombres = list(fragment_labels or [])
+        cursor = rec_start
+        for i, (a, b) in enumerate(tramos):
+            nombre = nombres[i].strip() if i < len(nombres) else ""
+            if nombre:
+                w.add_annotation(cursor, _corta(nombre))
+            cursor += b - a
         for t, texto in _reetiquetar(marcas, keep, tramos, rec_start):
             if not str(texto).startswith("MVC ref"):
                 w.add_annotation(t, texto)

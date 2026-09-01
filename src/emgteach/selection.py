@@ -56,12 +56,23 @@ class Segment:
     reason : str
         Short machine tag explaining why the fragment was proposed
         (``"activity"``, ``"whole"``, ``"manual"``).
+    label : str
+        What the operator says this fragment *is* — "Grip", "Flexion". Empty
+        for a fragment that is only a stretch of signal worth keeping.
+
+        The distinction matters because no algorithm can supply it. The onset
+        detector says "a contraction started here"; the co-activation table
+        needs "this window is the grip", and the difference between flexion,
+        extension and grip is not in the shape of the envelope — it is in what
+        the subject was asked to do. A named fragment is the operator saying
+        so, after the fact, over a trace they can see.
     """
 
     start_s: float
     end_s: float
     score: float = 0.0
     reason: str = ""
+    label: str = ""
 
     @property
     def duration_s(self) -> float:
@@ -230,7 +241,7 @@ def normalise_segments(
         a = max(0.0, min(float(s.start_s), full_duration_s))
         b = max(0.0, min(float(s.end_s), full_duration_s))
         if b - a > max(0.0, min_duration_s) or (min_duration_s == 0.0 and b > a):
-            clamped.append(Segment(a, b, s.score, s.reason))
+            clamped.append(Segment(a, b, s.score, s.reason, s.label))
 
     clamped.sort(key=lambda s: s.start_s)
 
@@ -243,6 +254,9 @@ def normalise_segments(
                 max(prev.end_s, s.end_s),
                 prev.score + s.score,
                 prev.reason,
+                # The earlier name wins, like the reason. Two fragments that
+                # overlap are one stretch, and the operator named its start.
+                prev.label or s.label,
             )
         else:
             merged.append(s)

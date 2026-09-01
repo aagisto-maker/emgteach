@@ -40,7 +40,14 @@ sesión** nuevo: los enlaces de la práctica anterior caducan.
 
 ### Analizar (Análisis)
 Abrir EDF → elegir **canal** → paneles + resumen → **Generar informe PDF** (selección
-de gráficos y de rango temporal). Siempre **1A. En bruto**, **2. Env. norm.** y
+de gráficos y de rango temporal).
+
+**Para la tabla de coactivación hay que nombrar las maniobras.** «Seleccionar
+fragmentos…» → columna **«Qué es»**: «Flexión», «Extensión», «Presa». Un
+fragmento con nombre es una ventana de la tabla; sin nombre es solo señal que se
+conserva. Nadie puede nombrarlo por usted —el detector sabe dónde empezó una
+contracción, no cuál era—, y por eso la tabla dice «registro completo» mientras
+no se haga. Siempre **1A. En bruto**, **2. Env. norm.** y
 **3. PSD**; con opciones avanzadas los paneles **4 a 8** (la fatiga está en el
 **7. MDF/tiempo**); según el modo, el **9** (envolventes superpuestas) o los
 **10 · 11 · 12** (acelerómetro).

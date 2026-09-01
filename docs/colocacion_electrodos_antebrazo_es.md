@@ -198,11 +198,38 @@ El orden importa, porque la aplicación depende de él.
    > **Comprobación inmediata:** después de calibrar, pida una contracción
    > fuerte cualquiera. Si la barra de carga en vivo pasa de 100 %, la
    > calibración no fue máxima — repítala.
-3. **Marque «Flexión»** (tecla **M**) y haga varias flexiones de muñeca.
-4. **Marque «Extensión»** y haga varias extensiones.
-5. **Marque «Presa»** y mantenga una presa firme unos segundos.
-6. Detenga y abra el registro en **Análisis**, con el modo *Contracción
-   agonista / antagonista* y los dos canales.
+3. **Haga las tres maniobras seguidas y siempre en este orden**: varias
+   flexiones de muñeca, varias extensiones, y una presa firme mantenida unos
+   segundos. Deje un par de segundos de quietud entre una y otra: es lo que
+   luego permite separarlas a ojo.
+
+   > **El orden importa ahora más que antes.** Las maniobras se nombran
+   > **después** del registro, reconociéndolas en la traza, así que conviene
+   > que estén siempre en el mismo sitio. Marcar en vivo tenía justo esta
+   > ventaja —se sabía en el momento qué se le había pedido al sujeto— y se
+   > pierde a cambio de no tener que teclear mientras se vigilan el sujeto y
+   > la señal. Para este protocolo no es problema: flexión, extensión y presa
+   > se distinguen en el panel 9 por cuál de los dos músculos lidera.
+
+4. Detenga. La pestaña de registro muestra entonces **la sesión entera** con
+   sus tramos sombreados —calentamiento, cada esfuerzo de calibración, la
+   pausa y el registro—; puede desplazarse por ella para ver qué salió.
+5. Abra el registro en **Análisis**, con el modo *Contracción agonista /
+   antagonista* y los dos canales.
+6. **Nombre las maniobras.** En «Seleccionar fragmentos…», ponga a cada
+   fragmento su nombre en la columna «Qué es»: «Flexión», «Extensión»,
+   «Presa». Un fragmento con nombre **es una ventana de la tabla de
+   coactivación**; uno sin nombre es solo señal que se conserva.
+
+   > Esto es lo que produce la tabla, y no hay atajo: el detector automático
+   > encuentra dónde empezó una contracción, no qué maniobra era. La
+   > diferencia entre flexión, extensión y presa no está en la forma de la
+   > envolvente —está en lo que se le pidió al sujeto—, así que la pone usted,
+   > mirando la traza. Ese acto de interpretación *es* la práctica.
+   >
+   > Los siete registros de banco del 30 y 31 de agosto no tienen ni una marca
+   > de fase, y por eso su tabla de coactivación dijo siempre «registro
+   > completo». Con los fragmentos nombrados sale una fila por maniobra.
 
 > **No hace falta grabar un EDF de calibración aparte.** Si calibra con la
 > grabación ya en marcha —el paso 2—, la referencia de cada músculo queda
