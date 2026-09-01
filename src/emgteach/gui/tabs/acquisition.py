@@ -1180,9 +1180,22 @@ class AcquisitionTab(QWidget):
         self._bcast_config()
 
     def _active_labels(self) -> list[str]:
-        """Labels of the active channels, falling back to the defaults."""
+        """Names of the active channels: the practical's, or the operator's.
+
+        A practical that fixes its channel names answers here rather than by
+        writing into the boxes. Writing into them looked simpler and was
+        wrong twice over: the name stayed behind on the next practical — an
+        agonist/antagonist recording came out labelled "Muscle" and "EMG2" —
+        and it went through ``_on_label_changed`` into QSettings, so choosing
+        the single-muscle practical once overwrote the muscle name the
+        operator had saved.
+        """
+        fijas = mode_fixed_labels(self._mode)
         labels = []
         for i in range(self._n_channels):
+            if i < len(fijas):
+                labels.append(tr(fijas[i]))
+                continue
             text = self._edit_labels[i].text().strip()
             labels.append(text or _CHANNEL_DEFAULT_LABELS[i])
         return labels
@@ -3534,15 +3547,11 @@ class AcquisitionTab(QWidget):
         self._box_device.setVisible(True)
         self._lbl_first_setup.setVisible(first_setup)
 
-        # Channel names the practical imposes. The kinematics one relates the
-        # EMG of a muscle to the movement of its segment, so both roles are
-        # fixed and only "which muscle" is open — and that is the name the
-        # student writes on their sheet, not in the header.
-        fijas = mode_fixed_labels(mode)
-        for i, edit in enumerate(self._edit_labels):
-            if i < len(fijas):
-                edit.setText(tr(fijas[i]))
-        self._box_labels.setVisible(not fijas)
+        # Channel names the practical imposes: the row goes, and the names
+        # come from _active_labels(). The boxes are left exactly as the
+        # operator had them, so their own names survive a visit to a practical
+        # that does not use them.
+        self._box_labels.setVisible(not mode_fixed_labels(mode))
 
         # Belongs to the kinematics practical, not to the fine controls.
         uses_acc = mode_uses_acc(mode)

@@ -106,6 +106,37 @@ def test_leaving_the_pair_practical_clears_the_second_channel(
     assert adq._combo_n_channels.currentIndex() == 0
 
 
+@pytest.mark.gui
+def test_a_practical_that_names_its_channels_hides_the_boxes(
+    main_window, qapp
+) -> None:
+    """And names them without writing into them.
+
+    Writing into the boxes looked simpler and was wrong twice over: the name
+    stayed behind on the next practical — an agonist/antagonist recording came
+    out labelled "Muscle" and "EMG2" — and it went through the save-on-change
+    into QSettings, so choosing the single-muscle practical once overwrote the
+    muscle name the operator had stored.
+    """
+    from emgteach.modes import mode_fixed_labels
+
+    adq = main_window._tab_adq
+    adq._edit_labels[0].setText("FCR")
+    adq._edit_labels[1].setText("ECR")
+
+    for mode in (MODE_PAIR, MODE_SINGLE, MODE_KINEMATICS, MODE_PAIR):
+        set_mode(main_window, qapp, mode)
+        fijas = mode_fixed_labels(mode)
+        assert shown(adq._box_labels) is (not fijas), mode
+        if fijas:
+            assert adq._active_labels()[0] not in ("FCR", "ECR"), mode
+        else:
+            assert adq._active_labels() == ["FCR", "ECR"], mode
+        # Whatever the practical calls its channels, the operator's own names
+        # are still in the boxes when they come back to them.
+        assert [e.text() for e in adq._edit_labels[:2]] == ["FCR", "ECR"], mode
+
+
 @pytest.mark.parametrize("mode", PRACTICALS)
 def test_practical_sets_the_accelerometer(main_window, qapp, mode) -> None:
     from emgteach.modes import mode_uses_acc

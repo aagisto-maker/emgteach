@@ -105,11 +105,21 @@ def normalise_mode(value: object) -> str:
     return value if value in MODES else DEFAULT_MODE
 
 
-#: What the EDF calls each channel, per practical. Fixed where the practical
-#: fixes them: the kinematics one relates the EMG of *a* muscle to the movement
-#: of the segment it drives, so "which muscle" is the only open question and the
-#: roles are not. The other two record muscles the operator chooses and names.
-_FIXED_LABELS = {MODE_KINEMATICS: ("Muscle",)}
+#: What the EDF calls each channel, per practical. Fixed wherever the practical
+#: leaves nothing to choose:
+#:
+#: * the single-muscle practical records **a** muscle — whichever one the
+#:   exercise is about — so a text box for its name asks a question whose
+#:   answer changes nothing the application does; the student writes it on
+#:   their sheet;
+#: * the kinematics one relates the EMG of a muscle to the movement of the
+#:   segment it drives, so both roles are fixed and only "which muscle" is
+#:   open, which is the same case.
+#:
+#: The agonist/antagonist practical is the exception, and the reason is the
+#: point of it: there are two muscles, telling them apart *is* the reading, and
+#: the names travel into the co-activation table as its column headings.
+_FIXED_LABELS = {MODE_SINGLE: ("Muscle",), MODE_KINEMATICS: ("Muscle",)}
 
 
 def mode_channels(mode: str) -> int:
