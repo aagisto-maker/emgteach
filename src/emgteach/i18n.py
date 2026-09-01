@@ -974,8 +974,10 @@ _ES = {
         "Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de "
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
+    'Basic analysis': 'Análisis básico',
+    'Intermediate analysis': 'Análisis intermedio',
+    'Advanced analysis': 'Análisis avanzado',
     "Muscle": "Músculo",
-    'Advanced analysis — muscle kinematics': 'Análisis avanzado — cinemática muscular',
     '{n} named': '{n} con nombre',
     'What it is': 'Qué es',
     'The app suggests the informative fragments (active periods). Adjust, add or remove them; only the checked fragments are analysed. You decide the final selection.\n\nNaming a fragment — «Grip», «Flexion» — makes it a window of the co-activation table. Nothing can name it for you: the detector finds where a contraction started, not which manoeuvre it was. That is read off the trace, and reading it is the exercise.': 'La aplicación propone los fragmentos informativos (periodos activos). Ajústalos, añade o quita; solo se analizan los marcados. La selección final la decides tú.\n\nPonerle nombre a un fragmento —«Presa», «Flexión»— lo convierte en una ventana de la tabla de coactivación. Nadie puede nombrarlo por ti: el detector encuentra dónde empezó una contracción, no qué maniobra era. Eso se lee en la traza, y leerlo es el ejercicio.',
@@ -1379,10 +1381,6 @@ _ES = {
     "Normalising {muscle}.": "Se normaliza {muscle}.",
 
     # Cuarto modo y franja de complejidad.
-    "Basic analysis — direct measurements":
-        "Análisis básico — medidas directas",
-    "Intermediate analysis — comparison between muscles":
-        "Análisis intermedio — comparación entre músculos",
     # Panel del bruto del segundo músculo, y el paso del tour sobre la franja.
     "1B. Raw signal — 2nd muscle": "1B. Señal en bruto — 2º músculo",
     "1B. Raw (2nd)": "1B. Bruto (2º)",

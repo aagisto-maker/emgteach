@@ -194,11 +194,23 @@ def mode_complexity_colour(mode: str) -> str:
 
 
 def mode_complexity_label(mode: str) -> str:
-    """What the band says: the level, and what it means for the reading."""
+    """What the band says: the level, and nothing else.
+
+    It used to carry a second half describing the kind of reading — "direct
+    measurements", "comparison between muscles", "derived quantities". Two
+    things went wrong with it. The practical is already named in the selector
+    directly above the band, so any half naming it is read twice; and any half
+    describing the reading instead is a second vocabulary for the same three
+    things, which has to be kept in step with the practicals and was not: one
+    of them had drifted to naming its practical while the others still
+    described their reading.
+
+    The level alone is what the band is for. Its colour carries the rest.
+    """
     return {
-        "basic": tr("Basic analysis — direct measurements"),
-        "intermediate": tr("Intermediate analysis — comparison between muscles"),
-        "advanced": tr("Advanced analysis — muscle kinematics"),
+        "basic": tr("Basic analysis"),
+        "intermediate": tr("Intermediate analysis"),
+        "advanced": tr("Advanced analysis"),
     }[mode_complexity(mode)]
 
 
