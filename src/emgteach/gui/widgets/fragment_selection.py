@@ -180,11 +180,16 @@ class FragmentSelectionDialog(QDialog):
                 "The app suggests the informative fragments (active periods). "
                 "Adjust, add or remove them; only the checked fragments are "
                 "analysed. You decide the final selection.\n\n"
-                "Naming a fragment — «Grip», «Flexion» — makes it a window of "
-                "the co-activation table. Nothing can name it for you: the "
-                "detector finds where a contraction started, not which "
-                "manoeuvre it was. That is read off the trace, and reading it "
-                "is the exercise."
+                "Name a fragment with the manoeuvre, not the muscle: in "
+                "«Flexion» both channels are recorded, the flexor as agonist "
+                "and the extensor as antagonist, and that pair is what the "
+                "co-activation table measures. Give consecutive fragments the "
+                "same name and they become one window of that table — six "
+                "efforts named «Flexion» are six samples of one condition, not "
+                "six conditions. Nothing can name them for you: the detector "
+                "finds where a contraction started, not which manoeuvre it "
+                "was. That is read off the trace, and reading it is the "
+                "exercise."
             )
         )
         info.setWordWrap(True)
@@ -200,7 +205,7 @@ class FragmentSelectionDialog(QDialog):
         self._table = QTableWidget(0, 6)
         self._table.setHorizontalHeaderLabels([
             tr("Keep"), tr("Start (s)"), tr("End (s)"), tr("Duration (s)"),
-            tr("What it is"), tr("Reason"),
+            tr("Manoeuvre"), tr("Reason"),
         ])
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -384,9 +389,10 @@ class FragmentSelectionDialog(QDialog):
                 combo_nombre.addItem(tr(preset))
         combo_nombre.setCurrentText(seg.label)
         combo_nombre.setToolTip(tr(
-            "Leave it empty for a fragment that is only signal worth "
-            "keeping. Name it and it becomes a window of the co-activation "
-            "table."
+            "The manoeuvre performed, not the muscle contracting. Leave it "
+            "empty for a fragment that is only signal worth keeping. "
+            "Consecutive fragments with the same name form a single window of "
+            "the co-activation table."
         ))
         self._table.setCellWidget(row, 4, combo_nombre)
 

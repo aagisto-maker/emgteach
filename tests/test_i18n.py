@@ -88,6 +88,23 @@ def test_the_names_a_practical_imposes_are_translated() -> None:
     assert not faltan, f"sin traducción al español: {faltan}"
 
 
+def test_the_suggested_manoeuvres_are_translated() -> None:
+    """The other door the literal scan cannot watch.
+
+    ``marker_presets`` is a tuple of names handed to ``tr()`` one by one, so
+    changing it — as the move from instants to manoeuvres did — adds strings
+    that no scan of the source will report as missing.
+    """
+    from emgteach.profiles import PROFILES
+
+    faltan = [
+        preset for perfil in PROFILES.values()
+        for preset in perfil.marker_presets
+        if preset not in i18n._ES
+    ]
+    assert not faltan, f"sin traducción al español: {faltan}"
+
+
 def test_every_translatable_string_has_a_spanish_entry() -> None:
     """No tr() literal may fall back to English in the Spanish interface.
 

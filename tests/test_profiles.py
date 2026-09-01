@@ -44,12 +44,18 @@ class TestEmgProfileValues:
         assert p.ylim_filtered == (-0.8, 0.8)
         assert p.ylim_envelope == (0.0, 0.5)
 
-    def test_marker_presets(self) -> None:
-        # The acquisition tab historically offered exactly these labels.
+    def test_marker_presets_are_manoeuvres(self) -> None:
+        """The suggestions must name manoeuvres, not instants.
+
+        They are offered as fragment names, and a fragment's name is what
+        tells the co-activation table which muscle is agonist and which is
+        antagonist. "Contraction onset" cannot say that; "Flexion" can.
+        """
         assert EMG_PROFILE.marker_presets == (
-            "Contraction onset",
-            "Contraction end",
-            "Fatigue",
+            "Flexion",
+            "Extension",
+            "Grip",
+            "Co-contraction",
             "Rest",
             "Other…",
         )

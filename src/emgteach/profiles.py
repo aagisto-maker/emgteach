@@ -217,12 +217,17 @@ class SignalProfile:
     # -- UI marker vocabulary (user-facing) --
     # No longer offered while recording: the picker beside the MARK button
     # went with it, because the recording runs faster than anyone can label
-    # it. The vocabulary stays because the naming it serves moves *after* the
-    # recording, over a signal the student can see.
+    # it. What the naming became, after the recording and over a signal the
+    # student can see, is not the same vocabulary: a fragment is named with
+    # the *manoeuvre* it belongs to, because that is what fixes which muscle
+    # is agonist and which antagonist, and the co-activation table has no
+    # other way to know. "Contraction onset" named an instant and could not
+    # answer that; "Flexion" does.
     marker_presets: tuple[str, ...] = (
-        "Contraction onset",
-        "Contraction end",
-        "Fatigue",
+        "Flexion",
+        "Extension",
+        "Grip",
+        "Co-contraction",
         "Rest",
         "Other…",
     )

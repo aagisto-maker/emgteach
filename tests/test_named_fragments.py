@@ -172,6 +172,42 @@ class TestANamedFragmentIsAWindowOfTheTable:
         esperado = sum(b - a for a, b in segs)
         assert r["duration"] == pytest.approx(esperado, abs=0.2)
 
+    def test_repeating_a_name_makes_one_window_of_the_several_fragments(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """The answer to the objection the naming raised on the bench.
+
+        Auto-suggest yields one fragment per *contraction*, so a run of six
+        flexions arrives as six fragments; but the muscle that is agonist and
+        the one that is antagonist are fixed by the *manoeuvre*, and the six
+        are six samples of it. Naming them all «Flexion» must give one row,
+        not six identical ones.
+        """
+        segs, _ = _fragmentos()
+        r = _analizar(qapp, _sesion(tmp_path / "sesion.edf"),
+                      roi_segments=segs,
+                      roi_labels=["Flexion", "Flexion", "Flexion"])
+        assert [f.label for f in r["coactivation"]] == ["Flexion"]
+        # And the one window spans all three, not just the first.
+        ventana = r["coactivation"][0].window_s
+        assert ventana[1] - ventana[0] == pytest.approx(
+            sum(b - a for a, b in segs), abs=0.6
+        )
+
+    def test_a_name_that_comes_back_later_opens_a_second_window(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        """Only *consecutive* repeats merge. Flexion, extension, flexion is
+        an alternation — three windows — because what lies between them is a
+        different condition, not more of the same one."""
+        segs, _ = _fragmentos()
+        r = _analizar(qapp, _sesion(tmp_path / "sesion.edf"),
+                      roi_segments=segs,
+                      roi_labels=["Flexion", "Extension", "Flexion"])
+        assert [f.label for f in r["coactivation"]] == [
+            "Flexion", "Extension", "Flexion",
+        ]
+
     def test_the_windows_land_where_the_fragments_do(
         self, qapp, tmp_path: Path
     ) -> None:

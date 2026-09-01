@@ -219,7 +219,14 @@ def coactivation_by_window(
 ) -> tuple[list[CoactivationResult], bool]:
     """One index per marked window, and whether the windows came from markers.
 
-    Each marker opens a window that runs to the next one. The **last** one is
+    Each *change* of name opens a window that runs to the next one. Consecutive
+    marks carrying the same name are one window, not several: the name is the
+    manoeuvre, and the manoeuvre is what fixes which muscle is agonist and
+    which antagonist. Six efforts all named «Flexion» are six samples of one
+    condition — the automatic suggestion offers them one per contraction, which
+    is the right unit for trimming and the wrong one for this table.
+
+    The **last** window is
     closed at the end of the activity instead of at the end of the recording —
     see :func:`_fin_de_la_actividad` — because nothing else closes it and the
     quiet before the stop button is not part of the phase.
@@ -242,6 +249,9 @@ def coactivation_by_window(
         (float(t) - t0, str(lbl)) for t, lbl in (markers or [])
         if 0.0 <= float(t) - t0 < duration
     )
+    # Only the first of a run of equal names survives; the rest would each
+    # close the window before it and produce a row per contraction.
+    marks = [m for i, m in enumerate(marks) if i == 0 or m[1] != marks[i - 1][1]]
     if not marks:
         return [coactivation_index(
             e1, e2, fs, floor_pct=floor_pct, rest_1=rest_1, rest_2=rest_2,

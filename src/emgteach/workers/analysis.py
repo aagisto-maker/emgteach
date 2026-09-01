@@ -463,6 +463,9 @@ class AnalysisWorker(QThread):
                     # This is the whole mechanism: the operator says "this one
                     # is the grip" over a trace they can see, and the table
                     # that could only ever say "whole recording" gets its rows.
+                    # Repeats are not filtered here — coactivation_by_window
+                    # merges consecutive equal names, so the same rule holds
+                    # for a tuned file reopened from disk.
                     if nombre:
                         new_markers.append((offset, nombre))
                     for t, label in markers:

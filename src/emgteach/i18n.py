@@ -425,6 +425,19 @@ _ES = {
     "Contraction onset": "Inicio contracción",
     "Contraction end": "Fin contracción",
     "Fatigue": "Fatiga",
+    # The fragment editor's suggested manoeuvres (EMG_PROFILE.marker_presets).
+    # They reach tr() as a variable, so the literal scan cannot see them;
+    # test_i18n guards them by name instead.
+    "Flexion": "Flexión",
+    "Extension": "Extensión",
+    "Grip": "Presa",
+    "Co-contraction": "Cocontracción",
+    # The ECG profile's own presets. Never translated because nothing scanned
+    # them; the guard on marker_presets found them the moment it was written.
+    "P wave": "Onda P",
+    "QRS complex": "Complejo QRS",
+    "T wave": "Onda T",
+    "Arrhythmia": "Arritmia",
     "Rest": "Reposo",
     "Other…": "Otro…",
     "Other": "Otro",
@@ -978,9 +991,9 @@ _ES = {
     'Advanced analysis': 'Análisis avanzado',
     "Muscle": "Músculo",
     '{n} named': '{n} con nombre',
-    'What it is': 'Qué es',
-    'The app suggests the informative fragments (active periods). Adjust, add or remove them; only the checked fragments are analysed. You decide the final selection.\n\nNaming a fragment — «Grip», «Flexion» — makes it a window of the co-activation table. Nothing can name it for you: the detector finds where a contraction started, not which manoeuvre it was. That is read off the trace, and reading it is the exercise.': 'La aplicación propone los fragmentos informativos (periodos activos). Ajústalos, añade o quita; solo se analizan los marcados. La selección final la decides tú.\n\nPonerle nombre a un fragmento —«Presa», «Flexión»— lo convierte en una ventana de la tabla de coactivación. Nadie puede nombrarlo por ti: el detector encuentra dónde empezó una contracción, no qué maniobra era. Eso se lee en la traza, y leerlo es el ejercicio.',
-    'Leave it empty for a fragment that is only signal worth keeping. Name it and it becomes a window of the co-activation table.': 'Déjalo vacío si el fragmento es solo señal que merece la pena conservar. Ponle nombre y pasa a ser una ventana de la tabla de coactivación.',
+    'Manoeuvre': 'Maniobra',
+    'The app suggests the informative fragments (active periods). Adjust, add or remove them; only the checked fragments are analysed. You decide the final selection.\n\nName a fragment with the manoeuvre, not the muscle: in «Flexion» both channels are recorded, the flexor as agonist and the extensor as antagonist, and that pair is what the co-activation table measures. Give consecutive fragments the same name and they become one window of that table — six efforts named «Flexion» are six samples of one condition, not six conditions. Nothing can name them for you: the detector finds where a contraction started, not which manoeuvre it was. That is read off the trace, and reading it is the exercise.': 'La aplicación propone los fragmentos informativos (periodos activos). Ajústalos, añade o quita; solo se analizan los marcados. La selección final la decides tú.\n\nNombra el fragmento con la maniobra, no con el músculo: en «Flexión» se registran los dos canales, el flexor como agonista y el extensor como antagonista, y ese par es lo que mide la tabla de coactivación. Si das el mismo nombre a fragmentos consecutivos pasan a ser una sola ventana de esa tabla: seis esfuerzos llamados «Flexión» son seis muestras de una condición, no seis condiciones. Nadie puede nombrarlos por ti: el detector encuentra dónde empezó una contracción, no qué maniobra era. Eso se lee en la traza, y leerlo es el ejercicio.',
+    'The manoeuvre performed, not the muscle contracting. Leave it empty for a fragment that is only signal worth keeping. Consecutive fragments with the same name form a single window of the co-activation table.': 'La maniobra realizada, no el músculo que se contrae. Déjalo vacío si el fragmento es solo señal que merece la pena conservar. Los fragmentos consecutivos con el mismo nombre forman una sola ventana de la tabla de coactivación.',
     'Save tuned EDF…': 'Guardar EDF afinado…',
     'Write a new recording carrying the current selection: the calibration repetitions kept and the fragments of the task. The original is never touched, and the new file says where it came from.': 'Escribe un registro nuevo con la selección vigente: las repeticiones de calibración conservadas y los fragmentos de la tarea. El original no se toca nunca, y el fichero nuevo dice de dónde viene.',
     'Save tuned recording': 'Guardar el registro afinado',
