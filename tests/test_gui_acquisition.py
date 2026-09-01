@@ -318,3 +318,92 @@ def test_reset_clears_acquisition_view(qapp) -> None:
     assert tab._total_samples == 0
     assert not tab._spin_warning.isEnabled()
     tab.cleanup()
+
+
+@pytest.mark.gui
+class TestTheTimeWindowControls:
+    """The two arrow buttons and the zoom combo, pressed while idle.
+
+    Reported from the bench as "I click and the time scale does not change".
+    It was true, and only when idle: the handlers changed the number of
+    visible samples and left the repaint to the next frame that carried new
+    samples. Recording, that frame arrives in thirty milliseconds and nobody
+    notices; standing still it never arrives, so the caption moved and the
+    plot did not. The vertical ▲▼ buttons in the same corner had always
+    forced the repaint.
+    """
+
+    @pytest.fixture
+    def tab(self, qapp):
+        from PySide6.QtCore import QSettings
+
+        from emgteach.gui.tabs.acquisition import AcquisitionTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+
+        ajustes = QSettings("emgteach-test", "ventana-tiempo")
+        ajustes.clear()
+        widget = AcquisitionTab(LoggerWidget(), ajustes)
+        widget.show()
+        qapp.processEvents()
+        yield widget
+        widget.cleanup()
+
+    @staticmethod
+    def _span(tab) -> float:
+        x, _y = tab._curves_raw[0].getData()
+        return 0.0 if x is None or not len(x) else float(x[-1])
+
+    def test_widening_moves_the_axis_with_nothing_recording(self, tab, qapp):
+        tab._refresh_plots(force=True)
+        antes = self._span(tab)
+        tab._on_tiempo_ampliar()
+        qapp.processEvents()
+        assert self._span(tab) > antes
+
+    def test_narrowing_moves_it_back(self, tab, qapp):
+        tab._refresh_plots(force=True)
+        antes = self._span(tab)
+        tab._on_tiempo_reducir()
+        qapp.processEvents()
+        assert self._span(tab) < antes
+
+    def test_the_combo_moves_it_too(self, tab, qapp):
+        tab._refresh_plots(force=True)
+        antes = self._span(tab)
+        tab._on_combo_zoom_changed(0)      # the whole buffer
+        qapp.processEvents()
+        assert self._span(tab) > antes
+
+    def test_the_caption_says_the_window_that_is_set(self, tab):
+        """It opened claiming "30 s visible" over a five-second window, so the
+        first press of ◀▶ looked like it shrank the window: the caption fell
+        from 30 to 10 while the window doubled."""
+        assert tab._lbl_ventana_info.text().startswith("5")
+        tab._on_tiempo_ampliar()
+        assert tab._lbl_ventana_info.text().startswith("10")
+
+
+@pytest.mark.gui
+def test_the_colour_key_is_offered_only_with_two_channels(qapp) -> None:
+    """With one channel it named the only trace on screen, in the colour that
+    trace already is. With two it is the only key the envelope plot has: the
+    raw plot writes each muscle's name inside its own lane, the envelope
+    overlays both curves and names neither."""
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+    from emgteach.modes import MODE_PAIR, MODE_SINGLE
+
+    ajustes = QSettings("emgteach-test", "leyenda")
+    ajustes.clear()
+    tab = AcquisitionTab(LoggerWidget(), ajustes)
+    tab.show()
+    qapp.processEvents()
+    try:
+        tab.apply_mode(MODE_SINGLE, False)
+        assert tab._lbl_legend.isHidden()
+        tab.apply_mode(MODE_PAIR, False)
+        assert not tab._lbl_legend.isHidden()
+    finally:
+        tab.cleanup()

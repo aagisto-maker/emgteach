@@ -906,7 +906,6 @@ class AcquisitionTab(QWidget):
         self._combo_zoom.setFixedSize(76, 26)
         for f in _ZOOM_FACTORS:
             self._combo_zoom.addItem(f"×{f}")
-        self._combo_zoom.setCurrentIndex(0)   # ×1 = the whole buffer
         self._combo_zoom.activated.connect(self._on_combo_zoom_changed)
         row_tiempo.addWidget(self._combo_zoom)
 
@@ -918,9 +917,14 @@ class AcquisitionTab(QWidget):
         self._btn_tiempo_reducir.clicked.connect(self._on_tiempo_reducir)
         row_tiempo.addWidget(self._btn_tiempo_reducir)
 
-        self._lbl_ventana_info = QLabel(f"{MAX_POINTS // FS} {tr('s visible')}")
+        # Written from the window that is actually set, not from the size of
+        # the buffer. It opened saying "30 s visible" over a five-second
+        # window, so the first press of ◀▶ appeared to *shrink* it — the
+        # caption fell from 30 to 10 while the window doubled.
+        self._lbl_ventana_info = QLabel()
         self._lbl_ventana_info.setStyleSheet("font-size: 8px; color: #444;")
         row_tiempo.addWidget(self._lbl_ventana_info)
+        self._update_ventana_label()
 
         row_tiempo.addSpacing(12)
         self._lbl_legend = QLabel()
@@ -1216,11 +1220,20 @@ class AcquisitionTab(QWidget):
                 self._load_name_labels[c].setText(labels[c] if vis else "")
 
     def _update_legend(self) -> None:
+        """The colour key, offered only where there are two curves to tell apart.
+
+        With one channel it named the only trace on screen, in the colour that
+        trace already is. With two it earns its place — but only because of the
+        envelope plot: the raw plot writes each muscle's name inside its own
+        lane, and the envelope overlays both curves with nothing naming them.
+        """
+        labels = self._active_labels()
         parts = [
             f'<span style="color:{_CHANNEL_COLOR_HEX[i]}">&#9679; {lbl}</span>'
-            for i, lbl in enumerate(self._active_labels())
+            for i, lbl in enumerate(labels)
         ]
         self._lbl_legend.setText("&nbsp;&nbsp;&nbsp;".join(parts))
+        self._lbl_legend.setVisible(len(labels) > 1)
         # Keep the stacked-mode lane labels in sync.
         if hasattr(self, "_lane_labels"):
             self._refresh_lane_label_texts()
@@ -3367,6 +3380,17 @@ class AcquisitionTab(QWidget):
     # Time scale (sliding window)
     # ------------------------------------------------------------------
 
+    # Every one of these ends in a forced repaint, and that is the whole
+    # point of the line. Without it the window only changed on the *next*
+    # frame that carried new samples — so while recording it worked with a
+    # thirty-millisecond delay nobody could notice, and standing idle it did
+    # nothing at all: the caption said "5 s visible" and the plot went on
+    # showing thirty. Reported from the bench as "I click and the time scale
+    # does not change", which is exactly what happened.
+    #
+    # The vertical ▲▼ buttons beside each plot had always forced it. Two
+    # controls in the same corner, one working and one not.
+
     @Slot()
     def _on_tiempo_ampliar(self) -> None:
         """◀▶ — double the visible window (less detail, more context)."""
@@ -3375,6 +3399,7 @@ class AcquisitionTab(QWidget):
         self._n_visible = nueva
         self._sync_combo_zoom()
         self._update_ventana_label()
+        self._refresh_plots(force=True)
 
     @Slot()
     def _on_tiempo_reducir(self) -> None:
@@ -3383,6 +3408,7 @@ class AcquisitionTab(QWidget):
         self._n_visible = nueva
         self._sync_combo_zoom()
         self._update_ventana_label()
+        self._refresh_plots(force=True)
 
     @Slot(int)
     def _on_combo_zoom_changed(self, index: int) -> None:
@@ -3391,6 +3417,7 @@ class AcquisitionTab(QWidget):
         nueva = max(nueva, int(0.5 * FS))
         self._n_visible = nueva
         self._update_ventana_label()
+        self._refresh_plots(force=True)
 
     def _sync_combo_zoom(self) -> None:
         """Update the combo so it reflects the current n_visible."""
