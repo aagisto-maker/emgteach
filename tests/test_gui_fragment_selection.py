@@ -174,3 +174,53 @@ class TestTheEditorStaysInsideTheRecordingPhase:
         dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
         assert any(ini < self.SPAN[0] for ini, _fin in dlg.selected_segments())
         dlg.deleteLater()
+
+
+class TestItSaysContractionEverywhere:
+    """One object, one name, in everything the student reads.
+
+    The dialogue's title, buttons and counter said «fragment» while its first
+    line said «contraction» — the same rows under two names, and the reader
+    with no way to know they were the same. The code still says fragment: the
+    word is in the tuned file, in the tabs and in the core, and it is a wider
+    thing there (a stretch of signal, which a contraction usually is but the
+    whole recording also is). Only the surface is unified.
+    """
+
+    def test_no_visible_string_says_fragment(self) -> None:
+        import ast
+        import pathlib
+
+        from emgteach.gui.widgets import fragment_selection
+
+        fuente = pathlib.Path(fragment_selection.__file__).read_text(
+            encoding="utf-8"
+        )
+        malas = [
+            (n.lineno, a.value)
+            for n in ast.walk(ast.parse(fuente))
+            if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "tr"
+            for a in n.args
+            if isinstance(a, ast.Constant)
+            and isinstance(a.value, str)
+            and "fragment" in a.value.lower()
+        ]
+        assert not malas, f"dicen «fragment» y deberían decir contracción: {malas}"
+
+    def test_the_spanish_says_contraccion_too(self, qapp: QCoreApplication) -> None:
+        """A key renamed in English but left with the old Spanish value is the
+        classic half-done rename, and only shows in the language nobody
+        develops in."""
+        from emgteach import i18n
+
+        anterior = i18n.get_language()
+        try:
+            i18n.set_language("es")
+            dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
+            visible = [dlg.windowTitle(), dlg._btn_add.text(),
+                       dlg._btn_remove.text(), dlg._btn_ok.text()]
+            assert not [t for t in visible if "fragment" in t.lower()], visible
+            assert sum("contracci" in t.lower() for t in visible) >= 3, visible
+            dlg.deleteLater()
+        finally:
+            i18n.set_language(anterior)

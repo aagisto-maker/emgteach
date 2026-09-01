@@ -85,7 +85,11 @@ class FragmentSelectionDialog(QDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Select analysis fragments"))
+        # «Contraction», not «fragment», everywhere the student can read it.
+        # The code still calls them fragments — that word is in the tuned file,
+        # in the tabs and in the core — but a dialogue that says one thing in
+        # its title and another in its first line is two names for one object.
+        self.setWindowTitle(tr("Choose the contractions to analyse"))
         self.setMinimumSize(720, 520)
 
         self._raw = np.asarray(raw, dtype=np.float64).ravel()
@@ -241,10 +245,14 @@ class FragmentSelectionDialog(QDialog):
         )
         self._btn_auto.clicked.connect(self._auto_suggest)
         btn_row.addWidget(self._btn_auto)
-        self._btn_add = QPushButton(tr("Add fragment"))
+        self._btn_add = QPushButton(tr("Add contraction"))
+        self._btn_add.setToolTip(
+            tr("Add a row for a contraction the app did not find.")
+        )
         self._btn_add.clicked.connect(self._add_fragment)
         btn_row.addWidget(self._btn_add)
-        self._btn_remove = QPushButton(tr("Remove selected"))
+        self._btn_remove = QPushButton(tr("Remove contraction"))
+        self._btn_remove.setToolTip(tr("Delete the selected row."))
         self._btn_remove.clicked.connect(self._remove_selected)
         btn_row.addWidget(self._btn_remove)
         self._btn_whole = QPushButton(tr("Whole recording"))
@@ -262,7 +270,7 @@ class FragmentSelectionDialog(QDialog):
         self._btn_cancel = QPushButton(tr("Cancel"))
         self._btn_cancel.clicked.connect(self.reject)
         ok_row.addWidget(self._btn_cancel)
-        self._btn_ok = QPushButton(tr("Use these fragments"))
+        self._btn_ok = QPushButton(tr("Use these contractions"))
         self._btn_ok.setDefault(True)
         self._btn_ok.clicked.connect(self.accept)
         ok_row.addWidget(self._btn_ok)
@@ -315,10 +323,9 @@ class FragmentSelectionDialog(QDialog):
                 combo_nombre.addItem(tr(preset))
         combo_nombre.setCurrentText(seg.label)
         combo_nombre.setToolTip(tr(
-            "The manoeuvre performed, not the muscle contracting. Leave it "
-            "empty for a fragment that is only signal worth keeping. "
-            "Consecutive fragments with the same name form a single window of "
-            "the co-activation table."
+            "The manoeuvre being made, not the muscle that contracted. Leave "
+            "it empty for a contraction worth analysing that is not part of "
+            "any manoeuvre. Consecutive rows with the same name count as one."
         ))
         self._table.setCellWidget(row, 4, combo_nombre)
 
@@ -413,7 +420,7 @@ class FragmentSelectionDialog(QDialog):
             self._lbl_total.setText(tr("Whole recording will be analysed."))
         else:
             self._lbl_total.setText(
-                tr("{n} fragment(s) — {d:.2f} s of {full:.1f} s").format(
+                tr("{n} contraction(s) — {d:.2f} s of {full:.1f} s").format(
                     n=len(kept), d=total, full=self._full_duration
                 )
             )

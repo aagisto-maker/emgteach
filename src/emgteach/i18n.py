@@ -994,7 +994,7 @@ _ES = {
     'Manoeuvre': 'Maniobra',
     'Each row is one contraction found in the recording. Uncheck the ones not worth analysing — a movement done wrong, a tug on the cable, an effort that never got going — and only the rest is analysed, joined up as if it had been recorded in one go.\n\nIf they are all good there is nothing to do here: cancel, and the whole recording is analysed. To move where one begins or ends, change its seconds with the mouse wheel, the arrows, or by typing.': 'Cada fila es una contracción encontrada en el registro. Desmarque las que no merezca la pena analizar —un movimiento mal hecho, un tirón del cable, un esfuerzo que no llegó a arrancar— y se analiza solo el resto, unido como si se hubiera registrado de una vez.\n\nSi todas están bien, aquí no hay nada que hacer: cancele y se analiza el registro entero. Para mover dónde empieza o acaba una, cambie sus segundos con la rueda del ratón, con las flechas o escribiéndolos.',
     'With two muscles each row can also be named with the manoeuvre — «Flexion», «Grip». The name says which movement was being made, not which muscle contracted, and it is what tells the co-activation table which of the two is the agonist. Consecutive rows with the same name count as one.': 'Con dos músculos, cada fila puede llevar además el nombre de la maniobra: «Flexión», «Presa». El nombre dice qué movimiento se estaba haciendo, no qué músculo se contrajo, y es lo que le dice a la tabla de coactivación cuál de los dos es el agonista. Las filas consecutivas con el mismo nombre cuentan como una.',
-    'The manoeuvre performed, not the muscle contracting. Leave it empty for a fragment that is only signal worth keeping. Consecutive fragments with the same name form a single window of the co-activation table.': 'La maniobra realizada, no el músculo que se contrae. Déjelo vacío si el fragmento es solo señal que merece la pena conservar. Los fragmentos consecutivos con el mismo nombre forman una sola ventana de la tabla de coactivación.',
+    'The manoeuvre being made, not the muscle that contracted. Leave it empty for a contraction worth analysing that is not part of any manoeuvre. Consecutive rows with the same name count as one.': 'La maniobra que se estaba haciendo, no el músculo que se contrajo. Déjelo vacío si es una contracción que merece la pena analizar pero no forma parte de ninguna maniobra. Las filas consecutivas con el mismo nombre cuentan como una.',
     'Save tuned EDF…': 'Guardar EDF afinado…',
     'Write a new recording carrying the current selection: the calibration repetitions kept and the fragments of the task. The original is never touched, and the new file says where it came from.': 'Escribe un registro nuevo con la selección vigente: las repeticiones de calibración conservadas y los fragmentos de la tarea. El original no se toca nunca, y el fichero nuevo dice de dónde viene.',
     'Save tuned recording': 'Guardar el registro afinado',
@@ -1059,7 +1059,7 @@ _ES = {
     "CSV export error: {error}": "Error al exportar CSV: {error}",
     "Cancelling…": "Cancelando…",
     # -- fragment-selection widget --
-    "Select analysis fragments": "Seleccionar fragmentos de análisis",
+    "Choose the contractions to analyse": "Elegir las contracciones que se analizan",
     "Band-pass low cut-off (Hz).": "Frecuencia de corte baja del paso-banda (Hz).",
     "Band-pass high cut-off (Hz).": "Frecuencia de corte alta del paso-banda (Hz).",
     "Mains-notch frequency (Hz), usually 50 or 60.":
@@ -1075,14 +1075,14 @@ _ES = {
         "Los periodos activos separados por menos de esto se fusionan en uno.",
     "Start over": "Empezar de nuevo",
     "Discard the changes and go back to what the app proposed.": "Descarta los cambios y vuelve a la propuesta de la aplicación.",
-    "Add fragment": "Añadir fragmento",
-    "Remove selected": "Quitar seleccionado",
+    "Add contraction": "Añadir contracción",
+    "Remove contraction": "Quitar contracción",
     "Whole recording": "Registro completo",
     # Segment "reason" codes shown in the fragment table.
     "activity": "actividad",
     "manual": "manual",
     "Clear the selection and analyse everything.": "Borra la selección y analiza todo.",
-    "Use these fragments": "Usar estos fragmentos",
+    "Use these contractions": "Usar estas contracciones",
     "Keep": "Conservar",
     "Start (s)": "Inicio (s)",
     "End (s)": "Fin (s)",
@@ -1096,7 +1096,9 @@ _ES = {
     "min. duration": "duración mín.",
     "merge gap": "hueco de fusión",
     "Whole recording will be analysed.": "Se analizará el registro completo.",
-    "{n} fragment(s) — {d:.2f} s of {full:.1f} s": "{n} fragmento(s) — {d:.2f} s de {full:.1f} s",
+    "{n} contraction(s) — {d:.2f} s of {full:.1f} s": "{n} contracción(es) — {d:.2f} s de {full:.1f} s",
+    'Add a row for a contraction the app did not find.': 'Añade una fila para una contracción que la aplicación no encontró.',
+    'Delete the selected row.': 'Borra la fila seleccionada.',
 
     # ── Recording modes and fine controls ──────────────────────────────
     "Single-muscle contraction": "Contracción de un músculo",
