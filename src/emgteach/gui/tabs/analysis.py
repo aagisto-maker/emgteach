@@ -1157,6 +1157,18 @@ class AnalysisTab(QWidget):
 
     @Slot()
     def _iniciar_analisis(self) -> None:
+        # Never start a second run over a first. Further down, `self._worker`
+        # is reassigned; if the previous QThread were still running, dropping
+        # the last reference to it destroys a live thread, and that kills the
+        # process from the C++ side — no traceback, no crash log, nothing.
+        # The Analyse button is disabled while a run is in flight, so this only
+        # matters for the callers that are not the button: the fragment and
+        # repetition dialogues, which re-analyse when they are accepted.
+        if self._worker is not None and self._worker.isRunning():
+            self._logger.append_log(
+                tr("An analysis is already running; wait for it to finish.")
+            )
+            return
         path = self._edit_path.text().strip()
         canal = self._combo_canal.currentText().strip() or "EMG"
         # Optional second channel for the agonist/antagonist overlay. Same

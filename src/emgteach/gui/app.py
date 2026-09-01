@@ -453,6 +453,11 @@ def install_qt_translations(app: QApplication, language: str) -> QTranslator | N
 
 
 def main() -> None:
+    # Before anything else: a crash from here on leaves a traceback on disk and
+    # says so, instead of vanishing into a console the windowed build lacks.
+    from emgteach.crash import install_crash_log
+
+    install_crash_log()
     _install_qt_message_filter()
     app = QApplication(sys.argv)
     app.setApplicationName("EMG Bioinstrumentacion")

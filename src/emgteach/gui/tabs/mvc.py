@@ -903,6 +903,13 @@ class MvcTab(QWidget):
 
     @Slot()
     def _iniciar_calculo(self) -> None:
+        # See the analysis tab: `self._worker` is reassigned below, and letting
+        # go of a QThread that is still running kills the process from the C++
+        # side, with no traceback to show for it.
+        if self._worker is not None and self._worker.isRunning():
+            self._log(tr("A calculation is already running; wait for it to "
+                         "finish."))
+            return
         path = self._edit_path.text().strip()
         f_env = self._spin_fenv.value()
 
