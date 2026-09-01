@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from PySide6.QtCore import Qt
 
 from emgteach.modes import (
     MODE_KINEMATICS,
@@ -228,6 +229,31 @@ class TestComplexityBand:
         texto = main_window._lbl_nivel.text()
         assert texto, f"{mode}: the band says nothing"
         assert mode_complexity_colour(mode) in main_window._lbl_nivel.styleSheet()
+
+    @pytest.mark.parametrize("mode", MODES)
+    def test_the_level_fits_beside_the_selector(
+        self, main_window, qapp, mode
+    ) -> None:
+        """It stopped being a band across the window and became a tag beside
+        the practical selector, at the selector's width.
+
+        Which is a width it has to fit in: elided, the word that disappears is
+        the one naming the level, and a tag reading "Análisis inter…" says
+        less than no tag at all. The full caption is the tooltip regardless.
+        """
+        set_mode(main_window, qapp, mode)
+        etiqueta = main_window._lbl_nivel
+        ancho_texto = etiqueta.fontMetrics().horizontalAdvance(etiqueta.text())
+        assert ancho_texto <= etiqueta.width() - 16, mode
+        assert etiqueta.toolTip() == etiqueta.text()
+
+    def test_the_level_sits_in_the_corner_and_not_across_the_window(
+        self, main_window
+    ) -> None:
+        """A full-width band is a lot of emphasis for a caption the selector
+        beside it already implies, and emphasis is read as importance."""
+        corner = main_window._tabs.cornerWidget(Qt.Corner.TopRightCorner)
+        assert main_window._lbl_nivel.parent() is corner
 
     def test_the_practicals_are_ordered(self) -> None:
         """Their order is the point: one muscle, then two, then derived."""

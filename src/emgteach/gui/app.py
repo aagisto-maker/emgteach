@@ -176,11 +176,19 @@ class MainWindow(QMainWindow):
         # The level of detail is a property of the practical, not a second
         # switch beside it: two independent axes meant the user had to hold
         # both in mind to know why a control was on screen or not. The fine
-        # controls live in the free mode now, and this band says which level
-        # the current practical is at.
+        # controls belong to the kinematics practical, and this says which
+        # level the current one is at.
+        #
+        # It used to be a band across the whole window. That is a lot of
+        # emphasis for a caption that repeats what the selector beside it
+        # already implies — the practicals are in order, so choosing one is
+        # choosing its level — and the emphasis is what a reader takes as
+        # importance. It sits beside the selector now, at the selector's own
+        # width: same colour, same words, a fifth of the room.
         self._lbl_nivel = QLabel()
         self._lbl_nivel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._lbl_nivel.setContentsMargins(8, 3, 8, 3)
+        self._lbl_nivel.setFixedWidth(self._combo_mode.sizeHint().width())
 
         self._combo_lang = QComboBox()
         self._combo_lang.addItem("English", "en")
@@ -225,6 +233,7 @@ class MainWindow(QMainWindow):
         corner_lay.setSpacing(2)
         corner_lay.addWidget(btn_reset)
         corner_lay.addWidget(self._combo_mode)
+        corner_lay.addWidget(self._lbl_nivel)
         corner_lay.addWidget(self._combo_lang)
         corner_lay.addWidget(btn_tour)
         corner_lay.addWidget(btn_mapa)
@@ -234,7 +243,6 @@ class MainWindow(QMainWindow):
         central = QWidget()
         root = QVBoxLayout(central)
         root.setContentsMargins(4, 4, 4, 4)
-        root.addWidget(self._lbl_nivel)
         root.addWidget(tabs, stretch=1)
         self.setCentralWidget(central)
 
@@ -316,10 +324,17 @@ class MainWindow(QMainWindow):
         self._refresh_nivel_band()
 
     def _refresh_nivel_band(self) -> None:
-        """Colour and caption of the complexity band."""
+        """Colour and caption of the level tag beside the practical selector.
+
+        The full caption is kept as the tooltip: at the selector's width a
+        long translation would be elided, and the word that gets cut is the
+        one that says the level.
+        """
         mode = self._mode()
         color = mode_complexity_colour(mode)
-        self._lbl_nivel.setText(mode_complexity_label(mode))
+        texto = mode_complexity_label(mode)
+        self._lbl_nivel.setText(texto)
+        self._lbl_nivel.setToolTip(texto)
         self._lbl_nivel.setStyleSheet(
             f"background-color: {color}; color: white; font-weight: bold; "
             "font-size: 11px; border-radius: 3px;"
