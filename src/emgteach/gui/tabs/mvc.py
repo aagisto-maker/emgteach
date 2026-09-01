@@ -745,6 +745,10 @@ class MvcTab(QWidget):
             self._selected_segments = dlg.selected_segments()
             self._spin_fenv.setValue(dlg.filter_kwargs()["f_env"])
             self._actualizar_etiqueta_fragmentos()
+            # A reference computed over the old selection is worse than none:
+            # every % MVC downstream is measured against it. Recompute.
+            if self._last_result is not None:
+                self._iniciar_calculo()
 
     def _tramo_de_registro(self, path: str) -> tuple[float, float] | None:
         """The session's recording phase, from the annotations alone."""

@@ -1001,6 +1001,13 @@ class AnalysisTab(QWidget):
             self._analysis_filter_kwargs = dlg.filter_kwargs()
             self._spin_fenv.setValue(self._analysis_filter_kwargs["f_env"])
             self._actualizar_etiqueta_fragmentos()
+            # Re-analyse for the same reason the repetitions dialogue does: the
+            # panels on screen were computed over the old selection, so leaving
+            # them up beside "12 fragment(s) selected" showed two answers to the
+            # same question — a table reading "Whole recording" under a label
+            # promising twelve fragments.
+            if self._last_result is not None:
+                self._iniciar_analisis()
 
     @Slot()
     def _editar_repeticiones(self) -> None:
