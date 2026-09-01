@@ -141,17 +141,27 @@ class TestNoMessageLeavesThePanel:
         assert overlay.height() >= 400
 
     def test_a_long_message_makes_the_panel_taller(self, overlay) -> None:
-        """And the same thing end to end, wherever text can be measured.
+        """And the same thing end to end, on a real string.
 
-        Skipped rather than weakened where it cannot: a machine with no fonts
-        cannot tell a long message from a short one, and a test that quietly
-        passed there would be claiming something it never checked.
+        Whether a *particular* sentence outgrows the floor is a property of
+        the font the machine has, not of the widget: with Arial this one needs
+        149 px and the panel goes to 241, while the fallback on a bare Linux
+        runner puts it under the 118 px that would be needed. So the case is
+        exhibited where it can be and declared unexhibitable where it cannot —
+        the rule itself is covered above, on every platform.
+
+        The first attempt at this guard compared the two texts' measurements,
+        which was the wrong question: the runner *does* tell them apart, just
+        not by enough.
         """
-        if overlay.text_height(self._LARGO) <= overlay.text_height("Short."):
-            pytest.skip("this Qt has no fonts: text cannot be measured")
         overlay.show_done("MVC ready", "Short.")
         corto = overlay.height()
         overlay.show_done("MVC ready", self._LARGO)
+        if overlay.height_for_text() <= corto:
+            pytest.skip(
+                "this Qt's fonts measure the message under the panel's own "
+                "floor, so a real string cannot exhibit the growth here"
+            )
         assert overlay.height() > corto
 
     def test_a_short_message_does_not_shrink_it_below_its_floor(
