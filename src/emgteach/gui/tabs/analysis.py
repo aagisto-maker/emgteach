@@ -986,6 +986,10 @@ class AnalysisTab(QWidget):
                 # calibration and offer its maximal efforts as fragments of
                 # the task.
                 span=self._tramo_de_registro(path),
+                # A name is only ever read by the co-activation table, which
+                # needs the agonist and the antagonist. Analysing one muscle,
+                # the column asked for something nothing would look at.
+                naming=self._hay_segundo_canal(),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -1038,6 +1042,14 @@ class AnalysisTab(QWidget):
         self._cal_keep = dlg.keep()
         self._actualizar_etiqueta_reps()
         self._iniciar_analisis()
+
+    def _hay_segundo_canal(self) -> bool:
+        """Whether this analysis has an antagonist, and so a co-activation
+        table for a fragment's name to feed."""
+        if not self._chk_compare2.isChecked():
+            return False
+        c2 = self._combo_canal2.currentText().strip()
+        return bool(c2) and c2 != self._combo_canal.currentText().strip()
 
     def _tramo_de_registro(self, path: str) -> tuple[float, float] | None:
         """The session's recording phase, or ``None`` for a file without one.
@@ -1147,12 +1159,13 @@ class AnalysisTab(QWidget):
     def _iniciar_analisis(self) -> None:
         path = self._edit_path.text().strip()
         canal = self._combo_canal.currentText().strip() or "EMG"
-        # Optional second channel for the agonist/antagonist overlay.
-        canal2 = None
-        if self._chk_compare2.isChecked():
-            c2 = self._combo_canal2.currentText().strip()
-            if c2 and c2 != canal:
-                canal2 = c2
+        # Optional second channel for the agonist/antagonist overlay. Same
+        # question the fragment editor asks to decide whether naming is worth
+        # offering, so both ask it in one place.
+        canal2 = (
+            self._combo_canal2.currentText().strip()
+            if self._hay_segundo_canal() else None
+        )
         # Accelerometer channel — only analysed when an ACC panel is selected.
         acc_channel = None
         if self._acc_channel_name and self._any_acc_panel_checked():

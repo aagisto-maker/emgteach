@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from emgteach import i18n
@@ -86,6 +88,31 @@ def test_the_names_a_practical_imposes_are_translated() -> None:
         if name not in i18n._ES
     ]
     assert not faltan, f"sin traducción al español: {faltan}"
+
+
+def test_the_spanish_interface_does_not_switch_to_tu() -> None:
+    """One register, all the way through.
+
+    English hides the choice — «you» is both — so a new string can be written
+    in English, translated in good faith, and land in the Spanish interface
+    addressing the user as «tú» while the other hundred and fifty entries
+    address them as «usted». It reads as two people wrote the program, and it
+    went unnoticed until it was seen on screen.
+
+    The net below is not exhaustive; it catches the forms that have no other
+    reading.
+    """
+    tuteo = re.compile(
+        r"\b(decides|puedes|tienes|debes|quieres|sabes|haces|ver[áa]s|podr[áa]s"
+        r"|por ti|contigo|tuyos?|tuyas?)\b",
+        re.IGNORECASE,
+    )
+    culpables = {
+        en: es for en, es in i18n._ES.items() if tuteo.search(es)
+    }
+    assert not culpables, "tutean, y el resto de la interfaz trata de usted: " + "; ".join(
+        repr(v[:70]) for v in culpables.values()
+    )
 
 
 def test_the_suggested_manoeuvres_are_translated() -> None:

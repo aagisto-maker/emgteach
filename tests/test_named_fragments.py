@@ -284,6 +284,33 @@ class TestTheEditorOffersTheName:
         d = dlg(segments=[(22.0, 27.0)])
         assert d._row_widgets[0]["label"].currentText() == ""
 
+    def test_with_one_muscle_the_column_is_not_offered(self, dlg) -> None:
+        """A name is read by one thing only: the co-activation table, which
+        needs an agonist and an antagonist. Analysing a single muscle — and in
+        the MVC tab always — the column asked the operator for something no
+        part of the program would ever look at.
+        """
+        d = dlg(segments=[(22.0, 27.0)], naming=False)
+        assert d._table.isColumnHidden(4)
+
+    def test_with_two_muscles_it_is(self, dlg) -> None:
+        d = dlg(segments=[(22.0, 27.0)], naming=True)
+        assert not d._table.isColumnHidden(4)
+
+    def test_the_naming_paragraph_goes_with_it(self, dlg) -> None:
+        """The dialogue is a secondary tool most sessions never open. Half its
+        text explained a column that is not there."""
+        def texto(d) -> str:
+            from PySide6.QtWidgets import QLabel
+            return " ".join(
+                w.text() for w in d.findChildren(QLabel) if "fragment" in w.text()
+                or "fragmento" in w.text()
+            )
+
+        con = texto(dlg(segments=[(22.0, 27.0)], naming=True))
+        sin = texto(dlg(segments=[(22.0, 27.0)], naming=False))
+        assert len(sin) < len(con) / 2
+
 
 class TestTheNamesSurviveInTheTunedFile:
     def test_they_are_written_at_their_own_start(self, tmp_path: Path) -> None:

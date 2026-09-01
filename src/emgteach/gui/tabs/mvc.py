@@ -736,6 +736,10 @@ class MvcTab(QWidget):
                 # signal in the file, so an editor allowed to see it proposes
                 # its maximal efforts as fragments of the task.
                 span=self._tramo_de_registro(path),
+                # Naming leads nowhere here: this tab computes one reference
+                # per muscle, and only the co-activation table ever reads a
+                # fragment's name. The dialogue used to ask for it anyway.
+                naming=False,
                 parent=self,
             )
         except Exception as exc:

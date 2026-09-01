@@ -94,6 +94,7 @@ class FragmentSelectionDialog(QDialog):
         segments: list[tuple[float, float]] | None = None,
         labels: list[str] | None = None,
         span: tuple[float, float] | None = None,
+        naming: bool = True,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -117,6 +118,12 @@ class FragmentSelectionDialog(QDialog):
             (max(0.0, float(span[0])), min(self._full_duration, float(span[1])))
             if span else (0.0, self._full_duration)
         )
+        # Whether naming a fragment does anything here. A name is only read
+        # by the co-activation table, which needs an agonist and an
+        # antagonist; with a single muscle on screen there is no such table
+        # and the column asked for something no part of the program would
+        # ever look at.
+        self._naming = bool(naming)
         self._row_widgets: list[dict[str, Any]] = []
 
         # Envelope for the preview (downsampled when drawing).
@@ -156,6 +163,7 @@ class FragmentSelectionDialog(QDialog):
         segments: list[tuple[float, float]] | None = None,
         labels: list[str] | None = None,
         span: tuple[float, float] | None = None,
+        naming: bool = True,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one channel from an EDF file."""
@@ -169,17 +177,24 @@ class FragmentSelectionDialog(QDialog):
             segments=segments,
             labels=labels,
             span=span,
+            naming=naming,
             parent=parent,
         )
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        info = QLabel(
-            tr(
-                "The app suggests the informative fragments (active periods). "
-                "Adjust, add or remove them; only the checked fragments are "
-                "analysed. You decide the final selection.\n\n"
+        # One paragraph on what the editor does; the second only where naming
+        # leads anywhere. Most sessions never open this dialogue at all, and a
+        # secondary tool that greets you with a wall of prose reads as a step
+        # of the practical rather than the escape hatch it is.
+        texto = tr(
+            "The app suggests the informative fragments (active periods), one "
+            "per contraction. Adjust, add or remove them; only the checked "
+            "fragments are analysed. You decide the final selection."
+        )
+        if self._naming:
+            texto += "\n\n" + tr(
                 "Name a fragment with the manoeuvre, not the muscle: in "
                 "«Flexion» both channels are recorded, the flexor as agonist "
                 "and the extensor as antagonist, and that pair is what the "
@@ -191,7 +206,7 @@ class FragmentSelectionDialog(QDialog):
                 "was. That is read off the trace, and reading it is the "
                 "exercise."
             )
-        )
+        info = QLabel(texto)
         info.setWordWrap(True)
         root.addWidget(info)
 
@@ -212,6 +227,11 @@ class FragmentSelectionDialog(QDialog):
         header = self._table.horizontalHeader()
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        if not self._naming:
+            # Hidden rather than removed: the column indices are wired into the
+            # row builder and the readers, and one practical having a column
+            # the others do not is not worth two sets of indices.
+            self._table.setColumnHidden(4, True)
         root.addWidget(self._table, stretch=1)
 
         # Envelope-filter cut-offs used to detect activity and draw the preview.

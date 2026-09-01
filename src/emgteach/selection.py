@@ -20,6 +20,7 @@ Everything here is pure and GUI-free, so it is unit-tested directly.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -96,6 +97,95 @@ def _find_runs(active: np.ndarray) -> list[tuple[int, int]]:
     return [(int(s), int(e)) for s, e in zip(starts, ends, strict=True)]
 
 
+#: How far a peak must stand out of its surroundings, as a fraction of the
+#: tallest peak in the same run, to count as a contraction of its own. At 0.25
+#: the four efforts of a bench run (peaks 117, 155, 73 and 65, in thousandths
+#: of a millivolt) all clear it and the ripples between them, of about 13, do
+#: not. It is deliberately not a control on screen: see _separate_contractions.
+_PROMINENCE_FRACTION = 0.25
+
+#: Where a contraction obtained by splitting is taken to begin and end, as a
+#: fraction of its own height above the resting baseline. Only split pieces are
+#: trimmed this way: a run the threshold separated on its own already has its
+#: edges, and re-cutting those would move fragments that were never wrong.
+_ONSET_FRACTION = 0.10
+
+
+def _separate_contractions(
+    env: np.ndarray, start: int, end: int, base: float
+) -> list[tuple[int, int, int, int]]:
+    """Cut a run of activity at the valleys between its contractions.
+
+    The threshold that finds the run answers "is this above the electrical
+    noise?", and over a series of efforts the answer is yes throughout: between
+    one contraction and the next the envelope falls to a twentieth of the peak
+    but stays a *twelvefold* above the noise floor, because a muscle asked for
+    six efforts in a row does not return to electrical silence between them. So
+    the six arrived as one 6.3-second block, which can only be kept or
+    discarded whole — and discarding one bad contraction is the reason the
+    fragment editor exists.
+
+    Separating them needs the other question, "where does one effort end and
+    the next begin?", and that one is answered against the *contraction*, not
+    against the noise: a peak is its own contraction when it stands out of its
+    surroundings by a fair fraction of the tallest peak in the run.
+
+    This runs unconditionally and adds no control to the dialogue. A splitting
+    threshold is the kind of parameter that is only ever set by looking at what
+    it does, and the editor is a secondary tool that most sessions never open;
+    a row too many is undone by deleting it, a row too few by dragging the ends
+    of its neighbour.
+
+    Returns ``[(i0, i1, t0, t1), ...]``: the trimmed contraction and the
+    stretch of the run it occupies. They differ only for a piece that came out
+    of a split, and the caller measures ``min_duration_s`` against the second
+    pair — otherwise the floor, meant to reject noise, drops brisk efforts
+    instead, which is how the strongest contraction of a bench run went
+    missing.
+    """
+    from scipy.signal import find_peaks
+
+    trozo = env[start : end + 1]
+    if trozo.size < 3:
+        return [(start, end, start, end)]
+    altura = float(trozo.max()) - base
+    if altura <= 0.0:
+        return [(start, end, start, end)]
+
+    picos, _ = find_peaks(trozo, prominence=_PROMINENCE_FRACTION * altura)
+    if picos.size < 2:
+        return [(start, end, start, end)]
+
+    # One cut per gap between consecutive peaks, at the quietest sample in it.
+    cortes = [
+        int(a + 1 + np.argmin(trozo[a + 1 : b]))
+        for a, b in pairwise(picos)
+        if b > a + 1
+    ]
+    bordes = [0, *cortes, trozo.size - 1]
+
+    # The cuts fall in the middle of the pauses, so each piece would carry the
+    # rest that follows it and read as a weaker contraction than it was. Trim
+    # each one back to its own effort, the way the threshold trimmed the runs
+    # it managed to separate by itself.
+    piezas: list[tuple[int, int, int, int]] = []
+    for i in range(len(bordes) - 1):
+        p0, p1 = bordes[i], bordes[i + 1]
+        if p1 <= p0:
+            continue
+        pieza = trozo[p0 : p1 + 1]
+        nivel = base + _ONSET_FRACTION * (float(pieza.max()) - base)
+        encima = np.flatnonzero(pieza > nivel)
+        if encima.size == 0:
+            piezas.append((start + p0, start + p1, start + p0, start + p1))
+            continue
+        piezas.append((
+            start + p0 + int(encima[0]), start + p0 + int(encima[-1]),
+            start + p0, start + p1,
+        ))
+    return piezas or [(start, end, start, end)]
+
+
 def suggest_significant_segments(
     emg_raw: FloatArray | np.ndarray,
     fs: float,
@@ -119,6 +209,13 @@ def suggest_significant_segments(
     ``merge_gap_s`` are merged, and periods shorter than ``min_duration_s``
     are dropped as noise.
 
+    That threshold asks "is this above the electrical noise?", and over a
+    series of efforts the answer stays yes throughout, so the series arrives as
+    one block that can only be kept or discarded whole. A second pass therefore
+    cuts each active period at the valleys between its contractions — see
+    :func:`_separate_contractions` — which is what makes a proposal one row per
+    contraction, the unit a bad repetition can be discarded in.
+
     Parameters
     ----------
     emg_raw : array-like
@@ -132,7 +229,11 @@ def suggest_significant_segments(
         Threshold sensitivity in robust standard deviations above the
         resting baseline (default 3).
     min_duration_s : float, optional
-        Minimum length of a kept fragment (default 0.5 s).
+        Minimum length of a kept fragment (default 0.5 s). For a contraction
+        carved out of a longer run this is measured against the stretch it
+        occupies, not against the part above its own onset level: the floor is
+        there to reject noise, and a brisk effort inside a series is 0.4 s of
+        contraction in 1.3 s of territory.
     merge_gap_s : float, optional
         Active periods separated by less than this are merged (default
         0.3 s).
@@ -180,11 +281,19 @@ def suggest_significant_segments(
         else:
             merged.append((start, end))
 
+    # And split the ones that swallowed several contractions whole.
+    split: list[tuple[int, int, int, int]] = []
+    for start, end in merged:
+        split.extend(_separate_contractions(env, start, end, base))
+
     min_len = round(min_duration_s * fs)
     segments: list[Segment] = []
     dt = 1.0 / fs
-    for start, end in merged:
-        if end - start + 1 < min_len:
+    for start, end, span_start, span_end in split:
+        # The floor is measured on the stretch the contraction occupies; see
+        # _separate_contractions. For anything that was not split the two are
+        # the same span and this is the test it always was.
+        if span_end - span_start + 1 < min_len:
             continue
         area = float(trapezoid(env[start : end + 1], dx=dt))
         segments.append(
