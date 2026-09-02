@@ -114,3 +114,138 @@ class TestItSaysWhichEditorComesFirst:
         tab._last_result = None
         tab._actualizar_siguiente_paso()
         assert not tab._lbl_siguiente.isVisible()
+
+
+class TestTheAnalyseButtonIsNoLongerAStep:
+    """It could not be removed, and it should not be a step either.
+
+    Five things still feed the analysis without re-running it — the channel,
+    the second channel, the accelerometer panels, the envelope smoothing and
+    the region of interest — so the button survives for exactly those. What it
+    stops being is part of the sequence: in a session that opens a recording
+    and then the two editors, it never lights up.
+    """
+
+    def test_it_starts_dark(self, tab) -> None:
+        assert not tab._btn_analizar.isEnabled()
+
+    def test_a_loaded_file_alone_does_not_light_it(self, tab, tmp_path) -> None:
+        tab._edit_path.setText(_registro(tmp_path / "r.edf"))
+        tab._actualizar_boton_analizar()
+        assert not tab._btn_analizar.isEnabled()
+
+    def test_changing_the_channel_lights_it(self, tab, tmp_path) -> None:
+        tab._edit_path.setText(_registro(tmp_path / "r.edf"))
+        tab._marcar_pendiente()
+        assert tab._btn_analizar.isEnabled()
+
+    def test_a_finished_analysis_puts_it_out(
+        self, tab, qapp, tmp_path
+    ) -> None:
+        """Run for real: a hand-made result dict would only prove that the
+        line assigning the flag exists."""
+        pytest.importorskip("mne")
+        from PySide6.QtCore import QElapsedTimer
+
+        tab._edit_path.setText(_registro(tmp_path / "r.edf"))
+        tab._populate_channels(tab._edit_path.text())
+        tab._marcar_pendiente()
+        assert tab._btn_analizar.isEnabled()
+
+        tab._iniciar_analisis()
+        reloj = QElapsedTimer()
+        reloj.start()
+        while (tab._worker is not None and tab._worker.isRunning()
+               and reloj.elapsed() < 30000):
+            qapp.processEvents()
+        if tab._worker is not None:
+            tab._worker.wait(5000)
+        for _ in range(30):
+            qapp.processEvents()
+        assert tab._last_result is not None, "el análisis no produjo resultado"
+        assert not tab._btn_analizar.isEnabled()
+
+    def test_with_no_file_nothing_lights_it(self, tab) -> None:
+        tab._marcar_pendiente()
+        assert not tab._btn_analizar.isEnabled()
+
+
+class TestTheGuidanceAlsoFloats:
+    """A line of small print under two buttons is read by whoever was already
+    looking there. The floating panel dims the rest and rings the button."""
+
+    def _pasos(self, tab):
+        vistos = []
+        tab.coach_step.connect(lambda t, b, w: vistos.append((t, b, w)))
+        return vistos
+
+    def test_the_first_step_floats_over_the_repetitions(self, tab) -> None:
+        vistos = self._pasos(tab)
+        tab._last_result = {"cal_rep_values": {0: [1.0, 1.2]}}
+        tab._actualizar_siguiente_paso()
+        assert len(vistos) == 1
+        assert vistos[0][2] is tab._btn_reps
+
+    def test_it_does_not_come_back_on_every_re_analysis(self, tab) -> None:
+        """Otherwise the panel reappears after each accept, over and over."""
+        vistos = self._pasos(tab)
+        tab._last_result = {"cal_rep_values": {0: [1.0]}}
+        tab._actualizar_siguiente_paso()
+        tab._actualizar_siguiente_paso()
+        tab._actualizar_siguiente_paso()
+        assert len(vistos) == 1
+
+    def test_the_next_step_floats_over_the_fragments(self, tab) -> None:
+        vistos = self._pasos(tab)
+        tab._last_result = {"cal_rep_values": {0: [1.0]}}
+        tab._actualizar_siguiente_paso()
+        tab._cal_keep = {0: {0}}
+        tab._actualizar_siguiente_paso()
+        assert [v[2] for v in vistos] == [tab._btn_reps, tab._btn_fragmentos]
+
+    def test_nothing_floats_once_both_are_done(self, tab) -> None:
+        vistos = self._pasos(tab)
+        tab._last_result = {"cal_rep_values": {0: [1.0]}}
+        tab._cal_keep = {0: {0}}
+        tab._selected_segments = [(1.0, 2.0)]
+        tab._actualizar_siguiente_paso()
+        assert vistos == []
+
+
+class TestTheCoactivationTableWaitsForItsWindows:
+    """The first analysis now runs on its own when the file is opened, so the
+    single whole-recording row was the *first* thing the student saw of this
+    panel: a co-activation index, in bold, computed over rest and flexion and
+    extension together. The module's own docstring says that number is not a
+    measurement of anything."""
+
+    def _resultado(self, desde_marcas: bool) -> dict:
+        from emgteach.coactivation import CoactivationResult
+
+        return {
+            "channel_name": "FCR",
+            "channel_name_2": "ECR",
+            "coactivation": [
+                CoactivationResult(index=42.0, mean_1=10.0, mean_2=9.0,
+                                   window_s=(0.0, 10.0), label="x")
+            ],
+            "coactivation_from_markers": desde_marcas,
+        }
+
+    def test_without_windows_the_table_is_hidden(self, tab) -> None:
+        # isVisibleTo, not isVisible: the tab itself is never shown in a
+        # headless run, so isVisible() is False either way and would pass
+        # over the bug it is meant to catch.
+        tab._refresh_coactivation(self._resultado(False))
+        assert not tab._tbl_coact.isVisibleTo(tab._box_coact)
+
+    def test_but_the_panel_still_says_what_to_do(self, tab) -> None:
+        """Hiding the whole panel would hide the way out of it."""
+        tab._refresh_coactivation(self._resultado(False))
+        assert tab._lbl_coact_aviso.text()
+        assert tab._btn_ayuda_coact is not None
+
+    def test_with_windows_the_table_is_there(self, tab) -> None:
+        tab._refresh_coactivation(self._resultado(True))
+        assert tab._tbl_coact.isVisibleTo(tab._box_coact)
+        assert tab._tbl_coact.rowCount() == 1

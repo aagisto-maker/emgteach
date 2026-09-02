@@ -37,7 +37,7 @@ from emgteach.gui.tabs.acquisition import AcquisitionTab
 from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
 from emgteach.gui.tour import build_tour
-from emgteach.gui.widgets.coach import CoachMark
+from emgteach.gui.widgets.coach import CoachMark, CoachStep
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import get_language, resolve_startup_language, set_language, tr
 from emgteach.modes import (
@@ -149,6 +149,7 @@ class MainWindow(QMainWindow):
         # so the same question came up twice in a row.
         self._tab_adq.recording_saved.connect(self._tab_ana.adopt_recording)
         self._tab_ana.file_opened.connect(self._tab_cvm.adopt_recording)
+        self._tab_ana.coach_step.connect(self._mostrar_paso_guiado)
 
         # Shared styling: each tab's gray background (class selector) is only
         # painted if the widget has WA_StyledBackground.
@@ -251,6 +252,18 @@ class MainWindow(QMainWindow):
 
         self._tabs = tabs
         self._coach = CoachMark(self)
+
+    def _mostrar_paso_guiado(self, titulo: str, cuerpo: str, control) -> None:
+        """Float one step of the analysis sequence over the control it names.
+
+        The same panel the tour uses, with one step instead of a list: it dims
+        the rest of the window and rings the button, so «open this next» points
+        at something the reader can see. Never over the tour itself, and never
+        while the analysis tab is not the one on screen.
+        """
+        if self._coach.isVisible() or self._tabs.currentWidget() is not self._tab_ana:
+            return
+        self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
 
     # ------------------------------------------------------------------
     # Guided tour

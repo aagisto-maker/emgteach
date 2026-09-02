@@ -228,10 +228,11 @@ class FragmentSelectionDialog(QDialog):
             "ones not worth analysing — a movement done wrong, a tug on the "
             "cable, an effort that never got going — and only the rest is "
             "analysed, joined up as if it had been recorded in one go.\n\n"
-            "If they are all good there is nothing to do here: cancel, and "
-            "the whole recording is analysed. To move where one begins or "
-            "ends, change its seconds with the mouse wheel, the arrows, or by "
-            "typing."
+            "Press «Use these fragments» even if you change nothing: that is "
+            "what applies them and re-runs the analysis. Cancelling leaves "
+            "the recording undivided, and the co-activation table with no "
+            "windows to measure. To move where one begins or ends, change its "
+            "seconds with the mouse wheel, the arrows, or by typing."
         )
         if self._naming:
             # Rewritten once the app started filling the column in. The old

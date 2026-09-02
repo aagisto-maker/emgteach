@@ -208,6 +208,11 @@ class AnalysisTab(QWidget):
     #: it, so the MVC tab uses the same recording *and* the same muscle without
     #: asking a question that has just been answered.
     file_opened = Signal(str, str)
+    #: One step of the guided sequence: (title, body, the control it points at).
+    #: Emitted rather than shown here because the floating panel belongs to the
+    #: window — it dims everything outside the control it explains, which a tab
+    #: cannot do to its siblings.
+    coach_step = Signal(str, str, object)
 
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
@@ -260,6 +265,9 @@ class AnalysisTab(QWidget):
         self._btn_abrir.clicked.connect(self._seleccionar_archivo)
         row_file.addWidget(self._btn_abrir)
         self._btn_analizar = QPushButton(tr("Analyse"))
+        self._btn_analizar.setToolTip(tr(
+        "Re-run the analysis with the settings changed since the last one. It lights up only when there is something to redo: opening a file analyses it, and the two editors re-analyse when you accept them."
+        ))
         self._btn_analizar.setEnabled(False)
         self._btn_analizar.clicked.connect(self._iniciar_analisis)
         row_file.addWidget(self._btn_analizar)
@@ -322,6 +330,11 @@ class AnalysisTab(QWidget):
         self._combo_canal.currentIndexChanged.connect(
             self._on_primary_channel_changed
         )
+        # These five feed the worker and none of them re-runs it, which is
+        # why the Analyse button survives. It lights up here and nowhere
+        # else, so in a session that only opens the two editors it stays
+        # dark from beginning to end.
+        self._combo_canal.currentIndexChanged.connect(self._marcar_pendiente)
         row_params.addWidget(self._combo_canal)
         # Optional second channel: overlay the agonist/antagonist envelopes. The
         # partner channel is chosen automatically (the other one), so the picker
@@ -352,6 +365,8 @@ class AnalysisTab(QWidget):
         self._combo_canal2.setEnabled(False)   # read-only: shows the partner
         self._combo_canal2.setToolTip(tr("Partner channel (chosen automatically)."))
         self._chk_compare2.toggled.connect(self._on_compare2_toggled)
+        self._chk_compare2.toggled.connect(self._marcar_pendiente)
+        self._combo_canal2.currentIndexChanged.connect(self._marcar_pendiente)
         compare_l.addWidget(self._combo_canal2)
         row_params.addWidget(self._box_compare)
 
@@ -418,6 +433,10 @@ class AnalysisTab(QWidget):
         self._spin_roi_end.setFixedWidth(96)
         self._spin_roi_end.setEnabled(False)
         row_roi.addWidget(self._spin_roi_end)
+        self._chk_roi.toggled.connect(self._marcar_pendiente)
+        self._spin_roi_start.valueChanged.connect(self._marcar_pendiente)
+        self._spin_roi_end.valueChanged.connect(self._marcar_pendiente)
+        self._spin_fenv.valueChanged.connect(self._marcar_pendiente)
         self._chk_roi.toggled.connect(self._spin_roi_start.setEnabled)
         self._chk_roi.toggled.connect(self._spin_roi_end.setEnabled)
         row_roi.addStretch()
@@ -479,6 +498,18 @@ class AnalysisTab(QWidget):
         # Filter cut-offs chosen in the fragment editor; when set they drive
         # the actual analysis (not just detection). None = use the tab defaults.
         self._analysis_filter_kwargs: dict[str, float] | None = None
+        # Whether a setting has changed since the last analysis. The
+        # button used to be a step of the sequence — press it once to see
+        # the recording, and again after each editor — and pressing the
+        # same control for two different reasons is what made the sequence
+        # hard to follow. It cannot go: the channel, the second channel,
+        # the accelerometer panels, the envelope smoothing and the region
+        # of interest all feed the analysis and none of them re-runs it.
+        # So it stays for exactly those, and stays dark otherwise.
+        self._pendiente = False
+        #: Which step of the guided sequence the floating panel last showed,
+        #: so it appears when the step changes and not after every re-analysis.
+        self._paso_mostrado: str = ""
         row_roi.addStretch()
         ctrl.addWidget(self._box_roi)
         ctrl.addWidget(self._box_fragmentos)
@@ -560,6 +591,11 @@ class AnalysisTab(QWidget):
             # the accelerometer panels only when the file has an ACC channel.
             if pid in (_OVERLAY_PID, *_ACC_PIDS):
                 chk.setEnabled(False)
+            if pid in _ACC_PIDS:
+                # The only panels whose checkbox changes what is
+                # *computed* rather than what is drawn: the worker reads
+                # the accelerometer only when one of them is on.
+                chk.toggled.connect(self._marcar_pendiente)
             paneles_layout.addWidget(chk)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
@@ -863,11 +899,14 @@ class AnalysisTab(QWidget):
     # ------------------------------------------------------------------
 
     def adopt_recording(self, path: str) -> None:
-        """Take the recording just made as the file to analyse.
+        """Take the recording just made as the file to analyse, and analyse it.
 
-        Only fills it in — it does not run the analysis. Loading is cheap and
-        expected; computing is neither, and a run nobody asked for would fight
-        whatever the student was reading.
+        It used to only fill the path in, on the grounds that a run nobody
+        asked for would fight whatever the student was reading. But they are
+        still on the acquisition tab when this fires, so nothing is fought —
+        and arriving at the analysis tab to find a file loaded and no results,
+        with a button that has to be pressed once now and again after each
+        editor, is the sequence that was hard to follow.
 
         This is where the muscle gets chosen for a two-channel recording, and
         the choice travels on from here: asking again in the MVC tab would be
@@ -879,7 +918,6 @@ class AnalysisTab(QWidget):
         self._last_edf_dir = str(Path(path).parent)
         self._populate_channels(path)
         self.file_opened.emit(path, self._combo_canal.currentText().strip())
-        self._btn_analizar.setEnabled(True)
         self._btn_fragmentos.setEnabled(True)
         self._selected_segments = []
         self._segment_labels = []
@@ -888,6 +926,8 @@ class AnalysisTab(QWidget):
         self._logger.append_log(
             tr("Recording loaded for analysis: {path}").format(path=Path(path).name)
         )
+        self._logger.append_log(tr("Running the first analysis…"))
+        self._iniciar_analisis()
 
     @Slot()
     def _seleccionar_archivo(self) -> None:
@@ -902,7 +942,6 @@ class AnalysisTab(QWidget):
             self._settings.setValue("analisis/last_dir", self._last_edf_dir)
             self._populate_channels(path)
             self.file_opened.emit(path, self._combo_canal.currentText().strip())
-            self._btn_analizar.setEnabled(True)
             self._btn_fragmentos.setEnabled(True)
             # A new file invalidates any previous fragment selection and its
             # associated filter cut-offs.
@@ -1104,20 +1143,34 @@ class AnalysisTab(QWidget):
         frags_hechos = bool(self._selected_segments)
 
         if hay_reps and not reps_hechas:
+            paso, boton = "reps", self._btn_reps
             texto = tr(
                 "Next: «{button}». It decides which maximal efforts set the "
                 "reference, and every % MVC below is measured against it — so "
                 "it goes before choosing the fragments."
             ).format(button=tr("Calibration repetitions…"))
         elif not frags_hechos:
+            paso, boton = "frags", self._btn_fragmentos
             texto = tr(
                 "Next: «{button}», to drop any contraction that did not come "
-                "out well. If they are all good there is nothing left to do."
+                "out well. Press «Use these fragments» even if you change "
+                "nothing: that is what applies them."
             ).format(button=tr("Select fragments…"))
         else:
-            texto = ""
+            paso, boton, texto = "", None, ""
         self._lbl_siguiente.setText(texto)
         self._lbl_siguiente.setVisible(bool(texto))
+
+        # And the same thing again, floating over the control it names. A line
+        # of small print under two buttons is read by whoever was already
+        # looking there; the floating panel dims everything else and rings the
+        # button, which is what «to see it better» asks for. Only on a *change*
+        # of step, or it would come back after every re-analysis.
+        if paso and paso != self._paso_mostrado:
+            self._paso_mostrado = paso
+            self.coach_step.emit(tr("Next step"), texto, boton)
+        elif not paso:
+            self._paso_mostrado = ""
 
     @Slot()
     def _explicar_coactivacion(self) -> None:
@@ -1161,6 +1214,21 @@ class AnalysisTab(QWidget):
             ) + "</p>"
         )
         caja.exec()
+
+    @Slot()
+    def _marcar_pendiente(self) -> None:
+        """A setting changed: there is now something to re-run."""
+        if self._edit_path.text().strip():
+            self._pendiente = True
+            self._actualizar_boton_analizar()
+
+    def _actualizar_boton_analizar(self) -> None:
+        corriendo = self._worker is not None and self._worker.isRunning()
+        self._btn_analizar.setEnabled(
+            bool(self._edit_path.text().strip())
+            and self._pendiente
+            and not corriendo
+        )
 
     def _hay_segundo_canal(self) -> bool:
         """Whether this analysis has an antagonist, and so a co-activation
@@ -1432,6 +1500,14 @@ class AnalysisTab(QWidget):
                 self._tbl_coact.setItem(fila, col, item)
 
         sin_marcas = not result.get("coactivation_from_markers", True)
+        # Without windows the table holds one row, over the whole recording,
+        # and its number is not a measurement of anything — the module says so
+        # itself. Since the first analysis now runs on its own when the file is
+        # opened, that row was the *first* thing the student saw of this panel:
+        # a co-activation index, bold, computed over rest and flexion and
+        # extension together. The row goes; the panel stays, with the line that
+        # says which button makes it real and the «?» that explains why.
+        self._tbl_coact.setVisible(not sin_marcas)
         # It used to say «mark the phases», which named an action that appears
         # nowhere in the interface under that name. Now it says which button.
         self._lbl_coact_aviso.setText(
@@ -1458,6 +1534,7 @@ class AnalysisTab(QWidget):
 
     def _on_result(self, result: dict) -> None:
         self._last_result = result
+        self._pendiente = False
         self._refresh_coactivation(result)
         self._actualizar_siguiente_paso()
         self._set_controles_habilitados(True)
@@ -2518,7 +2595,7 @@ class AnalysisTab(QWidget):
 
     def _set_controles_habilitados(self, habilitado: bool) -> None:
         self._btn_abrir.setEnabled(habilitado)
-        self._btn_analizar.setEnabled(habilitado and bool(self._edit_path.text()))
+        self._actualizar_boton_analizar()
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
         self._chk_roi.setEnabled(habilitado)
