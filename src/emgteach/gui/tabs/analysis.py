@@ -771,6 +771,21 @@ class AnalysisTab(QWidget):
         coact_v = QVBoxLayout(self._box_coact)
         coact_v.setContentsMargins(6, 4, 6, 6)
         coact_v.setSpacing(4)
+        # A «?» rather than a paragraph in the panel. What this table needs
+        # explaining is not the index but the windows: that they come from the
+        # names in the fragment editor, which is a different tab of the same
+        # dialogue and not anywhere near this box. Nobody was going to guess
+        # that, and the warning that said «mark the phases» named an action
+        # that appears nowhere in the interface under that name.
+        fila_ayuda = QHBoxLayout()
+        fila_ayuda.addStretch()
+        self._btn_ayuda_coact = QPushButton("?")
+        self._btn_ayuda_coact.setFixedSize(22, 22)
+        self._btn_ayuda_coact.setToolTip(tr("What this table is, and where its "
+                                            "rows come from"))
+        self._btn_ayuda_coact.clicked.connect(self._explicar_coactivacion)
+        fila_ayuda.addWidget(self._btn_ayuda_coact)
+        coact_v.addLayout(fila_ayuda)
         self._lbl_coact_aviso = QLabel("")
         self._lbl_coact_aviso.setWordWrap(True)
         self._lbl_coact_aviso.setStyleSheet("color:#B0243A; font-size:11px;")
@@ -990,6 +1005,13 @@ class AnalysisTab(QWidget):
                 # needs the agonist and the antagonist. Analysing one muscle,
                 # the column asked for something nothing would look at.
                 naming=self._hay_segundo_canal(),
+                # And with the antagonist to hand, the editor can fill the
+                # column in itself: which muscle led a contraction is a
+                # measurement, not a reading.
+                channel_name_2=(
+                    self._combo_canal2.currentText().strip()
+                    if self._hay_segundo_canal() else None
+                ),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -1042,6 +1064,49 @@ class AnalysisTab(QWidget):
         self._cal_keep = dlg.keep()
         self._actualizar_etiqueta_reps()
         self._iniciar_analisis()
+
+    @Slot()
+    def _explicar_coactivacion(self) -> None:
+        """What the table is, and — the part nobody could guess — where its
+        rows come from.
+
+        The panel used to warn «mark the phases», an action that appears under
+        that name nowhere in the interface. The phases are marked by naming
+        rows in the fragment editor, which is behind a button at the top of
+        this tab and looks like it is about trimming signal.
+        """
+        caja = QMessageBox(self)
+        caja.setIcon(QMessageBox.Icon.Information)
+        caja.setWindowTitle(tr("Co-activation (Falconer-Winter)"))
+        caja.setTextFormat(Qt.TextFormat.RichText)
+        caja.setText(
+            "<p><b>" + tr("What it measures") + "</b><br>" + tr(
+                "Of all the activity in the two muscles, how much of it was "
+                "shared — how much they worked at the same time. 0 % means one "
+                "worked and the other did not; 100 % means both did the same "
+                "thing throughout."
+            ) + "</p><p><b>" + tr("Why one row per window") + "</b><br>" + tr(
+                "The index compares the shape of the two envelopes, so it only "
+                "means something over a stretch in which one thing was being "
+                "done. Over a whole recording that mixes rest, flexion and "
+                "grip it still produces a number, and that number is not a "
+                "measurement of anything."
+            ) + "</p><p><b>" + tr("Where the windows come from") + "</b><br>"
+            + tr(
+                "From «{button}», at the top of this tab. Each row of that "
+                "dialogue has a name, which the app fills in itself with the "
+                "muscle that led the contraction. Consecutive rows with the "
+                "same name become one window here — six flexions in a row give "
+                "one row in this table, not six."
+            ).format(button=tr("Select fragments…"))
+            + "</p><p><b>" + tr("If it says «whole recording»")
+            + "</b><br>" + tr(
+                "Then no window has a name: either the fragment editor has not "
+                "been opened, or the names were cleared. Open it and accept "
+                "what it proposes."
+            ) + "</p>"
+        )
+        caja.exec()
 
     def _hay_segundo_canal(self) -> bool:
         """Whether this analysis has an antagonist, and so a co-activation
@@ -1313,8 +1378,13 @@ class AnalysisTab(QWidget):
                 self._tbl_coact.setItem(fila, col, item)
 
         sin_marcas = not result.get("coactivation_from_markers", True)
+        # It used to say «mark the phases», which named an action that appears
+        # nowhere in the interface under that name. Now it says which button.
         self._lbl_coact_aviso.setText(
-            tr("Whole recording — mark the phases for a meaningful value")
+            tr(
+                "Whole recording: with no named windows this number does not "
+                "measure anything. Open «{button}» and accept what it proposes."
+            ).format(button=tr("Select fragments…"))
             if sin_marcas else ""
         )
         self._lbl_coact_aviso.setVisible(sin_marcas)

@@ -355,3 +355,111 @@ class TestTheNamesSurviveInTheTunedFile:
         textos = [t for _o, t in read_edf_markers(dst)]
         assert "Grip" in textos
         assert "Flexion" not in textos
+
+
+class TestTheAppFillsInWhichMuscleLed:
+    """The naming, minus the part of it that was mechanical.
+
+    Naming twelve contractions by hand is twelve decisions, all of them the
+    same one, and the one thing in it that is a *measurement* — which of the
+    two muscles worked harder — the program can settle itself. Measured on the
+    bench recordings: where the manoeuvres alternated cleanly the quieter
+    muscle ran at 4-23 % of the louder, and where both worked at once it ran at
+    60-84 %; the cut is at 50 %.
+
+    What it does **not** do is call it «flexion». It knows these muscles only
+    as the text that was typed, so it cannot know FCR is the flexor, and a
+    label reading «extension» over a flexion would be worse than none. Reading
+    «FCR led, so this was a flexion» is the student's step.
+    """
+
+    FS = 1000
+
+    def _par(self, a_amp: float, b_amp: float):
+        """Two channels, one 1-second effort each at the given amplitudes."""
+        import numpy as np
+
+        n = 4 * self.FS
+        t = np.arange(n) / self.FS
+        rng = np.random.default_rng(3)
+        canales = []
+        for amp in (a_amp, b_amp):
+            sig = rng.normal(0.0, 0.002, size=n)
+            i0, i1 = int(1.5 * self.FS), int(2.5 * self.FS)
+            sig[i0:i1] += amp * np.sin(2 * np.pi * 90.0 * t[i0:i1])
+            canales.append(sig)
+        return canales
+
+    def _etiqueta(self, a_amp: float, b_amp: float) -> str:
+        from emgteach.coactivation import propose_labels
+        from emgteach.dsp import process_offline
+
+        c1, c2 = self._par(a_amp, b_amp)
+        e1 = process_offline(c1, self.FS)["emg_envelope"]
+        e2 = process_offline(c2, self.FS)["emg_envelope"]
+        return propose_labels(
+            e1, e2, self.FS, [(1.4, 2.6)],
+            name_1="FCR", name_2="ECR", both_label="ambos",
+        )[0]
+
+    def test_the_louder_muscle_names_the_window(self) -> None:
+        assert self._etiqueta(0.40, 0.04) == "FCR"
+        assert self._etiqueta(0.04, 0.40) == "ECR"
+
+    def test_two_muscles_working_together_name_neither(self) -> None:
+        assert self._etiqueta(0.40, 0.36) == "ambos"
+
+    def test_it_never_guesses_the_manoeuvre(self) -> None:
+        """The label is a muscle, never «flexion» or «extension»: the program
+        is not told which muscle is the flexor, and would be inventing it."""
+        for a, b in ((0.40, 0.04), (0.04, 0.40), (0.40, 0.36)):
+            assert self._etiqueta(a, b) in {"FCR", "ECR", "ambos"}
+
+    def test_a_silent_window_names_neither(self) -> None:
+        """Two muscles at rest are equally quiet, which is not a shared
+        effort — it is no effort."""
+        assert self._etiqueta(0.0, 0.0) == "ambos"
+
+
+@pytest.mark.gui
+class TestTheEditorArrivesWithTheColumnFilled:
+    def test_with_two_channels_every_row_has_a_name(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        from emgteach.gui.widgets.fragment_selection import (
+            FragmentSelectionDialog,
+        )
+
+        edf = _sesion(tmp_path / "sesion.edf")
+        d = FragmentSelectionDialog.from_edf(
+            edf, "FCR",
+            {"f_low": 20.0, "f_high": 450.0, "f_notch": 50.0, "f_env": 5.0},
+            naming=True, channel_name_2="ECR",
+        )
+        try:
+            assert d.labels(), "no ha propuesto ningún fragmento"
+            assert all(n for n in d.labels()), d.labels()
+        finally:
+            d.close()
+            d.deleteLater()
+            qapp.processEvents()
+
+    def test_with_one_channel_it_does_not_invent_names(
+        self, qapp, tmp_path: Path
+    ) -> None:
+        from emgteach.gui.widgets.fragment_selection import (
+            FragmentSelectionDialog,
+        )
+
+        edf = _sesion(tmp_path / "sesion.edf")
+        d = FragmentSelectionDialog.from_edf(
+            edf, "FCR",
+            {"f_low": 20.0, "f_high": 450.0, "f_notch": 50.0, "f_env": 5.0},
+            naming=False,
+        )
+        try:
+            assert not any(d.labels())
+        finally:
+            d.close()
+            d.deleteLater()
+            qapp.processEvents()

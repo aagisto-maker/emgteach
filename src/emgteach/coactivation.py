@@ -110,6 +110,75 @@ def _above_rest(envelope, rest: float) -> FloatArray:
     return np.clip(arr, 0.0, None)
 
 
+#: Below this ratio between the quieter and the louder muscle, one of them is
+#: doing the work. Measured on the bench recordings of 1 September: where the
+#: manoeuvres alternated cleanly the ratio ran from 0.04 to 0.23, and where
+#: both muscles worked at once it ran from 0.60 to 0.84. Half-way between is a
+#: wide margin on both sides.
+_DOMINANCE = 0.5
+
+
+def dominant_muscle(
+    env_1, env_2, fs: float, window_s: tuple[float, float], *, t0: float = 0.0
+) -> int | None:
+    """Which of the two muscles led in this window: 1, 2, or None for neither.
+
+    The question the operator was being asked to answer by hand, and the one
+    thing here that a measurement *can* answer. A contraction is not labelled
+    «flexion» by looking at its envelope — that is what the subject was asked
+    to do, and no algorithm knows it — but which muscle is the agonist is
+    simply which one worked harder, and the program has both channels.
+
+    Compared on the peak rather than the mean: a brief hard effort and a long
+    soft one have similar means, and it is the effort that identifies the
+    agonist.
+    """
+    e1 = np.asarray(env_1, dtype=np.float64)
+    e2 = np.asarray(env_2, dtype=np.float64)
+    a, b = window_s
+    i0, i1 = round((a - t0) * fs), round((b - t0) * fs)
+    i0, i1 = max(0, i0), min(min(e1.size, e2.size), i1)
+    if i1 <= i0:
+        return None
+    p1 = float(np.max(e1[i0:i1])) - resting_level(e1)
+    p2 = float(np.max(e2[i0:i1])) - resting_level(e2)
+    alto, bajo = max(p1, p2), min(p1, p2)
+    if alto <= 0.0:
+        return None
+    if bajo / alto >= _DOMINANCE:
+        return None  # both worked: this is a co-contraction
+    return 1 if p1 > p2 else 2
+
+
+def propose_labels(
+    env_1,
+    env_2,
+    fs: float,
+    windows: Sequence[tuple[float, float]],
+    *,
+    name_1: str,
+    name_2: str,
+    both_label: str,
+    t0: float = 0.0,
+) -> list[str]:
+    """A name for each window: the muscle that led it, or ``both_label``.
+
+    Deliberately the muscle's own name and not «flexion» or «extension». The
+    program is told which muscles these are only as the text the operator
+    typed, so it cannot know that FCR is the flexor — and a label that says
+    «extension» over a flexion is worse than no label. Reading «FCR led here,
+    so this was a flexion» off the table is a step the student can take and
+    the program cannot, which is the same division of labour as everywhere
+    else in this practical.
+    """
+    return [
+        {1: name_1, 2: name_2}.get(
+            dominant_muscle(env_1, env_2, fs, w, t0=t0), both_label
+        )
+        for w in windows
+    ]
+
+
 #: How much quiet to leave after the last activity when the final window is
 #: closed at the end of the effort. Enough not to clip the release of a
 #: contraction, short enough that the pause does not dilute the mean.

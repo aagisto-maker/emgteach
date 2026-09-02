@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emgteach.coactivation import propose_labels
 from emgteach.dsp import process_offline
 from emgteach.i18n import tr
 from emgteach.profiles import EMG_PROFILE
@@ -82,6 +83,9 @@ class FragmentSelectionDialog(QDialog):
         labels: list[str] | None = None,
         span: tuple[float, float] | None = None,
         naming: bool = True,
+        raw_2: np.ndarray | None = None,
+        name_1: str = '',
+        name_2: str = '',
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -111,21 +115,21 @@ class FragmentSelectionDialog(QDialog):
         # and the column asked for something no part of the program would
         # ever look at.
         self._naming = bool(naming)
+        # The antagonist, when there is one. Only used to work out which
+        # muscle led each contraction, which is the one part of the naming
+        # a measurement can settle: see coactivation.propose_labels.
+        self._raw_2 = (
+            np.asarray(raw_2, dtype=np.float64).ravel()
+            if raw_2 is not None else None
+        )
+        self._name_1 = name_1 or tr('Muscle {n}').format(n=1)
+        self._name_2 = name_2 or tr('Muscle {n}').format(n=2)
         self._row_widgets: list[dict[str, Any]] = []
 
         # Envelope for the preview (downsampled when drawing).
-        try:
-            self._env = process_offline(
-                self._raw,
-                self._fs,
-                f_low=self._f_low,
-                f_high=self._f_high,
-                f_notch=self._f_notch,
-                f_env=self._f_env,
-            )["emg_envelope"]
-        except Exception:  # pragma: no cover — very short/degenerate signal
-            self._env = np.abs(self._raw)
+        self._env = self._envolvente(self._raw)
         self._t = np.arange(len(self._env)) / self._fs
+        self._env_2 = self._envolvente(self._raw_2)
 
         self._build_ui()
 
@@ -139,6 +143,42 @@ class FragmentSelectionDialog(QDialog):
         else:
             self._auto_suggest()
 
+    def _envolvente(self, raw: np.ndarray | None):
+        """The envelope of a channel, or None when there is no channel."""
+        if raw is None:
+            return None
+        try:
+            return process_offline(
+                raw,
+                self._fs,
+                f_low=self._f_low,
+                f_high=self._f_high,
+                f_notch=self._f_notch,
+                f_env=self._f_env,
+            )["emg_envelope"]
+        except Exception:  # pragma: no cover — very short/degenerate signal
+            return np.abs(raw)
+
+    def _nombres_propuestos(self, segs: list[Segment]) -> list[str]:
+        """Which muscle led each proposal, where that can be measured.
+
+        The operator was being asked to name every contraction by hand, and
+        for a series of a dozen that is a dozen decisions, all of them the
+        same one. The part of it that is a measurement — which of the two
+        muscles worked harder — the program can make itself; what it cannot
+        do is say that FCR leading means the subject was asked to flex,
+        because it only knows these muscles as the names that were typed.
+        So it fills in the muscle, and the reading is left where it was.
+        """
+        if self._env_2 is None or self._env is None:
+            return [s.label for s in segs]
+        return propose_labels(
+            self._env, self._env_2, self._fs,
+            [(s.start_s, s.end_s) for s in segs],
+            name_1=self._name_1, name_2=self._name_2,
+            both_label=tr("Co-contraction"),
+        )
+
     # -- construction --------------------------------------------------------
 
     @classmethod
@@ -151,12 +191,19 @@ class FragmentSelectionDialog(QDialog):
         labels: list[str] | None = None,
         span: tuple[float, float] | None = None,
         naming: bool = True,
+        channel_name_2: str | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
-        """Build the dialog by loading one channel from an EDF file."""
+        """Build the dialog by loading one or two channels from an EDF."""
         from emgteach.io import read_edf_mne
 
         edf = read_edf_mne(edf_path, channel_name)
+        raw_2 = None
+        if channel_name_2:
+            try:
+                raw_2 = read_edf_mne(edf_path, channel_name_2)["emg_raw"]
+            except Exception:  # pragma: no cover — channel gone from the file
+                raw_2 = None
         return cls(
             edf["emg_raw"],
             float(edf["sfreq"]),
@@ -165,6 +212,9 @@ class FragmentSelectionDialog(QDialog):
             labels=labels,
             span=span,
             naming=naming,
+            raw_2=raw_2,
+            name_1=channel_name,
+            name_2=channel_name_2 or '',
             parent=parent,
         )
 
@@ -377,10 +427,18 @@ class FragmentSelectionDialog(QDialog):
             merge_gap_s=_DEFAULT_MERGE_GAP_S,
         )
         # Back into the file's own clock: the worker crops by these numbers.
-        self._set_rows([
+        filas = [
             Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
             for x in segs
-        ])
+        ]
+        if self._naming:
+            filas = [
+                Segment(f.start_s, f.end_s, f.score, f.reason, nombre)
+                for f, nombre in zip(
+                    filas, self._nombres_propuestos(filas), strict=True
+                )
+            ]
+        self._set_rows(filas)
 
     def _add_fragment(self) -> None:
         # A 1 s fragment centred on the span, ready to be dragged. Centred on
