@@ -50,16 +50,17 @@ class HelpButton(QToolButton):
     # -- placement --------------------------------------------------------
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if obj is self._box and event.type() in (
-            QEvent.Type.Resize, QEvent.Type.Show, QEvent.Type.LayoutRequest,
-        ):
+        # Only the box's own resize. Reacting to LayoutRequest as well, and
+        # raising the button each time, risked feeding the event queue from
+        # inside its own handler; a resize is the one thing that moves the
+        # corner, and a move of a child outside the layout posts nothing back.
+        if obj is self._box and event.type() == QEvent.Type.Resize:
             self._colocar()
         return False
 
     def _colocar(self) -> None:
         # Top-right corner, on the title line of the group box.
         self.move(self._box.width() - self._SIZE - 6, 0)
-        self.raise_()
 
     # -- behaviour --------------------------------------------------------
 
