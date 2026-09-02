@@ -1505,21 +1505,32 @@ class AnalysisTab(QWidget):
         # itself. Since the first analysis now runs on its own when the file is
         # opened, that row was the *first* thing the student saw of this panel:
         # a co-activation index, bold, computed over rest and flexion and
-        # extension together. The row goes; the panel stays, with the line that
-        # says which button makes it real and the «?» that explains why.
+        # extension together.
         self._tbl_coact.setVisible(not sin_marcas)
-        # It used to say «mark the phases», which named an action that appears
-        # nowhere in the interface under that name. Now it says which button.
+
+        # And the red line under it went the same way, for the same reason.
+        # It is a warning — «this number does not measure anything» — about a
+        # number the student has not asked for yet and can no longer see, at
+        # the one moment they have done nothing wrong: the file has just been
+        # opened. What to do next is already said twice over, in the line
+        # under the two editors and in the panel that floats over the button.
+        #
+        # It still has a case to answer, and only one: fragments were chosen
+        # and every name was cleared. That is a deliberate act with a
+        # consequence worth stating, so the warning survives for it — and with
+        # it the whole panel, which is otherwise empty and simply waits.
+        ha_elegido = bool(self._selected_segments)
+        avisar = sin_marcas and ha_elegido
         self._lbl_coact_aviso.setText(
             tr(
                 "Whole recording: with no named windows this number does not "
                 "measure anything. Open «{button}» and accept what it proposes."
             ).format(button=tr("Select fragments…"))
-            if sin_marcas else ""
+            if avisar else ""
         )
-        self._lbl_coact_aviso.setVisible(sin_marcas)
+        self._lbl_coact_aviso.setVisible(avisar)
         self._ajustar_alto_coact()
-        self._box_coact.setVisible(True)
+        self._box_coact.setVisible(not sin_marcas or avisar)
 
     def _ajustar_alto_coact(self) -> None:
         """Make the table exactly as tall as its rows, header included."""

@@ -437,15 +437,40 @@ class TestTheTableInTheApplication:
         finally:
             tab.cleanup()
 
-    def test_without_phase_markers_the_warning_shows(
+    def test_without_phase_markers_the_panel_says_nothing_yet(
         self, qapp, monkeypatch, tmp_path
     ) -> None:
+        """The whole-recording row is still computed, and still not shown.
+
+        This is the state right after a file is opened, now that opening one
+        analyses it: the student has done nothing, so there is nothing to warn
+        them about. The single row would be a co-activation index over rest and
+        flexion and extension together, and the red line under it would be a
+        warning about a number they cannot see. Both wait.
+        """
         edf = _forearm_edf(tmp_path / "nomarks.edf", phases=False)
         tab, r = self._analyse(qapp, monkeypatch, edf)
         try:
             assert r["coactivation_from_markers"] is False
             assert len(r["coactivation"]) == 1
+            assert not tab._selected_segments
+            assert tab._lbl_coact_aviso.isHidden()
+            assert tab._box_coact.isHidden()
+        finally:
+            tab.cleanup()
+
+    def test_but_once_fragments_are_chosen_and_unnamed_it_does(
+        self, qapp, monkeypatch, tmp_path
+    ) -> None:
+        """Clearing every name is deliberate, and has a consequence worth
+        stating: the table has no windows to measure."""
+        edf = _forearm_edf(tmp_path / "nomarks2.edf", phases=False)
+        tab, r = self._analyse(qapp, monkeypatch, edf)
+        try:
+            tab._selected_segments = [(1.0, 2.0)]
+            tab._refresh_coactivation(r)
             assert not tab._lbl_coact_aviso.isHidden()
+            assert tab._lbl_coact_aviso.text()
         finally:
             tab.cleanup()
 

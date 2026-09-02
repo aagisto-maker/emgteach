@@ -239,11 +239,31 @@ class TestTheCoactivationTableWaitsForItsWindows:
         tab._refresh_coactivation(self._resultado(False))
         assert not tab._tbl_coact.isVisibleTo(tab._box_coact)
 
-    def test_but_the_panel_still_says_what_to_do(self, tab) -> None:
-        """Hiding the whole panel would hide the way out of it."""
+    def test_before_the_student_has_done_anything_the_panel_is_not_there(
+        self, tab
+    ) -> None:
+        """No table and no red line either.
+
+        The line warns that a number does not measure anything, about a number
+        that is no longer shown, at the one moment the student has done nothing
+        wrong: the file has just been opened and analysed by itself. What to do
+        next is said twice already — under the two editors, and in the panel
+        that floats over the button.
+        """
+        tab._selected_segments = []
+        tab._refresh_coactivation(self._resultado(False))
+        assert not tab._lbl_coact_aviso.text()
+        assert not tab._box_coact.isVisibleTo(tab)
+
+    def test_but_clearing_every_name_by_hand_is_still_worth_saying(
+        self, tab
+    ) -> None:
+        """The one case the warning still answers: fragments were chosen and
+        every name was cleared, which is deliberate and has a consequence."""
+        tab._selected_segments = [(1.0, 2.0)]
         tab._refresh_coactivation(self._resultado(False))
         assert tab._lbl_coact_aviso.text()
-        assert tab._btn_ayuda_coact is not None
+        assert tab._box_coact.isVisibleTo(tab)
 
     def test_with_windows_the_table_is_there(self, tab) -> None:
         tab._refresh_coactivation(self._resultado(True))
