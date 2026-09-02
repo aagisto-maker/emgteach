@@ -142,6 +142,11 @@ class TestTheAnalysisHonoursTheSelection:
         # Two channels analysed, so each repetition also carries what the
         # other muscle was doing during it.
         assert all(v.crosstalk_pct is not None for v in valores[0])
+        # And each index says which muscle it is, so the report can name it
+        # instead of numbering it.
+        assert r["cal_channel_names"] == {
+            0: r["channel_name"], 1: r["channel_name_2"],
+        }
 
     def test_discarding_the_best_lifts_every_percentage(
         self, qapp, tmp_path: Path

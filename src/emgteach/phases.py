@@ -441,9 +441,11 @@ def reference_source_text(source: str, n_reps: int = 0) -> str:
     same trap as an auto-normalised one, only quieter.
     """
     if source == FROM_REPS:
-        if n_reps > 0:
+        if n_reps == 1:
+            return tr("calibration in this recording (1 repetition)")
+        if n_reps > 1:
             return tr(
-                "calibration in this recording ({n} repetition(s))"
+                "calibration in this recording ({n} repetitions)"
             ).format(n=n_reps)
         return tr("calibration in this recording")
     if source == FROM_CACHE:

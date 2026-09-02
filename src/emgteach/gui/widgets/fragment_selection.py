@@ -510,8 +510,20 @@ class FragmentSelectionDialog(QDialog):
         # Downsample the envelope for a light preview (cap ~4000 points).
         step = max(1, len(self._env) // 4000)
         self._ax.plot(
-            self._t[::step], self._env[::step], color="#1F4E79", linewidth=0.8
+            self._t[::step], self._env[::step], color="#1F4E79", linewidth=0.8,
+            label=self._name_1 if self._env_2 is not None else None,
         )
+        if self._env_2 is not None:
+            # Both muscles, in the colours the rest of the application uses
+            # for them. The «Muscle» column says which one led each
+            # contraction; with only one envelope drawn the student could not
+            # see why it said so, and had nothing to disagree with.
+            n2 = min(len(self._t), len(self._env_2))
+            self._ax.plot(
+                self._t[:n2:step], self._env_2[:n2:step], color="#D62728",
+                linewidth=0.8, label=self._name_2,
+            )
+            self._ax.legend(loc="upper right", fontsize=8)
         for seg in kept:
             self._ax.axvspan(seg.start_s, seg.end_s, color="#4CAF50", alpha=0.25)
         self._ax.set_xlim(self._span[0], max(self._span[1], self._span[0] + 1e-6))

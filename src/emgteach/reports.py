@@ -45,6 +45,7 @@ from emgteach.i18n import tr
 from emgteach.mvc import (
     AUTO_COLOR,
     NO_LOAD_MSG,
+    mark_excess_over_100,
     overlay_curves,
 )
 from emgteach.phases import NO_CALIBRATION, reference_source_text
@@ -303,6 +304,7 @@ def _draw_analysis_panel(
                     label=str(r.get("channel_name_2")
                               or tr("Muscle {n}").format(n=2)))
         ax.set_ylabel(curve1.ylabel, fontsize=8)
+        mark_excess_over_100(ax, curve1.ylabel)
         if curve1.warning:
             ax.set_title(ax.get_title(), pad=16)
             ax.text(0.5, 1.005, curve1.warning, transform=ax.transAxes,
@@ -403,6 +405,68 @@ def _styled_table(data: list[list[str]]) -> Table:
         )
     )
     return table
+
+
+def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> None:
+    """The reference, and everything the application knows about it.
+
+    One row per muscle: the value, where it came from and how many
+    repetitions counted; what the task reached against it, sustained over the
+    same half second the reference is measured on; and, when that crosses the
+    limit, the sentence that says the maximum was not one. Then the
+    repetitions themselves, with what the other muscle did during each — the
+    cross-talk that used to be shown for four seconds in the calibration
+    panel and then vanished.
+    """
+    refs = [
+        (result.get("channel_name"), result.get("mvc_ref"),
+         result.get("mvc_ref_source", NO_CALIBRATION),
+         len(result.get("cal_reps", {}).get(0, ()) or ())),
+        (result.get("channel_name_2"), result.get("mvc_ref_2"),
+         result.get("mvc_ref_source_2", NO_CALIBRATION),
+         len(result.get("cal_reps", {}).get(1, ()) or ())),
+    ]
+    refs = [r for r in refs if r[0] and r[1]]
+    if not refs:
+        return
+    story.append(Paragraph(tr("Calibration (maximal voluntary contraction)"), h2))
+    picos = result.get("task_peak_pct", {}) or {}
+    rows = [[tr("Muscle"), tr("Reference"), tr("Source"), tr("Task maximum")]]
+    for name, ref, fuente, n_reps in refs:
+        pico = picos.get(name)
+        rows.append([
+            str(name), f"{float(ref):.3f} mV",
+            reference_source_text(str(fuente), int(n_reps)),
+            "" if pico is None else tr("{pct:.0f} % MVC (sustained 0.5 s)").format(pct=pico),
+        ])
+    story.append(_styled_table(rows))
+    if result.get("mvc_implausible"):
+        story.append(Spacer(1, 0.15 * cm))
+        story.append(Paragraph(tr(
+            "The task exceeds the reference by a wide margin: the calibration "
+            "did not capture a maximum, so every percentage in this report is "
+            "too high in the same proportion. Calibrate again with a genuinely "
+            "maximal contraction, against something that cannot move."
+        ), normal))
+
+    reps = result.get("cal_rep_values") or {}
+    nombres = result.get("cal_channel_names") or {}
+    if reps:
+        story.append(Spacer(1, 0.2 * cm))
+        story.append(Paragraph(tr("Calibration repetitions"), normal))
+        filas = [[tr("Muscle"), tr("Repetition"), tr("Value"),
+                  tr("Other muscle during it")]]
+        keep = result.get("cal_keep") or {}
+        for idx, valores in sorted(reps.items()):
+            nombre = str(nombres.get(idx, tr("Channel {n}").format(n=int(idx) + 1)))
+            kept = keep.get(idx)
+            for v in valores:
+                descartada = kept is not None and v.rep not in kept
+                etiqueta = f"{v.rep}" + (f" ({tr('discarded')})" if descartada else "")
+                cross = "" if v.crosstalk_pct is None else f"{v.crosstalk_pct:.0f} %"
+                filas.append([nombre, etiqueta, f"{v.value_mv:.3f} mV", cross])
+        story.append(_styled_table(filas))
+    story.append(Spacer(1, 0.4 * cm))
 
 
 def build_session_report(
@@ -535,6 +599,14 @@ def build_session_report(
     ]
     story.append(_styled_table(metrics))
     story.append(Spacer(1, 0.4 * cm))
+
+    # The calibration, when the recording carries one. Everything the
+    # application learned about the reference used to stay in the log, or in
+    # a panel that closed itself: which repetitions counted, what the task
+    # reached against the maximum, whether the maximum was one at all, and
+    # what the other muscle did during each effort. The report is what the
+    # student hands in, so this is where it has to be.
+    _seccion_calibracion(story, result, h2, normal)
 
     # Co-activation, when the recording can support it: two muscles, and an
     # MVC reference for each. The two mean activations go beside every index,

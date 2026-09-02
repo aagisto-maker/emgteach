@@ -362,6 +362,7 @@ class MvcTab(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
+        self._mostrar_estado_vacio()
 
         self._y_scale_sidebar = QWidget()
         self._y_scale_sidebar.setFixedWidth(38)
@@ -720,10 +721,14 @@ class MvcTab(QWidget):
         self._refs_en_fichero = parse_mvc_ref_markers(markers)
         self._fases_en_fichero = parse_phase_markers(markers)
         if self._fases_en_fichero.cal_reps:
-            self._log(tr(
-                "This recording marks its own calibration "
-                "({n} repetition(s)); the reference is recomputed from it."
-            ).format(n=len(self._fases_en_fichero.cal_reps)))
+            n_reps = len(self._fases_en_fichero.cal_reps)
+            self._log((
+                tr("This recording marks its own calibration (1 repetition); "
+                   "the reference is recomputed from it.")
+                if n_reps == 1 else
+                tr("This recording marks its own calibration "
+                   "({n} repetitions); the reference is recomputed from it.")
+            ).format(n=n_reps))
         elif self._refs_en_fichero:
             self._log(tr(
                 "This recording carries a calibration recorded with it "
@@ -1558,6 +1563,22 @@ class MvcTab(QWidget):
     # New-session reset
     # ------------------------------------------------------------------
 
+    def _mostrar_estado_vacio(self) -> None:
+        """One line in the middle of the empty panel, saying what comes next.
+
+        Same idea as the analysis tab: a white rectangle with nothing on it
+        is a question, and the answer costs one sentence.
+        """
+        ax = self._fig.add_subplot(111)
+        ax.axis("off")
+        ax.text(
+            0.5, 0.5,
+            tr("Open a recording with calibration, or record one in "
+               "Acquisition: the reference is computed on its own."),
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=11, color="#7A8590",
+        )
+
     def reset(self) -> None:
         """Clear the tab to its just-opened state (new student): loaded files,
         result, plots and data panel."""
@@ -1604,6 +1625,7 @@ class MvcTab(QWidget):
             la.setText("—")
 
         self._fig.clear()
+        self._mostrar_estado_vacio()
         self._canvas.draw_idle()
         self._apdf_fig.clear()
         self._apdf_canvas.draw_idle()

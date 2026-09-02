@@ -680,6 +680,11 @@ class AnalysisWorker(QThread):
                     if idx_1 is not None and env_calibracion is not None
                     else {}
                 ),
+                #: Which muscle each of those indices is, so the report can
+                #: say a name rather than a channel number.
+                "cal_channel_names": (
+                    {idx_1: self._channel_name} if idx_1 is not None else {}
+                ),
                 "cal_keep": self._cal_keep,
                 # plot axis
                 "t_plot": t_plot,
@@ -803,6 +808,16 @@ class AnalysisWorker(QThread):
                         )
                         if i is not None and env is not None
                     }
+                    result["cal_channel_names"] = {
+                        i: n
+                        for i, n in (
+                            (_channel_position(self._channel_name, emg_channels),
+                             self._channel_name),
+                            (_channel_position(self._channel_name_2, emg_channels),
+                             self._channel_name_2),
+                        )
+                        if i is not None
+                    }
                     # Co-activation needs both envelopes as a percentage of
                     # *their own* muscle's maximum; without a reference for
                     # each, the pair cannot be compared at all and no index is
@@ -899,6 +914,14 @@ class AnalysisWorker(QThread):
                     env, fs, self._profile.mvc_peak_window_s
                 ) / float(ref) * 100.0
                 pico = float(pct.max())
+                # Always reported, not only when it crosses the line. On the
+                # bench a task peaked at 212 % of its reference on the
+                # instantaneous envelope and 135 % sustained: under the limit,
+                # so nothing was said — and the student saw an axis running
+                # past 200 % with no number to hang it on. The sustained
+                # figure is the honest one and it goes in the summary; the
+                # limit decides only whether it becomes a warning.
+                result.setdefault("task_peak_pct", {})[name] = pico
                 if pico > self._profile.mvc_implausible_pct:
                     result["mvc_implausible"] = max(
                         pico, result.get("mvc_implausible", 0.0))

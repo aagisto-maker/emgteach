@@ -303,6 +303,26 @@ class OverlayCurve:
     warning: str = ""
 
 
+def mark_excess_over_100(ax, ylabel: str) -> None:
+    """On a % MVC axis, show the 100 % line and shade whatever lies above it.
+
+    Drawn on the screen panel and on the report figure alike, from one place,
+    so the two cannot disagree. A curve that climbs to 200 % of the reference
+    is the thing the student should notice first, and on a bare axis it read
+    as any other peak: the maximum is the yardstick, and here is where the
+    signal went past it. The shading is faint on purpose — it marks, it does
+    not shout; the warning text, when the excess is sustained, does that.
+    """
+    if "%" not in str(ylabel):
+        return
+    lo, hi = ax.get_ylim()
+    if hi <= 100.0:
+        return
+    ax.axhline(100.0, color="#B0243A", linewidth=0.8, linestyle=":", alpha=0.8)
+    ax.axhspan(100.0, hi, color="#B0243A", alpha=0.06, linewidth=0)
+    ax.set_ylim(lo, hi)
+
+
 def overlay_curves(result) -> tuple[OverlayCurve, OverlayCurve | None]:
     """The two curves of the overlaid-envelopes panel, in the right unit.
 

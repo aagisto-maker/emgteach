@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QDoubleSpinBox,
     QFileDialog,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -191,7 +192,7 @@ from emgteach.modes import (
     MODE_PAIR,
     mode_uses_acc,
 )
-from emgteach.mvc import overlay_curves
+from emgteach.mvc import mark_excess_over_100, overlay_curves
 from emgteach.phases import (
     NO_CALIBRATION,
     parse_phase_markers,
@@ -699,80 +700,103 @@ class AnalysisTab(QWidget):
         progress_row.addWidget(self._btn_cancelar)
         root.addLayout(progress_row)
 
-        # --- Numeric summary panel (one row) ---
+        # --- Numeric summary: a grid of cards ---
+        # One card per figure, the caption above and the value below. The
+        # old version was a single row of nine "Label: value" pairs with
+        # pipes between them, inside a scroll area: to find a number the
+        # student had to read a sentence, and the sentence was 11 px high.
+        # Here the number is the thing on the card. Two rows of five so the
+        # panel keeps its width on a 1366 px screen.
         grp_resumen = QGroupBox(tr("Analysis summary"))
-        grp_resumen.setContentsMargins(4, 2, 4, 2)
-        resumen_inner = QWidget()
-        resumen_row = QHBoxLayout(resumen_inner)
-        resumen_row.setContentsMargins(4, 0, 4, 0)
-        resumen_row.setSpacing(0)
+        resumen_grid = QGridLayout(grp_resumen)
+        resumen_grid.setContentsMargins(8, 2, 8, 6)
+        resumen_grid.setHorizontalSpacing(16)
+        resumen_grid.setVerticalSpacing(0)
 
-        _st = "font-size: 11px; padding: 0 6px;"
-        _sep_st = "font-size: 11px; color: #999999; padding: 0 2px;"
+        _cap_st = "font-size: 10px; color: #6B7580;"
+        _val_st = "font-size: 13px; font-weight: 600;"
 
-        def _sep():
-            s = QLabel("|")
-            s.setStyleSheet(_sep_st)
-            return s
+        def _ficha(fila: int, col: int, caption: str, tooltip: str = "",
+                   ayuda: QToolButton | None = None) -> QLabel:
+            cap = QLabel(caption)
+            cap.setStyleSheet(_cap_st)
+            val = QLabel("—")
+            val.setStyleSheet(_val_st)
+            val.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            if tooltip:
+                cap.setToolTip(tooltip)
+                val.setToolTip(tooltip)
+            if ayuda is None:
+                resumen_grid.addWidget(cap, 2 * fila, col)
+            else:
+                cabecera = QHBoxLayout()
+                cabecera.setContentsMargins(0, 0, 0, 0)
+                cabecera.setSpacing(2)
+                cabecera.addWidget(cap)
+                cabecera.addWidget(ayuda)
+                cabecera.addStretch()
+                resumen_grid.addLayout(cabecera, 2 * fila, col)
+            resumen_grid.addWidget(val, 2 * fila + 1, col)
+            return val
 
-        self._lbl_mnf = QLabel(f"{tr('Mean frequency (MNF):')} —")
-        self._lbl_mdf = QLabel(f"{tr('Median frequency (MDF):')} —")
-        self._lbl_fatiga = QLabel(f"{tr('Fatigue:')} —")
-        self._lbl_pendiente = QLabel(f"{tr('MDF slope:')} —")
-        self._lbl_rms_global = QLabel(f"{tr('Global RMS:')} —")
-        self._lbl_iemg = QLabel("iEMG: —")
-        self._lbl_iemg.setToolTip(
-            tr("Integral of the rectified EMG — total muscle activation.")
+        # The fatigue verdict is the one card that is a judgement rather
+        # than a measurement, so it is the one with a "?" beside it.
+        self._btn_ayuda_fatiga = QToolButton()
+        self._btn_ayuda_fatiga.setText("?")
+        self._btn_ayuda_fatiga.setAutoRaise(True)
+        self._btn_ayuda_fatiga.setFixedSize(16, 16)
+        self._btn_ayuda_fatiga.setToolTip(tr("How the fatigue verdict is reached"))
+        self._btn_ayuda_fatiga.clicked.connect(self._explicar_fatiga)
+
+        self._lbl_mnf = _ficha(
+            0, 0, tr("Mean frequency (MNF)"),
+            tr("Mean spectral frequency; tends to fall with fatigue."),
         )
-        self._lbl_duracion = QLabel(f"{tr('Duration:')} —")
+        self._lbl_mdf = _ficha(
+            0, 1, tr("Median frequency (MDF)"),
+            tr("Frequency that splits the spectrum into two equal-power halves; "
+               "falls with fatigue."),
+        )
+        self._lbl_pendiente = _ficha(
+            0, 2, tr("MDF slope"),
+            tr("Slope of MDF over time (Hz/s); negative = fatigue."),
+        )
+        self._lbl_fatiga = _ficha(
+            0, 3, tr("Fatigue"),
+            tr("Fatigue indicator from the MDF trend over time."),
+            ayuda=self._btn_ayuda_fatiga,
+        )
+        # What the task reached against the reference, sustained over the
+        # same half second the reference is measured on. Computed for every
+        # analysis and, until now, only used to decide whether to warn.
+        self._lbl_pico = _ficha(
+            0, 4, tr("Task maximum"),
+            tr("Highest sustained level (0.5 s) of the task, as % of the "
+               "maximal contraction. Well above 100 % means the calibration "
+               "was not a maximum."),
+        )
+        self._lbl_rms_global = _ficha(
+            1, 0, tr("Global RMS"),
+            tr("Global RMS amplitude: mean intensity of the activation."),
+        )
+        self._lbl_iemg = _ficha(
+            1, 1, "iEMG",
+            tr("Integral of the rectified EMG — total muscle activation."),
+        )
+        self._lbl_duracion = _ficha(
+            1, 2, tr("Duration"), tr("Analysed signal duration."),
+        )
         # Where the yardstick came from. Shown beside the numbers it scales,
         # because a reference the student cannot trace is the same trap as an
-        # auto-normalised one, only quieter. This is what replaces the old
-        # "MVC source:" field.
-        self._lbl_cvm = QLabel(f"{tr('MVC:')} —")
-        self._lbl_archivo = QLabel("")
-
-        # Didactic tooltips: what each summary metric means.
-        self._lbl_mnf.setToolTip(tr("Mean spectral frequency; tends to fall with fatigue."))
-        self._lbl_mdf.setToolTip(
-            tr("Frequency that splits the spectrum into two equal-power halves; "
-               "falls with fatigue.")
-        )
-        self._lbl_fatiga.setToolTip(tr("Fatigue indicator from the MDF trend over time."))
-        self._lbl_pendiente.setToolTip(tr("Slope of MDF over time (Hz/s); negative = fatigue."))
-        self._lbl_rms_global.setToolTip(
-            tr("Global RMS amplitude: mean intensity of the activation.")
-        )
-        self._lbl_duracion.setToolTip(tr("Analysed signal duration."))
-        self._lbl_cvm.setToolTip(
+        # auto-normalised one, only quieter.
+        self._lbl_cvm = _ficha(
+            1, 3, tr("MVC"),
             tr("The maximal contraction every % MVC on this recording is "
-               "measured against, and where it came from.")
+               "measured against, and where it came from."),
         )
-        self._lbl_archivo.setToolTip(tr("Analysed EDF file."))
-
-        for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga, self._lbl_pendiente,
-                    self._lbl_rms_global, self._lbl_iemg, self._lbl_duracion,
-                    self._lbl_cvm, self._lbl_archivo):
-            lbl.setStyleSheet(_st)
-
-        for lbl in (self._lbl_mnf, _sep(), self._lbl_mdf, _sep(), self._lbl_fatiga, _sep(),
-                    self._lbl_pendiente, _sep(), self._lbl_rms_global, _sep(),
-                    self._lbl_iemg, _sep(), self._lbl_duracion, _sep(),
-                    self._lbl_cvm, _sep(), self._lbl_archivo):
-            resumen_row.addWidget(lbl)
-        resumen_row.addStretch()
-
-        resumen_scroll = QScrollArea()
-        resumen_scroll.setWidget(resumen_inner)
-        resumen_scroll.setWidgetResizable(True)
-        resumen_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        resumen_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        resumen_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        resumen_scroll.setFixedHeight(36)
-
-        resumen_vbox = QVBoxLayout(grp_resumen)
-        resumen_vbox.setContentsMargins(0, 0, 0, 0)
-        resumen_vbox.addWidget(resumen_scroll)
+        self._lbl_archivo = _ficha(1, 4, tr("File"), tr("Analysed EDF file."))
+        self._lbl_archivo.setText("")
+        resumen_grid.setColumnStretch(4, 1)
 
         root.addWidget(grp_resumen)
 
@@ -784,6 +808,7 @@ class AnalysisTab(QWidget):
         )
         # Mouse-wheel zoom on the panel under the cursor.
         self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
+        self._mostrar_estado_vacio()
 
         # Vertical-scale sidebar: one ▲▼ pair per active panel
         self._y_scale_sidebar = QWidget()
@@ -1305,7 +1330,8 @@ class AnalysisTab(QWidget):
             ))
             return
         detalle = ", ".join(
-            tr("{name}: {n} repetition(s)").format(
+            (tr("{name}: 1 repetition") if len(v) == 1
+             else tr("{name}: {n} repetitions")).format(
                 name=etiquetas.get(c, str(c + 1)), n=len(v))
             for c, v in sorted(valores.items())
         )
@@ -1321,10 +1347,13 @@ class AnalysisTab(QWidget):
             len(v) - len(self._cal_keep.get(c, {x.rep for x in v}))
             for c, v in valores.items()
         )
-        self._lbl_reps.setText(
-            "" if not descartadas
-            else tr("{n} repetition(s) discarded").format(n=descartadas)
-        )
+        if not descartadas:
+            texto = ""
+        elif descartadas == 1:
+            texto = tr("1 repetition discarded")
+        else:
+            texto = tr("{n} repetitions discarded").format(n=descartadas)
+        self._lbl_reps.setText(texto)
 
     def _actualizar_etiqueta_fragmentos(self) -> None:
         n = len(self._selected_segments)
@@ -1386,9 +1415,9 @@ class AnalysisTab(QWidget):
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)
         self._btn_afinado.setEnabled(False)
-        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
-        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
-        self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
+        self._lbl_mnf.setText("—")
+        self._lbl_mdf.setText("—")
+        self._lbl_fatiga.setText("—")
 
         roi_start = roi_end = None
         roi_segments = self._selected_segments or None
@@ -1643,18 +1672,17 @@ class AnalysisTab(QWidget):
     # ------------------------------------------------------------------
 
     def _actualizar_resumen(self, r: dict) -> None:
-        self._lbl_archivo.setText(f"{tr('File:')} {Path(r['edf_path']).name}")
-        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')}{r['mnf']:.1f} Hz")
-        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')}{r['mdf']:.1f} Hz")
+        self._lbl_archivo.setText(Path(r["edf_path"]).name)
+        self._lbl_mnf.setText(f"{r['mnf']:.1f} Hz")
+        self._lbl_mdf.setText(f"{r['mdf']:.1f} Hz")
         pendiente = r.get("mdf_slope", 0.0)
         r2 = r.get("fat_r_squared", 0.0)
         signo = "+" if pendiente >= 0 else ""
-        self._lbl_pendiente.setText(
-            f"{tr('MDF slope:')}{signo}{pendiente:.2f} Hz/s  (R²={r2:.2f})"
-        )
-        self._lbl_rms_global.setText(f"{tr('Global RMS:')}{r.get('rms_global', 0.0):.2f} mV")
-        self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
-        self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
+        self._lbl_pendiente.setText(f"{signo}{pendiente:.2f} Hz/s  (R²={r2:.2f})")
+        self._lbl_rms_global.setText(f"{r.get('rms_global', 0.0):.2f} mV")
+        self._lbl_iemg.setText(f"{r.get('iemg', 0.0):.1f} mV·s")
+        self._lbl_duracion.setText(f"{r.get('duration', 0.0):.1f} s")
+        self._actualizar_pico_tarea(r)
         self._actualizar_procedencia_cvm(r)
         self._btn_reps.setEnabled(bool(r.get("cal_rep_values")))
         self._actualizar_etiqueta_reps()
@@ -1664,21 +1692,87 @@ class AnalysisTab(QWidget):
         decline = r.get("fat_pct_decline", 0.0)
         veredicto = r.get("fat_verdict", INCONCLUSIVE)
         if veredicto == FATIGUE:
-            texto = tr("Fatigue: DETECTED (MDF −{decline:.1f}%)").format(decline=decline)
-            color = "#cc0000"
+            texto = tr("Detected (MDF −{decline:.1f} %)").format(decline=decline)
+            color = "#B0243A"
         elif veredicto == NO_FATIGUE:
-            texto = tr("Fatigue: Not detected (MDF stable or increasing)")
-            color = "#007700"
+            texto = tr("Not detected (MDF stable or rising)")
+            color = "#1E7A3C"
         else:
             # Not the same as "no fatigue", and it must not be read as one: the
             # recording does not answer the question. It says the fit, because
             # a bare "undetermined" gives the operator nothing to act on.
-            texto = tr("Fatigue: not conclusive (trend does not fit, R²={r2:.2f})").format(
-                r2=r2
-            )
-            color = "#885500"
+            texto = tr("Not conclusive (trend does not fit, R²={r2:.2f})").format(r2=r2)
+            color = "#8A5A00"
         self._lbl_fatiga.setText(texto)
-        self._lbl_fatiga.setStyleSheet(f"font-size: 9px; padding: 0 4px; color: {color};")
+        self._lbl_fatiga.setStyleSheet(
+            f"font-size: 13px; font-weight: 600; color: {color};"
+        )
+
+    def _actualizar_pico_tarea(self, r: dict) -> None:
+        """What the task reached against the reference, on its own card.
+
+        The worker has always computed this to decide whether to warn, and
+        the warning only fired past 150 %. A task at 135 % of "maximum" got
+        no word at all, and the student read the panel as if the maximum
+        had been one. Now the number is shown every time, red when it says
+        the calibration was not maximal.
+        """
+        picos = r.get("task_peak_pct") or {}
+        partes = []
+        for nombre in (r.get("channel_name"), r.get("channel_name_2")):
+            if nombre and nombre in picos:
+                partes.append(f"{picos[nombre]:.0f} %")
+        if not partes:
+            self._lbl_pico.setText("—")
+            self._lbl_pico.setStyleSheet("font-size: 13px; font-weight: 600;")
+            return
+        texto = " / ".join(partes) + " " + tr("MVC")
+        if r.get("mvc_implausible"):
+            self._lbl_pico.setText(texto + " — " + tr("not a maximum"))
+            self._lbl_pico.setStyleSheet(
+                "font-size: 13px; font-weight: 600; color: #B0243A;"
+            )
+            self._lbl_pico.setToolTip(tr(
+                "The task went well past the reference: the calibration did "
+                "not capture a maximum, so every % MVC here is too high in the "
+                "same proportion. Calibrate again, against something that "
+                "cannot move."
+            ))
+        else:
+            self._lbl_pico.setText(texto)
+            self._lbl_pico.setStyleSheet("font-size: 13px; font-weight: 600;")
+
+    def _explicar_fatiga(self) -> None:
+        """What the fatigue verdict is, in the words a student can check."""
+        QMessageBox.information(
+            self,
+            tr("Fatigue"),
+            "<p>" + tr(
+                "As a muscle fatigues, its action potentials slow down and "
+                "the EMG spectrum shifts towards lower frequencies. The "
+                "median frequency (MDF) is the frequency that splits the "
+                "spectrum in two halves of equal power; it is the standard "
+                "measure of that shift."
+            ) + "</p><p>" + tr(
+                "The application computes the MDF on successive windows and "
+                "fits a straight line to it over time. The verdict follows "
+                "that line:"
+            ) + "</p><ul><li>" + tr(
+                "<b>Detected</b>: the MDF falls clearly and the line fits "
+                "the data (high R²)."
+            ) + "</li><li>" + tr(
+                "<b>Not detected</b>: the MDF stays flat or rises."
+            ) + "</li><li>" + tr(
+                "<b>Not conclusive</b>: the line does not fit (low R²). "
+                "This is usual with short or intermittent contractions; the "
+                "recording does not answer the question, which is not the "
+                "same as answering “no”."
+            ) + "</li></ul><p>" + tr(
+                "Fatigue is only meaningful on a sustained contraction of "
+                "some tens of seconds. On a series of short contractions the "
+                "verdict says nothing about the muscle."
+            ) + "</p>",
+        )
 
     def _actualizar_procedencia_cvm(self, r: dict) -> None:
         """The reference and where it came from, in the summary bar.
@@ -1692,15 +1786,13 @@ class AnalysisTab(QWidget):
         n_reps = len(r.get("cal_reps", {}).get(0, ()) or ())
         if ref:
             self._lbl_cvm.setText(
-                f"{tr('MVC:')}{ref:.3f} mV — {reference_source_text(fuente, n_reps)}"
+                f"{ref:.3f} mV — {reference_source_text(fuente, n_reps)}"
             )
-            self._lbl_cvm.setStyleSheet("font-size: 11px; padding: 0 6px;")
+            self._lbl_cvm.setStyleSheet("font-size: 13px; font-weight: 600;")
             return
-        self._lbl_cvm.setText(
-            f"{tr('MVC:')}{reference_source_text(NO_CALIBRATION)}"
-        )
+        self._lbl_cvm.setText(reference_source_text(NO_CALIBRATION))
         self._lbl_cvm.setStyleSheet(
-            "font-size: 11px; padding: 0 6px; color: #8a5000;"
+            "font-size: 13px; font-weight: 600; color: #8A5A00;"
         )
 
     # ------------------------------------------------------------------
@@ -1975,6 +2067,7 @@ class AnalysisTab(QWidget):
             ax.tick_params(labelsize=7)
             ax.legend(loc="upper right", fontsize=7)
             ax.grid(True, **_grid)
+            mark_excess_over_100(ax, env1.ylabel)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
         # --- EMG vs MMG (electrical vs mechanical) ---
@@ -2427,14 +2520,29 @@ class AnalysisTab(QWidget):
         self._canvas.draw_idle()
 
     def _dibujar_marcadores(self, ax, inicio_s: float, fin_s: float) -> None:
+        """Marks on the signal: a line each, and a word only where a word says
+        something.
+
+        The automatic onsets came with «Onset (auto)» written up each line,
+        rotated — twenty-four of them across an eighteen-second recording,
+        over the trace they were meant to point at. They are all the same
+        word. A thin line places the onset; what it was is in the legend of
+        the phase markers, which do keep their text, since «REC start» or a
+        named manoeuvre is information the line alone does not carry.
+        """
         for t_mark, lbl_mark in self._markers:
-            if inicio_s <= t_mark <= fin_s:
-                ax.axvline(t_mark, color="#E67E22", linestyle="--",
-                           linewidth=1.2, alpha=0.8)
-                txt = (lbl_mark[:15] + "…") if len(lbl_mark) > 15 else lbl_mark
-                ax.text(t_mark, ax.get_ylim()[1], txt,
-                        fontsize=7, rotation=90, va="top", ha="right",
-                        color="#E67E22")
+            if not (inicio_s <= t_mark <= fin_s):
+                continue
+            automatica = "(auto)" in str(lbl_mark)
+            ax.axvline(t_mark, color="#E67E22", linestyle="--",
+                       linewidth=0.7 if automatica else 1.2,
+                       alpha=0.45 if automatica else 0.8)
+            if automatica:
+                continue
+            txt = (lbl_mark[:15] + "…") if len(lbl_mark) > 15 else lbl_mark
+            ax.text(t_mark, ax.get_ylim()[1], txt,
+                    fontsize=7, rotation=90, va="top", ha="right",
+                    color="#E67E22")
 
     # ------------------------------------------------------------------
     # Per-panel vertical scale
@@ -2591,16 +2699,32 @@ class AnalysisTab(QWidget):
     # New-session reset
     # ------------------------------------------------------------------
 
+    def _mostrar_estado_vacio(self) -> None:
+        """A blank canvas says nothing; this one says what to do.
+
+        Before the first analysis the panel area was a white rectangle two
+        thirds of the screen tall, with no word on it. The next action is one
+        line, and it goes in the middle of the space it is about.
+        """
+        self._fig.clear()
+        ax = self._fig.add_subplot(111)
+        ax.axis("off")
+        ax.text(
+            0.5, 0.5,
+            tr("Open a recording, or record one in Acquisition: it is "
+               "analysed on its own."),
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=11, color="#7A8590",
+        )
+        self._canvas.draw_idle()
+
     def _reset_summary_labels(self) -> None:
-        _st = "font-size: 11px; padding: 0 6px;"
-        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
-        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
-        self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
-        self._lbl_fatiga.setStyleSheet(_st)
-        self._lbl_pendiente.setText(f"{tr('MDF slope:')} —")
-        self._lbl_rms_global.setText(f"{tr('Global RMS:')} —")
-        self._lbl_iemg.setText("iEMG: —")
-        self._lbl_duracion.setText(f"{tr('Duration:')} —")
+        _st = "font-size: 13px; font-weight: 600;"
+        for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga,
+                    self._lbl_pendiente, self._lbl_rms_global, self._lbl_iemg,
+                    self._lbl_duracion, self._lbl_pico, self._lbl_cvm):
+            lbl.setText("—")
+            lbl.setStyleSheet(_st)
         self._lbl_archivo.setText("")
 
     def reset(self) -> None:
@@ -2644,8 +2768,7 @@ class AnalysisTab(QWidget):
         self._progress.setValue(0)
         self._progress.setFormat(tr("Ready"))
 
-        self._fig.clear()
-        self._canvas.draw_idle()
+        self._mostrar_estado_vacio()
         self._axes_list = []
         self._rebuild_y_sidebar([])
 

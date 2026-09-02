@@ -82,6 +82,82 @@ def resolve_startup_language(settings: Any = None) -> str:
 # (including {placeholders} and trailing ellipsis "…").
 
 _ES = {
+    # --- analysis summary cards, task maximum, fatigue help ---
+    "MDF slope": "Pendiente de la MDF",
+    "Task maximum": "Máximo de la tarea",
+    "MVC": "CVM",
+    "not a maximum": "no fue un máximo",
+    "How the fatigue verdict is reached": "Cómo se llega al veredicto de fatiga",
+    "Highest sustained level (0.5 s) of the task, as % of the maximal "
+    "contraction. Well above 100 % means the calibration was not a maximum.":
+        "Nivel más alto sostenido (0,5 s) durante la tarea, en % de la "
+        "contracción máxima. Muy por encima del 100 % significa que la "
+        "calibración no fue un máximo.",
+    "Detected (MDF −{decline:.1f} %)": "Detectada (MDF −{decline:.1f} %)",
+    "Not detected (MDF stable or rising)": "No detectada (MDF estable o en aumento)",
+    "Not conclusive (trend does not fit, R²={r2:.2f})":
+        "No concluyente (la tendencia no ajusta, R²={r2:.2f})",
+    "The task went well past the reference: the calibration did not capture "
+    "a maximum, so every % MVC here is too high in the same proportion. "
+    "Calibrate again, against something that cannot move.":
+        "La tarea superó con mucho la referencia: la calibración no recogió "
+        "un máximo, así que todos los % CVM de aquí están inflados en la "
+        "misma proporción. Vuelva a calibrar contra algo que no pueda moverse.",
+    "As a muscle fatigues, its action potentials slow down and the EMG "
+    "spectrum shifts towards lower frequencies. The median frequency (MDF) "
+    "is the frequency that splits the spectrum in two halves of equal "
+    "power; it is the standard measure of that shift.":
+        "Cuando un músculo se fatiga, sus potenciales de acción se vuelven "
+        "más lentos y el espectro del EMG se desplaza hacia frecuencias más "
+        "bajas. La frecuencia mediana (MDF) es la que divide el espectro en "
+        "dos mitades de igual potencia; es la medida habitual de ese "
+        "desplazamiento.",
+    "The application computes the MDF on successive windows and fits a "
+    "straight line to it over time. The verdict follows that line:":
+        "La aplicación calcula la MDF en ventanas sucesivas y ajusta una "
+        "recta a su evolución en el tiempo. El veredicto sale de esa recta:",
+    "<b>Detected</b>: the MDF falls clearly and the line fits the data "
+    "(high R²).":
+        "<b>Detectada</b>: la MDF baja con claridad y la recta ajusta bien "
+        "los datos (R² alto).",
+    "<b>Not detected</b>: the MDF stays flat or rises.":
+        "<b>No detectada</b>: la MDF se mantiene o sube.",
+    "<b>Not conclusive</b>: the line does not fit (low R²). This is usual "
+    "with short or intermittent contractions; the recording does not "
+    "answer the question, which is not the same as answering “no”.":
+        "<b>No concluyente</b>: la recta no ajusta (R² bajo). Es lo habitual "
+        "con contracciones cortas o intermitentes; el registro no responde a "
+        "la pregunta, que no es lo mismo que responder «no».",
+    "Fatigue is only meaningful on a sustained contraction of some tens of "
+    "seconds. On a series of short contractions the verdict says nothing "
+    "about the muscle.":
+        "La fatiga solo tiene sentido en una contracción sostenida de varias "
+        "decenas de segundos. En una serie de contracciones cortas el "
+        "veredicto no dice nada del músculo.",
+    "Open a recording, or record one in Acquisition: it is analysed on its own.":
+        "Abra un registro, o grabe uno en Registro: se analiza solo.",
+    "Open a recording with calibration, or record one in Acquisition: the "
+    "reference is computed on its own.":
+        "Abra un registro con calibración, o grabe uno en Registro: la "
+        "referencia se calcula sola.",
+    # --- session report: calibration section ---
+    "Calibration (maximal voluntary contraction)":
+        "Calibración (contracción voluntaria máxima)",
+    "Reference": "Referencia",
+    "Source": "Procedencia",
+    "{pct:.0f} % MVC (sustained 0.5 s)": "{pct:.0f} % CVM (sostenido 0,5 s)",
+    "The task exceeds the reference by a wide margin: the calibration did "
+    "not capture a maximum, so every percentage in this report is too high "
+    "in the same proportion. Calibrate again with a genuinely maximal "
+    "contraction, against something that cannot move.":
+        "La tarea supera la referencia con mucho margen: la calibración no "
+        "recogió un máximo, así que todos los porcentajes de este informe "
+        "están inflados en la misma proporción. Vuelva a calibrar con una "
+        "contracción realmente máxima, contra algo que no pueda moverse.",
+    "Repetition": "Repetición",
+    "Other muscle during it": "El otro músculo mientras tanto",
+    "Channel {n}": "Canal {n}",
+    "discarded": "descartada",
     # --- app / window ---
     "EMG Bioinstrumentation": "EMG Bioinstrumentación",
     "Surface EMG acquisition": "Adquisición de EMG de superficie",
@@ -756,8 +832,10 @@ _ES = {
     "calibration recorded in this file": "calibración grabada en este mismo fichero",
     # -- procedencia de la referencia de CVM (phases.py) --
     "calibration in this recording": "calibración de este registro",
-    "calibration in this recording ({n} repetition(s))":
-        "calibración de este registro ({n} repetición/ones)",
+    "calibration in this recording (1 repetition)":
+        "calibración de este registro (1 repetición)",
+    "calibration in this recording ({n} repetitions)":
+        "calibración de este registro ({n} repeticiones)",
     "calibration as recorded (repetitions not stored)":
         "calibración tal como se grabó (no se guardaron las repeticiones)",
     "no calibration": "sin calibración",
@@ -1009,7 +1087,8 @@ _ES = {
     'Muscle load computed over the recording phase ({d:.2f} s of {full:.2f} s); the calibration and the pause are outside it.': 'Carga muscular calculada sobre la fase de registro ({d:.2f} s de {full:.2f} s); la calibración y la pausa quedan fuera.',
     'MVC reference amplitude: {value:.4f} {units}': 'Amplitud de referencia de CVM: {value:.4f} {units}',
     'This recording carries no calibration, so there is no maximum to express it as a percentage of: no % MVC and no muscle-load analysis. The signal and its envelope do not depend on a reference and are drawn as usual.': 'Este registro no trae calibración, así que no hay un máximo del que expresar porcentajes: ni % CVM ni análisis de carga muscular. La señal y su envolvente no dependen de una referencia y se dibujan como siempre.',
-    'This recording marks its own calibration ({n} repetition(s)); the reference is recomputed from it.': 'Este registro marca su propia calibración ({n} repetición(es)); la referencia se recalcula a partir de ella.',
+    'This recording marks its own calibration (1 repetition); the reference is recomputed from it.': 'Este registro marca su propia calibración (1 repetición); la referencia se recalcula a partir de ella.',
+    'This recording marks its own calibration ({n} repetitions); the reference is recomputed from it.': 'Este registro marca su propia calibración ({n} repeticiones); la referencia se recalcula a partir de ella.',
     'This recording carries a calibration recorded with it ({n} channel(s)).': 'Este registro trae una calibración grabada con él ({n} canal(es)).',
     'No calibration': 'Sin calibración',
     'This recording has no maximal effort in it, so there is no maximum to express the signal as a percentage of: no % MVC and no muscle-load analysis. The signal and its envelope are drawn as usual. Record the session again with the guided flow, which calibrates without stopping the recording.': 'Este registro no lleva dentro ningún esfuerzo máximo, así que no hay un máximo del que expresar porcentajes: ni % CVM ni análisis de carga muscular. La señal y su envolvente se dibujan como siempre. Vuelve a grabar la sesión con el flujo guiado, que calibra sin parar el registro.',
@@ -1028,11 +1107,13 @@ _ES = {
     'Analyse the recording first: what each maximal effort was worth is measured from the signal, not stored in the file.': 'Analiza primero el registro: lo que valió cada esfuerzo máximo se mide sobre la señal, no viene guardado en el fichero.',
     'This recording carries no calibration. Only sessions recorded with the guided flow mark their maximal efforts.': 'Este registro no trae calibración. Solo las sesiones grabadas con el flujo guiado marcan sus esfuerzos máximos.',
     'This recording carries no calibration spans, so the repetition list stays off. Only sessions recorded with the guided flow have them.': 'Este registro no trae tramos de calibración, así que la lista de repeticiones queda apagada. Solo las sesiones grabadas con el flujo guiado los llevan.',
-    '{name}: {n} repetition(s)': '{name}: {n} repetición(es)',
+    '{name}: 1 repetition': '{name}: 1 repetición',
+    '{name}: {n} repetitions': '{name}: {n} repeticiones',
     'Calibration in the file — {detail}. The repetition list is available.': 'Calibración en el fichero: {detail}. La lista de repeticiones está disponible.',
     'Calibration repetitions…': 'Repeticiones de la calibración…',
     'Keep or discard the maximal efforts the reference is computed from. Discarding one moves the reference and every % MVC with it — which is what makes a weak repetition worth spotting.': 'Conservar o descartar los esfuerzos máximos con los que se calcula la referencia. Descartar uno mueve la referencia y con ella todos los % CVM: por eso merece la pena localizar una repetición floja.',
-    '{n} repetition(s) discarded': '{n} repetición(es) descartada(s)',
+    '1 repetition discarded': '1 repetición descartada',
+    '{n} repetitions discarded': '{n} repeticiones descartadas',
     'Calibration repetitions': 'Repeticiones de la calibración',
     'Each maximal effort the wizard recorded. Unticking one leaves it out of the reference — and out of every % MVC computed from it.': 'Cada esfuerzo máximo que registró el asistente. Al desmarcar uno queda fuera de la referencia, y por tanto de todos los % CVM que se calculan con ella.',
     'rep {n}': 'rep. {n}',
