@@ -14,6 +14,14 @@ import pytest
 
 # Must be set before any PySide6 import
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+# The offscreen platform ships no fonts of its own. On Windows it then draws
+# every glyph as a box, and a box is wider than a letter: a window measured
+# under it had a minimum width of 1911 px against 858 px with real fonts, so
+# any test that asks how wide something is was measuring the missing fonts.
+# Pointed at the system's, the suite sees what the student sees. Linux and
+# macOS find theirs through fontconfig and need nothing.
+if os.name == "nt" and os.path.isdir(r"C:\Windows\Fonts"):
+    os.environ.setdefault("QT_QPA_FONTDIR", r"C:\Windows\Fonts")
 
 
 @pytest.fixture(autouse=True)

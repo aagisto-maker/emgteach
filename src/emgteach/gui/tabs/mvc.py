@@ -272,10 +272,16 @@ class MvcTab(QWidget):
         row_params.addWidget(self._box_fenv)
 
         row_params.addStretch()
+        # The actions on a row of their own. Channel, fragments, envelope
+        # cut-off, three buttons and the panel boxes all shared one row, and
+        # a row cannot wrap: its minimum width was 1083 px on the simplest
+        # practical and 1276 px on the advanced one, which is what set the
+        # whole window's minimum — a 1366-pixel laptop could not show it.
+        row_acciones = QHBoxLayout()
         self._btn_calcular = QPushButton(tr("Compute MVC"))
         self._btn_calcular.setEnabled(False)
         self._btn_calcular.clicked.connect(self._iniciar_calculo)
-        row_params.addWidget(self._btn_calcular)
+        row_acciones.addWidget(self._btn_calcular)
 
         # A disabled button that does not say why is the worst of both: the
         # tab looks broken rather than incomplete. So it says what is missing,
@@ -288,22 +294,22 @@ class MvcTab(QWidget):
             "color: #8a5000; font-size: 11px; padding: 0 4px;"
         )
         self._lbl_calcular_bloqueado.setVisible(False)
-        row_params.addWidget(self._lbl_calcular_bloqueado)
+        row_acciones.addWidget(self._lbl_calcular_bloqueado)
 
         self._btn_guardar = QPushButton(tr("Save figure (PNG)"))
         self._btn_guardar.setEnabled(False)
         self._btn_guardar.clicked.connect(self._guardar_figura)
-        row_params.addWidget(self._btn_guardar)
+        row_acciones.addWidget(self._btn_guardar)
 
         self._btn_informe = QPushButton(tr("Generate PDF report"))
         self._btn_informe.setEnabled(False)
         self._btn_informe.clicked.connect(self._generar_informe)
-        row_params.addWidget(self._btn_informe)
+        row_acciones.addWidget(self._btn_informe)
 
         # Which of the three panels to draw continues the same row. The tab
         # always drew all three, which is a lot of vertical space for a student
         # who is after one of them — most often the last, the signal in % MVC.
-        row_paneles = row_params
+        row_paneles = row_acciones
         row_paneles.addSpacing(16)
         row_paneles.addWidget(QLabel(tr("Panels:")))
         self._chk_paneles: list[QCheckBox] = []
@@ -315,6 +321,7 @@ class MvcTab(QWidget):
             self._chk_paneles.append(chk)
         row_paneles.addStretch()
         ctrl.addLayout(row_params)
+        ctrl.addLayout(row_acciones)
 
         # Event log for this tab. Kept short: what matters is that the
         # flat-channel and saturated-channel warnings are seen before the
@@ -602,11 +609,10 @@ class MvcTab(QWidget):
                 "maximal effort."
             ),
             tr(
-                "To do that you need two recordings: the one you want to study, "
-                "and a short reference recording in which the subject contracts "
-                "the muscle as hard as possible. Record the reference first, "
-                "with the electrodes in the same position, and do not remove "
-                "them in between."
+                "The maximum is recorded inside the session: when the "
+                "recording starts, the app asks for a maximal effort of each "
+                "muscle and writes it into the same file, before the task. "
+                "That is the reference; nothing else has to be chosen here."
             ),
             tr(
                 "The reference has to be made against something that cannot "
@@ -629,7 +635,11 @@ class MvcTab(QWidget):
         ):
             lbl = QLabel(paragraph)
             lbl.setWordWrap(True)
-            lbl.setStyleSheet("font-size: 12px;")
+            lbl.setStyleSheet("font-size: 13px;")
+            # A measure a reader can follow. Wrapped to the window, each line
+            # ran to some 250 characters across a 1400-pixel screen, and the
+            # eye lost its place on the way back to the left margin.
+            lbl.setMaximumWidth(720)
             lay.addWidget(lbl)
 
         btn_row = QHBoxLayout()
@@ -833,6 +843,13 @@ class MvcTab(QWidget):
         self._log(
             tr("Recording loaded to normalise: {path}").format(path=Path(path).name)
         )
+        # And compute, as the analysis tab does since it started analysing on
+        # open: a tab that receives a recording and waits for a button press
+        # to show anything is the same "press once to see, again to apply"
+        # that made the sequence hard to follow there.
+        if self._btn_calcular.isEnabled():
+            self._log(tr("Running the first computation…"))
+            self._iniciar_calculo()
 
     @Slot()
     def _seleccionar_edf_prueba(self) -> None:

@@ -514,6 +514,9 @@ class AcquisitionTab(QWidget):
         # Row 2: destination folder + Browse
         cfg_row2 = QHBoxLayout()
         cfg_row2.setSpacing(6)
+        # With a folder saved, the placeholder never shows, and the row was a
+        # bare text box beside a Browse button: a field nobody could name.
+        cfg_row2.addWidget(QLabel(tr("Folder:")))
         self._edit_dir = QLineEdit()
         self._edit_dir.setPlaceholderText(tr("EDF destination folder"))
         self._edit_dir.setText(self._settings.value("adquisicion/save_dir", "."))
@@ -972,6 +975,13 @@ class AcquisitionTab(QWidget):
 
         # Raw signal
         self._plot_raw = pg.PlotWidget(title=tr("Raw EMG signal (mV)"))
+        # pyqtgraph rescales a small-valued axis by itself and labels it
+        # «mV (x0.000)» with ticks 0–500 — what the envelope plot said on
+        # every screen, and what no student can read as millivolts. The unit
+        # is the unit; the ticks carry the decimals. Disabled *before* the
+        # first setYRange: turned off afterwards, the ×1000 already chosen
+        # stays — the axis only recomputes it while the option is on.
+        self._plot_raw.getAxis("left").enableAutoSIPrefix(False)
         self._plot_raw.setYRange(*self._y_ranges_init[0])
         self._plot_raw.setLabel("left", "mV")
         self._plot_raw.showGrid(x=True, y=True, alpha=0.3)
@@ -989,6 +999,7 @@ class AcquisitionTab(QWidget):
         self._plot_env = pg.PlotWidget(
             title=tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
         )
+        self._plot_env.getAxis("left").enableAutoSIPrefix(False)   # see above
         self._plot_env.setYRange(*self._y_ranges_init[1])
         self._plot_env.setLabel("left", "mV")
         self._plot_env.showGrid(x=True, y=True, alpha=0.3)
@@ -1122,8 +1133,11 @@ class AcquisitionTab(QWidget):
         self._apply_channel_visibility()
         self._update_legend()
         # Configure the plot mode (overlaid or stacked) according to the
-        # persisted number of channels.
-        self._apply_stacking_mode()
+        # persisted number of channels — with the raw range set to the saved
+        # device's full scale first, which applies the stacking on its way.
+        self._ajustar_rango_bruto_al_dispositivo(
+            self._combo_device_type.currentIndex()
+        )
         # Apply the ACC-placement channel-count constraint to the initial state
         # (MMG placement forces a single muscle).
         self._apply_acc_placement_constraints()
@@ -1153,6 +1167,30 @@ class AcquisitionTab(QWidget):
         """Show the COM-port field (BITalino) or the COM-port selector (Arduino)."""
         self._widget_mac.setVisible(index == 0)
         self._widget_arduino.setVisible(index == 1)
+        self._ajustar_rango_bruto_al_dispositivo(index)
+
+    def _ajustar_rango_bruto_al_dispositivo(self, index: int) -> None:
+        """Draw the raw plot to the device's own full scale.
+
+        The profile's ±3.3 mV predates the gain correction: a BITalino cannot
+        exceed ±1.635 mV, so the trace lived in the middle half of the panel
+        with dead space above and below it; the Arduino front end reaches
+        ±12.5 mV and was clipped by the same number. The full scale is a
+        property of the device, so it is read off the device class rather
+        than kept as a second copy here.
+        """
+        from emgteach.devices.arduino import ArduinoDevice
+        from emgteach.devices.bitalino import BitalinoDevice
+
+        clase = BitalinoDevice if index == 0 else ArduinoDevice
+        try:
+            gain = getattr(clase, "_GAIN_EMG", None) or clase._GAIN
+            amp = clase._V_REF / 2.0 * 1000.0 / gain
+        except Exception:  # pragma: no cover — a backend without the constants
+            amp = self._profile.ylim_raw[1]
+        self._y_ranges_init[0] = (-amp, amp)
+        if not (self._worker and self._worker.isRunning()):
+            self._apply_stacking_mode()
 
     # ------------------------------------------------------------------
     # Channels (1 or 2: agonist/antagonist)
@@ -1945,6 +1983,12 @@ class AcquisitionTab(QWidget):
         for c in range(len(señales), MAX_CHANNELS):
             self._curves_raw[c].setData([], [])
             self._curves_env[c].setData([], [])
+        # The lanes are named after the file being reviewed, not after the
+        # label boxes: those still said «EMG1 / EMG2» while the shading beside
+        # them read «FCR 1 … ECR 3», two names for the same muscle on one
+        # screen. Restored from the boxes on the way back to live.
+        for c, nombre in enumerate(nombres[:MAX_CHANNELS]):
+            self._lane_labels[0][c].setText(f" {nombre}")
 
         # The accelerometer, when the session recorded one. Read by index
         # because it is not an EMG channel and carries its own units.
@@ -2040,6 +2084,7 @@ class AcquisitionTab(QWidget):
             tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
         )
         self._reset_all_scales()
+        self._refresh_lane_label_texts()   # back to the label boxes' names
         self._new_data = True
         self._refresh_plots(force=True)
         # Re-enabling auto-range only says the axis *may* refit; pyqtgraph

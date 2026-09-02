@@ -182,6 +182,17 @@ class CoachMark(QWidget):
         self._host.installEventFilter(self)
         self._render()
 
+    @property
+    def is_tour(self) -> bool:
+        """Whether what is showing walks the tabs itself.
+
+        The tour passes ``on_tab`` and changes tabs on purpose; a single
+        contextual step — «open this next» — does not, and a tab change under
+        it means the reader went elsewhere: the panel should go too, instead
+        of floating over a screen that has none of what it points at.
+        """
+        return self._on_tab is not None
+
     def stop(self) -> None:
         self._host.removeEventFilter(self)
         self.hide()

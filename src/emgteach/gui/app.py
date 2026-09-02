@@ -150,6 +150,7 @@ class MainWindow(QMainWindow):
         self._tab_adq.recording_saved.connect(self._tab_ana.adopt_recording)
         self._tab_ana.file_opened.connect(self._tab_cvm.adopt_recording)
         self._tab_ana.coach_step.connect(self._mostrar_paso_guiado)
+        # (connected once the tab widget exists, below)
 
         # Shared styling: each tab's gray background (class selector) is only
         # painted if the widget has WA_StyledBackground.
@@ -252,6 +253,7 @@ class MainWindow(QMainWindow):
 
         self._tabs = tabs
         self._coach = CoachMark(self)
+        tabs.currentChanged.connect(self._cerrar_paso_guiado)
 
     def _mostrar_paso_guiado(self, titulo: str, cuerpo: str, control) -> None:
         """Float one step of the analysis sequence over the control it names.
@@ -264,6 +266,17 @@ class MainWindow(QMainWindow):
         if self._coach.isVisible() or self._tabs.currentWidget() is not self._tab_ana:
             return
         self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
+
+    def _cerrar_paso_guiado(self, _index: int) -> None:
+        """A contextual step does not survive a change of tab.
+
+        Seen on the bench: the «next step» panel raised over the analysis tab
+        stayed up when the student went back to Acquisition, dimming the
+        session review and pointing at a button that was no longer on screen.
+        The tour is different — it changes tabs itself — and is left alone.
+        """
+        if self._coach.isVisible() and not self._coach.is_tour:
+            self._coach.stop()
 
     # ------------------------------------------------------------------
     # Guided tour

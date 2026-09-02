@@ -48,9 +48,10 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
     steps.append(CoachStep(
         tr("Complexity level"),
         tr(
-            "The coloured band shows the subjective level of complexity of "
-            "the analysis: basic, intermediate or advanced. There is also a "
-            "free analysis that gives control over the fine settings."
+            "The coloured band shows the level of the practical: basic, "
+            "intermediate or advanced. The further along, the more of the "
+            "reading is interpretation rather than measurement; the fine "
+            "settings appear only in the advanced one."
         ),
         lambda: win._lbl_nivel,
         tab=TAB_ACQ,

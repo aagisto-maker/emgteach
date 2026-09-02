@@ -1137,14 +1137,14 @@ _ES = {
         "electrodos, de la piel y de la grasa que hay debajo. La normalización "
         "resuelve esto expresando cada valor como porcentaje de la amplitud "
         "que ese músculo alcanza en un esfuerzo máximo.",
-    "To do that you need two recordings: the one you want to study, and a "
-    "short reference recording in which the subject contracts the muscle as "
-    "hard as possible. Record the reference first, with the electrodes in the "
-    "same position, and do not remove them in between.":
-        "Para ello hacen falta dos registros: el que se quiere estudiar y un "
-        "registro corto de referencia en el que el sujeto contrae el músculo "
-        "con toda la fuerza que pueda. Se registra primero la referencia, con los "
-        "electrodos en la misma posición, y no los retire entre uno y otro.",
+    "The maximum is recorded inside the session: when the recording starts, "
+    "the app asks for a maximal effort of each muscle and writes it into the "
+    "same file, before the task. That is the reference; nothing else has to "
+    "be chosen here.":
+        "El máximo se registra dentro de la propia sesión: al iniciar la "
+        "grabación, la aplicación pide un esfuerzo máximo de cada músculo y lo "
+        "escribe en el mismo fichero, antes de la tarea. Esa es la referencia; "
+        "aquí no hay que elegir nada más.",
     "Without a reference recording this tab can still work, but the "
     "percentages it produces are not percentages of MVC and the muscle-load "
     "limits do not apply to them.":
@@ -1253,7 +1253,7 @@ _ES = {
     '9. Env. overlay (% MVC)': '9. Env. superp. (% CVM)',
     'Millivolts are not comparable between two muscles. Calibrate MVC while recording to compare them.': 'Los milivoltios no son comparables entre dos músculos. Calibre la CVM mientras graba para poder compararlos.',
     'Complexity level': 'Nivel de complejidad',
-    'The coloured band shows the subjective level of complexity of the analysis: basic, intermediate or advanced. There is also a free analysis that gives control over the fine settings.': 'La banda coloreada indica el nivel subjetivo de complejidad del análisis: básico, intermedio o avanzado. Hay un análisis libre que permite controlar los ajustes finos.',
+    'The coloured band shows the level of the practical: basic, intermediate or advanced. The further along, the more of the reading is interpretation rather than measurement; the fine settings appear only in the advanced one.': 'La banda coloreada indica el nivel de la práctica: básico, intermedio o avanzado. Cuanto más avanzado, más de la lectura es interpretación y no medida; los ajustes finos solo aparecen en el avanzado.',
     'Connecting the sensor': 'Conexión del sensor',
     'The board has to be switched on and the electrodes connected: the positive and the negative go on the midline of the muscle, while the reference goes on a neutral point, over a bone if possible.': 'La placa tiene que estar encendida y los electrodos conectados: el positivo y el negativo se sitúan sobre la línea media del músculo, mientras que el de referencia se coloca en un punto neutro, a ser posible sobre un hueso.',
     'How to place the accelerometer': 'Cómo situar el acelerómetro',
@@ -1520,6 +1520,8 @@ _ES = {
     'Then no window has a name: either the fragment editor has not been opened, or the names were cleared. Open it and accept what it proposes.': 'Entonces ninguna ventana tiene nombre: o no se ha abierto el cuadro de fragmentos, o se han borrado los nombres. Ábralo y acepte lo que propone.',
     'Whole recording: with no named windows this number does not measure anything. Open «{button}» and accept what it proposes.': 'Registro completo: sin ventanas con nombre este número no mide nada. Abra «{button}» y acepte lo que propone.',
     'Running the first analysis…': 'Haciendo el primer análisis…',
+    'Running the first computation…': 'Haciendo el primer cálculo…',
+    'Folder:': 'Carpeta:',
     'Next: «{button}». It decides which maximal efforts set the reference, and every % MVC below is measured against it — so it goes before choosing the fragments.': 'Siguiente: «{button}». Decide qué esfuerzos máximos fijan la referencia, y todos los % CVM de abajo se miden contra ella, así que va antes de elegir los fragmentos.',
     'Next: «{button}», to drop any contraction that did not come out well. Press «Use these fragments» even if you change nothing: that is what applies them.': 'Siguiente: «{button}», para quitar las contracciones que no salieran bien. Pulse «Usar estos fragmentos» aunque no cambie nada: es lo que las aplica.',
     'The «Muscle» column says which of the two led each contraction; the app fills it in by comparing them. Change it if you disagree. Consecutive rows with the same name become a single window of the co-activation table, so a run of flexions is measured as one.': 'La columna «Músculo» dice cuál de los dos llevó cada contracción; la aplicación la rellena comparándolos. Cámbiela si no está de acuerdo. Las filas seguidas con el mismo nombre pasan a ser una sola ventana de la tabla de coactivación, de modo que una serie de flexiones se mide como una.',
