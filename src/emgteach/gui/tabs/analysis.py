@@ -597,12 +597,28 @@ class AnalysisTab(QWidget):
                 # the accelerometer only when one of them is on.
                 chk.toggled.connect(self._marcar_pendiente)
             paneles_layout.addWidget(chk)
+            # Ticking a box redraws; there is no button to press afterwards.
+            chk.toggled.connect(self._redibujar)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
-        self._btn_redibujar = QPushButton(tr("Redraw"))
-        self._btn_redibujar.setEnabled(False)
-        self._btn_redibujar.clicked.connect(self._redibujar)
-        paneles_layout.addWidget(self._btn_redibujar)
+        # The advanced practical owns twelve panels, and twelve boxes do not
+        # fit on a row at 1400 px: they overflowed into a scroll bar, which
+        # is a developer's menu, not a student's. By default it shows its
+        # own six — the teaching core and the accelerometer three — and this
+        # reveals the rest: the further EMG analyses and the two-muscle
+        # panels, for whoever wants them.
+        self._mas_paneles = False
+        self._btn_mas_paneles = QToolButton()
+        self._btn_mas_paneles.setText(tr("More panels…"))
+        self._btn_mas_paneles.setCheckable(True)
+        self._btn_mas_paneles.setAutoRaise(True)
+        self._btn_mas_paneles.setStyleSheet("font-size: 11px;")
+        self._btn_mas_paneles.toggled.connect(self._on_mas_paneles)
+        self._btn_mas_paneles.setVisible(False)
+        paneles_layout.addWidget(self._btn_mas_paneles)
+        # No «Redraw» button: the boxes redraw as they are ticked (see the
+        # loop above). A button that has to be pressed after every change is
+        # a second step for the same intention.
 
         paneles_scroll = QScrollArea()
         paneles_scroll.setWidget(paneles_inner)
@@ -625,30 +641,10 @@ class AnalysisTab(QWidget):
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(4)
 
-        grp_markers_bar = QGroupBox(tr("Markers"))
-        markers_inner = QHBoxLayout(grp_markers_bar)
-        markers_inner.setContentsMargins(6, 2, 6, 2)
-        markers_inner.setSpacing(6)
-        self._lbl_markers_bar = QLabel(tr("Markers ({n}):").format(n=0))
-        self._lbl_markers_bar.setStyleSheet("font-size: 11px;")
-        markers_inner.addWidget(self._lbl_markers_bar)
-        self._combo_markers = QComboBox()
-        self._combo_markers.setStyleSheet("font-size: 11px;")
-        self._combo_markers.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        self._combo_markers.setEnabled(False)
-        self._combo_markers.addItem(tr("No markers"))
-        markers_inner.addWidget(self._combo_markers, stretch=1)
-        self._btn_ir_marcador = QPushButton(tr("Go"))
-        self._btn_ir_marcador.setFixedWidth(40)
-        self._btn_ir_marcador.setFixedHeight(26)
-        self._btn_ir_marcador.setStyleSheet("font-size: 11px;")
-        self._btn_ir_marcador.setEnabled(False)
-        self._btn_ir_marcador.clicked.connect(self._on_ir_marcador)
-        markers_inner.addWidget(self._btn_ir_marcador)
-        bottom_row.addWidget(grp_markers_bar, stretch=2)
-
+        # There used to be a «Markers (n): [list] Go» box here, to jump the
+        # view to one marker. Jumping to a marker is an expert's move; the
+        # student's markers are the automatic onsets, which are drawn on the
+        # panels and used by the fragment editor without anyone listing them.
         bottom_row.addWidget(grp_paneles, stretch=5)
         root.addLayout(bottom_row)
 
@@ -814,7 +810,10 @@ class AnalysisTab(QWidget):
         # single figure because the index is computed per marked phase — one
         # number for a recording that mixes rest, flexion and grip would not
         # be a measurement of anything.
-        self._box_coact = QGroupBox(tr("Co-activation (Falconer-Winter)"))
+        # The method's name is in the «?» beside it, not in the title: a box
+        # headed «Falconer-Winter» names two authors the student has never
+        # heard of before it names the thing measured.
+        self._box_coact = QGroupBox(tr("Co-activation"))
         coact_v = QVBoxLayout(self._box_coact)
         coact_v.setContentsMargins(6, 4, 6, 6)
         coact_v.setSpacing(4)
@@ -1554,7 +1553,6 @@ class AnalysisTab(QWidget):
         self._btn_informe.setEnabled(True)
         self._btn_csv.setEnabled(True)
         self._btn_afinado.setEnabled(True)
-        self._btn_redibujar.setEnabled(True)
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
         self._time_range.set_total_duration(duracion_total)
@@ -1569,7 +1567,6 @@ class AnalysisTab(QWidget):
         self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
         self._lbl_duracion_info.setText(f"{tr('Duration:')}{_dur_ini:.1f} s")
         self._markers = result.get("markers", [])
-        self._actualizar_lista_marcadores()
         self._update_combo_items()
         self._sync_combo_zoom()
         self._actualizar_resumen(result)
@@ -2439,38 +2436,6 @@ class AnalysisTab(QWidget):
                         fontsize=7, rotation=90, va="top", ha="right",
                         color="#E67E22")
 
-    def _actualizar_lista_marcadores(self) -> None:
-        sorted_m = sorted(self._markers, key=lambda x: x[0])
-        n = len(sorted_m)
-        self._lbl_markers_bar.setText(tr("Markers ({n}):").format(n=n))
-        self._combo_markers.blockSignals(True)
-        self._combo_markers.clear()
-        if sorted_m:
-            for tiempo, etiqueta in sorted_m:
-                self._combo_markers.addItem(f"t={tiempo:.1f} s — {etiqueta}")
-            self._combo_markers.setEnabled(True)
-            self._btn_ir_marcador.setEnabled(True)
-        else:
-            self._combo_markers.addItem(tr("No markers"))
-            self._combo_markers.setEnabled(False)
-            self._btn_ir_marcador.setEnabled(False)
-        self._combo_markers.blockSignals(False)
-
-    def _on_ir_marcador(self) -> None:
-        sorted_m = sorted(self._markers, key=lambda x: x[0])
-        idx = self._combo_markers.currentIndex()
-        if idx < 0 or idx >= len(sorted_m):
-            return
-        tiempo, _ = sorted_m[idx]
-        _, dur = self._time_range.get_range()
-        nuevo_inicio = max(0.0, min(tiempo - dur / 2, self._duracion_total - dur))
-        self._time_range.set_range(nuevo_inicio, dur)
-        self._lbl_inicio_info.setText(f"{tr('Start:')}{nuevo_inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"{tr('Duration:')}{dur:.1f} s")
-        self._sync_combo_zoom()
-        if self._last_result is not None:
-            self._dibujar_paneles(self._last_result)
-
     # ------------------------------------------------------------------
     # Per-panel vertical scale
     # ------------------------------------------------------------------
@@ -2672,10 +2637,8 @@ class AnalysisTab(QWidget):
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)
         self._btn_afinado.setEnabled(False)
-        self._btn_redibujar.setEnabled(False)
 
         self._reset_summary_labels()
-        self._actualizar_lista_marcadores()
 
         self._progress.setVisible(False)
         self._progress.setValue(0)
@@ -2716,10 +2679,15 @@ class AnalysisTab(QWidget):
         # Shared by every mode: fine control.
         self._box_fenv.setVisible(advanced)
         self._box_roi.setVisible(advanced)
+        # Saving a derived EDF is for whoever curates the recordings, not for
+        # the student reading one; and its name explains nothing to them.
+        self._btn_afinado.setVisible(advanced)
         # Offered in every practical; see where it is built.
         self._box_fragmentos.setVisible(True)
 
         self._sync_compare_to_mode()
+        # Only the advanced practical has panels to reveal.
+        self._btn_mas_paneles.setVisible(mode == MODE_KINEMATICS)
         self._apply_panel_visibility(mode, advanced)
 
     def _sync_compare_to_mode(self) -> None:
@@ -2803,7 +2771,11 @@ class AnalysisTab(QWidget):
         """
         pid = self._panel_pids[index]
         if mode == MODE_KINEMATICS:
-            return True                      # everything: that is what it is for
+            # Its own six always: the teaching core and the accelerometer
+            # panels. The other six wait behind «More panels…».
+            if pid in _CORE_PIDS or pid in _ACC_PIDS:
+                return True
+            return self._mas_paneles
         if mode == MODE_PAIR:
             return pid in (0, _RAW2_PID, _OVERLAY_PID)
         if pid in (_RAW2_PID, _OVERLAY_PID):
@@ -2811,6 +2783,12 @@ class AnalysisTab(QWidget):
         if pid in _ACC_PIDS:
             return mode_uses_acc(mode)
         return pid in _CORE_PIDS
+
+    @Slot(bool)
+    def _on_mas_paneles(self, checked: bool) -> None:
+        """Reveal or fold the panels outside the practical's own six."""
+        self._mas_paneles = bool(checked)
+        self._apply_panel_visibility(self._mode, self._advanced)
 
     def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:
         """Hide the panels this practical does not use, and untick them.

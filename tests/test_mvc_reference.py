@@ -304,15 +304,28 @@ class TestBestOfThreeAndTheFinalPanel:
         yield widget
         widget.close()
 
-    def test_best_of_three_is_offered_in_every_practical(self, tab) -> None:
-        """It was behind the advanced flag, so the agonist/antagonist
-        practical — the one that needs two good references — could not reach
-        it at all."""
-        from emgteach.modes import MODES
+    def test_best_of_three_is_the_behaviour_not_a_box(self, tab) -> None:
+        """It was a checkbox, off by default, in every practical — and the
+        protocol document told the operator to tick it. Repeating the maximum
+        and keeping the strongest is not an option: it is how a maximum is
+        measured at all, so there is no box, and a calibration always asks for
+        three efforts per muscle."""
+        assert not hasattr(tab, "_chk_mvc_best3")
 
-        for mode in MODES:
-            tab.apply_mode(mode, False)
-            assert not tab._chk_mvc_best3.isHidden(), mode
+        class Corriendo:
+            def isRunning(self) -> bool:
+                return True
+
+            def add_marker(self, *_a) -> None:
+                pass
+
+        tab._worker = Corriendo()
+        try:
+            tab._iniciar_calibracion(auto_flow=False)
+            assert tab._mvc_reps == 3
+        finally:
+            tab._mvc_cancel()
+            tab._worker = None
 
     def test_a_weak_calibration_ends_on_the_panel_not_only_in_the_log(
         self, tab

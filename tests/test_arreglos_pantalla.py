@@ -250,6 +250,48 @@ class TestTheReviewNamesTheLanesAfterTheFile:
             _cierra(qapp, win)
 
 
+class TestTheAdvancedPracticalFoldsItsExtraPanels:
+    """Twelve panel boxes did not fit on a row at 1400 px and overflowed into
+    a scroll bar — a developer's menu, not a student's. The advanced practical
+    now shows its own six and folds the rest behind «More panels…»."""
+
+    def _visibles(self, tab) -> list[str]:
+        return [c.text() for c in tab._chk_paneles if c.isVisibleTo(tab)]
+
+    def test_kinematics_starts_with_its_own_six(self, qapp) -> None:
+        win = _ventana(qapp, "kinematics")
+        try:
+            vis = self._visibles(win._tab_ana)
+            assert len(vis) == 6, vis
+            assert win._tab_ana._btn_mas_paneles.isVisibleTo(win._tab_ana)
+        finally:
+            _cierra(qapp, win)
+
+    def test_more_reveals_the_other_six_and_folds_them_back(self, qapp) -> None:
+        win = _ventana(qapp, "kinematics")
+        try:
+            ana = win._tab_ana
+            ana._btn_mas_paneles.setChecked(True)
+            qapp.processEvents()
+            # Every box there is: thirteen, since the raw trace comes twice
+            # (one per muscle) on top of the twelve numbered panels.
+            assert len(self._visibles(ana)) == len(ana._chk_paneles)
+            ana._btn_mas_paneles.setChecked(False)
+            qapp.processEvents()
+            assert len(self._visibles(ana)) == 6
+        finally:
+            _cierra(qapp, win)
+
+    @pytest.mark.parametrize("modo", ["single", "pair"])
+    def test_the_other_practicals_have_nothing_to_reveal(self, qapp, modo) -> None:
+        win = _ventana(qapp, modo)
+        try:
+            assert not win._tab_ana._btn_mas_paneles.isVisibleTo(win._tab_ana)
+            assert len(self._visibles(win._tab_ana)) == 3
+        finally:
+            _cierra(qapp, win)
+
+
 class TestTheMvcTabComputesOnArrival:
     """Same as the analysis tab since it started analysing on open: a tab that
     receives a recording and waits for a button press to show anything."""

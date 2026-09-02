@@ -43,8 +43,7 @@ practicals — one muscle, agonist/antagonist and muscle kinematics — fix
 the channel count and the accelerometer, and each tab offers only the
 measurements that suit the practical, with the fine controls reachable in
 the kinematics practical alone, which is advanced by its own nature. It also gains a **guided
-tour** over the interface itself, a **map** of the route a recording
-takes, a **rehearsal** of the guided force-velocity procedure that runs
+tour** over the interface itself, a **rehearsal** of the guided force-velocity procedure that runs
 with no hardware, and an **agonist/antagonist co-activation index**
 (Falconer-Winter) built on an MVC reference that now travels inside the
 EDF, so the two muscles are compared in % MVC rather than in
@@ -55,7 +54,7 @@ millivolts. See
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **778 tests** passing on Linux and Windows across Python
+test suite of **759 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 

@@ -262,11 +262,9 @@ class TestComplexityBand:
         ]
 
     def test_every_mode_is_a_practical_on_the_scale(self) -> None:
-        """There used to be a fourth mode off this ramp — "free analysis",
-        which recorded the accelerometer and two muscles and showed every
-        control. It was a superset of the kinematics practical, so all the
-        restricted one contributed was removal, and the name described none of
-        what it did. One practical, on the scale, named for what it measures."""
+        """Every mode is a practical with a place on the scale: nothing is
+        offered that is not one of the three, and each is named for what it
+        measures."""
         assert set(MODES) == set(PRACTICALS)
         colores = {mode_complexity_colour(m) for m in MODES}
         assert len(colores) == len(MODES)
@@ -301,10 +299,17 @@ def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
     set_mode(main_window, qapp, MODE_PAIR)
     assert panels_offered(ana) == {0, _RAW2_PID, _OVERLAY_PID}
 
-    # The kinematics practical is the one place nothing is withheld: it
-    # carries the accelerometer panels and the fine controls alike.
+    # The kinematics practical is the one place nothing is withheld — but
+    # not all at once: it opens on its own six (the core and the
+    # accelerometer panels) and «More panels…» reveals every other one.
+    # Thirteen boxes on one row overflowed into a scroll bar.
     set_mode(main_window, qapp, MODE_KINEMATICS)
+    propios = panels_offered(ana)
+    assert len(propios) == 6 and propios < set(ana._panel_pids)
+    ana._btn_mas_paneles.setChecked(True)
+    qapp.processEvents()
     assert panels_offered(ana) == set(ana._panel_pids)
+    ana._btn_mas_paneles.setChecked(False)
 
 
 def test_the_second_raw_panel_sits_next_to_the_first(main_window) -> None:

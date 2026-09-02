@@ -838,7 +838,14 @@ class AcquisitionTab(QWidget):
         )
         self._chk_auto.toggled.connect(self._on_auto_toggled)
         auto_l.addWidget(self._chk_auto)
-        auto_l.addWidget(QLabel("k:"))
+        # The sensitivity lives in a container of its own so the practicals
+        # can hide it: a student does not know what k is and should not be
+        # deciding it. The fine controls of the advanced practical show it.
+        self._box_k = QWidget()
+        k_l = QHBoxLayout(self._box_k)
+        k_l.setContentsMargins(0, 0, 0, 0)
+        k_l.setSpacing(6)
+        k_l.addWidget(QLabel("k:"))
         self._spin_k = QDoubleSpinBox()
         self._spin_k.setRange(1.0, 10.0)
         self._spin_k.setSingleStep(0.5)
@@ -858,7 +865,8 @@ class AcquisitionTab(QWidget):
             lambda v: self._settings.setValue("adquisicion/onset_k", v)
         )
         self._spin_k.setEnabled(self._chk_auto.isChecked())
-        auto_l.addWidget(self._spin_k)
+        k_l.addWidget(self._spin_k)
+        auto_l.addWidget(self._box_k)
         markers_layout.addWidget(self._box_autoonset)
         markers_layout.addStretch()
         markers_outer.addLayout(markers_layout)
@@ -935,12 +943,17 @@ class AcquisitionTab(QWidget):
 
         row_tiempo.addStretch()
 
-        btn_reset_escala = QPushButton(tr("Reset scales"))
-        btn_reset_escala.setFixedHeight(26)
-        btn_reset_escala.setStyleSheet("font-size: 10px;")
-        btn_reset_escala.setToolTip(tr("Restore Y ranges and time window to initial values"))
-        btn_reset_escala.clicked.connect(self._reset_all_scales)
-        row_tiempo.addWidget(btn_reset_escala)
+        # Kept as an attribute so the practicals can hide it with the ▲▼
+        # sidebar: with the raw range on the device's own full scale and the
+        # envelope auto-ranging, a student has nothing to reset.
+        self._btn_reset_escala = QPushButton(tr("Reset scales"))
+        self._btn_reset_escala.setFixedHeight(26)
+        self._btn_reset_escala.setStyleSheet("font-size: 10px;")
+        self._btn_reset_escala.setToolTip(
+            tr("Restore Y ranges and time window to initial values")
+        )
+        self._btn_reset_escala.clicked.connect(self._reset_all_scales)
+        row_tiempo.addWidget(self._btn_reset_escala)
 
         plots_root.addLayout(row_tiempo)
 
@@ -996,9 +1009,15 @@ class AcquisitionTab(QWidget):
         plots_col_vbox.addWidget(self._plot_raw, stretch=1)
 
         # Envelope
-        self._plot_env = pg.PlotWidget(
-            title=tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
-        )
+        # The title names what is drawn; how it is computed is a hover away.
+        # «Envelope (5 Hz low-pass filter, causal with continuous state)» put
+        # three terms the student has not met into the one line they read.
+        self._plot_env = pg.PlotWidget(title=tr("Envelope (mV)"))
+        self._plot_env.setToolTip(tr(
+            "The rectified signal smoothed with a 5 Hz low-pass filter, "
+            "computed as the samples arrive: it follows the level of "
+            "activation."
+        ))
         self._plot_env.getAxis("left").enableAutoSIPrefix(False)   # see above
         self._plot_env.setYRange(*self._y_ranges_init[1])
         self._plot_env.setLabel("left", "mV")
@@ -2284,12 +2303,11 @@ class AcquisitionTab(QWidget):
         )
         self._btn_calibrar.clicked.connect(self._on_calibrar)
         mvc_row.addWidget(self._btn_calibrar)
-        self._chk_mvc_best3 = QCheckBox(tr("Best of 3"))
-        self._chk_mvc_best3.setToolTip(
-            tr("Repeat each muscle 3 times and keep the strongest contraction "
-               "(more reliable). Otherwise a single contraction per muscle.")
-        )
-        mvc_row.addWidget(self._chk_mvc_best3)
+        # «Best of 3» used to be a checkbox here, off by default. Repeating
+        # the maximum and keeping the strongest is not an option: it is how a
+        # maximum is measured at all — the first maximal effort of a session
+        # is genuinely submaximal, and a single attempt has nothing to fall
+        # back on. The protocol said to tick it; the application now does.
         mvc_row.addStretch()
         left_col.addLayout(mvc_row)
 
@@ -2442,7 +2460,9 @@ class AcquisitionTab(QWidget):
         # phase, which is exactly what the flow exists to write.
         self._mvc_flow_auto = auto_flow or self._mvc_flow_pending
         self._mvc_flow_pending = False
-        self._mvc_reps = 3 if self._chk_mvc_best3.isChecked() else 1
+        # Always three: the first maximal effort of a session is genuinely
+        # submaximal, and with one attempt there is nothing to fall back on.
+        self._mvc_reps = 3
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
@@ -3680,15 +3700,15 @@ class AcquisitionTab(QWidget):
         # recording with no marks in it at all. Marks are not a refinement —
         # the analysis finds each effort by them.
         self._box_autoonset.setVisible(True)
+        # Fine controls: the warning/danger thresholds, the onset sensitivity
+        # k, and the four ways of moving the view by hand (Reset scales and
+        # the ▲▼ sidebar). None of them is a decision a student should be
+        # making in the middle of a physiology exercise; the advanced
+        # practical, where the reader is past that point, shows them all.
         self._box_thr.setVisible(advanced)
-        # "Best of 3" is offered in every practical. Repeating the maximum and
-        # keeping the strongest is not a refinement — it is how a maximum is
-        # measured at all: the first maximal effort of a session is genuinely
-        # submaximal, and a single attempt has nothing to fall back on when it
-        # goes wrong. On the bench a single-rep extensor calibration came out
-        # *below* its own resting level, while the flexor, warmed up, reached
-        # 38 times rest in the same session.
-        self._chk_mvc_best3.setVisible(True)
+        self._box_k.setVisible(advanced)
+        self._btn_reset_escala.setVisible(advanced)
+        self._sidebar.setVisible(advanced)
 
     def _apply_mode_channels(self, mode: str) -> None:
         """Make the recording match the mode: channel count and accelerometer.
@@ -3696,11 +3716,10 @@ class AcquisitionTab(QWidget):
         Driven through the existing widgets so their slots run and the plots,
         legend, load bars and broadcast configuration all follow.
         """
-        # Every practical does this, including the kinematics one. It used
-        # to be the exception, as the "free analysis" mode that imposed
-        # nothing — but the channel selector is hidden in every mode on
-        # purpose, so "whatever the user set stays set" meant a channel count
-        # that nothing on screen could show or change. That is the state this
+        # Every practical does this, including the kinematics one. The
+        # channel selector is hidden in every mode on purpose, so "whatever
+        # the user set stays set" would mean a channel count that nothing on
+        # screen could show or change. That is the state this
         # module exists to make unreachable.
         #
         # Imposing is not locking: this *sets* the widgets when the practical

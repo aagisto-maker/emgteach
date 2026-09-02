@@ -20,20 +20,11 @@ filter cut-offs, region of interest, fatigue thresholds, onset detection —
 belong to :data:`MODE_KINEMATICS`, the one practical advanced enough to need
 them.
 
-**There were two kinematics practicals and only one of them was a practical.**
-A restricted one — a single muscle, the accelerometer, no fine controls — and a
-"free analysis" that recorded the accelerometer too, with two muscles and every
-control on screen. The second was a superset of the first, so all the first
-contributed was *removal*; and "free analysis" named none of what it did. It
-was not free analysis at all: it was a kinematics with options, which is what
-the practical needs to be, since deriving a force-velocity curve from a
-movement is an advanced exercise by its own nature and the reader is already
-past the point where a hidden filter cut-off protects them.
-
-So there are three practicals, and the third is named for what it measures.
-Its stored setting is still ``"kinematics"``, and a session saved under the old
-``"free"`` is read as the same thing — the two collapsed into one, and nobody
-should be thrown back to the single-muscle default for having chosen either.
+There are three practicals, and each is named for what it measures. The third,
+muscle kinematics, is the advanced one: deriving a force-velocity curve from a
+movement is an advanced exercise by its own nature, and the reader is already
+past the point where a hidden filter cut-off protects them — so that practical
+carries the fine controls and the other two do not.
 """
 
 from __future__ import annotations
@@ -65,9 +56,9 @@ MODE_PAIR = "pair"
 #: See the note above on why there is one of these and not two.
 MODE_KINEMATICS = "kinematics"
 
-#: What the setting said while this practical was called "free analysis". Read
-#: as :data:`MODE_KINEMATICS` so an installation that had it selected opens on
-#: the same practical instead of falling back to the default.
+#: A value older installations may still have saved for the advanced
+#: practical. Read as :data:`MODE_KINEMATICS` so they open on it instead of
+#: falling back to the default.
 _LEGACY_FREE = "free"
 
 MODES: tuple[str, ...] = (MODE_SINGLE, MODE_PAIR, MODE_KINEMATICS)
