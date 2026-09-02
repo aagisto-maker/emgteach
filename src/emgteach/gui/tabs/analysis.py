@@ -302,7 +302,9 @@ class AnalysisTab(QWidget):
             "it came from."
         ))
         self._btn_afinado.clicked.connect(self._guardar_afinado)
-        row_file.addWidget(self._btn_afinado)
+        # Added to the second row further down, with the other two tools for
+        # afterwards: on the first row, with eight buttons across, the path
+        # field was squeezed to sixty pixels on a 1366 px screen.
         # Force-velocity study (needs an accelerometer channel in the file).
         self._btn_fv = QPushButton(tr("Force-velocity study…"))
         self._btn_fv.setEnabled(False)
@@ -314,7 +316,7 @@ class AnalysisTab(QWidget):
             )
         )
         self._btn_fv.clicked.connect(self._abrir_estudio_fv)
-        row_file.addWidget(self._btn_fv)
+        # Same: goes on the second row (see below).
         ctrl.addLayout(row_file)
 
         # Line 2: channel + f_env
@@ -480,6 +482,11 @@ class AnalysisTab(QWidget):
         self._lbl_reps = QLabel("")
         self._lbl_reps.setStyleSheet("font-size: 11px; color: #8a5000;")
         row_frag.addWidget(self._lbl_reps)
+        # The two tools of the advanced practical, beside the other two for
+        # afterwards rather than on the file row: with eight buttons across
+        # the top, the path field was squeezed to sixty pixels at 1366 px.
+        row_frag.addWidget(self._btn_afinado)
+        row_frag.addWidget(self._btn_fv)
         row_frag.addStretch()
         # Which of the two to do next, said in one line. Both buttons light up
         # together at the end of the first analysis, and nothing said that the
@@ -1657,9 +1664,11 @@ class AnalysisTab(QWidget):
         alto = self._tbl_contr.horizontalHeader().height() + 4
         for i in range(len(filas)):
             alto += self._tbl_contr.rowHeight(i)
-        # Four rows before it scrolls: on a 768 px screen anything taller
-        # leaves the panels a hundred pixels, and the panels come first.
-        self._tbl_contr.setFixedHeight(max(38, min(alto, 118)))
+        # Three rows before it scrolls on a 768 px screen, six on a 1080 px
+        # one: anything taller leaves the panels a hundred pixels, and the
+        # panels come first.
+        tope = 200 if self.height() >= 850 else 118
+        self._tbl_contr.setFixedHeight(max(38, min(alto, tope)))
         resumen = tr("{n} contractions").format(n=len(filas))
         emd = result.get("emd_ms_mean")
         if emd is not None:
