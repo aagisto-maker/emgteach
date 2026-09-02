@@ -127,11 +127,17 @@ def _analizar(qapp, edf: str, **kw) -> dict:
     salida: list[dict] = []
     worker.result_ready.connect(salida.append)
     worker.start()
+    # wait() first, and only then pump events for the queued result. The
+    # old loop spun processEvents() while the thread ran, and on a two-core
+    # CI runner under the coverage tracer that spin held the GIL almost
+    # continuously: the worker crawled through mne's EDF reader for the
+    # whole job (thirty minutes, twice) and the test never came back. wait()
+    # releases the GIL and blocks; the worker runs at full speed.
+    worker.wait(120000)
     reloj = QElapsedTimer()
     reloj.start()
-    while not salida and reloj.elapsed() < 30000:
+    while not salida and reloj.elapsed() < 5000:
         qapp.processEvents()
-    worker.wait(5000)
     assert salida, "the analysis produced no result"
     return salida[0]
 

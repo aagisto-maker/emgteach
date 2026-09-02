@@ -232,11 +232,14 @@ def test_the_verdict_reaches_the_result_dictionary(qapp, tmp_path) -> None:
     salida: list[dict] = []
     worker.result_ready.connect(salida.append)
     worker.start()
+    # wait() first (it releases the GIL), then pump the queued result: a
+    # processEvents() spin while the thread runs starved it on CI. See
+    # test_analysis_phases._analizar.
+    worker.wait(120000)
     timer = QElapsedTimer()
     timer.start()
-    while not salida and timer.elapsed() < 20000:
+    while not salida and timer.elapsed() < 5000:
         qapp.processEvents()
-    worker.wait(5000)
 
     assert salida, "the analysis produced no result"
     r = salida[0]

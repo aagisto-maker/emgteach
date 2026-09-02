@@ -86,11 +86,14 @@ def _normalizar(qapp, edf: str, **kw) -> dict:
     worker.result_ready.connect(salida.append)
     worker.error.connect(lambda m: salida.append({"error": m}))
     worker.start()
+    # wait() first (it releases the GIL), then pump the queued result: a
+    # processEvents() spin while the thread runs starved it on CI. See
+    # test_analysis_phases._analizar.
+    worker.wait(120000)
     reloj = QElapsedTimer()
     reloj.start()
-    while not salida and reloj.elapsed() < 30000:
+    while not salida and reloj.elapsed() < 5000:
         qapp.processEvents()
-    worker.wait(5000)
     assert salida, "the normalisation produced no result"
     return salida[0]
 

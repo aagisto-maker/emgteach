@@ -153,13 +153,15 @@ class TestTheAnalyseButtonIsNoLongerAStep:
         assert tab._btn_analizar.isEnabled()
 
         tab._iniciar_analisis()
+        # wait() first (it releases the GIL), then pump the queued signals:
+        # a processEvents() spin while the thread runs starved it on CI. See
+        # test_analysis_phases._analizar.
+        if tab._worker is not None:
+            tab._worker.wait(120000)
         reloj = QElapsedTimer()
         reloj.start()
-        while (tab._worker is not None and tab._worker.isRunning()
-               and reloj.elapsed() < 30000):
+        while tab._last_result is None and reloj.elapsed() < 5000:
             qapp.processEvents()
-        if tab._worker is not None:
-            tab._worker.wait(5000)
         for _ in range(30):
             qapp.processEvents()
         assert tab._last_result is not None, "el análisis no produjo resultado"
