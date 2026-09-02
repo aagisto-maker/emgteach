@@ -82,10 +82,272 @@ def resolve_startup_language(settings: Any = None) -> str:
 # (including {placeholders} and trailing ellipsis "…").
 
 _ES = {
+    # --- muscle labels (acquisition) ---
+    "Agonist — e.g. FCR": "Agonista, p. ej. FCR",
+    "Antagonist — e.g. ECR": "Antagonista, p. ej. ECR",
+    "Agonist": "Agonista",
+    "Antagonist": "Antagonista",
+    # --- per-contraction table ---
+    "{n} contractions found; see the table.":
+        "{n} contracciones encontradas; véase la tabla.",
+    "The contraction table could not be built: {err}":
+        "No se pudo construir la tabla de contracciones: {err}",
+    "Contractions": "Contracciones",
+    "What each column is, and what is usual": "Qué es cada columna y qué es lo habitual",
+    "RMS (mV)": "RMS (mV)",
+    "Peak (% MVC)": "Pico (% CVM)",
+    "EMD (ms)": "Retraso EM (ms)",
+    "{n} contractions": "{n} contracciones",
+    "mean electromechanical delay {ms:.0f} ms":
+        "retraso electromecánico medio {ms:.0f} ms",
+    "Each row is one contraction the application found on its own, the same "
+    "ones the fragment editor proposes. With two muscles, the row belongs to "
+    "the one that led it; «Co-contraction» means both worked at once, and the "
+    "numbers are the stronger one's.":
+        "Cada fila es una contracción que la aplicación ha encontrado por sí "
+        "misma, las mismas que propone el editor de fragmentos. Con dos "
+        "músculos, la fila es del que la lideró; «Cocontracción» significa "
+        "que los dos trabajaron a la vez, y los números son los del más fuerte.",
+    "RMS": "RMS",
+    "mean amplitude of the filtered signal over the contraction. Rest is a "
+    "few hundredths of a millivolt; a firm effort with surface electrodes is "
+    "usually 0.1–1 mV, and depends on the electrodes and the skin, which is "
+    "why % MVC exists.":
+        "amplitud media de la señal filtrada durante la contracción. El reposo "
+        "son unas centésimas de milivoltio; un esfuerzo firme con electrodos "
+        "de superficie suele estar entre 0,1 y 1 mV, y depende de los "
+        "electrodos y de la piel, que es por lo que existe el % CVM.",
+    "the highest half-second of the contraction against the maximum. A task "
+    "effort is usually 20–80 %; above 100 % (in red) the calibration was not "
+    "a maximum.":
+        "el medio segundo más alto de la contracción respecto al máximo. Un "
+        "esfuerzo de tarea suele ser del 20–80 %; por encima del 100 % (en "
+        "rojo) la calibración no fue un máximo.",
+    "MDF": "MDF",
+    "median frequency of the spectrum. Typically 60–150 Hz for surface EMG "
+    "of limb muscles; it falls along a sustained effort as the muscle "
+    "fatigues. Not shown for contractions shorter than a quarter of a second.":
+        "frecuencia mediana del espectro. Típicamente 60–150 Hz en EMG de "
+        "superficie de músculos de las extremidades; baja a lo largo de un "
+        "esfuerzo sostenido a medida que el músculo se fatiga. No se muestra "
+        "en contracciones de menos de un cuarto de segundo.",
+    "EMD": "Retraso EM",
+    "electromechanical delay, from the electrical onset to the start of the "
+    "movement measured by the accelerometer on the limb. Usually 30–100 ms "
+    "in healthy adults: the time the muscle takes to take up its slack and "
+    "build force.":
+        "retraso electromecánico, desde el inicio eléctrico hasta el comienzo "
+        "del movimiento medido por el acelerómetro en la extremidad. "
+        "Habitualmente 30–100 ms en adultos sanos: el tiempo que tarda el "
+        "músculo en tensar sus elementos elásticos y generar fuerza.",
+    # --- spectrum before/after the filter, ranges on the cards ---
+    "After the filter": "Después del filtro",
+    "Before the filter (raw)": "Antes del filtro (bruto)",
+    "Electromechanical delay: {ms:.0f} ms (mean of {n})":
+        "Retraso electromecánico: {ms:.0f} ms (media de {n})",
+    "usual 80–170 Hz": "habitual 80–170 Hz",
+    "usual 60–150 Hz": "habitual 60–150 Hz",
+    "a task effort is usually 20–80 %": "un esfuerzo de tarea suele ser 20–80 %",
+    "rest ≈ 0.01 mV · effort 0.1–1 mV": "reposo ≈ 0,01 mV · esfuerzo 0,1–1 mV",
+    # --- «?» texts per box (help_texts.py) ---
+    "Choose the device and the port it appears on; on a laboratory computer "
+    "this is set once and kept. The student code written here goes into the "
+    "file name and the report.":
+        "Elija el dispositivo y el puerto en el que aparece; en un ordenador "
+        "de laboratorio esto se fija una vez y se conserva. El código de "
+        "alumno que se escribe aquí va al nombre del archivo y al informe.",
+    "In the practicals that need a reference, the session asks for the "
+    "maximal contraction first and the task afterwards, and writes both into "
+    "one file.":
+        "En las prácticas que necesitan referencia, la sesión pide primero la "
+        "contracción máxima y después la tarea, y escribe las dos en un solo "
+        "archivo.",
+    "The live signal": "La señal en directo",
+    "The upper trace is the raw signal: the sum of the action potentials of "
+    "the fibres under the electrodes, in millivolts. The lower one is its "
+    "envelope — the raw signal rectified and smoothed — which follows how "
+    "hard the muscle is working and is what the load bars and the analysis "
+    "are built on.":
+        "El trazo superior es la señal en bruto: la suma de los potenciales de "
+        "acción de las fibras bajo los electrodos, en milivoltios. El inferior "
+        "es su envolvente, la señal rectificada y suavizada, que sigue cuánto "
+        "trabaja el músculo y es sobre lo que se construyen las barras de "
+        "carga y el análisis.",
+    "Three repetitions are recorded and the reference is the strongest "
+    "half-second held; a repetition that came out weak can be discarded "
+    "afterwards in the analysis.":
+        "Se graban tres repeticiones y la referencia es el medio segundo más "
+        "fuerte que se mantuvo; una repetición que salió floja puede "
+        "descartarse después en el análisis.",
+    "Opening a recording": "Abrir un registro",
+    "Open a recording and it is analysed on its own; the channel to study is "
+    "the muscle's name from the file. The two buttons underneath are for "
+    "afterwards: «Calibration repetitions…» chooses which maximal efforts fix "
+    "the reference, and «Select fragments…» limits the analysis to some of "
+    "the contractions. Neither is needed to read a clean recording.":
+        "Abra un registro y se analiza solo; el canal a estudiar es el nombre "
+        "del músculo que trae el archivo. Los dos botones de debajo son para "
+        "después: «Repeticiones de la calibración…» elige qué esfuerzos "
+        "máximos fijan la referencia, y «Seleccionar fragmentos…» limita el "
+        "análisis a algunas contracciones. Ninguno hace falta para leer un "
+        "registro limpio.",
+    "Reading the numbers": "Leer los números",
+    "Each card is one figure for the whole analysed span, with its usual "
+    "range in grey where one can be given: those ranges are orientative "
+    "values for surface EMG in healthy adults, not limits. The task maximum "
+    "says how far the effort went against the calibrated maximum; well above "
+    "100 % means the calibration was not maximal. The fatigue verdict has its "
+    "own «?». The table further down gives the same figures contraction by "
+    "contraction.":
+        "Cada ficha es una cifra del tramo analizado entero, con su rango "
+        "habitual en gris cuando se puede dar uno: esos rangos son valores "
+        "orientativos para EMG de superficie en adultos sanos, no límites. El "
+        "máximo de la tarea dice hasta dónde llegó el esfuerzo respecto al "
+        "máximo calibrado; muy por encima del 100 % significa que la "
+        "calibración no fue máxima. El veredicto de fatiga tiene su propio "
+        "«?». La tabla de más abajo da las mismas cifras contracción a "
+        "contracción.",
+    # --- the five-step tour (tour.py) ---
+    "Everything else follows from this. Each mode records what that "
+    "practical needs — one muscle, an agonist/antagonist pair, or a "
+    "muscle plus the accelerometer — and the rest of the interface "
+    "offers only the measurements that make sense for it. The "
+    "coloured band beside it is the level: basic, intermediate or "
+    "advanced.":
+        "Todo lo demás sale de aquí. Cada modo registra lo que esa práctica "
+        "necesita (un músculo, un par agonista/antagonista, o un músculo más "
+        "el acelerómetro) y el resto de la interfaz ofrece solo las medidas "
+        "que tienen sentido para ella. La banda de color de al lado es el "
+        "nivel: básico, intermedio o avanzado.",
+    "This practical names its channel itself, so there is nothing to "
+    "type.":
+        "Esta práctica pone nombre a su canal por sí misma, así que no hay "
+        "nada que escribir.",
+    "Type the name of each muscle in the boxes beside it — the "
+    "anatomical name, FCR or ECR rather than «channel 1». It is "
+    "written into the recording and is how every table names them.":
+        "Escriba el nombre de cada músculo en las casillas de al lado: el "
+        "nombre anatómico, FCR o ECR y no «canal 1». Se escribe dentro del "
+        "registro y es como los nombra cada tabla.",
+    "The recording can be made with either of two devices: BITalino "
+    "(Bluetooth) or Arduino (USB). Switch the board on and connect "
+    "the electrodes: the positive and the negative go on the midline "
+    "of the muscle, the reference on a neutral point, over a bone if "
+    "possible.":
+        "El registro puede hacerse con cualquiera de dos dispositivos: "
+        "BITalino (Bluetooth) o Arduino (USB). Encienda la placa y conecte "
+        "los electrodos: el positivo y el negativo van sobre la línea media "
+        "del músculo, la referencia en un punto neutro, sobre un hueso si es "
+        "posible.",
+    "Press record. The session asks first for a maximal contraction "
+    "— the reference every measurement is expressed against — and "
+    "then for the task. Both go into one file, so nothing has to be "
+    "matched up afterwards. Watch the live trace: at rest it should "
+    "be a flat line with only baseline noise. A signal that never "
+    "returns to baseline usually means a loose electrode, not a "
+    "tonic muscle. Each contraction onset is marked on its own.":
+        "Pulse grabar. La sesión pide primero una contracción máxima (la "
+        "referencia respecto a la que se expresa cada medida) y después la "
+        "tarea. Las dos van a un solo archivo, así que no hay que emparejar "
+        "nada después. Observe el trazo en directo: en reposo debe ser una "
+        "línea plana con solo el ruido basal. Una señal que nunca vuelve a la "
+        "línea base suele ser un electrodo suelto, no un músculo tónico. El "
+        "inicio de cada contracción se marca solo.",
+    "There are two possibilities: on the muscle it allows the "
+    "mechanomyogram (MMG) to be measured, which runs in parallel "
+    "with the electrical signal; on the moving segment of the "
+    "joint it allows the movement, and the parameters associated "
+    "with it, to be measured — including the delay between the "
+    "muscle firing and the limb moving.":
+        "Hay dos posibilidades: sobre el músculo permite medir el "
+        "mecanomiograma (MMG), que corre en paralelo con la señal eléctrica; "
+        "sobre el segmento móvil de la articulación permite medir el "
+        "movimiento y los parámetros asociados a él, incluido el retraso "
+        "entre que el músculo se activa y la extremidad se mueve.",
+    "The force-velocity experiment, and its rehearsal":
+        "El experimento fuerza-velocidad, y su ensayo",
+    "The step-by-step wizard guides you through the contractions "
+    "with different loads: with a greater load the velocity is "
+    "lower, and that inverse relation is the force-velocity "
+    "curve. As it is the longest procedure in the application, a "
+    "simulation is provided as a rehearsal, so that what is "
+    "going to be done live is understood first.":
+        "El asistente paso a paso guía las contracciones con distintas "
+        "cargas: con más carga la velocidad es menor, y esa relación inversa "
+        "es la curva fuerza-velocidad. Como es el procedimiento más largo de "
+        "la aplicación, se ofrece una simulación como ensayo, para entender "
+        "primero lo que se va a hacer en vivo.",
+    "The recording is analysed as soon as it is opened. Both "
+    "muscles were calibrated while recording, so the two "
+    "envelopes are overlaid in % MVC — the only form in which two "
+    "different muscles compare at all, since each one's "
+    "millivolts depend on its own electrodes and skin. In a clean "
+    "movement the agonist activates while the antagonist stays "
+    "nearly silent; simultaneous activation is co-contraction, "
+    "which holds the joint rigid and is typical of an unpractised "
+    "or uncertain movement. The table below the panels gives one "
+    "row per contraction, and which muscle led it.":
+        "El registro se analiza en cuanto se abre. Los dos músculos se "
+        "calibraron al grabar, así que las dos envolventes se superponen en "
+        "% CVM, la única forma en que dos músculos distintos se pueden "
+        "comparar, porque los milivoltios de cada uno dependen de sus "
+        "electrodos y de su piel. En un movimiento limpio el agonista se "
+        "activa mientras el antagonista queda casi en silencio; la activación "
+        "simultánea es cocontracción, que rigidiza la articulación y es "
+        "típica de un movimiento poco practicado o inseguro. La tabla bajo "
+        "los paneles da una fila por contracción, y qué músculo la lideró.",
+    "The recording is analysed as soon as it is opened. The study "
+    "builds the load-velocity, force-velocity and power curves "
+    "from a recording where several known loads were lifted, and "
+    "relates them to the EMG amplitude — that is, to how many "
+    "motor units had to be recruited for each load. The panels "
+    "also show the movement against the EMG and the delay "
+    "between the two.":
+        "El registro se analiza en cuanto se abre. El estudio construye las "
+        "curvas carga-velocidad, fuerza-velocidad y potencia a partir de un "
+        "registro en el que se levantaron varias cargas conocidas, y las "
+        "relaciona con la amplitud del EMG, es decir, con cuántas unidades "
+        "motoras hubo que reclutar para cada carga. Los paneles muestran "
+        "también el movimiento frente al EMG y el retraso entre ambos.",
+    "What the analysis shows": "Qué muestra el análisis",
+    "The recording is analysed as soon as it is opened. Raw "
+    "signal: what the contracting fibres produce. Normalised "
+    "envelope: how activation changes over time, which is what is "
+    "compared between efforts. Spectrum: how the activity is "
+    "distributed across frequencies — as a sustained contraction "
+    "fatigues the muscle, the median frequency (MDF) falls. The "
+    "cards above the panels carry the numbers with their usual "
+    "ranges, and the table below gives one row per contraction.":
+        "El registro se analiza en cuanto se abre. Señal en bruto: lo que "
+        "producen las fibras que se contraen. Envolvente normalizada: cómo "
+        "cambia la activación con el tiempo, que es lo que se compara entre "
+        "esfuerzos. Espectro: cómo se reparte la actividad entre frecuencias; "
+        "a medida que una contracción sostenida fatiga el músculo, la "
+        "frecuencia mediana (MDF) baja. Las fichas sobre los paneles llevan "
+        "los números con sus rangos habituales, y la tabla de debajo da una "
+        "fila por contracción.",
+    "A raw amplitude cannot be compared between two people, or "
+    "between two sessions of the same person: it depends on the "
+    "electrodes, the skin and the fat beneath it. Expressing every "
+    "value as a percentage of the maximal contraction cancels all of "
+    "that out, because the two amplitudes share the same electrodes "
+    "and the same skin: what is left is how hard the muscle is "
+    "working. The maximum is inside the recording: the session "
+    "calibrates without stopping, so nothing else has to be chosen "
+    "here. Every box has a «?» with more.":
+        "Una amplitud en bruto no se puede comparar entre dos personas, ni "
+        "entre dos sesiones de la misma persona: depende de los electrodos, "
+        "de la piel y de la grasa que hay debajo. Expresar cada valor como "
+        "porcentaje de la contracción máxima anula todo eso, porque las dos "
+        "amplitudes comparten los mismos electrodos y la misma piel: lo que "
+        "queda es cuánto trabaja el músculo. El máximo está dentro del "
+        "registro: la sesión calibra sin detenerse, así que aquí no hay que "
+        "elegir nada más. Cada caja tiene un «?» con más.",
     # --- analysis summary cards, task maximum, fatigue help ---
     "MDF slope": "Pendiente de la MDF",
     "Task maximum": "Máximo de la tarea",
     "MVC": "CVM",
+    "Close": "Cerrar",
     "not a maximum": "no fue un máximo",
     "How the fatigue verdict is reached": "Cómo se llega al veredicto de fatiga",
     "Highest sustained level (0.5 s) of the task, as % of the maximal "

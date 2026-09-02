@@ -326,8 +326,14 @@ def compute_psd_mnf_mdf(
     fs: float,
     f_low: float = 20.0,
     f_high: float = 450.0,
+    nperseg: int | None = None,
 ) -> dict[str, Any]:
     """Welch PSD and the two fatigue-related spectral metrics.
+
+    ``nperseg`` defaults to one second of samples; a caller with a shorter
+    stretch (one contraction) passes its own length, so the estimate is made
+    once over what there is instead of Welch shrinking the window and
+    warning about it.
 
     Parameters
     ----------
@@ -345,7 +351,7 @@ def compute_psd_mnf_mdf(
         ``mnf`` (mean frequency, Hz), ``mdf`` (median frequency, Hz).
     """
     emg = np.asarray(emg_filtered, dtype=np.float64)
-    nperseg = int(fs)
+    nperseg = int(fs) if nperseg is None else max(8, int(nperseg))
     frequencies, psd = welch(emg, fs=fs, nperseg=nperseg, noverlap=nperseg // 2)
 
     band_mask = (frequencies >= f_low) & (frequencies <= f_high)

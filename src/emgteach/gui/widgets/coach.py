@@ -221,13 +221,23 @@ class CoachMark(QWidget):
 
         self._lbl_title.setText(step.title)
         self._lbl_body.setText(step.body)
+        # A single step — a «?» on a box, or the next step of the analysis —
+        # is not a tour: «Step 1 of 1», a disabled Back and a Skip beside a
+        # Finish are three controls for one action, which is closing it.
+        solo = len(self._steps) == 1
+        self._lbl_count.setVisible(not solo)
+        self._btn_back.setVisible(not solo)
+        self._btn_skip.setVisible(not solo)
         self._lbl_count.setText(
             tr("Step {i} of {n}").format(i=self._index + 1, n=len(self._steps))
         )
         self._btn_back.setEnabled(self._index > 0)
-        self._btn_next.setText(
-            tr("Finish") if self._index == len(self._steps) - 1 else tr("Next")
-        )
+        if solo:
+            self._btn_next.setText(tr("Close"))
+        else:
+            self._btn_next.setText(
+                tr("Finish") if self._index == len(self._steps) - 1 else tr("Next")
+            )
         self.step_changed.emit(self._index)
         self._reposition()
         self.update()

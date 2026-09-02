@@ -172,8 +172,10 @@ _PANEL_TOOLTIPS = {
 from emgteach.broadcast import BroadcastServer
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
+from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
 from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
@@ -250,6 +252,7 @@ class AnalysisTab(QWidget):
 
         # --- Top row: Parameters (stretch 3) + Log (stretch 2) ---
         grp_ctrl = QGroupBox(tr("Analysis parameters"))
+        add_help(grp_ctrl, "ana.params")
         ctrl = QVBoxLayout(grp_ctrl)
         ctrl.setSpacing(4)
         ctrl.setContentsMargins(6, 4, 6, 4)
@@ -530,6 +533,7 @@ class AnalysisTab(QWidget):
 
         # --- Panel selection — one compact line with horizontal scroll ---
         grp_paneles = QGroupBox(tr("Panels to show"))
+        add_help(grp_paneles, "ana.panels")
         # Box identical to the others (same steel fill and border), like
         # "Markers". Each panel description sits in a white chip; its tick box
         # is white and fills blue when checked.
@@ -708,6 +712,7 @@ class AnalysisTab(QWidget):
         # Here the number is the thing on the card. Two rows of five so the
         # panel keeps its width on a 1366 px screen.
         grp_resumen = QGroupBox(tr("Analysis summary"))
+        add_help(grp_resumen, "ana.summary")
         resumen_grid = QGridLayout(grp_resumen)
         resumen_grid.setContentsMargins(8, 2, 8, 6)
         resumen_grid.setHorizontalSpacing(16)
@@ -716,8 +721,15 @@ class AnalysisTab(QWidget):
         _cap_st = "font-size: 10px; color: #6B7580;"
         _val_st = "font-size: 13px; font-weight: 600;"
 
+        # Three rows per card: the caption, the value and — where one
+        # exists — the usual range in small grey. A median frequency of
+        # 130 Hz means nothing to a student who has never seen one; «usual
+        # 60–120 Hz» beside it is what turns the number into a reading. The
+        # ranges are orientative values for surface EMG, not limits.
+        _rango_st = "font-size: 9px; color: #8A94A0;"
+
         def _ficha(fila: int, col: int, caption: str, tooltip: str = "",
-                   ayuda: QToolButton | None = None) -> QLabel:
+                   ayuda: QToolButton | None = None, rango: str = "") -> QLabel:
             cap = QLabel(caption)
             cap.setStyleSheet(_cap_st)
             val = QLabel("—")
@@ -726,8 +738,9 @@ class AnalysisTab(QWidget):
             if tooltip:
                 cap.setToolTip(tooltip)
                 val.setToolTip(tooltip)
+            base = 3 * fila
             if ayuda is None:
-                resumen_grid.addWidget(cap, 2 * fila, col)
+                resumen_grid.addWidget(cap, base, col)
             else:
                 cabecera = QHBoxLayout()
                 cabecera.setContentsMargins(0, 0, 0, 0)
@@ -735,8 +748,12 @@ class AnalysisTab(QWidget):
                 cabecera.addWidget(cap)
                 cabecera.addWidget(ayuda)
                 cabecera.addStretch()
-                resumen_grid.addLayout(cabecera, 2 * fila, col)
-            resumen_grid.addWidget(val, 2 * fila + 1, col)
+                resumen_grid.addLayout(cabecera, base, col)
+            resumen_grid.addWidget(val, base + 1, col)
+            if rango:
+                lbl_rango = QLabel(rango)
+                lbl_rango.setStyleSheet(_rango_st)
+                resumen_grid.addWidget(lbl_rango, base + 2, col)
             return val
 
         # The fatigue verdict is the one card that is a judgement rather
@@ -751,11 +768,13 @@ class AnalysisTab(QWidget):
         self._lbl_mnf = _ficha(
             0, 0, tr("Mean frequency (MNF)"),
             tr("Mean spectral frequency; tends to fall with fatigue."),
+            rango=tr("usual 80–170 Hz"),
         )
         self._lbl_mdf = _ficha(
             0, 1, tr("Median frequency (MDF)"),
             tr("Frequency that splits the spectrum into two equal-power halves; "
                "falls with fatigue."),
+            rango=tr("usual 60–150 Hz"),
         )
         self._lbl_pendiente = _ficha(
             0, 2, tr("MDF slope"),
@@ -774,10 +793,12 @@ class AnalysisTab(QWidget):
             tr("Highest sustained level (0.5 s) of the task, as % of the "
                "maximal contraction. Well above 100 % means the calibration "
                "was not a maximum."),
+            rango=tr("a task effort is usually 20–80 %"),
         )
         self._lbl_rms_global = _ficha(
             1, 0, tr("Global RMS"),
             tr("Global RMS amplitude: mean intensity of the activation."),
+            rango=tr("rest ≈ 0.01 mV · effort 0.1–1 mV"),
         )
         self._lbl_iemg = _ficha(
             1, 1, "iEMG",
@@ -881,6 +902,39 @@ class AnalysisTab(QWidget):
         coact_v.addWidget(self._tbl_coact)
         self._box_coact.setVisible(False)
         root.addWidget(self._box_coact)
+
+        # One row per contraction. The student makes six efforts and used to
+        # receive one global RMS: the figure showed six bursts and the number
+        # described the eighteen seconds around them. This is the table a
+        # laboratory report is built from, so it is the one the student can
+        # copy — and the one place the electromechanical delay is given.
+        self._box_contr = QGroupBox(tr("Contractions"))
+        contr_v = QVBoxLayout(self._box_contr)
+        contr_v.setContentsMargins(6, 4, 6, 6)
+        contr_v.setSpacing(4)
+        fila_ayuda_c = QHBoxLayout()
+        self._lbl_contr_resumen = QLabel("")
+        self._lbl_contr_resumen.setStyleSheet("font-size: 11px; color: #6B7580;")
+        fila_ayuda_c.addWidget(self._lbl_contr_resumen)
+        fila_ayuda_c.addStretch()
+        self._btn_ayuda_contr = QPushButton("?")
+        self._btn_ayuda_contr.setFixedSize(22, 22)
+        self._btn_ayuda_contr.setToolTip(tr("What each column is, and what is usual"))
+        self._btn_ayuda_contr.clicked.connect(self._explicar_contracciones)
+        fila_ayuda_c.addWidget(self._btn_ayuda_contr)
+        contr_v.addLayout(fila_ayuda_c)
+        self._tbl_contr = QTableWidget(0, 7)
+        self._tbl_contr.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._tbl_contr.verticalHeader().setVisible(False)
+        self._tbl_contr.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self._tbl_contr.setSizeAdjustPolicy(
+            QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self._tbl_contr.setFixedHeight(38)
+        contr_v.addWidget(self._tbl_contr)
+        self._box_contr.setVisible(False)
+        root.addWidget(self._box_contr)
 
         # Display-window navigator at the very bottom: the minimap takes ~80 %
         # of the width; a compact two-row cluster (start/duration labels on top,
@@ -1560,6 +1614,99 @@ class AnalysisTab(QWidget):
         self._ajustar_alto_coact()
         self._box_coact.setVisible(not sin_marcas or avisar)
 
+    def _refresh_contractions(self, result: dict) -> None:
+        """Fill the per-contraction table, or hide it.
+
+        Hidden rather than empty: a heading over a blank table asks a
+        question, and on a recording with no clear efforts the answer is
+        that there were none — which the log already says.
+        """
+        filas = result.get("contractions") or []
+        if not filas:
+            self._box_contr.setVisible(False)
+            return
+        dos = bool(result.get("channel_name_2"))
+        con_emd = any(f.emd_ms is not None for f in filas)
+        cabeceras = [
+            "#", tr("Start (s)"), tr("Duration (s)"), tr("Muscle"),
+            tr("RMS (mV)"), tr("Peak (% MVC)"), tr("MDF (Hz)"),
+        ]
+        if con_emd:
+            cabeceras.append(tr("EMD (ms)"))
+        self._tbl_contr.setColumnCount(len(cabeceras))
+        self._tbl_contr.setHorizontalHeaderLabels(cabeceras)
+        self._tbl_contr.setColumnHidden(3, not dos)
+        self._tbl_contr.setRowCount(len(filas))
+        for i, f in enumerate(filas):
+            celdas = [
+                str(f.n), f"{f.start_s:.1f}", f"{f.duration_s:.2f}", f.muscle,
+                f"{f.rms_mv:.3f}",
+                "—" if f.peak_pct is None else f"{f.peak_pct:.0f}",
+                "—" if f.mdf_hz is None else f"{f.mdf_hz:.0f}",
+            ]
+            if con_emd:
+                celdas.append("—" if f.emd_ms is None else f"{f.emd_ms:.0f}")
+            for col, texto in enumerate(celdas):
+                item = QTableWidgetItem(texto)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                if col == 5 and f.peak_pct is not None and f.peak_pct > 100.0:
+                    item.setForeground(QColor("#B0243A"))
+                self._tbl_contr.setItem(i, col, item)
+        # As tall as its rows, up to a ceiling: a series of twenty efforts
+        # scrolls instead of pushing the panels off the window.
+        alto = self._tbl_contr.horizontalHeader().height() + 4
+        for i in range(len(filas)):
+            alto += self._tbl_contr.rowHeight(i)
+        # Four rows before it scrolls: on a 768 px screen anything taller
+        # leaves the panels a hundred pixels, and the panels come first.
+        self._tbl_contr.setFixedHeight(max(38, min(alto, 118)))
+        resumen = tr("{n} contractions").format(n=len(filas))
+        emd = result.get("emd_ms_mean")
+        if emd is not None:
+            resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
+        self._lbl_contr_resumen.setText(resumen)
+        self._box_contr.setVisible(True)
+
+    def _explicar_contracciones(self) -> None:
+        """What each column is, and what is usual — the reference the numbers
+        were missing. The ranges are orientative values for surface EMG in
+        healthy adults, not limits: a value outside them is a question, not
+        a fault."""
+        caja = QMessageBox(self)
+        caja.setIcon(QMessageBox.Icon.Information)
+        caja.setWindowTitle(tr("Contractions"))
+        caja.setTextFormat(Qt.TextFormat.RichText)
+        caja.setText(
+            "<p>" + tr(
+                "Each row is one contraction the application found on its "
+                "own, the same ones the fragment editor proposes. With two "
+                "muscles, the row belongs to the one that led it; "
+                "«Co-contraction» means both worked at once, and the numbers "
+                "are the stronger one's."
+            ) + "</p><ul><li><b>" + tr("RMS") + "</b>: " + tr(
+                "mean amplitude of the filtered signal over the contraction. "
+                "Rest is a few hundredths of a millivolt; a firm effort with "
+                "surface electrodes is usually 0.1–1 mV, and depends on the "
+                "electrodes and the skin, which is why % MVC exists."
+            ) + "</li><li><b>" + tr("Peak (% MVC)") + "</b>: " + tr(
+                "the highest half-second of the contraction against the "
+                "maximum. A task effort is usually 20–80 %; above 100 % (in "
+                "red) the calibration was not a maximum."
+            ) + "</li><li><b>" + tr("MDF") + "</b>: " + tr(
+                "median frequency of the spectrum. Typically 60–150 Hz for "
+                "surface EMG of limb muscles; it falls along a sustained "
+                "effort as the muscle fatigues. Not shown for contractions "
+                "shorter than a quarter of a second."
+            ) + "</li><li><b>" + tr("EMD") + "</b>: " + tr(
+                "electromechanical delay, from the electrical onset to the "
+                "start of the movement measured by the accelerometer on the "
+                "limb. Usually 30–100 ms in healthy adults: the time the "
+                "muscle takes to take up its slack and build force."
+            ) + "</li></ul>"
+        )
+        caja.setStandardButtons(QMessageBox.StandardButton.Ok)
+        caja.exec()
+
     def _ajustar_alto_coact(self) -> None:
         """Make the table exactly as tall as its rows, header included."""
         filas = self._tbl_coact.rowCount()
@@ -1575,6 +1722,7 @@ class AnalysisTab(QWidget):
         self._last_result = result
         self._pendiente = False
         self._refresh_coactivation(result)
+        self._refresh_contractions(result)
         self._actualizar_siguiente_paso()
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
@@ -2145,6 +2293,7 @@ class AnalysisTab(QWidget):
                 ax2.tick_params(axis="y", labelsize=7, colors="#D35400")
                 ax2.set_xlim(inicio_s, fin_s)
                 ax2.legend(loc="upper right", fontsize=7)
+                draw_emd_note(ax, r)
                 # The accelerometer is uncalibrated, so the movement trace is in
                 # arbitrary units — the point is that it tracks the contraction.
                 ax.text(0.5, 0.98,
@@ -2171,7 +2320,9 @@ class AnalysisTab(QWidget):
         # --- 4: PSD ---
         if 4 in ax_map:
             ax = ax_map[4]
-            ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.8)
+            draw_spectrum_before_filter(ax, r)
+            ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.8,
+                    label=tr("After the filter"))
             ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=2.0,
                        label=f"MNF: {r['mnf']:.1f} Hz")
             ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
@@ -2763,6 +2914,8 @@ class AnalysisTab(QWidget):
         self._btn_afinado.setEnabled(False)
 
         self._reset_summary_labels()
+        self._box_contr.setVisible(False)
+        self._tbl_contr.setRowCount(0)
 
         self._progress.setVisible(False)
         self._progress.setValue(0)

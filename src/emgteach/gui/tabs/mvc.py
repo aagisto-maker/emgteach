@@ -59,6 +59,7 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
@@ -199,6 +200,7 @@ class MvcTab(QWidget):
 
         # ── Controls panel ──────────────────────────────────────────
         grp_ctrl = QGroupBox(tr("MVC normalisation parameters"))
+        add_help(grp_ctrl, "mvc.params")
         ctrl = QVBoxLayout(grp_ctrl)
 
         row_test = QHBoxLayout()
@@ -495,6 +497,7 @@ class MvcTab(QWidget):
         levels — each (where relevant) with its normal range and a short
         explanation; out-of-range values are shown in red."""
         box = QGroupBox(tr("Normalisation and muscle load"))
+        add_help(box, "mvc.load")
         v = QVBoxLayout(box)
         v.setContentsMargins(8, 6, 8, 6)
         v.setSpacing(4)

@@ -41,6 +41,7 @@ from reportlab.platypus import (
 )
 
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
+from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
 from emgteach.i18n import tr
 from emgteach.mvc import (
     AUTO_COLOR,
@@ -251,7 +252,9 @@ def _draw_analysis_panel(
         ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 4:
-        ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.6)
+        draw_spectrum_before_filter(ax, r)
+        ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.6,
+                label=tr("After the filter"))
         ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=1.8,
                    label=f"MNF: {float(r['mnf']):.1f} Hz")
         ax.axvline(r["mdf"], color="#C71585", ls="--", lw=1.8,
@@ -356,6 +359,7 @@ def _draw_analysis_panel(
             ax2.set_ylabel(tr("Movement (a.u.)"), fontsize=8, color="#D35400")
             ax2.tick_params(axis="y", labelsize=7, colors="#D35400")
             ax2.set_xlim(x0, x1)
+            draw_emd_note(ax, r)
         ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
@@ -405,6 +409,50 @@ def _styled_table(data: list[list[str]]) -> Table:
         )
     )
     return table
+
+
+def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -> None:
+    """One row per contraction, as on screen.
+
+    This is the table a laboratory report is built from; without it the
+    student copies numbers off a screenshot. Same rows, same columns, same
+    rounding as the tab, so the two cannot be compared and found different.
+    """
+    filas = result.get("contractions") or []
+    if not filas:
+        return
+    dos = bool(result.get("channel_name_2"))
+    con_emd = any(f.emd_ms is not None for f in filas)
+    story.append(Paragraph(tr("Contractions"), h2))
+    cab = ["#", tr("Start (s)"), tr("Duration (s)")]
+    if dos:
+        cab.append(tr("Muscle"))
+    cab += [tr("RMS (mV)"), tr("Peak (% MVC)"), tr("MDF (Hz)")]
+    if con_emd:
+        cab.append(tr("EMD (ms)"))
+    rows = [cab]
+    for f in filas:
+        fila = [str(f.n), f"{f.start_s:.1f}", f"{f.duration_s:.2f}"]
+        if dos:
+            fila.append(str(f.muscle))
+        fila += [
+            f"{f.rms_mv:.3f}",
+            "" if f.peak_pct is None else f"{f.peak_pct:.0f}",
+            "" if f.mdf_hz is None else f"{f.mdf_hz:.0f}",
+        ]
+        if con_emd:
+            fila.append("" if f.emd_ms is None else f"{f.emd_ms:.0f}")
+        rows.append(fila)
+    story.append(_styled_table(rows))
+    emd = result.get("emd_ms_mean")
+    if emd is not None:
+        story.append(Spacer(1, 0.15 * cm))
+        story.append(Paragraph(
+            tr("Electromechanical delay: {ms:.0f} ms (mean of {n})").format(
+                ms=float(emd), n=sum(1 for f in filas if f.emd_ms is not None)),
+            normal,
+        ))
+    story.append(Spacer(1, 0.4 * cm))
 
 
 def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> None:
@@ -607,6 +655,7 @@ def build_session_report(
     # what the other muscle did during each effort. The report is what the
     # student hands in, so this is where it has to be.
     _seccion_calibracion(story, result, h2, normal)
+    _seccion_contracciones(story, result, h2, normal)
 
     # Co-activation, when the recording can support it: two muscles, and an
     # MVC reference for each. The two mean activations go beside every index,

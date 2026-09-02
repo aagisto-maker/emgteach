@@ -67,6 +67,7 @@ from emgteach.devices import (
     create_device,
 )
 from emgteach.dsp import LiveQualityMonitor, process_offline
+from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
@@ -155,6 +156,12 @@ _QUALITY_STYLES = {
 _CHANNEL_COLORS = [(65, 105, 225), (214, 39, 40)]
 _CHANNEL_COLOR_HEX = ["#4169E1", "#D62728"]
 _CHANNEL_DEFAULT_LABELS = ["EMG1", "EMG2"]
+#: What the empty boxes suggest, and what a recording gets when they are
+#: left empty. A name a student can read back — «agonist», «antagonist» —
+#: rather than a channel number; the anatomical one is still theirs to
+#: type. Callables so tr() runs in the language of the moment.
+_LABEL_HINTS = [lambda: tr("Agonist — e.g. FCR"), lambda: tr("Antagonist — e.g. ECR")]
+_LABEL_FALLBACKS = [lambda: tr("Agonist"), lambda: tr("Antagonist")]
 # Defaults used in earlier versions; they are migrated to the ones above if
 # still stored in QSettings (this does not overwrite names chosen by the user,
 # only the old defaults). One tuple of superseded defaults per channel.
@@ -434,6 +441,7 @@ class AcquisitionTab(QWidget):
 
         # — Device configuration (half width) —
         grp_config = QGroupBox(tr("Device configuration"))
+        add_help(grp_config, "acq.device")
         cfg_outer = QVBoxLayout(grp_config)
         cfg_outer.setContentsMargins(6, 3, 6, 3)
         cfg_outer.setSpacing(3)
@@ -573,12 +581,15 @@ class AcquisitionTab(QWidget):
                     "used as the channel label in the EDF file)."
                 )
             )
-            stored = self._settings.value(
-                f"adquisicion/label_{i}", _CHANNEL_DEFAULT_LABELS[i]
-            )
-            if stored in _OLD_DEFAULT_LABELS[i]:
-                stored = _CHANNEL_DEFAULT_LABELS[i]  # migrate old default
+            stored = self._settings.value(f"adquisicion/label_{i}", "")
+            # A stored default is not a name the operator gave: the box
+            # starts empty, with a hint of what goes in it. «EMG1» in the
+            # practical whose whole point is telling two muscles apart was
+            # the wrong answer pre-filled.
+            if stored in _OLD_DEFAULT_LABELS[i] or stored == _CHANNEL_DEFAULT_LABELS[i]:
+                stored = ""
             edit.setText(stored)
+            edit.setPlaceholderText(_LABEL_HINTS[i]())
             # Room for the 16 characters the EDF label allows: these are the
             # muscle names, the one thing on this row the student really reads.
             edit.setMinimumWidth(130)
@@ -757,6 +768,7 @@ class AcquisitionTab(QWidget):
 
         # — Acquisition control (single line) —
         grp_control = QGroupBox(tr("Acquisition control"))
+        add_help(grp_control, "acq.control")
         ctrl_layout = QHBoxLayout(grp_control)
         ctrl_layout.setContentsMargins(6, 3, 6, 3)
         ctrl_layout.setSpacing(6)
@@ -816,6 +828,7 @@ class AcquisitionTab(QWidget):
         # for a feature nobody pressed, in the tab where vertical space is
         # worth the most: it is the one with the live plots in it.
         grp_markers = QGroupBox(tr("Event markers"))
+        add_help(grp_markers, "acq.markers")
         markers_outer = QVBoxLayout(grp_markers)
         markers_outer.setContentsMargins(6, 3, 6, 3)
         markers_outer.setSpacing(4)
@@ -892,6 +905,7 @@ class AcquisitionTab(QWidget):
 
         # ── Plots + scale controls ──────────────────────────────
         grp_plots = QGroupBox(tr("Real-time EMG signal"))
+        add_help(grp_plots, "acq.plots")
         self._grp_plots = grp_plots  # for positioning the floating MVC guide
         grp_plots.setObjectName("plotsBox")  # stays white (see setStyleSheet)
         plots_root = QVBoxLayout(grp_plots)
@@ -1256,7 +1270,7 @@ class AcquisitionTab(QWidget):
                 labels.append(tr(fijas[i]))
                 continue
             text = self._edit_labels[i].text().strip()
-            labels.append(text or _CHANNEL_DEFAULT_LABELS[i])
+            labels.append(text or _LABEL_FALLBACKS[i]())
         return labels
 
     def _apply_channel_visibility(self) -> None:
@@ -2283,6 +2297,7 @@ class AcquisitionTab(QWidget):
         side by side — a load bar (tiredness / fatigue zones) and its P10/P50/P90
         readout, with a status label at the end."""
         grp = QGroupBox(tr("Muscle load (live MVC)"))
+        add_help(grp, "acq.load")
         row = QHBoxLayout(grp)
         row.setContentsMargins(6, 3, 6, 3)
         row.setSpacing(8)

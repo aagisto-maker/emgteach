@@ -13,6 +13,7 @@ from PySide6.QtCore import QThread, Signal
 from scipy.integrate import trapezoid
 
 from emgteach.coactivation import coactivation_by_window
+from emgteach.contractions import contraction_table, mean_emd_ms
 from emgteach.dsp import (
     compute_psd_mnf_mdf,
     compute_segments,
@@ -533,6 +534,14 @@ class AnalysisWorker(QThread):
             psd_result = compute_psd_mnf_mdf(
                 proc["emg_filtered"], fs, f_low=self._f_low, f_high=self._f_high
             )
+            # The same spectrum before the filter, over the whole band the
+            # sampling allows. Drawn faintly behind the filtered one so the
+            # student sees what the band-pass and the notch took away — the
+            # mains line at 50 Hz, the movement below 20 Hz — instead of being
+            # told that a filter was applied.
+            psd_bruto = compute_psd_mnf_mdf(
+                emg_raw, fs, f_low=0.0, f_high=fs / 2.0
+            )
             self.log.emit(
                 f"MNF = {psd_result['mnf']:.1f} Hz   "
                 f"MDF = {psd_result['mdf']:.1f} Hz"
@@ -693,6 +702,8 @@ class AnalysisWorker(QThread):
                 # spectral
                 "frequencies": psd_result["frequencies"],
                 "psd": psd_result["psd"],
+                "frequencies_raw": psd_bruto["frequencies"],
+                "psd_raw": psd_bruto["psd"],
                 "mnf": psd_result["mnf"],
                 "mdf": psd_result["mdf"],
                 # segments
@@ -771,6 +782,7 @@ class AnalysisWorker(QThread):
                     # envelope: the agonist/antagonist practical shows one raw
                     # panel per muscle before overlaying the two envelopes.
                     result["emg_raw_2"] = emg_raw_2
+                    result["emg_filtered_2"] = proc2["emg_filtered"]
                     result["emg_envelope_2"] = proc2["emg_envelope"]
                     result["emg_envelope_normalised_2"] = (
                         proc2["emg_envelope_normalised"]
@@ -979,6 +991,46 @@ class AnalysisWorker(QThread):
                         tr("Could not analyse the accelerometer «{name}»: {err}")
                         .format(name=self._acc_channel, err=exc)
                     )
+
+            # One row per contraction, from the same proposer the fragment
+            # editor uses. Kept out of the analysis proper: a table that
+            # fails to build must not take the panels with it.
+            try:
+                filas = contraction_table(
+                    fs=fs,
+                    emg_raw=emg_raw,
+                    emg_filtered=proc["emg_filtered"],
+                    envelope=proc["emg_envelope"],
+                    mvc_ref=result.get("mvc_ref"),
+                    emg_raw_2=result.get("emg_raw_2"),
+                    emg_filtered_2=result.get("emg_filtered_2"),
+                    envelope_2=result.get("emg_envelope_2"),
+                    mvc_ref_2=result.get("mvc_ref_2"),
+                    name_1=self._channel_name,
+                    name_2=self._channel_name_2 or "",
+                    both_label=tr("Co-contraction"),
+                    movement=(
+                        result.get("acc_movement_envelope")
+                        if self._acc_placement == "limb" else None
+                    ),
+                    f_low=self._f_low, f_high=self._f_high,
+                    f_notch=self._f_notch, f_env=self._f_env,
+                    window_s=self._profile.mvc_peak_window_s,
+                )
+                result["contractions"] = filas
+                result["emd_ms_mean"] = mean_emd_ms(filas)
+                if filas:
+                    self.log.emit(
+                        tr("{n} contractions found; see the table.")
+                        .format(n=len(filas))
+                    )
+            except Exception as exc:
+                result["contractions"] = []
+                result["emd_ms_mean"] = None
+                self.log.emit(
+                    tr("The contraction table could not be built: {err}")
+                    .format(err=exc)
+                )
 
             self.progress.emit(100)
             self.result_ready.emit(result)
