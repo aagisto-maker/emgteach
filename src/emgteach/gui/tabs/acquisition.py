@@ -1813,6 +1813,35 @@ class AcquisitionTab(QWidget):
             return
         self._new_data = False
 
+        if self._total_samples == 0:
+            # Nothing has been acquired since the last clear, so there is
+            # nothing to draw — and drawing anyway is not harmless. The ring
+            # buffers are *filled* with zeros rather than emptied, so a redraw
+            # here lays a flat line across the envelope plot and, stacked, one
+            # along each lane's baseline. On a fresh start nobody sees them,
+            # because no redraw is forced before the first samples arrive; on
+            # «New session» one is, and the tab came back with lines across it.
+            for curva in (*self._curves_raw, *self._curves_env, self._curve_acc):
+                if curva is not None:
+                    curva.setData([], [])
+            # And the axis, said rather than implied. Coming out of the session
+            # review the X range is the session's — forty seconds, ninety, as
+            # long as it was — and what used to bring it back was auto-range
+            # refitting itself around those phantom zeros. With nothing drawn
+            # there is nothing to fit, so the empty tab would have kept the
+            # last session's axis: the same "advancing over an empty canvas"
+            # reported from the bench, arriving by the other door.
+            #
+            # And auto-range straight back on afterwards: setXRange turns it
+            # off, which is the very thing that stranded the live view inside
+            # the session's axis in the first place. The explicit range is only
+            # what the empty tab shows; the first samples to arrive refit it.
+            ventana = min(self._n_visible, MAX_POINTS) / FS
+            for pw in (self._plot_raw, self._plot_env):
+                pw.setXRange(0.0, ventana, padding=0)
+                pw.enableAutoRange(axis="x")
+            return
+
         n = min(self._n_visible, MAX_POINTS)
         # X axis in seconds relative to the start of the visible window (all
         # buffers have the same length, so it is computed only once).

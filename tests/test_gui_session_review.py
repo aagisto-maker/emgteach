@@ -213,10 +213,13 @@ class TestTheReviewOnTheAcquisitionTab:
         tab._on_finished(_sesion(tmp_path / "sesion.edf"))
         tab.reset()
 
-        # One live window's worth of data, as the worker would deliver it.
+        # One live window's worth of data, as the worker would deliver it —
+        # including the sample count, which the worker also advances and which
+        # is now what tells a cleared tab from one with a signal on it.
         for c in range(2):
             tab._buf_raw[c].extend(np.zeros(tab._n_visible))
             tab._buf_env[c].extend(np.zeros(tab._n_visible))
+        tab._total_samples += tab._n_visible
         tab._new_data = True
         tab._refresh_plots(force=True)
         qapp.processEvents()

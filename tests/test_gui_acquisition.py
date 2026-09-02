@@ -321,6 +321,58 @@ def test_reset_clears_acquisition_view(qapp) -> None:
 
 
 @pytest.mark.gui
+def test_a_new_session_leaves_the_plots_empty(qapp) -> None:
+    """No leftover lines across the plots.
+
+    Reported from the bench as looking careless, and it was: the ring buffers
+    are *filled* with zeros rather than emptied, and reset() forces a redraw.
+    Fresh from start-up nobody sees it, because no redraw is forced before the
+    first samples arrive; after «New session» one is, so the tab came back with
+    a flat line along the envelope and, stacked, one along each lane.
+    """
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    settings = QSettings("emgteach-test", "acq-lineas")
+    settings.clear()
+    tab = AcquisitionTab(LoggerWidget(), settings)
+    tab._n_channels = 2
+    tab._apply_channel_visibility()
+
+    # Some signal on the plots, as after a recording.
+    tab._total_samples = 5 * 1000
+    tab._new_data = True
+    tab._refresh_plots(force=True)
+    assert any(c.getData()[0] is not None and len(c.getData()[0])
+               for c in tab._curves_env[:2])
+
+    tab.reset()
+
+    for nombre, curvas in (("raw", tab._curves_raw), ("env", tab._curves_env)):
+        for i, curva in enumerate(curvas):
+            x, _y = curva.getData()
+            assert x is None or len(x) == 0, (
+                f"la curva {nombre}[{i}] sigue dibujada tras «Nueva sesión»"
+            )
+
+    # The axis is the live window, not whatever was there before…
+    izq, der = tab._plot_raw.getViewBox().viewRange()[0]
+    assert der - izq == pytest.approx(tab._n_visible / 1000, abs=0.6)
+
+    # …and it can still follow the next recording. Setting an explicit range
+    # turns pyqtgraph's auto-range off, and an axis stuck at five seconds while
+    # the window is widened is the same "advancing over an empty canvas" the
+    # session review already had to fix once.
+    for pw in (tab._plot_raw, tab._plot_env):
+        assert pw.getViewBox().autoRangeEnabled()[0], (
+            "el auto-rango del eje X se ha quedado apagado"
+        )
+    tab.cleanup()
+
+
+@pytest.mark.gui
 class TestTheTimeWindowControls:
     """The two arrow buttons and the zoom combo, pressed while idle.
 
@@ -344,6 +396,13 @@ class TestTheTimeWindowControls:
         ajustes.clear()
         widget = AcquisitionTab(LoggerWidget(), ajustes)
         widget.show()
+        # With something recorded, which is the situation the complaint came
+        # from: the plots hold a trace and pressing ◀▶ does not move it. An
+        # empty tab draws nothing at all now — the ring buffers are filled with
+        # zeros rather than emptied, and drawing those put phantom lines across
+        # a fresh session — so measuring the drawn extent there would measure
+        # the absence of a bug that used to be one.
+        widget._total_samples = 30 * 1000
         qapp.processEvents()
         yield widget
         widget.cleanup()
