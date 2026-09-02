@@ -256,18 +256,23 @@ class TestTheEditorOffersTheName:
             d.deleteLater()
         qapp.processEvents()
 
-    def test_the_practicals_own_vocabulary_is_already_in_it(
+    def test_the_dropdown_offers_what_the_column_can_say(
         self, dlg
     ) -> None:
-        """The MARK presets were not lost when the button went: they stopped
-        being live labels and became the suggestions here."""
-        from emgteach.profiles import EMG_PROFILE
+        """The two muscles and «co-contraction», which are the three things
+        the app itself puts there.
 
-        d = dlg(segments=[(22.0, 27.0)])
+        It used to offer the old MARK vocabulary — «Grip», «Fatigue» — words
+        for manoeuvres this practical never asks for: its protocol is flexions
+        and extensions. A name offered for something nobody was told to do
+        reads as an instruction to do it.
+        """
+        d = dlg(segments=[(22.0, 27.0)], naming=True, channel_name_2="ECR")
         combo = d._row_widgets[0]["label"]
-        ofrecidos = {combo.itemText(i) for i in range(combo.count())}
-        assert any(p in " ".join(ofrecidos) or p in ofrecidos
-                   for p in EMG_PROFILE.marker_presets if p != "Other…")
+        ofrecidos = [combo.itemText(i) for i in range(combo.count())]
+        assert "FCR" in ofrecidos and "ECR" in ofrecidos
+        assert not [o for o in ofrecidos
+                    if o.lower() in {"grip", "presa", "fatigue", "fatiga"}]
 
     def test_a_name_typed_comes_back(self, dlg) -> None:
         d = dlg(segments=[(22.0, 27.0), (28.0, 33.0)])

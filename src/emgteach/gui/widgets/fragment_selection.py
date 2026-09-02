@@ -39,7 +39,6 @@ from PySide6.QtWidgets import (
 from emgteach.coactivation import propose_labels
 from emgteach.dsp import process_offline
 from emgteach.i18n import tr
-from emgteach.profiles import EMG_PROFILE
 from emgteach.selection import (
     Segment,
     normalise_segments,
@@ -235,12 +234,16 @@ class FragmentSelectionDialog(QDialog):
             "typing."
         )
         if self._naming:
+            # Rewritten once the app started filling the column in. The old
+            # version explained how to name the rows by hand, which is no
+            # longer the job, and did it in terms of manoeuvres, which is not
+            # what the column says.
             texto += "\n\n" + tr(
-                "With two muscles each row can also be named with the "
-                "manoeuvre — «Flexion», «Grip». The name says which movement "
-                "was being made, not which muscle contracted, and it is what "
-                "tells the co-activation table which of the two is the "
-                "agonist. Consecutive rows with the same name count as one."
+                "The «Muscle» column says which of the two led each "
+                "contraction; the app fills it in by comparing them. Change it "
+                "if you disagree. Consecutive rows with the same name become a "
+                "single window of the co-activation table, so a run of "
+                "flexions is measured as one."
             )
         info = QLabel(texto)
         info.setWordWrap(True)
@@ -259,7 +262,9 @@ class FragmentSelectionDialog(QDialog):
         self._table = QTableWidget(0, 5)
         self._table.setHorizontalHeaderLabels([
             tr("Keep"), tr("Start (s)"), tr("End (s)"), tr("Duration (s)"),
-            tr("Manoeuvre"),
+            # «Muscle», not «Manoeuvre»: what the column holds is which of the
+            # two led the contraction, which is what the app can measure.
+            tr("Muscle"),
         ])
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -357,22 +362,22 @@ class FragmentSelectionDialog(QDialog):
         dur_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
         self._table.setItem(row, 3, dur_item)
 
-        # Editable, with the practical's own vocabulary already in it. The
-        # presets are the ones the MARK button used to offer: they stopped
-        # being live labels and became suggestions here, which is where the
-        # naming moved to.
+        # The three things this column can say, which are the three the app
+        # itself puts there. It used to offer the old MARK vocabulary — «Grip»,
+        # «Fatigue» — words for manoeuvres the practical never asks for: the
+        # protocol is flexions and extensions. Offering a name for something
+        # nobody was told to do reads as an instruction to do it.
         combo_nombre = QComboBox()
         combo_nombre.setEditable(True)
-        combo_nombre.addItem("")
-        for preset in EMG_PROFILE.marker_presets:
-            if preset != "Other…":
-                combo_nombre.addItem(tr(preset))
+        for opcion in ("", self._name_1, self._name_2, tr("Co-contraction")):
+            if opcion not in {combo_nombre.itemText(i)
+                              for i in range(combo_nombre.count())}:
+                combo_nombre.addItem(opcion)
         combo_nombre.setCurrentText(seg.label)
         combo_nombre.setToolTip(tr(
-            "The manoeuvre performed, not the muscle contracting. Leave it "
-            "empty for a fragment that is only signal worth keeping. "
-            "Consecutive fragments with the same name form a single window of "
-            "the co-activation table."
+            "Which muscle led this contraction. The app works it out by "
+            "comparing the two; change it if you disagree, or empty it to "
+            "leave the contraction out of the co-activation table."
         ))
         self._table.setCellWidget(row, 4, combo_nombre)
 
@@ -415,22 +420,40 @@ class FragmentSelectionDialog(QDialog):
         """
         a, b = self._span
         i0, i1 = round(a * self._fs), round(b * self._fs)
-        segs = suggest_significant_segments(
-            self._raw[i0:i1],
-            self._fs,
-            f_low=self._f_low,
-            f_high=self._f_high,
-            f_notch=self._f_notch,
-            f_env=self._f_env,
-            k=_DEFAULT_K,
-            min_duration_s=_DEFAULT_MIN_DURATION_S,
-            merge_gap_s=_DEFAULT_MERGE_GAP_S,
-        )
+
+        def detecta(raw):
+            return suggest_significant_segments(
+                raw[i0:i1],
+                self._fs,
+                f_low=self._f_low,
+                f_high=self._f_high,
+                f_notch=self._f_notch,
+                f_env=self._f_env,
+                k=_DEFAULT_K,
+                min_duration_s=_DEFAULT_MIN_DURATION_S,
+                merge_gap_s=_DEFAULT_MERGE_GAP_S,
+            )
+
         # Back into the file's own clock: the worker crops by these numbers.
+        segs = detecta(self._raw)
         filas = [
             Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
             for x in segs
         ]
+        if self._raw_2 is not None:
+            # Both muscles, not just the one on display. The selection crops
+            # *both* channels, so proposing only the contractions of the
+            # channel that happens to be selected quietly decided which half
+            # of the session got analysed: on the bench recording of 1
+            # September, choosing FCR gave ten windows and choosing ECR gave
+            # eleven, and the two selections overlapped by 19 % — the flexions
+            # or the extensions, according to a combo box that looks like it
+            # only chooses what is drawn.
+            filas += [
+                Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
+                for x in detecta(self._raw_2)
+            ]
+            filas = normalise_segments(filas, self._full_duration)
         if self._naming:
             filas = [
                 Segment(f.start_s, f.end_s, f.score, f.reason, nombre)

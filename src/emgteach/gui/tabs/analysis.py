@@ -458,6 +458,16 @@ class AnalysisTab(QWidget):
         self._lbl_reps.setStyleSheet("font-size: 11px; color: #8a5000;")
         row_frag.addWidget(self._lbl_reps)
         row_frag.addStretch()
+        # Which of the two to do next, said in one line. Both buttons light up
+        # together at the end of the first analysis, and nothing said that the
+        # calibration comes first — but it does, and not by convention: the
+        # reference it fixes is the yardstick for every % MVC the fragments are
+        # then measured in, so choosing the fragments first means choosing them
+        # against a reference that is about to change.
+        self._lbl_siguiente = QLabel("")
+        self._lbl_siguiente.setWordWrap(True)
+        self._lbl_siguiente.setStyleSheet("font-size: 11px; color: #205080;")
+        self._lbl_siguiente.setVisible(False)
         self._selected_segments: list[tuple[float, float]] = []
         #: What the operator calls each fragment, aligned with the list
         #: above. A named fragment is a window of the co-activation table;
@@ -472,6 +482,7 @@ class AnalysisTab(QWidget):
         row_roi.addStretch()
         ctrl.addWidget(self._box_roi)
         ctrl.addWidget(self._box_fragmentos)
+        ctrl.addWidget(self._lbl_siguiente)
 
         # Log to the right of the parameters
         grp_log_top = QGroupBox(tr("Event log"))
@@ -905,6 +916,15 @@ class AnalysisTab(QWidget):
             self._btn_afinado.setEnabled(False)
             self._progress.setValue(0)
             self._progress.setFormat(tr("Ready"))
+            # And analyse it, without being asked. Opening a recording in
+            # order not to analyse it is not a thing anyone does, and making
+            # the first run a button press gave that button two meanings: the
+            # first time it means «show me the recording», and afterwards it
+            # means «apply what I have just chosen». Pressing the same control
+            # twice for two different reasons is what made the sequence hard
+            # to follow — so the first one goes.
+            self._logger.append_log(tr("Running the first analysis…"))
+            self._iniciar_analisis()
 
     def _populate_channels(self, path: str) -> None:
         """Fill the channel picker with the file's EMG channels (excludes ACC).
@@ -1064,6 +1084,40 @@ class AnalysisTab(QWidget):
         self._cal_keep = dlg.keep()
         self._actualizar_etiqueta_reps()
         self._iniciar_analisis()
+
+    def _actualizar_siguiente_paso(self) -> None:
+        """One line saying which of the two editors to open next.
+
+        They light up together at the end of the first analysis, side by side,
+        and nothing said that one of them comes first. One does: the
+        calibration fixes the reference, and every % MVC the fragments are
+        then measured in is measured against it — so choosing the fragments
+        first means choosing them against a reference that is about to change,
+        and the numbers move under you when you go back for the calibration.
+        """
+        r = self._last_result or {}
+        if not r:
+            self._lbl_siguiente.setVisible(False)
+            return
+        hay_reps = bool(r.get("cal_rep_values"))
+        reps_hechas = bool(self._cal_keep)
+        frags_hechos = bool(self._selected_segments)
+
+        if hay_reps and not reps_hechas:
+            texto = tr(
+                "Next: «{button}». It decides which maximal efforts set the "
+                "reference, and every % MVC below is measured against it — so "
+                "it goes before choosing the fragments."
+            ).format(button=tr("Calibration repetitions…"))
+        elif not frags_hechos:
+            texto = tr(
+                "Next: «{button}», to drop any contraction that did not come "
+                "out well. If they are all good there is nothing left to do."
+            ).format(button=tr("Select fragments…"))
+        else:
+            texto = ""
+        self._lbl_siguiente.setText(texto)
+        self._lbl_siguiente.setVisible(bool(texto))
 
     @Slot()
     def _explicar_coactivacion(self) -> None:
@@ -1405,6 +1459,7 @@ class AnalysisTab(QWidget):
     def _on_result(self, result: dict) -> None:
         self._last_result = result
         self._refresh_coactivation(result)
+        self._actualizar_siguiente_paso()
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)

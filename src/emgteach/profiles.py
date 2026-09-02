@@ -3,7 +3,7 @@
 A :class:`SignalProfile` bundles everything that defines *what a signal
 is* — independent of the hardware that records it: the sampling rate,
 the DSP filter band, the offline-analysis windows, the derived EDF
-channel schema, the on-screen display ranges and the marker vocabulary.
+channel schema and the on-screen display ranges.
 
 The rest of the package (the workers and the GUI) reads its defaults
 from a profile instead of from hardcoded literals scattered across
@@ -88,9 +88,6 @@ class SignalProfile:
     ylim_raw, ylim_filtered, ylim_envelope : tuple of float
         Initial vertical display ranges for the realtime acquisition
         plots, in :attr:`dimension` units.
-    marker_presets : tuple of str
-        User-facing (Spanish) preset labels offered by the acquisition
-        tab's event-marker control.
     """
 
     name: str
@@ -213,24 +210,6 @@ class SignalProfile:
     ylim_raw: tuple[float, float] = (-3.3, 3.3)
     ylim_filtered: tuple[float, float] = (-0.8, 0.8)
     ylim_envelope: tuple[float, float] = (0.0, 0.5)
-
-    # -- UI marker vocabulary (user-facing) --
-    # No longer offered while recording: the picker beside the MARK button
-    # went with it, because the recording runs faster than anyone can label
-    # it. What the naming became, after the recording and over a signal the
-    # student can see, is not the same vocabulary: a fragment is named with
-    # the *manoeuvre* it belongs to, because that is what fixes which muscle
-    # is agonist and which antagonist, and the co-activation table has no
-    # other way to know. "Contraction onset" named an instant and could not
-    # answer that; "Flexion" does.
-    marker_presets: tuple[str, ...] = (
-        "Flexion",
-        "Extension",
-        "Grip",
-        "Co-contraction",
-        "Rest",
-        "Other…",
-    )
 
     def __post_init__(self) -> None:
         if self.sample_frequency <= 0:
@@ -363,14 +342,6 @@ ECG_PROFILE = SignalProfile(
     ylim_raw=(-2.0, 2.0),
     ylim_filtered=(-2.0, 2.0),
     ylim_envelope=(0.0, 2.0),
-    marker_presets=(
-        "P wave",
-        "QRS complex",
-        "T wave",
-        "Arrhythmia",
-        "Rest",
-        "Other…",
-    ),
 )
 
 
