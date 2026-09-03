@@ -184,3 +184,83 @@ def _altura_minima() -> int:
     from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 
     return MvcOverlay._H
+
+
+# ---------------------------------------------------------------------------
+# The title has to fit as well
+# ---------------------------------------------------------------------------
+
+
+#: Every title the wizard passes to the overlay, by mode, with the longest
+#: label and repetition tag actually used. The brief-squeeze instruction is
+#: the author's sentence, word for word, and in Spanish it is twice the
+#: panel's width at the title's size.
+def _titulos() -> list[tuple[str, str]]:
+    from emgteach.i18n import tr
+
+    label = "ECR"
+    breve = tr(" (brief {i}/{n})").format(i=1, n=3)
+    return [
+        ("ready", tr("Get ready — {label}{rep}").format(label=label, rep=breve)),
+        ("contract", tr(
+            "Make a single, brief contraction of {label} with the greatest "
+            "force you can{rep}"
+        ).format(label=label, rep=breve)),
+        ("contract", tr("Contract {label} at maximum!{rep}").format(
+            label=label, rep=breve)),
+        ("contract", tr("Contract at maximum! (no load)")),
+        ("done", tr("Channels not separated")),
+        ("done", tr("Calibration too weak")),
+    ]
+
+
+def _mostrar_titulo(overlay, modo: str, titulo: str) -> None:
+    if modo == "ready":
+        overlay.show_ready(titulo, 3, "x")
+    elif modo == "done":
+        overlay.show_done(titulo, "x")
+    else:
+        overlay.show_contract(titulo, 2.0, 0.5, 0.6)
+
+
+class TestNoTitleLeavesThePanel:
+    """Reported a second time from the bench, after the messages were fixed:
+    the brief-squeeze instruction is drawn as the *title*, and the title was
+    still a single bold line."""
+
+    def test_every_real_title_fits_its_band(self, overlay, idioma) -> None:
+        malos = []
+        for modo, titulo in _titulos():
+            _mostrar_titulo(overlay, modo, titulo)
+            _x, _y, _w, alto = overlay.title_rect()
+            if overlay.title_height() > alto:
+                malos.append(f"[{idioma}/{modo}] {titulo[:60]!r}")
+        assert not malos, "titles that overflow their band:\n" + "\n".join(malos)
+
+    def test_the_message_starts_below_the_title(self, overlay, idioma) -> None:
+        """A wrapped title pushes the message down instead of being drawn
+        over it — and the whole thing still ends inside the panel."""
+        for modo, titulo in _titulos():
+            _mostrar_titulo(overlay, modo, titulo)
+            _x, ty, _w, th = overlay.title_rect()
+            _x, my, _w, mh = overlay.message_rect()
+            assert ty + th <= my, f"{modo}: {titulo[:40]!r}"
+            assert my + mh <= overlay.height()
+
+    def test_a_long_title_moves_everything_down(self, overlay, monkeypatch) -> None:
+        """The mechanism, independent of the machine's fonts: what the title
+        measures is what the rest of the panel moves by."""
+        overlay.show_contract("Short", 2.0, 0.5, 0.6)
+        _x, y_corto, _w, _h = overlay.message_rect()
+        alto_corto = overlay.height()
+        monkeypatch.setattr(type(overlay), "title_height",
+                            lambda self, text=None: 120)
+        overlay.show_contract("Long enough to need four lines", 2.0, 0.5, 0.6)
+        _x, y_largo, _w, _h = overlay.message_rect()
+        assert y_largo - y_corto == 120 - 30
+        assert overlay.height() > alto_corto
+
+    def test_modes_without_a_title_band_report_none(self, overlay) -> None:
+        overlay.show_relax("x")
+        assert overlay.title_height() == 0
+        assert overlay.title_rect() == (0, 0, 0, 0)

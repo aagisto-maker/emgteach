@@ -25,7 +25,7 @@ from emgteach.gui.tour import build_tour
 from emgteach.gui.widgets.help_button import HelpButton
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.io import BufferedEdfWriter, ChannelInfo
-from emgteach.modes import MODE_PAIR, MODE_SINGLE, MODES
+from emgteach.modes import MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE, MODES
 from emgteach.mvc import mvc_from_reps
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers.analysis import AnalysisWorker
@@ -227,6 +227,39 @@ class TestThreeBoxesBelowWithACornerHelp:
     def test_no_file_card(self, tab) -> None:
         textos = {w.text() for w in tab._grp_resumen.findChildren(QLabel)}
         assert tr("File") not in textos
+
+
+class TestTheGuidedForceVelocityExplainsItself:
+    """Every box on the acquisition tab has a «?» in its corner except the
+    guided force-velocity flow, whose only explanation was the button's
+    tooltip. It is the kinematics practical's whole procedure, so it gets a
+    box of its own with the same corner help as the rest."""
+
+    def test_the_box_carries_its_own_corner_help(self, main_window) -> None:
+        adq = main_window._tab_adq
+        claves = {b.objectName() for b in adq._box_fv_guided.findChildren(HelpButton)}
+        assert claves == {"help:acq.fv"}
+
+    def test_only_the_kinematics_practical_shows_it(self, main_window, qapp) -> None:
+        adq = main_window._tab_adq
+        for mode in MODES:
+            main_window._combo_mode.setCurrentIndex(MODES.index(mode))
+            qapp.processEvents()
+            assert adq._box_fv_guided.isVisibleTo(adq) == (mode == MODE_KINEMATICS), mode
+
+    def test_the_help_says_what_the_two_buttons_do(self) -> None:
+        from emgteach.gui import help_texts
+
+        cuerpo = help_texts.text("acq.fv")[1]
+        assert tr("Guided F-V…") in cuerpo
+        assert tr("Rehearse…") in cuerpo
+
+    def test_the_device_help_names_the_test_identifier(self) -> None:
+        from emgteach.gui import help_texts
+
+        cuerpo = help_texts.text("acq.device")[1]
+        assert "identifier" in cuerpo
+        assert "student code" not in cuerpo
 
 
 class TestSmallThings:

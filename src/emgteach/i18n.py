@@ -141,11 +141,10 @@ _ES = {
         "Haga una contracción o sacudida muscular simple (breve) de {label} con "
         "la máxima fuerza posible{rep}",
     "e.g. bench 3, attempt 2": "p. ej. mesa 3, intento 2",
-    "Goes into the file name, the EDF header and the report. One student, a "
-    "pair, a bench or a repeat — whatever tells this recording apart.":
-        "Va al nombre del archivo, a la cabecera del EDF y al informe. Un "
-        "alumno, una pareja, una mesa o una repetición: lo que distinga este "
-        "registro.",
+    "Goes into the EDF header and the report. One student, a pair, a bench "
+    "or a repeat — whatever tells this recording apart.":
+        "Va a la cabecera del EDF y al informe. Un alumno, una pareja, una "
+        "mesa o una repetición: lo que distinga este registro.",
     "threshold = rest + k × noise (3 is usual)":
         "umbral = reposo + k × ruido (lo habitual es 3)",
     "Type the name of each muscle in its box, following the order of the "
@@ -227,11 +226,37 @@ _ES = {
     "rest ≈ 0.01 mV · effort 0.1–1 mV": "reposo ≈ 0,01 mV · esfuerzo 0,1–1 mV",
     # --- «?» texts per box (help_texts.py) ---
     "Choose the device and the port it appears on; on a laboratory computer "
-    "this is set once and kept. The student code written here goes into the "
-    "file name and the report.":
+    "this is set once and kept. The test identifier written here goes into "
+    "the recording's header and the report.":
         "Elija el dispositivo y el puerto en el que aparece; en un ordenador "
-        "de laboratorio esto se fija una vez y se conserva. El código de "
-        "alumno que se escribe aquí va al nombre del archivo y al informe.",
+        "de laboratorio esto se fija una vez y se conserva. El identificador "
+        "de prueba que se escribe aquí va a la cabecera del registro y al "
+        "informe.",
+    "The guided force-velocity study": "El estudio fuerza-velocidad guiado",
+    "A muscle shortens more slowly the heavier the load it moves, and the "
+    "power it delivers is greatest at intermediate loads. «Guided F-V…» runs "
+    "the procedure that measures this: it asks for the plan (the loads in "
+    "order, how many lifts of each, the seconds of preparation), starts the "
+    "recording if it was not running, takes an isometric maximum without load "
+    "as the reference, and then prompts one quick lift per repetition, marking "
+    "each in the file with its load. The force-velocity study in the Analysis "
+    "tab reads those marks and draws the load-velocity, force-velocity, power "
+    "and recruitment curves.":
+        "Un músculo se acorta más despacio cuanto mayor es la carga que mueve, "
+        "y la potencia que entrega es máxima con cargas intermedias. «F-V "
+        "guiada…» dirige el procedimiento que lo mide: pide el plan (las "
+        "cargas en orden, cuántas elevaciones de cada una, los segundos de "
+        "preparación), inicia la grabación si no estaba en marcha, toma un "
+        "máximo isométrico sin carga como referencia y después avisa de una "
+        "elevación rápida por repetición, marcando cada una en el archivo con "
+        "su carga. El estudio fuerza-velocidad de la pestaña Análisis lee esas "
+        "marcas y dibuja las curvas carga-velocidad, fuerza-velocidad, "
+        "potencia y reclutamiento.",
+    "«Rehearse…» runs the same prompts with a synthetic signal and no "
+    "hardware, to learn the procedure before anyone holds a weight.":
+        "«Ensayar…» recorre los mismos avisos con una señal sintética y sin "
+        "hardware, para aprender el procedimiento antes de que nadie sostenga "
+        "un peso.",
     "In the practicals that need a reference, the session asks for the "
     "maximal contraction first and the task afterwards, and writes both into "
     "one file.":

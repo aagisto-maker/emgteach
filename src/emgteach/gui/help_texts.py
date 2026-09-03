@@ -37,8 +37,8 @@ _TEXTS = {
             "it and the selector does not appear."
         ) + " " + tr(
             "Choose the device and the port it appears on; on a laboratory "
-            "computer this is set once and kept. The student code written "
-            "here goes into the file name and the report."
+            "computer this is set once and kept. The test identifier written "
+            "here goes into the recording's header and the report."
         ),
     ),
     "acq.control": lambda: (
@@ -89,6 +89,24 @@ _TEXTS = {
             "The reference is the strongest 0.2 s across all six, so it is a "
             "maximum the task cannot exceed; a repetition that came out weak "
             "can be discarded afterwards in the analysis."
+        ),
+    ),
+    "acq.fv": lambda: (
+        tr("The guided force-velocity study"),
+        tr(
+            "A muscle shortens more slowly the heavier the load it moves, and "
+            "the power it delivers is greatest at intermediate loads. «Guided "
+            "F-V…» runs the procedure that measures this: it asks for the plan "
+            "(the loads in order, how many lifts of each, the seconds of "
+            "preparation), starts the recording if it was not running, takes "
+            "an isometric maximum without load as the reference, and then "
+            "prompts one quick lift per repetition, marking each in the file "
+            "with its load. The force-velocity study in the Analysis tab reads "
+            "those marks and draws the load-velocity, force-velocity, power "
+            "and recruitment curves."
+        ) + " " + tr(
+            "«Rehearse…» runs the same prompts with a synthetic signal and no "
+            "hardware, to learn the procedure before anyone holds a weight."
         ),
     ),
     "acq.classroom": lambda: (

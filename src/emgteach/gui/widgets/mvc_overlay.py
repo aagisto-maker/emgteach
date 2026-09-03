@@ -14,6 +14,14 @@ instruction simply ran off both edges. That is not a cosmetic problem here —
 the messages that overflow are the long ones, and the long ones are the ones
 that explain what went wrong. Now every message wraps, and the panel measures
 what it is about to draw and grows to hold it.
+
+The title got the same treatment later, for the same reason. Wrapping the
+message left the title as a single bold line, and the brief-squeeze
+instruction the author asked for word for word («Haga una contracción o
+sacudida muscular simple (breve) de FCR con la máxima fuerza posible») is
+twice the panel's width at that size. So the title band is measured too, and
+everything under it — the countdown, the bars, the message — moves down by
+whatever the title grew.
 """
 
 from __future__ import annotations
@@ -34,6 +42,12 @@ _PEAK = QColor(241, 196, 15)       # amber (peak marker)
 _OK = QColor(46, 204, 113)
 _MUTED = QColor(190, 190, 200)
 
+_WRAP_TOP = int(
+    Qt.AlignmentFlag.AlignHCenter
+    | Qt.AlignmentFlag.AlignTop
+    | Qt.TextFlag.TextWordWrap
+)
+
 
 class MvcOverlay(QFrame):
     """Floating guide panel for the guided MVC-calibration wizard."""
@@ -46,8 +60,17 @@ class MvcOverlay(QFrame):
     _SUB_MARGIN = 18          # px each side
     _BOTTOM = 16              # px below the last line
 
-    #: Where the message band starts in each mode — i.e. how much room the
-    #: countdown, the bars or the title need above it.
+    #: The title band per mode: point size, top of the band, and the height
+    #: of the single-line strip the layout below was designed around. A
+    #: title that needs more than that strip pushes everything down.
+    _TITLE: ClassVar[dict[str, tuple[int, int, int]]] = {
+        "ready": (15, 18, 30),
+        "contract": (16, 14, 30),
+        "done": (20, 26, 36),
+    }
+
+    #: Where the message band starts in each mode with a single-line title —
+    #: i.e. how much room the countdown, the bars or the title need above it.
     _TOP: ClassVar[dict[str, int]] = {
         "ready": 152,
         "contract": 160,
@@ -117,7 +140,7 @@ class MvcOverlay(QFrame):
     # -- sizing --------------------------------------------------------------
 
     def _present(self) -> None:
-        """Grow to fit the message, then show and repaint.
+        """Grow to fit the title and the message, then show and repaint.
 
         The width stays fixed so the acquisition tab's horizontal centring
         keeps working without being told anything; only the height moves, and
@@ -128,9 +151,42 @@ class MvcOverlay(QFrame):
         self.raise_()
         self.update()
 
+    def title_height(self, text: str | None = None) -> int:
+        """Height the title needs, wrapped, at the panel's own width.
+
+        Never less than the strip the layout was drawn around, so a short
+        title changes nothing; modes without a title band report 0.
+        """
+        if self._mode not in self._TITLE:
+            return 0
+        pt, _y, strip = self._TITLE[self._mode]
+        texto = self._title if text is None else text
+        if not texto:
+            return strip
+        f = QFont("Arial", pt)
+        f.setBold(True)
+        rect = QFontMetrics(f).boundingRect(
+            0, 0, self._W - 2 * self._SUB_MARGIN, 10_000, _WRAP_TOP, texto
+        )
+        return max(strip, rect.height())
+
+    def title_rect(self) -> tuple[int, int, int, int]:
+        """``(x, y, w, h)`` of the band the title is drawn in; empty without one."""
+        if self._mode not in self._TITLE:
+            return (0, 0, 0, 0)
+        _pt, y, _strip = self._TITLE[self._mode]
+        return (self._SUB_MARGIN, y, self._W - 2 * self._SUB_MARGIN,
+                self.title_height())
+
+    def _title_extra(self) -> int:
+        """How far everything under the title moves down for a wrapped one."""
+        if self._mode not in self._TITLE:
+            return 0
+        return self.title_height() - self._TITLE[self._mode][2]
+
     def message_rect(self) -> tuple[int, int, int, int]:
         """``(x, y, w, h)`` of the band the message is drawn in."""
-        top = self._TOP.get(self._mode, 152)
+        top = self._TOP.get(self._mode, 152) + self._title_extra()
         ancho = self._W - 2 * self._SUB_MARGIN
         return (
             self._SUB_MARGIN, top, ancho,
@@ -143,19 +199,14 @@ class MvcOverlay(QFrame):
         if not texto:
             return 0
         fm = QFontMetrics(QFont("Arial", self._SUB_PT))
-        flags = int(
-            Qt.AlignmentFlag.AlignHCenter
-            | Qt.AlignmentFlag.AlignTop
-            | Qt.TextFlag.TextWordWrap
-        )
         rect = fm.boundingRect(
-            0, 0, self._W - 2 * self._SUB_MARGIN, 10_000, flags, texto
+            0, 0, self._W - 2 * self._SUB_MARGIN, 10_000, _WRAP_TOP, texto
         )
         return rect.height()
 
     def height_for_text(self) -> int:
         """The height this panel needs for what it is about to draw."""
-        top = self._TOP.get(self._mode, 152)
+        top = self._TOP.get(self._mode, 152) + self._title_extra()
         return max(self._H, top + self.text_height() + self._BOTTOM)
 
     # -- painting ------------------------------------------------------------
@@ -169,17 +220,19 @@ class MvcOverlay(QFrame):
         p.setBrush(_BG)
         p.drawRoundedRect(0, 0, w, h, 16, 16)
 
+        # Everything below the title shifts by what the title grew.
+        d = self._title_extra()
         if self._mode == "ready":
-            self._text(p, self._title, 0, 18, w, 30, 15, bold=True)
-            self._text(p, self._count, 0, 55, w, 90, 64, bold=True, colour=_ACCENT)
+            self._title_band(p, colour=_FG)
+            self._text(p, self._count, 0, 55 + d, w, 90, 64, bold=True, colour=_ACCENT)
         elif self._mode == "contract":
-            self._text(p, self._title, 0, 14, w, 30, 16, bold=True, colour=_EFFORT)
-            self._text(p, self._count + " s", 0, 44, w, 34, 22, bold=True)
+            self._title_band(p, colour=_EFFORT)
+            self._text(p, self._count + " s", 0, 44 + d, w, 34, 22, bold=True)
             # Window progress (thin) and live effort (tall) bars.
-            self._bar(p, 24, 92, w - 48, 8, self._progress, _ACCENT, peak=None)
-            self._text(p, self._effort_label(), 24, 108, w - 48, 16, 9,
+            self._bar(p, 24, 92 + d, w - 48, 8, self._progress, _ACCENT, peak=None)
+            self._text(p, self._effort_label(), 24, 108 + d, w - 48, 16, 9,
                        align=Qt.AlignmentFlag.AlignLeft)
-            self._bar(p, 24, 126, w - 48, 26, self._effort, _EFFORT, peak=1.0)
+            self._bar(p, 24, 126 + d, w - 48, 26, self._effort, _EFFORT, peak=1.0)
         elif self._mode == "relax":
             self._text(p, self._relax_word(), 0, 40, w, 60, 40, bold=True,
                        colour=_ACCENT)
@@ -187,7 +240,7 @@ class MvcOverlay(QFrame):
             # Just the cue word, large and green — no bars or countdown.
             self._text(p, self._title, 0, 40, w, 60, 38, bold=True, colour=_EFFORT)
         elif self._mode == "done":
-            self._text(p, self._title, 0, 26, w, 36, 20, bold=True, colour=_OK)
+            self._title_band(p, colour=_OK)
 
         # One path for every message, wrapped, in the band measured above. The
         # single-line strips this replaces are what let the long warnings —
@@ -196,7 +249,8 @@ class MvcOverlay(QFrame):
             x, y, bw, bh = self.message_rect()
             colour = _FG if self._mode == "done" else _MUTED
             self._text(p, self._subtitle, x, y, bw, bh, self._SUB_PT,
-                       colour=colour, wrap=True)
+                       colour=colour, wrap=True,
+                       align=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         p.end()
 
     # -- helpers -------------------------------------------------------------
@@ -210,6 +264,13 @@ class MvcOverlay(QFrame):
     def _relax_word(self) -> str:
         return tr("Relax")
 
+    def _title_band(self, p, *, colour) -> None:
+        """The title, wrapped and centred in the band it was measured for."""
+        x, y, w, h = self.title_rect()
+        pt = self._TITLE[self._mode][0]
+        self._text(p, self._title, x, y, w, h, pt, bold=True, colour=colour,
+                   wrap=True)
+
     def _text(self, p, text, x, y, w, h, pt, *, bold=False, colour=None,
               align=Qt.AlignmentFlag.AlignCenter, wrap=False) -> None:
         if not text:
@@ -218,14 +279,12 @@ class MvcOverlay(QFrame):
         f = QFont("Arial", pt)
         f.setBold(bold)
         p.setFont(f)
-        flags = align | Qt.AlignmentFlag.AlignVCenter
+        flags = int(align)
         if wrap:
-            flags = (
-                Qt.AlignmentFlag.AlignHCenter
-                | Qt.AlignmentFlag.AlignTop
-                | Qt.TextFlag.TextWordWrap
-            )
-        p.drawText(x, y, w, h, int(flags), text)
+            flags |= int(Qt.TextFlag.TextWordWrap)
+        else:
+            flags |= int(Qt.AlignmentFlag.AlignVCenter)
+        p.drawText(x, y, w, h, flags, text)
 
     def _bar(self, p, x, y, w, h, frac, colour, peak=None) -> None:
         frac = max(0.0, min(1.0, frac))

@@ -700,9 +700,8 @@ class AcquisitionTab(QWidget):
         self._edit_student_code.setFixedWidth(120)
         self._edit_student_code.setPlaceholderText(tr("e.g. bench 3, attempt 2"))
         self._edit_student_code.setToolTip(tr(
-            "Goes into the file name, the EDF header and the report. One "
-            "student, a pair, a bench or a repeat — whatever tells this "
-            "recording apart."
+            "Goes into the EDF header and the report. One student, a pair, "
+            "a bench or a repeat — whatever tells this recording apart."
         ))
         self._edit_student_code.setText(
             self._settings.value("adquisicion/student_code", "")
@@ -2346,11 +2345,16 @@ class AcquisitionTab(QWidget):
         mvc_row.addStretch()
         left_col.addLayout(mvc_row)
 
-        # Named container: the basic level hides the guided force-velocity row
-        # (button and its configuration label) as a unit.
-        self._box_fv_guided = QWidget()
+        # Its own box, with its own «?». The guided flow is the kinematics
+        # practical's whole procedure, not a detail of the load monitor, and
+        # the button's tooltip was the only place that said what it does —
+        # every other thing on this tab is explained from a corner «?», and a
+        # student who has learnt to look there found nothing here. The
+        # kinematics practical shows the box; the other two hide it whole.
+        self._box_fv_guided = QGroupBox(tr("Guided force-velocity acquisition"))
+        add_help(self._box_fv_guided, "acq.fv")
         fv_row = QHBoxLayout(self._box_fv_guided)
-        fv_row.setContentsMargins(0, 0, 0, 0)
+        fv_row.setContentsMargins(6, 3, 6, 3)
         fv_row.setSpacing(6)
         self._btn_fv_guided = QPushButton(tr("Guided F-V…"))
         self._btn_fv_guided.setEnabled(False)
