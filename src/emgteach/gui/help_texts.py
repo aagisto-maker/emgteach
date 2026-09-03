@@ -30,8 +30,11 @@ _TEXTS = {
     "acq.device": lambda: (
         tr("Devices the application supports"),
         tr(
-            "The recording can be made with either of two devices: BITalino "
-            "(Bluetooth) or Arduino (USB)."
+            "The application supports two devices: the BITalino over "
+            "Bluetooth and the Arduino + MyoWare 2.0 over USB. Only the "
+            "single-muscle practical can use the Arduino; the other two need "
+            "the BITalino's second channel or its accelerometer, so they fix "
+            "it and the selector does not appear."
         ) + " " + tr(
             "Choose the device and the port it appears on; on a laboratory "
             "computer this is set once and kept. The student code written "

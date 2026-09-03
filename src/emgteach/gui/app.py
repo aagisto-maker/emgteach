@@ -42,6 +42,7 @@ from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import get_language, resolve_startup_language, set_language, tr
 from emgteach.modes import (
     DEFAULT_MODE,
+    MODE_SINGLE,
     MODES,
     mode_complexity_colour,
     mode_complexity_label,
@@ -288,15 +289,25 @@ class MainWindow(QMainWindow):
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Question)
         msg.setWindowTitle(tr("Quick guide"))
+        # The sensor named is the one the chosen practical can be done with.
+        # Only the single-muscle practical works over the Arduino + MyoWare;
+        # the pair needs two channels and the kinematics one the
+        # accelerometer, so both are BITalino, and offering the other board
+        # there is offering hardware that cannot record what is about to be
+        # recorded.
+        sensores = (
+            tr("either of two sensors: a BITalino over Bluetooth or an "
+               "Arduino + MyoWare 2.0 over USB")
+            if self._mode() == MODE_SINGLE
+            else tr("a BITalino over Bluetooth")
+        )
         msg.setText(
             tr(
                 "The electrical activity of a muscle is recorded and turned "
                 "into measurements that can be interpreted. The application "
-                "works with "
-                "either of two sensors: a BITalino over Bluetooth or an "
-                "Arduino + MyoWare 2.0 over USB.\n\nFor a short walkthrough "
+                "works with {sensors}.\n\nFor a short walkthrough "
                 "of the application, press Yes."
-            )
+            ).format(sensors=sensores)
         )
         chk = QCheckBox(tr("Show this guide next time"))
         chk.setChecked(True)

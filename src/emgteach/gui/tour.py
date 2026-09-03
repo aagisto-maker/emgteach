@@ -26,7 +26,12 @@ from typing import TYPE_CHECKING
 
 from emgteach.gui.widgets.coach import CoachStep
 from emgteach.i18n import tr
-from emgteach.modes import MODE_PAIR, mode_fixed_labels, mode_uses_acc
+from emgteach.modes import (
+    MODE_PAIR,
+    MODE_SINGLE,
+    mode_fixed_labels,
+    mode_uses_acc,
+)
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from emgteach.gui.app import MainWindow
@@ -66,14 +71,31 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             "Type the name of each muscle in its box, following the order of "
             "the board's channels (Muscle 1 is the one recorded on A1)."
         )
+    # Only the single-muscle practical can be recorded with the Arduino +
+    # MyoWare board. The pair needs two channels and the kinematics practical
+    # the accelerometer, so naming the other board there offers hardware that
+    # cannot record what is about to be recorded.
+    if mode == MODE_SINGLE:
+        dispositivo = tr(
+            "The recording can be made with either of two devices: BITalino "
+            "(Bluetooth) or Arduino (USB)."
+        )
+    elif mode == MODE_PAIR:
+        dispositivo = tr(
+            "This practical is recorded with the BITalino over Bluetooth, "
+            "which is the device that gives two channels."
+        )
+    else:
+        dispositivo = tr(
+            "This practical is recorded with the BITalino over Bluetooth, "
+            "which is the device that carries the accelerometer."
+        )
     steps.append(CoachStep(
         tr("Connecting the sensor"),
-        tr(
-            "The recording can be made with either of two devices: BITalino "
-            "(Bluetooth) or Arduino (USB). Switch the board on and connect "
-            "the electrodes: the positive and the negative go on the midline "
-            "of the muscle, the reference on a neutral point, over a bone if "
-            "possible."
+        dispositivo + " " + tr(
+            "Switch the board on and connect the electrodes: the positive and "
+            "the negative go on the midline of the muscle, the reference on a "
+            "neutral point, over a bone if possible."
         ) + " " + nombres,
         lambda: adq._btn_conectar,
         tab=TAB_ACQ,

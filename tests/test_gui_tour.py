@@ -86,24 +86,40 @@ def test_unticking_the_box_stops_it_coming_back(main_window, monkeypatch) -> Non
     assert len(raised) == 1          # not asked a second time
 
 
-def test_the_offer_names_both_sensors(main_window, offer) -> None:
+def test_the_offer_names_the_sensor_of_the_chosen_practical(
+    main_window, qapp, offer
+) -> None:
+    """The welcome box named both sensors whatever the practical was, and the
+    MyoWare board cannot record two channels or an accelerometer."""
+    set_mode(main_window, qapp, MODE_SINGLE)
     main_window.maybe_offer_tour()
-    text = offer[0]["text"]
-    assert "BITalino" in text and "MyoWare" in text
+    assert "BITalino" in offer[0]["text"] and "MyoWare" in offer[0]["text"]
+
+    for mode in (MODE_PAIR, MODE_KINEMATICS):
+        offer.clear()
+        set_mode(main_window, qapp, mode)
+        main_window.maybe_offer_tour()
+        assert "BITalino" in offer[0]["text"], mode
+        assert "MyoWare" not in offer[0]["text"], mode
 
 
 # ── the tour follows the mode ──────────────────────────────────────────
 
 
 @pytest.mark.parametrize("mode", MODES)
-def test_every_mode_names_both_devices(main_window, qapp, mode) -> None:
-    """A student should know the application takes either device, whichever
-    one the laboratory happens to have wired up. The sensor model is named in
-    the start-up message rather than here — see the test for that."""
+def test_each_mode_names_the_device_it_can_be_recorded_with(
+    main_window, qapp, mode
+) -> None:
+    """Only the single-muscle practical can be done with the Arduino board.
+
+    The pair needs two channels and the kinematics practical the
+    accelerometer, so offering that board there offers hardware that cannot
+    record what is about to be recorded.
+    """
     set_mode(main_window, qapp, mode)
     bodies = " ".join(step.body for step in build_tour(main_window))
     assert "BITalino" in bodies
-    assert "Arduino" in bodies
+    assert ("Arduino" in bodies) is (mode == MODE_SINGLE)
 
 
 def test_steps_match_the_practical(main_window, qapp) -> None:

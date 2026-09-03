@@ -95,6 +95,41 @@ _ES = {
     "with:": "con:",
     "Co-activation\nindex": "Índice de\ncoactivación",
     "mean % MVC": "% CVM medio",
+    # --- el dispositivo, según la práctica ---
+    "a BITalino over Bluetooth": "un BITalino por Bluetooth",
+    "either of two sensors: a BITalino over Bluetooth or an Arduino + "
+    "MyoWare 2.0 over USB":
+        "cualquiera de dos sensores: un BITalino por Bluetooth o un Arduino + "
+        "MyoWare 2.0 por USB",
+    "The electrical activity of a muscle is recorded and turned into "
+    "measurements that can be interpreted. The application works with "
+    "{sensors}.\n\nFor a short walkthrough of the application, press Yes.":
+        "Se registra la actividad eléctrica de un músculo y se convierte en "
+        "medidas que se pueden interpretar. La aplicación funciona con "
+        "{sensors}.\n\nPara un recorrido breve por la aplicación, pulse Sí.",
+    "This practical is recorded with the BITalino over Bluetooth, which is "
+    "the device that gives two channels.":
+        "Esta práctica se registra con el BITalino por Bluetooth, que es el "
+        "dispositivo que da dos canales.",
+    "This practical is recorded with the BITalino over Bluetooth, which is "
+    "the device that carries the accelerometer.":
+        "Esta práctica se registra con el BITalino por Bluetooth, que es el "
+        "dispositivo que lleva el acelerómetro.",
+    "Switch the board on and connect the electrodes: the positive and the "
+    "negative go on the midline of the muscle, the reference on a neutral "
+    "point, over a bone if possible.":
+        "Encienda la placa y conecte los electrodos: el positivo y el "
+        "negativo van sobre la línea media del músculo, la referencia en un "
+        "punto neutro, sobre un hueso si es posible.",
+    "The application supports two devices: the BITalino over Bluetooth and "
+    "the Arduino + MyoWare 2.0 over USB. Only the single-muscle practical "
+    "can use the Arduino; the other two need the BITalino's second channel "
+    "or its accelerometer, so they fix it and the selector does not appear.":
+        "La aplicación admite dos dispositivos: el BITalino por Bluetooth y "
+        "el Arduino + MyoWare 2.0 por USB. Solo la práctica de un músculo "
+        "puede usar el Arduino; las otras dos necesitan el segundo canal del "
+        "BITalino o su acelerómetro, así que lo fijan y el selector no "
+        "aparece.",
     # --- calibration wizard: brief maximal squeezes ---
     " (brief {i}/{n})": " (breve {i}/{n})",
     "Make a single, brief muscle contraction (a twitch) with the greatest "
