@@ -22,10 +22,6 @@ abstract: >-
   (an MVC maximum followed by cued quick lifts, each auto-marked with its load)
   and a force-velocity study that turns one recording into the load-velocity,
   Hill force-velocity, power and recruitment curves.
-  Parts of this software were developed with the assistance of an AI coding
-  assistant (Anthropic's Claude) under the direction and review of the author,
-  who set all requirements, took the design decisions and is responsible for
-  the released code. The AI assistant is a tool and is not an author.
 type: software
 version: 2.0.0
 date-released: "2026-07-19"
