@@ -663,7 +663,13 @@ class AnalysisTab(QWidget):
             [c.sizeHint().height() for c in self._chk_paneles]
             + [self._btn_mas_paneles.sizeHint().height()]
         )
-        paneles_scroll.setFixedHeight(_alto_chip + 8)
+        # And with room for the horizontal scrollbar. A scroll area of fixed
+        # height pays for the bar out of its viewport, so the moment «More
+        # panels…» made the row overflow the bar appeared and the chips lost
+        # their bottom edge behind it. Reserved always, so the row keeps one
+        # height whether the bar is there or not.
+        _alto_barra = paneles_scroll.horizontalScrollBar().sizeHint().height()
+        paneles_scroll.setFixedHeight(_alto_chip + 8 + _alto_barra)
         paneles_scroll.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
