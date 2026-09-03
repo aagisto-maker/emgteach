@@ -30,7 +30,7 @@ except Exception:
     pass
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QColor, QFontMetrics
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QCheckBox,
@@ -257,7 +257,9 @@ class AnalysisTab(QWidget):
         add_help(grp_ctrl, "ana.params")
         ctrl = QVBoxLayout(grp_ctrl)
         ctrl.setSpacing(4)
-        ctrl.setContentsMargins(6, 4, 6, 4)
+        # A little more room under the last row: with the panel chips there,
+        # the row sat against the frame and looked cut off.
+        ctrl.setContentsMargins(6, 4, 6, 8)
 
         # Line 1: EDF file + Analyse + Save
         row_file = QHBoxLayout()
@@ -653,8 +655,15 @@ class AnalysisTab(QWidget):
         paneles_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         paneles_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         paneles_scroll.viewport().setStyleSheet("background: transparent;")
-        _fm = QFontMetrics(self.font())
-        paneles_scroll.setFixedHeight(_fm.lineSpacing() + 14)
+        # Measured off the chips themselves, not off this widget's font: the
+        # chips carry their own font size, padding and border in a style
+        # sheet, so a height derived from the tab's line spacing clipped
+        # them by a couple of pixels at the bottom on other machines.
+        _alto_chip = max(
+            [c.sizeHint().height() for c in self._chk_paneles]
+            + [self._btn_mas_paneles.sizeHint().height()]
+        )
+        paneles_scroll.setFixedHeight(_alto_chip + 8)
         paneles_scroll.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
@@ -1506,10 +1515,16 @@ class AnalysisTab(QWidget):
 
         n1 = result.get("channel_name") or tr("Muscle {n}").format(n=1)
         n2 = result.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-        cabecera = tr("Mean activation (% MVC)")
+        # Two lines per heading: the muscle on the first, what is measured on
+        # the second. On one line «FCR — Mean activation (% MVC)» was elided
+        # to something unreadable at any width this box gets.
+        # Short on purpose: the box is a fifth of the window and four columns
+        # have to fit. What the figure is stands in the «?»; the report,
+        # which has the width, keeps the long wording.
+        cabecera = tr("mean % MVC")
         self._tbl_coact.setHorizontalHeaderLabels([
-            tr("Window"), f"{n1} — {cabecera}", f"{n2} — {cabecera}",
-            tr("Co-activation index"),
+            tr("Window"), f"{n1}\n{cabecera}", f"{n2}\n{cabecera}",
+            tr("Co-activation\nindex"),
         ])
         self._tbl_coact.setRowCount(len(tabla))
         for fila, res in enumerate(tabla):
@@ -1528,6 +1543,10 @@ class AnalysisTab(QWidget):
             ]
             for col, texto in enumerate(celdas):
                 item = QTableWidgetItem(texto)
+                if col:
+                    # Figures under a centred heading, as in the contraction
+                    # table; the window's name stays left, it is prose.
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 if col == 3 and res.index is None:
                     item.setForeground(QColor("#8A6500"))
                 elif col == 3:
@@ -1625,15 +1644,26 @@ class AnalysisTab(QWidget):
         self._box_contr.setVisible(True)
 
     def _ajustar_alto_coact(self) -> None:
-        """Make the table exactly as tall as its rows, header included."""
+        """Room for the rows it has, and free to fill the rest of its box.
+
+        It used to be pinned to a fixed height, so it stopped short of the
+        bottom of its own box while the two boxes beside it in the band were
+        taller: a strip of empty box under the last row. Now the rows set a
+        floor and the layout hands it whatever height the band has.
+        """
         filas = self._tbl_coact.rowCount()
-        alto = self._tbl_coact.horizontalHeader().height() + 4
+        cabecera = max(
+            self._tbl_coact.horizontalHeader().height(),
+            self._tbl_coact.horizontalHeader().sizeHint().height(),
+        )
+        alto = cabecera + 4
         for i in range(filas):
             alto += self._tbl_coact.rowHeight(i)
         # A floor so an empty table is not a sliver, and a ceiling so a
         # recording marked into many phases scrolls instead of pushing the
         # panels off the window.
-        self._tbl_coact.setFixedHeight(max(38, min(alto, 110)))
+        tope = 160 if self.height() >= 850 else 110
+        self._tbl_coact.setMinimumHeight(max(38, min(alto, tope)))
 
     def _on_result(self, result: dict) -> None:
         self._last_result = result

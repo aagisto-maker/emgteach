@@ -93,6 +93,8 @@ _ES = {
     "Test identifier: {code}": "Identificador de prueba: {code}",
     "Device: BITalino": "Dispositivo: BITalino",
     "with:": "con:",
+    "Co-activation\nindex": "Índice de\ncoactivación",
+    "mean % MVC": "% CVM medio",
     # --- calibration wizard: brief maximal squeezes ---
     " (brief {i}/{n})": " (breve {i}/{n})",
     "Make a single, brief muscle contraction (a twitch) with the greatest "

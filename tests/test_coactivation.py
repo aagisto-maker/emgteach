@@ -574,7 +574,8 @@ def test_the_table_is_as_tall_as_its_rows(qapp, tmp_path) -> None:
 
     The practical produces three rows at most and usually one, so most of that
     height was blank table taking room the raw traces needed — and with two
-    muscles there are two of those to fit.
+    muscles there are two of those to fit. What the rows set now is a floor:
+    beyond it the table fills its box, which sits in a band with two others.
     """
     from PySide6.QtCore import QSettings
 
@@ -587,11 +588,14 @@ def test_the_table_is_as_tall_as_its_rows(qapp, tmp_path) -> None:
     tab.show()
     qapp.processEvents()
     try:
-        vacia = tab._tbl_coact.height()
+        tab._ajustar_alto_coact()
+        vacia = tab._tbl_coact.minimumHeight()
         tab._tbl_coact.setRowCount(3)
         tab._ajustar_alto_coact()
-        tres = tab._tbl_coact.height()
+        tres = tab._tbl_coact.minimumHeight()
         assert tres > vacia, "three rows do not make it taller than none"
-        assert tres <= 150, "it grew past the ceiling that keeps it on screen"
+        assert tres <= 160, "it grew past the ceiling that keeps it on screen"
+        # And nothing pins it: the box it is in can hand it more.
+        assert tab._tbl_coact.maximumHeight() > 1000
     finally:
         tab.cleanup()
