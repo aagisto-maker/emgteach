@@ -102,6 +102,9 @@ _TEXTS = {
             "chooses which maximal efforts fix the reference, and «Select "
             "fragments…» limits the analysis to some of the contractions. "
             "Neither is needed to read a clean recording."
+        ) + " " + tr(
+            "The chips at the end of that line choose which panels are drawn; "
+            "hover over «Panels:» for what each one shows."
         ),
     ),
     "ana.panels": lambda: (

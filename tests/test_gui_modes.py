@@ -294,10 +294,11 @@ def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
     set_mode(main_window, qapp, MODE_SINGLE)
     assert panels_offered(ana) == set(_CORE_PIDS)
 
-    # The pair practical is a closed set: each muscle raw, then the two
-    # envelopes overlaid. A spectrum there would be about one of the two.
+    # The pair practical is a closed set: each muscle raw, the two envelopes
+    # overlaid, and the fatigue trend of both. A spectrum there would be
+    # about one of the two.
     set_mode(main_window, qapp, MODE_PAIR)
-    assert panels_offered(ana) == {0, _RAW2_PID, _OVERLAY_PID}
+    assert panels_offered(ana) == {0, _RAW2_PID, _OVERLAY_PID, 6}
 
     # The kinematics practical is the one place nothing is withheld — but
     # not all at once: it opens on its own six (the core and the

@@ -63,9 +63,8 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         )
     else:
         nombres = tr(
-            "Type the name of each muscle in the boxes beside it — the "
-            "anatomical name, FCR or ECR rather than «channel 1». It is "
-            "written into the recording and is how every table names them."
+            "Type the name of each muscle in its box, following the order of "
+            "the board's channels (Muscle 1 is the one recorded on A1)."
         )
     steps.append(CoachStep(
         tr("Connecting the sensor"),

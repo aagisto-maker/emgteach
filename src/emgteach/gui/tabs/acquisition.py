@@ -80,6 +80,7 @@ from emgteach.io import (
 )
 from emgteach.modes import (
     DEFAULT_MODE,
+    MODE_SINGLE,
     mode_channels,
     mode_fixed_labels,
     mode_protocol,
@@ -463,6 +464,12 @@ class AcquisitionTab(QWidget):
         saved_type = int(self._settings.value("adquisicion/device_type", 0))
         self._combo_device_type.setCurrentIndex(saved_type)
         self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
+        # In the practicals that can only be done with the BITalino the
+        # selector is hidden and this caption stands in for it, so the
+        # address field beside it does not sit there unnamed.
+        self._lbl_device_fixed = QLabel(tr("Device: BITalino"))
+        self._lbl_device_fixed.setVisible(False)
+        cfg_row1.addWidget(self._lbl_device_fixed)
         cfg_row1.addWidget(self._combo_device_type, stretch=1)
 
         # Conditional central area: COM port (BITalino) or COM selector (Arduino)
@@ -524,7 +531,7 @@ class AcquisitionTab(QWidget):
         cfg_row2.setSpacing(6)
         # With a folder saved, the placeholder never shows, and the row was a
         # bare text box beside a Browse button: a field nobody could name.
-        cfg_row2.addWidget(QLabel(tr("Folder:")))
+        cfg_row2.addWidget(QLabel(tr("Output path and file:")))
         self._edit_dir = QLineEdit()
         self._edit_dir.setPlaceholderText(tr("EDF destination folder"))
         self._edit_dir.setText(self._settings.value("adquisicion/save_dir", "."))
@@ -679,39 +686,44 @@ class AcquisitionTab(QWidget):
         # names left both cramped, and the muscle names are what matter here.
         cfg_outer.addWidget(self._box_acc)
 
-        # Row 4: session identification written to the EDF+ header.
-        meta_row = QHBoxLayout()
-        meta_row.setSpacing(6)
-        # The code, and only the code. The name used to be asked for here and
-        # written into the EDF header as ``patientname``, which meant every
-        # recording carried it out of the laboratory — into the marking pile,
-        # into whatever is shared with a colleague, into an archive. A code
-        # identifies the student for whoever needs to, and identifies nobody
-        # for whoever does not.
-        meta_row.addWidget(QLabel(tr("Student code:")))
+        # Row 4: the test identifier, written to the EDF+ header, sharing the
+        # line with the classroom broadcast.
+        # An identifier, and only that. The name used to be asked for here
+        # and written into the EDF header as ``patientname``, which meant
+        # every recording carried it out of the laboratory — into the marking
+        # pile, into whatever is shared with a colleague, into an archive. It
+        # is called a *test* identifier rather than a student code because
+        # that is what it names: one student's recording, a pair's, a whole
+        # bench's, or the third attempt of the same person.
         self._edit_student_code = QLineEdit()
-        self._edit_student_code.setFixedWidth(90)
+        self._edit_student_code.setFixedWidth(120)
+        self._edit_student_code.setPlaceholderText(tr("e.g. bench 3, attempt 2"))
+        self._edit_student_code.setToolTip(tr(
+            "Goes into the file name, the EDF header and the report. One "
+            "student, a pair, a bench or a repeat — whatever tells this "
+            "recording apart."
+        ))
         self._edit_student_code.setText(
             self._settings.value("adquisicion/student_code", "")
         )
         self._edit_student_code.textChanged.connect(
             lambda v: self._settings.setValue("adquisicion/student_code", v)
         )
-        meta_row.addWidget(self._edit_student_code)
         # No protocol field. It asked the operator to type what the
         # application already knew — the practical is chosen at the top of the
         # window — and let the header disagree with the mode it was recorded
         # in. It is written from the mode now; see modes.mode_protocol().
-        meta_row.addStretch()
-        cfg_outer.addLayout(meta_row)
 
-        # Row 5: classroom broadcast — students follow on their phone browser.
-        # Named container: the basic level hides the whole row, status label
-        # included.
+        # Classroom broadcast — students follow on their phone browser — on
+        # the same line as the identifier. Named container: the basic level
+        # hides the whole row, status label included.
         self._box_aula = QWidget()
         aula_row = QHBoxLayout(self._box_aula)
         aula_row.setContentsMargins(0, 0, 0, 0)
         aula_row.setSpacing(6)
+        aula_row.addWidget(QLabel(tr("Test identifier:")))
+        aula_row.addWidget(self._edit_student_code)
+        aula_row.addSpacing(14)
         self._chk_aula = QCheckBox(tr("Broadcast to phones (in the laboratory)"))
         self._chk_aula.setToolTip(
             tr(
@@ -879,6 +891,12 @@ class AcquisitionTab(QWidget):
         )
         self._spin_k.setEnabled(self._chk_auto.isChecked())
         k_l.addWidget(self._spin_k)
+        # What k is, in the box and not only in the «?»: the help text
+        # named it, the box did not show it, and a knob that is explained
+        # but absent is worse than either.
+        lbl_k = QLabel(tr("threshold = rest + k × noise (3 is usual)"))
+        lbl_k.setStyleSheet("font-size: 10px; color: #6B7580;")
+        k_l.addWidget(lbl_k)
         auto_l.addWidget(self._box_k)
         markers_layout.addWidget(self._box_autoonset)
         markers_layout.addStretch()
@@ -3684,6 +3702,16 @@ class AcquisitionTab(QWidget):
         first_setup = not port
         self._box_device.setVisible(True)
         self._lbl_first_setup.setVisible(first_setup)
+        # Only the single-muscle practical can be done with the Arduino +
+        # MyoWare board; the other two need the BITalino (two channels, the
+        # accelerometer). So the device choice is offered there and nowhere
+        # else, and a practical that needs the BITalino gets it — the port
+        # or address stays editable, since that differs from board to board.
+        solo_un_musculo = self._mode == MODE_SINGLE
+        self._combo_device_type.setVisible(solo_un_musculo)
+        self._lbl_device_fixed.setVisible(not solo_un_musculo)
+        if not solo_un_musculo and self._combo_device_type.currentIndex() != 0:
+            self._combo_device_type.setCurrentIndex(0)
 
         # Channel names the practical imposes: the row goes, and the names
         # come from _active_labels(). The boxes are left exactly as the
@@ -3721,7 +3749,11 @@ class AcquisitionTab(QWidget):
         # making in the middle of a physiology exercise; the advanced
         # practical, where the reader is past that point, shows them all.
         self._box_thr.setVisible(advanced)
-        self._box_k.setVisible(advanced)
+        # k stays on screen in every practical, with its one-line meaning
+        # beside it: the box's help explains it, and a control that is
+        # explained and hidden is a puzzle. Its default is right for all
+        # three practicals; the label says so.
+        self._box_k.setVisible(True)
         self._btn_reset_escala.setVisible(advanced)
         self._sidebar.setVisible(advanced)
 

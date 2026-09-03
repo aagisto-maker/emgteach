@@ -272,11 +272,25 @@ def _draw_analysis_panel(
         ax.legend(fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 6:
-        ax.scatter(r["t_seg"], r["mdf_seg"], s=18, alpha=0.7, color="#666666",
-                   label=tr("MDF per window"))
+        dos = r.get("mdf_seg_2") is not None
+        n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
+        ax.scatter(r["t_seg"], r["mdf_seg"], s=18, alpha=0.7,
+                   color="#4169E1" if dos else "#666666",
+                   label=(tr("{muscle}: MDF per window").format(muscle=n1)
+                          if dos else tr("MDF per window")))
         if len(r["t_seg"]) >= 2:
-            ax.plot(r["t_seg"], r["fat_fitted"], color="#E74C3C", lw=2.2,
-                    label=tr("Trend (degree 2)"))
+            ax.plot(r["t_seg"], r["fat_fitted"],
+                    color="#4169E1" if dos else "#E74C3C", lw=2.2,
+                    label=(tr("{muscle}: trend").format(muscle=n1)
+                           if dos else tr("Trend (degree 2)")))
+        if dos:
+            n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+            ax.scatter(r["t_seg_2"], r["mdf_seg_2"], s=18, alpha=0.7,
+                       color="#D62728",
+                       label=tr("{muscle}: MDF per window").format(muscle=n2))
+            if len(r["t_seg_2"]) >= 2:
+                ax.plot(r["t_seg_2"], r["fat_fitted_2"], color="#D62728", lw=2.2,
+                        label=tr("{muscle}: trend").format(muscle=n2))
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_ylabel("MDF (Hz)", fontsize=8)
         ax.set_xlim(x0, x1)
@@ -577,7 +591,7 @@ def build_session_report(
     header_lines = [tr("Generated on: {dt:%Y-%m-%d %H:%M}").format(dt=generated_at)]
     if student_code:
         header_lines.append(
-            tr("Student code: {code}").format(code=student_code))
+            tr("Test identifier: {code}").format(code=student_code))
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
@@ -907,7 +921,7 @@ def build_mvc_report(
     header_lines = [tr("Generated on: {dt:%Y-%m-%d %H:%M}").format(dt=generated_at)]
     if student_code:
         header_lines.append(
-            tr("Student code: {code}").format(code=student_code))
+            tr("Test identifier: {code}").format(code=student_code))
     edf_name = Path(str(result.get("edf_path", ""))).name
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))

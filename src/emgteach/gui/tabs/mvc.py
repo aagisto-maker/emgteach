@@ -58,6 +58,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emgteach.gui.widgets.canvas import ScrollingCanvas
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
@@ -221,8 +222,9 @@ class MvcTab(QWidget):
         # file happened to be in the box.
         ctrl.addLayout(row_test)
 
+        # Same order as the analysis tab: the fragment editor first, then
+        # the channel, then the actions and the panel boxes.
         row_params = QHBoxLayout()
-        row_params.addWidget(QLabel(tr("EMG channel:")))
         self._combo_canal = QComboBox()
         self._combo_canal.setEditable(False)
         self._combo_canal.addItem("EMG")
@@ -234,7 +236,6 @@ class MvcTab(QWidget):
                 "this channel — press \"Compute MVC\" after changing it."
             )
         )
-        row_params.addWidget(self._combo_canal)
         self._combo_canal.currentIndexChanged.connect(self._on_canal_cambiado)
 
         # Fragment selection. The muscle-load analysis is about the *task*, and
@@ -257,6 +258,9 @@ class MvcTab(QWidget):
         self._lbl_fragmentos = QLabel("")
         self._lbl_fragmentos.setStyleSheet("font-size: 11px; color: #333333;")
         row_params.addWidget(self._lbl_fragmentos)
+        row_params.addSpacing(10)
+        row_params.addWidget(QLabel(tr("EMG channel:")))
+        row_params.addWidget(self._combo_canal)
 
         self._box_fenv = QWidget()
         fenv_l = QHBoxLayout(self._box_fenv)
@@ -359,11 +363,12 @@ class MvcTab(QWidget):
         # Top: the three time-series panels (with the ▲▼ sidebar). Below: the
         # muscle-load APDF on its own square canvas + a structured data panel.
         self._fig = Figure(constrained_layout=True)
-        self._canvas = FigureCanvasQTAgg(self._fig)
+        # The wheel scrolls the page of panels; it no longer rescales the
+        # panel under the cursor. Scale has its buttons in the sidebar.
+        self._canvas = ScrollingCanvas(self._fig)
         self._canvas.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
         self._mostrar_estado_vacio()
 
         self._y_scale_sidebar = QWidget()
@@ -785,11 +790,10 @@ class MvcTab(QWidget):
         if not self._selected_segments:
             self._lbl_fragmentos.setText("")
             return
-        total = sum(b - a for a, b in self._selected_segments)
+        n = len(self._selected_segments)
         self._lbl_fragmentos.setText(
-            tr("{n} fragment(s) selected ({d:.1f} s)").format(
-                n=len(self._selected_segments), d=total
-            )
+            tr("1 fragment selected") if n == 1
+            else tr("{n} fragments selected").format(n=n)
         )
 
     def _refresh_compute_enabled(self) -> None:
@@ -1332,10 +1336,28 @@ class MvcTab(QWidget):
                 lambda checked=False, a=ax, pi=panel_idx: self._y_zoom(pi, a, False)
             )
 
+            # Time scale beside the amplitude, as in the analysis tab: the
+            # wheel scrolls the page now, and the scale is a button.
+            btn_in = QToolButton()
+            btn_in.setText("▶◀")
+            btn_in.setFixedSize(32, 18)
+            btn_in.setStyleSheet(_BTN_ST)
+            btn_in.setToolTip(tr("Narrow the window (more detail)"))
+            btn_in.clicked.connect(self._on_tiempo_reducir)
+            btn_out = QToolButton()
+            btn_out.setText("◀▶")
+            btn_out.setFixedSize(32, 18)
+            btn_out.setStyleSheet(_BTN_ST)
+            btn_out.setToolTip(tr("Widen the window (see more time)"))
+            btn_out.clicked.connect(self._on_tiempo_ampliar)
+
             slot_vbox.addStretch()
             slot_vbox.addWidget(btn_up, alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addWidget(lbl,    alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addWidget(btn_dn, alignment=Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addSpacing(4)
+            slot_vbox.addWidget(btn_in, alignment=Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addWidget(btn_out, alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addStretch()
 
             self._y_scale_sidebar_layout.addWidget(slot, stretch=1)
@@ -1365,20 +1387,6 @@ class MvcTab(QWidget):
             media = (ymax - ymin) / 2.0 * escala
             ax.set_ylim(centro - media, centro + media)
         self._y_accum[panel_idx] = nuevo
-        self._canvas.draw_idle()
-
-    def _on_scroll_zoom(self, event) -> None:
-        """Mouse-wheel zoom on the panel under the cursor (X and Y), centred
-        on the cursor position."""
-        ax = event.inaxes
-        if ax is None or event.xdata is None or event.ydata is None:
-            return
-        scale = 1.0 / 1.2 if event.button == "up" else 1.2
-        x, y = event.xdata, event.ydata
-        x0, x1 = ax.get_xlim()
-        y0, y1 = ax.get_ylim()
-        ax.set_xlim(x - (x - x0) * scale, x + (x1 - x) * scale)
-        ax.set_ylim(y - (y - y0) * scale, y + (y1 - y) * scale)
         self._canvas.draw_idle()
 
     # ------------------------------------------------------------------
@@ -1537,9 +1545,20 @@ class MvcTab(QWidget):
         if not ruta.lower().endswith(".pdf"):
             ruta += ".pdf"
         out = Path(ruta)
+        # The identifier travels in the EDF header since recording time;
+        # a file from before that carries none, and the acquisition tab's
+        # current one is the best guess left.
+        from emgteach.io import read_edf_metadata
+
+        try:
+            codigo = read_edf_metadata(self._edit_path.text().strip()).student_code
+        except Exception:
+            codigo = ""
         meta = {
-            "student": self._settings.value("analisis/student", ""),
-            "student_code": self._settings.value("analisis/student_code", ""),
+            "student": "",
+            "student_code": codigo or str(
+                self._settings.value("adquisicion/student_code", "") or ""
+            ),
         }
         try:
             build_mvc_report(out, self._last_result, meta, time_range=rango)

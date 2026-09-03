@@ -137,7 +137,7 @@ class TestTheFolderFieldHasAName:
         win = _ventana(qapp, "single")
         try:
             textos = {w.text() for w in win._tab_adq.findChildren(QLabel)}
-            assert tr("Folder:") in textos
+            assert tr("Output path and file:") in textos
         finally:
             _cierra(qapp, win)
 
@@ -287,7 +287,9 @@ class TestTheAdvancedPracticalFoldsItsExtraPanels:
         win = _ventana(qapp, modo)
         try:
             assert not win._tab_ana._btn_mas_paneles.isVisibleTo(win._tab_ana)
-            assert len(self._visibles(win._tab_ana)) == 3
+            # The pair has one more than the core: the fatigue trend of
+            # both muscles.
+            assert len(self._visibles(win._tab_ana)) == {"single": 3, "pair": 4}[modo]
         finally:
             _cierra(qapp, win)
 

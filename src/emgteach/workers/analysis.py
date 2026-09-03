@@ -787,6 +787,26 @@ class AnalysisWorker(QThread):
                     result["emg_envelope_normalised_2"] = (
                         proc2["emg_envelope_normalised"]
                     )
+                    # The fatigue trend of the second muscle too, so the
+                    # agonist/antagonist practical can put both on panel 7:
+                    # a flexor that tires while its extensor does not is a
+                    # finding this practical can make and no other.
+                    segs2 = compute_segments(
+                        proc2["emg_filtered"], fs,
+                        seg_len_s=self._seg_len_s, overlap=self._overlap,
+                    )
+                    activos2 = active_segments(
+                        segs2["rms_seg"], self._profile.fatigue_active_ratio
+                    )
+                    fat2 = fit_mdf_vs_time(
+                        segs2["t_seg"][activos2], segs2["mdf_seg"][activos2],
+                        t_eval=segs2["t_seg"],
+                    )
+                    result["t_seg_2"] = segs2["t_seg"]
+                    result["mdf_seg_2"] = segs2["mdf_seg"]
+                    result["rms_seg_2"] = segs2["rms_seg"]
+                    result["fat_fitted_2"] = fat2["fitted"]
+                    result["mdf_slope_2"] = float(fat2["slope"])
                     # Same stretch of time, second channel.
                     env_pausa_2 = _cola_de_la_pausa(
                         env_calibracion_2, fs, phases, self._profile

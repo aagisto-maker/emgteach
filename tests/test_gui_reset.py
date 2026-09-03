@@ -23,8 +23,7 @@ def test_analysis_reset(qapp) -> None:
     tab = AnalysisTab(LoggerWidget(), settings)
 
     tab._edit_path.setText("foo.edf")
-    tab._edit_student_code.setText("A1")
-    tab._edit_student_code.setText("A1")
+    tab._student_code = "A1"
     tab._last_result = {"sentinel": 1}
     tab._btn_informe.setEnabled(True)
     tab._btn_guardar.setEnabled(True)
@@ -33,8 +32,7 @@ def test_analysis_reset(qapp) -> None:
 
     assert tab._last_result is None
     assert tab._edit_path.text() == ""
-    assert tab._edit_student_code.text() == ""
-    assert tab._edit_student_code.text() == ""
+    assert tab._student_code == ""
     assert not tab._btn_informe.isEnabled()
     assert not tab._btn_guardar.isEnabled()
     # The persisted student fields are cleared too.

@@ -261,7 +261,9 @@ class TestTheTourIsShort:
     ) -> None:
         botones = main_window.findChildren(HelpButton)
         claves = {b.objectName().removeprefix("help:") for b in botones}
-        assert len(claves) >= 10
+        # Nine boxes: the panel chips lost their own box when they joined the
+        # editors' line, and their text went to the «Panels:» tooltip.
+        assert len(claves) >= 9
         assert claves <= set(help_texts.keys())
 
     def test_the_button_explains_over_its_own_box(self, main_window, qapp) -> None:

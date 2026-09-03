@@ -87,6 +87,35 @@ _ES = {
     "Antagonist — e.g. ECR": "Antagonista, p. ej. ECR",
     "Agonist": "Agonista",
     "Antagonist": "Antagonista",
+    # --- acquisition: output path, test identifier, k ---
+    "Output path and file:": "Ruta y archivo de salida:",
+    "Test identifier:": "Identificador de prueba:",
+    "Test identifier: {code}": "Identificador de prueba: {code}",
+    "Device: BITalino": "Dispositivo: BITalino",
+    "with:": "con:",
+    "e.g. bench 3, attempt 2": "p. ej. mesa 3, intento 2",
+    "Goes into the file name, the EDF header and the report. One student, a "
+    "pair, a bench or a repeat — whatever tells this recording apart.":
+        "Va al nombre del archivo, a la cabecera del EDF y al informe. Un "
+        "alumno, una pareja, una mesa o una repetición: lo que distinga este "
+        "registro.",
+    "threshold = rest + k × noise (3 is usual)":
+        "umbral = reposo + k × ruido (lo habitual es 3)",
+    "Type the name of each muscle in its box, following the order of the "
+    "board's channels (Muscle 1 is the one recorded on A1).":
+        "Escriba el nombre de cada músculo en la casilla correspondiente "
+        "siguiendo el orden del canal de la placa (Músculo 1 será el que se "
+        "está registrando por A1).",
+    # --- fatigue panel with both muscles ---
+    "{muscle}: MDF per window": "{muscle}: MDF por ventana",
+    "{muscle}: trend": "{muscle}: tendencia",
+    # --- analysis row: fragments count, panel chips ---
+    "1 fragment selected": "1 fragmento seleccionado",
+    "{n} fragments selected": "{n} fragmentos seleccionados",
+    "The chips at the end of that line choose which panels are drawn; hover "
+    "over «Panels:» for what each one shows.":
+        "Las casillas al final de esa línea eligen qué paneles se dibujan; "
+        "pase el ratón por «Paneles:» para ver qué muestra cada uno.",
     # --- per-contraction table ---
     "{n} contractions found; see the table.":
         "{n} contracciones encontradas; véase la tabla.",
