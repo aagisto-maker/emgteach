@@ -328,3 +328,49 @@ class TestWhatTheSecondBenchSessionShowed:
         cvm.reset()
         qapp.processEvents()
         assert not cvm._entry_panel.isVisibleTo(cvm)
+
+    def test_a_new_recording_forgets_what_the_last_one_chose(
+        self, tab, qapp, tmp_path: Path
+    ) -> None:
+        """Bench, 3 September, fourth recording: no guided box at all.
+
+        Opening a file cleared the fragments but kept the discarded
+        calibration repetitions and the record of which step had been shown,
+        so the new file opened as if its calibration were reviewed, offered
+        «select fragments» — the step the previous file had ended on — and a
+        step that has not changed is not offered again. Worse, the discards
+        went to the worker by number, against a different recording.
+        """
+        import time
+
+        tab._cal_keep = {0: {1, 2}}
+        tab._selected_segments = [(0.0, 1.0)]
+        tab._paso_mostrado = "frags"
+        pasos: list[str] = []
+        tab.coach_step.connect(lambda _t, cuerpo, _b: pasos.append(cuerpo))
+        # One channel: with two, adopting a recording asks which muscle to
+        # analyse in a modal dialogue, and headless that question waits for
+        # an answer that never comes.
+        tab.adopt_recording(_registro(tmp_path / "n.edf"))
+        tab._worker.wait(120000)
+        t0 = time.time()
+        while time.time() - t0 < 5 and tab._worker.isRunning():
+            qapp.processEvents()
+        for _ in range(20):
+            qapp.processEvents()
+        assert tab._cal_keep == {} and tab._selected_segments == []
+        assert pasos and tr("Select fragments…") in pasos[-1]
+
+    def test_a_step_replaces_the_one_still_on_screen(self, main_window, qapp) -> None:
+        """The previous «open this next» left on screen used to swallow the
+        next one, and a step is only ever offered once."""
+        main_window._tabs.setCurrentWidget(main_window._tab_ana)
+        qapp.processEvents()
+        main_window._mostrar_paso_guiado("t", "primero", main_window._tab_ana._btn_reps)
+        assert main_window._coach.isVisible()
+        main_window._mostrar_paso_guiado(
+            "t", "segundo", main_window._tab_ana._btn_fragmentos
+        )
+        assert main_window._coach.isVisible()
+        assert "segundo" in main_window._coach._lbl_body.text()
+        main_window._coach.stop()

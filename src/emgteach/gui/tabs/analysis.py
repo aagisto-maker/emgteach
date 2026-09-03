@@ -989,6 +989,27 @@ class AnalysisTab(QWidget):
     # Control slots
     # ------------------------------------------------------------------
 
+    def _olvidar_lo_elegido(self) -> None:
+        """What was chosen for the previous recording does not carry over.
+
+        Opening a file cleared the fragments but kept the calibration
+        repetitions that had been discarded, and the record of which guided
+        step had been shown. From the bench of 3 September: with the discards
+        of the previous file still in hand the new one opened as if its
+        calibration had already been reviewed, so the step it offered was
+        «select fragments» — the same step the previous file had ended on —
+        and a step that has not changed is not offered again. No guidance,
+        and repetitions of one recording being discarded by number in
+        another.
+        """
+        self._cal_keep = {}
+        self._actualizar_ayuda_reps()
+        self._selected_segments = []
+        self._segment_labels = []
+        self._analysis_filter_kwargs = None
+        self._actualizar_etiqueta_fragmentos()
+        self._paso_mostrado = ""
+
     def adopt_recording(self, path: str) -> None:
         """Take the recording just made as the file to analyse, and analyse it.
 
@@ -1010,10 +1031,7 @@ class AnalysisTab(QWidget):
         self._populate_channels(path)
         self.file_opened.emit(path, self._combo_canal.currentText().strip())
         self._btn_fragmentos.setEnabled(True)
-        self._selected_segments = []
-        self._segment_labels = []
-        self._analysis_filter_kwargs = None
-        self._actualizar_etiqueta_fragmentos()
+        self._olvidar_lo_elegido()
         self._logger.append_log(
             tr("Recording loaded for analysis: {path}").format(path=Path(path).name)
         )
@@ -1034,12 +1052,8 @@ class AnalysisTab(QWidget):
             self._populate_channels(path)
             self.file_opened.emit(path, self._combo_canal.currentText().strip())
             self._btn_fragmentos.setEnabled(True)
-            # A new file invalidates any previous fragment selection and its
-            # associated filter cut-offs.
-            self._selected_segments = []
-            self._segment_labels = []
-            self._analysis_filter_kwargs = None
-            self._actualizar_etiqueta_fragmentos()
+            # A new file invalidates whatever was chosen for the last one.
+            self._olvidar_lo_elegido()
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
             self._btn_csv.setEnabled(False)
@@ -2863,12 +2877,7 @@ class AnalysisTab(QWidget):
         self._btn_analizar.setEnabled(False)
         self._btn_fragmentos.setEnabled(False)
         self._btn_reps.setEnabled(False)
-        self._cal_keep = {}
-        self._actualizar_ayuda_reps()
-        self._selected_segments = []
-        self._segment_labels = []
-        self._analysis_filter_kwargs = None
-        self._actualizar_etiqueta_fragmentos()
+        self._olvidar_lo_elegido()
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)

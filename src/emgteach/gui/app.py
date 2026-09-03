@@ -250,6 +250,9 @@ class MainWindow(QMainWindow):
         self._paso_pendiente: tuple[str, str, object] | None = None
         tabs.currentChanged.connect(self._cerrar_paso_guiado)
         tabs.currentChanged.connect(lambda _i: self._paso_guiado_pendiente())
+        # And when whatever was on screen (the tour, a «?») closes, the step
+        # that waited behind it comes forward.
+        self._coach.finished.connect(self._paso_guiado_pendiente)
 
     def _mostrar_paso_guiado(self, titulo: str, cuerpo: str, control) -> None:
         """Float one step of the analysis sequence over the control it names.
@@ -260,7 +263,13 @@ class MainWindow(QMainWindow):
         while the analysis tab is not the one on screen.
         """
         if self._coach.isVisible():
-            return
+            if self._coach.is_tour:
+                # Never over the tour; kept for when it ends.
+                self._paso_pendiente = (titulo, cuerpo, control)
+                return
+            # A single step still on screen is the previous «open this
+            # next»; the next one replaces it rather than being dropped.
+            self._coach.stop()
         if self._tabs.currentWidget() is not self._tab_ana:
             # Kept rather than dropped. The recording is analysed as soon as
             # it is opened, which happens while the student is still on the
