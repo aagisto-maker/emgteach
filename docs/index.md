@@ -31,6 +31,14 @@ metric — plus teaching materials, are available (English and Spanish):
 - **One‑page cheat sheet** — English: [`cheatsheet.md`](cheatsheet.md) ·
   Spanish: [`chuleta_es.md`](chuleta_es.md)
 
+## Development
+
+Parts of this software were developed with the assistance of an AI coding
+assistant (Anthropic's Claude) under the direction and review of the author,
+who set all requirements, took the design decisions and is responsible for the
+released code. The AI assistant is a tool and is not an author; see
+[`AUTHORS.md`](https://github.com/aagisto-maker/emgteach/blob/main/AUTHORS.md).
+
 ## Useful links
 
 - Source code: <https://github.com/aagisto-maker/emgteach>
