@@ -20,26 +20,33 @@
 normalización de señales de electromiografía de superficie (EMG)** en el
 laboratorio docente de fisiología. Permite:
 
-- **Registrar** la actividad eléctrica muscular en tiempo real, con las
-  plataformas BITalino o Arduino + MyoWare, en **uno o dos canales**
-  (p. ej. músculo agonista y antagonista) y, si la práctica lo pide, con el
-  **acelerómetro**.
-- **Visualizar** en vivo la señal en bruto, filtrada y su envolvente, marcar
-  eventos (manual o automáticamente) y **monitorizar la carga muscular en
-  tiempo real** con avisos de cansancio/fatiga.
-- **Analizar** un registro a posteriori: amplitud (RMS), contenido espectral
-  (PSD, frecuencia media y mediana) e **indicadores de fatiga muscular**.
-- **Normalizar** la señal respecto a la **Contracción Voluntaria Máxima (CVM)**
-  y evaluar la **carga muscular** según el método de Jonsson (ergonomía).
-- **Exportar informes PDF** reproducibles de la sesión.
+- **Registrar** la actividad eléctrica muscular en tiempo real con un BITalino
+  (o, en la práctica de un músculo, con un Arduino + MyoWare), en **uno o dos
+  canales** y, si la práctica lo pide, con el **acelerómetro**.
+- **Calibrar la contracción voluntaria máxima dentro de la propia sesión**, con
+  un asistente que la escribe en el mismo fichero, y **monitorizar la carga
+  muscular en tiempo real** con avisos de cansancio y fatiga.
+- **Analizar** un registro en cuanto se abre, sin pulsar nada: una **tabla por
+  contracción** (RMS, pico en % CVM, frecuencia mediana, retraso electromecánico),
+  las **fichas del resumen** con sus rangos orientativos, el espectro antes y
+  después del filtro, y el **veredicto de fatiga** con las condiciones que exige.
+- **Comparar dos músculos** en % CVM y medir su **coactivación** (índice de
+  Falconer-Winter) por maniobra.
+- **Normalizar** la tarea respecto a la **CVM** y evaluar la **carga muscular**
+  según el método de Jonsson (ergonomía).
+- **Exportar informes PDF** reproducibles, que llevan la calibración, las tablas y
+  las fichas: el entregable de la práctica.
 
 Los archivos se guardan en formato estándar **EDF+** (compatible con otras
 herramientas como MNE‑Python o EDFbrowser).
 
 La aplicación se organiza en **tres pestañas**: **Adquisición**, **Análisis** y
-**CVM** (normalización a la contracción máxima). Antes que ellas está el
-**selector de práctica**, con tres modos, del que se derivan el número de canales,
-el uso del acelerómetro y las medidas que cada pestaña ofrece (§4.1).
+**Normalización CVM**. Antes que ellas está el **selector de práctica**, con tres
+opciones y una banda de color que dice el nivel (básico, intermedio, avanzado),
+del que se derivan el número de canales, el uso del acelerómetro, qué pide la
+grabación y qué medidas ofrece cada pestaña (§4.1). Una **guía de cinco pasos** y
+un **«?»** en la esquina de cada caja llevan la explicación al sitio donde surge la
+pregunta (§4.2).
 
 [Figura sugerida: captura de la ventana principal mostrando las tres pestañas y el
 selector de práctica en la esquina superior derecha.]
@@ -195,7 +202,8 @@ es más pequeño y siempre reproducible.
 | Corte de envolvente | 5 Hz | Suavizado del nivel de activación |
 | Ventana RMS | 50 ms | Cálculo de amplitud RMS |
 | Segmento de análisis de fatiga | 1 s (solape 50 %) | Ventanas para RMS/MDF en el tiempo |
-| Percentil para la referencia CVM | 95 | Referencia robusta de máximo (ver §6.1) |
+| Ventana de la referencia CVM | 0,2 s | El mejor 0,2 s de las seis repeticiones de calibración (ver §5.1) |
+| Calibración | 3 × 4 s mantenidas + 3 × 1,5 s breves, tras 10 s de calentamiento | Lo que pide el asistente por músculo |
 
 [Figura sugerida: cuatro trazados apilados del mismo tramo —en bruto, filtrado,
 rectificado y envolvente— para ilustrar la cadena de procesado.]
@@ -211,56 +219,44 @@ idioma, hay un desplegable con tres opciones. Es el primer control que se toca e
 cada sesión: fija qué se registra, y las tres pestañas se configuran a partir de
 ahí.
 
-| Modo | Canales EMG | Acelerómetro | Prácticas del cuaderno |
-|---|---|---|---|
-| **Contracción de un músculo** | 1 | no | 1, 2, 4 y 5 |
-| **Contracción agonista / antagonista** | 2 | no | 3 |
-| **Cinemática muscular** | 1 | sí | 6 |
+| Práctica | Nivel (banda) | Canales EMG | Acelerómetro | Dispositivo | Calibración |
+|---|---|---|---|---|---|
+| **Contracción de un músculo** | básico (verde) | 1 | no | BITalino o Arduino + MyoWare | con el botón «Calibrar CVM» |
+| **Contracción agonista / antagonista** | intermedio (naranja) | 2 | no | BITalino | automática al iniciar la grabación |
+| **Cinemática muscular** | avanzado (violeta) | 1 | sí | BITalino | con el botón «Calibrar CVM» |
 
-El modo **decide lo que se registra**, y no se limita a filtrar lo que se ve. Fija el
-número de canales y el uso del acelerómetro, y cada pestaña ofrece solo las
-medidas que tienen sentido para esa práctica. Por eso han desaparecido de la
-pantalla el selector de número de canales y la casilla del acelerómetro: eran
-controles que solo podían contradecir al modo elegido, y un montaje de dos
-músculos elegido en un modo podía sobrevivir a un cambio de modo que ya no tenía
-forma de mostrarlo ni de cambiarlo.
+La práctica **decide lo que se registra**, y no se limita a filtrar lo que se ve.
+Fija el número de canales y el uso del acelerómetro, y cada pestaña ofrece solo
+las medidas que tienen sentido para ella. Por eso no hay en pantalla un selector
+de número de canales ni una casilla del acelerómetro, y el selector de
+dispositivo aparece solo en la práctica de un músculo: las otras dos necesitan un
+segundo canal o el acelerómetro, que solo tiene el BITalino, así que la caja dice
+«Dispositivo: BITalino» y deja editable la dirección.
 
-Conviene conocer de antemano dos comportamientos que, sin explicación, parecen
-caprichosos:
+**El nivel es la práctica.** No hay una casilla de «opciones avanzadas»: los
+controles finos (frecuencia de corte de la envolvente, región de interés, guardar
+el registro afinado, estudio de fuerza-velocidad) pertenecen a la práctica de
+cinemática, que es avanzada por su propia naturaleza, y allí ocupan una fila
+propia. Las otras dos prácticas no los muestran.
 
-1. **Lo que un modo oculta, además lo desmarca**, y al volver a ese modo se
-   restaura la selección anterior. Un panel que quedara marcado se seguiría
-   dibujando sin forma visible de quitarlo.
-2. **Una función que está funcionando no se oculta**, aunque se apaguen las
-   opciones avanzadas. La detección automática de inicio, si está activa,
-   permanece a la vista: una marca automática que nadie pueda parar es peor que
-   un control de más.
+Dos comportamientos que conviene conocer de antemano:
 
-**Opciones avanzadas.** Casilla contigua al selector, e independiente de él.
-Muestra los controles finos comunes a las tres prácticas: frecuencias de corte de
-los filtros, umbrales de aviso de carga, región de interés y detección automática
-de inicio. Sin marcarla, la pestaña de adquisición se queda en lo imprescindible y
-la de análisis ofrece tres paneles.
+1. **Lo que una práctica no ofrece, además lo desmarca**, y al volver a esa
+   práctica se restaura la selección anterior. Un panel que quedara marcado se
+   seguiría dibujando sin forma visible de quitarlo.
+2. **Cada práctica abre con sus paneles y el botón «Más paneles…» revela el
+   resto**, salvo los que el registro no puede alimentar (un segundo músculo, el
+   acelerómetro). Un alumno curioso no está confinado a la práctica avanzada.
 
-Hay una excepción deliberada. Si no hay ningún puerto ni dirección guardados, la
-caja de conexión del dispositivo se muestra igualmente, con un aviso de primera
-configuración. Sin ella, una instalación recién hecha no tendría manera de
-conectar nada y la aplicación parecería rota. Una vez guardado el dispositivo, esa
-caja pasa a depender de las opciones avanzadas.
-
-**El registro manda sobre el modo.** Al abrir en modo agonista / antagonista un
+**El registro manda sobre la práctica.** Al abrir en agonista / antagonista un
 EDF que solo tiene un canal, se avisa de cuántos canales tiene el archivo y se
-propone el modo que le corresponde, en lugar de comportarse en silencio como un
-análisis de un canal mientras el modo sigue afirmando que hay dos músculos. Con
-un archivo de dos canales, en cambio, la comparación de envolventes se activa
-sola.
+propone la práctica que le corresponde, en lugar de comportarse en silencio como
+un análisis de un canal mientras el selector sigue afirmando que hay dos músculos.
+Con un archivo de dos canales, la comparación de envolventes se activa sola.
 
 [Figura sugerida: detalle de la esquina superior derecha con el selector de
-práctica desplegado, la casilla «Opciones avanzadas», el selector de idioma y los
-botones «Guía» y «?».]
-
-[Figura sugerida: la pestaña de Adquisición en el mismo modo, con y sin opciones
-avanzadas, una al lado de la otra.]
+práctica desplegado, la banda de nivel, el selector de idioma y los botones
+«Guía» y «?».]
 
 ### 4.2 La guía interactiva
 
@@ -268,25 +264,27 @@ Recorrido que señala cada control **sobre la propia pantalla**: oscurece el res
 rodea el control del que habla y muestra al lado qué es y qué significa
 fisiológicamente. Cambia de pestaña por su cuenta cuando el recorrido lo pide.
 
-**Sigue al modo:** 14 pasos en la contracción de un músculo, 15 en agonista /
-antagonista y 17 en cinemática muscular. El acelerómetro se explica solo en la
-práctica que lo usa, y la coordinación agonista / antagonista solo en la suya.
+**Cinco pasos** (siete en cinemática): elegir la práctica; conectar, con el
+dispositivo que esa práctica admite y el orden de los canales (Músculo 1 es el
+registrado por A1); grabar, con el máximo dentro del registro; leer el análisis;
+y por qué todo está en % CVM. En cinemática se añaden la colocación del
+acelerómetro y el estudio de fuerza-velocidad. Lo que antes eran catorce a
+diecisiete pasos se repartió entre estos cinco y los **«?»** de cada caja: la
+explicación de un control aparece donde surge la pregunta, sobre la propia caja,
+con el mismo panel que usa la guía.
 
-Se ofrece al arrancar, mediante un diálogo con una casilla **«Ofrecer esta guía la
+Se ofrece al arrancar, mediante un diálogo con una casilla **«Mostrar esta guía la
 próxima vez»** marcada por defecto. Un ordenador de laboratorio ve un alumno
 distinto cada sesión, así que la decisión de apagarla corresponde a quien tiene el
-equipo a su cargo y no a quien lo abrió primero. El botón **«Guía»**, junto al
-**«?»**, la relanza en cualquier momento. Se niega a arrancar si hay un registro
-en marcha.
+equipo a su cargo y no a quien lo abrió primero. Ese diálogo nombra el sensor de
+la práctica elegida: los dos en la de un músculo, solo el BITalino en las otras.
+El botón **«Guía»**, junto al **«?»**, la relanza en cualquier momento. Se niega a
+arrancar si hay un registro en marcha.
 
-El recorrido cubre, por este orden: la elección de la práctica y las opciones
-avanzadas, los dispositivos admitidos y la conexión, las etiquetas de canal, la
-colocación del acelerómetro (solo en cinemática), la grabación, el seguimiento en
-móviles, los marcadores, la adquisición guiada de fuerza-velocidad (solo en
-cinemática), la calibración del máximo, la fatiga en el espectro, la coordinación
-agonista / antagonista (solo en su modo), el estudio de fuerza-velocidad (solo en
-cinemática), la descarga de informe y datos, el sentido de normalizar y la carga
-muscular.
+**Los pasos guiados del análisis.** Al abrir un registro, la pestaña de Análisis
+señala con el mismo panel flotante el siguiente paso: primero «Repeticiones de la
+calibración…», después «Seleccionar fragmentos…». El cuadro espera a que la
+pestaña esté en pantalla y desaparece al cambiar de pestaña.
 
 [Figura sugerida: un paso de la guía en funcionamiento, con la pantalla oscurecida
 y el control resaltado.]
@@ -295,13 +293,19 @@ y el control resaltado.]
 
 Permite **registrar** una sesión y observarla en vivo.
 
-**Configuración del dispositivo** (visible con las opciones avanzadas, o en una
-instalación sin dispositivo guardado)
-- Selección del tipo de dispositivo (BITalino o Arduino + MyoWare).
-- Dirección **MAC** (BITalino) o **puerto COM** (Arduino).
-- **Carpeta de destino** del archivo EDF.
-- **Etiqueta** de cada canal (nombre del músculo). El número de canales ya no se
-  elige aquí: lo fija el modo.
+**Configuración del dispositivo**
+- Tipo de dispositivo (BITalino o Arduino + MyoWare), solo en la práctica de un
+  músculo; en las otras dos la fila dice «Dispositivo: BITalino».
+- Dirección **MAC** (BITalino) o **puerto COM** (Arduino), siempre editable. El
+  botón «Por defecto» restaura la guardada.
+- **Ruta y archivo de salida**: la carpeta donde se escribirá el EDF.
+- **Etiquetas**: el nombre de cada músculo, en el orden de los canales de la
+  placa (Músculo 1 es el registrado por A1). En el par, las casillas empiezan
+  vacías con una pista («Agonista, p. ej. FCR»); vacías, el registro dice
+  «Agonista» y «Antagonista». En las otras dos prácticas el canal se llama
+  «Músculo» y no hay casilla.
+- **Identificador de prueba**: un alumno, una pareja, una mesa o un intento; va a
+  la cabecera del EDF y al informe. Comparte línea con la difusión a móviles.
 
 **Control de adquisición**
 - Botones **Conectar/Desconectar** e **Iniciar/Detener grabación**.
@@ -327,36 +331,49 @@ vertical de cada gráfica se ajusta con botones **▲▼**, y la **ventana tempo
 con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
 
 **Marcadores de eventos**
-- Marcadores **manuales** con etiquetas predefinidas (*Inicio contracción*, *Fin
-  contracción*, *Fatiga*, *Reposo*, *Otro…*) o personalizadas; se pueden insertar
-  con un botón o con la tecla **M**.
-- **Detección automática de inicio de contracción** (*Auto‑inicio*), entre las
-  opciones avanzadas: se marca el comienzo de una contracción cuando la envolvente
-  supera un **umbral** (línea base + *k*·desviación típica del reposo); la
-  sensibilidad se ajusta con el parámetro **k**. (Significado en §5.6.) Si queda
-  activa, sigue a la vista aunque se apaguen las opciones avanzadas.
+- **Detección automática de inicio de contracción** (*Auto-inicio*), a la vista en
+  las tres prácticas: se marca el comienzo de una contracción cuando la envolvente
+  supera un **umbral** igual al reposo más *k* veces su ruido; *k* está al lado
+  con su explicación («umbral = reposo + k × ruido; lo habitual es 3»). Una *k*
+  menor detecta esfuerzos más suaves y admite más falsas alarmas. (Significado en
+  §5.6.)
+- No hay marcado manual: pedir al operador que teclee mientras vigila al sujeto y
+  la señal era una fuente de errores. Las maniobras se reconocen después, en el
+  editor de fragmentos, y la aplicación rellena sola qué músculo llevó cada una.
 - Las marcas se dibujan en vivo sobre las gráficas y quedan registradas como
-  **anotaciones** en el EDF.
+  **anotaciones** en el EDF, igual que las fases de la sesión (calentamiento,
+  cada repetición de calibración, preparación, registro).
 
-**Monitor de carga muscular en vivo (CVM en tiempo real)**
-- Botón **Calibrar CVM**: durante la grabación se realizan unos segundos de
-  **contracción máxima** y se calcula la **referencia CVM** por canal. La variante
-  **«Mejor de 3»** está entre las opciones avanzadas.
-- Tras calibrar, por cada canal se muestra una **barra de carga** que indica el
-  **% de CVM actual**, con **zonas de color**: verde (normal), naranja
-  (*Warning*, cansancio) y roja (*Danger*, fatiga), y los niveles **P10/P50/P90**
-  (estático/mediano/pico) en tiempo real. (Significado en §5.5.) Los umbrales de
-  esos avisos se editan con las opciones avanzadas.
+**Carga muscular (CVM en vivo)**
+- **La calibración es un asistente**, y siempre el mismo: 10 s de calentamiento
+  con dos o tres contracciones suaves; por músculo, **tres contracciones máximas
+  mantenidas** de 4 s («¡Contraiga FCR al máximo!») y **tres sacudidas máximas
+  breves** de 1,5 s («Haga una contracción o sacudida muscular simple (breve) con
+  la máxima fuerza posible»), cada una con su cuenta atrás y sus 2 s de descanso.
+  En la práctica del par lo lanza el propio botón de grabar, antes de la tarea,
+  y después escribe 5 s de preparación y el inicio del registro; en las otras dos
+  se lanza con **«Calibrar CVM»** con la grabación en marcha. Todo queda dentro del
+  mismo fichero, cada repetición con su tramo marcado (§5.1).
+- Al terminar cada músculo, el asistente comprueba que la referencia supere al
+  menos cinco veces su nivel de reposo (si no, avisa: no fue una contracción
+  máxima) y, con dos músculos, mide **cuánto leyó el otro canal** durante el
+  máximo. Por encima del 50 % de su propia referencia el panel termina en
+  «Canales sin separar».
+- Tras calibrar, por cada canal se muestra una **barra de carga** con el **% de
+  CVM actual** y sus **zonas de color**: verde hasta el 40 %, naranja (cansancio)
+  hasta el 70 %, roja (fatiga) por encima; y los niveles **P10/P50/P90** en vivo.
+  (Significado en §5.5.)
 
 **El acelerómetro** (solo en cinemática muscular). Se registra como un canal más,
 en unidades `g` y sin calibrar. La caja de acelerómetro reúne el selector de
 entrada analógica (A1–A6, por defecto A4), el botón **«Buscar canal del ACC…»** que lo
 localiza leyendo las seis entradas en vivo, y el selector de colocación: sobre el
 músculo (MMG) o sobre el segmento que se mueve (temblor y fuerza-velocidad). El
-selector de entrada no depende de las opciones avanzadas: el valor por defecto no
-acierta en todas las placas, y esconderlo dejaría un primer registro de cinemática
-sin leer nada. En esta caja está también el botón **«F-V guiada…»**, que dirige la
-adquisición de una serie de cargas conocidas.
+selector de entrada está siempre a la vista: el valor por defecto no acierta en
+todas las placas, y esconderlo dejaría un primer registro de cinemática sin leer
+nada. En esta caja están también **«F-V guiada…»**, que dirige la adquisición de
+una serie de cargas conocidas, y **«Ensayar…»**, que corre ese procedimiento sin
+hardware sobre una señal simulada.
 
 [Figura sugerida: captura completa de la pestaña de Adquisición durante una
 grabación de 2 canales, señalando: gráficas apiladas, controles de escala,
@@ -369,41 +386,63 @@ en zona verde, otra en naranja/roja.]
 
 Analiza en profundidad un registro EDF ya guardado.
 
-**Parámetros**
-- Selección del **archivo EDF** y del **canal** a analizar.
-- **Frecuencia de corte de la envolvente** y **región de interés**, entre las
-  opciones avanzadas.
-- **Código de alumno/a**, opcional (para el informe). El nombre no se pide a
-  propósito: un registro lleva su cabecera a donde vaya, y un código
-  identifica al alumno ante quien tiene que identificarlo y ante nadie más.
+**Parámetros de análisis** (una caja, dos o tres filas)
+- Primera fila: el **archivo EDF** y los botones Explorar, Analizar, Guardar figura,
+  Generar informe PDF y Exportar CSV. El registro **se analiza solo al abrirlo**
+  (o al terminar una grabación); «Analizar» solo se enciende cuando ha cambiado
+  algún ajuste desde el último análisis.
+- Segunda fila, **en el orden en que se hacen las cosas**: «Repeticiones de la
+  calibración…», «Seleccionar fragmentos…» con el recuento de fragmentos elegidos,
+  el **canal** (y, en el par, el compañero, que se fija solo), y las **casillas de
+  paneles** de la práctica con «Más paneles…» al final.
+- Solo en cinemática, una fila de controles finos: **analizar solo una región**
+  (de… a…), **frecuencia de corte de la envolvente**, **Guardar EDF afinado…** y
+  **Estudio fuerza-velocidad…**.
+- El **identificador de prueba** no se pide aquí: se lee de la cabecera del EDF,
+  donde lo escribió la pestaña de Adquisición, y va al informe. Debajo de la
+  caja, una línea dice cuál es el siguiente paso.
 
-**Los doce paneles de análisis** y su significado. Los tres primeros son el núcleo
-docente y se ofrecen siempre; los cinco siguientes valen para cualquier práctica y
-dependen de las opciones avanzadas; los cuatro últimos pertenecen cada uno a una
-práctica.
+**Los trece paneles de análisis** y su significado. Cada práctica abre con los
+suyos y **«Más paneles…»** revela el resto, salvo los que el registro no puede
+alimentar. Los paneles se apilan en una página que se desplaza con la rueda del
+ratón; a la izquierda de cada uno, ▲▼ cambian la escala de amplitud y ▶◀ la de
+tiempo.
 
-| Panel | Qué muestra | Significado | Se ofrece |
+| Panel | Qué muestra | Significado | Abre con |
 |---|---|---|---|
-| **1A. Señal en bruto** | EMG sin procesar | Punto de partida; permite ver artefactos | siempre |
-| **2. Envolvente normalizada** | Envolvente escalada a su máximo (0–1) | Forma de la activación, comparable | siempre |
-| **3. PSD con MNF/MDF** | Densidad espectral de potencia | Reparto de energía por frecuencia; base de la fatiga | siempre |
-| **4. Filtrada + rectificada** | Señal limpia y su valor absoluto | Aísla la actividad muscular real | opciones avanzadas |
-| **5. Envolvente vs RMS** | Dos medidas de amplitud superpuestas | Nivel de activación en el tiempo | opciones avanzadas |
-| **6. RMS por ventana** | Amplitud RMS a lo largo del tiempo | Evolución del esfuerzo | opciones avanzadas |
-| **7. MDF vs tiempo (fatiga)** | Frecuencia mediana por segmento + tendencia | **Indicador de fatiga**: si desciende, hay fatiga | opciones avanzadas |
-| **8. RMS vs MDF** | Relación amplitud–frecuencia | Relación fuerza/fatiga durante la tarea | opciones avanzadas |
-| **9. Envolventes superpuestas** | Las dos envolventes en el mismo eje | Coactivación y coordinación | agonista / antagonista |
-| **10. EMG vs MMG** | Envolvente eléctrica y mecánica | Acoplamiento electromecánico | cinemática muscular |
-| **11. Temblor** | Espectro del acelerómetro | Pico de temblor fisiológico (~8–12 Hz) | cinemática muscular |
-| **12. Movimiento vs EMG** | Trazado cinemático y envolvente EMG | El movimiento sigue a la contracción | cinemática muscular |
+| **1A. Señal en bruto** | EMG sin procesar, con los inicios marcados por líneas finas | Punto de partida; permite ver artefactos | las tres prácticas |
+| **1B. Señal en bruto (2.º)** | El segundo músculo | Cada músculo en su carril | agonista / antagonista |
+| **2. Envolvente normalizada** | Envolvente escalada a su máximo (0–1) | Forma de la activación, comparable | un músculo, cinemática |
+| **3. PSD con MNF/MDF** | Densidad espectral; en gris, el espectro **antes** del filtro; en el par, los dos músculos con su MDF | Qué quitó el filtro; reparto de energía; base de la fatiga | las tres prácticas |
+| **4. Filtrada + rectificada** | Señal limpia y su valor absoluto | Aísla la actividad muscular real | «Más paneles…» |
+| **5. Envolvente frente a RMS** | Dos medidas de amplitud superpuestas | Nivel de activación en el tiempo | «Más paneles…» |
+| **6. RMS por ventana** | Amplitud RMS a lo largo del tiempo | Evolución del esfuerzo | «Más paneles…» |
+| **7. MDF frente al tiempo** | MDF por ventana y su recta; en el par, los dos músculos | **Indicador de fatiga** (§5.4) | agonista / antagonista |
+| **8. RMS frente a MDF** | Relación amplitud–frecuencia | Relación fuerza/fatiga durante la tarea | «Más paneles…» |
+| **9. Envolventes superpuestas** | Las dos envolventes en % CVM sobre el mismo eje, con la banda del 100 % | Coactivación y coordinación | agonista / antagonista |
+| **10. EMG frente a MMG** | Envolvente eléctrica y mecánica | Acoplamiento electromecánico | cinemática muscular |
+| **11. Temblor** | Espectro del acelerómetro | Pico del temblor fisiológico (8–12 Hz) | cinemática muscular |
+| **12. Movimiento frente a EMG** | Trazado cinemático y envolvente EMG, con el retraso electromecánico medio anotado | El movimiento sigue a la contracción | cinemática muscular |
 
-Los tres primeros vienen **marcados por defecto**. Los nombres de la tabla son los
-del diálogo de informe; en la fila de casillas de la pantalla aparecen abreviados
-(*1A. En bruto*, *2. Env. norm.*, *3. PSD*…).
+En la fila de casillas los nombres aparecen abreviados (*1A. En bruto*, *2. Env.
+norm.*, *3. PSD*…); los de la tabla son los de los títulos de los paneles y del
+informe. Sobre cualquier panel en % CVM, una banda rosa marca lo que pasa del
+100 %, y si el registro pasa mucho tiempo ahí el panel lo dice en rojo.
 
-**Resumen de métricas** (panel numérico): RMS global, frecuencia media (MNF),
-frecuencia mediana (MDF), pendiente de la MDF, indicador de **fatiga**, iEMG y
-duración. (Definiciones e interpretación en §5.)
+**La banda inferior**, en tres cuadros que comparten el ancho:
+
+- **Coactivación** (solo en el par): una fila por ventana con la activación media
+  de cada músculo en % CVM y el índice de Falconer-Winter, o «no se informa» y su
+  razón (§5.7).
+- **Contracciones**: una fila por contracción encontrada, con inicio, duración,
+  músculo que la llevó (o «Cocontracción»), RMS, pico en % CVM (en rojo si pasa
+  del 100 %), MDF y, en cinemática, el retraso electromecánico. Son las mismas
+  contracciones que propone el editor de fragmentos.
+- **Resumen del análisis**, en fichas: frecuencia media, frecuencia mediana,
+  pendiente de la MDF con su R², fatiga (el veredicto), **máximo de la tarea**
+  (por músculo, en rojo con «no fue un máximo» si la calibración no lo fue), RMS
+  global, iEMG, duración y CVM con su origen. Bajo cada ficha, en gris, el rango
+  orientativo (§5.7). El «?» de cada cuadro explica cómo leerlo.
 
 **Estudio de fuerza-velocidad** (solo en cinemática muscular). Un botón toma las
 repeticiones de un mismo registro, con su carga anotada en cada una, y devuelve
@@ -411,9 +450,9 @@ cuatro curvas: carga frente a velocidad, la fuerza-velocidad normalizada de form
 hiperbólica, la potencia como producto de ambas, y el reclutamiento, que es la
 amplitud EMG frente a la carga.
 
-**Navegación**: la **ventana de visualización** (minimapa) permite acotar el
-tramo dibujado arrastrando con el ratón; también con la rueda del ratón sobre los
-paneles.
+**Navegación**: la **ventana de visualización** (minimapa, abajo) permite acotar el
+tramo dibujado arrastrando con el ratón. La rueda del ratón sobre los paneles los
+desplaza verticalmente; las escalas se cambian con los botones de la izquierda.
 
 **Informe PDF**: el botón *Generar informe PDF* abre un diálogo para **elegir qué
 gráficos** incluir y el **rango temporal** a representar (por defecto, la ventana
@@ -430,12 +469,16 @@ núcleo docente, señalando el resumen numérico y el navegador temporal.]
 
 Expresa la señal como **porcentaje de la CVM** y evalúa la **carga muscular**.
 
-**Panel de entrada.** La primera vez que se abre la pestaña en cada sesión, y de
-nuevo después de *Nueva sesión*, la pestaña recibe con una explicación de qué es
-una contracción voluntaria máxima y por qué hace falta un registro de referencia.
-Se cierra con **«Entendido, continuar»**. La abreviatura CVM aparecía en el título
-de la pestaña, en dos selectores de archivo, en el botón de calcular y en los ejes
-de las gráficas, y no se expandía en ninguno.
+**Panel de entrada.** La primera vez que se abre la pestaña en cada ejecución de la
+aplicación, recibe con una explicación de qué es una contracción voluntaria
+máxima, por qué se hace contra algo que no cede y por qué la referencia está
+dentro del propio registro. Se cierra con **«Entendido, continuar»** y no vuelve
+hasta que se reinicie la aplicación: «Nueva sesión» no lo resucita.
+
+**Calcula sola.** Al terminar una grabación, o al abrir un registro, la pestaña
+recibe el fichero y calcula sin pulsar nada; **«Calcular CVM»** queda para volver
+a hacerlo tras cambiar algo. La fila de controles va en el orden de uso:
+«Seleccionar fragmentos…», el canal, y las casillas de los tres paneles.
 
 **Entradas**
 - **El EDF de la sesión**, y nada más. La sesión marca su propia calibración,
@@ -547,9 +590,30 @@ depende de factores no fisiológicos (impedancia de la piel, posición exacta de
 electrodos, anatomía); el **% CVM** permite **comparar** entre músculos, sujetos y
 sesiones.
 
-> La referencia CVM se calcula como el **percentil 95** de la envolvente (no el
-> máximo absoluto), para que sea **robusta** frente a artefactos o picos
-> espurios.
+> **Cómo se mide la referencia.** Es el **mejor 0,2 s sostenido** de las seis
+> repeticiones de calibración (tres máximas mantenidas y tres sacudidas breves),
+> con el reposo de la ventana ya descontado. No es el máximo instantáneo, que una
+> sola muestra de ruido podría fijar, ni el medio segundo mantenido, que se
+> quedaba en la meseta: una contracción mantenida muestra un pico al empezar y
+> luego una meseta, y los esfuerzos breves de la tarea alcanzan ese pico. Medida
+> sobre la meseta, la tarea superaba el 100 % con la calibración bien hecha (135 %
+> en el banco). El máximo de la tarea y el pico de cada contracción se miden con
+> la misma ventana de 0,2 s, así que la comparación es con una sola vara.
+>
+> **Cómo se hace un máximo que lo sea.** Contra algo que no ceda (el canto inferior
+> de la mesa), con el antebrazo apoyado y la muñeca unos 20° hacia el lado
+> contrario a la acción del músculo; para el flexor, **con el puño cerrado**. Sin
+> resistencia el músculo se acorta a su velocidad máxima y, por la relación
+> fuerza-velocidad, desarrolla su fuerza mínima: una máxima en el aire es
+> submáxima por construcción. Con la mano abierta contra la mesa la tarea llegó al
+> 178 % de la referencia del flexor; con el puño cerrado, al 109 %.
+>
+> **Cómo se comprueba.** La ficha «Máximo de la tarea» del análisis. Entre el 90 y
+> el 125 % es lo que dan las calibraciones correctas; a partir del 150 % la
+> aplicación lo escribe en rojo, «no fue un máximo», en la ficha, sobre el panel
+> 9 y en el informe, porque todos los porcentajes posteriores están mal en la
+> misma proporción. Las repeticiones que salieron flojas se descartan en
+> «Repeticiones de la calibración…» y la referencia se recalcula.
 
 ### 5.2 Medidas de amplitud: RMS, iEMG, envolvente
 
@@ -578,12 +642,24 @@ Eléctricamente, esto se traduce en un **desplazamiento del espectro hacia
 frecuencias más bajas** (*compresión espectral*) — es decir, **MNF y MDF
 disminuyen con el tiempo**.
 
-- El programa estima la fatiga ajustando la **MDF frente al tiempo** (panel 7 del
-  Análisis) y observando su **pendiente**:
-  - Pendiente **negativa** (la MDF baja) → **fatiga detectada**.
-  - Pendiente plana o positiva → **sin fatiga**.
+- El programa calcula la MDF en ventanas de un segundo (solape del 50 %), **solo
+  en las ventanas en que el músculo trabajaba**, y ajusta una recta a la MDF
+  frente al tiempo (panel 7 del Análisis). El veredicto sigue a esa recta:
+  - **Fatiga detectada**: pendiente negativa y una recta que explica algo
+    (R² ≥ 0,30) sobre al menos cuatro ventanas.
+  - **No detectada**: la MDF se mantiene o sube, con una recta que ajusta.
+  - **No concluyente**: la recta no ajusta (R² < 0,30), o hay menos de cuatro
+    ventanas. Es lo normal en una serie de contracciones breves: el registro no
+    responde a la pregunta, lo cual no es lo mismo que responder «no».
+- La fatiga solo tiene sentido sobre una contracción **mantenida** de algunas
+  decenas de segundos. Mezclar reposo y esfuerzo fabrica una pendiente de la nada
+  (la MDF del reposo es la del amplificador, muy alta): por eso el ajuste excluye
+  las ventanas quietas, y por eso en el ejercicio de fatiga conviene seleccionar
+  solo el tramo mantenido.
 - A menudo, la fatiga se acompaña de un **aumento de la amplitud (RMS)** para
-  mantener la fuerza, de ahí el interés del panel 8 (RMS vs MDF).
+  mantener la fuerza, de ahí el interés del panel 8 (RMS frente a MDF). Pero parte
+  de esa subida procede de que cambia la cancelación de amplitud entre
+  potenciales, no del reclutamiento; la prueba específica es la MDF.
 
 [Figura sugerida: ilustración del desplazamiento del espectro a la izquierda con
 la fatiga (dos PSD: inicio vs final) y un trazado de MDF descendente en el tiempo.]
@@ -596,22 +672,29 @@ biomecánica, deporte) se usa el **método de Jonsson** — el análisis de la
 normalizada a % CVM. Es un método **publicado y de dominio público** (Jonsson,
 1978/1982). De la distribución acumulada se leen **tres niveles de carga**:
 
-| Nivel | Percentil | Definición | Significado | Límite orientativo |
-|---|---|---|---|---|
-| **Estático** | P10 | Carga superada el **90 %** del tiempo | Carga casi continua "de fondo" | ≤ ~5 % CVM |
-| **Mediano** | P50 | Carga superada el **50 %** del tiempo | Carga de trabajo típica | ≤ ~14 % CVM |
-| **Pico** | P90 | Carga superada el **10 %** del tiempo | Esfuerzos altos recurrentes | ≤ ~70 % CVM |
+| Nivel | Percentil | Definición | Significado | Límite de Jonsson | La aplicación usa |
+|---|---|---|---|---|---|
+| **Estático** | P10 | Carga superada el **90 %** del tiempo | Carga casi continua «de fondo» | 2–5 % CVM | 5 % |
+| **Mediano** | P50 | Carga superada el **50 %** del tiempo | Carga de trabajo típica | 10–14 % CVM | 14 % |
+| **Pico** | P90 | Carga superada el **10 %** del tiempo | Esfuerzos altos recurrentes | 50–70 % CVM | 70 % |
 
+- Jonsson dio los límites como un intervalo: el valor bajo para trabajo de larga
+  duración (jornada entera) y el alto para tareas más cortas. La aplicación usa el
+  **extremo alto** de cada intervalo, que es el adecuado para una tarea de
+  laboratorio de un minuto; si el ejercicio simula una jornada, conviene leer los
+  números contra el extremo bajo. La activación media se compara con el 10 %.
 - Superar estos límites de forma sostenida se asocia a **fatiga** y a mayor riesgo
-  de **trastornos musculoesqueléticos**.
-- En el **monitor en vivo**, la carga actual se clasifica en **zonas**: *Normal*
-  (verde), *Warning* / cansancio (naranja, por defecto a partir de ~40 % CVM) y
-  *Danger* / fatiga (roja, por defecto a partir de ~70 % CVM). Esto permite
-  **intervenir** (pausa, cambio de postura) antes de llegar a la fatiga.
+  de **trastornos musculoesqueléticos**. El riesgo no suele venir de los picos
+  sino de un estático alto y mantenido: un músculo que nunca descansa acaba
+  resintiéndose aunque trabaje a un nivel bajo.
+- En el **monitor en vivo**, la carga instantánea se clasifica en **zonas**: verde
+  hasta el 40 % CVM, naranja (cansancio) hasta el 70 % y roja (fatiga) por encima.
+  Mide otra cosa que el APDF: el instante, no la distribución. Una tarea puede no
+  pasar nunca del 40 % y tener un estático del 8 %, el doble del límite; las dos
+  lecturas se complementan y conviene explicar la diferencia en la práctica.
 
-> **Nota.** Los límites por defecto (estático 5 %, mediano 14 %, pico 70 %;
-> *warning* 40 %, *danger* 70 %) son **valores orientativos** derivados de la
-> literatura, **no umbrales clínicos**; pueden ajustarse.
+> **Nota.** Los límites son **valores orientativos** derivados de la literatura,
+> **no umbrales clínicos**; pueden ajustarse en el perfil.
 
 [Figura sugerida: gráfico APDF anotado, con la curva acumulada y los puntos
 estático/mediano/pico; al lado, la barra del monitor en vivo con las zonas
@@ -627,10 +710,71 @@ verde/naranja/roja.]
 ### 5.6 Detección de inicio de contracción (onset)
 
 El **inicio de una contracción** se detecta automáticamente cuando la envolvente
-supera un **umbral** definido como la **media de la línea base (reposo) más
-k·desviaciones típicas**, con un tiempo mínimo de permanencia (anti‑rebote) y un
-periodo refractario para no marcar el mismo evento dos veces. El parámetro **k**
-controla la **sensibilidad** (menor k = más sensible).
+supera un **umbral** definido como la **media del reposo más k desviaciones
+típicas** del propio reposo (tomado del primer segundo del registro), con un
+tiempo mínimo de permanencia de 50 ms para no marcar una oscilación del ruido y
+un periodo refractario de medio segundo para no marcar el mismo evento dos veces.
+El parámetro **k** controla la **sensibilidad**: una k menor detecta esfuerzos más
+suaves y admite más falsos positivos; una k mayor descarta el ruido y puede pasar
+por alto activaciones débiles. El valor por defecto, **k = 3**, es el que
+recomendaron Hodges y Bui (1996) tras comparar veintisiete variantes del método.
+Por eso el registro debe empezar con **unos segundos de reposo**: sin línea base
+no hay umbral que calcular.
+
+### 5.7 Coactivación, separación entre canales y retraso electromecánico
+
+**Índice de coactivación (Falconer y Winter, 1985).** De toda la actividad
+registrada en los dos músculos, qué fracción es actividad **compartida**, es decir,
+ejercida por ambos a la vez: 0 % si trabajó uno y el otro no, 100 % si los dos
+hicieron lo mismo todo el tiempo. Se calcula sobre las envolventes en % CVM de
+cada músculo, con su reposo descontado, **por ventana**: una ventana es un grupo
+de contracciones seguidas que la aplicación atribuyó al mismo músculo (o a los
+dos) en el editor de fragmentos. Sobre un registro entero que mezcla reposo,
+flexión y presa el índice produce un número que no mide nada; por eso se calcula
+por maniobra. Cuando uno de los dos músculos no llega al 5 % CVM de media en la
+ventana, la fila dice **«no se informa»** con su razón: en una flexión limpia el
+extensor calla, y decir «coactivación baja» sería inventar una medida. Con una
+presa firme, en cambio, los dos trabajan y el índice sale alto.
+
+**Separación entre canales.** Durante el máximo de un músculo, el otro canal nunca
+está en silencio: parte es coactivación real (el antagonista sujeta la
+articulación) y parte es la señal del primero conducida por el tejido hasta el
+segundo par. El asistente lo mide al calibrar y lo escribe en el registro de
+eventos y en el informe. Con los electrodos bien situados en el antebrazo sale
+entre el 10 y el 25 % de la propia referencia; por encima del 50 % el panel termina
+en **«Canales sin separar»**, porque entonces los dos pares están leyendo el mismo
+músculo y todo lo que se compare después está midiendo lo mismo dos veces.
+
+**Retraso electromecánico (EMD).** En la práctica de cinemática, con el
+acelerómetro sobre el segmento que se mueve, la tabla de contracciones da para
+cada esfuerzo el tiempo entre el inicio de la señal eléctrica y el inicio del
+movimiento, ambos medidos donde cada señal alcanza la quinta parte de su propio
+pico. Es el tiempo que tarda el músculo en liberar el calcio, formar puentes y
+tensar sus elementos elásticos: 30–100 ms en adultos sanos, 35–80 ms en
+contracciones voluntarias (Cavanagh y Komi, 1979).
+
+### 5.8 Valores orientativos
+
+Los rangos que la aplicación muestra en gris bajo las fichas y en los «?» de las
+tablas. Son **orientativos**, para EMG de superficie en adultos sanos: dependen del
+músculo, de los electrodos y del sujeto, y un valor fuera de rango es una pregunta,
+no un fallo.
+
+| Medida | Rango orientativo | Fuente |
+|---|---|---|
+| Frecuencia media (MNF) | 80–170 Hz | el grueso de la energía del EMG de superficie está entre 50 y 150 Hz; la MNF queda algo por encima de la MDF por la cola del espectro (Phinyomark, 2012) |
+| Frecuencia mediana (MDF) | 60–150 Hz; en el antebrazo, 90–150 | la misma banda; banco de emgteach: FCR y ECR entre 86 y 127 Hz con buen montaje, 176 Hz con el electrodo mal situado |
+| RMS en reposo | ≈ 0,005–0,02 mV | ruido de fondo del amplificador y la piel, ≥ 8 µV pico a pico en el mejor caso (McManus, 2020) |
+| RMS en esfuerzo | 0,1–1 mV; máximos hasta ~1,5 mV | electrodos de superficie sobre músculos de extremidad |
+| Esfuerzo de tarea | 20–80 % CVM | esfuerzos submáximos típicos |
+| Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones de banco de emgteach; aviso en rojo a partir del 150 % |
+| Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 % CVM; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
+| Índice de coactivación | recíproco: «no se informa»; presa firme: 60–95 % | Falconer y Winter (1985); Ervilha (2012) sobre cocontracción voluntaria |
+| Separación entre canales | ≤ 20–25 % de la propia referencia | banco de emgteach con electrodos bien situados |
+| Carga estática, mediana, pico | ≤ 2–5, 10–14, 50–70 % CVM (la aplicación: 5, 14, 70) | Jonsson (1978, 1982) |
+| Retraso electromecánico | 30–100 ms; voluntario 35–80 | Cavanagh y Komi (1979): bíceps 41 ± 13 ms, tríceps 26 ± 11 ms |
+| Temblor fisiológico | pico a 8–12 Hz | acelerometría de la postura mantenida |
+| Umbral de inicio | reposo + 3 desviaciones típicas | Hodges y Bui (1996) |
 
 ---
 
@@ -653,9 +797,14 @@ una amplitud antigua a la escala nueva, el factor es 1000/1009 = 0,99108.
 
 ### 6.2 Anotaciones (marcadores)
 
-Los marcadores (manuales y automáticos) se guardan como **anotaciones EDF+**, de
-modo que el contexto del registro (inicios de contracción, fatiga, reposo…) viaja
-**dentro del propio archivo** y se recupera al analizarlo.
+Los inicios automáticos de contracción y las **fases de la sesión** (calentamiento,
+cada repetición de calibración con su músculo y su número, preparación, inicio del
+registro) se guardan como **anotaciones EDF+**, junto con la referencia de CVM de
+cada canal. Así el contexto del registro viaja **dentro del propio archivo**: el
+análisis recalcula la referencia desde los tramos marcados, sabe qué parte del
+fichero es la tarea y puede descartar una repetición sin tocar la señal. Se
+reservan cuatro señales de anotación, porque una sola admite unas cinco por
+segundo y una sesión guiada escribe ráfagas de ellas.
 
 ### 6.3 Informes PDF
 
@@ -673,58 +822,76 @@ el acelerómetro y las medidas que se ofrecen después.
 
 ### 7.1 Contracción de un músculo
 
-1. **Modo**: *Contracción de un músculo*.
-2. **Adquisición.** Conectar el dispositivo, etiquetar el canal con el nombre del
-   músculo, *Iniciar grabación*. Se pide al sujeto la tarea y se marcan los eventos
-   relevantes con la tecla **M**. *Detener grabación* (se guarda el EDF).
-3. **Análisis.** Se abre el EDF, se revisan los tres paneles del núcleo docente
-   (señal en bruto, envolvente normalizada y PSD) y el resumen numérico (RMS,
-   MNF/MDF, fatiga). Con las opciones avanzadas se acota el tramo de interés y se
-   añaden los paneles 4 a 8. Se genera el **informe PDF**.
-4. **Normalización CVM.** Se registra aparte una contracción máxima como
-   referencia, se normaliza la tarea a % CVM y se revisa la **carga muscular
-   (APDF)**. Se genera su informe.
+1. **Práctica**: *Contracción de un músculo* (nivel básico).
+2. **Adquisición.** Conectar, escribir el identificador de prueba, *Iniciar
+   grabación*. Si el ejercicio necesita % CVM (escalones de esfuerzo, fatiga,
+   carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
+   calentamiento y los seis esfuerzos máximos contra la mesa, con el puño cerrado.
+   Después, la tarea; los inicios se marcan solos. *Detener grabación*.
+3. **Análisis.** Se analiza solo. Seguir los dos cuadros guiados: revisar las
+   **repeticiones de la calibración** y, en los **fragmentos**, dejar solo la tarea
+   (desmarcando los seis esfuerzos de calibración si los hubo). Leer la tabla de
+   contracciones (una fila por esfuerzo, con RMS, pico en % CVM y MDF), las fichas
+   del resumen contra sus rangos, y los paneles 1A, 2 y 3; para la fatiga, el
+   panel 7 desde «Más paneles…». Comprobar la ficha «Máximo de la tarea». Generar
+   el **informe PDF**.
+4. **Normalización CVM.** Recibe el registro y calcula sola. Con «Seleccionar
+   fragmentos…» dejar solo la tarea, y leer los niveles P10, P50 y P90 contra sus
+   límites. Generar su informe.
 
-Las prácticas 1, 2, 4 y 5 del cuaderno siguen este flujo. La de fatiga se apoya
-sobre todo en el panel 7 (MDF frente al tiempo), que requiere las opciones
-avanzadas.
+Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 
 ### 7.2 Contracción agonista / antagonista
 
-1. **Modo**: *Contracción agonista / antagonista*. El registro pasa a dos canales
-   sin tocar nada más.
-2. **Adquisición.** Se etiquetan los dos canales (p. ej. bíceps y tríceps). La
-   señal en bruto se dibuja apilada, un carril por músculo, y las envolventes
-   superpuestas.
-3. **Análisis.** Al abrir un EDF de dos canales, la comparación de envolventes se
-   activa sola y aparece el panel **9. Envolventes superpuestas**. Se elige cuál de
-   los dos canales lleva el resto del análisis. Si el archivo tuviera un solo
-   canal, se avisa y se propone el modo que le corresponde.
-4. **Normalización CVM.** Se normaliza un canal cada vez.
+1. **Práctica**: *Contracción agonista / antagonista* (nivel intermedio). El
+   registro pasa a dos canales y la caja del dispositivo dice «BITalino».
+2. **Adquisición.** Se etiquetan los dos músculos en el orden de los canales (FCR
+   en A1, ECR en A2). Al pulsar *Iniciar grabación*, el asistente calibra los dos
+   músculos (puño cerrado contra la mesa para el flexor, dorso de la mano para el
+   extensor), mide la separación entre canales, y tras 5 s de preparación abre el
+   registro. La señal en bruto se dibuja apilada, un carril por músculo, y las
+   envolventes superpuestas. Maniobras: flexiones, extensiones y una presa.
+3. **Análisis.** Se analiza solo. Revisar las repeticiones de los dos músculos y
+   aceptar los fragmentos: la columna «Músculo» ya dice quién llevó cada
+   contracción, medido en % CVM de cada uno. Leer el panel **9. Envolventes
+   superpuestas** (en % CVM, con la banda del 100 %), el **3. PSD** y el **7.
+   MDF frente al tiempo** con los dos músculos, la tabla de contracciones y la
+   **tabla de coactivación**, una fila por maniobra. Si el archivo tuviera un solo
+   canal, se avisa y se propone la práctica que le corresponde.
+4. **Normalización CVM.** Se normaliza un canal cada vez, con la referencia que el
+   propio fichero lleva para ese músculo.
 
 ### 7.3 Cinemática muscular
 
-1. **Modo**: *Cinemática muscular*. Aparecen la gráfica del acelerómetro y su caja
-   de ajustes.
+1. **Práctica**: *Cinemática muscular* (nivel avanzado). Aparecen la gráfica del
+   acelerómetro, su caja de ajustes y los controles finos.
 2. **Colocación del sensor.** Se elige entre sobre el músculo (MMG) o sobre el
-   segmento que se mueve (temblor y fuerza-velocidad). Si la traza no responde al
-   inclinar el sensor, se usa **«Buscar canal del ACC…»** para localizar la entrada
-   analógica correcta.
-3. **Adquisición.** Para la curva de fuerza-velocidad, el botón **«F-V guiada…»**
-   dirige la serie: primero un máximo sin carga, después cada carga y cada
-   repetición, con las elevaciones marcadas automáticamente en el EDF.
-4. **Análisis.** Paneles **10. EMG vs MMG**, **11. Temblor** y **12. Movimiento vs
-   EMG**, y el botón de **estudio de fuerza-velocidad**, que devuelve las curvas
-   carga-velocidad, fuerza-velocidad, potencia y reclutamiento.
+   segmento que se mueve (temblor, fuerza-velocidad, retraso electromecánico). Si
+   la traza no responde al inclinar el sensor, **«Buscar canal del ACC…»** localiza
+   la entrada analógica correcta. **«Ensayar…»** corre el procedimiento de
+   fuerza-velocidad sin hardware, con una señal simulada.
+3. **Adquisición.** Para la curva de fuerza-velocidad, **«F-V guiada…»** pide el
+   plan (cargas, repeticiones por carga, preparación), inicia la grabación si hace
+   falta y dirige la serie: un máximo isométrico sin carga de 3 s y después cada
+   repetición de cada carga, marcadas en el EDF con su carga. Para el retraso
+   electromecánico bastan flexiones rápidas sueltas; para el temblor, una postura
+   mantenida.
+4. **Análisis.** Paneles **10. EMG frente a MMG**, **11. Temblor** y **12.
+   Movimiento frente a EMG**; la tabla de contracciones con la columna **EMD**; y
+   **«Estudio fuerza-velocidad…»**, que devuelve las curvas carga-velocidad,
+   fuerza-velocidad, potencia y reclutamiento.
 
 ### 7.4 Monitorización de carga en vivo (ergonomía)
 
 1. Conectar e **Iniciar grabación**.
-2. Pulsar **Calibrar CVM** y realizar unos segundos de contracción máxima.
+2. Pulsar **Calibrar CVM** y seguir al asistente: calentamiento, tres máximas
+   mantenidas y tres sacudidas, contra la mesa.
 3. Realizar la tarea observando las **barras de carga**: si entran en naranja
-   (cansancio) o rojo (fatiga), conviene intervenir (pausa, cambio de postura).
+   (cansancio, más del 40 %) o rojo (fatiga, más del 70 %), conviene intervenir
+   (pausa, cambio de postura). Si una contracción cualquiera pasa del 100 %, la
+   calibración no fue máxima: repetirla.
 
-Los umbrales de esos avisos se editan con las opciones avanzadas marcadas.
+Los umbrales de esos avisos están en el perfil de señal, no en la interfaz.
 
 ### 7.5 Sesión de laboratorio con seguimiento en móviles
 
@@ -757,10 +924,10 @@ móviles como capa común (1 operador → N seguidores).]
   El criterio es infinitivo o «hay que» para las instrucciones, «conviene» para
   las recomendaciones, y tercera persona simple en los textos de ayuda que
   describen lo que hace un control.
-- **Ajustes que persisten entre sesiones**: el modo de práctica, la casilla de
-  opciones avanzadas, el idioma, el dispositivo y su puerto, y la casilla
-  «Ofrecer esta guía la próxima vez» del recorrido guiado (§4.2). El modo y las
-  opciones avanzadas se aplican en caliente, sin reiniciar.
+- **Ajustes que persisten entre sesiones**: la práctica elegida, el idioma, el
+  dispositivo y su dirección, la ruta de salida, las etiquetas de los músculos, el
+  identificador de prueba, el plan de fuerza-velocidad y la casilla «Mostrar esta
+  guía la próxima vez» (§4.2). La práctica se aplica en caliente, sin reiniciar.
 - Los **parámetros por defecto** (filtros, percentil CVM, límites de carga,
   duración de calibración, etc.) están centralizados y son ajustables.
 
@@ -770,25 +937,60 @@ móviles como capa común (1 operador → N seguidores).]
 
 ### La interfaz no ofrece lo que se busca
 
-**No aparece la caja de conexión con la MAC o el puerto.** Una vez guardado el
-dispositivo, esa caja depende de las **opciones avanzadas**: hay que marcar la
-casilla de la esquina superior derecha. En una instalación sin dispositivo
-guardado se muestra siempre.
+**Falta el selector de dispositivo.** Solo aparece en la práctica de un músculo;
+las otras dos necesitan el BITalino y la caja lo dice. La dirección sigue siendo
+editable.
 
-**Falta el selector de número de canales, o la casilla del acelerómetro.** Ya no
-existen como controles: los fija el **modo de práctica** (§4.1). Para registrar
-dos canales, se elige *Contracción agonista / antagonista*; para el acelerómetro,
-*Cinemática muscular*.
+**Falta el selector de número de canales, o la casilla del acelerómetro.** No
+existen como controles: los fija la **práctica** (§4.1). Para registrar dos
+canales, *Contracción agonista / antagonista*; para el acelerómetro, *Cinemática
+muscular*.
 
-**Un panel de análisis ha desaparecido y estaba marcado.** El modo activo no lo
-usa. Al volver al modo que lo ofrece se restaura marcado como estaba.
+**Faltan los controles finos (región, corte de la envolvente, EDF afinado).**
+Pertenecen a la práctica de cinemática. No hay casilla de «opciones avanzadas».
 
-**No se ofrece la auto‑normalización en la pestaña CVM.** Es deliberado: sin
-opciones avanzadas el registro de referencia es obligatorio, porque los límites de
-carga de un resultado auto‑normalizado no significan nada (§5.5).
+**Un panel de análisis ha desaparecido y estaba marcado.** La práctica activa no
+lo abre por defecto. **«Más paneles…»** lo revela; al volver a la práctica que lo
+ofrece se restaura marcado como estaba.
+
+**No aparece el cuadro guía del análisis.** Espera a que la pestaña de Análisis
+esté en pantalla; si se cerró, la línea «Siguiente: …» bajo la caja de parámetros
+dice lo mismo.
 
 **La guía interactiva no arranca.** No se inicia con un registro en marcha. Hay
 que detener la grabación y pulsar de nuevo **«Guía»**.
+
+### Lo que dicen los resultados
+
+**«Máximo de la tarea: … no fue un máximo», en rojo.** El registro pasa del 150 %
+de la referencia: la calibración no fue una contracción máxima y todos los
+porcentajes están altos en la misma proporción. Repetirla contra la mesa, con el
+puño cerrado, manteniendo los cuatro segundos; y revisar en «Repeticiones de la
+calibración…» si alguna repetición floja está bajando la referencia (§5.1).
+
+**La tabla de coactivación dice «no se informa».** Uno de los dos músculos no
+llegó al 5 % CVM de media en esa ventana: en una flexión o una extensión limpias
+es la respuesta correcta. Para que el índice dé número hace falta una maniobra
+en que los dos trabajen, como una presa firme (§5.7).
+
+**La tabla de coactivación dice «registro completo».** Ninguna contracción tiene
+nombre: abrir «Seleccionar fragmentos…» y aceptar lo que propone. La aplicación
+rellena sola qué músculo llevó cada una.
+
+**«Canales sin separar» al terminar de calibrar.** Durante el máximo de un
+músculo el otro canal leyó más del 50 % de su propia referencia: los dos pares
+están viendo el mismo músculo. Separar los pares hacia el borde cubital y el
+dorsal, comprobar que cada uno está sobre su vientre y apoyar el antebrazo
+(§5.7).
+
+**«Fatiga: no concluyente».** La recta de la MDF no ajusta, o hay menos de cuatro
+ventanas de trabajo: el registro no responde a la pregunta. Es lo esperable en una
+serie de contracciones breves. Para medir fatiga hace falta una contracción
+mantenida de decenas de segundos, y seleccionar solo ese tramo (§5.4).
+
+**Una MDF muy alta (más de 150 Hz) en un solo músculo.** Suele ser el electrodo:
+demasiado cerca del tendón o sobre otro músculo. Comparar con la del otro canal y
+mover el par uno o dos centímetros hacia el vientre.
 
 ### Conexión y dispositivo
 
@@ -901,8 +1103,18 @@ porque la pila científica no tiene *wheels*.
 - **EDF+**: formato de archivo estándar para biopotenciales.
 - **Seguimiento en móviles**: retransmisión de la sesión en vivo por la red local
   para que los alumnos la sigan (solo lectura) desde el navegador del móvil.
-- **Modo de práctica**: la elección que configura la aplicación (un músculo,
-  agonista / antagonista o cinemática muscular).
+- **Práctica**: la elección que configura la aplicación (un músculo, agonista /
+  antagonista o cinemática muscular), con su nivel (básico, intermedio, avanzado).
+- **Máximo de la tarea**: el 0,2 s más fuerte de la tarea como porcentaje de la
+  referencia; por encima del 150 %, la calibración no fue máxima.
+- **Índice de coactivación (Falconer-Winter)**: fracción de la actividad de los dos
+  músculos que fue compartida, por ventana; «no se informa» cuando uno no trabajó.
+- **Separación entre canales**: lo que un canal lee del otro músculo durante su
+  máximo, en % de su propia referencia.
+- **Retraso electromecánico (EMD)**: tiempo entre el inicio de la señal eléctrica y
+  el inicio del movimiento.
+- **Repetición de calibración**: cada uno de los seis esfuerzos máximos por músculo
+  (tres mantenidos, tres breves) marcados en el fichero.
 
 ---
 
@@ -915,6 +1127,25 @@ porque la pila científica no tiene *wheels*.
   electromyography* (software). Zenodo.
 - Agis‑Torres, Á. (2026). *Silent corruption of EDF recordings during real‑time
   biopotential streaming: a buffered‑write solution* (paquete de reproducibilidad).
+- Cavanagh, P. R., y Komi, P. V. (1979). Electromechanical delay in human skeletal
+  muscle under concentric and eccentric contractions. *European Journal of Applied
+  Physiology*, 42, 159–163.
+- Falconer, K., y Winter, D. A. (1985). Quantitative assessment of co‑contraction
+  at the ankle joint in walking. *Electromyography and Clinical Neurophysiology*,
+  25, 135–149.
+- Hodges, P. W., y Bui, B. H. (1996). A comparison of computer‑based methods for the
+  determination of onset of muscle contraction using electromyography.
+  *Electroencephalography and Clinical Neurophysiology*, 101, 511–519.
+- McManus, L., De Vito, G., y Lowery, M. M. (2020). Analysis and biophysics of
+  surface EMG for physiotherapists and kinesiologists. *Frontiers in Neurology*,
+  11, 576729.
+- Phinyomark, A., Thongpanja, S., Hu, H., Phukpattaranont, P., y Limsakul, C.
+  (2012). The usefulness of mean and median frequencies in electromyography
+  analysis. En *Computational Intelligence in Electromyography Analysis* (pp.
+  195–220). InTech.
+- Ervilha, U. F., Graven‑Nielsen, T., y Duarte, M. (2012). A simple test of muscle
+  coactivation estimation using electromyography. *Brazilian Journal of Medical and
+  Biological Research*, 45, 977–981.
 
 ---
 
@@ -935,10 +1166,13 @@ porque la pila científica no tiene *wheels*.
 13. Diagrama de flujo de los flujos de trabajo típicos.
 14. Seguimiento en móviles: móvil del alumnado con la envolvente, la barra de
     % CVM y el botón de descarga de sesión.
-15. Selector de práctica desplegado, con la casilla de opciones avanzadas al lado.
+15. Selector de práctica desplegado, con la banda de nivel al lado.
 16. Un paso de la guía interactiva, con la pantalla oscurecida y el control
     resaltado.
-17. La misma pestaña con y sin opciones avanzadas, una al lado de la otra.
+17. La banda inferior de Análisis con sus tres cuadros: coactivación,
+    contracciones y resumen en fichas, con un «Máximo de la tarea» en rojo.
+18. El asistente de calibración en una sacudida breve, con la barra de esfuerzo.
+19. La tabla de contracciones de un registro del par, con la columna «Músculo».
 
 > **Sugerencia de tono para el manual:** combinar instrucciones prácticas ("cómo
 > se hace") con recuadros de "¿qué significa fisiológicamente?" junto a cada

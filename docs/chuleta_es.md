@@ -1,95 +1,94 @@
-# emgteach — Chuleta de laboratorio (1 página)
+# emgteach — Chuleta de laboratorio (2 páginas)
 
-**Paso 0: elegir la práctica.** Desplegable de la esquina superior derecha. Fija
-los canales y el acelerómetro, y de ahí se deriva todo lo demás.
+**Paso 0: elegir la práctica.** Desplegable de la esquina superior derecha. La
+banda de al lado dice el nivel. Todo lo demás se deriva de esa elección.
 
-| Modo | Canales | Acelerómetro |
-|---|---|---|
-| **Contracción de un músculo** | 1 | no |
-| **Contracción agonista / antagonista** | 2 | no |
-| **Cinemática muscular** | 1 | sí |
+| Práctica | Nivel | Canales | Qué mide |
+|---|---|---|---|
+| **Contracción de un músculo** | básico | 1 | amplitud, espectro, fatiga, carga |
+| **Contracción agonista / antagonista** | intermedio | 2 | dos músculos en % CVM, coactivación |
+| **Cinemática muscular** | avanzado | 1 + acelerómetro | fuerza-velocidad, retraso electromecánico, temblor |
 
-Al lado, la casilla **«Opciones avanzadas»** (cortes de filtro, umbrales, región de
-interés, auto‑inicio) y el botón **«Guía»**, que relanza el recorrido guiado.
+**«Guía»** relanza el recorrido de cinco pasos; cada caja tiene un **«?»** en su
+esquina con lo que hace.
 
-**Las 3 pestañas** · **Adquisición**: registrar en vivo · **Análisis**: estudiar un
-EDF ya grabado · **CVM**: normalizar a % CVM y evaluar la carga muscular.
+**Las 3 pestañas** · **Adquisición**: grabar · **Análisis**: leer un registro (se
+analiza solo al abrirlo) · **Normalización CVM**: la tarea en % CVM y su carga.
 
-**Cadena de señal:** En bruto → *notch 50 Hz + paso‑banda 20–450 Hz* → **Filtrada** →
-rectificada → **Envolvente** (paso‑bajo 5 Hz). *En el EDF solo se guarda la señal en
-bruto; lo demás se recalcula.* **Fondo de escala:** BITalino ±1,635 mV · Arduino +
-MyoWare ±12,5 mV.
+**Cadena de señal:** en bruto → *notch 50 Hz + paso-banda 20–450 Hz* → rectificada
+→ **envolvente** (paso-bajo 5 Hz). *En el EDF solo va la señal en bruto; lo demás
+se recalcula.* Fondo de escala BITalino ±1,635 mV.
 
 ---
 
-### Registrar (Adquisición)
-1. **Conectar** (dispositivo + MAC/puerto + carpeta de destino).
-2. **Iniciar grabación**. Los eventos se marcan con la tecla **M** (o el botón).
-3. **Detener** (se guarda el EDF).
-- **LED:** rojo = desconectado · amarillo = sin datos · verde = recibiendo.
-- **Escalas:** ▲▼ por gráfica; zoom temporal con desplegable / ◀▶ / rueda.
-- **2 canales:** en bruto **apilada**; envolvente **superpuesta** (azul = canal 1,
-  rojo = canal 2).
-- **Carga en vivo:** **Calibrar CVM** grabando (contracción máxima unos segundos) →
-  barras 🟢 Normal · 🟠 cansancio · 🔴 fatiga.
+### Grabar (Adquisición)
+1. **Conectar**. Solo la práctica de un músculo elige dispositivo; las otras dos
+   son BITalino. Identificarlo por su **MAC**. Escribir las **etiquetas** de los
+   músculos (Músculo 1 = A1) y el **identificador de prueba**.
+2. **Iniciar grabación**. En el par, el asistente calibra los dos músculos antes
+   de la tarea. En las otras dos, **«Calibrar CVM»** mientras se graba.
+3. **Detener**: se guarda el EDF y aparece la sesión entera con sus tramos.
+- **Calibración**: 10 s de calentamiento; por músculo, **3 máximas mantenidas**
+  (4 s) y **3 sacudidas breves** (1,5 s). Referencia = el mejor 0,2 s de las seis.
+- **El máximo se hace contra la mesa, nunca contra una mano.** FCR: **puño
+  cerrado**, palma arriba bajo el canto de la mesa. ECR: dorso de la mano contra
+  el tablero. Muñeca unos 20° hacia el lado contrario a la acción del músculo.
+- **Auto-inicio** marca solo cada contracción (umbral = reposo + k × ruido, k = 3).
+- **Barras de carga** tras calibrar: 🟢 hasta 40 % · 🟠 hasta 70 % · 🔴 más.
 
-### Seguimiento en móviles (a la vista en los tres modos)
-Casilla **«Difundir a móviles (en laboratorio)»** → **Copiar enlace** o **QR**. Todos
-en la misma Wi‑Fi, dirección con `http://`. Cada activación genera un **código de
-sesión** nuevo: los enlaces de la práctica anterior caducan.
+### Seguir la sesión desde el móvil
+Casilla **«Difundir a móviles (en laboratorio)»** → **QR** o enlace
+`http://…:8070/?k=…`. Misma Wi-Fi, con `http://`. Cada activación cambia el código.
 
 ### Analizar (Análisis)
-Abrir EDF → elegir **canal** → paneles + resumen → **Generar informe PDF** (selección
-de gráficos y de rango temporal).
+Al abrir el registro se analiza solo. Seguir los cuadros que aparecen, en orden:
+1. **«Repeticiones de la calibración…»**: quitar las flojas. Primero, porque fija
+   la referencia de todos los porcentajes.
+2. **«Seleccionar fragmentos…»**: una fila por contracción; desmarcar las malas
+   (y, en la práctica de un músculo, los esfuerzos de calibración) y **«Usar estos
+   fragmentos»**.
 
-**Para la tabla de coactivación hay que nombrar las maniobras.** «Seleccionar
-fragmentos…» → columna **«Qué es»**: «Flexión», «Extensión», «Presa». Un
-fragmento con nombre es una ventana de la tabla; sin nombre es solo señal que se
-conserva. Nadie puede nombrarlo por usted —el detector sabe dónde empezó una
-contracción, no cuál era—, y por eso la tabla dice «registro completo» mientras
-no se haga. Siempre **1A. En bruto**, **2. Env. norm.** y
-**3. PSD**; con opciones avanzadas los paneles **4 a 8** (la fatiga está en el
-**7. MDF/tiempo**); según el modo, el **9** (envolventes superpuestas) o los
-**10 · 11 · 12** (acelerómetro).
+Después leer: **paneles** (rueda del ratón para desplazar; ▲▼ amplitud, ▶◀ tiempo),
+**tabla de contracciones** (RMS, pico en % CVM, MDF, y EMD en cinemática),
+**resumen** en fichas, y en el par la **tabla de coactivación**. **«Generar informe
+PDF»** = entregable.
 
-### Normalizar y carga (CVM)
-**El EDF de la sesión** → paneles + **gráfico APDF** + panel de datos → **informe
-PDF**. No se pide ningún segundo archivo: la referencia sale de la calibración
-que el propio registro lleva marcada, y la carga se mide sobre la **fase de
-registro**, no sobre el fichero entero.
+Paneles por práctica: un músculo **1A · 2 · 3**; par **1A · 1B · 3 · 7 · 9**;
+cinemática **1A · 2 · 3 · 10 · 11 · 12**. **«Más paneles…»** revela el resto.
+
+### Normalizar y carga (Normalización CVM)
+Se calcula solo al recibir el registro. **«Seleccionar fragmentos…»** para dejar
+solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límite.
 
 ---
 
-### Métricas clave — qué significan
-| Métrica | Significado |
-|---|---|
-| **RMS / envolvente** | Amplitud → **nivel de activación** (≈ fuerza, no lineal) |
-| **iEMG** | Actividad total acumulada (área bajo la envolvente) |
-| **MNF / MDF** | Frecuencia media / mediana del espectro (PSD) |
-| **MDF ↓ con el tiempo** | **FATIGA** (el espectro se desplaza a frecuencias bajas) |
-| **% CVM** | Activación respecto al máximo (permite comparar) |
-
-### Carga muscular (método de Jonsson, en % CVM)
-| Nivel | = | Significado | Límite orientativo |
-|---|---|---|---|
-| **Estático** | P10 | Carga casi continua "de fondo" | ≤ ~5 % |
-| **Mediano** | P50 | Carga de trabajo típica | ≤ ~14 % |
-| **Pico** | P90 | Esfuerzos altos recurrentes | ≤ ~70 % |
-
-🔴 **En rojo** = supera su límite. ⚠️ Sin calibración en el registro no hay
-máximo del que ser porcentaje: no se calculan ni el % CVM ni estos tres
-niveles, y el gráfico APDF no se dibuja. La señal y su envolvente sí.
+### Qué significan los números
+| Medida | Significado | Orientativo |
+|---|---|---|
+| **RMS** | cuánto se activa el músculo (no lineal con la fuerza) | reposo ≈ 0,01 mV · esfuerzo 0,1–1 mV |
+| **Pico (% CVM)** | el esfuerzo respecto al propio máximo | tarea 20–80 % · > 150 % = la calibración no fue máxima |
+| **MNF / MDF** | frecuencia media / mediana del espectro | 80–170 / 60–150 Hz |
+| **MDF ↓ con el tiempo** | **fatiga** (pendiente negativa que ajuste, R² ≥ 0,30) | «no concluyente» = el registro no responde |
+| **Índice de coactivación** | actividad compartida por los dos músculos | recíproco: «no se informa» · presa: alto |
+| **Separación entre canales** | lo que un canal lee del otro músculo en su máximo | ≤ 25 % bien · > 50 % «sin separar» |
+| **P10 · P50 · P90** | carga estática · mediana · pico (Jonsson) | ≤ 5 · 14 · 70 % CVM |
+| **EMD** | de la señal eléctrica al movimiento | 30–100 ms |
+| **Temblor** | pico del espectro del acelerómetro | 8–12 Hz |
 
 ### Problemas rápidos
 - **Sin señal / línea plana** → contacto de electrodos, referencia, canal correcto.
-- **Ruido 50 Hz** → mejorar contacto; alejar cargadores/cables.
-- **"Sin calibrar"** → **Calibrar CVM** *mientras se graba*.
-- **No aparece la caja de la MAC / el puerto** → está tras **Opciones avanzadas**.
-- **Falta el selector de canales o del acelerómetro** → los fija el **modo**.
-- **El registro no coincide con el modo** → el EDF tiene un canal y agonista /
-  antagonista necesita dos.
-- **Informe ilegible (registro largo)** → acortar el **rango temporal** en el diálogo.
+- **Ruido a 50 Hz** → mejorar contacto; alejar cargadores y cables.
+- **«no fue un máximo»** (en rojo, Máximo de la tarea) → recalibrar contra la
+  mesa, puño cerrado, mantener los 4 s.
+- **La tabla de coactivación dice «no se informa»** → en una flexión o extensión
+  limpia es lo correcto; hace falta una **presa** para que dé número.
+- **«Canales sin separar»** → separar los pares hacia el borde cubital y dorsal;
+  cada par sobre su vientre; antebrazo apoyado.
+- **«Fatiga: no concluyente»** → contracción demasiado corta o intermitente;
+  seleccionar solo el tramo mantenido.
+- **No aparece el cuadro guía** → pasar a la pestaña Análisis: espera allí.
 - **BITalino no conecta** → emparejar antes en Bluetooth del sistema y dar su
-  **dirección MAC** (o dejar el campo vacío para autodetectar).
+  **MAC** (o dejar el campo vacío para autodetectar).
 
-> **Idea clave:** *amplitud = cuánto se activa el músculo; frecuencia = fatiga.*
+> **Idea clave:** *amplitud = cuánto se activa el músculo · frecuencia = si se
+> fatiga · % CVM = con qué compararlo.*

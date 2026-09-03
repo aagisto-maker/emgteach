@@ -121,10 +121,18 @@ El orden importa, porque la aplicación depende de él.
    > empujan **hacia arriba contra la cara inferior del tablero**:
    >
    > - **Canal 1 (flexores):** siéntese cerca, antebrazo **supinado** apoyado,
-   >   la mano metida bajo el borde de la mesa con la **palma hacia arriba**.
-   >   Empuje la palma contra el tablero. Muñeca en neutro.
+   >   la mano metida bajo el borde de la mesa con la **palma hacia arriba** y
+   >   **el puño cerrado**. Empuje hacia arriba contra el tablero.
    > - **Canal 2 (extensores):** lo mismo con el antebrazo **pronado**, el
-   >   **dorso** de la mano contra el tablero.
+   >   **dorso** de la mano contra el tablero, dedos relajados.
+   >
+   > **El puño cerrado no es un detalle** (comprobado el 3 de septiembre en tres
+   > registros seguidos): con la mano abierta la referencia del flexor salió a la
+   > mitad de lo que la tarea produjo después (la tarea al 178 % de la
+   > «máxima», marcada en rojo); con el puño cerrado, 217 µV y la tarea al 109 %,
+   > dentro de lo que dan las calibraciones correctas. Cerrar la mano pone a
+   > trabajar a los flexores largos de los dedos junto al FCR y fija la muñeca
+   > en la longitud en que el flexor da más fuerza.
    >
    > **Los 20° valen para los dos, y son críticos** (comprobado en el banco el
    > 31 de agosto: «la posición del brazo es crítica, tanto para FCR como ECR el
@@ -177,17 +185,25 @@ El orden importa, porque la aplicación depende de él.
    > calibración salió diez veces menor que las contracciones posteriores del
    > mismo registro, y el análisis daba picos del 1509 % de CVM.
    >
-   > **Marque «Mejor de 3»** antes de calibrar: repite cada músculo tres veces
-   > y se queda con la más fuerte. La primera contracción máxima de una sesión
-   > es genuinamente submáxima, y con un solo intento no hay nada a lo que
-   > recurrir cuando sale mal.
+   > **Seis repeticiones por músculo, y se queda con la mejor.** Ya no hay
+   > casilla que marcar: el asistente pide siempre **tres contracciones máximas
+   > mantenidas** de 4 s y después **tres sacudidas máximas breves** de 1,5 s
+   > («Haga una contracción o sacudida muscular simple (breve) con la máxima
+   > fuerza posible»), y la referencia es el mejor 0,2 s de las seis. La primera
+   > contracción máxima de una sesión es genuinamente submáxima, y con un solo
+   > intento no hay nada a lo que recurrir cuando sale mal. Las sacudidas están
+   > porque una contracción mantenida hace un pico al empezar y luego una meseta,
+   > y los esfuerzos breves de la tarea alcanzan ese pico: medida sobre la
+   > meseta, la referencia se quedaba corta (135 % de tarea el 1 de septiembre).
+   > En el banco del 3 de septiembre una sacudida fijó la referencia del flexor
+   > un 22 % por encima de la mejor mantenida.
    >
-   > **Y no se salte el calentamiento.** Desde esta versión la calibración abre
-   > con 10 s pidiendo dos o tres contracciones suaves de cada músculo; hágalas.
-   > «Mejor de 3» no basta por sí solo: el 31 de agosto las tres repeticiones
-   > del flexor salieron al 57 %, 68 % y 100 % unas de otras —**todavía
-   > subiendo en la tercera**—, así que la mejor de las tres seguía sin ser una
-   > máxima.
+   > **Y no se salte el calentamiento.** La calibración abre con 10 s pidiendo
+   > dos o tres contracciones suaves de cada músculo; hágalas. Repetir no basta
+   > por sí solo: el 31 de agosto las tres repeticiones del flexor salieron al
+   > 57 %, 68 % y 100 % unas de otras —**todavía subiendo en la tercera**—, así
+   > que la mejor de las tres seguía sin ser una máxima. Las repeticiones flojas
+   > se descartan después en «Repeticiones de la calibración…».
    >
    > **Antebrazo apoyado del todo, mano en reposo, antes de la cuenta atrás.**
    > Si la mano queda al aire, los extensores ya están trabajando para
@@ -216,27 +232,28 @@ El orden importa, porque la aplicación depende de él.
    pausa y el registro—; puede desplazarse por ella para ver qué salió.
 5. Abra el registro en **Análisis**, con el modo *Contracción agonista /
    antagonista* y los dos canales.
-6. **Nombre las maniobras.** En «Seleccionar fragmentos…», ponga a cada
-   fragmento su nombre en la columna «Qué es»: «Flexión», «Extensión»,
-   «Presa». Un fragmento con nombre **es una ventana de la tabla de
-   coactivación**; uno sin nombre es solo señal que se conserva.
+6. **Acepte los fragmentos.** En «Seleccionar fragmentos…» hay una fila por
+   contracción y la columna **«Músculo»** viene rellena: la aplicación mide cuál
+   de los dos alcanzó una fracción mayor **de su propio máximo** y escribe FCR,
+   ECR o «Cocontracción» (cuando el menor pasa de la mitad del mayor). Las filas
+   seguidas con el mismo nombre forman **una ventana de la tabla de
+   coactivación**; una serie de seis flexiones da una fila, no seis. Corrija solo
+   si la traza dice otra cosa, y pulse «Usar estos fragmentos».
 
-   > Esto es lo que produce la tabla, y no hay atajo: el detector automático
-   > encuentra dónde empezó una contracción, no qué maniobra era. La
-   > diferencia entre flexión, extensión y presa no está en la forma de la
-   > envolvente —está en lo que se le pidió al sujeto—, así que la pone usted,
-   > mirando la traza. Ese acto de interpretación *es* la práctica.
-   >
-   > Los siete registros de banco del 30 y 31 de agosto no tienen ni una marca
-   > de fase, y por eso su tabla de coactivación dijo siempre «registro
-   > completo». Con los fragmentos nombrados sale una fila por maniobra.
+   > La comparación se hace en % CVM, no en milivoltios, y no es un detalle: en
+   > el banco del 3 de septiembre la referencia del flexor era un tercio de la
+   > del extensor, y comparando milivoltios diez de las doce flexiones salían
+   > como «cocontracción». Lo que la aplicación no puede saber es qué se le pidió
+   > al sujeto —eso no está en la envolvente—, así que las ventanas llevan el
+   > nombre del músculo que las llevó, no «flexión» o «extensión». Leer «FCR
+   > lideró, luego fue una flexión» es el paso que da el alumno.
 
-> **No hace falta grabar un EDF de calibración aparte.** Si calibra con la
-> grabación ya en marcha —el paso 2—, la referencia de cada músculo queda
-> escrita dentro del propio fichero como anotación (`MVC ref ch=1 value=…`), y
-> tanto **Análisis** como **Normalización CVM** la leen de ahí. En la pestaña de
-> normalización el selector de «EDF de referencia» pasa a ser opcional y el
-> aviso rojo de «no es %CVM real» desaparece.
+> **No hace falta grabar un EDF de calibración aparte.** La calibración del paso
+> 2 queda escrita dentro del propio fichero: cada repetición con su tramo
+> (`CAL start ch=1 rep=4`…) y la referencia de cada músculo como anotación
+> (`MVC ref ch=1 value=…`). **Análisis** y **Normalización CVM** la leen de ahí,
+> recalculándola desde los tramos si se descarta alguna repetición. La pestaña
+> de normalización no pide ningún segundo fichero.
 >
 > **Para el análisis de Jonsson, recorte.** La carga muscular es una propiedad
 > de *la tarea*, y un registro que empieza con tres esfuerzos máximos tiene un

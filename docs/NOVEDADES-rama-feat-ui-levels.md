@@ -1,11 +1,21 @@
 # Novedades de emgteach — rama `feat/ui-levels`
 
+> **Nota del 3 de septiembre de 2026.** Este documento describe los primeros 14
+> commits de la rama (agosto) y **está superado** en varios puntos: ya no hay
+> casilla de «Opciones avanzadas» (el nivel es la práctica), la guía tiene cinco
+> pasos y no catorce, la calibración pide tres máximas mantenidas y tres
+> sacudidas breves, y el análisis tiene tabla por contracción, fichas con rangos
+> y tres cuadros abajo. La descripción al día es la sección «Unreleased» de
+> [`CHANGELOG.md`](../CHANGELOG.md) y los manuales de `docs/`, revisados tras la
+> pasada de banco del 3 de septiembre. Se conserva como registro de por qué se
+> tomaron las decisiones de la primera tanda.
+
 Material de trabajo para actualizar los manuales y la presentación de la
 aplicación. Recoge lo que cambia **de cara al usuario** en los 14 commits de la
 rama, sobre la v2.0.0.
 
-Estado: 329 tests, ruff limpio, mypy sin errores nuevos. **Sin probar con
-hardware** y sin *push* ni PR.
+Estado (22 de agosto): 329 tests, ruff limpio, mypy sin errores nuevos. Sin
+probar con hardware y sin *push* ni PR.
 
 ---
 
