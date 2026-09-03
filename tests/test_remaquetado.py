@@ -90,8 +90,8 @@ class TestTheConfigurationBoxSaysWhatItAsks:
         adq = main_window._tab_adq
         _set_mode(main_window, qapp, mode)
         assert adq._box_k.isVisibleTo(adq)
-        textos = {w.text() for w in adq._box_k.findChildren(QLabel)}
-        assert tr("threshold = rest + k × noise (3 is usual)") in textos  # noqa: RUF001
+        assert adq._lbl_k_explica.isVisibleTo(adq)
+        assert adq._lbl_k_explica.text() == tr("threshold = rest + k × noise (3 is usual)")  # noqa: RUF001
 
 
 class TestTheTourNamesTheChannelOrder:

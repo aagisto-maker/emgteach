@@ -441,14 +441,19 @@ class AnalysisTab(QWidget):
         self._spin_fenv.valueChanged.connect(self._marcar_pendiente)
         self._chk_roi.toggled.connect(self._spin_roi_start.setEnabled)
         self._chk_roi.toggled.connect(self._spin_roi_end.setEnabled)
-        # The envelope cut-off and the advanced practical's two tools share
-        # this advanced row.
-        row_roi.addSpacing(12)
-        row_roi.addWidget(self._box_fenv)
-        row_roi.addSpacing(12)
-        row_roi.addWidget(self._btn_afinado)
-        row_roi.addWidget(self._btn_fv)
         row_roi.addStretch()
+
+        # The envelope cut-off and the advanced practical's two tools, on an
+        # advanced row of their own. Sharing the region row fitted on a
+        # Windows font and not on the Linux runner's wider one: 1439 px.
+        self._box_tools = QWidget()
+        row_tools = QHBoxLayout(self._box_tools)
+        row_tools.setContentsMargins(0, 0, 0, 0)
+        row_tools.addWidget(self._box_fenv)
+        row_tools.addSpacing(12)
+        row_tools.addWidget(self._btn_afinado)
+        row_tools.addWidget(self._btn_fv)
+        row_tools.addStretch()
 
         # The fragment editor sits in its own container, offered in every
         # practical. Keeping the part of a recording that came out well is not
@@ -535,6 +540,7 @@ class AnalysisTab(QWidget):
         self._paso_mostrado: str = ""
         row_roi.addStretch()
         ctrl.addWidget(self._box_roi)
+        ctrl.addWidget(self._box_tools)
         ctrl.addWidget(self._box_fragmentos)
         ctrl.addWidget(self._lbl_siguiente)
 
@@ -2983,6 +2989,7 @@ class AnalysisTab(QWidget):
         # Shared by every mode: fine control.
         self._box_fenv.setVisible(advanced)
         self._box_roi.setVisible(advanced)
+        self._box_tools.setVisible(advanced)
         # Saving a derived EDF is for whoever curates the recordings, not for
         # the student reading one; and its name explains nothing to them.
         self._btn_afinado.setVisible(advanced)

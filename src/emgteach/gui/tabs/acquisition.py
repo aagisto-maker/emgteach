@@ -891,16 +891,17 @@ class AcquisitionTab(QWidget):
         )
         self._spin_k.setEnabled(self._chk_auto.isChecked())
         k_l.addWidget(self._spin_k)
-        # What k is, in the box and not only in the «?»: the help text
-        # named it, the box did not show it, and a knob that is explained
-        # but absent is worse than either.
-        lbl_k = QLabel(tr("threshold = rest + k × noise (3 is usual)"))
-        lbl_k.setStyleSheet("font-size: 10px; color: #6B7580;")
-        k_l.addWidget(lbl_k)
         auto_l.addWidget(self._box_k)
         markers_layout.addWidget(self._box_autoonset)
         markers_layout.addStretch()
         markers_outer.addLayout(markers_layout)
+        # What k is, in the box and not only in the «?»: the help text
+        # named it, the box did not show it, and a knob that is explained
+        # but absent is worse than either. On its own line under the
+        # controls, where it costs height and not width.
+        self._lbl_k_explica = QLabel(tr("threshold = rest + k × noise (3 is usual)"))
+        self._lbl_k_explica.setStyleSheet("font-size: 10px; color: #6B7580;")
+        markers_outer.addWidget(self._lbl_k_explica)
 
         # The last two onsets found, so the detection is visibly working
         # without going to the log for it. Two lines: it is a sign of life,
