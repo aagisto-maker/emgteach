@@ -398,7 +398,7 @@ class TestTheAppFillsInWhichMuscleLed:
             canales.append(sig)
         return canales
 
-    def _etiqueta(self, a_amp: float, b_amp: float) -> str:
+    def _etiqueta(self, a_amp: float, b_amp: float, **refs) -> str:
         from emgteach.coactivation import propose_labels
         from emgteach.dsp import process_offline
 
@@ -407,7 +407,7 @@ class TestTheAppFillsInWhichMuscleLed:
         e2 = process_offline(c2, self.FS)["emg_envelope"]
         return propose_labels(
             e1, e2, self.FS, [(1.4, 2.6)],
-            name_1="FCR", name_2="ECR", both_label="ambos",
+            name_1="FCR", name_2="ECR", both_label="ambos", **refs,
         )[0]
 
     def test_the_louder_muscle_names_the_window(self) -> None:
@@ -427,6 +427,23 @@ class TestTheAppFillsInWhichMuscleLed:
         """Two muscles at rest are equally quiet, which is not a shared
         effort — it is no effort."""
         assert self._etiqueta(0.0, 0.0) == "ambos"
+
+    def test_each_muscle_is_weighed_against_its_own_maximum(self) -> None:
+        """Millivolts do not compare across two muscles, and this was the one
+        place still comparing them.
+
+        From the bench recording of 3 September: the flexor's reference came
+        to 0.087 mV and the extensor's to 0.286 mV, three times larger, so a
+        flexion at its own maximum read *smaller in millivolts* than an
+        extensor sitting at 42 % of its own. Ten of the twelve contractions
+        of that series came back named «co-contraction»; with each muscle
+        weighed against its own maximum, nine of them are flexions.
+        """
+        # The same pair of amplitudes, 3.3 times apart, as that recording.
+        assert self._etiqueta(0.09, 0.12) == "ambos"
+        assert self._etiqueta(0.09, 0.12, ref_1=0.087, ref_2=0.286) == "FCR"
+        # And with no reference to hand it still answers, on millivolts.
+        assert self._etiqueta(0.40, 0.04, ref_1=None, ref_2=None) == "FCR"
 
 
 @pytest.mark.gui

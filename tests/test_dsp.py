@@ -226,6 +226,33 @@ class TestSpectralMetrics:
         assert abs(result["mnf"] - 80.0) < 2.0, f"MNF={result['mnf']}"
         assert abs(result["mdf"] - 80.0) < 2.0, f"MDF={result['mdf']}"
 
+    def test_the_median_survives_a_window_shorter_than_a_second(self) -> None:
+        """Found on the bench recording of 3 September: two rows of the
+        contraction table read «MDF 0 Hz» on contractions of 0.42 s that had
+        a perfectly ordinary spectrum.
+
+        The median was located by comparing a running *sum* of the bins
+        against half of an *integral*, and the two differ by the frequency
+        spacing. A one-second window gives 1 Hz bins, where they coincide;
+        anything shorter gives coarser bins, no bin ever reaches half, and
+        the median came back as zero. It is now read off the same integral.
+        """
+        sig = _sinusoid(80.0, duration_s=0.4)
+        for nperseg in (None, 400, 256):
+            kw = {} if nperseg is None else {"nperseg": nperseg}
+            r = compute_psd_mnf_mdf(sig, FS, **kw)
+            assert abs(r["mdf"] - 80.0) < 8.0, f"nperseg={nperseg}: MDF={r['mdf']}"
+
+    def test_a_signal_shorter_than_the_default_window_is_still_a_spectrum(
+        self,
+    ) -> None:
+        """Welch shortens an over-long window on its own but keeps the overlap
+        it was handed, and an overlap that is no longer smaller than the window
+        raises. Anything under a second therefore crashed the analysis instead
+        of returning a coarser spectrum."""
+        r = compute_psd_mnf_mdf(_sinusoid(80.0, duration_s=0.3), FS)
+        assert r["frequencies"].size and abs(r["mdf"] - 80.0) < 10.0
+
     def test_psd_returns_band_only(self) -> None:
         sig = _sinusoid(100.0, duration_s=4.0)
         result = compute_psd_mnf_mdf(sig, FS, f_low=20.0, f_high=450.0)

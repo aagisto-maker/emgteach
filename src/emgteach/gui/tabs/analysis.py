@@ -1156,6 +1156,13 @@ class AnalysisTab(QWidget):
                     self._combo_canal2.currentText().strip()
                     if self._hay_segundo_canal() else None
                 ),
+                # And each muscle's own maximum, so «who led this one» is
+                # decided as a share of it. Two different muscles do not
+                # compare in millivolts: on the bench of 3 September the
+                # flexor's reference was a third of the extensor's, and
+                # every flexion came back named «co-contraction».
+                mvc_ref=(self._last_result or {}).get("mvc_ref"),
+                mvc_ref_2=(self._last_result or {}).get("mvc_ref_2"),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only

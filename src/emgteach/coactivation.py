@@ -119,7 +119,8 @@ _DOMINANCE = 0.5
 
 
 def dominant_muscle(
-    env_1, env_2, fs: float, window_s: tuple[float, float], *, t0: float = 0.0
+    env_1, env_2, fs: float, window_s: tuple[float, float], *, t0: float = 0.0,
+    ref_1: float | None = None, ref_2: float | None = None,
 ) -> int | None:
     """Which of the two muscles led in this window: 1, 2, or None for neither.
 
@@ -132,6 +133,16 @@ def dominant_muscle(
     Compared on the peak rather than the mean: a brief hard effort and a long
     soft one have similar means, and it is the effort that identifies the
     agonist.
+
+    And compared as a share of **each muscle's own maximum** whenever the
+    recording carries one, which is the same rule the overlay panel and the
+    co-activation index already follow. Millivolts do not compare across two
+    muscles: on the bench recording of 3 September the flexor's reference was
+    0.087 mV and the extensor's 0.286 mV, so a flexion at 100 % of the flexor's
+    own maximum still read *smaller in millivolts* than an extensor sitting at
+    42 % of its own — and every contraction of the series came back labelled
+    «co-contraction». Without references there is nothing better than
+    millivolts, and the label is then as good as the montage.
     """
     e1 = np.asarray(env_1, dtype=np.float64)
     e2 = np.asarray(env_2, dtype=np.float64)
@@ -142,6 +153,8 @@ def dominant_muscle(
         return None
     p1 = float(np.max(e1[i0:i1])) - resting_level(e1)
     p2 = float(np.max(e2[i0:i1])) - resting_level(e2)
+    if ref_1 and ref_2:
+        p1, p2 = p1 / float(ref_1), p2 / float(ref_2)
     alto, bajo = max(p1, p2), min(p1, p2)
     if alto <= 0.0:
         return None
@@ -160,6 +173,8 @@ def propose_labels(
     name_2: str,
     both_label: str,
     t0: float = 0.0,
+    ref_1: float | None = None,
+    ref_2: float | None = None,
 ) -> list[str]:
     """A name for each window: the muscle that led it, or ``both_label``.
 
@@ -173,7 +188,9 @@ def propose_labels(
     """
     return [
         {1: name_1, 2: name_2}.get(
-            dominant_muscle(env_1, env_2, fs, w, t0=t0), both_label
+            dominant_muscle(env_1, env_2, fs, w, t0=t0,
+                            ref_1=ref_1, ref_2=ref_2),
+            both_label,
         )
         for w in windows
     ]

@@ -351,8 +351,13 @@ def compute_psd_mnf_mdf(
         ``mnf`` (mean frequency, Hz), ``mdf`` (median frequency, Hz).
     """
     emg = np.asarray(emg_filtered, dtype=np.float64)
-    nperseg = int(fs) if nperseg is None else max(8, int(nperseg))
-    frequencies, psd = welch(emg, fs=fs, nperseg=nperseg, noverlap=nperseg // 2)
+    # Clamped to the signal: Welch shortens an over-long window by itself but
+    # keeps the overlap it was given, and an overlap that is no longer smaller
+    # than the window is an error, not a spectrum. Anything under a second
+    # asked for the default one-second window and raised.
+    ventana = int(fs) if nperseg is None else int(nperseg)
+    ventana = max(8, min(ventana, emg.size)) if emg.size else 8
+    frequencies, psd = welch(emg, fs=fs, nperseg=ventana, noverlap=ventana // 2)
 
     band_mask = (frequencies >= f_low) & (frequencies <= f_high)
     f_band = frequencies[band_mask]
@@ -364,9 +369,17 @@ def compute_psd_mnf_mdf(
     else:
         mnf = 0.0
 
-    cumulative = np.cumsum(psd_band)
-    mdf_idx = np.where(cumulative >= total_power / 2.0)[0]
-    mdf = float(f_band[mdf_idx[0]]) if mdf_idx.size > 0 else 0.0
+    # The median frequency splits the spectrum into two halves of equal
+    # power, so it has to be found on the same integral the total was
+    # measured with. This compared a running *sum* of the bins against half
+    # of an *integral*, and the two differ by the frequency spacing: with
+    # the 1 Hz bins of a one-second window they coincide, which is why the
+    # fault sat here unseen. Ask for a coarser spectrum — a contraction
+    # shorter than a second — and no bin ever reaches half the integral, so
+    # the median came back as 0 Hz on a signal with a perfectly good one.
+    acumulada = cumulative_trapezoid(psd_band, x=f_band, initial=0.0)
+    total = float(acumulada[-1]) if acumulada.size else 0.0
+    mdf = float(np.interp(total / 2.0, acumulada, f_band)) if total > 0 else 0.0
 
     return {
         "frequencies": f_band,

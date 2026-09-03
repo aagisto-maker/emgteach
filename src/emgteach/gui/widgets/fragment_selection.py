@@ -85,6 +85,8 @@ class FragmentSelectionDialog(QDialog):
         raw_2: np.ndarray | None = None,
         name_1: str = '',
         name_2: str = '',
+        mvc_ref: float | None = None,
+        mvc_ref_2: float | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -123,6 +125,10 @@ class FragmentSelectionDialog(QDialog):
         )
         self._name_1 = name_1 or tr('Muscle {n}').format(n=1)
         self._name_2 = name_2 or tr('Muscle {n}').format(n=2)
+        #: Each muscle's own maximum, when the recording carries one: the
+        #: only footing on which two different muscles compare.
+        self._mvc_ref = mvc_ref
+        self._mvc_ref_2 = mvc_ref_2
         self._row_widgets: list[dict[str, Any]] = []
 
         # Envelope for the preview (downsampled when drawing).
@@ -176,6 +182,7 @@ class FragmentSelectionDialog(QDialog):
             [(s.start_s, s.end_s) for s in segs],
             name_1=self._name_1, name_2=self._name_2,
             both_label=tr("Co-contraction"),
+            ref_1=self._mvc_ref, ref_2=self._mvc_ref_2,
         )
 
     # -- construction --------------------------------------------------------
@@ -191,6 +198,8 @@ class FragmentSelectionDialog(QDialog):
         span: tuple[float, float] | None = None,
         naming: bool = True,
         channel_name_2: str | None = None,
+        mvc_ref: float | None = None,
+        mvc_ref_2: float | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
@@ -214,6 +223,8 @@ class FragmentSelectionDialog(QDialog):
             raw_2=raw_2,
             name_1=channel_name,
             name_2=channel_name_2 or '',
+            mvc_ref=mvc_ref,
+            mvc_ref_2=mvc_ref_2,
             parent=parent,
         )
 

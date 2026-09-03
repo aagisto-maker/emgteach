@@ -185,12 +185,20 @@ def contraction_table(
         canal = 1
         nombre = name_1
         if dos and env2 is not None:
-            lider = dominant_muscle(env, env2, fs, (s.start_s, s.end_s))
+            lider = dominant_muscle(env, env2, fs, (s.start_s, s.end_s),
+                                    ref_1=mvc_ref, ref_2=mvc_ref_2)
             if lider == 2:
                 canal, nombre = 2, name_2
             elif lider is None:
+                # A co-contraction shows the stronger muscle's numbers, and
+                # "stronger" is a share of each one's own maximum wherever
+                # there is one: in millivolts the muscle with the closer
+                # electrodes wins every time.
                 nombre = both_label
-                canal = 2 if p2 > p1 else 1
+                if mvc_ref and mvc_ref_2:
+                    canal = 2 if p2 / mvc_ref_2 > p1 / mvc_ref else 1
+                else:
+                    canal = 2 if p2 > p1 else 1
         k = len(filas) + 1
         e = env2 if (canal == 2 and env2 is not None) else env
         f = filt2 if (canal == 2 and filt2 is not None) else filt
