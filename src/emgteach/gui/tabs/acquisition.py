@@ -2663,8 +2663,8 @@ class AcquisitionTab(QWidget):
                 self._mvc_rest_buf = []      # one baseline per repetition
             count = max(1, int(np.ceil(MVC_READY_S - self._mvc_elapsed)))
             detalle = (
-                tr("A brief, maximal squeeze when the count reaches 0: as hard "
-                   "as you can, then let go at once.")
+                tr("Make a single, brief muscle contraction (a twitch) with "
+                   "the greatest force you can.")
                 if breve else
                 tr("Push as hard as you can when the count reaches 0 — against s"
                    "omething that cannot move, such as the underside of the table, not against a hand")
@@ -2704,7 +2704,8 @@ class AcquisitionTab(QWidget):
             progress = min(1.0, self._mvc_elapsed / dur)
             effort = (self._mvc_cur / self._mvc_peak) if self._mvc_peak > 0 else 0.0
             titulo = (
-                tr("Squeeze {label} as hard as you can and let go!{rep}")
+                tr("Make a single, brief contraction of {label} with the "
+                   "greatest force you can{rep}")
                 if breve else tr("Contract {label} at maximum!{rep}")
             ).format(label=label, rep=rep)
             self._mvc_overlay.show_contract(titulo, secs_left, progress, effort)

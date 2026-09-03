@@ -95,12 +95,14 @@ _ES = {
     "with:": "con:",
     # --- calibration wizard: brief maximal squeezes ---
     " (brief {i}/{n})": " (breve {i}/{n})",
-    "A brief, maximal squeeze when the count reaches 0: as hard as you can, "
-    "then let go at once.":
-        "Una sacudida breve y máxima cuando la cuenta llegue a 0: con toda su "
-        "fuerza, y suelte enseguida.",
-    "Squeeze {label} as hard as you can and let go!{rep}":
-        "¡Apriete {label} con toda su fuerza y suelte!{rep}",
+    "Make a single, brief muscle contraction (a twitch) with the greatest "
+    "force you can.":
+        "Haga una contracción o sacudida muscular simple (breve) con la máxima "
+        "fuerza posible.",
+    "Make a single, brief contraction of {label} with the greatest force you "
+    "can{rep}":
+        "Haga una contracción o sacudida muscular simple (breve) de {label} con "
+        "la máxima fuerza posible{rep}",
     "e.g. bench 3, attempt 2": "p. ej. mesa 3, intento 2",
     "Goes into the file name, the EDF header and the report. One student, a "
     "pair, a bench or a repeat — whatever tells this recording apart.":
