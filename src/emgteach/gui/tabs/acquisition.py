@@ -291,6 +291,7 @@ class AcquisitionTab(QWidget):
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_reps = 1
+        self._mvc_bursts = 0
         self._mvc_elapsed = 0.0       # seconds spent in the current phase
         self._mvc_peak = 0.0          # running peak of the current contraction
         self._mvc_cur = 0.0           # current (recent) effort of the contraction
@@ -2497,6 +2498,13 @@ class AcquisitionTab(QWidget):
         # Always three: the first maximal effort of a session is genuinely
         # submaximal, and with one attempt there is nothing to fall back on.
         self._mvc_reps = 3
+        # And then three brief maximal squeezes. A held maximum peaks at its
+        # start and settles on a plateau; the task's brief efforts reach the
+        # peak, and on the bench they came out at 135 % of a plateau-based
+        # reference. A squeeze reaches the peak alone, and the reference is
+        # the best 0.2 s across all six, so it is a maximum the task cannot
+        # exceed. Reps 1–3 are the held ones, 4–6 the squeezes.
+        self._mvc_bursts = self._profile.mvc_bursts
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
@@ -2624,11 +2632,17 @@ class AcquisitionTab(QWidget):
     def _mvc_tick(self) -> None:
         self._mvc_elapsed += MVC_TICK_MS / 1000.0
         label = self._mvc_label()
-        rep = (
-            tr(" (rep {i}/{n})").format(i=self._mvc_rep + 1, n=self._mvc_reps)
-            if self._mvc_reps > 1
-            else ""
-        )
+        # Reps 1..n are the held maxima; the ones after are the brief
+        # squeezes, counted on their own so the subject knows which they are
+        # doing.
+        breve = self._mvc_rep >= self._mvc_reps
+        if breve:
+            rep = tr(" (brief {i}/{n})").format(
+                i=self._mvc_rep - self._mvc_reps + 1, n=self._mvc_bursts)
+        elif self._mvc_reps > 1:
+            rep = tr(" (rep {i}/{n})").format(i=self._mvc_rep + 1, n=self._mvc_reps)
+        else:
+            rep = ""
         if self._mvc_phase == "warmup":
             total = self._profile.warmup_s
             cuenta = max(1, int(np.ceil(total - self._mvc_elapsed)))
@@ -2648,11 +2662,17 @@ class AcquisitionTab(QWidget):
             if self._mvc_elapsed <= MVC_TICK_MS / 1000.0:
                 self._mvc_rest_buf = []      # one baseline per repetition
             count = max(1, int(np.ceil(MVC_READY_S - self._mvc_elapsed)))
+            detalle = (
+                tr("A brief, maximal squeeze when the count reaches 0: as hard "
+                   "as you can, then let go at once.")
+                if breve else
+                tr("Push as hard as you can when the count reaches 0 — against s"
+                   "omething that cannot move, such as the underside of the table, not against a hand")
+            )
             self._mvc_overlay.show_ready(
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 count,
-                tr("Push as hard as you can when the count reaches 0 — against s"
-                   "omething that cannot move, such as the underside of the table, not against a hand"),
+                detalle,
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
@@ -2660,8 +2680,7 @@ class AcquisitionTab(QWidget):
             self._bcast_calib(
                 True, "ready",
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
-                tr("Push as hard as you can when the count reaches 0 — against s"
-                   "omething that cannot move, such as the underside of the table, not against a hand"), count=count,
+                detalle, count=count,
             )
             if self._mvc_elapsed >= MVC_READY_S:
                 self._mvc_phase = "contract"
@@ -2677,15 +2696,18 @@ class AcquisitionTab(QWidget):
                     cal_start_marker(self._mvc_muscle, self._mvc_rep + 1)
                 )
         elif self._mvc_phase == "contract":
-            secs_left = max(0.0, self._profile.apda_calib_s - self._mvc_elapsed)
-            progress = min(1.0, self._mvc_elapsed / self._profile.apda_calib_s)
+            # A held maximum lasts the calibration time; a squeeze, a second
+            # and a half: long enough to reach the peak, too short for the
+            # plateau.
+            dur = self._profile.mvc_burst_s if breve else self._profile.apda_calib_s
+            secs_left = max(0.0, dur - self._mvc_elapsed)
+            progress = min(1.0, self._mvc_elapsed / dur)
             effort = (self._mvc_cur / self._mvc_peak) if self._mvc_peak > 0 else 0.0
-            self._mvc_overlay.show_contract(
-                tr("Contract {label} at maximum!{rep}").format(label=label, rep=rep),
-                secs_left,
-                progress,
-                effort,
-            )
+            titulo = (
+                tr("Squeeze {label} as hard as you can and let go!{rep}")
+                if breve else tr("Contract {label} at maximum!{rep}")
+            ).format(label=label, rep=rep)
+            self._mvc_overlay.show_contract(titulo, secs_left, progress, effort)
             self._mvc_info(
                 tr(
                     "Contract {label} as hard as you can!  ({s:.0f} s)  "
@@ -2693,11 +2715,10 @@ class AcquisitionTab(QWidget):
                 ).format(label=label, s=secs_left, pk=self._mvc_peak)
             )
             self._bcast_calib(
-                True, "contract",
-                tr("Contract {label} at maximum!{rep}").format(label=label, rep=rep),
+                True, "contract", titulo,
                 secs=secs_left, progress=progress, effort=effort,
             )
-            if self._mvc_elapsed >= self._profile.apda_calib_s:
+            if self._mvc_elapsed >= dur:
                 self._mvc_finish_rep()
         elif self._mvc_phase == "rest":
             sub = (
@@ -2775,7 +2796,7 @@ class AcquisitionTab(QWidget):
                 np.asarray(muestras, dtype=float)
             )
         self._mvc_rep += 1
-        if self._mvc_rep < self._mvc_reps:
+        if self._mvc_rep < self._mvc_reps + self._mvc_bursts:
             self._mvc_phase = "rest"          # rest, then repeat this muscle
             self._mvc_elapsed = 0.0
             return

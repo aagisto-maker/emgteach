@@ -130,7 +130,14 @@ class TestTheCalibrationIsComparedWithRest:
         """Tunable against real forearm data, like the co-activation floor."""
         assert EMG_PROFILE.mvc_min_rest_ratio == pytest.approx(5.0)
         assert EMG_PROFILE.mvc_implausible_pct == pytest.approx(150.0)
-        assert EMG_PROFILE.mvc_peak_window_s == pytest.approx(0.5)
+        # 0.2 s, not 0.5: a held maximum peaks at its start and then settles
+        # on a plateau, and the task's brief efforts reach that peak. The
+        # reference has to be measured where the peak is, or the task beats
+        # it by construction. Three brief squeezes join the calibration for
+        # the same reason.
+        assert EMG_PROFILE.mvc_peak_window_s == pytest.approx(0.2)
+        assert EMG_PROFILE.mvc_bursts == 3
+        assert EMG_PROFILE.mvc_burst_s == pytest.approx(1.5)
 
 
 @pytest.mark.gui

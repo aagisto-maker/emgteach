@@ -283,13 +283,21 @@ class TestTheAdvancedPracticalFoldsItsExtraPanels:
             _cierra(qapp, win)
 
     @pytest.mark.parametrize("modo", ["single", "pair"])
-    def test_the_other_practicals_have_nothing_to_reveal(self, qapp, modo) -> None:
+    def test_the_other_practicals_can_reveal_the_rest_too(self, qapp, modo) -> None:
+        """Curiosity is not confined to the advanced practical: each opens on
+        its own set (the pair adds the spectrum and the fatigue trend of both
+        muscles) and «More panels…» shows the rest, minus what the recording
+        cannot support."""
         win = _ventana(qapp, modo)
         try:
-            assert not win._tab_ana._btn_mas_paneles.isVisibleTo(win._tab_ana)
-            # The pair has one more than the core: the fatigue trend of
-            # both muscles.
-            assert len(self._visibles(win._tab_ana)) == {"single": 3, "pair": 4}[modo]
+            ana = win._tab_ana
+            assert ana._btn_mas_paneles.isVisibleTo(ana)
+            assert len(self._visibles(ana)) == {"single": 3, "pair": 5}[modo]
+            ana._btn_mas_paneles.setChecked(True)
+            qapp.processEvents()
+            # Single: no second-muscle panels, no accelerometer ones (13 - 5).
+            # Pair: everything but the accelerometer three (13 - 3).
+            assert len(self._visibles(ana)) == {"single": 8, "pair": 10}[modo]
         finally:
             _cierra(qapp, win)
 

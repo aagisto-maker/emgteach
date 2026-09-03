@@ -121,13 +121,25 @@ class SignalProfile:
     # the same factor. Warn below this ratio of reference to resting level.
     mvc_min_rest_ratio: float = 5.0
     # The reference is the strongest window the subject actually held, not
-    # an instantaneous peak. Anything compared against it has to be
-    # measured the same way or the comparison inflates by itself.
-    mvc_peak_window_s: float = 0.5
-    # And after the fact, by definition: the reference IS the strongest half
-    # second of a maximal effort, so if the task beats it the effort was not
-    # maximal. What is compared is the task's own strongest half second,
-    # measured the same way.
+    # a single sample. Anything compared against it has to be measured the
+    # same way or the comparison inflates by itself.
+    #
+    # 0.2 s, not 0.5. A held maximal contraction shows a peak at its start
+    # and then a plateau, and a half-second mean sits on the plateau; the
+    # task's brief efforts reach the peak, so they came out at 135 % of a
+    # "maximum" (bench, 1 September) with nothing wrong in the calibration.
+    # The reference has to be measured where the peak is. Long enough to
+    # exclude a single spike, short enough to hold the initial burst.
+    mvc_peak_window_s: float = 0.2
+    # And, for the same reason, the calibration adds three brief maximal
+    # squeezes after the three sustained efforts: a squeeze reaches the
+    # peak without the plateau, and the reference is the best of all six.
+    mvc_bursts: int = 3
+    mvc_burst_s: float = 1.5               # s — duration of one brief squeeze
+    # And after the fact, by definition: the reference IS the strongest
+    # 0.2 s of a maximal effort, so if the task beats it the effort was not
+    # maximal. What is compared is the task's own strongest 0.2 s, measured
+    # the same way.
     #
     # The margin is not fitted, it sits in a gap. Across 21 bench recordings,
     # every session whose calibration was sound peaked at 91-124 % of its own

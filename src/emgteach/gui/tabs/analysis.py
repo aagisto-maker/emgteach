@@ -193,6 +193,7 @@ from emgteach.modes import (
     DEFAULT_MODE,
     MODE_KINEMATICS,
     MODE_PAIR,
+    MODE_SINGLE,
     mode_uses_acc,
 )
 from emgteach.mvc import mark_excess_over_100, overlay_curves
@@ -326,7 +327,7 @@ class AnalysisTab(QWidget):
         self._combo_canal = QComboBox()
         self._combo_canal.setEditable(False)  # pick one of the file's channels
         self._combo_canal.addItem("EMG")
-        self._combo_canal.setFixedWidth(120)
+        self._combo_canal.setFixedWidth(110)
         self._combo_canal.setToolTip(
             tr(
                 "EMG channel to analyse. Every panel and the report use only "
@@ -352,8 +353,8 @@ class AnalysisTab(QWidget):
         # Shown only in the agonist/antagonist mode, where comparing the two
         # channels is the point of the practical. The pair comes from the
         # recording, so it is stated rather than asked for.
-        # Two words on a line this full: the partner is stated, not chosen.
-        compare_l.addWidget(QLabel(tr("with:")))
+        # No caption on a line this full: the partner is stated in the
+        # read-only box beside the channel, and its tooltip says what it is.
         # Kept to drive the overlay logic and gate panel 9, but never shown:
         # in this mode there is nothing to opt into.
         self._chk_compare2 = QCheckBox(tr("Compare channels:"))
@@ -568,8 +569,8 @@ class AnalysisTab(QWidget):
             "  background-color: #FFFFFF;"
             "  border: 1px solid #A7C2DF;"
             "  border-radius: 4px;"
-            "  padding: 3px 8px;"
-            "  font-size: 11px;"
+            "  padding: 2px 5px;"
+            "  font-size: 10px;"
             "}"
             "QCheckBox::indicator {"
             "  width: 14px; height: 14px;"
@@ -762,14 +763,8 @@ class AnalysisTab(QWidget):
                 resumen_grid.addWidget(lbl_rango, base + 2, col)
             return val
 
-        # The fatigue verdict is the one card that is a judgement rather
-        # than a measurement, so it is the one with a "?" beside it.
-        self._btn_ayuda_fatiga = QToolButton()
-        self._btn_ayuda_fatiga.setText("?")
-        self._btn_ayuda_fatiga.setAutoRaise(True)
-        self._btn_ayuda_fatiga.setFixedSize(16, 16)
-        self._btn_ayuda_fatiga.setToolTip(tr("How the fatigue verdict is reached"))
-        self._btn_ayuda_fatiga.clicked.connect(self._explicar_fatiga)
+        # The fatigue verdict is explained in the box's own «?», with the
+        # rest of the cards: one help per box, in the corner, all alike.
 
         self._lbl_mnf = _ficha(
             0, 0, tr("Mean frequency (MNF)"),
@@ -789,16 +784,15 @@ class AnalysisTab(QWidget):
         self._lbl_fatiga = _ficha(
             1, 0, tr("Fatigue"),
             tr("Fatigue indicator from the MDF trend over time."),
-            ayuda=self._btn_ayuda_fatiga,
         )
         # What the task reached against the reference, sustained over the
         # same half second the reference is measured on. Computed for every
         # analysis and, until now, only used to decide whether to warn.
         self._lbl_pico = _ficha(
             1, 1, tr("Task maximum"),
-            tr("Highest sustained level (0.5 s) of the task, as % of the "
+            tr("Highest sustained level ({w:.1f} s) of the task, as % of the "
                "maximal contraction. Well above 100 % means the calibration "
-               "was not a maximum."),
+               "was not a maximum.").format(w=EMG_PROFILE.mvc_peak_window_s),
             rango=tr("a task effort is usually 20–80 %"),
         )
         self._lbl_rms_global = _ficha(
@@ -821,8 +815,10 @@ class AnalysisTab(QWidget):
             tr("The maximal contraction every % MVC on this recording is "
                "measured against, and where it came from."),
         )
-        self._lbl_archivo = _ficha(3, 0, tr("File"), tr("Analysed EDF file."))
-        self._lbl_archivo.setText("")
+        # No file card: the name is in the path field at the top of the tab.
+        # Kept as a label that sits in no layout, since the code that fills
+        # the cards writes to it.
+        self._lbl_archivo = QLabel("")
         resumen_grid.setColumnStretch(2, 1)
         # Placed at the bottom, beside the contraction table (see below):
         # above the panels it cost them a strip of height on every screen.
@@ -870,21 +866,13 @@ class AnalysisTab(QWidget):
         coact_v = QVBoxLayout(self._box_coact)
         coact_v.setContentsMargins(6, 4, 6, 6)
         coact_v.setSpacing(4)
-        # A «?» rather than a paragraph in the panel. What this table needs
+        # A «?» in the corner, like every other box. What this table needs
         # explaining is not the index but the windows: that they come from the
         # names in the fragment editor, which is a different tab of the same
         # dialogue and not anywhere near this box. Nobody was going to guess
         # that, and the warning that said «mark the phases» named an action
         # that appears nowhere in the interface under that name.
-        fila_ayuda = QHBoxLayout()
-        fila_ayuda.addStretch()
-        self._btn_ayuda_coact = QPushButton("?")
-        self._btn_ayuda_coact.setFixedSize(22, 22)
-        self._btn_ayuda_coact.setToolTip(tr("What this table is, and where its "
-                                            "rows come from"))
-        self._btn_ayuda_coact.clicked.connect(self._explicar_coactivacion)
-        fila_ayuda.addWidget(self._btn_ayuda_coact)
-        coact_v.addLayout(fila_ayuda)
+        add_help(self._box_coact, "ana.coact")
         self._lbl_coact_aviso = QLabel("")
         self._lbl_coact_aviso.setWordWrap(True)
         self._lbl_coact_aviso.setStyleSheet("color:#B0243A; font-size:11px;")
@@ -908,7 +896,7 @@ class AnalysisTab(QWidget):
         self._ajustar_alto_coact()
         coact_v.addWidget(self._tbl_coact)
         self._box_coact.setVisible(False)
-        root.addWidget(self._box_coact)
+        # Joins the bottom band with the other two boxes (see below).
 
         # One row per contraction. The student makes six efforts and used to
         # receive one global RMS: the figure showed six bursts and the number
@@ -919,17 +907,10 @@ class AnalysisTab(QWidget):
         contr_v = QVBoxLayout(self._box_contr)
         contr_v.setContentsMargins(6, 4, 6, 6)
         contr_v.setSpacing(4)
-        fila_ayuda_c = QHBoxLayout()
+        add_help(self._box_contr, "ana.contr")
         self._lbl_contr_resumen = QLabel("")
         self._lbl_contr_resumen.setStyleSheet("font-size: 11px; color: #6B7580;")
-        fila_ayuda_c.addWidget(self._lbl_contr_resumen)
-        fila_ayuda_c.addStretch()
-        self._btn_ayuda_contr = QPushButton("?")
-        self._btn_ayuda_contr.setFixedSize(22, 22)
-        self._btn_ayuda_contr.setToolTip(tr("What each column is, and what is usual"))
-        self._btn_ayuda_contr.clicked.connect(self._explicar_contracciones)
-        fila_ayuda_c.addWidget(self._btn_ayuda_contr)
-        contr_v.addLayout(fila_ayuda_c)
+        contr_v.addWidget(self._lbl_contr_resumen)
         self._tbl_contr = QTableWidget(0, 7)
         self._tbl_contr.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
@@ -948,6 +929,7 @@ class AnalysisTab(QWidget):
         # got a hundred pixels on a laptop.
         bottom_boxes = QHBoxLayout()
         bottom_boxes.setSpacing(6)
+        bottom_boxes.addWidget(self._box_coact, stretch=2)
         bottom_boxes.addWidget(self._box_contr, stretch=3)
         bottom_boxes.addWidget(self._grp_resumen, stretch=2)
         root.addLayout(bottom_boxes)
@@ -1267,48 +1249,6 @@ class AnalysisTab(QWidget):
             self._paso_mostrado = ""
 
     @Slot()
-    def _explicar_coactivacion(self) -> None:
-        """What the table is, and — the part nobody could guess — where its
-        rows come from.
-
-        The panel used to warn «mark the phases», an action that appears under
-        that name nowhere in the interface. The phases are marked by naming
-        rows in the fragment editor, which is behind a button at the top of
-        this tab and looks like it is about trimming signal.
-        """
-        caja = QMessageBox(self)
-        caja.setIcon(QMessageBox.Icon.Information)
-        caja.setWindowTitle(tr("Co-activation (Falconer-Winter)"))
-        caja.setTextFormat(Qt.TextFormat.RichText)
-        caja.setText(
-            "<p><b>" + tr("What it measures") + "</b><br>" + tr(
-                "Of all the activity in the two muscles, how much of it was "
-                "shared — how much they worked at the same time. 0 % means one "
-                "worked and the other did not; 100 % means both did the same "
-                "thing throughout."
-            ) + "</p><p><b>" + tr("Why one row per window") + "</b><br>" + tr(
-                "The index compares the shape of the two envelopes, so it only "
-                "means something over a stretch in which one thing was being "
-                "done. Over a whole recording that mixes rest, flexion and "
-                "grip it still produces a number, and that number is not a "
-                "measurement of anything."
-            ) + "</p><p><b>" + tr("Where the windows come from") + "</b><br>"
-            + tr(
-                "From «{button}», at the top of this tab. Each row of that "
-                "dialogue has a name, which the app fills in itself with the "
-                "muscle that led the contraction. Consecutive rows with the "
-                "same name become one window here — six flexions in a row give "
-                "one row in this table, not six."
-            ).format(button=tr("Select fragments…"))
-            + "</p><p><b>" + tr("If it says «whole recording»")
-            + "</b><br>" + tr(
-                "Then no window has a name: either the fragment editor has not "
-                "been opened, or the names were cleared. Open it and accept "
-                "what it proposes."
-            ) + "</p>"
-        )
-        caja.exec()
-
     @Slot()
     def _marcar_pendiente(self) -> None:
         """A setting changed: there is now something to re-run."""
@@ -1675,7 +1615,7 @@ class AnalysisTab(QWidget):
         # Three rows before it scrolls on a 768 px screen, six on a 1080 px
         # one: anything taller leaves the panels a hundred pixels, and the
         # panels come first.
-        tope = 200 if self.height() >= 850 else 118
+        tope = 160 if self.height() >= 850 else 110
         self._tbl_contr.setFixedHeight(max(38, min(alto, tope)))
         resumen = tr("{n} contractions").format(n=len(filas))
         emd = result.get("emd_ms_mean")
@@ -1683,46 +1623,6 @@ class AnalysisTab(QWidget):
             resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
         self._lbl_contr_resumen.setText(resumen)
         self._box_contr.setVisible(True)
-
-    def _explicar_contracciones(self) -> None:
-        """What each column is, and what is usual — the reference the numbers
-        were missing. The ranges are orientative values for surface EMG in
-        healthy adults, not limits: a value outside them is a question, not
-        a fault."""
-        caja = QMessageBox(self)
-        caja.setIcon(QMessageBox.Icon.Information)
-        caja.setWindowTitle(tr("Contractions"))
-        caja.setTextFormat(Qt.TextFormat.RichText)
-        caja.setText(
-            "<p>" + tr(
-                "Each row is one contraction the application found on its "
-                "own, the same ones the fragment editor proposes. With two "
-                "muscles, the row belongs to the one that led it; "
-                "«Co-contraction» means both worked at once, and the numbers "
-                "are the stronger one's."
-            ) + "</p><ul><li><b>" + tr("RMS") + "</b>: " + tr(
-                "mean amplitude of the filtered signal over the contraction. "
-                "Rest is a few hundredths of a millivolt; a firm effort with "
-                "surface electrodes is usually 0.1–1 mV, and depends on the "
-                "electrodes and the skin, which is why % MVC exists."
-            ) + "</li><li><b>" + tr("Peak (% MVC)") + "</b>: " + tr(
-                "the highest half-second of the contraction against the "
-                "maximum. A task effort is usually 20–80 %; above 100 % (in "
-                "red) the calibration was not a maximum."
-            ) + "</li><li><b>" + tr("MDF") + "</b>: " + tr(
-                "median frequency of the spectrum. Typically 60–150 Hz for "
-                "surface EMG of limb muscles; it falls along a sustained "
-                "effort as the muscle fatigues. Not shown for contractions "
-                "shorter than a quarter of a second."
-            ) + "</li><li><b>" + tr("EMD") + "</b>: " + tr(
-                "electromechanical delay, from the electrical onset to the "
-                "start of the movement measured by the accelerometer on the "
-                "limb. Usually 30–100 ms in healthy adults: the time the "
-                "muscle takes to take up its slack and build force."
-            ) + "</li></ul>"
-        )
-        caja.setStandardButtons(QMessageBox.StandardButton.Ok)
-        caja.exec()
 
     def _ajustar_alto_coact(self) -> None:
         """Make the table exactly as tall as its rows, header included."""
@@ -1733,7 +1633,7 @@ class AnalysisTab(QWidget):
         # A floor so an empty table is not a sliver, and a ceiling so a
         # recording marked into many phases scrolls instead of pushing the
         # panels off the window.
-        self._tbl_coact.setFixedHeight(max(38, min(alto, 150)))
+        self._tbl_coact.setFixedHeight(max(38, min(alto, 110)))
 
     def _on_result(self, result: dict) -> None:
         self._last_result = result
@@ -1906,38 +1806,6 @@ class AnalysisTab(QWidget):
         else:
             self._lbl_pico.setText(texto)
             self._lbl_pico.setStyleSheet("font-size: 13px; font-weight: 600;")
-
-    def _explicar_fatiga(self) -> None:
-        """What the fatigue verdict is, in the words a student can check."""
-        QMessageBox.information(
-            self,
-            tr("Fatigue"),
-            "<p>" + tr(
-                "As a muscle fatigues, its action potentials slow down and "
-                "the EMG spectrum shifts towards lower frequencies. The "
-                "median frequency (MDF) is the frequency that splits the "
-                "spectrum in two halves of equal power; it is the standard "
-                "measure of that shift."
-            ) + "</p><p>" + tr(
-                "The application computes the MDF on successive windows and "
-                "fits a straight line to it over time. The verdict follows "
-                "that line:"
-            ) + "</p><ul><li>" + tr(
-                "<b>Detected</b>: the MDF falls clearly and the line fits "
-                "the data (high R²)."
-            ) + "</li><li>" + tr(
-                "<b>Not detected</b>: the MDF stays flat or rises."
-            ) + "</li><li>" + tr(
-                "<b>Not conclusive</b>: the line does not fit (low R²). "
-                "This is usual with short or intermittent contractions; the "
-                "recording does not answer the question, which is not the "
-                "same as answering “no”."
-            ) + "</li></ul><p>" + tr(
-                "Fatigue is only meaningful on a sustained contraction of "
-                "some tens of seconds. On a series of short contractions the "
-                "verdict says nothing about the muscle."
-            ) + "</p>",
-        )
 
     def _actualizar_procedencia_cvm(self, r: dict) -> None:
         """The reference and where it came from, in the summary bar.
@@ -2337,13 +2205,27 @@ class AnalysisTab(QWidget):
         # --- 4: PSD ---
         if 4 in ax_map:
             ax = ax_map[4]
-            draw_spectrum_before_filter(ax, r)
-            ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.8,
-                    label=tr("After the filter"))
-            ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=2.0,
-                       label=f"MNF: {r['mnf']:.1f} Hz")
-            ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
-                       label=f"MDF: {r['mdf']:.1f} Hz")
+            dos = r.get("psd_2") is not None
+            if dos:
+                # Both muscles, in the colours of the overlay panel, each
+                # with its own median frequency; the raw spectrum and the
+                # single-muscle markers would only clutter the comparison.
+                n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
+                n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+                ax.plot(r["frequencies"], r["psd"], color="#4169E1", lw=1.8,
+                        label=f"{n1}  (MDF {r['mdf']:.0f} Hz)")
+                ax.plot(r["frequencies_2"], r["psd_2"], color="#D62728", lw=1.8,
+                        label=f"{n2}  (MDF {r['mdf_2']:.0f} Hz)")
+                ax.axvline(r["mdf"], color="#4169E1", ls="--", lw=1.4, alpha=0.8)
+                ax.axvline(r["mdf_2"], color="#D62728", ls="--", lw=1.4, alpha=0.8)
+            else:
+                draw_spectrum_before_filter(ax, r)
+                ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.8,
+                        label=tr("After the filter"))
+                ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=2.0,
+                           label=f"MNF: {r['mnf']:.1f} Hz")
+                ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
+                           label=f"MDF: {r['mdf']:.1f} Hz")
             ax.set_title(tr("3. Power spectral density (PSD)"), fontsize=9)
             ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
             ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
@@ -2997,8 +2879,8 @@ class AnalysisTab(QWidget):
         self._box_fragmentos.setVisible(True)
 
         self._sync_compare_to_mode()
-        # Only the advanced practical has panels to reveal.
-        self._btn_mas_paneles.setVisible(mode == MODE_KINEMATICS)
+        # Every practical has panels to reveal; see _panel_is_offered.
+        self._btn_mas_paneles.setVisible(True)
         self._apply_panel_visibility(mode, advanced)
 
     def _sync_compare_to_mode(self) -> None:
@@ -3081,22 +2963,28 @@ class AnalysisTab(QWidget):
         level; the rest belong to one practical each.
         """
         pid = self._panel_pids[index]
+        # Each practical opens on its own set; «More panels…» reveals the
+        # rest in every practical, since a curious student is not confined
+        # to the advanced one. Panels that need what the recording does not
+        # have (a second muscle, an accelerometer) stay hidden regardless.
         if mode == MODE_KINEMATICS:
-            # Its own six always: the teaching core and the accelerometer
-            # panels. The other six wait behind «More panels…».
-            if pid in _CORE_PIDS or pid in _ACC_PIDS:
-                return True
-            return self._mas_paneles
-        if mode == MODE_PAIR:
-            # Plus the fatigue trend, which in this practical carries both
-            # muscles: whether one tires and the other does not is a
-            # question only a pair can answer.
-            return pid in (0, _RAW2_PID, _OVERLAY_PID, 6)
+            propios = pid in _CORE_PIDS or pid in _ACC_PIDS
+        elif mode == MODE_PAIR:
+            # Raw trace of each muscle, the two envelopes overlaid, and the
+            # spectrum and the fatigue trend of both: whether one tires and
+            # the other does not is a question only a pair can answer.
+            propios = pid in (0, _RAW2_PID, _OVERLAY_PID, 4, 6)
+        else:
+            propios = pid in _CORE_PIDS
+        if propios:
+            return True
+        if not self._mas_paneles:
+            return False
         if pid in (_RAW2_PID, _OVERLAY_PID):
-            return False                     # both need a second muscle
+            return mode != MODE_SINGLE       # both need a second muscle
         if pid in _ACC_PIDS:
             return mode_uses_acc(mode)
-        return pid in _CORE_PIDS
+        return True
 
     @Slot(bool)
     def _on_mas_paneles(self, checked: bool) -> None:

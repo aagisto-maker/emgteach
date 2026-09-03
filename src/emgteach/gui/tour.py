@@ -191,7 +191,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             "and the same skin: what is left is how hard the muscle is "
             "working. The maximum is inside the recording: the session "
             "calibrates without stopping, so nothing else has to be chosen "
-            "here. Every box has a «?» with more."
+            "here."
         ),
         lambda: cvm._edit_path,
         tab=TAB_MVC,

@@ -807,6 +807,16 @@ class AnalysisWorker(QThread):
                     result["rms_seg_2"] = segs2["rms_seg"]
                     result["fat_fitted_2"] = fat2["fitted"]
                     result["mdf_slope_2"] = float(fat2["slope"])
+                    # And its spectrum, so panel 3 can show the two muscles
+                    # side by side in the same practical.
+                    psd2 = compute_psd_mnf_mdf(
+                        proc2["emg_filtered"], fs,
+                        f_low=self._f_low, f_high=self._f_high,
+                    )
+                    result["frequencies_2"] = psd2["frequencies"]
+                    result["psd_2"] = psd2["psd"]
+                    result["mnf_2"] = psd2["mnf"]
+                    result["mdf_2"] = psd2["mdf"]
                     # Same stretch of time, second channel.
                     env_pausa_2 = _cola_de_la_pausa(
                         env_calibracion_2, fs, phases, self._profile

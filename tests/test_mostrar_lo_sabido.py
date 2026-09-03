@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QLabel, QToolButton
+from PySide6.QtWidgets import QLabel
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, Table
 
@@ -24,6 +24,7 @@ from emgteach.gui.tabs.mvc import MvcTab
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.mvc import mark_excess_over_100
 from emgteach.phases import FROM_REPS, RepValue
+from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import _seccion_calibracion
 
 tr = i18n.tr
@@ -95,18 +96,16 @@ class TestTheSummaryIsCards:
                     tab._lbl_duracion, tab._lbl_pico, tab._lbl_cvm):
             assert lbl.text() == "—"
 
-    def test_the_fatigue_verdict_has_a_help_button(self, tab, monkeypatch) -> None:
-        boton = tab._btn_ayuda_fatiga
-        assert isinstance(boton, QToolButton) and boton.text() == "?"
-        abiertos: list[tuple[str, str]] = []
-        monkeypatch.setattr(
-            "emgteach.gui.tabs.analysis.QMessageBox.information",
-            staticmethod(lambda parent, title, text, *a, **k: abiertos.append((title, text))),
-        )
-        boton.click()
-        assert len(abiertos) == 1
-        titulo, texto = abiertos[0]
-        assert titulo == tr("Fatigue")
+    def test_the_fatigue_verdict_is_explained_in_the_box_help(self, tab) -> None:
+        """One «?» per box, in the corner, all alike: the fatigue verdict's
+        explanation lives in the summary box's help, not in a button of its
+        own beside the caption."""
+        from emgteach.gui import help_texts
+        from emgteach.gui.widgets.help_button import HelpButton
+
+        assert not hasattr(tab, "_btn_ayuda_fatiga")
+        assert any(b.objectName() == "help:ana.summary" for b in tab.findChildren(HelpButton))
+        texto = help_texts.text("ana.summary")[1]
         assert "MDF" in texto and "R²" in texto
 
 
@@ -216,7 +215,8 @@ class TestTheReportSaysWhatTheCalibrationWas:
         celdas = _celdas(story)
         assert "FCR" in celdas and "0.094 mV" in celdas
         assert any("3" in c and "repeti" in c for c in celdas), "the source names the reps"
-        assert tr("{pct:.0f} % MVC (sustained 0.5 s)").format(pct=135.2) in celdas
+        assert tr("{pct:.0f} % MVC (sustained {w:.1f} s)").format(
+            pct=135.2, w=EMG_PROFILE.mvc_peak_window_s) in celdas
         # The repetitions, with the other muscle's share and the discard.
         assert "0.081 mV" in celdas and "35 %" in celdas
         assert f"3 ({tr('discarded')})" in celdas

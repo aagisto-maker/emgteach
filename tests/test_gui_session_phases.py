@@ -81,6 +81,7 @@ def _una_repeticion(tab) -> None:
     from emgteach.gui.tabs.acquisition import MVC_READY_S
 
     tab._mvc_reps = 1
+    tab._mvc_bursts = 0                     # no brief efforts either
     tab._mvc_muscle = 0
     tab._mvc_rep = 0
     tab._mvc_phase = "ready"

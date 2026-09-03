@@ -50,6 +50,7 @@ from emgteach.mvc import (
     overlay_curves,
 )
 from emgteach.phases import NO_CALIBRATION, reference_source_text
+from emgteach.profiles import EMG_PROFILE
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -252,13 +253,23 @@ def _draw_analysis_panel(
         ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 4:
-        draw_spectrum_before_filter(ax, r)
-        ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.6,
-                label=tr("After the filter"))
-        ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=1.8,
-                   label=f"MNF: {float(r['mnf']):.1f} Hz")
-        ax.axvline(r["mdf"], color="#C71585", ls="--", lw=1.8,
-                   label=f"MDF: {float(r['mdf']):.1f} Hz")
+        if r.get("psd_2") is not None:
+            n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
+            n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+            ax.plot(r["frequencies"], r["psd"], color="#4169E1", lw=1.6,
+                    label=f"{n1}  (MDF {float(r['mdf']):.0f} Hz)")
+            ax.plot(r["frequencies_2"], r["psd_2"], color="#D62728", lw=1.6,
+                    label=f"{n2}  (MDF {float(r['mdf_2']):.0f} Hz)")
+            ax.axvline(r["mdf"], color="#4169E1", ls="--", lw=1.2, alpha=0.8)
+            ax.axvline(r["mdf_2"], color="#D62728", ls="--", lw=1.2, alpha=0.8)
+        else:
+            draw_spectrum_before_filter(ax, r)
+            ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.6,
+                    label=tr("After the filter"))
+            ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=1.8,
+                       label=f"MNF: {float(r['mnf']):.1f} Hz")
+            ax.axvline(r["mdf"], color="#C71585", ls="--", lw=1.8,
+                       label=f"MDF: {float(r['mdf']):.1f} Hz")
         ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
         ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
         ax.set_xlim(0, float(r.get("f_high", 450)) + 50)
@@ -499,7 +510,8 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
         rows.append([
             str(name), f"{float(ref):.3f} mV",
             reference_source_text(str(fuente), int(n_reps)),
-            "" if pico is None else tr("{pct:.0f} % MVC (sustained 0.5 s)").format(pct=pico),
+            "" if pico is None else tr("{pct:.0f} % MVC (sustained {w:.1f} s)").format(
+                pct=pico, w=EMG_PROFILE.mvc_peak_window_s),
         ])
     story.append(_styled_table(rows))
     if result.get("mvc_implausible"):

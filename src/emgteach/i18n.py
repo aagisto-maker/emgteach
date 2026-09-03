@@ -93,6 +93,14 @@ _ES = {
     "Test identifier: {code}": "Identificador de prueba: {code}",
     "Device: BITalino": "Dispositivo: BITalino",
     "with:": "con:",
+    # --- calibration wizard: brief maximal squeezes ---
+    " (brief {i}/{n})": " (breve {i}/{n})",
+    "A brief, maximal squeeze when the count reaches 0: as hard as you can, "
+    "then let go at once.":
+        "Una sacudida breve y máxima cuando la cuenta llegue a 0: con toda su "
+        "fuerza, y suelte enseguida.",
+    "Squeeze {label} as hard as you can and let go!{rep}":
+        "¡Apriete {label} con toda su fuerza y suelte!{rep}",
     "e.g. bench 3, attempt 2": "p. ej. mesa 3, intento 2",
     "Goes into the file name, the EDF header and the report. One student, a "
     "pair, a bench or a repeat — whatever tells this recording apart.":
@@ -146,10 +154,10 @@ _ES = {
         "son unas centésimas de milivoltio; un esfuerzo firme con electrodos "
         "de superficie suele estar entre 0,1 y 1 mV, y depende de los "
         "electrodos y de la piel, que es por lo que existe el % CVM.",
-    "the highest half-second of the contraction against the maximum. A task "
+    "the highest {w:.1f} s of the contraction against the maximum. A task "
     "effort is usually 20–80 %; above 100 % (in red) the calibration was not "
     "a maximum.":
-        "el medio segundo más alto de la contracción respecto al máximo. Un "
+        "los {w:.1f} s más altos de la contracción respecto al máximo. Un "
         "esfuerzo de tarea suele ser del 20–80 %; por encima del 100 % (en "
         "rojo) la calibración no fue un máximo.",
     "MDF": "MDF",
@@ -202,12 +210,18 @@ _ES = {
         "es su envolvente, la señal rectificada y suavizada, que sigue cuánto "
         "trabaja el músculo y es sobre lo que se construyen las barras de "
         "carga y el análisis.",
-    "Three repetitions are recorded and the reference is the strongest "
-    "half-second held; a repetition that came out weak can be discarded "
-    "afterwards in the analysis.":
-        "Se graban tres repeticiones y la referencia es el medio segundo más "
-        "fuerte que se mantuvo; una repetición que salió floja puede "
-        "descartarse después en el análisis.",
+    "Three sustained maximal efforts are recorded, then three brief maximal "
+    "squeezes: a held contraction shows a peak at its start and then a "
+    "plateau, and a brief squeeze reaches that peak alone. The reference is "
+    "the strongest 0.2 s across all six, so it is a maximum the task cannot "
+    "exceed; a repetition that came out weak can be discarded afterwards in "
+    "the analysis.":
+        "Se graban tres esfuerzos máximos mantenidos y después tres sacudidas "
+        "máximas breves: una contracción mantenida muestra un pico al inicio "
+        "y luego una meseta, y una sacudida breve alcanza ese pico sin más. "
+        "La referencia es el 0,2 s más fuerte de las seis, de modo que es un "
+        "máximo que la tarea no puede superar; una repetición que salió "
+        "floja puede descartarse después en el análisis.",
     "Opening a recording": "Abrir un registro",
     "Open a recording and it is analysed on its own; the channel to study is "
     "the muscle's name from the file. The two buttons underneath are for "
@@ -225,17 +239,15 @@ _ES = {
     "range in grey where one can be given: those ranges are orientative "
     "values for surface EMG in healthy adults, not limits. The task maximum "
     "says how far the effort went against the calibrated maximum; well above "
-    "100 % means the calibration was not maximal. The fatigue verdict has its "
-    "own «?». The table further down gives the same figures contraction by "
-    "contraction.":
+    "100 % means the calibration was not maximal. The table beside gives the "
+    "same figures contraction by contraction.":
         "Cada ficha es una cifra del tramo analizado entero, con su rango "
         "habitual en gris cuando se puede dar uno: esos rangos son valores "
         "orientativos para EMG de superficie en adultos sanos, no límites. El "
         "máximo de la tarea dice hasta dónde llegó el esfuerzo respecto al "
         "máximo calibrado; muy por encima del 100 % significa que la "
-        "calibración no fue máxima. El veredicto de fatiga tiene su propio "
-        "«?». La tabla de más abajo da las mismas cifras contracción a "
-        "contracción.",
+        "calibración no fue máxima. La tabla de al lado da las mismas cifras "
+        "contracción a contracción.",
     # --- the five-step tour (tour.py) ---
     "Everything else follows from this. Each mode records what that "
     "practical needs — one muscle, an agonist/antagonist pair, or a "
@@ -355,23 +367,6 @@ _ES = {
         "frecuencia mediana (MDF) baja. Las fichas sobre los paneles llevan "
         "los números con sus rangos habituales, y la tabla de debajo da una "
         "fila por contracción.",
-    "A raw amplitude cannot be compared between two people, or "
-    "between two sessions of the same person: it depends on the "
-    "electrodes, the skin and the fat beneath it. Expressing every "
-    "value as a percentage of the maximal contraction cancels all of "
-    "that out, because the two amplitudes share the same electrodes "
-    "and the same skin: what is left is how hard the muscle is "
-    "working. The maximum is inside the recording: the session "
-    "calibrates without stopping, so nothing else has to be chosen "
-    "here. Every box has a «?» with more.":
-        "Una amplitud en bruto no se puede comparar entre dos personas, ni "
-        "entre dos sesiones de la misma persona: depende de los electrodos, "
-        "de la piel y de la grasa que hay debajo. Expresar cada valor como "
-        "porcentaje de la contracción máxima anula todo eso, porque las dos "
-        "amplitudes comparten los mismos electrodos y la misma piel: lo que "
-        "queda es cuánto trabaja el músculo. El máximo está dentro del "
-        "registro: la sesión calibra sin detenerse, así que aquí no hay que "
-        "elegir nada más. Cada caja tiene un «?» con más.",
     # --- analysis summary cards, task maximum, fatigue help ---
     "MDF slope": "Pendiente de la MDF",
     "Task maximum": "Máximo de la tarea",
@@ -379,9 +374,9 @@ _ES = {
     "Close": "Cerrar",
     "not a maximum": "no fue un máximo",
     "How the fatigue verdict is reached": "Cómo se llega al veredicto de fatiga",
-    "Highest sustained level (0.5 s) of the task, as % of the maximal "
+    "Highest sustained level ({w:.1f} s) of the task, as % of the maximal "
     "contraction. Well above 100 % means the calibration was not a maximum.":
-        "Nivel más alto sostenido (0,5 s) durante la tarea, en % de la "
+        "Nivel más alto sostenido ({w:.1f} s) durante la tarea, en % de la "
         "contracción máxima. Muy por encima del 100 % significa que la "
         "calibración no fue un máximo.",
     "Detected (MDF −{decline:.1f} %)": "Detectada (MDF −{decline:.1f} %)",
@@ -436,7 +431,7 @@ _ES = {
         "Calibración (contracción voluntaria máxima)",
     "Reference": "Referencia",
     "Source": "Procedencia",
-    "{pct:.0f} % MVC (sustained 0.5 s)": "{pct:.0f} % CVM (sostenido 0,5 s)",
+    "{pct:.0f} % MVC (sustained {w:.1f} s)": "{pct:.0f} % CVM (sostenido {w:.1f} s)",
     "The task exceeds the reference by a wide margin: the calibration did "
     "not capture a maximum, so every percentage in this report is too high "
     "in the same proportion. Calibrate again with a genuinely maximal "

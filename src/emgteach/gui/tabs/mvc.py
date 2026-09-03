@@ -159,6 +159,13 @@ class MvcTab(QWidget):
         # somewhere invisible. That included the flat-channel and saturated-
         # channel warnings, the most common mistake a student makes.
         self._local_log = LoggerWidget()
+        # Five lines rather than the widget's three: the parameters box beside
+        # it is three rows tall, and the log used to stop short with blank
+        # box underneath. Not unlimited — left to grow, it stretched the
+        # whole header to its own preferred height.
+        self._local_log.setMaximumHeight(
+            int(self._local_log.fontMetrics().lineSpacing() * 5 + 10)
+        )
 
         # ── Vertical-scale state (3 time-series panels: 0=filtered, 1=envelope, 2=norm) ──
         self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0}
