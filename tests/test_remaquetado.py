@@ -249,3 +249,82 @@ class TestTheNormalisationTabFollows:
         cvm._selected_segments = [(0.0, 1.0), (2.0, 3.0), (4.0, 5.0)]
         cvm._actualizar_etiqueta_fragmentos()
         assert cvm._lbl_fragmentos.text() == tr("{n} fragments selected").format(n=3)
+
+
+# ---------------------------------------------------------------------------
+# Lo visto en el banco del 3 de septiembre, segunda tanda
+# ---------------------------------------------------------------------------
+
+
+class TestWhatTheSecondBenchSessionShowed:
+    def test_the_legend_names_the_muscles_of_the_chosen_practical(
+        self, main_window, qapp
+    ) -> None:
+        """It read «Muscle · ECR» beside two boxes saying FCR and ECR.
+
+        The legend and the lane labels are painted while the tab is built,
+        before any mode has been applied, so they carried the names of the
+        default practical; with the channel count already at two, nothing
+        changed afterwards and the first one never got its name.
+        """
+        adq = main_window._tab_adq
+        _set_mode(main_window, qapp, MODE_PAIR)
+        adq._edit_labels[0].setText("FCR")
+        adq._edit_labels[1].setText("ECR")
+        qapp.processEvents()
+        # Re-applying the mode with the count already right used to leave it.
+        adq.apply_mode(MODE_PAIR, advanced=False)
+        qapp.processEvents()
+        assert adq._active_labels() == ["FCR", "ECR"]
+        assert "FCR" in adq._lbl_legend.text()
+        assert tr("Muscle") not in adq._lbl_legend.text()
+
+    def test_the_next_step_waits_for_the_analysis_tab(self, main_window, qapp) -> None:
+        """The recording is analysed as soon as it is opened, which happens
+        while the student is still on Acquisition — so the step saying what to
+        do next was raised over a tab nobody was looking at and dropped, and
+        the analysis tab, which only emits on a *change* of step, never
+        offered it again."""
+        main_window._tabs.setCurrentWidget(main_window._tab_adq)
+        qapp.processEvents()
+        main_window._mostrar_paso_guiado(
+            "t", "b", main_window._tab_ana._btn_reps
+        )
+        assert not main_window._coach.isVisible()
+        assert main_window._paso_pendiente is not None
+
+        main_window._tabs.setCurrentWidget(main_window._tab_ana)
+        qapp.processEvents()
+        assert main_window._coach.isVisible()
+        assert main_window._paso_pendiente is None
+        main_window._coach.stop()
+
+    def test_the_contraction_table_fills_its_box(self, tab) -> None:
+        """Pinned to a fixed height it sat at the bottom of a taller box with
+        a strip of empty box above it."""
+        from emgteach.contractions import Contraction
+
+        def filas(n: int) -> list[Contraction]:
+            return [
+                Contraction(i, float(i), float(i) + 0.7, "FCR", 0.2, 60.0, 120.0)
+                for i in range(1, n + 1)
+            ]
+
+        tab._refresh_contractions({"contractions": filas(2), "channel_name": "FCR"})
+        assert tab._tbl_contr.maximumHeight() > 1000
+        con_dos = tab._tbl_contr.minimumHeight()
+        tab._refresh_contractions({"contractions": filas(8), "channel_name": "FCR"})
+        assert tab._tbl_contr.minimumHeight() > con_dos
+
+    def test_the_normalisation_greeting_does_not_come_back(
+        self, main_window, qapp
+    ) -> None:
+        """Dismissed stays dismissed: «New session» used to raise it again
+        over a tab the operator was already using."""
+        cvm = main_window._tab_cvm
+        cvm._dismiss_entry_screen()
+        qapp.processEvents()
+        assert not cvm._entry_panel.isVisibleTo(cvm)
+        cvm.reset()
+        qapp.processEvents()
+        assert not cvm._entry_panel.isVisibleTo(cvm)

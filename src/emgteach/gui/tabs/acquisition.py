@@ -3771,6 +3771,12 @@ class AcquisitionTab(QWidget):
         # the ▲▼ sidebar). None of them is a decision a student should be
         # making in the middle of a physiology exercise; the advanced
         # practical, where the reader is past that point, shows them all.
+        # The legend and the lane labels are painted while the tab is built,
+        # before any mode has been applied, so they carried the names of the
+        # default practical: with the channel count already at two nothing
+        # changed and the first lane stayed «Muscle» beside an «ECR».
+        self._update_legend()
+
         self._box_thr.setVisible(advanced)
         # k stays on screen in every practical, with its one-line meaning
         # beside it: the box's help explains it, and a control that is

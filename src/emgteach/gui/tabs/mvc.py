@@ -1622,13 +1622,13 @@ class MvcTab(QWidget):
 
         self._local_log.clear()
 
-        # A new session means a new student, so the explanation is due again:
-        # right away if this tab is the one on screen, otherwise the next time
-        # it is opened (showEvent does not fire for the tab already showing).
-        self._entry_shown = False
+        # Once per run of the application, and «New session» does not bring
+        # it back. It used to, on the grounds that a new session is a new
+        # student — but from the operator's seat the panel they had already
+        # dismissed reappeared over a tab they were using, which reads as the
+        # tab changing its mind. Dismissed stays dismissed; never opened, it
+        # still greets the first opening.
         self._dismiss_entry_screen()
-        if self.isVisible():
-            self._show_entry_screen()
 
         self._edit_path.clear()
         self._spin_fenv.setValue(5.0)

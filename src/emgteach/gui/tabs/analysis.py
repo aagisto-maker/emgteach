@@ -928,7 +928,7 @@ class AnalysisTab(QWidget):
         self._tbl_contr.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._tbl_contr.setSizeAdjustPolicy(
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-        self._tbl_contr.setFixedHeight(38)
+        self._tbl_contr.setMinimumHeight(38)
         contr_v.addWidget(self._tbl_contr)
         self._box_contr.setVisible(False)
 
@@ -1638,11 +1638,13 @@ class AnalysisTab(QWidget):
         alto = self._tbl_contr.horizontalHeader().height() + 4
         for i in range(len(filas)):
             alto += self._tbl_contr.rowHeight(i)
-        # Three rows before it scrolls on a 768 px screen, six on a 1080 px
-        # one: anything taller leaves the panels a hundred pixels, and the
-        # panels come first.
+        # The rows set a floor and the layout hands it the rest of the box,
+        # as the co-activation table does: pinned to a fixed height it sat
+        # at the bottom of a taller box with a strip of empty box above it.
+        # The ceiling on the floor keeps a long series from pushing the
+        # panels off the window; beyond it the table scrolls.
         tope = 160 if self.height() >= 850 else 110
-        self._tbl_contr.setFixedHeight(max(38, min(alto, tope)))
+        self._tbl_contr.setMinimumHeight(max(38, min(alto, tope)))
         resumen = tr("{n} contractions").format(n=len(filas))
         emd = result.get("emd_ms_mean")
         if emd is not None:

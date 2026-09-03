@@ -245,7 +245,11 @@ class MainWindow(QMainWindow):
 
         self._tabs = tabs
         self._coach = CoachMark(self)
+        #: A guided step emitted while another tab was on screen, waiting for
+        #: the analysis tab to come forward.
+        self._paso_pendiente: tuple[str, str, object] | None = None
         tabs.currentChanged.connect(self._cerrar_paso_guiado)
+        tabs.currentChanged.connect(lambda _i: self._paso_guiado_pendiente())
 
     def _mostrar_paso_guiado(self, titulo: str, cuerpo: str, control) -> None:
         """Float one step of the analysis sequence over the control it names.
@@ -255,8 +259,27 @@ class MainWindow(QMainWindow):
         at something the reader can see. Never over the tour itself, and never
         while the analysis tab is not the one on screen.
         """
-        if self._coach.isVisible() or self._tabs.currentWidget() is not self._tab_ana:
+        if self._coach.isVisible():
             return
+        if self._tabs.currentWidget() is not self._tab_ana:
+            # Kept rather than dropped. The recording is analysed as soon as
+            # it is opened, which happens while the student is still on the
+            # acquisition tab, so the step saying what to do next was emitted
+            # over a tab nobody was looking at — and the analysis tab, which
+            # only emits on a *change* of step, never offered it again.
+            self._paso_pendiente = (titulo, cuerpo, control)
+            return
+        self._paso_pendiente = None
+        self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
+
+    def _paso_guiado_pendiente(self) -> None:
+        """Show the step that was emitted while another tab was on screen."""
+        if self._paso_pendiente is None or self._coach.isVisible():
+            return
+        if self._tabs.currentWidget() is not self._tab_ana:
+            return
+        titulo, cuerpo, control = self._paso_pendiente
+        self._paso_pendiente = None
         self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
 
     def _cerrar_paso_guiado(self, _index: int) -> None:
