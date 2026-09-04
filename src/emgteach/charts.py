@@ -16,8 +16,10 @@ flexion lies along one axis, an extension along the other, a grip inside the
 wedge, and the slider that sets the wedge is seen doing so.
 
 The co-activation box, with its one to three windows, cannot show a relation
-and does not pretend to: one short bar per window with the index, and the
-two mean activations under the window's name.
+and does not pretend to: one line per window, the name on the left and the
+seconds on the right, with the index as a bar in the co-activation colour
+or, where there is none to report, a gold block and a chip in the colour of
+the muscle that worked alone; a legend above says what each colour is.
 
 Both functions draw into a ``Figure`` they are handed, so the same picture
 appears in the tab (a Qt canvas) and in the PDF (a figure rendered to PNG).
@@ -30,6 +32,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
+from matplotlib.patches import Patch
 
 from emgteach.i18n import tr
 
@@ -42,6 +45,13 @@ COLOUR_BOTH = "#8E44AD"
 _COLOUR_MDF = "#333333"
 _COLOUR_OVER = "#B0243A"
 _COLOUR_NOT_REPORTED = "#8A6500"
+#: The gold block that stands where an index would go when there is none.
+_COLOUR_GOLD = "#D9A520"
+#: Its length on the index scale, and where the who-worked chip sits.
+_BLOQUE_DORADO = 14.0
+_X_CHIP = 108.0
+#: Below this share of the maximum a muscle did not work in the window.
+_SUELO_PCT = 5.0
 _COLOUR_INDEX = "#5B7DB1"
 _COLOUR_TREND = "#7F8C8D"
 
@@ -476,14 +486,17 @@ def draw_coactivation_chart(
     name_2: str,
     small: bool = False,
 ) -> None:
-    """One line per window: its name on the left, the index as a bar, and
-    the two means written after it.
+    """One line per window: its name on the left, its time on the right,
+    and between them the index as a bar and a chip for who worked.
 
     ``results`` are :class:`emgteach.coactivation.CoactivationResult`. A
-    window whose index is not reported gets a hatched empty bar and the word.
-    Everything of a window sits on its one line — the first version stacked
-    the means under the name in a second line of tick label, and three
-    windows in a box 150 px high were a smudge.
+    reported index is a bar in the co-activation colour with the number in
+    it; a window whose index is not reported gets a short gold block
+    instead, and a chip in the colour of the muscle that worked alone
+    (none when neither reached the floor — a rest). The legend above says
+    what each colour is. The two means are not written here: they are two
+    numbers per line that crowded the line, and the table behind the chart
+    has them.
     """
     fig.clear()
     ax = fig.add_subplot(111)
@@ -493,46 +506,69 @@ def draw_coactivation_chart(
         return
     n = len(results)
     y = np.arange(n)[::-1]
-    etiquetas = []
+    nombres: list[str] = []
+    tiempos: list[str] = []
     for yi, r in zip(y, results, strict=True):
+        nombres.append(str(r.label))
         ini, fin = r.window_s
-        tramo = f" ({ini:.0f}–{fin:.0f} s)" if fin > ini else ""  # noqa: RUF001
-        etiquetas.append(f"{r.label}{tramo}")
-        medias = f"{name_1} {r.mean_1:.0f} · {name_2} {r.mean_2:.0f}"
+        tiempos.append(f"{ini:.0f}–{fin:.0f} s" if fin > ini else "")  # noqa: RUF001
+        arriba_1 = float(r.mean_1) >= _SUELO_PCT
+        arriba_2 = float(r.mean_2) >= _SUELO_PCT
         if r.index is not None:
             idx = float(r.index)
-            ax.barh(yi, idx, height=0.6, color=_COLOUR_INDEX, zorder=2)
-            # Inside the bar once there is room, so a high index never runs
-            # into the means written after the scale.
+            ax.barh(yi, idx, height=0.6, color=COLOUR_BOTH, zorder=2)
+            # Inside the bar once there is room, after it when there is not.
             if idx >= 30:
                 ax.text(idx - 2, yi, f"{idx:.0f} %", va="center", ha="right",
                         fontsize=fs, fontweight="bold", color="white", zorder=3)
             else:
                 ax.text(idx + 2, yi, f"{idx:.0f} %", va="center", ha="left",
                         fontsize=fs, fontweight="bold", zorder=3)
-            ax.text(103, yi, medias, va="center", ha="left", fontsize=fs - 1,
-                    color="#555555", zorder=3)
+            continue
+        ax.barh(yi, _BLOQUE_DORADO, height=0.6, color=_COLOUR_GOLD, zorder=2)
+        # Who worked, when the index has nothing to say about it.
+        if arriba_1 and arriba_2:
+            chip = COLOUR_BOTH
+        elif arriba_1:
+            chip = COLOUR_1
+        elif arriba_2:
+            chip = COLOUR_2
         else:
-            ax.barh(yi, 100.0, height=0.6, facecolor="white", edgecolor="#CCCCCC",
-                    hatch="///", lw=0.6, zorder=2)
-            ax.text(2, yi, tr("not reported"), va="center", ha="left", fontsize=fs,
-                    color=_COLOUR_NOT_REPORTED, zorder=3,
-                    bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5})
-            ax.text(103, yi, medias, va="center", ha="left", fontsize=fs - 1,
-                    color="#555555", zorder=3)
+            chip = None
+        if chip is not None:
+            ax.plot([_X_CHIP], [yi], marker="s", ms=fs + 1, color=chip, ls="none",
+                    zorder=3)
     ax.set_yticks(y)
-    ax.set_yticklabels(etiquetas, fontsize=fs)
+    ax.set_yticklabels(nombres, fontsize=fs)
     # Room for at least three lines even when there is one window, and
     # centred in it: a single bar left to fill the box was a slab half the
     # height of the panel.
     alto = max(n, 3.0)
     medio = (n - 1) / 2.0
     ax.set_ylim(medio - alto / 2.0, medio + alto / 2.0)
-    ax.set_xlim(0, 150)
+    ax.set_xlim(0, 116)
     ax.set_xticks([0, 50, 100])
     ax.tick_params(axis="x", labelsize=fs)
-    ax.set_xlabel(tr("Index (%) · means in % MVC"), fontsize=fs)
+    ax.set_xlabel(tr("Co-activation index (%)"), fontsize=fs)
     ax.grid(axis="x", lw=0.4, alpha=0.4, zorder=0)
     _quitar_marco(ax)
     ax.spines["left"].set_visible(False)
     ax.tick_params(axis="y", length=0)
+    # The window's seconds on an axis of their own, at the right: in the
+    # name they made every tick label a sentence.
+    ax_t = ax.twinx()
+    ax_t.set_ylim(ax.get_ylim())
+    ax_t.set_yticks(y)
+    ax_t.set_yticklabels(tiempos, fontsize=fs - 1, color="#6B7580")
+    ax_t.tick_params(axis="y", length=0)
+    for lado in ("top", "right", "left", "bottom"):
+        ax_t.spines[lado].set_visible(False)
+    leyenda = [
+        Patch(color=COLOUR_1, label=name_1),
+        Patch(color=COLOUR_2, label=name_2),
+        Patch(color=COLOUR_BOTH, label=tr("Co-activation")),
+        Patch(color=_COLOUR_GOLD, label=tr("not reported")),
+    ]
+    ax.legend(handles=leyenda, fontsize=fs - 1, loc="lower left",
+              bbox_to_anchor=(0.0, 1.0), ncol=4, frameon=False, handlelength=1.0,
+              columnspacing=0.9, borderaxespad=0.0, handletextpad=0.4)

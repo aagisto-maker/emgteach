@@ -167,13 +167,12 @@ class TestOneLineInTheOrderThingsAreDone:
 
 class TestTheBottomBand:
     def test_summary_and_contractions_share_a_row(self, tab) -> None:
+        # The row is a widget of its own now (its height is fixed, see
+        # test_fragmentos_interactivos), placed in the tab's root layout.
         raiz = tab.layout()
-        compartida = None
-        for i in range(raiz.count()):
-            sub = raiz.itemAt(i).layout()
-            if sub is not None and sub.indexOf(tab._grp_resumen) >= 0:
-                compartida = sub
-        assert compartida is not None
+        assert raiz.indexOf(tab._banda) >= 0
+        compartida = tab._banda.layout()
+        assert compartida.indexOf(tab._grp_resumen) >= 0
         assert compartida.indexOf(tab._box_contr) >= 0
         assert compartida.indexOf(tab._box_contr) < compartida.indexOf(tab._grp_resumen)
 

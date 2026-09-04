@@ -210,6 +210,13 @@ _TEXTS = {
             "Then no window has a name: either the fragment editor has not "
             "been opened, or the names were cleared. Open it and accept "
             "what it proposes."
+        ) + "</p><p><b>" + tr("How to read the chart") + "</b><br>" + tr(
+            "One line per window, its seconds on the right. A purple bar is "
+            "the index, with the number in it. A gold block means the index "
+            "is not reported, and the small square beside it is the colour "
+            "of the muscle that worked alone — in a clean flexion or "
+            "extension that is the correct answer, not a fault. No square "
+            "at all is a rest. The two mean activations are in the table."
         ) + "</p>",
     ),
     "ana.contr": lambda: (

@@ -434,13 +434,21 @@ def mvc_reference(
     return None, NO_CALIBRATION
 
 
-def reference_source_text(source: str, n_reps: int = 0) -> str:
+def reference_source_text(source: str, n_reps: int = 0, *, short: bool = False) -> str:
     """The provenance in words, for the panel that used to say ``MVC source:``.
 
     Always shown beside the value: a reference the student cannot trace is the
-    same trap as an auto-normalised one, only quieter.
+    same trap as an auto-normalised one, only quieter. ``short`` is the
+    summary card's version — «calibration» over «(6 repetitions)», two short
+    lines — where the full sentence is the report's.
     """
     if source == FROM_REPS:
+        if short:
+            if n_reps == 1:
+                return tr("calibration") + "\n" + tr("(1 repetition)")
+            if n_reps > 1:
+                return tr("calibration") + "\n" + tr("({n} repetitions)").format(n=n_reps)
+            return tr("calibration")
         if n_reps == 1:
             return tr("calibration in this recording (1 repetition)")
         if n_reps > 1:
@@ -449,6 +457,8 @@ def reference_source_text(source: str, n_reps: int = 0) -> str:
             ).format(n=n_reps)
         return tr("calibration in this recording")
     if source == FROM_CACHE:
+        if short:
+            return tr("calibration") + "\n" + tr("(as recorded)")
         return tr("calibration as recorded (repetitions not stored)")
     return tr("no calibration")
 

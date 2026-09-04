@@ -207,8 +207,11 @@ second did, with the co-activation band in the middle. **«Series»** follows th
 contractions in order with the fitted trend and the MDF on the right axis, and in
 kinematics **«By load»** groups amplitude, electromechanical delay and MDF by the
 load the wizard marked. **«Table»** is the numbers, which are the ones copied
-into the tables of this guide. The co-activation chart is one bar per window
-with the index and the two mean activations, with its own «Chart · Table».
+into the tables of this guide. The co-activation chart is one line per window:
+the name on the left, the seconds on the right and, between them, the index as
+a purple bar or, when it is not reported, a gold block and a small square in
+the colour of the muscle that worked alone; the legend above says what each
+colour is, and the means in % MVC are in its «Table».
 **«Generate PDF report»** produces the deliverable with the
 figures, the calibration, the charts, the tables and the cards.
 

@@ -28,7 +28,6 @@ except Exception:
     # Headless environment (e.g. CI without a display): the GUI is never
     # rendered there, and the tabs create FigureCanvasQTAgg explicitly.
     pass
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QColor
@@ -62,12 +61,26 @@ from PySide6.QtWidgets import (
 
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
-#: How tall the two charts of the bottom band get, and with them the band:
-#: the boxes are as tall as this plus their title and margins, and each
-#: chart fills its box. It is paid for out of the panels' height, so it is
-#: as much as three co-activation windows and nine summary cards need and
-#: not a pixel more.
-_ALTO_GRAFICO = 200
+#: The height of the band under the panels, fixed: each of its three boxes
+#: fills it, and each chart fills its box. It is paid for out of the
+#: panels' height, so it is as much as three co-activation windows and
+#: nine summary cards need and not a pixel more. Capping the charts instead
+#: let a long table's size hint set the band, and left the co-activation
+#: chart short of the box it sat in.
+_ALTO_BANDA = 250
+
+#: Pixels per line a chart asks for beyond the box, so a long series
+#: scrolls instead of shrinking into a smudge (see _pedir_espacio).
+_PX_POR_VENTANA = 26
+_PX_POR_BARRA = 15
+_PX_POR_CONTRACCION = 22
+
+
+def _en_dos_lineas(texto: str) -> str:
+    """«Detected (MDF −12 %)» as «Detected» over «(MDF −12 %)»: the summary
+    cards wrap, and a break before the parenthesis is where a reader would
+    put it."""
+    return texto.replace(" (", "\n(", 1)
 
 
 class _SelectorEsquina(QWidget):
@@ -825,8 +838,8 @@ class AnalysisTab(QWidget):
         grp_resumen = QGroupBox(tr("Analysis summary"))
         add_help(grp_resumen, "ana.summary")
         resumen_grid = QGridLayout(grp_resumen)
-        resumen_grid.setContentsMargins(8, 2, 8, 6)
-        resumen_grid.setHorizontalSpacing(10)
+        resumen_grid.setContentsMargins(6, 2, 6, 6)
+        resumen_grid.setHorizontalSpacing(8)
         resumen_grid.setVerticalSpacing(0)
 
         # A point smaller than the rest of the band, because these nine
@@ -1009,17 +1022,15 @@ class AnalysisTab(QWidget):
         self._ajustar_alto_coact()
         # A chart in front of the table: one line per window with the index
         # as a bar; the table stays one click behind, for the numbers a
-        # report copies. See emgteach.charts. It fills the box: capped low
-        # and pushed up by a stretch, three windows shared 165 px with a
-        # strip of empty box under them.
+        # report copies. See emgteach.charts. It fills the box, and when a
+        # recording has more windows than the box has lines for, the canvas
+        # grows and the box scrolls under the wheel, as the table does.
         self._fig_coact = Figure(figsize=(3.4, 1.6), constrained_layout=True)
-        self._canvas_coact = FigureCanvasQTAgg(self._fig_coact)
-        self._canvas_coact.setMinimumHeight(105)
-        self._canvas_coact.setMaximumHeight(_ALTO_GRAFICO)
+        self._canvas_coact = ScrollingCanvas(self._fig_coact)
+        self._scroll_coact = self._envolver_en_scroll(self._canvas_coact)
         self._stack_coact = QStackedWidget()
-        self._stack_coact.addWidget(self._canvas_coact)
+        self._stack_coact.addWidget(self._scroll_coact)
         self._stack_coact.addWidget(self._tbl_coact)
-        self._stack_coact.setMaximumHeight(_ALTO_GRAFICO)
         coact_v.addWidget(self._stack_coact, stretch=1)
         self._sel_coact = _SelectorEsquina(
             self._box_coact, [("chart", tr("Chart")), ("table", tr("Table"))])
@@ -1055,13 +1066,11 @@ class AnalysisTab(QWidget):
         # against the other for two. A conclusion is read off a relation,
         # not off a row of bars. See emgteach.charts.
         self._fig_contr = Figure(figsize=(5.2, 1.6), constrained_layout=True)
-        self._canvas_contr = FigureCanvasQTAgg(self._fig_contr)
-        self._canvas_contr.setMinimumHeight(115)
-        self._canvas_contr.setMaximumHeight(_ALTO_GRAFICO)
+        self._canvas_contr = ScrollingCanvas(self._fig_contr)
+        self._scroll_contr = self._envolver_en_scroll(self._canvas_contr)
         self._stack_contr = QStackedWidget()
-        self._stack_contr.addWidget(self._canvas_contr)
+        self._stack_contr.addWidget(self._scroll_contr)
         self._stack_contr.addWidget(self._tbl_contr)
-        self._stack_contr.setMaximumHeight(_ALTO_GRAFICO)
         contr_v.addWidget(self._stack_contr, stretch=1)
         # The relation first: it is the panel a conclusion is read off. The
         # series and the numbers are a click away, on the title line.
@@ -1091,15 +1100,19 @@ class AnalysisTab(QWidget):
         # panels and the table below them, and between the two the panels
         # got a hundred pixels on a laptop.
         # The width goes where a chart needs it. The co-activation box holds
-        # a name, a bar and two means on every line, and it had the narrowest
-        # share of the three; the summary is nine short cards that read fine
-        # in less width once the long values wrap.
-        bottom_boxes = QHBoxLayout()
+        # a name, a bar, a chip and a time on every line, and it had the
+        # narrowest share of the three; the summary is nine short cards
+        # that read fine in less width once the long values wrap, and the
+        # less width they take the squarer the box.
+        self._banda = QWidget()
+        self._banda.setFixedHeight(_ALTO_BANDA)
+        bottom_boxes = QHBoxLayout(self._banda)
+        bottom_boxes.setContentsMargins(0, 0, 0, 0)
         bottom_boxes.setSpacing(6)
         bottom_boxes.addWidget(self._box_coact, stretch=7)
         bottom_boxes.addWidget(self._box_contr, stretch=7)
-        bottom_boxes.addWidget(self._grp_resumen, stretch=5)
-        root.addLayout(bottom_boxes)
+        bottom_boxes.addWidget(self._grp_resumen, stretch=4)
+        root.addWidget(self._banda)
 
         # Display-window navigator at the very bottom: the minimap takes ~80 %
         # of the width; a compact two-row cluster (start/duration labels on top,
@@ -1742,6 +1755,7 @@ class AnalysisTab(QWidget):
 
         draw_coactivation_chart(self._fig_coact, tabla, name_1=n1, name_2=n2,
                                 small=True)
+        self._pedir_espacio(self._canvas_coact, alto=_PX_POR_VENTANA * len(tabla) + 70)
         self._canvas_coact.draw_idle()
 
         sin_marcas = not result.get("coactivation_from_markers", True)
@@ -1826,7 +1840,7 @@ class AnalysisTab(QWidget):
         # at the bottom of a taller box with a strip of empty box above it.
         # The ceiling on the floor keeps a long series from pushing the
         # panels off the window; beyond it the table scrolls.
-        tope = min(_ALTO_GRAFICO - 6, 160 if self.height() >= 850 else 110)
+        tope = 160 if self.height() >= 850 else 110
         self._tbl_contr.setMinimumHeight(max(38, min(alto, tope)))
         self._filas_contr = list(filas)
         self._nombres_contr = (
@@ -1873,13 +1887,40 @@ class AnalysisTab(QWidget):
     def _dibujar_contracciones(self) -> None:
         vista = self._sel_contr.vista()
         n1, n2 = self._nombres_contr
+        panel = vista if vista != "table" else "relation"
         draw_contraction_chart(
             self._fig_contr, self._filas_contr, name_1=n1, name_2=n2,
             both_ratio=float((self._detection_kwargs or {}).get("both_ratio", 0.5)),
-            small=True, view=vista if vista != "table" else "relation",
-            loads=self._cargas_contr,
+            small=True, view=panel, loads=self._cargas_contr,
         )
+        # The two views with one line or one point per contraction ask for
+        # room to keep them apart; the rest fit any box.
+        n = len(self._filas_contr)
+        if panel == "dominance":
+            self._pedir_espacio(self._canvas_contr, alto=_PX_POR_BARRA * n + 60)
+        elif panel == "series":
+            self._pedir_espacio(self._canvas_contr, ancho=_PX_POR_CONTRACCION * n + 90)
+        else:
+            self._pedir_espacio(self._canvas_contr)
         self._canvas_contr.draw_idle()
+
+    @staticmethod
+    def _envolver_en_scroll(canvas: ScrollingCanvas) -> QScrollArea:
+        """A frameless scroll area round a chart canvas. The canvas takes the
+        viewport's size until it asks for more (see _pedir_espacio); then
+        the box scrolls under the wheel, which the canvas passes on."""
+        scroll = QScrollArea()
+        scroll.setWidget(canvas)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setStyleSheet("QScrollArea { background: transparent; }")
+        return scroll
+
+    @staticmethod
+    def _pedir_espacio(canvas: ScrollingCanvas, *, alto: int = 0, ancho: int = 0) -> None:
+        """What the drawing needs beyond the box: a floor on the canvas's
+        size, in pixels. Zero on either axis means «whatever the box gives»."""
+        canvas.setMinimumSize(max(0, int(ancho)), max(0, int(alto)))
 
     def _ajustar_alto_coact(self) -> None:
         """Room for the rows it has, and free to fill the rest of its box.
@@ -1900,7 +1941,7 @@ class AnalysisTab(QWidget):
         # A floor so an empty table is not a sliver, and a ceiling so a
         # recording marked into many phases scrolls instead of pushing the
         # panels off the window.
-        tope = min(_ALTO_GRAFICO - 6, 160 if self.height() >= 850 else 110)
+        tope = 160 if self.height() >= 850 else 110
         self._tbl_coact.setMinimumHeight(max(38, min(alto, tope)))
 
     def _on_result(self, result: dict) -> None:
@@ -2011,7 +2052,7 @@ class AnalysisTab(QWidget):
         pendiente = r.get("mdf_slope", 0.0)
         r2 = r.get("fat_r_squared", 0.0)
         signo = "+" if pendiente >= 0 else ""
-        self._lbl_pendiente.setText(f"{signo}{pendiente:.2f} Hz/s  (R²={r2:.2f})")
+        self._lbl_pendiente.setText(f"{signo}{pendiente:.2f} Hz/s\n(R²={r2:.2f})")
         self._lbl_rms_global.setText(f"{r.get('rms_global', 0.0):.2f} mV")
         self._lbl_iemg.setText(f"{r.get('iemg', 0.0):.1f} mV·s")
         self._lbl_duracion.setText(f"{r.get('duration', 0.0):.1f} s")
@@ -2036,7 +2077,9 @@ class AnalysisTab(QWidget):
             # a bare "undetermined" gives the operator nothing to act on.
             texto = tr("Not conclusive (trend does not fit, R²={r2:.2f})").format(r2=r2)
             color = "#8A5A00"
-        self._lbl_fatiga.setText(texto)
+        # The verdict on one line, its reason in parentheses on the next: on
+        # one line the reason set the width of the whole panel.
+        self._lbl_fatiga.setText(_en_dos_lineas(texto))
         self._lbl_fatiga.setStyleSheet(
             f"font-size: 12px; font-weight: 600; color: {color};"
         )
@@ -2061,7 +2104,7 @@ class AnalysisTab(QWidget):
             return
         texto = " / ".join(partes) + " " + tr("MVC")
         if r.get("mvc_implausible"):
-            self._lbl_pico.setText(texto + " — " + tr("not a maximum"))
+            self._lbl_pico.setText(texto + "\n" + tr("not a maximum"))
             self._lbl_pico.setStyleSheet(
                 "font-size: 12px; font-weight: 600; color: #B0243A;"
             )
@@ -2086,12 +2129,14 @@ class AnalysisTab(QWidget):
         fuente = r.get("mvc_ref_source", NO_CALIBRATION)
         n_reps = len(r.get("cal_reps", {}).get(0, ()) or ())
         if ref:
+            # Three short lines — the value, «calibration», «(6 repetitions)»
+            # — where one long one set the width of the whole panel.
             self._lbl_cvm.setText(
-                f"{ref:.3f} mV — {reference_source_text(fuente, n_reps)}"
+                f"{ref:.3f} mV\n{reference_source_text(fuente, n_reps, short=True)}"
             )
             self._lbl_cvm.setStyleSheet("font-size: 12px; font-weight: 600;")
             return
-        self._lbl_cvm.setText(reference_source_text(NO_CALIBRATION))
+        self._lbl_cvm.setText(reference_source_text(NO_CALIBRATION, short=True))
         self._lbl_cvm.setStyleSheet(
             "font-size: 12px; font-weight: 600; color: #8A5A00;"
         )

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from matplotlib import colors as mcolors
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings
 
@@ -363,22 +364,42 @@ class TestTheCharts:
         assert hi - lo >= 3.0
         assert (lo + hi) / 2 == pytest.approx(0.0)
 
-    def test_the_co_activation_chart_is_one_bar_per_window(self) -> None:
+    def test_the_co_activation_chart_is_one_line_per_window(self) -> None:
+        """A bar with the index, or a gold block and a chip for who worked;
+        the name on the left, the seconds on an axis of their own on the
+        right, and a legend that says what each colour is."""
+        from emgteach.charts import COLOUR_1, COLOUR_2, COLOUR_BOTH
+
         fig = Figure()
         res = [
             CoactivationResult(index=85.0, mean_1=60.0, mean_2=55.0, window_s=(0.0, 5.0), label="Grip"),
             CoactivationResult(index=None, mean_1=45.0, mean_2=3.0, window_s=(5.0, 9.0),
-                               label="FCR", reason="not reported — x"),
+                               label="Flexion", reason="not reported — x"),
+            CoactivationResult(index=None, mean_1=2.0, mean_2=1.0, window_s=(9.0, 12.0),
+                               label="Rest", reason="not reported — y"),
         ]
         draw_coactivation_chart(fig, res, name_1="FCR", name_2="ECR")
         ax = fig.axes[0]
-        assert len(ax.patches) == 2
+        # One bar per window: the index, or the gold block in its place.
+        assert len(ax.patches) == 3
+        colores = [p.get_facecolor() for p in ax.patches]
+        assert colores[0] == pytest.approx(mcolors.to_rgba(COLOUR_BOTH))
+        assert colores[1] == colores[2] != colores[0]
         textos = [t.get_text() for t in ax.texts]
         assert "85 %" in textos
-        assert tr("not reported") in textos
-        # The two means are written on the window's line, never the index alone.
-        assert any("FCR 60" in t and "ECR 55" in t for t in textos)
-        assert any("FCR 45" in t and "ECR 3" in t for t in textos)
+        # No means, and no words for «not reported»: that is the legend's job.
+        assert not any("FCR 60" in t or "not reported" in t for t in textos)
+        etiquetas = [t.get_text() for t in ax.get_legend().get_texts()]
+        assert etiquetas == ["FCR", "ECR", tr("Co-activation"), tr("not reported")]
+        # The chip: the flexion was the first muscle's alone, the rest nobody's.
+        chips = [ln for ln in ax.get_lines() if ln.get_marker() == "s"]
+        assert len(chips) == 1
+        assert mcolors.to_rgba(chips[0].get_color()) == pytest.approx(mcolors.to_rgba(COLOUR_1))
+        assert mcolors.to_rgba(COLOUR_2) != mcolors.to_rgba(COLOUR_1)
+        # Names on the left, seconds on the right.
+        assert [t.get_text() for t in ax.get_yticklabels()] == ["Grip", "Flexion", "Rest"]
+        derecha = [t.get_text() for t in fig.axes[1].get_yticklabels()]
+        assert derecha == ["0–5 s", "5–9 s", "9–12 s"]  # noqa: RUF001
 
 
 @pytest.mark.gui
@@ -443,14 +464,15 @@ class TestTheTabShowsChartsFirst:
             otra.deleteLater()
 
     def test_the_band_stays_low(self, tab) -> None:
-        """The band under the panels is paid for out of the panels' height."""
-        from emgteach.gui.tabs.analysis import _ALTO_GRAFICO
+        """The band under the panels is paid for out of the panels' height:
+        its height is fixed, and nothing inside it — not a long table's size
+        hint — can push it taller."""
+        from emgteach.gui.tabs.analysis import _ALTO_BANDA
 
-        # The stacks cap what shows; the tables inside them stay free to
-        # fill whatever they are given (test_remaquetado pins that).
-        for w in (tab._canvas_contr, tab._canvas_coact, tab._stack_contr,
-                  tab._stack_coact):
-            assert w.maximumHeight() <= _ALTO_GRAFICO
+        assert tab._banda.height() == tab._banda.minimumHeight() == _ALTO_BANDA
+        assert tab._banda.maximumHeight() == _ALTO_BANDA
+        for caja in (tab._box_coact, tab._box_contr, tab._grp_resumen):
+            assert caja.parent() is tab._banda
         # And the view switches live on the title line, not on a row of their own.
         for sel, box in ((tab._sel_contr, tab._box_contr), (tab._sel_coact, tab._box_coact)):
             assert sel.parent() is box
@@ -485,6 +507,57 @@ class TestTheTabShowsChartsFirst:
             # A caption and the stack, and the stack takes what is left.
             assert lay.count() == 2
             assert lay.stretch(1) == 1
+
+    def test_a_long_series_scrolls_instead_of_shrinking(self, tab) -> None:
+        """Thirty contractions on the dominance bars, or a dozen windows of
+        co-activation, ask the canvas for more than the box: the box then
+        scrolls under the wheel, as the table beside it does."""
+        from PySide6.QtWidgets import QScrollArea
+
+        # The canvases sit in scroll areas, and pass the wheel on to them.
+        assert isinstance(tab._stack_contr.widget(0), QScrollArea)
+        assert isinstance(tab._stack_coact.widget(0), QScrollArea)
+        muchas = [
+            Contraction(n=k, start_s=float(k), end_s=k + 0.8, muscle="FCR" if k % 2 else "ECR",
+                        rms_mv=0.2, peak_pct=50.0, mdf_hz=90.0, channel=1 if k % 2 else 2,
+                        rms_mv_other=0.02, peak_pct_other=4.0)
+            for k in range(1, 31)
+        ]
+        tab._refresh_contractions({"contractions": muchas, "channel_name": "FCR",
+                                   "channel_name_2": "ECR"})
+        tab._sel_contr.set_vista("dominance")
+        alto_30 = tab._canvas_contr.minimumHeight()
+        tab._sel_contr.set_vista("series")
+        ancho_30 = tab._canvas_contr.minimumWidth()
+        tab._sel_contr.set_vista("relation")
+        assert tab._canvas_contr.minimumHeight() == tab._canvas_contr.minimumWidth() == 0
+        self._llenar(tab)
+        tab._sel_contr.set_vista("dominance")
+        assert alto_30 > tab._canvas_contr.minimumHeight()
+        tab._sel_contr.set_vista("series")
+        assert ancho_30 > tab._canvas_contr.minimumWidth()
+        ventanas = [
+            CoactivationResult(index=None, mean_1=40.0, mean_2=2.0, window_s=(2.0 * k, 2.0 * k + 1),
+                               label=f"w{k}", reason="x")
+            for k in range(12)
+        ]
+        tab._selected_segments = [(1.0, 2.0)]
+        tab._refresh_coactivation({"channel_name": "FCR", "channel_name_2": "ECR",
+                                   "coactivation": ventanas, "coactivation_from_markers": True})
+        doce = tab._canvas_coact.minimumHeight()
+        tab._refresh_coactivation({"channel_name": "FCR", "channel_name_2": "ECR",
+                                   "coactivation": ventanas[:3], "coactivation_from_markers": True})
+        assert doce > tab._canvas_coact.minimumHeight()
+
+    def test_the_summary_says_calibration_over_its_repetitions(self, tab) -> None:
+        from emgteach.phases import FROM_REPS
+
+        tab._actualizar_procedencia_cvm({
+            "mvc_ref": 0.834, "mvc_ref_source": FROM_REPS,
+            "cal_reps": {0: [1.0, 1.1, 1.2, 1.0, 1.1, 1.2]},
+        })
+        lineas = tab._lbl_cvm.text().split("\n")
+        assert lineas == ["0.834 mV", tr("calibration"), tr("({n} repetitions)").format(n=6)]
 
     def test_the_long_summary_values_wrap(self, tab) -> None:
         """The fatigue verdict and where the MVC came from are sentences.

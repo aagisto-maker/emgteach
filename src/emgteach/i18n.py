@@ -1770,7 +1770,22 @@ _ES = {
     'The relation needs at least two contractions with an MDF.':
         'La relación necesita al menos dos contracciones con MDF.',
     'No contractions': 'Sin contracciones',
-    'Index (%) · means in % MVC': 'Índice (%) · medias en % CVM',
+    'Co-activation index (%)': 'Índice de coactivación (%)',
+    '(1 repetition)': '(1 repetición)',
+    'How to read the chart': 'Cómo leer el gráfico',
+    'One line per window, its seconds on the right. A purple bar is the index, '
+    'with the number in it. A gold block means the index is not reported, and '
+    'the small square beside it is the colour of the muscle that worked alone — '
+    'in a clean flexion or extension that is the correct answer, not a fault. No '
+    'square at all is a rest. The two mean activations are in the table.':
+        'Una línea por ventana, con sus segundos a la derecha. Una barra morada es '
+        'el índice, con el número dentro. Un bloque dorado quiere decir que el '
+        'índice no se informa, y el cuadradito de al lado lleva el color del músculo '
+        'que trabajó solo: en una flexión o una extensión limpias esa es la '
+        'respuesta correcta, no un fallo. Sin cuadradito, es un reposo. Las dos '
+        'activaciones medias están en la tabla.',
+    '({n} repetitions)': '({n} repeticiones)',
+    '(as recorded)': '(tal como se grabó)',
     'Relation': 'Relación',
     'Series': 'Serie',
     'Category': 'Categoría',

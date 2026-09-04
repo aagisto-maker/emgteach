@@ -209,13 +209,10 @@ class TestTheSpectrumOfBothMuscles:
 
 class TestThreeBoxesBelowWithACornerHelp:
     def test_coactivation_contractions_and_summary_share_the_band(self, tab) -> None:
-        raiz = tab.layout()
-        fila = None
-        for i in range(raiz.count()):
-            sub = raiz.itemAt(i).layout()
-            if sub is not None and sub.indexOf(tab._grp_resumen) >= 0:
-                fila = sub
-        assert fila is not None
+        # The band is a widget of its own in the root layout (its height is
+        # fixed), and the three boxes share its row in this order.
+        assert tab.layout().indexOf(tab._banda) >= 0
+        fila = tab._banda.layout()
         assert 0 <= fila.indexOf(tab._box_coact) < fila.indexOf(tab._box_contr) < fila.indexOf(tab._grp_resumen)
 
     def test_each_has_the_same_corner_help_and_no_inline_button(self, tab) -> None:

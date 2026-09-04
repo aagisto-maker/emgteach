@@ -206,9 +206,11 @@ llevó el segundo, con la banda de coactivación en medio. **«Serie»** sigue l
 contracciones en orden, con su recta de tendencia y la MDF en el eje derecho, y
 en cinemática **«Por carga»** agrupa amplitud, retraso electromecánico y MDF por
 la carga que dejó marcada el asistente. **«Tabla»** son los números, que son los
-que se copian en las tablas de este guion. El de coactivación es una barra por
-ventana con el índice y las dos activaciones medias, con su propio «Gráfico ·
-Tabla». El botón **«Generar informe
+que se copian en las tablas de este guion. El de coactivación es una línea por
+ventana: el nombre a la izquierda, los segundos a la derecha y, en medio, el
+índice como barra morada o, cuando no se informa, un bloque dorado y un
+cuadradito del color del músculo que trabajó solo; la leyenda de arriba dice
+qué es cada color, y las medias en % CVM están en su «Tabla». El botón **«Generar informe
 PDF»** produce el entregable con las figuras, la calibración, los gráficos, las
 tablas y las fichas.
 
