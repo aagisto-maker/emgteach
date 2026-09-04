@@ -272,5 +272,5 @@ class TestTheCoactivationTableWaitsForItsWindows:
         tab._refresh_coactivation(self._resultado(True))
         assert tab._stack_coact.isVisibleTo(tab._box_coact)
         assert tab._tbl_coact.rowCount() == 1
-        # And the chart in front of it has its two bars and its index.
-        assert len(tab._ax_coact.patches) >= 2
+        # And the chart in front of it has its bar for the one window.
+        assert len(tab._fig_coact.axes[0].patches) == 1

@@ -30,7 +30,7 @@ except Exception:
     pass
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
+from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
@@ -60,6 +60,41 @@ from PySide6.QtWidgets import (
 )
 
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
+
+#: The tallest the two summary charts (and the tables behind them) get. The
+#: band under the panels is paid for out of the panels' height.
+_ALTO_GRAFICO = 150
+
+
+class _BotonEsquina(QToolButton):
+    """A small checkable button on the title line of a group box, left of
+    the «?», kept in its corner across resizes the way the «?» is."""
+
+    def __init__(self, box: QGroupBox) -> None:
+        super().__init__(box)
+        self._box = box
+        self.setCheckable(True)
+        self.setAutoRaise(True)
+        self.setFixedHeight(18)
+        self.setStyleSheet(
+            "QToolButton { font-size: 10px; color: #2E86DE; border: 1px solid "
+            "#2E86DE; border-radius: 9px; background: white; padding: 0 7px; }"
+            "QToolButton:checked { background: #E3F0FB; }"
+        )
+        box.installEventFilter(self)
+        self.colocar()
+        self.raise_()
+
+    def eventFilter(self, obj, event) -> bool:
+        if obj is self._box and event.type() == QEvent.Type.Resize:
+            self.colocar()
+        return False
+
+    def colocar(self) -> None:
+        self.adjustSize()
+        # Right of the box, leaving room for the «?» (18 px) and its margin.
+        self.move(self._box.width() - 18 - 6 - 8 - self.width(), 0)
+        self.raise_()
 
 # Teaching panel layout. The three panels relevant to physiology students
 # (raw, normalised envelope, PSD) come first, renumbered 1A, 2, 3 and checked
@@ -916,19 +951,23 @@ class AnalysisTab(QWidget):
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._tbl_coact.verticalHeader().setVisible(False)
         self._ajustar_alto_coact()
-        # A chart in front of the table. The two mean activations as bars and
-        # the index over them is read at a glance; the table stays one click
+        # A chart in front of the table: one short bar per window with the
+        # index, the two means under the name; the table stays one click
         # behind, for the numbers a report copies. See emgteach.charts.
-        self._fig_coact = Figure(figsize=(3.4, 1.9), constrained_layout=True)
+        # Low on purpose: the band under the panels is paid for out of the
+        # panels' height, and a chart that stretched to fill it ate a third
+        # of a laptop screen.
+        self._fig_coact = Figure(figsize=(3.4, 1.3), constrained_layout=True)
         self._canvas_coact = FigureCanvasQTAgg(self._fig_coact)
-        self._canvas_coact.setMinimumHeight(110)
-        self._ax_coact = self._fig_coact.add_subplot(111)
+        self._canvas_coact.setMinimumHeight(105)
+        self._canvas_coact.setMaximumHeight(_ALTO_GRAFICO)
         self._stack_coact = QStackedWidget()
         self._stack_coact.addWidget(self._canvas_coact)
         self._stack_coact.addWidget(self._tbl_coact)
-        coact_v.addWidget(self._stack_coact, stretch=1)
-        self._btn_tabla_coact = self._boton_tabla()
-        coact_v.addWidget(self._btn_tabla_coact, 0, Qt.AlignmentFlag.AlignRight)
+        self._stack_coact.setMaximumHeight(_ALTO_GRAFICO)
+        coact_v.addWidget(self._stack_coact)
+        coact_v.addStretch(1)
+        self._btn_tabla_coact = self._boton_tabla(self._box_coact)
         self._box_coact.setVisible(False)
         # Joins the bottom band with the other two boxes (see below).
 
@@ -954,19 +993,21 @@ class AnalysisTab(QWidget):
         self._tbl_contr.setSizeAdjustPolicy(
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._tbl_contr.setMinimumHeight(38)
-        # One bar per contraction, two with two muscles, the median frequency
-        # as a dot on the right axis: which effort was the strongest and
-        # whether the antagonist joined in are seen before they are read.
-        self._fig_contr = Figure(figsize=(4.6, 1.9), constrained_layout=True)
+        # Two panels: the series along time with its trend, and the relation
+        # to read it by — amplitude against MDF for one muscle, one muscle
+        # against the other for two. A conclusion is read off a relation,
+        # not off a row of bars. See emgteach.charts.
+        self._fig_contr = Figure(figsize=(5.2, 1.4), constrained_layout=True)
         self._canvas_contr = FigureCanvasQTAgg(self._fig_contr)
-        self._canvas_contr.setMinimumHeight(110)
-        self._ax_contr = self._fig_contr.add_subplot(111)
+        self._canvas_contr.setMinimumHeight(115)
+        self._canvas_contr.setMaximumHeight(_ALTO_GRAFICO)
         self._stack_contr = QStackedWidget()
         self._stack_contr.addWidget(self._canvas_contr)
         self._stack_contr.addWidget(self._tbl_contr)
-        contr_v.addWidget(self._stack_contr, stretch=1)
-        self._btn_tabla_contr = self._boton_tabla()
-        contr_v.addWidget(self._btn_tabla_contr, 0, Qt.AlignmentFlag.AlignRight)
+        self._stack_contr.setMaximumHeight(_ALTO_GRAFICO)
+        contr_v.addWidget(self._stack_contr)
+        contr_v.addStretch(1)
+        self._btn_tabla_contr = self._boton_tabla(self._box_contr)
         self._box_contr.setVisible(False)
         self._aplicar_vista_tablas(
             bool(self._settings.value("analysis/bottom_as_tables", False, type=bool))
@@ -1622,7 +1663,7 @@ class AnalysisTab(QWidget):
                     item.setFont(font)
                 self._tbl_coact.setItem(fila, col, item)
 
-        draw_coactivation_chart(self._ax_coact, tabla, name_1=n1, name_2=n2,
+        draw_coactivation_chart(self._fig_coact, tabla, name_1=n1, name_2=n2,
                                 small=True)
         self._canvas_coact.draw_idle()
 
@@ -1708,12 +1749,13 @@ class AnalysisTab(QWidget):
         # at the bottom of a taller box with a strip of empty box above it.
         # The ceiling on the floor keeps a long series from pushing the
         # panels off the window; beyond it the table scrolls.
-        tope = 160 if self.height() >= 850 else 110
+        tope = min(_ALTO_GRAFICO - 6, 160 if self.height() >= 850 else 110)
         self._tbl_contr.setMinimumHeight(max(38, min(alto, tope)))
         draw_contraction_chart(
-            self._ax_contr, filas,
+            self._fig_contr, filas,
             name_1=result.get("channel_name") or tr("Muscle {n}").format(n=1),
             name_2=(result.get("channel_name_2") or "") if dos else "",
+            both_ratio=float((self._detection_kwargs or {}).get("both_ratio", 0.5)),
             small=True,
         )
         self._canvas_contr.draw_idle()
@@ -1724,12 +1766,12 @@ class AnalysisTab(QWidget):
         self._lbl_contr_resumen.setText(resumen)
         self._box_contr.setVisible(True)
 
-    def _boton_tabla(self) -> QToolButton:
-        """The small switch under each chart: the numbers, one click behind."""
-        btn = QToolButton()
-        btn.setCheckable(True)
-        btn.setAutoRaise(True)
-        btn.setStyleSheet("font-size: 10px; color: #2E86DE;")
+    def _boton_tabla(self, box: QGroupBox) -> QToolButton:
+        """The small switch in the title line of each box, beside its «?»:
+        the numbers, one click behind. On the title line and not under the
+        chart, because a row of its own under each chart cost the band the
+        height of a line for a button pressed once a session."""
+        btn = _BotonEsquina(box)
         btn.setText(tr("Table"))
         btn.setToolTip(tr("Show the numbers behind this chart, or the chart again."))
         btn.toggled.connect(self._aplicar_vista_tablas)
@@ -1745,6 +1787,7 @@ class AnalysisTab(QWidget):
             btn.setChecked(tablas)
             btn.setText(tr("Chart") if tablas else tr("Table"))
             btn.blockSignals(False)
+            btn.colocar()
         self._settings.setValue("analysis/bottom_as_tables", bool(tablas))
 
     def _ajustar_alto_coact(self) -> None:
@@ -1766,7 +1809,7 @@ class AnalysisTab(QWidget):
         # A floor so an empty table is not a sliver, and a ceiling so a
         # recording marked into many phases scrolls instead of pushing the
         # panels off the window.
-        tope = 160 if self.height() >= 850 else 110
+        tope = min(_ALTO_GRAFICO - 6, 160 if self.height() >= 850 else 110)
         self._tbl_coact.setMinimumHeight(max(38, min(alto, tope)))
 
     def _on_result(self, result: dict) -> None:

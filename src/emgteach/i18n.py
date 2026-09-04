@@ -1760,4 +1760,19 @@ _ES = {
     'Contraction': 'Contracción',
     'Mean activation (% MVC) · index (%)': 'Activación media (% CVM) · índice (%)',
     'not reported': 'no se informa',
+    # --- the contraction chart as two panels: the series and its relation ---
+    'Amplitude against MDF (JASA)': 'Amplitud frente a MDF (JASA)',
+    'Who leads each contraction': 'Quién lleva cada contracción',
+    'fatigue': 'fatiga',
+    'more force': 'más fuerza',
+    'less force': 'menos fuerza',
+    'recovery': 'recuperación',
+    '{name} leads': 'lidera {name}',
+    'The relation needs at least two contractions with an MDF.':
+        'La relación necesita al menos dos contracciones con MDF.',
+    'No contractions': 'Sin contracciones',
+    'Index (%) · means in % MVC': 'Índice (%) · medias en % CVM',
+    '{name} {slope:+.1f} %/contr.': '{name} {slope:+.1f} %/contr.',
+    '{name} {slope:+.2f} mV/contr.': '{name} {slope:+.2f} mV/contr.',
+    'MDF {slope:+.1f} Hz/contr.': 'MDF {slope:+.1f} Hz/contr.',
 }

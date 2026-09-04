@@ -1056,6 +1056,9 @@ class AnalysisWorker(QThread):
                 )
                 result["contractions"] = filas
                 result["emd_ms_mean"] = mean_emd_ms(filas)
+                # The rule the rows were labelled under, so the chart can
+                # draw the same wedge the labels came from.
+                result["detection"] = dict(self._detection)
                 if filas:
                     self.log.emit(
                         tr("{n} contractions found; see the table.")

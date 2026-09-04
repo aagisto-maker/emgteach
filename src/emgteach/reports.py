@@ -441,10 +441,8 @@ def _render_chart(draw, *args, **kwargs) -> BytesIO:
     """One of the two summary charts of :mod:`emgteach.charts`, as a PNG."""
     from matplotlib.figure import Figure
 
-    fig = Figure(figsize=(6.4, 2.4), dpi=150)
-    ax = fig.add_subplot(111)
-    draw(ax, *args, **kwargs)
-    fig.tight_layout()
+    fig = Figure(figsize=(6.4, 2.4), dpi=150, constrained_layout=True)
+    draw(fig, *args, **kwargs)
     buf = BytesIO()
     fig.savefig(buf, format="png")
     buf.seek(0)
@@ -471,6 +469,7 @@ def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -
                 draw_contraction_chart, filas,
                 name_1=str(result.get("channel_name") or tr("Muscle {n}").format(n=1)),
                 name_2=str(result.get("channel_name_2") or "") if dos else "",
+                both_ratio=float((result.get("detection") or {}).get("both_ratio", 0.5)),
             ),
             width=16 * cm, height=6 * cm,
         ))

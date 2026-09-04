@@ -51,10 +51,11 @@ Al abrir el registro se analiza solo. Seguir los cuadros que aparecen, en orden:
    ajuste fino, plegado.
 
 Después leer: **paneles** (rueda del ratón para desplazar; ▲▼ amplitud, ▶◀ tiempo),
-**gráfico de contracciones** (una barra por contracción, dos en el par; MDF en el
-eje derecho; EMD sobre la barra en cinemática), **resumen** en fichas, y en el par
-el **gráfico de coactivación** (activación media por ventana e índice encima). El
-botón **«Tabla»** bajo cada gráfico da los números. **«Generar informe PDF»** =
+**gráfico de contracciones** (izquierda: la serie con su tendencia y la MDF;
+derecha: la relación, amplitud frente a MDF con un músculo, o un músculo frente
+al otro con la cuña de coactivación en el par), **resumen** en fichas, y en el
+par el **gráfico de coactivación** (una barra por ventana con el índice). El botón
+**«Tabla»** del título de cada gráfico da los números. **«Generar informe PDF»** =
 entregable.
 
 Paneles por práctica: un músculo **1A · 2 · 3**; par **1A · 1B · 3 · 7 · 9**;

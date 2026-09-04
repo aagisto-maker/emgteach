@@ -191,11 +191,19 @@ siguiente:
 Después se lee. La pestaña tiene tres zonas: los **paneles** (arriba, con la rueda
 del ratón se desplazan; los botones ▲▼ y ▶◀ de la izquierda cambian las escalas),
 el **gráfico de contracciones** y el **resumen** (abajo) y, en el par, el
-**gráfico de coactivación**. Los dos gráficos son barras: una por contracción
-(dos con dos músculos, cada uno en su color, con la MDF como punto en el eje
-derecho) y, en coactivación, la activación media de cada músculo por ventana con
-el índice encima. El botón **«Tabla»** bajo cada gráfico enseña los números, que
-son los que se copian en las tablas de este guion. El botón **«Generar informe
+**gráfico de coactivación**. El de contracciones son dos paneles: a la izquierda,
+la serie a lo largo del registro (el pico de cada contracción y, con un músculo,
+su recta de tendencia con la pendiente por contracción, más la MDF en el eje
+derecho con la suya); a la derecha, la relación de la que se saca la conclusión.
+Con un músculo es la **amplitud frente a la MDF**, contracción a contracción y
+unidas en orden: una deriva hacia más amplitud y menos frecuencia es fatiga,
+hacia más de las dos es más fuerza, y los otros dos cuadrantes son sus
+contrarios. Con dos músculos es **un músculo frente al otro**, con la cuña en la
+que la aplicación llama coactivación a una contracción: una flexión cae sobre un
+eje, una extensión sobre el otro y una presa dentro de la cuña. El de coactivación
+es una barra por ventana con el índice y las dos activaciones medias. El botón
+**«Tabla»** del título de cada gráfico enseña los números, que son los que se
+copian en las tablas de este guion. El botón **«Generar informe
 PDF»** produce el entregable con las figuras, la calibración, los gráficos, las
 tablas y las fichas.
 

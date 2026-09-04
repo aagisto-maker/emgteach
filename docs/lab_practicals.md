@@ -192,11 +192,19 @@ press. On switching to Analysis a box points at the next step:
 Then read. The tab has three areas: the **panels** (top; the mouse wheel scrolls
 them; the ▲▼ and ▶◀ buttons on the left change the scales), the **contraction
 chart** and the **summary** (bottom) and, in the pair, the **co-activation
-chart**. Both charts are bars: one per contraction (two with two muscles, each
-in its colour, with the MDF as a dot on the right axis) and, for co-activation,
-each muscle's mean activation per window with the index over it. The **«Table»**
-button under each chart shows the numbers, which are the ones copied into the
-tables of this guide. **«Generate PDF report»** produces the deliverable with the
+chart**. The contraction chart is two panels: on the left, the series along the
+recording (each contraction's peak and, with one muscle, its fitted trend with
+the slope per contraction, plus the MDF on the right axis with its own); on the
+right, the relation the conclusion is read from. With one muscle it is
+**amplitude against MDF**, contraction by contraction and joined in order: a
+drift towards more amplitude and less frequency is fatigue, towards more of both
+is more force, and the other two quadrants are their opposites. With two muscles
+it is **one muscle against the other**, with the wedge in which the application
+calls a contraction co-activation: a flexion falls on one axis, an extension on
+the other and a grip inside the wedge. The co-activation chart is one bar per
+window with the index and the two mean activations. The **«Table»** button on
+each chart's title shows the numbers, which are the ones copied into the tables
+of this guide. **«Generate PDF report»** produces the deliverable with the
 figures, the calibration, the charts, the tables and the cards.
 
 ### 6 · Following the session on a phone

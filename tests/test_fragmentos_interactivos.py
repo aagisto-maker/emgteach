@@ -198,41 +198,89 @@ def _rows(dos: bool) -> list[Contraction]:
 
 
 class TestTheCharts:
-    def test_two_bars_per_contraction_with_two_muscles(self) -> None:
-        fig = Figure()
-        ax = fig.add_subplot(111)
-        draw_contraction_chart(ax, _rows(True), name_1="FCR", name_2="ECR")
-        assert len(ax.patches) == 6
-        # The median frequency rides on its own axis.
-        assert len(fig.axes) == 2
-        # And the electromechanical delay is written over its bar.
-        assert any("42 ms" in t.get_text() for t in ax.texts)
+    """A chart earns its place by showing a relation a conclusion can be read
+    off. The first version was the table drawn as bars, and the author's
+    verdict was exact: nothing came out of it."""
 
-    def test_one_bar_per_contraction_with_one_muscle(self) -> None:
+    def test_two_muscles_get_the_series_and_the_activation_plane(self) -> None:
         fig = Figure()
-        ax = fig.add_subplot(111)
-        draw_contraction_chart(ax, _rows(False), name_1="FCR")
-        assert len(ax.patches) == 3
+        draw_contraction_chart(fig, _rows(True), name_1="FCR", name_2="ECR")
+        # The series (plus the MDF axis twinned on it) and the relation.
+        assert len(fig.axes) == 3
+        serie, relacion = fig.axes[0], fig.axes[1]
+        # Two lines with markers along the series, one per muscle.
+        assert len([ln for ln in serie.get_lines() if len(ln.get_xdata()) == 3]) == 2
+        # The plane carries the co-activation wedge and one point per contraction.
+        assert len(relacion.patches) >= 1
+        assert len([ln for ln in relacion.get_lines() if len(ln.get_xdata()) == 1]) == 3
+        # The electromechanical delay is written over its point.
+        assert any("42 ms" in t.get_text() for t in serie.texts)
+        assert relacion.get_title() == tr("Who leads each contraction")
+
+    def test_the_wedge_follows_the_rule_it_was_labelled_under(self) -> None:
+        """The slider that sets the rule is seen setting the wedge: a wider
+        ratio narrows it."""
+        def ancho(ratio):
+            fig = Figure()
+            draw_contraction_chart(fig, _rows(True), name_1="FCR", name_2="ECR",
+                                   both_ratio=ratio)
+            cuña = fig.axes[1].patches[0]
+            xs, ys = cuña.get_xy()[:, 0], cuña.get_xy()[:, 1]
+            return float(ys[1] / xs[1])  # the lower edge's slope is the ratio
+        assert ancho(0.3) == pytest.approx(0.3)
+        assert ancho(0.7) == pytest.approx(0.7)
+
+    def test_one_muscle_gets_the_series_with_its_trend_and_the_jasa_plane(self) -> None:
+        filas = [
+            Contraction(n=k, start_s=float(k), end_s=k + 0.8, muscle="FCR",
+                        rms_mv=0.2 + 0.02 * k, peak_pct=50.0 + 5.0 * k,
+                        mdf_hz=100.0 - 4.0 * k)
+            for k in range(1, 7)
+        ]
+        fig = Figure()
+        draw_contraction_chart(fig, filas, name_1="FCR")
+        assert len(fig.axes) == 3
+        serie, relacion, mdf = fig.axes[0], fig.axes[1], fig.axes[2]
+        etiquetas = [t.get_text() for t in serie.get_legend().get_texts()]
+        # Six contractions are enough for a fitted trend, and the slope is
+        # written in the legend, for the amplitude and for the MDF.
+        assert any("/" in e and "%" in e for e in etiquetas)
+        assert any(e.startswith("MDF") and "Hz/" in e for e in etiquetas)
+        assert mdf.get_ylabel() == tr("MDF (Hz)")
+        # The JASA plane names its four quadrants.
+        textos = [t.get_text() for t in relacion.texts]
+        for palabra in ("fatigue", "more force", "less force", "recovery"):
+            assert tr(palabra) in textos
+        assert relacion.get_title() == tr("Amplitude against MDF (JASA)")
+
+    def test_too_few_points_for_a_relation_says_so(self) -> None:
+        fig = Figure()
+        draw_contraction_chart(fig, _rows(False)[:1], name_1="FCR")
+        relacion = fig.axes[1]
+        assert not relacion.axison
+        assert any("MDF" in t.get_text() for t in relacion.texts)
 
     def test_no_rows_no_axes(self) -> None:
         fig = Figure()
-        ax = fig.add_subplot(111)
-        draw_contraction_chart(ax, [], name_1="FCR")
-        assert not ax.axison
+        draw_contraction_chart(fig, [], name_1="FCR")
+        assert len(fig.axes) == 1 and not fig.axes[0].axison
 
-    def test_the_co_activation_chart_says_when_it_does_not_report(self) -> None:
+    def test_the_co_activation_chart_is_one_bar_per_window(self) -> None:
         fig = Figure()
-        ax = fig.add_subplot(111)
         res = [
             CoactivationResult(index=85.0, mean_1=60.0, mean_2=55.0, window_s=(0.0, 5.0), label="Grip"),
             CoactivationResult(index=None, mean_1=45.0, mean_2=3.0, window_s=(5.0, 9.0),
                                label="FCR", reason="not reported — x"),
         ]
-        draw_coactivation_chart(ax, res, name_1="FCR", name_2="ECR")
-        assert len(ax.patches) == 4
+        draw_coactivation_chart(fig, res, name_1="FCR", name_2="ECR")
+        ax = fig.axes[0]
+        assert len(ax.patches) == 2
         textos = [t.get_text() for t in ax.texts]
         assert "85 %" in textos
         assert tr("not reported") in textos
+        # The two means sit under the window's name, never the index alone.
+        etiquetas = [t.get_text() for t in ax.get_yticklabels()]
+        assert any("FCR 60" in e and "ECR 55" in e for e in etiquetas)
 
 
 @pytest.mark.gui
@@ -246,14 +294,27 @@ class TestTheTabShowsChartsFirst:
         yield t
         t.deleteLater()
 
-    def test_the_contraction_box_draws_bars_and_keeps_the_table(self, tab) -> None:
+    def test_the_contraction_box_draws_the_two_panels_and_keeps_the_table(self, tab) -> None:
         tab._refresh_contractions({
             "contractions": _rows(True), "channel_name": "FCR",
             "channel_name_2": "ECR", "emd_ms_mean": 42.0,
         })
         assert tab._stack_contr.currentIndex() == 0
-        assert len(tab._ax_contr.patches) == 6
+        assert len(tab._fig_contr.axes) == 3
         assert tab._tbl_contr.rowCount() == 3
+
+    def test_the_band_stays_low(self, tab) -> None:
+        """The band under the panels is paid for out of the panels' height."""
+        from emgteach.gui.tabs.analysis import _ALTO_GRAFICO
+
+        # The stacks cap what shows; the tables inside them stay free to
+        # fill whatever they are given (test_remaquetado pins that).
+        for w in (tab._canvas_contr, tab._canvas_coact, tab._stack_contr,
+                  tab._stack_coact):
+            assert w.maximumHeight() <= _ALTO_GRAFICO
+        # And the table switch lives on the title line, not on a row of its own.
+        assert tab._btn_tabla_contr.parent() is tab._box_contr
+        assert tab._btn_tabla_contr.y() == 0
 
     def test_the_table_is_one_click_behind_in_both_boxes(self, tab) -> None:
         tab._btn_tabla_contr.setChecked(True)
