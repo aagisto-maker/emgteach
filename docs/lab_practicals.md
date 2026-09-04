@@ -392,13 +392,39 @@ does so as a percentage of each one's maximum.
 **Objective.** See the reciprocal pattern of an antagonist pair and measure its
 co-activation.
 
+**Why the grip works.** The finger flexors are extrinsic: their bellies are in the
+forearm and their tendons cross the wrist. Closing the fist therefore produces,
+besides the closing of the fingers, a flexor moment on the wrist that would bend
+it; the radial wrist extensors counter it and hold the wrist in slight extension,
+which is the length at which those flexors are strongest. That is why grip force
+falls when the wrist flexes, and why the extensors are continuously active
+throughout a grip, without the silences they show in a reciprocal movement. Here
+they are not antagonists but stabilisers. It is also the mechanism of lateral
+epicondylitis, an injury of repeated gripping and not of extending the wrist.
+
 **Procedure.**
 1. **Start recording**. Calibrate both muscles as in section 4 (fist closed for
    the FCR, back of the hand for the ECR).
 2. In the recording, always in this order, with 2 s of stillness between
    manoeuvres: **six wrist flexions** (1 s each, against the table), **six
-   extensions**, and **one grip**: close the fist hard and hold it 5 s.
-3. **Stop**. In Analysis, review the repetitions and accept the fragments: the
+   extensions**, and finally the **grip**.
+3. **The grip in detail**, because it is the manoeuvre that yields a number and
+   the easiest one to get wrong:
+   - Forearm on the table as far as the wrist, elbow at 90°, thumb up, and **the
+     wrist beyond the edge, in the air**. If the wrist rests on the table, the
+     table does the stabilising, the extensor relaxes and the manoeuvre measures
+     nothing.
+   - Squeeze something that does not deform and gives a repeatable posture: a
+     rolled-up blood-pressure cuff, a tennis ball or a tightly rolled towel. A
+     hand dynamometer is better still, since it also quantifies the effort.
+   - «Close the fist hard and hold it» for **5 s**, firm but submaximal, guided by
+     the load bar towards 50–60 %. **Never say «extend the wrist»**: the extensors
+     have to come in on their own.
+   - Three 5 s grips 2 s apart give more signal and still count as one window,
+     since consecutive rows with the same name are grouped.
+   - It goes last, so its fatigue does not contaminate the flexions or the
+     extensions.
+4. **Stop**. In Analysis, review the repetitions and accept the fragments: the
    **Muscle** column comes filled in with who led each contraction; correct only
    if the trace says otherwise. Consecutive rows with the same name form one
    window of the co-activation table.
@@ -413,6 +439,22 @@ co-activation.
 
 From the event log or the PDF, the **channel separation** during calibration:
 ECR during the FCR maximum ____ %; FCR during the ECR maximum ____ %.
+
+**What each manoeuvre teaches.** The three in this exercise, plus the one in 2b,
+form a progression worth reading whole before answering:
+
+| Manoeuvre | What the two muscles do | What the index gives |
+|---|---|---|
+| Flexions | the FCR works; the ECR stays under the 5 % floor | not reported |
+| Extensions | the roles swap | not reported |
+| Grip | both work at once | a high number, of the order of 60–95 % |
+| Fast alternation (2b) | both work, but by turns | a low number |
+
+The grip is the only manoeuvre of this montage that produces a number, and the
+comparison with the fast alternation of exercise 2b closes the argument: in both
+manoeuvres the two muscles work, but only in the grip do they work **at the same
+time**, which is what the index measures. Co-activation is a property of the task,
+not of the muscle.
 
 **Questions.**
 - During the flexions, what does the ECR do? If its row says «not reported», why

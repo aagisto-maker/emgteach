@@ -86,6 +86,9 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
   mesa, puño cerrado, mantener los 4 s.
 - **La tabla de coactivación dice «no se informa»** → en una flexión o extensión
   limpia es lo correcto; hace falta una **presa** para que dé número.
+- **La presa no coactiva** → la muñeca está apoyada en la mesa. Tiene que quedar
+  **en el aire, fuera del borde**: apoyada, el tablero estabiliza y el extensor
+  afloja. Y nunca se pide «extienda la muñeca»: los extensores entran solos.
 - **«Canales sin separar»** → separar los pares hacia el borde cubital y dorsal;
   cada par sobre su vientre; antebrazo apoyado.
 - **«Fatiga: no concluyente»** → contracción demasiado corta o intermitente;

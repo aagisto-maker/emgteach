@@ -391,13 +391,40 @@ porcentaje del máximo de cada uno.
 **Objetivo.** Ver el patrón recíproco de un par antagonista y medir su
 coactivación.
 
+**Fundamento de la presa.** Los flexores de los dedos son extrínsecos: sus
+vientres están en el antebrazo y sus tendones cruzan la muñeca. Al cerrar el puño
+producen, además del cierre de los dedos, un momento flexor sobre la muñeca que la
+doblaría; los extensores radiales del carpo lo contrarrestan y la sostienen en
+ligera extensión, que es la longitud a la que esos flexores dan más fuerza. Por eso
+la fuerza de presa cae cuando la muñeca se flexiona, y por eso los extensores están
+activos de forma continua durante toda la presa, sin los silencios que muestran en
+un movimiento recíproco. Aquí no son antagonistas, son estabilizadores. Es también
+el mecanismo de la epicondilitis lateral, que es una lesión por presa repetida y no
+por extender la muñeca.
+
 **Procedimiento.**
 1. **Iniciar grabación**. Calibrar los dos músculos como dice el apartado 4 (puño
    cerrado para el FCR, dorso de la mano para el ECR).
 2. En el registro, y siempre en este orden, con 2 s de quietud entre maniobras:
    **seis flexiones** de muñeca (1 s cada una, contra la mesa), **seis
-   extensiones**, y **una presa**: cerrar el puño con fuerza y mantenerlo 5 s.
-3. **Detener**. En Análisis, revisar las repeticiones y aceptar los fragmentos:
+   extensiones**, y por último la **presa**.
+3. **La presa, con detalle**, porque es la maniobra que da número y la que más
+   fácil sale mal:
+   - Antebrazo apoyado en la mesa hasta la muñeca, codo a 90°, pulgar hacia
+     arriba, y **la muñeca fuera del borde, en el aire**. Si la muñeca descansa
+     sobre la mesa, el tablero hace de estabilizador, el extensor afloja y la
+     maniobra no mide nada.
+   - Apretar algo que no se deforme y dé una postura repetible: un manguito de
+     tensión enrollado, una pelota de tenis o una toalla apretada. Con
+     dinamómetro de mano, mejor, porque además cuantifica el esfuerzo.
+   - «Cierre el puño con fuerza y manténgalo» **5 s**, firme pero submáximo,
+     guiándose por la barra de carga hacia el 50–60 %. **Nunca «extienda la
+     muñeca»**: los extensores tienen que entrar solos.
+   - Tres presas de 5 s separadas por 2 s dan más señal y siguen contando como una
+     sola ventana, porque las filas seguidas con el mismo nombre se agrupan.
+   - Va la última, para que su fatiga no contamine las flexiones ni las
+     extensiones.
+4. **Detener**. En Análisis, revisar las repeticiones y aceptar los fragmentos:
    la columna **Músculo** viene rellena con quién llevó cada contracción; corregir
    solo si la traza dice otra cosa. Las filas seguidas con el mismo nombre forman
    una sola ventana de la tabla de coactivación.
@@ -413,6 +440,22 @@ coactivación.
 Del registro de eventos o del PDF, la **separación entre canales** durante la
 calibración: ECR durante el máximo del FCR ____ %; FCR durante el máximo del ECR
 ____ %.
+
+**Lo que enseña cada maniobra.** Las tres de este ejercicio, más la del 2b, forman
+una progresión; conviene leerla entera antes de responder:
+
+| Maniobra | Qué hacen los dos músculos | Qué da el índice |
+|---|---|---|
+| Flexiones | trabaja el FCR; el ECR no llega al suelo del 5 % | no se informa |
+| Extensiones | los papeles se intercambian | no se informa |
+| Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
+| Alternancia rápida (2b) | los dos trabajan, pero por turnos | número bajo |
+
+La presa es la única maniobra de este montaje que produce un número, y la
+comparación con la alternancia rápida del ejercicio 2b es la que cierra el
+argumento: en las dos trabajan los dos músculos, pero solo en la presa trabajan **a
+la vez**, que es lo que el índice mide. La coactivación es una propiedad de la
+tarea, no del músculo.
 
 **Cuestiones.**
 - En las flexiones, ¿qué hace el ECR? Si su fila dice «no se informa», ¿por qué es

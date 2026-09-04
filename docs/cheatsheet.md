@@ -89,6 +89,10 @@ limits.
   closed, hold the 4 s.
 - **The co-activation table says «not reported»** → in a clean flexion or
   extension that is correct; a **grip** is needed for a number.
+- **The grip does not co-activate** → the wrist is resting on the table. It has to
+  be **in the air, beyond the edge**: resting, the table stabilises and the
+  extensor relaxes. And never ask for «extend the wrist»: the extensors come in on
+  their own.
 - **«Channels not separated»** → move the pairs apart towards the ulnar and dorsal
   edges; each pair over its belly; forearm rested.
 - **«Fatigue: not conclusive»** → contraction too short or intermittent; select

@@ -736,6 +736,45 @@ ventana, la fila dice **«no se informa»** con su razón: en una flexión limpi
 extensor calla, y decir «coactivación baja» sería inventar una medida. Con una
 presa firme, en cambio, los dos trabajan y el índice sale alto.
 
+**Por qué el protocolo incluye una presa.** Con solo flexiones y extensiones el
+índice diría «no se informa» en todas las filas: es la respuesta correcta, pero es
+un resultado nulo, y el alumnado no llegaría a ver funcionar lo que la práctica
+mide. La presa es la única maniobra de este montaje en la que los dos músculos
+trabajan a la vez. Se prefirió a las dos alternativas evidentes. La cocontracción
+voluntaria («rigidice la muñeca sin moverla») también da número, pero es una
+instrucción artificial, sin función, que cada sujeto interpreta a su manera;
+sostener un peso con la muñeca neutra activa los dos músculos demasiado poco, con
+medias que rozan el suelo del 5 %. La presa es una tarea real que nadie tiene que
+aprender, activa mucho los dos músculos y tiene lectura clínica inmediata.
+
+| Maniobra | Qué hacen los dos músculos | Qué da el índice |
+|---|---|---|
+| Flexiones | trabaja el flexor; el extensor no llega al suelo del 5 % | no se informa |
+| Extensiones | los papeles se intercambian | no se informa |
+| Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
+| Alternancia rápida | los dos trabajan, pero por turnos | número bajo |
+
+La lección de fondo es que la coactivación es una propiedad de la **tarea** y no
+del músculo. El contraste entre la presa y la alternancia rápida es el más útil de
+los cuatro: en las dos trabajan los dos músculos, pero solo en la presa trabajan a
+la vez, que es exactamente lo que el índice mide y no la cantidad de actividad.
+
+**La fisiología de la presa.** Los flexores de los dedos son extrínsecos y sus
+tendones cruzan la muñeca, de modo que al cerrar el puño generan un momento flexor
+que la doblaría; los extensores radiales del carpo lo contrarrestan y la mantienen
+en ligera extensión, que es la longitud a la que esos flexores dan más fuerza, y
+por eso la fuerza de presa cae con la muñeca flexionada (Beringer y cols., 2020).
+Medidos con sEMG durante combinaciones de presa y fuerza de muñeca, los extensores
+se mantienen activos de forma continua, sin periodos de actividad baja, mientras
+que los flexores sí dependen de la tarea; los autores señalan ese trabajo
+sostenido como el mecanismo probable de que los extensores desarrollen lesiones
+crónicas por sobreuso con más frecuencia (Forman y cols., 2021). De ahí el gancho
+clínico de la práctica: la epicondilitis lateral es una lesión por presa repetida y
+no por extender la muñeca. En el laboratorio hay un detalle de postura del que
+depende todo: **la muñeca tiene que quedar en el aire, fuera del borde de la mesa**.
+Apoyada, el tablero hace de estabilizador, el extensor afloja y la maniobra deja de
+medir lo que se pretende.
+
 **Separación entre canales.** Durante el máximo de un músculo, el otro canal nunca
 está en silencio: parte es coactivación real (el antagonista sujeta la
 articulación) y parte es la señal del primero conducida por el tejido hasta el
@@ -1146,6 +1185,14 @@ porque la pila científica no tiene *wheels*.
 - Ervilha, U. F., Graven‑Nielsen, T., y Duarte, M. (2012). A simple test of muscle
   coactivation estimation using electromyography. *Brazilian Journal of Medical and
   Biological Research*, 45, 977–981.
+- Beringer, C. R., Mansouri, M., Fisher, L. E., Collinger, J. L., Munin, M. C.,
+  Boninger, M. L., y Gaunt, R. A. (2020). The effect of wrist posture on extrinsic
+  finger muscle activity during single joint movements. *Scientific Reports*, 10,
+  8377.
+- Forman, D. A., Forman, G. N., y Holmes, M. W. R. (2021). Wrist extensor muscle
+  activity is less task‑dependent than wrist flexor muscle activity while
+  simultaneously performing moderate‑to‑high handgrip and wrist forces.
+  *Ergonomics*, 64(12). doi:10.1080/00140139.2021.1934564
 
 ---
 

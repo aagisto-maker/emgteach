@@ -521,6 +521,46 @@ the window, the row says **«not reported»** with its reason: in a clean flexio
 the extensor is silent, and reporting "low co-activation" would be inventing a
 measurement. In a firm grip both work and the index is high.
 
+**Why the protocol includes a grip.** With flexions and extensions alone the index
+would say «not reported» in every row: the right answer, but a null result, and the
+student would never see what the practical measures actually work. The grip is the
+only manoeuvre of this montage in which both muscles work at once. It was preferred
+to the two obvious alternatives. Voluntary co-contraction («stiffen the wrist
+without moving it») also yields a number, but it is an artificial instruction, with
+no function, that each subject interprets differently; holding a weight with the
+wrist
+neutral activates both muscles too weakly, with means grazing the 5 % floor. The
+grip is a real task nobody has to be taught, it activates both muscles strongly,
+and it has an immediate clinical reading.
+
+| Manoeuvre | What the two muscles do | What the index gives |
+|---|---|---|
+| Flexions | the flexor works; the extensor stays under the 5 % floor | not reported |
+| Extensions | the roles swap | not reported |
+| Grip | both work at once | a high number, of the order of 60–95 % |
+| Fast alternation | both work, but by turns | a low number |
+
+The underlying lesson is that co-activation is a property of the **task**, not of
+the muscle. The contrast between the grip and the fast alternation is the most
+useful of the four: in both the two muscles work, but only in the grip do they work
+at the same time, which is exactly what the index measures rather than the amount
+of activity.
+
+**The physiology of the grip.** The finger flexors are extrinsic and their tendons
+cross the wrist, so closing the fist produces a flexor moment that would bend it;
+the radial wrist extensors counter it and hold the wrist in slight extension, the
+length at which those flexors are strongest, which is why grip force falls with the
+wrist flexed (Beringer et al., 2020). Measured with sEMG during combinations of
+handgrip and wrist force, the extensors stay continuously active with no periods of
+low activity, while the flexors are task-dependent; the authors point to that
+sustained work as the likely mechanism by which the extensors develop chronic
+overuse injuries more often (Forman et al., 2021). Hence the clinical hook of the
+practical: lateral epicondylitis is an injury of repeated gripping, not of extending
+the wrist. In the laboratory one detail of posture decides everything: **the wrist
+has to be in the air, beyond the edge of the table**. Resting on it, the table does
+the stabilising, the extensor relaxes, and the manoeuvre stops measuring what it is
+for.
+
 **Channel separation.** During one muscle's maximum the other channel is never
 silent: partly real co-activation, partly the first muscle's signal conducted
 through the tissue. The wizard measures it at calibration and writes it to the
@@ -782,6 +822,14 @@ Python 3.10–3.12; 3.13 is not supported yet.
 - Ervilha, U. F., Graven-Nielsen, T., & Duarte, M. (2012). A simple test of muscle
   coactivation estimation using electromyography. *Brazilian Journal of Medical
   and Biological Research*, 45, 977–981.
+- Beringer, C. R., Mansouri, M., Fisher, L. E., Collinger, J. L., Munin, M. C.,
+  Boninger, M. L., & Gaunt, R. A. (2020). The effect of wrist posture on extrinsic
+  finger muscle activity during single joint movements. *Scientific Reports*, 10,
+  8377.
+- Forman, D. A., Forman, G. N., & Holmes, M. W. R. (2021). Wrist extensor muscle
+  activity is less task-dependent than wrist flexor muscle activity while
+  simultaneously performing moderate-to-high handgrip and wrist forces.
+  *Ergonomics*, 64(12). doi:10.1080/00140139.2021.1934564
 - Agis‑Torres, Á. (2026). *emgteach: an open‑source teaching platform for surface
   electromyography* (software). Zenodo.
 - Agis‑Torres, Á. (2026). *Silent corruption of EDF recordings during real‑time
