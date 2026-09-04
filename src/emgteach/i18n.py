@@ -174,12 +174,13 @@ _ES = {
         "retraso electromecánico medio {ms:.0f} ms",
     "Each row is one contraction the application found on its own, the same "
     "ones the fragment editor proposes. With two muscles, the row belongs to "
-    "the one that led it; «Co-contraction» means both worked at once, and the "
+    "the one that led it; «Co-activation» means both worked at once, and the "
     "numbers are the stronger one's.":
         "Cada fila es una contracción que la aplicación ha encontrado por sí "
         "misma, las mismas que propone el editor de fragmentos. Con dos "
-        "músculos, la fila es del que la lideró; «Cocontracción» significa "
-        "que los dos trabajaron a la vez, y los números son los del más fuerte.",
+        "músculos, la fila es del que la lideró; «Coactivación» significa "
+        "que los dos trabajaron a la vez, y los números son los del más "
+        "fuerte.",
     "RMS": "RMS",
     "mean amplitude of the filtered signal over the contraction. Rest is a "
     "few hundredths of a millivolt; a firm effort with surface electrodes is "
@@ -364,23 +365,21 @@ _ES = {
         "es la curva fuerza-velocidad. Como es el procedimiento más largo de "
         "la aplicación, se ofrece una simulación como ensayo, para entender "
         "primero lo que se va a hacer en vivo.",
-    "The recording is analysed as soon as it is opened. Both "
-    "muscles were calibrated while recording, so the two "
-    "envelopes are overlaid in % MVC — the only form in which two "
-    "different muscles compare at all, since each one's "
-    "millivolts depend on its own electrodes and skin. In a clean "
-    "movement the agonist activates while the antagonist stays "
-    "nearly silent; simultaneous activation is co-contraction, "
-    "which holds the joint rigid and is typical of an unpractised "
-    "or uncertain movement. The table below the panels gives one "
-    "row per contraction, and which muscle led it.":
+    "The recording is analysed as soon as it is opened. Both muscles were "
+    "calibrated while recording, so the two envelopes are overlaid in % MVC "
+    "— the only form in which two different muscles compare at all, since "
+    "each one's millivolts depend on its own electrodes and skin. In a clean "
+    "movement the agonist activates while the antagonist stays nearly "
+    "silent; simultaneous activation is co-activation, which holds the joint "
+    "rigid and is typical of an unpractised or uncertain movement. The table "
+    "below the panels gives one row per contraction, and which muscle led it.":
         "El registro se analiza en cuanto se abre. Los dos músculos se "
         "calibraron al grabar, así que las dos envolventes se superponen en "
         "% CVM, la única forma en que dos músculos distintos se pueden "
         "comparar, porque los milivoltios de cada uno dependen de sus "
         "electrodos y de su piel. En un movimiento limpio el agonista se "
         "activa mientras el antagonista queda casi en silencio; la "
-        "activación simultánea es cocontracción, que deja rígida la "
+        "activación simultánea es coactivación, que deja rígida la "
         "articulación y es típica de un movimiento poco practicado o "
         "inseguro. La tabla bajo los paneles da una fila por contracción, y "
         "qué músculo la lideró.",
@@ -837,7 +836,6 @@ _ES = {
     "Flexion": "Flexión",
     "Extension": "Extensión",
     "Grip": "Presa",
-    "Co-contraction": "Cocontracción",
     # The ECG profile's own presets. Never translated because nothing scanned
     # them; the guard on marker_presets found them the moment it was written.
     "Rest": "Reposo",
@@ -1335,7 +1333,6 @@ _ES = {
     "Intermediate level": "Nivel intermedio",
     "Advanced level": "Nivel avanzado",
     "Muscle": "Músculo",
-    'Each row is one contraction found in the recording. Uncheck the ones not worth analysing — a movement done wrong, a tug on the cable, an effort that never got going — and only the rest is analysed, joined up as if it had been recorded in one go.\n\nPress «Use these fragments» even if you change nothing: that is what applies them and re-runs the analysis. Cancelling leaves the recording undivided, and the co-activation table with no windows to measure. To move where one begins or ends, change its seconds with the mouse wheel, the arrows, or by typing.': 'Cada fila es una contracción encontrada en el registro. Desmarque las que no merezca la pena analizar —un movimiento mal hecho, un tirón del cable, un esfuerzo que no llegó a arrancar— y se analiza solo el resto, unido como si se hubiera registrado de una vez.\n\nPulse «Usar estos fragmentos» aunque no cambie nada: es lo que los aplica y vuelve a hacer el análisis. Cancelar deja el registro sin dividir, y la tabla de coactivación sin ventanas que medir. Para mover dónde empieza o acaba una, cambie sus segundos con la rueda del ratón, con las flechas o escribiéndolos.',
     'Save tuned EDF…': 'Guardar EDF afinado…',
     'Write a new recording carrying the current selection: the calibration repetitions kept and the fragments of the task. The original is never touched, and the new file says where it came from.': 'Escribe un registro nuevo con la selección vigente: las repeticiones de calibración conservadas y los fragmentos de la tarea. El original no se toca nunca, y el fichero nuevo dice de dónde viene.',
     'Save tuned recording': 'Guardar el registro afinado',
@@ -1741,4 +1738,26 @@ _ES = {
     'The «Muscle» column says which of the two led each contraction; the app fills it in by comparing them. Change it if you disagree. Consecutive rows with the same name become a single window of the co-activation table, so a run of flexions is measured as one.': 'La columna «Músculo» dice cuál de los dos llevó cada contracción; la aplicación la rellena comparándolos. Cámbiela si no está de acuerdo. Las filas seguidas con el mismo nombre pasan a ser una sola ventana de la tabla de coactivación, de modo que una serie de flexiones se mide como una.',
     'Which muscle led this contraction. The app works it out by comparing the two; change it if you disagree, or empty it to leave the contraction out of the co-activation table.': 'Qué músculo llevó esta contracción. La aplicación lo deduce comparándolos; cámbielo si no está de acuerdo, o déjelo vacío para que la contracción no entre en la tabla de coactivación.',
     'Re-run the analysis with the settings changed since the last one. It lights up only when there is something to redo: opening a file analyses it, and the two editors re-analyse when you accept them.': 'Vuelve a hacer el análisis con los ajustes que hayan cambiado desde el anterior. Solo se enciende cuando hay algo que rehacer: abrir un fichero lo analiza, y los dos editores reanalizan al aceptarlos.',
+    # --- fragment editor with live adjustment, and the two summary charts ---
+    'Each row is one contraction found in the recording. Uncheck the ones not worth analysing — a movement done wrong, a tug on the cable — and only the rest is analysed, joined up as if recorded in one go. Press «Use these fragments» even if you change nothing: that is what applies them.': 'Cada fila es una contracción encontrada en el registro. Desmarque las que no merezca la pena analizar (un movimiento mal hecho, un tirón del cable) y se analiza solo el resto, unido como si se hubiera registrado de una vez. Pulse «Usar estos fragmentos» aunque no cambie nada: es lo que los aplica.',
+    'Adjust the proposal': 'Ajustar la propuesta',
+    'Sensitivity': 'Sensibilidad',
+    'lower finds more contractions; higher, fewer': 'más baja encuentra más contracciones; más alta, menos',
+    'Co-activation when the weaker muscle exceeds': 'Coactivación cuando el músculo menor supera el',
+    '% of the stronger': '% del mayor',
+    'Fine adjustment': 'Ajuste fino',
+    'Minimum duration (s)': 'Duración mínima (s)',
+    'Join gaps shorter than (s)': 'Unir huecos menores de (s)',
+    'Split between contractions': 'Separación entre contracciones',
+    'lower splits a series more readily; higher keeps it together': 'más baja separa una serie con más facilidad; más alta la mantiene unida',
+    'Reset': 'Restablecer',
+    'Moving a setting rebuilds the proposal; rows edited by hand are replaced.': 'Al mover un ajuste se rehace la propuesta; las filas editadas a mano se sustituyen.',
+    'Click a shaded stretch to keep or drop it.': 'Pulse sobre un tramo sombreado para conservarlo o descartarlo.',
+    'activity threshold': 'umbral de actividad',
+    'Table': 'Tabla',
+    'Chart': 'Gráfico',
+    'Show the numbers behind this chart, or the chart again.': 'Muestra los números que hay detrás de este gráfico, o el gráfico de nuevo.',
+    'Contraction': 'Contracción',
+    'Mean activation (% MVC) · index (%)': 'Activación media (% CVM) · índice (%)',
+    'not reported': 'no se informa',
 }

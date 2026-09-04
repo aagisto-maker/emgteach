@@ -347,7 +347,7 @@ spends much time there the panel says so in red.
   activation in % MVC and the Falconer-Winter index, or «not reported» with its
   reason (§5.7).
 - **Contractions**: one row per contraction found, with start, duration, the
-  muscle that led it (or «Co-contraction»), RMS, peak in % MVC (red above 100 %),
+  muscle that led it (or «Co-activation»), RMS, peak in % MVC (red above 100 %),
   MDF and, in kinematics, the electromechanical delay. The same contractions the
   fragment editor proposes.
 - **Analysis summary**, as cards: mean frequency, median frequency, MDF slope
@@ -551,7 +551,7 @@ fault.
 | Task effort | 20–80 % MVC | typical submaximal efforts |
 | Task maximum with a sound calibration | 90–125 % MVC | emgteach bench sessions; red warning from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 % MVC; finger extensor during wrist flexion at 75 % ≈ 15 % |
-| Co-activation index | reciprocal: «not reported»; firm grip: 60–95 % | Falconer and Winter (1985); Ervilha (2012) on voluntary co-contraction |
+| Co-activation index | reciprocal: «not reported»; firm grip: 60–95 % | Falconer and Winter (1985); Ervilha (2012) on voluntary co-activation |
 | Channel separation | ≤ 20–25 % of its own reference | emgteach bench with well-placed electrodes |
 | Static, median, peak load | ≤ 2–5, 10–14, 50–70 % MVC (the application: 5, 14, 70) | Jonsson (1978, 1982) |
 | Electromechanical delay | 30–100 ms; voluntary 35–80 | Cavanagh and Komi (1979): biceps 41 ± 13 ms, triceps 26 ± 11 ms |
@@ -767,7 +767,7 @@ Python 3.10–3.12; 3.13 is not supported yet.
 - Cavanagh, P. R., & Komi, P. V. (1979). Electromechanical delay in human skeletal
   muscle under concentric and eccentric contractions. *European Journal of Applied
   Physiology*, 42, 159–163.
-- Falconer, K., & Winter, D. A. (1985). Quantitative assessment of co-contraction
+- Falconer, K., & Winter, D. A. (1985). Quantitative assessment of co-activation
   at the ankle joint in walking. *Electromyography and Clinical Neurophysiology*,
   25, 135–149.
 - Hodges, P. W., & Bui, B. H. (1996). A comparison of computer-based methods for

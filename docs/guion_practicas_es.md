@@ -180,12 +180,24 @@ siguiente:
    cable) y se pulsa **«Usar estos fragmentos»** aunque no se cambie nada. En la
    práctica de un músculo, si la calibración se hizo con el botón, aquí se
    desmarcan también los seis esfuerzos de calibración para quedarse con la tarea.
+   El cuadro se ajusta mirando: dos deslizadores, la **sensibilidad** (cuántas
+   contracciones encuentra; la línea discontinua sobre la envolvente es el umbral
+   que fija) y, en el par, el **umbral de coactivación** (a partir de qué fracción
+   del músculo mayor el menor cuenta como coactivación). Cada movimiento redibuja
+   el sombreado y las filas al momento, y pulsar sobre un tramo sombreado lo
+   descarta o lo repone. El **ajuste fino** (duración mínima, unión de huecos,
+   separación entre contracciones) está plegado y rara vez hace falta.
 
 Después se lee. La pestaña tiene tres zonas: los **paneles** (arriba, con la rueda
 del ratón se desplazan; los botones ▲▼ y ▶◀ de la izquierda cambian las escalas),
-la **tabla de contracciones** y el **resumen** (abajo) y, en el par, la **tabla de
-coactivación**. El botón **«Generar informe PDF»** produce el entregable con las
-figuras, la calibración, las tablas y las fichas.
+el **gráfico de contracciones** y el **resumen** (abajo) y, en el par, el
+**gráfico de coactivación**. Los dos gráficos son barras: una por contracción
+(dos con dos músculos, cada uno en su color, con la MDF como punto en el eje
+derecho) y, en coactivación, la activación media de cada músculo por ventana con
+el índice encima. El botón **«Tabla»** bajo cada gráfico enseña los números, que
+son los que se copian en las tablas de este guion. El botón **«Generar informe
+PDF»** produce el entregable con las figuras, la calibración, los gráficos, las
+tablas y las fichas.
 
 ### 6 · Seguir la sesión desde el móvil
 
@@ -363,7 +375,7 @@ el asistente calibra **los dos músculos** (apartado 4) y después abre el regis
 El análisis ofrece **1A. En bruto**, **1B. Bruto (2º)**, **3. PSD** con las dos
 curvas, **7. MDF/tiempo** de los dos y **9. Env. superp.**, las dos envolventes en
 % CVM sobre el mismo eje. La tabla de contracciones dice **qué músculo llevó cada
-una** (FCR, ECR o «Cocontracción», cuando el menor supera la mitad del mayor,
+una** (FCR, ECR o «Coactivación», cuando el menor supera la mitad del mayor,
 medidos cada uno contra su propio máximo) y la **tabla de coactivación** da, por
 ventana, la activación media de cada músculo y el **índice de Falconer-Winter**.
 
@@ -414,7 +426,7 @@ ____ %.
 - Compare las MDF de los dos músculos en el panel 3. ¿Son distintas? ¿Qué puede
   significar una MDF muy por encima del rango habitual?
 
-### Ejercicio 2b · Cocontracción voluntaria y fatiga de un par
+### Ejercicio 2b · Coactivación voluntaria y fatiga de un par
 
 **Objetivo.** Ver que la coactivación depende de la tarea, no del músculo.
 

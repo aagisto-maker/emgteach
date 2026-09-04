@@ -251,12 +251,18 @@ class AnalysisWorker(QThread):
         roi_start_s: float | None = None,
         roi_end_s: float | None = None,
         roi_segments: list[tuple[float, float]] | None = None,
+        detection_kwargs: dict[str, float] | None = None,
         profile: SignalProfile = EMG_PROFILE,
         parent=None,
     ) -> None:
         super().__init__(parent)
         self._profile = profile
         self._edf_path = edf_path
+        #: The detection settings the fragment editor was left on — the
+        #: sensitivity, the split between contractions, the co-activation
+        #: rule. The contraction table is built with the same numbers, so
+        #: what the student tuned by eye is what the rows are made of.
+        self._detection = dict(detection_kwargs or {})
         self._roi_start_s = float(roi_start_s) if roi_start_s is not None else None
         self._roi_end_s = float(roi_end_s) if roi_end_s is not None else None
         # Optional multi-fragment selection. When given (and non-empty) it takes
@@ -1038,7 +1044,8 @@ class AnalysisWorker(QThread):
                     mvc_ref_2=result.get("mvc_ref_2"),
                     name_1=self._channel_name,
                     name_2=self._channel_name_2 or "",
-                    both_label=tr("Co-contraction"),
+                    both_label=tr("Co-activation"),
+                    **self._detection,
                     movement=(
                         result.get("acc_movement_envelope")
                         if self._acc_placement == "limb" else None

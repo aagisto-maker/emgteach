@@ -34,7 +34,9 @@ if TYPE_CHECKING:
     FloatArray = npt.NDArray[np.float64]
 
 __all__ = [
+    "DEFAULT_DETECTION",
     "Segment",
+    "activity_threshold",
     "normalise_segments",
     "suggest_significant_segments",
     "total_duration_s",
@@ -111,8 +113,39 @@ _PROMINENCE_FRACTION = 0.25
 _ONSET_FRACTION = 0.10
 
 
+#: The detection settings the fragment editor lets the student move, with the
+#: values the proposal uses when nobody has touched them. One dictionary so the
+#: editor, the analysis worker and the contraction table read the same keys.
+DEFAULT_DETECTION: dict[str, float] = {
+    "k": 3.0,
+    "min_duration_s": 0.5,
+    "merge_gap_s": 0.3,
+    "prominence": _PROMINENCE_FRACTION,
+}
+
+
+def activity_threshold(env: np.ndarray, k: float = 3.0) -> tuple[float, float]:
+    """The resting baseline of an envelope and the level activity must clear.
+
+    The same estimate :func:`suggest_significant_segments` uses, exposed so the
+    fragment editor can draw the line the sensitivity slider moves: a threshold
+    the student can see is one they can set by looking, which is the only way
+    this kind of number ever gets set.
+    """
+    env = np.asarray(env, dtype=np.float64).ravel()
+    if env.size == 0:
+        return 0.0, 0.0
+    low = env[env <= np.percentile(env, 40.0)]
+    base = float(np.median(low)) if low.size else float(np.median(env))
+    mad = float(np.median(np.abs(low - base))) * 1.4826 if low.size else 0.0
+    if mad <= 0.0:
+        mad = float(np.std(env)) or 1e-9
+    return base, base + float(k) * mad
+
+
 def _separate_contractions(
-    env: np.ndarray, start: int, end: int, base: float
+    env: np.ndarray, start: int, end: int, base: float,
+    prominence: float = _PROMINENCE_FRACTION,
 ) -> list[tuple[int, int, int, int]]:
     """Cut a run of activity at the valleys between its contractions.
 
@@ -152,7 +185,7 @@ def _separate_contractions(
     if altura <= 0.0:
         return [(start, end, start, end)]
 
-    picos, _ = find_peaks(trozo, prominence=_PROMINENCE_FRACTION * altura)
+    picos, _ = find_peaks(trozo, prominence=float(prominence) * altura)
     if picos.size < 2:
         return [(start, end, start, end)]
 
@@ -198,6 +231,7 @@ def suggest_significant_segments(
     min_duration_s: float = 0.5,
     merge_gap_s: float = 0.3,
     max_segments: int | None = None,
+    prominence: float = _PROMINENCE_FRACTION,
 ) -> list[Segment]:
     """Propose the informative fragments (active periods) of a recording.
 
@@ -240,6 +274,10 @@ def suggest_significant_segments(
     max_segments : int, optional
         If given, keep only the ``max_segments`` highest-scoring fragments
         (still returned in chronological order).
+    prominence : float, optional
+        How far a peak must stand out of its run, as a fraction of the run's
+        tallest peak, to count as a contraction of its own (default 0.25).
+        Lower splits a series more readily; higher keeps it together.
 
     Returns
     -------
@@ -262,12 +300,7 @@ def suggest_significant_segments(
     )["emg_envelope"]
 
     # Robust resting baseline from the quieter 40% of the envelope.
-    low = env[env <= np.percentile(env, 40.0)]
-    base = float(np.median(low)) if low.size else float(np.median(env))
-    mad = float(np.median(np.abs(low - base))) * 1.4826 if low.size else 0.0
-    if mad <= 0.0:
-        mad = float(np.std(env)) or 1e-9
-    threshold = base + k * mad
+    base, threshold = activity_threshold(env, k)
 
     active = env > threshold
     runs = _find_runs(active)
@@ -284,7 +317,7 @@ def suggest_significant_segments(
     # And split the ones that swallowed several contractions whole.
     split: list[tuple[int, int, int, int]] = []
     for start, end in merged:
-        split.extend(_separate_contractions(env, start, end, base))
+        split.extend(_separate_contractions(env, start, end, base, prominence))
 
     min_len = round(min_duration_s * fs)
     segments: list[Segment] = []

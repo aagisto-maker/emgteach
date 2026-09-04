@@ -159,7 +159,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
                 "different muscles compare at all, since each one's "
                 "millivolts depend on its own electrodes and skin. In a clean "
                 "movement the agonist activates while the antagonist stays "
-                "nearly silent; simultaneous activation is co-contraction, "
+                "nearly silent; simultaneous activation is co-activation, "
                 "which holds the joint rigid and is typical of an unpractised "
                 "or uncertain movement. The table below the panels gives one "
                 "row per contraction, and which muscle led it."

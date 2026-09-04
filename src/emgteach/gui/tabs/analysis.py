@@ -28,6 +28,7 @@ except Exception:
     # Headless environment (e.g. CI without a display): the GUI is never
     # rendered there, and the tabs create FigureCanvasQTAgg explicitly.
     pass
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QColor
@@ -50,6 +51,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QToolButton,
@@ -169,6 +171,7 @@ _PANEL_TOOLTIPS = {
 }
 
 from emgteach.broadcast import BroadcastServer
+from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
@@ -529,6 +532,10 @@ class AnalysisTab(QWidget):
         # Filter cut-offs chosen in the fragment editor; when set they drive
         # the actual analysis (not just detection). None = use the tab defaults.
         self._analysis_filter_kwargs: dict[str, float] | None = None
+        # The detection settings the fragment editor was left on, so the
+        # contraction table is built with the numbers the student tuned by
+        # eye there. None = the core defaults.
+        self._detection_kwargs: dict[str, float] | None = None
         # Whether a setting has changed since the last analysis. The
         # button used to be a step of the sequence — press it once to see
         # the recording, and again after each editor — and pressing the
@@ -909,7 +916,19 @@ class AnalysisTab(QWidget):
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._tbl_coact.verticalHeader().setVisible(False)
         self._ajustar_alto_coact()
-        coact_v.addWidget(self._tbl_coact)
+        # A chart in front of the table. The two mean activations as bars and
+        # the index over them is read at a glance; the table stays one click
+        # behind, for the numbers a report copies. See emgteach.charts.
+        self._fig_coact = Figure(figsize=(3.4, 1.9), constrained_layout=True)
+        self._canvas_coact = FigureCanvasQTAgg(self._fig_coact)
+        self._canvas_coact.setMinimumHeight(110)
+        self._ax_coact = self._fig_coact.add_subplot(111)
+        self._stack_coact = QStackedWidget()
+        self._stack_coact.addWidget(self._canvas_coact)
+        self._stack_coact.addWidget(self._tbl_coact)
+        coact_v.addWidget(self._stack_coact, stretch=1)
+        self._btn_tabla_coact = self._boton_tabla()
+        coact_v.addWidget(self._btn_tabla_coact, 0, Qt.AlignmentFlag.AlignRight)
         self._box_coact.setVisible(False)
         # Joins the bottom band with the other two boxes (see below).
 
@@ -935,8 +954,23 @@ class AnalysisTab(QWidget):
         self._tbl_contr.setSizeAdjustPolicy(
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._tbl_contr.setMinimumHeight(38)
-        contr_v.addWidget(self._tbl_contr)
+        # One bar per contraction, two with two muscles, the median frequency
+        # as a dot on the right axis: which effort was the strongest and
+        # whether the antagonist joined in are seen before they are read.
+        self._fig_contr = Figure(figsize=(4.6, 1.9), constrained_layout=True)
+        self._canvas_contr = FigureCanvasQTAgg(self._fig_contr)
+        self._canvas_contr.setMinimumHeight(110)
+        self._ax_contr = self._fig_contr.add_subplot(111)
+        self._stack_contr = QStackedWidget()
+        self._stack_contr.addWidget(self._canvas_contr)
+        self._stack_contr.addWidget(self._tbl_contr)
+        contr_v.addWidget(self._stack_contr, stretch=1)
+        self._btn_tabla_contr = self._boton_tabla()
+        contr_v.addWidget(self._btn_tabla_contr, 0, Qt.AlignmentFlag.AlignRight)
         self._box_contr.setVisible(False)
+        self._aplicar_vista_tablas(
+            bool(self._settings.value("analysis/bottom_as_tables", False, type=bool))
+        )
 
         # Bottom band: the contractions on the left, the summary cards on
         # the right, sharing the width. The summary used to sit above the
@@ -1007,6 +1041,7 @@ class AnalysisTab(QWidget):
         self._selected_segments = []
         self._segment_labels = []
         self._analysis_filter_kwargs = None
+        self._detection_kwargs = None
         self._actualizar_etiqueta_fragmentos()
         self._paso_mostrado = ""
 
@@ -1183,6 +1218,9 @@ class AnalysisTab(QWidget):
                 # every flexion came back named «co-contraction».
                 mvc_ref=(self._last_result or {}).get("mvc_ref"),
                 mvc_ref_2=(self._last_result or {}).get("mvc_ref_2"),
+                # Where the sliders were left last time, so a second visit
+                # starts from the first one's result.
+                detection=self._detection_kwargs,
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -1193,6 +1231,7 @@ class AnalysisTab(QWidget):
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self._selected_segments = dlg.selected_segments()
             self._segment_labels = dlg.labels()
+            self._detection_kwargs = dlg.detection_kwargs()
             # Adopt the cut-offs tuned in the editor for the actual analysis so
             # what was previewed is what gets analysed. Reflect f_env in the tab.
             self._analysis_filter_kwargs = dlg.filter_kwargs()
@@ -1487,6 +1526,7 @@ class AnalysisTab(QWidget):
             roi_start_s=roi_start,
             roi_end_s=roi_end,
             roi_segments=roi_segments,
+            detection_kwargs=self._detection_kwargs,
         )
         self._worker.result_ready.connect(self._on_result)
         self._worker.progress.connect(self._on_progress)
@@ -1582,6 +1622,10 @@ class AnalysisTab(QWidget):
                     item.setFont(font)
                 self._tbl_coact.setItem(fila, col, item)
 
+        draw_coactivation_chart(self._ax_coact, tabla, name_1=n1, name_2=n2,
+                                small=True)
+        self._canvas_coact.draw_idle()
+
         sin_marcas = not result.get("coactivation_from_markers", True)
         # Without windows the table holds one row, over the whole recording,
         # and its number is not a measurement of anything — the module says so
@@ -1589,7 +1633,8 @@ class AnalysisTab(QWidget):
         # opened, that row was the *first* thing the student saw of this panel:
         # a co-activation index, bold, computed over rest and flexion and
         # extension together.
-        self._tbl_coact.setVisible(not sin_marcas)
+        self._stack_coact.setVisible(not sin_marcas)
+        self._btn_tabla_coact.setVisible(not sin_marcas)
 
         # And the red line under it went the same way, for the same reason.
         # It is a warning — «this number does not measure anything» — about a
@@ -1665,12 +1710,42 @@ class AnalysisTab(QWidget):
         # panels off the window; beyond it the table scrolls.
         tope = 160 if self.height() >= 850 else 110
         self._tbl_contr.setMinimumHeight(max(38, min(alto, tope)))
+        draw_contraction_chart(
+            self._ax_contr, filas,
+            name_1=result.get("channel_name") or tr("Muscle {n}").format(n=1),
+            name_2=(result.get("channel_name_2") or "") if dos else "",
+            small=True,
+        )
+        self._canvas_contr.draw_idle()
         resumen = tr("{n} contractions").format(n=len(filas))
         emd = result.get("emd_ms_mean")
         if emd is not None:
             resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
         self._lbl_contr_resumen.setText(resumen)
         self._box_contr.setVisible(True)
+
+    def _boton_tabla(self) -> QToolButton:
+        """The small switch under each chart: the numbers, one click behind."""
+        btn = QToolButton()
+        btn.setCheckable(True)
+        btn.setAutoRaise(True)
+        btn.setStyleSheet("font-size: 10px; color: #2E86DE;")
+        btn.setText(tr("Table"))
+        btn.setToolTip(tr("Show the numbers behind this chart, or the chart again."))
+        btn.toggled.connect(self._aplicar_vista_tablas)
+        return btn
+
+    @Slot(bool)
+    def _aplicar_vista_tablas(self, tablas: bool) -> None:
+        """Both boxes together: a student who wants numbers wants them in both."""
+        for stack, btn in ((self._stack_coact, self._btn_tabla_coact),
+                           (self._stack_contr, self._btn_tabla_contr)):
+            stack.setCurrentIndex(1 if tablas else 0)
+            btn.blockSignals(True)
+            btn.setChecked(tablas)
+            btn.setText(tr("Chart") if tablas else tr("Table"))
+            btn.blockSignals(False)
+        self._settings.setValue("analysis/bottom_as_tables", bool(tablas))
 
     def _ajustar_alto_coact(self) -> None:
         """Room for the rows it has, and free to fill the rest of its box.

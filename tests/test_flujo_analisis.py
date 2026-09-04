@@ -239,7 +239,8 @@ class TestTheCoactivationTableWaitsForItsWindows:
         # headless run, so isVisible() is False either way and would pass
         # over the bug it is meant to catch.
         tab._refresh_coactivation(self._resultado(False))
-        assert not tab._tbl_coact.isVisibleTo(tab._box_coact)
+        # The stack holds the chart and, one click behind, the table.
+        assert not tab._stack_coact.isVisibleTo(tab._box_coact)
 
     def test_before_the_student_has_done_anything_the_panel_is_not_there(
         self, tab
@@ -269,5 +270,7 @@ class TestTheCoactivationTableWaitsForItsWindows:
 
     def test_with_windows_the_table_is_there(self, tab) -> None:
         tab._refresh_coactivation(self._resultado(True))
-        assert tab._tbl_coact.isVisibleTo(tab._box_coact)
+        assert tab._stack_coact.isVisibleTo(tab._box_coact)
         assert tab._tbl_coact.rowCount() == 1
+        # And the chart in front of it has its two bars and its index.
+        assert len(tab._ax_coact.patches) >= 2

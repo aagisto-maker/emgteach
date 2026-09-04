@@ -218,7 +218,7 @@ _TEXTS = {
             "Each row is one contraction the application found on its "
             "own, the same ones the fragment editor proposes. With two "
             "muscles, the row belongs to the one that led it; "
-            "«Co-contraction» means both worked at once, and the numbers "
+            "«Co-activation» means both worked at once, and the numbers "
             "are the stronger one's."
         ) + "</p><ul><li><b>" + tr("RMS") + "</b>: " + tr(
             "mean amplitude of the filtered signal over the contraction. "

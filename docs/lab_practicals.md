@@ -181,12 +181,23 @@ press. On switching to Analysis a box points at the next step:
    fragments»** even if nothing changed. In the single-muscle practical, if the
    calibration was made with the button, also untick the six calibration efforts
    to keep the task.
+   The dialogue is adjusted by looking: two sliders, the **sensitivity** (how
+   many contractions it finds; the dashed line over the envelope is the
+   threshold it sets) and, in the pair, the **co-activation threshold** (from
+   what share of the stronger muscle the weaker one counts as co-activating).
+   Every move redraws the shading and the rows at once, and a click on a shaded
+   stretch drops or restores it. The **fine adjustment** (minimum duration, gap
+   joining, split between contractions) stays folded and is rarely needed.
 
 Then read. The tab has three areas: the **panels** (top; the mouse wheel scrolls
 them; the ▲▼ and ▶◀ buttons on the left change the scales), the **contraction
-table** and the **summary** (bottom) and, in the pair, the **co-activation
-table**. **«Generate PDF report»** produces the deliverable with the figures, the
-calibration, the tables and the cards.
+chart** and the **summary** (bottom) and, in the pair, the **co-activation
+chart**. Both charts are bars: one per contraction (two with two muscles, each
+in its colour, with the MDF as a dot on the right axis) and, for co-activation,
+each muscle's mean activation per window with the index over it. The **«Table»**
+button under each chart shows the numbers, which are the ones copied into the
+tables of this guide. **«Generate PDF report»** produces the deliverable with the
+figures, the calibration, the charts, the tables and the cards.
 
 ### 6 · Following the session on a phone
 
@@ -365,7 +376,7 @@ wizard calibrates **both muscles** (section 4) and then opens the recording. The
 analysis offers **1A. Raw**, **1B. Raw (2nd)**, **3. PSD** with both curves, **7.
 MDF/time** of both and **9. Env. overlay**, the two envelopes in % MVC on the same
 axis. The contraction table says **which muscle led each one** (FCR, ECR or
-«Co-contraction» when the smaller exceeds half of the larger, each measured
+«Co-activation» when the smaller exceeds half of the larger, each measured
 against its own maximum) and the **co-activation table** gives, per window, the
 mean activation of each muscle and the **Falconer-Winter index**.
 
@@ -415,7 +426,7 @@ ECR during the FCR maximum ____ %; FCR during the ECR maximum ____ %.
 - Compare the two muscles' MDFs in panel 3. Are they different? What can an MDF
   well above the usual range mean?
 
-### Exercise 2b · Voluntary co-contraction and fatigue of a pair
+### Exercise 2b · Voluntary co-activation and fatigue of a pair
 
 **Objective.** See that co-activation depends on the task, not on the muscle.
 

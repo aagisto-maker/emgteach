@@ -40,6 +40,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
 from emgteach.i18n import tr
@@ -436,12 +437,27 @@ def _styled_table(data: list[list[str]]) -> Table:
     return table
 
 
+def _render_chart(draw, *args, **kwargs) -> BytesIO:
+    """One of the two summary charts of :mod:`emgteach.charts`, as a PNG."""
+    from matplotlib.figure import Figure
+
+    fig = Figure(figsize=(6.4, 2.4), dpi=150)
+    ax = fig.add_subplot(111)
+    draw(ax, *args, **kwargs)
+    fig.tight_layout()
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+    return buf
+
+
 def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -> None:
-    """One row per contraction, as on screen.
+    """One row per contraction, as on screen — the chart first, the table under it.
 
     This is the table a laboratory report is built from; without it the
     student copies numbers off a screenshot. Same rows, same columns, same
     rounding as the tab, so the two cannot be compared and found different.
+    The chart above it is the one the tab shows in front of the table.
     """
     filas = result.get("contractions") or []
     if not filas:
@@ -449,6 +465,18 @@ def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -
     dos = bool(result.get("channel_name_2"))
     con_emd = any(f.emd_ms is not None for f in filas)
     story.append(Paragraph(tr("Contractions"), h2))
+    try:
+        story.append(Image(
+            _render_chart(
+                draw_contraction_chart, filas,
+                name_1=str(result.get("channel_name") or tr("Muscle {n}").format(n=1)),
+                name_2=str(result.get("channel_name_2") or "") if dos else "",
+            ),
+            width=16 * cm, height=6 * cm,
+        ))
+        story.append(Spacer(1, 0.15 * cm))
+    except Exception:  # pragma: no cover — a chart must never sink the report
+        pass
     cab = ["#", tr("Start (s)"), tr("Duration (s)")]
     if dos:
         cab.append(tr("Muscle"))
@@ -699,6 +727,15 @@ def build_session_report(
         cab = tr("Mean activation (% MVC)")
         n1 = str(result.get("channel_name") or tr("Muscle {n}").format(n=1))
         n2 = str(result.get("channel_name_2") or tr("Muscle {n}").format(n=2))
+        if result.get("coactivation_from_markers", True):
+            try:
+                story.append(Image(
+                    _render_chart(draw_coactivation_chart, coact, name_1=n1, name_2=n2),
+                    width=16 * cm, height=6 * cm,
+                ))
+                story.append(Spacer(1, 0.15 * cm))
+            except Exception:  # pragma: no cover — a chart must never sink the report
+                pass
         rows = [[tr("Window"), f"{n1} — {cab}", f"{n2} — {cab}",
                  tr("Co-activation index")]]
         for res in coact:

@@ -46,12 +46,16 @@ Al abrir el registro se analiza solo. Seguir los cuadros que aparecen, en orden:
    la referencia de todos los porcentajes.
 2. **«Seleccionar fragmentos…»**: una fila por contracción; desmarcar las malas
    (y, en la práctica de un músculo, los esfuerzos de calibración) y **«Usar estos
-   fragmentos»**.
+   fragmentos»**. Dos deslizadores en vivo: **sensibilidad** y, en el par, **umbral
+   de coactivación**; pulsar sobre un tramo sombreado lo quita o lo repone; el
+   ajuste fino, plegado.
 
 Después leer: **paneles** (rueda del ratón para desplazar; ▲▼ amplitud, ▶◀ tiempo),
-**tabla de contracciones** (RMS, pico en % CVM, MDF, y EMD en cinemática),
-**resumen** en fichas, y en el par la **tabla de coactivación**. **«Generar informe
-PDF»** = entregable.
+**gráfico de contracciones** (una barra por contracción, dos en el par; MDF en el
+eje derecho; EMD sobre la barra en cinemática), **resumen** en fichas, y en el par
+el **gráfico de coactivación** (activación media por ventana e índice encima). El
+botón **«Tabla»** bajo cada gráfico da los números. **«Generar informe PDF»** =
+entregable.
 
 Paneles por práctica: un músculo **1A · 2 · 3**; par **1A · 1B · 3 · 7 · 9**;
 cinemática **1A · 2 · 3 · 10 · 11 · 12**. **«Más paneles…»** revela el resto.

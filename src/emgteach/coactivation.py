@@ -121,6 +121,7 @@ _DOMINANCE = 0.5
 def dominant_muscle(
     env_1, env_2, fs: float, window_s: tuple[float, float], *, t0: float = 0.0,
     ref_1: float | None = None, ref_2: float | None = None,
+    both_ratio: float = _DOMINANCE,
 ) -> int | None:
     """Which of the two muscles led in this window: 1, 2, or None for neither.
 
@@ -158,8 +159,11 @@ def dominant_muscle(
     alto, bajo = max(p1, p2), min(p1, p2)
     if alto <= 0.0:
         return None
-    if bajo / alto >= _DOMINANCE:
-        return None  # both worked: this is a co-contraction
+    # ``both_ratio`` is the one number of this rule a student may want to
+    # move, and the fragment editor lets them, with the labels changing as
+    # the slider does: below it one muscle led, at or above it both worked.
+    if bajo / alto >= float(both_ratio):
+        return None  # both worked: this is co-activation
     return 1 if p1 > p2 else 2
 
 
@@ -175,6 +179,7 @@ def propose_labels(
     t0: float = 0.0,
     ref_1: float | None = None,
     ref_2: float | None = None,
+    both_ratio: float = _DOMINANCE,
 ) -> list[str]:
     """A name for each window: the muscle that led it, or ``both_label``.
 
@@ -189,7 +194,7 @@ def propose_labels(
     return [
         {1: name_1, 2: name_2}.get(
             dominant_muscle(env_1, env_2, fs, w, t0=t0,
-                            ref_1=ref_1, ref_2=ref_2),
+                            ref_1=ref_1, ref_2=ref_2, both_ratio=both_ratio),
             both_label,
         )
         for w in windows

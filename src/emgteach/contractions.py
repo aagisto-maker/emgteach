@@ -64,10 +64,23 @@ class Contraction:
     peak_pct: float | None
     mdf_hz: float | None
     emd_ms: float | None = None
+    #: Which channel the numbers above belong to (1 or 2), and what the
+    #: *other* muscle did meanwhile in a two-channel recording — ``None``
+    #: with one channel. The table shows the leader; the chart shows both,
+    #: side by side, which is where a co-activation is seen rather than read.
+    channel: int = 1
+    rms_mv_other: float | None = None
+    peak_pct_other: float | None = None
 
     @property
     def duration_s(self) -> float:
         return self.end_s - self.start_s
+
+    def by_muscle(self, which: int) -> tuple[float, float | None]:
+        """``(rms_mv, peak_pct)`` of muscle 1 or 2, whichever led."""
+        if which == self.channel:
+            return self.rms_mv, self.peak_pct
+        return (self.rms_mv_other or 0.0), self.peak_pct_other
 
 
 def _running_mean_max(env: np.ndarray, w: int) -> float:
@@ -123,8 +136,19 @@ def contraction_table(
     f_notch: float = 50.0,
     f_env: float = 5.0,
     window_s: float = 0.5,
+    k: float = 3.0,
+    min_duration_s: float = 0.5,
+    merge_gap_s: float = 0.3,
+    prominence: float = 0.25,
+    both_ratio: float = 0.5,
 ) -> list[Contraction]:
     """The contractions of the analysed span, one row each.
+
+    ``k``, ``min_duration_s``, ``merge_gap_s`` and ``prominence`` are the
+    detection settings of :func:`suggest_significant_segments`, and
+    ``both_ratio`` the co-activation rule of :func:`dominant_muscle`: the
+    same numbers the fragment editor lets the student move, so the rows here
+    are the rows they saw there.
 
     The proposer is run on each channel and the two lists are merged, as the
     fragment editor does, so a series of flexions and extensions yields every
@@ -140,7 +164,11 @@ def contraction_table(
     if n == 0:
         return []
     total_s = n / fs
-    filtros = dict(f_low=f_low, f_high=f_high, f_notch=f_notch, f_env=f_env)
+    filtros = dict(
+        f_low=f_low, f_high=f_high, f_notch=f_notch, f_env=f_env,
+        k=k, min_duration_s=min_duration_s, merge_gap_s=merge_gap_s,
+        prominence=prominence,
+    )
 
     segs = [s for s in suggest_significant_segments(raw, fs, **filtros)
             if s.reason != "whole"]
@@ -186,7 +214,8 @@ def contraction_table(
         nombre = name_1
         if dos and env2 is not None:
             lider = dominant_muscle(env, env2, fs, (s.start_s, s.end_s),
-                                    ref_1=mvc_ref, ref_2=mvc_ref_2)
+                                    ref_1=mvc_ref, ref_2=mvc_ref_2,
+                                    both_ratio=both_ratio)
             if lider == 2:
                 canal, nombre = 2, name_2
             elif lider is None:
@@ -225,9 +254,21 @@ def contraction_table(
                 candidato = (t_move - t_emg) * 1000.0
                 if _EMD_RANGE_MS[0] <= candidato <= _EMD_RANGE_MS[1]:
                     emd = candidato
+        # The other muscle's own numbers over the same stretch, for the chart
+        # that draws the two side by side.
+        rms_otro = pico_otro = None
+        if dos and env2 is not None:
+            e_o = env if canal == 2 else env2
+            f_o = filt if canal == 2 else filt2
+            ref_o = mvc_ref if canal == 2 else mvc_ref_2
+            if f_o is not None and f_o.size:
+                rms_otro = float(np.sqrt(np.mean(f_o[i0:i1] ** 2)))
+            if ref_o:
+                pico_otro = 100.0 * _running_mean_max(e_o[i0:i1], w) / float(ref_o)
         filas.append(Contraction(
             n=k, start_s=float(s.start_s), end_s=float(s.end_s), muscle=nombre,
             rms_mv=rms, peak_pct=pico, mdf_hz=mdf, emd_ms=emd,
+            channel=canal, rms_mv_other=rms_otro, peak_pct_other=pico_otro,
         ))
     return filas
 

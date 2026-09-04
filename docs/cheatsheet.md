@@ -48,12 +48,16 @@ order:
    reference of every percentage.
 2. **«Select fragments…»**: one row per contraction; untick the bad ones (and, in
    the single-muscle practical, the calibration efforts) and **«Use these
-   fragments»**.
+   fragments»**. Two live sliders: **sensitivity** and, in the pair, the
+   **co-activation threshold**; a click on a shaded stretch drops or restores
+   it; the fine adjustment stays folded.
 
 Then read: **panels** (mouse wheel to scroll; ▲▼ amplitude, ▶◀ time), the
-**contraction table** (RMS, peak in % MVC, MDF, and EMD in kinematics), the
-**summary** cards, and in the pair the **co-activation table**. **«Generate PDF
-report»** = the deliverable.
+**contraction chart** (one bar per contraction, two in the pair; MDF on the
+right axis; EMD over the bar in kinematics), the **summary** cards, and in the
+pair the **co-activation chart** (mean activation per window with the index
+over it). The **«Table»** button under each chart gives the numbers.
+**«Generate PDF report»** = the deliverable.
 
 Panels per practical: single **1A · 2 · 3**; pair **1A · 1B · 3 · 7 · 9**;
 kinematics **1A · 2 · 3 · 10 · 11 · 12**. **«More panels…»** reveals the rest.

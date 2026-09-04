@@ -7,51 +7,83 @@ accept, tweak, add or drop them before the analysis runs. The core logic
 lives in :mod:`emgteach.selection`; this dialog only edits a list of
 ``(start_s, end_s)`` windows and shows a preview.
 
+**Two levels of adjustment, both live.** The first version of this dialogue
+carried eight spin boxes nobody could set without already knowing what they
+did; the second carried none, and the recourse when the proposal was wrong
+was to drag seconds row by row. What was asked for is the thing in between:
+a couple of settings a student can move *while looking at the result*. So
+the basic level is two sliders — how sensitive the detector is, and from
+what share of the stronger muscle the weaker one counts as co-activating —
+and every move of them redraws the shaded stretches and the rows at once.
+The fine level, folded away until asked for, adds the minimum duration, the
+gap that joins two pieces, and how readily a run is split into separate
+contractions. The threshold the sensitivity sets is drawn as a dashed line
+over the envelope, so it is set by eye, which is the only way a number of
+that kind ever gets set. A click on a shaded stretch keeps or drops it.
+
 The dialog is constructible directly from signal arrays (so it can be unit
 tested headless) or from an EDF file via :meth:`FragmentSelectionDialog.from_edf`.
 """
 
 from __future__ import annotations
 
-import inspect
 from typing import Any
 
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
     QDialog,
     QDoubleSpinBox,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QPushButton,
+    QSlider,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
-from emgteach.coactivation import propose_labels
+from emgteach.charts import COLOUR_1, COLOUR_2
+from emgteach.coactivation import _DOMINANCE, propose_labels
 from emgteach.dsp import process_offline
 from emgteach.i18n import tr
 from emgteach.selection import (
+    DEFAULT_DETECTION,
     Segment,
+    activity_threshold,
     normalise_segments,
     suggest_significant_segments,
     total_duration_s,
 )
 
-# Detection parameters, read straight from the core function so the two never
-# drift apart. They are no longer editable here: see _build_ui.
-_suggest_defaults = inspect.signature(suggest_significant_segments).parameters
-_DEFAULT_K = float(_suggest_defaults["k"].default)
-_DEFAULT_MIN_DURATION_S = float(_suggest_defaults["min_duration_s"].default)
-_DEFAULT_MERGE_GAP_S = float(_suggest_defaults["merge_gap_s"].default)
+#: The shading of a kept fragment, by who led it: the first muscle, the
+#: second, both, or nobody in particular (one muscle, or no name).
+_SHADE_1 = COLOUR_1
+_SHADE_2 = COLOUR_2
+_SHADE_BOTH = "#8E44AD"
+_SHADE_PLAIN = "#4CAF50"
+_SHADE_DROPPED = "#9E9E9E"
+
+#: How long after the last slider move the proposal is rebuilt. Long enough
+#: that dragging does not rebuild at every pixel, short enough to feel live.
+_DEBOUNCE_MS = 150
+
+
+def default_detection() -> dict[str, float]:
+    """The detection settings the dialogue opens on, co-activation rule included."""
+    d = dict(DEFAULT_DETECTION)
+    d["both_ratio"] = float(_DOMINANCE)
+    return d
 
 
 class FragmentSelectionDialog(QDialog):
@@ -69,6 +101,9 @@ class FragmentSelectionDialog(QDialog):
     segments : list of (float, float), optional
         Pre-existing selection to load. When ``None`` the dialog runs the
         automatic suggestion on open.
+    detection : dict, optional
+        The settings to open the sliders on — what the editor was left on
+        last time — so a second visit starts where the first ended.
     parent : QWidget, optional
         Parent widget.
     """
@@ -87,11 +122,16 @@ class FragmentSelectionDialog(QDialog):
         name_2: str = '',
         mvc_ref: float | None = None,
         mvc_ref_2: float | None = None,
+        detection: dict[str, float] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Select analysis fragments"))
-        self.setMinimumSize(720, 520)
+        # Bigger than it was: the plot is now the control, and a plot in
+        # which a twelve-second series occupies six hundred pixels is one in
+        # which the stretches can be told apart and clicked.
+        self.setMinimumSize(960, 640)
+        self.resize(1120, 740)
 
         self._raw = np.asarray(raw, dtype=np.float64).ravel()
         self._fs = float(fs)
@@ -130,11 +170,25 @@ class FragmentSelectionDialog(QDialog):
         self._mvc_ref = mvc_ref
         self._mvc_ref_2 = mvc_ref_2
         self._row_widgets: list[dict[str, Any]] = []
+        #: The detection settings, as the sliders have them.
+        self._det = default_detection()
+        if detection:
+            self._det.update({k: float(v) for k, v in detection.items()
+                              if k in self._det})
+        self._both_label = tr("Co-activation")
 
         # Envelope for the preview (downsampled when drawing).
         self._env = self._envolvente(self._raw)
         self._t = np.arange(len(self._env)) / self._fs
         self._env_2 = self._envolvente(self._raw_2)
+
+        # Rebuilding the proposal is a filter pass over the whole span; a
+        # slider being dragged asks for it at every pixel. One timer, armed
+        # on every move, fires once the hand has stopped.
+        self._timer = QTimer(self)
+        self._timer.setSingleShot(True)
+        self._timer.setInterval(_DEBOUNCE_MS)
+        self._timer.timeout.connect(self._auto_suggest)
 
         self._build_ui()
 
@@ -181,8 +235,9 @@ class FragmentSelectionDialog(QDialog):
             self._env, self._env_2, self._fs,
             [(s.start_s, s.end_s) for s in segs],
             name_1=self._name_1, name_2=self._name_2,
-            both_label=tr("Co-contraction"),
+            both_label=self._both_label,
             ref_1=self._mvc_ref, ref_2=self._mvc_ref_2,
+            both_ratio=self._det["both_ratio"],
         )
 
     # -- construction --------------------------------------------------------
@@ -200,6 +255,7 @@ class FragmentSelectionDialog(QDialog):
         channel_name_2: str | None = None,
         mvc_ref: float | None = None,
         mvc_ref_2: float | None = None,
+        detection: dict[str, float] | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
@@ -225,32 +281,24 @@ class FragmentSelectionDialog(QDialog):
             name_2=channel_name_2 or '',
             mvc_ref=mvc_ref,
             mvc_ref_2=mvc_ref_2,
+            detection=detection,
             parent=parent,
         )
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        # What it is for, in the words a student would use, and when not to
-        # bother. This dialogue is used by students and most sessions never
-        # open it: it earns two short paragraphs, not a lecture.
+        # What it is for, in the words a student would use. Two sentences:
+        # this dialogue is used by students and most sessions never open it.
         texto = tr(
             "Each row is one contraction found in the recording. Uncheck the "
             "ones not worth analysing — a movement done wrong, a tug on the "
-            "cable, an effort that never got going — and only the rest is "
-            "analysed, joined up as if it had been recorded in one go.\n\n"
-            "Press «Use these fragments» even if you change nothing: that is "
-            "what applies them and re-runs the analysis. Cancelling leaves "
-            "the recording undivided, and the co-activation table with no "
-            "windows to measure. To move where one begins or ends, change its "
-            "seconds with the mouse wheel, the arrows, or by typing."
+            "cable — and only the rest is analysed, joined up as if recorded "
+            "in one go. Press «Use these fragments» even if you change "
+            "nothing: that is what applies them."
         )
         if self._naming:
-            # Rewritten once the app started filling the column in. The old
-            # version explained how to name the rows by hand, which is no
-            # longer the job, and did it in terms of manoeuvres, which is not
-            # what the column says.
-            texto += "\n\n" + tr(
+            texto += " " + tr(
                 "The «Muscle» column says which of the two led each "
                 "contraction; the app fills it in by comparing them. Change it "
                 "if you disagree. Consecutive rows with the same name become a "
@@ -261,11 +309,17 @@ class FragmentSelectionDialog(QDialog):
         info.setWordWrap(True)
         root.addWidget(info)
 
-        # Preview plot.
-        self._fig = Figure(figsize=(7.0, 2.2), constrained_layout=True)
+        # Preview plot — the control, not a decoration: the shaded stretches
+        # are the rows, the dashed line is the sensitivity, and a click on a
+        # stretch keeps or drops it.
+        self._fig = Figure(figsize=(9.0, 3.0), constrained_layout=True)
         self._canvas = FigureCanvasQTAgg(self._fig)
+        self._canvas.setMinimumHeight(220)
         self._ax = self._fig.add_subplot(111)
-        root.addWidget(self._canvas, stretch=1)
+        self._canvas.mpl_connect("button_press_event", self._on_click)
+        root.addWidget(self._canvas, stretch=3)
+
+        root.addWidget(self._build_adjustments())
 
         # Fragment table.
         # No «Reason» column: it said «activity» / «manual» / «whole
@@ -287,18 +341,7 @@ class FragmentSelectionDialog(QDialog):
             # row builder and the readers, and one practical having a column
             # the others do not is not worth two sets of indices.
             self._table.setColumnHidden(4, True)
-        root.addWidget(self._table, stretch=1)
-
-        # The envelope cut-offs and the detection parameters used to live
-        # here, eight spin boxes of them. They are gone. Band and notch are
-        # the profile's and are not set anywhere else in the program; the
-        # envelope smoothing belongs to the tab that opened this dialogue,
-        # and having a second copy meant a student who came in to delete a
-        # row could change the analysis without knowing it. The three
-        # detection numbers — sensitivity, minimum duration, merge gap —
-        # cannot be set by anyone who does not already know what they do,
-        # and the recourse when the proposal is wrong is the one that needs
-        # no explanation: drag the seconds, add a row, delete a row.
+        root.addWidget(self._table, stretch=2)
 
         # Action buttons.
         btn_row = QHBoxLayout()
@@ -339,6 +382,160 @@ class FragmentSelectionDialog(QDialog):
         ok_row.addWidget(self._btn_ok)
         root.addLayout(ok_row)
 
+    def _build_adjustments(self) -> QGroupBox:
+        """The two levels of adjustment: two sliders, and a folded fine row."""
+        grp = QGroupBox(tr("Adjust the proposal"))
+        lay = QGridLayout(grp)
+        lay.setContentsMargins(8, 4, 8, 6)
+        lay.setHorizontalSpacing(8)
+        lay.setVerticalSpacing(4)
+
+        # Basic 1: sensitivity. The slider holds k × 10 (a QSlider is integer).
+        lay.addWidget(QLabel(tr("Sensitivity")), 0, 0)
+        self._sld_k = QSlider(Qt.Orientation.Horizontal)
+        self._sld_k.setRange(10, 60)
+        self._sld_k.setValue(round(self._det["k"] * 10))
+        self._sld_k.setToolTip(tr("lower finds more contractions; higher, fewer"))
+        self._sld_k.valueChanged.connect(self._on_k)
+        lay.addWidget(self._sld_k, 0, 1)
+        self._lbl_k = QLabel()
+        self._lbl_k.setMinimumWidth(52)
+        lay.addWidget(self._lbl_k, 0, 2)
+        pista_k = QLabel(tr("lower finds more contractions; higher, fewer"))
+        pista_k.setStyleSheet("color:#6B7580; font-size:10px;")
+        lay.addWidget(pista_k, 0, 3)
+
+        # Basic 2, only with two muscles: the co-activation rule. Holds the
+        # ratio in percent.
+        self._sld_ratio = QSlider(Qt.Orientation.Horizontal)
+        self._sld_ratio.setRange(20, 90)
+        self._sld_ratio.setValue(round(self._det["both_ratio"] * 100))
+        self._sld_ratio.valueChanged.connect(self._on_ratio)
+        self._lbl_ratio = QLabel()
+        self._lbl_ratio.setMinimumWidth(52)
+        self._fila_ratio = [
+            QLabel(tr("Co-activation when the weaker muscle exceeds")),
+            self._sld_ratio, self._lbl_ratio, QLabel(tr("% of the stronger")),
+        ]
+        for col, w in enumerate(self._fila_ratio):
+            lay.addWidget(w, 1, col)
+            w.setVisible(self._naming and self._env_2 is not None)
+
+        # The fine level, folded. A toggle button rather than a checkbox,
+        # because it reveals controls rather than setting anything.
+        self._btn_fino = QToolButton()
+        self._btn_fino.setCheckable(True)
+        self._btn_fino.setAutoRaise(True)
+        self._btn_fino.setText("▸ " + tr("Fine adjustment"))
+        self._btn_fino.toggled.connect(self._toggle_fino)
+        lay.addWidget(self._btn_fino, 2, 0, 1, 2)
+        self._btn_reset = QPushButton(tr("Reset"))
+        self._btn_reset.setToolTip(tr(
+            "Moving a setting rebuilds the proposal; rows edited by hand are "
+            "replaced."
+        ))
+        self._btn_reset.clicked.connect(self._reset_detection)
+        lay.addWidget(self._btn_reset, 2, 2)
+        pista = QLabel(tr("Click a shaded stretch to keep or drop it."))
+        pista.setStyleSheet("color:#6B7580; font-size:10px;")
+        lay.addWidget(pista, 2, 3)
+
+        self._box_fino = QWidget()
+        fino = QGridLayout(self._box_fino)
+        fino.setContentsMargins(0, 0, 0, 0)
+        fino.setHorizontalSpacing(8)
+        fino.setVerticalSpacing(4)
+        fino.addWidget(QLabel(tr("Minimum duration (s)")), 0, 0)
+        self._spin_min = QDoubleSpinBox()
+        self._spin_min.setRange(0.1, 3.0)
+        self._spin_min.setSingleStep(0.1)
+        self._spin_min.setDecimals(1)
+        self._spin_min.setValue(self._det["min_duration_s"])
+        self._spin_min.valueChanged.connect(self._on_fine)
+        fino.addWidget(self._spin_min, 0, 1)
+        fino.addWidget(QLabel(tr("Join gaps shorter than (s)")), 0, 2)
+        self._spin_gap = QDoubleSpinBox()
+        self._spin_gap.setRange(0.0, 2.0)
+        self._spin_gap.setSingleStep(0.1)
+        self._spin_gap.setDecimals(1)
+        self._spin_gap.setValue(self._det["merge_gap_s"])
+        self._spin_gap.valueChanged.connect(self._on_fine)
+        fino.addWidget(self._spin_gap, 0, 3)
+        fino.addWidget(QLabel(tr("Split between contractions")), 1, 0)
+        self._sld_prom = QSlider(Qt.Orientation.Horizontal)
+        self._sld_prom.setRange(5, 60)
+        self._sld_prom.setValue(round(self._det["prominence"] * 100))
+        self._sld_prom.setToolTip(tr(
+            "lower splits a series more readily; higher keeps it together"
+        ))
+        self._sld_prom.valueChanged.connect(self._on_prom)
+        fino.addWidget(self._sld_prom, 1, 1)
+        self._lbl_prom = QLabel()
+        self._lbl_prom.setMinimumWidth(52)
+        fino.addWidget(self._lbl_prom, 1, 2)
+        pista_p = QLabel(tr("lower splits a series more readily; higher keeps it together"))
+        pista_p.setStyleSheet("color:#6B7580; font-size:10px;")
+        fino.addWidget(pista_p, 1, 3)
+        self._box_fino.setVisible(False)
+        lay.addWidget(self._box_fino, 3, 0, 1, 4)
+        lay.setColumnStretch(1, 1)
+        lay.setColumnStretch(3, 1)
+
+        self._refresh_setting_labels()
+        return grp
+
+    # -- the settings --------------------------------------------------------
+
+    def _refresh_setting_labels(self) -> None:
+        self._lbl_k.setText(f"k = {self._det['k']:.1f}")
+        self._lbl_ratio.setText(f"{self._det['both_ratio'] * 100:.0f} %")
+        self._lbl_prom.setText(f"{self._det['prominence']:.2f}")
+
+    def _on_k(self, value: int) -> None:
+        self._det["k"] = value / 10.0
+        self._refresh_setting_labels()
+        self._timer.start()
+
+    def _on_prom(self, value: int) -> None:
+        self._det["prominence"] = value / 100.0
+        self._refresh_setting_labels()
+        self._timer.start()
+
+    def _on_fine(self, _value: float) -> None:
+        self._det["min_duration_s"] = float(self._spin_min.value())
+        self._det["merge_gap_s"] = float(self._spin_gap.value())
+        self._timer.start()
+
+    def _on_ratio(self, value: int) -> None:
+        """The co-activation rule moves the names, not the rows: no rebuild."""
+        self._det["both_ratio"] = value / 100.0
+        self._refresh_setting_labels()
+        self._relabel_rows()
+
+    def _toggle_fino(self, on: bool) -> None:
+        self._box_fino.setVisible(on)
+        self._btn_fino.setText(("▾ " if on else "▸ ") + tr("Fine adjustment"))
+
+    def _reset_detection(self) -> None:
+        self._det = default_detection()
+        for w in (self._sld_k, self._sld_ratio, self._sld_prom,
+                  self._spin_min, self._spin_gap):
+            w.blockSignals(True)
+        self._sld_k.setValue(round(self._det["k"] * 10))
+        self._sld_ratio.setValue(round(self._det["both_ratio"] * 100))
+        self._sld_prom.setValue(round(self._det["prominence"] * 100))
+        self._spin_min.setValue(self._det["min_duration_s"])
+        self._spin_gap.setValue(self._det["merge_gap_s"])
+        for w in (self._sld_k, self._sld_ratio, self._sld_prom,
+                  self._spin_min, self._spin_gap):
+            w.blockSignals(False)
+        self._refresh_setting_labels()
+        self._auto_suggest()
+
+    def detection_kwargs(self) -> dict[str, float]:
+        """The settings the editor was left on, for the analysis to reuse."""
+        return dict(self._det)
+
     # -- row management ------------------------------------------------------
 
     def _set_rows(self, segments: list[Segment]) -> None:
@@ -375,13 +572,10 @@ class FragmentSelectionDialog(QDialog):
         self._table.setItem(row, 3, dur_item)
 
         # The three things this column can say, which are the three the app
-        # itself puts there. It used to offer the old MARK vocabulary — «Grip»,
-        # «Fatigue» — words for manoeuvres the practical never asks for: the
-        # protocol is flexions and extensions. Offering a name for something
-        # nobody was told to do reads as an instruction to do it.
+        # itself puts there.
         combo_nombre = QComboBox()
         combo_nombre.setEditable(True)
-        for opcion in ("", self._name_1, self._name_2, tr("Co-contraction")):
+        for opcion in ("", self._name_1, self._name_2, self._both_label):
             if opcion not in {combo_nombre.itemText(i)
                               for i in range(combo_nombre.count())}:
                 combo_nombre.addItem(opcion)
@@ -391,6 +585,7 @@ class FragmentSelectionDialog(QDialog):
             "comparing the two; change it if you disagree, or empty it to "
             "leave the contraction out of the co-activation table."
         ))
+        combo_nombre.currentTextChanged.connect(self._refresh_derived)
         self._table.setCellWidget(row, 4, combo_nombre)
 
         self._row_widgets.append({
@@ -419,6 +614,21 @@ class FragmentSelectionDialog(QDialog):
                 segs.append(Segment(a, b, label=nombre))
         return segs
 
+    def _relabel_rows(self) -> None:
+        """Name every row again under the current co-activation rule."""
+        if not self._naming or self._env_2 is None:
+            return
+        segs = self._current_segments(only_kept=False)
+        if len(segs) != len(self._row_widgets):
+            return
+        for w, nombre in zip(self._row_widgets, self._nombres_propuestos(segs),
+                             strict=True):
+            combo = w["label"]
+            combo.blockSignals(True)
+            combo.setCurrentText(nombre)
+            combo.blockSignals(False)
+        self._refresh_derived()
+
     # -- actions -------------------------------------------------------------
 
     def _auto_suggest(self) -> None:
@@ -430,6 +640,7 @@ class FragmentSelectionDialog(QDialog):
         the decision this application takes out of the operator's hands, and
         it was arriving back as a suggestion.
         """
+        self._timer.stop()
         a, b = self._span
         i0, i1 = round(a * self._fs), round(b * self._fs)
 
@@ -441,9 +652,10 @@ class FragmentSelectionDialog(QDialog):
                 f_high=self._f_high,
                 f_notch=self._f_notch,
                 f_env=self._f_env,
-                k=_DEFAULT_K,
-                min_duration_s=_DEFAULT_MIN_DURATION_S,
-                merge_gap_s=_DEFAULT_MERGE_GAP_S,
+                k=self._det["k"],
+                min_duration_s=self._det["min_duration_s"],
+                merge_gap_s=self._det["merge_gap_s"],
+                prominence=self._det["prominence"],
             )
 
         # Back into the file's own clock: the worker crops by these numbers.
@@ -456,11 +668,7 @@ class FragmentSelectionDialog(QDialog):
             # Both muscles, not just the one on display. The selection crops
             # *both* channels, so proposing only the contractions of the
             # channel that happens to be selected quietly decided which half
-            # of the session got analysed: on the bench recording of 1
-            # September, choosing FCR gave ten windows and choosing ECR gave
-            # eleven, and the two selections overlapped by 19 % — the flexions
-            # or the extensions, according to a combo box that looks like it
-            # only chooses what is drawn.
+            # of the session got analysed.
             filas += [
                 Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
                 for x in detecta(self._raw_2)
@@ -495,6 +703,21 @@ class FragmentSelectionDialog(QDialog):
     def _use_whole(self) -> None:
         self._set_rows([])
 
+    def _on_click(self, event) -> None:
+        if event.inaxes is not self._ax or event.xdata is None:
+            return
+        self._toggle_at(float(event.xdata))
+
+    def _toggle_at(self, x: float) -> None:
+        """Keep or drop the row whose stretch contains ``x`` seconds."""
+        for w in self._row_widgets:
+            a = w["start"].value()  # type: ignore[attr-defined]
+            b = w["end"].value()  # type: ignore[attr-defined]
+            if a <= x <= b:
+                chk = w["keep"]
+                chk.setChecked(not chk.isChecked())  # type: ignore[attr-defined]
+                return
+
     # -- derived state (duration cells, total label, preview) ----------------
 
     def _refresh_derived(self) -> None:
@@ -514,30 +737,59 @@ class FragmentSelectionDialog(QDialog):
                     n=len(kept), d=total, full=self._full_duration
                 )
             )
-        self._redraw_preview(kept)
+        self._redraw_preview()
 
-    def _redraw_preview(self, kept: list[Segment]) -> None:
+    def _shade_colour(self, label: str) -> str:
+        if not self._naming or self._env_2 is None:
+            return _SHADE_PLAIN
+        if label == self._name_1:
+            return _SHADE_1
+        if label == self._name_2:
+            return _SHADE_2
+        if label == self._both_label:
+            return _SHADE_BOTH
+        return _SHADE_PLAIN
+
+    def _redraw_preview(self) -> None:
         self._ax.clear()
         # Downsample the envelope for a light preview (cap ~4000 points).
         step = max(1, len(self._env) // 4000)
+        a, b = self._span
+        i0, i1 = round(a * self._fs), round(b * self._fs)
         self._ax.plot(
-            self._t[::step], self._env[::step], color="#1F4E79", linewidth=0.8,
+            self._t[::step], self._env[::step], color=COLOUR_1, linewidth=0.8,
             label=self._name_1 if self._env_2 is not None else None,
         )
+        # The threshold the sensitivity sets, over the span the detector
+        # sees, so a slider move is a line move before it is a row change.
+        _base, umbral = activity_threshold(self._env[i0:i1], self._det["k"])
+        self._ax.axhline(umbral, color=COLOUR_1, lw=0.8, ls="--", alpha=0.7,
+                         label=tr("activity threshold"))
         if self._env_2 is not None:
-            # Both muscles, in the colours the rest of the application uses
-            # for them. The «Muscle» column says which one led each
-            # contraction; with only one envelope drawn the student could not
-            # see why it said so, and had nothing to disagree with.
             n2 = min(len(self._t), len(self._env_2))
             self._ax.plot(
-                self._t[:n2:step], self._env_2[:n2:step], color="#D62728",
+                self._t[:n2:step], self._env_2[:n2:step], color=COLOUR_2,
                 linewidth=0.8, label=self._name_2,
             )
-            self._ax.legend(loc="upper right", fontsize=8)
-        for seg in kept:
-            self._ax.axvspan(seg.start_s, seg.end_s, color="#4CAF50", alpha=0.25)
-        self._ax.set_xlim(self._span[0], max(self._span[1], self._span[0] + 1e-6))
+            _b2, umbral2 = activity_threshold(self._env_2[i0:i1], self._det["k"])
+            self._ax.axhline(umbral2, color=COLOUR_2, lw=0.8, ls="--", alpha=0.7)
+        # Every row, kept or not: the dropped ones in grey, so the click
+        # that dropped one can bring it back.
+        for w in self._row_widgets:
+            ini = w["start"].value()  # type: ignore[attr-defined]
+            fin = w["end"].value()  # type: ignore[attr-defined]
+            if fin <= ini:
+                continue
+            if w["keep"].isChecked():  # type: ignore[attr-defined]
+                nombre = w["label"].currentText().strip()  # type: ignore[attr-defined]
+                self._ax.axvspan(ini, fin, color=self._shade_colour(nombre),
+                                 alpha=0.25, lw=0)
+            else:
+                self._ax.axvspan(ini, fin, color=_SHADE_DROPPED, alpha=0.15,
+                                 hatch="//", lw=0)
+        if self._env_2 is not None or True:
+            self._ax.legend(loc="upper right", fontsize=8, frameon=False)
+        self._ax.set_xlim(a, max(b, a + 1e-6))
         self._ax.set_xlabel(tr("Time (s)"))
         self._ax.set_ylabel(tr("Envelope (mV)"))
         self._canvas.draw_idle()
@@ -547,9 +799,8 @@ class FragmentSelectionDialog(QDialog):
     def filter_kwargs(self) -> dict[str, float]:
         """Return the filter cut-offs currently set in the dialog.
 
-        These are the band-pass / notch / envelope cut-offs the user tuned
-        for the preview and detection; the caller can reuse them for the
-        actual analysis so it matches what was seen here.
+        The tab behind owns them; they pass through unchanged so the analysis
+        matches what was previewed here.
         """
         return {
             "f_low": self._f_low,

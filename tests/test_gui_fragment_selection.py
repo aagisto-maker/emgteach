@@ -69,27 +69,31 @@ def test_preloaded_segments_are_used(qapp: QCoreApplication) -> None:
 
 
 class TestTheStudentCannotChangeTheAnalysisFromHere:
-    """The eight settings this dialogue used to carry are gone.
+    """The eight settings this dialogue once carried are not back.
 
     It is opened by students, to throw away a repetition that went wrong. It
     used to greet them with a band-pass, a notch, an envelope cut-off and three
     detection parameters — concepts none of which can be set by someone who
     does not already know what they do, and two of which had a second copy in
-    the tab behind. A student who came in to delete a row could change the
-    analysis without knowing it.
+    the tab behind. What it offers now is two sliders whose effect is drawn
+    as they move, and a fine row that stays folded until asked for; the
+    filters stay with the tab behind.
     """
 
-    def test_no_settings_are_offered(self, qapp: QCoreApplication) -> None:
+    def test_no_filter_settings_are_offered(self, qapp: QCoreApplication) -> None:
         from PySide6.QtWidgets import QDoubleSpinBox
 
         dlg = FragmentSelectionDialog(_burst_signal(), FS, FILTER_KWARGS)
-        # The only spin boxes left are the two per row, which are the start and
-        # end of a fragment — the part he liked.
+        # The only spin boxes on view are the two per row, which are the start
+        # and end of a fragment — the part he liked. The fine row's two are
+        # folded away.
         fuera_de_la_tabla = [
             w for w in dlg.findChildren(QDoubleSpinBox)
             if not any(w is r["start"] or w is r["end"] for r in dlg._row_widgets)
+            and w.isVisibleTo(dlg)
         ]
         assert fuera_de_la_tabla == []
+        assert not dlg._box_fino.isVisibleTo(dlg)
         dlg.deleteLater()
 
     def test_the_cut_offs_pass_straight_through(

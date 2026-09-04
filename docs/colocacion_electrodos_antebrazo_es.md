@@ -235,7 +235,7 @@ El orden importa, porque la aplicación depende de él.
 6. **Acepte los fragmentos.** En «Seleccionar fragmentos…» hay una fila por
    contracción y la columna **«Músculo»** viene rellena: la aplicación mide cuál
    de los dos alcanzó una fracción mayor **de su propio máximo** y escribe FCR,
-   ECR o «Cocontracción» (cuando el menor pasa de la mitad del mayor). Las filas
+   ECR o «Coactivación» (cuando el menor pasa de la mitad del mayor). Las filas
    seguidas con el mismo nombre forman **una ventana de la tabla de
    coactivación**; una serie de seis flexiones da una fila, no seis. Corrija solo
    si la traza dice otra cosa, y pulse «Usar estos fragmentos».
@@ -243,7 +243,7 @@ El orden importa, porque la aplicación depende de él.
    > La comparación se hace en % CVM, no en milivoltios, y no es un detalle: en
    > el banco del 3 de septiembre la referencia del flexor era un tercio de la
    > del extensor, y comparando milivoltios diez de las doce flexiones salían
-   > como «cocontracción». Lo que la aplicación no puede saber es qué se le pidió
+   > como «coactivación». Lo que la aplicación no puede saber es qué se le pidió
    > al sujeto —eso no está en la envolvente—, así que las ventanas llevan el
    > nombre del músculo que las llevó, no «flexión» o «extensión». Leer «FCR
    > lideró, luego fue una flexión» es el paso que da el alumno.
