@@ -62,10 +62,12 @@ from PySide6.QtWidgets import (
 
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
-#: The tallest the two summary charts (and the tables behind them) get. The
-#: band under the panels is paid for out of the panels' height; 165 is what
-#: three co-activation windows need to be read without squinting.
-_ALTO_GRAFICO = 165
+#: How tall the two charts of the bottom band get, and with them the band:
+#: the boxes are as tall as this plus their title and margins, and each
+#: chart fills its box. It is paid for out of the panels' height, so it is
+#: as much as three co-activation windows and nine summary cards need and
+#: not a pixel more.
+_ALTO_GRAFICO = 200
 
 
 class _SelectorEsquina(QWidget):
@@ -824,25 +826,33 @@ class AnalysisTab(QWidget):
         add_help(grp_resumen, "ana.summary")
         resumen_grid = QGridLayout(grp_resumen)
         resumen_grid.setContentsMargins(8, 2, 8, 6)
-        resumen_grid.setHorizontalSpacing(16)
+        resumen_grid.setHorizontalSpacing(10)
         resumen_grid.setVerticalSpacing(0)
 
-        _cap_st = "font-size: 10px; color: #6B7580;"
-        _val_st = "font-size: 13px; font-weight: 600;"
+        # A point smaller than the rest of the band, because these nine
+        # cards buy their width from the two charts beside them and a
+        # number reads perfectly well at 12 px.
+        _cap_st = "font-size: 9px; color: #6B7580;"
+        _val_st = "font-size: 12px; font-weight: 600;"
 
         # Three rows per card: the caption, the value and — where one
         # exists — the usual range in small grey. A median frequency of
         # 130 Hz means nothing to a student who has never seen one; «usual
         # 60–120 Hz» beside it is what turns the number into a reading. The
         # ranges are orientative values for surface EMG, not limits.
-        _rango_st = "font-size: 9px; color: #8A94A0;"
+        _rango_st = "font-size: 8px; color: #8A94A0;"
 
         def _ficha(fila: int, col: int, caption: str, tooltip: str = "",
                    ayuda: QToolButton | None = None, rango: str = "") -> QLabel:
             cap = QLabel(caption)
             cap.setStyleSheet(_cap_st)
+            cap.setWordWrap(True)
             val = QLabel("—")
             val.setStyleSheet(_val_st)
+            # Wrapped, not elided: the fatigue verdict and the provenance of
+            # the MVC are sentences, not numbers, and on one line they set
+            # the width of the whole panel — or got cut off.
+            val.setWordWrap(True)
             val.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             if tooltip:
                 cap.setToolTip(tooltip)
@@ -862,6 +872,7 @@ class AnalysisTab(QWidget):
             if rango:
                 lbl_rango = QLabel(rango)
                 lbl_rango.setStyleSheet(_rango_st)
+                lbl_rango.setWordWrap(True)
                 resumen_grid.addWidget(lbl_rango, base + 2, col)
             return val
 
@@ -996,13 +1007,12 @@ class AnalysisTab(QWidget):
             QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._tbl_coact.verticalHeader().setVisible(False)
         self._ajustar_alto_coact()
-        # A chart in front of the table: one short bar per window with the
-        # index, the two means under the name; the table stays one click
-        # behind, for the numbers a report copies. See emgteach.charts.
-        # Low on purpose: the band under the panels is paid for out of the
-        # panels' height, and a chart that stretched to fill it ate a third
-        # of a laptop screen.
-        self._fig_coact = Figure(figsize=(3.4, 1.3), constrained_layout=True)
+        # A chart in front of the table: one line per window with the index
+        # as a bar; the table stays one click behind, for the numbers a
+        # report copies. See emgteach.charts. It fills the box: capped low
+        # and pushed up by a stretch, three windows shared 165 px with a
+        # strip of empty box under them.
+        self._fig_coact = Figure(figsize=(3.4, 1.6), constrained_layout=True)
         self._canvas_coact = FigureCanvasQTAgg(self._fig_coact)
         self._canvas_coact.setMinimumHeight(105)
         self._canvas_coact.setMaximumHeight(_ALTO_GRAFICO)
@@ -1010,8 +1020,7 @@ class AnalysisTab(QWidget):
         self._stack_coact.addWidget(self._canvas_coact)
         self._stack_coact.addWidget(self._tbl_coact)
         self._stack_coact.setMaximumHeight(_ALTO_GRAFICO)
-        coact_v.addWidget(self._stack_coact)
-        coact_v.addStretch(1)
+        coact_v.addWidget(self._stack_coact, stretch=1)
         self._sel_coact = _SelectorEsquina(
             self._box_coact, [("chart", tr("Chart")), ("table", tr("Table"))])
         self._sel_coact.setToolTip(tr("The chart, or the numbers behind it."))
@@ -1045,7 +1054,7 @@ class AnalysisTab(QWidget):
         # to read it by — amplitude against MDF for one muscle, one muscle
         # against the other for two. A conclusion is read off a relation,
         # not off a row of bars. See emgteach.charts.
-        self._fig_contr = Figure(figsize=(5.2, 1.4), constrained_layout=True)
+        self._fig_contr = Figure(figsize=(5.2, 1.6), constrained_layout=True)
         self._canvas_contr = FigureCanvasQTAgg(self._fig_contr)
         self._canvas_contr.setMinimumHeight(115)
         self._canvas_contr.setMaximumHeight(_ALTO_GRAFICO)
@@ -1053,8 +1062,7 @@ class AnalysisTab(QWidget):
         self._stack_contr.addWidget(self._canvas_contr)
         self._stack_contr.addWidget(self._tbl_contr)
         self._stack_contr.setMaximumHeight(_ALTO_GRAFICO)
-        contr_v.addWidget(self._stack_contr)
-        contr_v.addStretch(1)
+        contr_v.addWidget(self._stack_contr, stretch=1)
         # The relation first: it is the panel a conclusion is read off. The
         # series and the numbers are a click away, on the title line.
         # Every view the chart has; the recording then decides which are
@@ -1082,11 +1090,15 @@ class AnalysisTab(QWidget):
         # the right, sharing the width. The summary used to sit above the
         # panels and the table below them, and between the two the panels
         # got a hundred pixels on a laptop.
+        # The width goes where a chart needs it. The co-activation box holds
+        # a name, a bar and two means on every line, and it had the narrowest
+        # share of the three; the summary is nine short cards that read fine
+        # in less width once the long values wrap.
         bottom_boxes = QHBoxLayout()
         bottom_boxes.setSpacing(6)
-        bottom_boxes.addWidget(self._box_coact, stretch=2)
-        bottom_boxes.addWidget(self._box_contr, stretch=3)
-        bottom_boxes.addWidget(self._grp_resumen, stretch=2)
+        bottom_boxes.addWidget(self._box_coact, stretch=7)
+        bottom_boxes.addWidget(self._box_contr, stretch=7)
+        bottom_boxes.addWidget(self._grp_resumen, stretch=5)
         root.addLayout(bottom_boxes)
 
         # Display-window navigator at the very bottom: the minimap takes ~80 %
@@ -2026,7 +2038,7 @@ class AnalysisTab(QWidget):
             color = "#8A5A00"
         self._lbl_fatiga.setText(texto)
         self._lbl_fatiga.setStyleSheet(
-            f"font-size: 13px; font-weight: 600; color: {color};"
+            f"font-size: 12px; font-weight: 600; color: {color};"
         )
 
     def _actualizar_pico_tarea(self, r: dict) -> None:
@@ -2045,13 +2057,13 @@ class AnalysisTab(QWidget):
                 partes.append(f"{picos[nombre]:.0f} %")
         if not partes:
             self._lbl_pico.setText("—")
-            self._lbl_pico.setStyleSheet("font-size: 13px; font-weight: 600;")
+            self._lbl_pico.setStyleSheet("font-size: 12px; font-weight: 600;")
             return
         texto = " / ".join(partes) + " " + tr("MVC")
         if r.get("mvc_implausible"):
             self._lbl_pico.setText(texto + " — " + tr("not a maximum"))
             self._lbl_pico.setStyleSheet(
-                "font-size: 13px; font-weight: 600; color: #B0243A;"
+                "font-size: 12px; font-weight: 600; color: #B0243A;"
             )
             self._lbl_pico.setToolTip(tr(
                 "The task went well past the reference: the calibration did "
@@ -2061,7 +2073,7 @@ class AnalysisTab(QWidget):
             ))
         else:
             self._lbl_pico.setText(texto)
-            self._lbl_pico.setStyleSheet("font-size: 13px; font-weight: 600;")
+            self._lbl_pico.setStyleSheet("font-size: 12px; font-weight: 600;")
 
     def _actualizar_procedencia_cvm(self, r: dict) -> None:
         """The reference and where it came from, in the summary bar.
@@ -2077,11 +2089,11 @@ class AnalysisTab(QWidget):
             self._lbl_cvm.setText(
                 f"{ref:.3f} mV — {reference_source_text(fuente, n_reps)}"
             )
-            self._lbl_cvm.setStyleSheet("font-size: 13px; font-weight: 600;")
+            self._lbl_cvm.setStyleSheet("font-size: 12px; font-weight: 600;")
             return
         self._lbl_cvm.setText(reference_source_text(NO_CALIBRATION))
         self._lbl_cvm.setStyleSheet(
-            "font-size: 13px; font-weight: 600; color: #8A5A00;"
+            "font-size: 12px; font-weight: 600; color: #8A5A00;"
         )
 
     # ------------------------------------------------------------------
@@ -3044,7 +3056,7 @@ class AnalysisTab(QWidget):
         self._canvas.draw_idle()
 
     def _reset_summary_labels(self) -> None:
-        _st = "font-size: 13px; font-weight: 600;"
+        _st = "font-size: 12px; font-weight: 600;"
         for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga,
                     self._lbl_pendiente, self._lbl_rms_global, self._lbl_iemg,
                     self._lbl_duracion, self._lbl_pico, self._lbl_cvm):

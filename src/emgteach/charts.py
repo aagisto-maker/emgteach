@@ -522,7 +522,12 @@ def draw_coactivation_chart(
                     color="#555555", zorder=3)
     ax.set_yticks(y)
     ax.set_yticklabels(etiquetas, fontsize=fs)
-    ax.set_ylim(-0.6, n - 0.4)
+    # Room for at least three lines even when there is one window, and
+    # centred in it: a single bar left to fill the box was a slab half the
+    # height of the panel.
+    alto = max(n, 3.0)
+    medio = (n - 1) / 2.0
+    ax.set_ylim(medio - alto / 2.0, medio + alto / 2.0)
     ax.set_xlim(0, 150)
     ax.set_xticks([0, 50, 100])
     ax.tick_params(axis="x", labelsize=fs)

@@ -348,6 +348,21 @@ class TestTheCharts:
         draw_contraction_chart(fig, [], name_1="FCR")
         assert len(fig.axes) == 1 and not fig.axes[0].axison
 
+    def test_one_window_does_not_become_a_slab(self) -> None:
+        """Left to fill the box, a single bar was half the panel high."""
+        fig = Figure()
+        draw_coactivation_chart(
+            fig,
+            [CoactivationResult(index=74.0, mean_1=52.0, mean_2=48.0,
+                                window_s=(0.0, 20.0), label="Grip")],
+            name_1="FCR", name_2="ECR",
+        )
+        lo, hi = fig.axes[0].get_ylim()
+        # The bar is 0.6 units: three lines' worth of room keeps it to a fifth
+        # of the panel, and it sits in the middle of them.
+        assert hi - lo >= 3.0
+        assert (lo + hi) / 2 == pytest.approx(0.0)
+
     def test_the_co_activation_chart_is_one_bar_per_window(self) -> None:
         fig = Figure()
         res = [
@@ -461,6 +476,21 @@ class TestTheTabShowsChartsFirst:
         tab._refresh_contractions({"contractions": _rows(False), "channel_name": "FCR"})
         assert tab._sel_contr.vista() == "relation"
         assert tab._stack_contr.currentIndex() == 0
+
+    def test_each_chart_fills_its_box(self, tab) -> None:
+        """Capped low and pushed up by a trailing stretch, both charts sat in
+        the top two thirds of their box with a strip of empty box beneath."""
+        for caja in (tab._box_coact, tab._box_contr):
+            lay = caja.layout()
+            # A caption and the stack, and the stack takes what is left.
+            assert lay.count() == 2
+            assert lay.stretch(1) == 1
+
+    def test_the_long_summary_values_wrap(self, tab) -> None:
+        """The fatigue verdict and where the MVC came from are sentences.
+        On one line they set the width of the whole panel."""
+        for lbl in (tab._lbl_fatiga, tab._lbl_cvm, tab._lbl_pico):
+            assert lbl.wordWrap()
 
     def test_the_co_activation_box_has_chart_and_table(self, tab) -> None:
         assert tab._sel_coact.claves() == ["chart", "table"]
