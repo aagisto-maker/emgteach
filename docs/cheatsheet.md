@@ -53,11 +53,12 @@ order:
    it; the fine adjustment stays folded.
 
 Then read: **panels** (mouse wheel to scroll; ▲▼ amplitude, ▶◀ time), the
-**contraction chart** (left: the series with its trend and the MDF; right: the
-relation, amplitude against MDF with one muscle, or one muscle against the other
-with the co-activation wedge in the pair), the **summary** cards, and in the pair
-the **co-activation chart** (one bar per window with the index). The **«Table»**
-button on each chart's title gives the numbers.
+**contraction chart** (one view at a time, on its title: **Relation**, amplitude
+against MDF with one muscle or one muscle against the other with the
+co-activation wedge in the pair; in the pair **Category** and **Who leads**;
+**Series**; in kinematics **By load**; and **Table** with the numbers), the
+**summary** cards, and in the pair the **co-activation chart** (one bar per
+window with the index, with its own «Chart · Table»).
 **«Generate PDF report»** = the deliverable.
 
 Panels per practical: single **1A · 2 · 3**; pair **1A · 1B · 3 · 7 · 9**;

@@ -411,6 +411,9 @@ class AnalysisWorker(QThread):
             # The shape of the session, read before anything is trimmed: the
             # calibration lies outside the analysed span on purpose.
             phases = parse_phase_markers(markers)
+            # The loads of the guided force-velocity wizard, kept apart: the
+            # contraction chart groups the efforts by them.
+            fv_loads = parse_fv_load_markers(markers)
             # The MVC references and the force-velocity loads are facts about
             # the session, not phases of it. Once read they are dropped, so
             # they neither clutter every panel with a marker line nor open a
@@ -463,6 +466,7 @@ class AnalysisWorker(QThread):
                     [emg_raw[i0:i1] for (i0, i1, _, _, _) in bounds])
                 times = np.arange(len(emg_raw), dtype=np.float64) / fs
                 new_markers: list[tuple[float, str]] = []
+                new_loads: list[tuple[float, float]] = []
                 offset = 0.0
                 for i0, i1, seg_a, seg_b, nombre in bounds:
                     # A named fragment opens a window of the co-activation
@@ -478,8 +482,14 @@ class AnalysisWorker(QThread):
                     for t, label in markers:
                         if seg_a <= t < seg_b:
                             new_markers.append((offset + (t - seg_a), label))
+                    # The load markers move with the signal they mark, so a
+                    # contraction in concatenated time still finds its load.
+                    for t, kg in fv_loads:
+                        if seg_a <= t < seg_b:
+                            new_loads.append((offset + (t - seg_a), kg))
                     offset += (i1 - i0) / fs
                 markers = sorted(new_markers)
+                fv_loads = sorted(new_loads)
                 if len(bounds) == 1:
                     self.log.emit(
                         tr("Region of interest: {a:.2f}-{b:.2f} s ({d:.2f} s).").format(
@@ -742,6 +752,7 @@ class AnalysisWorker(QThread):
                 "edf_path": self._edf_path,
                 "channel_name": self._channel_name,
                 "markers": markers,
+                "fv_loads": fv_loads,
                 # DSP/analysis parameters actually used, so a report can show
                 # the "configuration used" without re-deriving it.
                 "config": {

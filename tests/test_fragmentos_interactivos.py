@@ -197,6 +197,30 @@ def _rows(dos: bool) -> list[Contraction]:
     ]
 
 
+class TestTheLoadOfEachContraction:
+    """The guided wizard marks the start of each load's window; a
+    contraction belongs to the last marker before it, if close enough.
+    The worker hands the parsed ``(onset_s, kg)`` pairs over as
+    ``fv_loads``, already in the analysed span's time."""
+
+    def test_each_contraction_takes_the_marker_before_it(self) -> None:
+        from emgteach.contractions import load_of_each
+
+        marcas = [(12.4, 2.0), (20.2, 3.0)]
+        filas = [
+            Contraction(1, 5.0, 6.0, "FCR", 0.1, None, None),
+            Contraction(2, 13.0, 15.0, "FCR", 0.1, None, None),
+            Contraction(3, 21.0, 22.5, "FCR", 0.1, None, None),
+            Contraction(4, 40.0, 41.0, "FCR", 0.1, None, None),
+        ]
+        assert load_of_each(filas, marcas) == [None, 2.0, 3.0, None]
+
+    def test_no_markers_no_loads(self) -> None:
+        from emgteach.contractions import load_of_each
+
+        assert load_of_each(_rows(False), []) == [None, None, None]
+
+
 class TestTheCharts:
     """A chart earns its place by showing a relation a conclusion can be read
     off. The first version was the table drawn as bars, and the author's
@@ -252,6 +276,65 @@ class TestTheCharts:
         for palabra in ("fatigue", "more force", "less force", "recovery"):
             assert tr(palabra) in textos
         assert relacion.get_title() == tr("Amplitude against MDF (JASA)")
+
+    def test_the_category_view_groups_by_who_led(self) -> None:
+        fig = Figure()
+        draw_contraction_chart(fig, _rows(True), name_1="FCR", name_2="ECR",
+                               view="category")
+        ax = fig.axes[0]
+        # One bar per muscle per category present.
+        categorias = {r.muscle for r in _rows(True)}
+        assert len(ax.patches) == 2 * len(categorias)
+        etiquetas = [t.get_text() for t in ax.get_xticklabels()]
+        assert any(e.startswith("FCR") for e in etiquetas)
+        assert any(e.startswith(tr("Co-activation")) for e in etiquetas)
+        assert ax.get_title() == tr("Mean per category, and each contraction")
+
+    def test_the_dominance_view_is_one_bar_per_contraction_in_a_band(self) -> None:
+        fig = Figure()
+        draw_contraction_chart(fig, _rows(True), name_1="FCR", name_2="ECR",
+                               view="dominance", both_ratio=0.5)
+        ax = fig.axes[0]
+        # Three bars plus the band.
+        assert len(ax.patches) == 4
+        banda = ax.patches[0]
+        assert banda.get_x() + banda.get_width() == pytest.approx((1 - 0.5) / (1 + 0.5))
+        etiquetas = [t.get_text() for t in ax.get_xticklabels()]
+        assert tr("only {name}").format(name="FCR") in etiquetas
+        assert tr("equal") in etiquetas
+
+    def test_the_load_view_groups_by_the_marker(self) -> None:
+        filas = [
+            *_rows(False),
+            Contraction(n=4, start_s=9.0, end_s=9.8, muscle="FCR", rms_mv=0.3,
+                        peak_pct=70.0, mdf_hz=90.0, emd_ms=55.0),
+        ]
+        fig = Figure()
+        draw_contraction_chart(fig, filas, name_1="FCR", view="load",
+                               loads=[2.0, 2.0, 3.0, None])
+        assert len(fig.axes) == 3
+        etiquetas = [t.get_text() for t in fig.axes[0].get_xticklabels()]
+        assert etiquetas == ["2", "3", tr("none")]
+        assert fig.axes[0].get_xlabel() == tr("Load (kg)")
+        assert fig.axes[1].get_title() == tr("EMD by load")
+
+    def test_views_that_need_what_the_recording_lacks_say_so(self) -> None:
+        fig = Figure()
+        draw_contraction_chart(fig, _rows(False), name_1="FCR", view="category")
+        assert not fig.axes[0].axison
+        assert any("two muscles" in t.get_text() or "dos músculos" in t.get_text()
+                   for t in fig.axes[0].texts)
+        fig = Figure()
+        draw_contraction_chart(fig, _rows(False), name_1="FCR", view="load")
+        assert not fig.axes[0].axison
+
+    def test_the_report_can_ask_for_panels_side_by_side(self) -> None:
+        fig = Figure()
+        draw_contraction_chart(fig, _rows(True), name_1="FCR", name_2="ECR",
+                               view=("category", "dominance"))
+        assert len(fig.axes) == 2
+        with pytest.raises(ValueError):
+            draw_contraction_chart(fig, _rows(True), name_1="FCR", view="pie")
 
     def test_too_few_points_for_a_relation_says_so(self) -> None:
         fig = Figure()
@@ -357,6 +440,27 @@ class TestTheTabShowsChartsFirst:
         for sel, box in ((tab._sel_contr, tab._box_contr), (tab._sel_coact, tab._box_coact)):
             assert sel.parent() is box
             assert sel.y() == 0
+
+    def test_the_recording_decides_which_views_are_offered(self, tab) -> None:
+        """Two muscles for the categories and the dominance, load markers
+        for the load; a plain single-muscle recording gets the three."""
+        self._llenar(tab)
+        assert tab._sel_contr.visibles() == [
+            "relation", "category", "dominance", "series", "table"]
+        tab._refresh_contractions({"contractions": _rows(False), "channel_name": "FCR"})
+        assert tab._sel_contr.visibles() == ["relation", "series", "table"]
+        tab._refresh_contractions({
+            "contractions": _rows(False), "channel_name": "FCR",
+            "fv_loads": [(0.5, 2.0), (4.5, 3.0)],
+        })
+        assert tab._sel_contr.visibles() == ["relation", "series", "load", "table"]
+
+    def test_a_view_the_next_recording_lacks_falls_back_to_the_relation(self, tab) -> None:
+        self._llenar(tab)
+        tab._sel_contr.set_vista("dominance")
+        tab._refresh_contractions({"contractions": _rows(False), "channel_name": "FCR"})
+        assert tab._sel_contr.vista() == "relation"
+        assert tab._stack_contr.currentIndex() == 0
 
     def test_the_co_activation_box_has_chart_and_table(self, tab) -> None:
         assert tab._sel_coact.claves() == ["chart", "table"]

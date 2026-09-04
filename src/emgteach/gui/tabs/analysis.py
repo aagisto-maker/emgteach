@@ -106,6 +106,20 @@ class _SelectorEsquina(QWidget):
     def claves(self) -> list[str]:
         return list(self._botones)
 
+    def visibles(self) -> list[str]:
+        return [k for k, b in self._botones.items() if not b.isHidden()]
+
+    def set_disponibles(self, claves: list[str]) -> None:
+        """Show only these; a recording decides which views it supports. If
+        the one that was down is no longer offered, the first offered one
+        goes down instead."""
+        ofrecidas = [k for k in claves if k in self._botones]
+        for k, b in self._botones.items():
+            b.setVisible(k in ofrecidas)
+        if ofrecidas and self.vista() not in ofrecidas:
+            self.set_vista(ofrecidas[0])
+        self.colocar()
+
     def vista(self) -> str:
         return next((k for k, b in self._botones.items() if b.isChecked()),
                     next(iter(self._botones)))
@@ -237,6 +251,7 @@ _PANEL_TOOLTIPS = {
 
 from emgteach.broadcast import BroadcastServer
 from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
+from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
@@ -1042,15 +1057,21 @@ class AnalysisTab(QWidget):
         contr_v.addStretch(1)
         # The relation first: it is the panel a conclusion is read off. The
         # series and the numbers are a click away, on the title line.
+        # Every view the chart has; the recording then decides which are
+        # offered (two muscles for the categories and the dominance, load
+        # markers for the load), see _refresh_contractions.
         self._sel_contr = _SelectorEsquina(
-            self._box_contr, [("relation", tr("Relation")), ("series", tr("Series")),
-                              ("table", tr("Table"))])
-        self._sel_contr.setToolTip(tr("Relation, series or the numbers behind them."))
+            self._box_contr, [("relation", tr("Relation")), ("category", tr("Category")),
+                              ("dominance", tr("Who leads")), ("series", tr("Series")),
+                              ("load", tr("By load")), ("table", tr("Table"))])
+        self._sel_contr.setToolTip(
+            tr("One view at a time; the numbers behind them are the last."))
         self._sel_contr.cambiado.connect(self._aplicar_vista_contr)
         #: What the contraction chart was last drawn from, so a change of
         #: view redraws without re-running the analysis.
         self._filas_contr: list = []
         self._nombres_contr: tuple[str, str] = ("", "")
+        self._cargas_contr: list[float | None] = []
         self._box_contr.setVisible(False)
         self._sel_coact.set_vista(
             str(self._settings.value("analysis/coact_view", "chart")))
@@ -1800,6 +1821,16 @@ class AnalysisTab(QWidget):
             result.get("channel_name") or tr("Muscle {n}").format(n=1),
             (result.get("channel_name_2") or "") if dos else "",
         )
+        self._cargas_contr = load_of_each(filas, result.get("fv_loads") or [])
+        con_cargas = any(c is not None for c in self._cargas_contr)
+        vistas = ["relation"]
+        if dos:
+            vistas += ["category", "dominance"]
+        vistas.append("series")
+        if con_cargas:
+            vistas.append("load")
+        vistas.append("table")
+        self._sel_contr.set_disponibles(vistas)
         self._dibujar_contracciones()
         resumen = tr("{n} contractions").format(n=len(filas))
         emd = result.get("emd_ms_mean")
@@ -1833,7 +1864,8 @@ class AnalysisTab(QWidget):
         draw_contraction_chart(
             self._fig_contr, self._filas_contr, name_1=n1, name_2=n2,
             both_ratio=float((self._detection_kwargs or {}).get("both_ratio", 0.5)),
-            small=True, view=vista if vista in ("relation", "series") else "relation",
+            small=True, view=vista if vista != "table" else "relation",
+            loads=self._cargas_contr,
         )
         self._canvas_contr.draw_idle()
 

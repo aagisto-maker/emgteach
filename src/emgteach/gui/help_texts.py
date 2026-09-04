@@ -239,7 +239,21 @@ _TEXTS = {
             "start of the movement measured by the accelerometer on the "
             "limb. Usually 30–100 ms in healthy adults: the time the "
             "muscle takes to take up its slack and build force."
-        ) + "</li></ul>",
+        ) + "</li></ul><p>" + tr(
+            "The box shows one view at a time, chosen on its title line. "
+            "«Relation» is the panel a conclusion is read off: amplitude "
+            "against MDF with one muscle, where a drift towards more "
+            "amplitude and less frequency is fatigue; one muscle against "
+            "the other with two, where a flexion lies on one axis, an "
+            "extension on the other and a grip in the co-activation wedge. "
+            "«Category» groups the contractions by who led them, with each "
+            "muscle's mean; «Who leads» is one bar per contraction, to the "
+            "right when the first muscle led and to the left when the "
+            "second did, with the band where both count as co-activation. "
+            "«Series» follows the contractions in order with the fitted "
+            "trend; «By load» groups them by the load of the guided "
+            "acquisition. «Table» is the numbers behind them all."
+        ) + "</p>",
     ),
     # ── MVC normalisation ──────────────────────────────────────────────
     "mvc.params": lambda: (

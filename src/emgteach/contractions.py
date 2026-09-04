@@ -14,6 +14,7 @@ Everything is computed on the analysed span and expressed in its clock, so
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -114,6 +115,38 @@ def _onset_s(
     if idx.size == 0:
         return None
     return (i0 + int(idx[0])) / fs
+
+
+def load_of_each(
+    rows: Sequence[Contraction],
+    load_markers: Iterable[tuple[float, float]],
+    max_window_s: float = 6.5,
+) -> list[float | None]:
+    """The load, in kg, each contraction was made under — or ``None``.
+
+    ``load_markers`` are the ``(onset_s, load_kg)`` pairs the guided
+    force-velocity wizard left at the start of each load's window (see
+    :func:`emgteach.force_velocity.parse_fv_load_markers`; the analysis
+    worker hands them over as ``fv_loads``, in the analysed span's own
+    time). A contraction belongs to the last marker before its midpoint,
+    provided the midpoint falls within ``max_window_s`` of it — the wizard's
+    windows are six seconds. A contraction with no marker close enough (the
+    calibration efforts, a recording made without the wizard) gets ``None``,
+    and the chart that groups by load puts those in a group of their own
+    rather than losing them.
+    """
+    marcas = sorted((float(t), float(kg)) for t, kg in load_markers)
+    out: list[float | None] = []
+    for r in rows:
+        mid = 0.5 * (float(r.start_s) + float(r.end_s))
+        carga: float | None = None
+        for onset, kg in marcas:
+            if onset <= mid + 0.5:
+                carga = kg if mid - onset <= max_window_s else None
+            else:
+                break
+        out.append(carga)
+    return out
 
 
 def contraction_table(

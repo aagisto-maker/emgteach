@@ -1773,9 +1773,44 @@ _ES = {
     'Index (%) · means in % MVC': 'Índice (%) · medias en % CVM',
     'Relation': 'Relación',
     'Series': 'Serie',
-    'Relation, series or the numbers behind them.':
-        'La relación, la serie o los números que hay detrás.',
+    'Category': 'Categoría',
+    'Who leads': 'Quién lidera',
+    'By load': 'Por carga',
+    'One view at a time; the numbers behind them are the last.':
+        'Una vista cada vez; los números que hay detrás son la última.',
     'The chart, or the numbers behind it.': 'El gráfico, o los números que hay detrás.',
+    'Mean per category, and each contraction': 'Media por categoría, y cada contracción',
+    'Who leads, and by how much': 'Quién lidera, y por cuánto',
+    'only {name}': 'solo {name}',
+    'equal': 'iguales',
+    'floor 5 %': 'suelo 5 %',
+    'Amplitude by load': 'Amplitud por carga',
+    'EMD by load': 'EMD por carga',
+    'MDF by load': 'MDF por carga',
+    'This view needs two muscles.': 'Esta vista necesita dos músculos.',
+    'The box shows one view at a time, chosen on its title line. «Relation» is the '
+    'panel a conclusion is read off: amplitude against MDF with one muscle, where a '
+    'drift towards more amplitude and less frequency is fatigue; one muscle against '
+    'the other with two, where a flexion lies on one axis, an extension on the other '
+    'and a grip in the co-activation wedge. «Category» groups the contractions by who '
+    'led them, with each muscle\'s mean; «Who leads» is one bar per contraction, to '
+    'the right when the first muscle led and to the left when the second did, with '
+    'the band where both count as co-activation. «Series» follows the contractions '
+    'in order with the fitted trend; «By load» groups them by the load of the guided '
+    'acquisition. «Table» is the numbers behind them all.':
+        'El cuadro enseña una vista cada vez, elegida en su línea de título. «Relación» '
+        'es el panel del que se saca la conclusión: la amplitud frente a la MDF con un '
+        'músculo, donde una deriva hacia más amplitud y menos frecuencia es fatiga; un '
+        'músculo frente al otro con dos, donde una flexión cae sobre un eje, una '
+        'extensión sobre el otro y una presa en la cuña de coactivación. «Categoría» '
+        'agrupa las contracciones según quién las llevó, con la media de cada músculo; '
+        '«Quién lidera» es una barra por contracción, hacia la derecha cuando llevó el '
+        'primer músculo y hacia la izquierda cuando llevó el segundo, con la banda en la '
+        'que los dos cuentan como coactivación. «Serie» sigue las contracciones en orden '
+        'con la recta de tendencia; «Por carga» las agrupa por la carga de la '
+        'adquisición guiada. «Tabla» son los números que hay detrás de todas.',
+    'This view needs the load markers of the guided force-velocity acquisition.':
+        'Esta vista necesita los marcadores de carga de la adquisición fuerza-velocidad guiada.',
     '{name} {slope:+.1f} %/contr.': '{name} {slope:+.1f} %/contr.',
     '{name} {slope:+.2f} mV/contr.': '{name} {slope:+.2f} mV/contr.',
     'MDF {slope:+.1f} Hz/contr.': 'MDF {slope:+.1f} Hz/contr.',

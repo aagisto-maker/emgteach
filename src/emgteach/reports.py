@@ -41,6 +41,7 @@ from reportlab.platypus import (
 )
 
 from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
+from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
 from emgteach.i18n import tr
@@ -463,19 +464,29 @@ def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -
     dos = bool(result.get("channel_name_2"))
     con_emd = any(f.emd_ms is not None for f in filas)
     story.append(Paragraph(tr("Contractions"), h2))
-    try:
-        story.append(Image(
-            _render_chart(
-                draw_contraction_chart, filas,
-                name_1=str(result.get("channel_name") or tr("Muscle {n}").format(n=1)),
-                name_2=str(result.get("channel_name_2") or "") if dos else "",
-                both_ratio=float((result.get("detection") or {}).get("both_ratio", 0.5)),
-            ),
-            width=16 * cm, height=6 * cm,
-        ))
-        story.append(Spacer(1, 0.15 * cm))
-    except Exception:  # pragma: no cover — a chart must never sink the report
-        pass
+    # The series and the relation first; then, with two muscles, the
+    # categories and the dominance side by side; and, when the guided
+    # force-velocity wizard left its load markers, the three panels by load.
+    # The tab shows the same views one at a time.
+    n1 = str(result.get("channel_name") or tr("Muscle {n}").format(n=1))
+    n2 = str(result.get("channel_name_2") or "") if dos else ""
+    razon = float((result.get("detection") or {}).get("both_ratio", 0.5))
+    cargas = load_of_each(filas, result.get("fv_loads") or [])
+    vistas: list = ["both"]
+    if dos:
+        vistas.append(("category", "dominance"))
+    if any(c is not None for c in cargas):
+        vistas.append("load")
+    for vista in vistas:
+        try:
+            story.append(Image(
+                _render_chart(draw_contraction_chart, filas, name_1=n1, name_2=n2,
+                              both_ratio=razon, view=vista, loads=cargas),
+                width=16 * cm, height=6 * cm,
+            ))
+            story.append(Spacer(1, 0.15 * cm))
+        except Exception:  # pragma: no cover — a chart must never sink the report
+            pass
     cab = ["#", tr("Start (s)"), tr("Duration (s)")]
     if dos:
         cab.append(tr("Muscle"))
