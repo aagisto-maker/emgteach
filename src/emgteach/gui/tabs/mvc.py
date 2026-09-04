@@ -644,9 +644,9 @@ class MvcTab(QWidget):
                 "follows comes out too high in the same proportion."
             ),
             tr(
-                "Without a reference recording this tab can still work, but the "
-                "percentages it produces are not percentages of MVC and the "
-                "muscle-load limits do not apply to them."
+                "A recording with no calibration inside it cannot be "
+                "normalised: without a maximum there is no percentage, and "
+                "this tab says so rather than dividing the signal by itself."
             ),
         ):
             lbl = QLabel(paragraph)

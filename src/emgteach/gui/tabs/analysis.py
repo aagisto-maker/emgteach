@@ -2140,7 +2140,7 @@ class AnalysisTab(QWidget):
             else:
                 ax.text(
                     0.5, 0.5,
-                    tr("Enable “Compare 2nd channel” to overlay the antagonist."),
+                    tr("This panel needs a recording with two muscles."),
                     transform=ax.transAxes, ha="center", va="center",
                     fontsize=8, color="#888888",
                 )
@@ -2965,8 +2965,8 @@ class AnalysisTab(QWidget):
             + "\n\n"
             + tr(
                 "Choose \"Single-muscle contraction\" or \"Muscle "
-                "kinematics\" at the top of the window, or open a two "
-                "channels recording."
+                "kinematics\" at the top of the window, or open a "
+                "two-channel recording."
             ),
         )
 

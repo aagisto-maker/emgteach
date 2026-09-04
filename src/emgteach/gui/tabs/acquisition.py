@@ -1748,7 +1748,6 @@ class AcquisitionTab(QWidget):
         self._reset_load_monitor()
         self._update_fv_button()
         self._load_timer.start()
-        self._log(tr("Press M to quickly add a marker with the selected label."))
 
         # Armed here and fired on the first block of data: the device can take
         # seconds to open, and a countdown that starts before the samples do

@@ -693,7 +693,7 @@ def build_session_report(
         if not result.get("coactivation_from_markers", True):
             story.append(Paragraph(
                 f"<font color='#B0243A'>"
-                f"{tr('Whole recording — mark the phases for a meaningful value')}"
+                f"{tr('Whole recording — accept the fragments for one value per window')}"
                 f"</font>", normal
             ))
         cab = tr("Mean activation (% MVC)")

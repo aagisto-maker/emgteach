@@ -199,9 +199,9 @@ def mode_complexity_label(mode: str) -> str:
     The level alone is what the band is for. Its colour carries the rest.
     """
     return {
-        "basic": tr("Basic analysis"),
-        "intermediate": tr("Intermediate analysis"),
-        "advanced": tr("Advanced analysis"),
+        "basic": tr("Basic level"),
+        "intermediate": tr("Intermediate level"),
+        "advanced": tr("Advanced level"),
     }[mode_complexity(mode)]
 
 

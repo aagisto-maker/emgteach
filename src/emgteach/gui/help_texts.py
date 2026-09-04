@@ -226,7 +226,7 @@ _TEXTS = {
             "surface electrodes is usually 0.1–1 mV, and depends on the "
             "electrodes and the skin, which is why % MVC exists."
         ) + "</li><li><b>" + tr("Peak (% MVC)") + "</b>: " + tr(
-            "the highest {w:.1f} s of the contraction against the "
+            "the strongest {w:.1f} s of the contraction, as a share of the "
             "maximum. A task effort is usually 20–80 %; above 100 % (in "
             "red) the calibration was not a maximum."
         ).format(w=EMG_PROFILE.mvc_peak_window_s) + "</li><li><b>" + tr("MDF") + "</b>: " + tr(

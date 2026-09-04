@@ -895,7 +895,7 @@ class AnalysisWorker(QThread):
                     # page.
                     if not (ref1 and ref2):
                         result["coactivation_reason"] = tr(
-                            "not reported — no MVC reference for both channels"
+                            "not reported — no MVC reference for one of the channels"
                         )
                     result["emg_baseline_usable_2"] = _baseline_is_usable(
                         proc2["emg_envelope"], fs, self._profile,

@@ -92,7 +92,6 @@ _ES = {
     "Test identifier:": "Identificador de prueba:",
     "Test identifier: {code}": "Identificador de prueba: {code}",
     "Device: BITalino": "Dispositivo: BITalino",
-    "with:": "con:",
     "Co-activation\nindex": "Índice de\ncoactivación",
     "mean % MVC": "% CVM medio",
     # --- el dispositivo, según la práctica ---
@@ -149,9 +148,8 @@ _ES = {
         "umbral = reposo + k × ruido (lo habitual es 3)",
     "Type the name of each muscle in its box, following the order of the "
     "board's channels (Muscle 1 is the one recorded on A1).":
-        "Escriba el nombre de cada músculo en la casilla correspondiente "
-        "siguiendo el orden del canal de la placa (Músculo 1 será el que se "
-        "está registrando por A1).",
+        "Escriba el nombre de cada músculo en su casilla, siguiendo el orden "
+        "de los canales de la placa (Músculo 1 es el que se registra por A1).",
     # --- fatigue panel with both muscles ---
     "{muscle}: MDF per window": "{muscle}: MDF por ventana",
     "{muscle}: trend": "{muscle}: tendencia",
@@ -168,10 +166,9 @@ _ES = {
     "The contraction table could not be built: {err}":
         "No se pudo construir la tabla de contracciones: {err}",
     "Contractions": "Contracciones",
-    "What each column is, and what is usual": "Qué es cada columna y qué es lo habitual",
     "RMS (mV)": "RMS (mV)",
     "Peak (% MVC)": "Pico (% CVM)",
-    "EMD (ms)": "Retraso EM (ms)",
+    "EMD (ms)": "EMD (ms)",
     "{n} contractions": "{n} contracciones",
     "mean electromechanical delay {ms:.0f} ms":
         "retraso electromecánico medio {ms:.0f} ms",
@@ -188,16 +185,16 @@ _ES = {
     "few hundredths of a millivolt; a firm effort with surface electrodes is "
     "usually 0.1–1 mV, and depends on the electrodes and the skin, which is "
     "why % MVC exists.":
-        "amplitud media de la señal filtrada durante la contracción. El reposo "
-        "son unas centésimas de milivoltio; un esfuerzo firme con electrodos "
-        "de superficie suele estar entre 0,1 y 1 mV, y depende de los "
-        "electrodos y de la piel, que es por lo que existe el % CVM.",
-    "the highest {w:.1f} s of the contraction against the maximum. A task "
-    "effort is usually 20–80 %; above 100 % (in red) the calibration was not "
-    "a maximum.":
-        "los {w:.1f} s más altos de la contracción respecto al máximo. Un "
-        "esfuerzo de tarea suele ser del 20–80 %; por encima del 100 % (en "
-        "rojo) la calibración no fue un máximo.",
+        "amplitud media de la señal filtrada durante la contracción. El "
+        "reposo son unas centésimas de milivoltio; un esfuerzo firme con "
+        "electrodos de superficie suele estar entre 0,1 y 1 mV, y depende de "
+        "los electrodos y de la piel: por eso existe el % CVM.",
+    "the strongest {w:.1f} s of the contraction, as a share of the maximum. "
+    "A task effort is usually 20–80 %; above 100 % (in red) the calibration "
+    "was not a maximum.":
+        "el tramo de {w:.1f} s más fuerte de la contracción, como porcentaje "
+        "del máximo. Un esfuerzo de tarea suele estar entre el 20 y el 80 %; "
+        "por encima del 100 % (en rojo) la calibración no fue un máximo.",
     "MDF": "MDF",
     "median frequency of the spectrum. Typically 60–150 Hz for surface EMG "
     "of limb muscles; it falls along a sustained effort as the muscle "
@@ -206,7 +203,7 @@ _ES = {
         "superficie de músculos de las extremidades; baja a lo largo de un "
         "esfuerzo sostenido a medida que el músculo se fatiga. No se muestra "
         "en contracciones de menos de un cuarto de segundo.",
-    "EMD": "Retraso EM",
+    "EMD": "EMD",
     "electromechanical delay, from the electrical onset to the start of the "
     "movement measured by the accelerometer on the limb. Usually 30–100 ms "
     "in healthy adults: the time the muscle takes to take up its slack and "
@@ -280,12 +277,13 @@ _ES = {
     "the strongest 0.2 s across all six, so it is a maximum the task cannot "
     "exceed; a repetition that came out weak can be discarded afterwards in "
     "the analysis.":
-        "Se graban tres esfuerzos máximos mantenidos y después tres sacudidas "
-        "máximas breves: una contracción mantenida muestra un pico al inicio "
-        "y luego una meseta, y una sacudida breve alcanza ese pico sin más. "
-        "La referencia es el 0,2 s más fuerte de las seis, de modo que es un "
-        "máximo que la tarea no puede superar; una repetición que salió "
-        "floja puede descartarse después en el análisis.",
+        "Se graban tres esfuerzos máximos mantenidos y después tres "
+        "sacudidas máximas breves: una contracción mantenida muestra un pico "
+        "al inicio y luego una meseta, y una sacudida breve alcanza ese pico "
+        "sin más. La referencia es el tramo de 0,2 s más fuerte de las seis "
+        "repeticiones, de modo que es un máximo que la tarea no puede "
+        "superar; una repetición que salió floja puede descartarse después "
+        "en el análisis.",
     "Opening a recording": "Abrir un registro",
     "Open a recording and it is analysed on its own; the channel to study is "
     "the muscle's name from the file. The two buttons underneath are for "
@@ -305,11 +303,11 @@ _ES = {
     "says how far the effort went against the calibrated maximum; well above "
     "100 % means the calibration was not maximal. The table beside gives the "
     "same figures contraction by contraction.":
-        "Cada ficha es una cifra del tramo analizado entero, con su rango "
+        "Cada ficha es una cifra para todo el tramo analizado, con su rango "
         "habitual en gris cuando se puede dar uno: esos rangos son valores "
-        "orientativos para EMG de superficie en adultos sanos, no límites. El "
-        "máximo de la tarea dice hasta dónde llegó el esfuerzo respecto al "
-        "máximo calibrado; muy por encima del 100 % significa que la "
+        "orientativos para EMG de superficie en adultos sanos, no límites. "
+        "El máximo de la tarea dice hasta dónde llegó el esfuerzo respecto "
+        "al máximo calibrado; muy por encima del 100 % significa que la "
         "calibración no fue máxima. La tabla de al lado da las mismas cifras "
         "contracción a contracción.",
     # --- the five-step tour (tour.py) ---
@@ -328,22 +326,6 @@ _ES = {
     "type.":
         "Esta práctica pone nombre a su canal por sí misma, así que no hay "
         "nada que escribir.",
-    "Type the name of each muscle in the boxes beside it — the "
-    "anatomical name, FCR or ECR rather than «channel 1». It is "
-    "written into the recording and is how every table names them.":
-        "Escriba el nombre de cada músculo en las casillas de al lado: el "
-        "nombre anatómico, FCR o ECR y no «canal 1». Se escribe dentro del "
-        "registro y es como los nombra cada tabla.",
-    "The recording can be made with either of two devices: BITalino "
-    "(Bluetooth) or Arduino (USB). Switch the board on and connect "
-    "the electrodes: the positive and the negative go on the midline "
-    "of the muscle, the reference on a neutral point, over a bone if "
-    "possible.":
-        "El registro puede hacerse con cualquiera de dos dispositivos: "
-        "BITalino (Bluetooth) o Arduino (USB). Encienda la placa y conecte "
-        "los electrodos: el positivo y el negativo van sobre la línea media "
-        "del músculo, la referencia en un punto neutro, sobre un hueso si es "
-        "posible.",
     "Press record. The session asks first for a maximal contraction "
     "— the reference every measurement is expressed against — and "
     "then for the task. Both go into one file, so nothing has to be "
@@ -397,10 +379,11 @@ _ES = {
         "% CVM, la única forma en que dos músculos distintos se pueden "
         "comparar, porque los milivoltios de cada uno dependen de sus "
         "electrodos y de su piel. En un movimiento limpio el agonista se "
-        "activa mientras el antagonista queda casi en silencio; la activación "
-        "simultánea es cocontracción, que rigidiza la articulación y es "
-        "típica de un movimiento poco practicado o inseguro. La tabla bajo "
-        "los paneles da una fila por contracción, y qué músculo la lideró.",
+        "activa mientras el antagonista queda casi en silencio; la "
+        "activación simultánea es cocontracción, que deja rígida la "
+        "articulación y es típica de un movimiento poco practicado o "
+        "inseguro. La tabla bajo los paneles da una fila por contracción, y "
+        "qué músculo la lideró.",
     "The recording is analysed as soon as it is opened. The study "
     "builds the load-velocity, force-velocity and power curves "
     "from a recording where several known loads were lifted, and "
@@ -415,29 +398,27 @@ _ES = {
         "motoras hubo que reclutar para cada carga. Los paneles muestran "
         "también el movimiento frente al EMG y el retraso entre ambos.",
     "What the analysis shows": "Qué muestra el análisis",
-    "The recording is analysed as soon as it is opened. Raw "
-    "signal: what the contracting fibres produce. Normalised "
-    "envelope: how activation changes over time, which is what is "
-    "compared between efforts. Spectrum: how the activity is "
-    "distributed across frequencies — as a sustained contraction "
-    "fatigues the muscle, the median frequency (MDF) falls. The "
-    "cards above the panels carry the numbers with their usual "
-    "ranges, and the table below gives one row per contraction.":
+    "The recording is analysed as soon as it is opened. Raw signal: what the "
+    "contracting fibres produce. Normalised envelope: how activation changes "
+    "over time, which is what is compared between efforts. Spectrum: how the "
+    "activity is distributed across frequencies — as a sustained contraction "
+    "fatigues the muscle, the median frequency (MDF) falls. The cards under "
+    "the panels carry the numbers with their usual ranges, and the table "
+    "beside them gives one row per contraction.":
         "El registro se analiza en cuanto se abre. Señal en bruto: lo que "
         "producen las fibras que se contraen. Envolvente normalizada: cómo "
         "cambia la activación con el tiempo, que es lo que se compara entre "
-        "esfuerzos. Espectro: cómo se reparte la actividad entre frecuencias; "
-        "a medida que una contracción sostenida fatiga el músculo, la "
-        "frecuencia mediana (MDF) baja. Las fichas sobre los paneles llevan "
-        "los números con sus rangos habituales, y la tabla de debajo da una "
-        "fila por contracción.",
+        "esfuerzos. Espectro: cómo se reparte la actividad entre "
+        "frecuencias; a medida que una contracción sostenida fatiga el "
+        "músculo, la frecuencia mediana (MDF) baja. Las fichas bajo los "
+        "paneles llevan los números con sus rangos habituales, y la tabla de "
+        "al lado da una fila por contracción.",
     # --- analysis summary cards, task maximum, fatigue help ---
     "MDF slope": "Pendiente de la MDF",
     "Task maximum": "Máximo de la tarea",
     "MVC": "CVM",
     "Close": "Cerrar",
     "not a maximum": "no fue un máximo",
-    "How the fatigue verdict is reached": "Cómo se llega al veredicto de fatiga",
     "Highest sustained level ({w:.1f} s) of the task, as % of the maximal "
     "contraction. Well above 100 % means the calibration was not a maximum.":
         "Nivel más alto sostenido ({w:.1f} s) durante la tarea, en % de la "
@@ -485,10 +466,10 @@ _ES = {
         "decenas de segundos. En una serie de contracciones cortas el "
         "veredicto no dice nada del músculo.",
     "Open a recording, or record one in Acquisition: it is analysed on its own.":
-        "Abra un registro, o grabe uno en Registro: se analiza solo.",
+        "Abra un registro, o grabe uno en Adquisición: se analiza solo.",
     "Open a recording with calibration, or record one in Acquisition: the "
     "reference is computed on its own.":
-        "Abra un registro con calibración, o grabe uno en Registro: la "
+        "Abra un registro con calibración, o grabe uno en Adquisición: la "
         "referencia se calcula sola.",
     # --- session report: calibration section ---
     "Calibration (maximal voluntary contraction)":
@@ -552,9 +533,9 @@ _ES = {
     "Warning — the protocol is {length} characters and the EDF+ header has "
     "room for {budget}; it will be saved cut short as \"{kept}\". Shorten it "
     "to keep it whole.":
-        "Aviso — el protocolo tiene {length} caracteres y en la cabecera EDF+ "
-        "caben {budget}; se guardará recortado como «{kept}». Acórtalo para "
-        "conservarlo entero.",
+        "Aviso — el protocolo tiene {length} caracteres y en la cabecera "
+        "EDF+ caben {budget}; se guardará recortado como «{kept}». Acórtelo "
+        "para conservarlo entero.",
     "sensor_labels has {n} entries but the device reports {m} channel(s).":
         "Las etiquetas de sensor tienen {n} entradas pero el dispositivo informa de {m} canal(es).",
     "Device configuration": "Configuración del dispositivo",
@@ -849,7 +830,6 @@ _ES = {
     "Status: recording…": "Estado: grabando…",
     "Event markers": "Marcadores de eventos",
     "Contraction onset": "Inicio contracción",
-    "Contraction end": "Fin contracción",
     "Fatigue": "Fatiga",
     # The fragment editor's suggested manoeuvres (EMG_PROFILE.marker_presets).
     # They reach tr() as a variable, so the literal scan cannot see them;
@@ -860,13 +840,7 @@ _ES = {
     "Co-contraction": "Cocontracción",
     # The ECG profile's own presets. Never translated because nothing scanned
     # them; the guard on marker_presets found them the moment it was written.
-    "P wave": "Onda P",
-    "QRS complex": "Complejo QRS",
-    "T wave": "Onda T",
-    "Arrhythmia": "Arritmia",
     "Rest": "Reposo",
-    "Other…": "Otro…",
-    "Other": "Otro",
     "Auto-onset": "Auto-inicio",
     "Automatically marks the contraction onset when the envelope "
     "exceeds the threshold (baseline + k·SD of the resting period).":
@@ -912,8 +886,6 @@ _ES = {
     "Device configured: {desc}. Press 'Start recording'.":
         "Dispositivo configurado: {desc}. Ya se puede pulsar «Iniciar grabación».",
     "Device disconnected.": "Dispositivo desconectado.",
-    "Press M to quickly add a marker with the selected label.":
-        "Pulsar M para marcar rápidamente con la etiqueta seleccionada.",
     "Marker added: t={t:.1f} s — {label}": "Marca añadida: t={t:.1f} s — {label}",
     "Recording finished. File: {path}": "Grabación finalizada. Archivo: {path}",
     "No data from the device — connection not established.":
@@ -923,22 +895,12 @@ _ES = {
     # -- live muscle-load monitor --
     "Muscle load (live MVC)": "Carga muscular (CVM en vivo)",
     "Calibrate MVC": "Calibrar CVM",
-    "Calibrate the MVC to start monitoring.":
-        "Calibra el CVM para empezar a monitorizar.",
-    "MVC calibrated. Monitoring load.": "CVM calibrado. Monitorizando carga.",
-    "MVC calibrated for live load monitoring.":
-        "CVM calibrado para el monitor de carga en vivo.",
     "Calibration failed (no signal).": "Calibración fallida (sin señal).",
     # -- guided MVC-calibration wizard --
     "Guided MVC calibration: contract each muscle in turn at maximum "
     "when prompted; sets the reference for the live load monitor.":
         "Calibración CVM guiada: contraiga cada músculo por turnos al máximo "
         "cuando se le indique; fija la referencia del monitor de carga en vivo.",
-    "Best of 3": "Mejor de 3",
-    "Repeat each muscle 3 times and keep the strongest contraction "
-    "(more reliable). Otherwise a single contraction per muscle.":
-        "Repita cada músculo 3 veces y conserve la contracción más fuerte "
-        "(más fiable). Si no, una sola contracción por músculo.",
     "Muscle {n}": "Músculo {n}",
     " (rep {i}/{n})": " (rep {i}/{n})",
     "Get ready — {label}{rep}: {n}": "Prepárese — {label}{rep}: {n}",
@@ -991,9 +953,6 @@ _ES = {
     "Applying the processing pipeline (DSP)…": "Aplicando la cadena de procesado (DSP)…",
     "Computing PSD, MNF and MDF…": "Calculando PSD, MNF y MDF…",
     "Computing segment-wise RMS and MDF…": "Calculando RMS y MDF por ventana…",
-    "Polynomial fatigue fit (degree 2)…": "Ajuste polinómico de fatiga (grado 2)…",
-    "No fatigue (MDF increases or stays stable).":
-        "Sin fatiga (la MDF aumenta o se mantiene estable).",
     "Analysis parameters": "Parámetros de análisis",
     "EDF file:": "Archivo EDF:",
     "Select an EDF file…": "Seleccionar un archivo EDF…",
@@ -1038,18 +997,12 @@ _ES = {
     "coordination (needs a 2nd channel).":
         "Envolventes de ambos canales superpuestas — coordinación "
         "agonista/antagonista (requiere un 2º canal).",
-    "Enable “Compare 2nd channel” to overlay the antagonist.":
-        "Active «Comparar 2º canal» para superponer el antagonista.",
+    "This panel needs a recording with two muscles.":
+        "Este panel necesita un registro con dos músculos.",
     "2nd channel «{name}» overlaid.": "2º canal «{name}» superpuesto.",
     "Could not analyse the 2nd channel «{name}»: {err}":
         "No se pudo analizar el 2º canal «{name}»: {err}",
-    "EMG channel of the EDF to analyse. Filled with the channels of "
-    "the file when you select it (e.g. agonist/antagonist).":
-        "Canal EMG del EDF a analizar. Se rellena con los canales del archivo "
-        "al seleccionarlo (p. ej. agonista/antagonista).",
     "Envelope cutoff frequency (Hz):": "Frec. corte envolvente (Hz):",
-    "Code:": "Código:",
-    "Panels to show": "Paneles a mostrar",
     "1A. Raw": "1A. En bruto",
     "2. Env. norm.": "2. Env. norm.",
     "3. PSD": "3. PSD",
@@ -1060,20 +1013,12 @@ _ES = {
     "8. RMS vs MDF": "8. RMS vs MDF",
     "Redraw": "Redibujar",
     "Markers": "Marcadores",
-    "Markers ({n}):": "Marcadores ({n}):",
-    "No markers": "Sin marcadores",
-    "Go": "Ir",
     "Widen the time window (×2)": "Ampliar ventana temporal (×2)",
     "Narrow the time window (÷2)": "Reducir ventana temporal (÷2)",
     "Analysis summary": "Resumen del análisis",
     "Start:": "Inicio:",
     "Duration:": "Duración:",
     "File:": "Archivo:",
-    "Mean frequency (MNF):": "Frecuencia Media (MNF):",
-    "Median frequency (MDF):": "Frecuencia Mediana (MDF):",
-    "Fatigue:": "Fatiga:",
-    "MDF slope:": "Pendiente MDF:",
-    "Global RMS:": "RMS global:",
     "Integral of the rectified EMG — total muscle activation.":
         "Integral de la EMG rectificada — activación muscular total.",
     # --- didactic tooltips (panels, summary metrics, APDF) ---
@@ -1105,7 +1050,6 @@ _ES = {
     "Global RMS amplitude: mean intensity of the activation.":
         "Amplitud RMS global: intensidad media de la activación.",
     "Analysed signal duration.": "Duración de la señal analizada.",
-    "Analysed EDF file.": "Archivo EDF analizado.",
     "Out of normal range": "Fuera del rango normal",
     "<p>Amplitude Probability Distribution Function (Jonsson): "
     "the % of time the muscle stays below each load level (% MVC). "
@@ -1162,24 +1106,12 @@ _ES = {
     # Progress bar + fatigue summary (analysis tab).
     "Ready": "Listo",
     "Analysing…  %p%": "Analizando…  %p%",
-    "Fatigue: not conclusive (trend does not fit, R²={r2:.2f})":
-        "Fatiga: no concluyente (la tendencia no ajusta, R²={r2:.2f})",
-    "Fatigue: Not detected (MDF stable or increasing)":
-        "Fatiga: No detectada (MDF estable o crece)",
 
     # --- MVC worker / GUI ---
     "Signal loaded — {fs:.0f} Hz — {dur:.1f} s — units: {units}":
         "Señal cargada — {fs:.0f} Hz — {dur:.1f} s — unidades: {units}",
     "Processing test signal (notch → band-pass → envelope)…":
         "Procesando señal de prueba (notch → paso-banda → envolvente)…",
-    "Loading MVC file: {path}": "Cargando archivo CVM: {path}",
-    "Processing MVC signal…": "Procesando señal CVM…",
-    "external MVC file (percentile {p:.0f})": "archivo CVM externo (percentil {p:.0f})",
-    "Could not load the MVC file ({error}). Falling back to auto-normalisation.":
-        "No se pudo cargar el archivo CVM ({error}). Se usa auto-normalización.",
-    "auto (percentile {p:.0f} of the test signal)":
-        "automática (percentil {p:.0f} de la señal de prueba)",
-    "calibration recorded in this file": "calibración grabada en este mismo fichero",
     # -- procedencia de la referencia de CVM (phases.py) --
     "calibration in this recording": "calibración de este registro",
     "calibration in this recording (1 repetition)":
@@ -1189,31 +1121,20 @@ _ES = {
     "calibration as recorded (repetitions not stored)":
         "calibración tal como se grabó (no se guardaron las repeticiones)",
     "no calibration": "sin calibración",
-    "MVC:": "CVM:",
     "The maximal contraction every % MVC on this recording is measured against, and where it came from.":
         "La contracción máxima contra la que se mide cada % de CVM de este registro, y de dónde sale.",
-    "MVC reference read from the file's own calibration: {value:.4f} {units}.":
-        "Referencia de CVM leída de la calibración del propio fichero: {value:.4f} {units}.",
     "Muscle load computed over {n} selected fragment(s) ({d:.2f} s of {full:.2f} s).":
         "Carga muscular calculada sobre {n} fragmento(s) seleccionado(s) ({d:.2f} s de {full:.2f} s).",
     "Choose which parts of the recording the muscle load is measured over — leave out the calibration and any pause. The MVC reference is not affected: it comes from the calibration, wherever in the file that is.":
         "Elija sobre qué partes del registro se mide la carga muscular: deje fuera la calibración y las pausas. La referencia de CVM no se ve afectada, sale de la calibración esté donde esté en el fichero.",
-    "MVC reference amplitude: {value:.4f} {units} ({source})":
-        "Amplitud CVM de referencia: {value:.4f} {units} ({source})",
     "Mean normalised activation: {value:.1f} % MVC":
         "Activación media normalizada: {value:.1f} % CVM",
     "MVC normalisation parameters": "Parámetros de normalización CVM",
     "Test EDF:": "EDF de prueba:",
     "Select the EDF file to normalise…": "Seleccionar el archivo EDF a normalizar…",
-    "Remove": "Quitar",
-    "EMG channel of the EDF to normalise. Filled with the channels "
-    "of the test file when you select it.":
-        "Canal EMG del EDF a normalizar. Se rellena con los canales "
-        "del archivo de prueba al seleccionarlo.",
     "Compute MVC": "Calcular CVM",
     "MVC reference:": "CVM referencia:",
     "Mean activation:": "Activación media:",
-    "MVC source:": "Fuente CVM:",
     "1. Filtered and rectified EMG signal": "1. Señal EMG filtrada y rectificada",
     "Amplitude ({units})": "Amplitud ({units})",
     "MVC ref: {value:.4f} {units}": "CVM ref: {value:.4f} {units}",
@@ -1400,11 +1321,8 @@ _ES = {
     "No fatigue: MDF slope {slope:+.3f} Hz/s (R²={r2:.2f}).":
         "Sin fatiga: pendiente MDF {slope:+.3f} Hz/s (R²={r2:.2f}).",
     # -- acquisition tab (protocol / markers) --
-    "e.g. Isometric contraction 30 s": "p. ej. Contracción isométrica 30 s",
     "Live signal quality: saturation or a flat (disconnected) signal.":
         "Calidad de señal en vivo: saturación o señal plana (desconectada).",
-    "Delete": "Eliminar",
-    "Protocol:": "Protocolo:",
     # -- analysis tab (region / fragments / CSV) --
     "Export CSV": "Exportar CSV",
     "Analyse only a region:": "Analizar solo una región:",
@@ -1413,16 +1331,11 @@ _ES = {
         "abajo en lugar del registro completo.",
     "Select fragments…": "Seleccionar fragmentos…",
     'Student code:': 'Código de alumno/a:',
-    'Student code: {code}': 'Código de alumno/a: {code}',
-    'Basic analysis': 'Análisis básico',
-    'Intermediate analysis': 'Análisis intermedio',
-    'Advanced analysis': 'Análisis avanzado',
+    "Basic level": "Nivel básico",
+    "Intermediate level": "Nivel intermedio",
+    "Advanced level": "Nivel avanzado",
     "Muscle": "Músculo",
-    '{n} named': '{n} con nombre',
-    'Manoeuvre': 'Maniobra',
     'Each row is one contraction found in the recording. Uncheck the ones not worth analysing — a movement done wrong, a tug on the cable, an effort that never got going — and only the rest is analysed, joined up as if it had been recorded in one go.\n\nPress «Use these fragments» even if you change nothing: that is what applies them and re-runs the analysis. Cancelling leaves the recording undivided, and the co-activation table with no windows to measure. To move where one begins or ends, change its seconds with the mouse wheel, the arrows, or by typing.': 'Cada fila es una contracción encontrada en el registro. Desmarque las que no merezca la pena analizar —un movimiento mal hecho, un tirón del cable, un esfuerzo que no llegó a arrancar— y se analiza solo el resto, unido como si se hubiera registrado de una vez.\n\nPulse «Usar estos fragmentos» aunque no cambie nada: es lo que los aplica y vuelve a hacer el análisis. Cancelar deja el registro sin dividir, y la tabla de coactivación sin ventanas que medir. Para mover dónde empieza o acaba una, cambie sus segundos con la rueda del ratón, con las flechas o escribiéndolos.',
-    'With two muscles each row can also be named with the manoeuvre — «Flexion», «Grip». The name says which movement was being made, not which muscle contracted, and it is what tells the co-activation table which of the two is the agonist. Consecutive rows with the same name count as one.': 'Con dos músculos, cada fila puede llevar además el nombre de la maniobra: «Flexión», «Presa». El nombre dice qué movimiento se estaba haciendo, no qué músculo se contrajo, y es lo que le dice a la tabla de coactivación cuál de los dos es el agonista. Las filas consecutivas con el mismo nombre cuentan como una.',
-    'The manoeuvre performed, not the muscle contracting. Leave it empty for a fragment that is only signal worth keeping. Consecutive fragments with the same name form a single window of the co-activation table.': 'La maniobra realizada, no el músculo que se contrae. Déjelo vacío si el fragmento es solo señal que merece la pena conservar. Los fragmentos consecutivos con el mismo nombre forman una sola ventana de la tabla de coactivación.',
     'Save tuned EDF…': 'Guardar EDF afinado…',
     'Write a new recording carrying the current selection: the calibration repetitions kept and the fragments of the task. The original is never touched, and the new file says where it came from.': 'Escribe un registro nuevo con la selección vigente: las repeticiones de calibración conservadas y los fragmentos de la tarea. El original no se toca nunca, y el fichero nuevo dice de dónde viene.',
     'Save tuned recording': 'Guardar el registro afinado',
@@ -1431,7 +1344,13 @@ _ES = {
     'Tuned recording saved: {name} — {kept}/{total} calibration repetition(s), {secs:.1f} s of {full:.1f} s of the task. The original is untouched.': 'Registro afinado guardado: {name} — {kept}/{total} repetición(es) de calibración, {secs:.1f} s de {full:.1f} s de la tarea. El original queda intacto.',
     'The most recent onsets detected. They all travel in the EDF.': 'Los últimos inicios detectados. Todos viajan dentro del EDF.',
     'Marks are put on by themselves': 'Las marcas se ponen solas',
-    'With this ticked the application timestamps each contraction onset as it finds it — the threshold is the resting level plus k standard deviations, and k is the knob beside it. The marks travel inside the EDF, so each effort can be found again during the analysis. Unticked, nothing is written: marking by hand during a recording asks the operator to keep up with a signal that does not wait.': 'Con esto marcado la aplicación pone la hora de cada inicio de contracción según lo encuentra: el umbral es el nivel de reposo más k desviaciones típicas, y k es el mando de al lado. Las marcas viajan dentro del EDF, así que cada esfuerzo se vuelve a encontrar en el análisis. Sin marcar, no se escribe ninguna: marcar a mano durante un registro es pedirle al operador que siga el ritmo de una señal que no espera.',
+    'With this ticked the application timestamps each contraction onset as it finds it — the threshold is the resting level plus k standard deviations, and k is the knob beside it. The marks travel inside the EDF, so each effort can be found again during the analysis. Unticked, nothing is written: marking by hand during a recording asks the operator to keep up with a signal that does not wait.': "Con esto marcado, la aplicación anota el instante de cada inicio de "
+        "contracción según lo encuentra: el umbral es el nivel de reposo más "
+        "k desviaciones típicas, y k es el mando de al lado. Las marcas "
+        "viajan dentro del EDF, así que cada esfuerzo se vuelve a encontrar "
+        "en el análisis. Sin marcar, no se escribe ninguna: marcar a mano "
+        "durante un registro es pedirle al operador que siga el ritmo de una "
+        "señal que no espera.",
     '2. Envelope (no calibration in this recording)': '2. Envolvente (este registro no trae calibración)',
     '3. Signal as % MVC — not available': '3. Señal en % CVM — no disponible',
     'Muscle load computed over the recording phase ({d:.2f} s of {full:.2f} s); the calibration and the pause are outside it.': 'Carga muscular calculada sobre la fase de registro ({d:.2f} s de {full:.2f} s); la calibración y la pausa quedan fuera.',
@@ -1441,20 +1360,29 @@ _ES = {
     'This recording marks its own calibration ({n} repetitions); the reference is recomputed from it.': 'Este registro marca su propia calibración ({n} repeticiones); la referencia se recalcula a partir de ella.',
     'This recording carries a calibration recorded with it ({n} channel(s)).': 'Este registro trae una calibración grabada con él ({n} canal(es)).',
     'No calibration': 'Sin calibración',
-    'This recording has no maximal effort in it, so there is no maximum to express the signal as a percentage of: no % MVC and no muscle-load analysis. The signal and its envelope are drawn as usual. Record the session again with the guided flow, which calibrates without stopping the recording.': 'Este registro no lleva dentro ningún esfuerzo máximo, así que no hay un máximo del que expresar porcentajes: ni % CVM ni análisis de carga muscular. La señal y su envolvente se dibujan como siempre. Vuelve a grabar la sesión con el flujo guiado, que calibra sin parar el registro.',
+    'This recording has no maximal effort in it, so there is no maximum to express the signal as a percentage of: no % MVC and no muscle-load analysis. The signal and its envelope are drawn as usual. Record the session again with the guided flow, which calibrates without stopping the recording.': "Este registro no lleva dentro ningún esfuerzo máximo, así que no "
+        "hay un máximo del que expresar porcentajes: ni % CVM ni análisis de "
+        "carga muscular. La señal y su envolvente se dibujan como siempre. "
+        "Vuelva a grabar la sesión con el flujo guiado, que calibra sin "
+        "parar el registro.",
     'none': 'ninguna',
     'Reference from:': 'Referencia tomada de:',
-    'Muscle load needs a maximum to be a percentage of, and this recording carries no calibration. Record the session again with the guided flow, which calibrates without stopping the recording.': 'La carga muscular necesita un máximo del que ser porcentaje, y este registro no trae calibración. Vuelve a grabar la sesión con el flujo guiado, que calibra sin parar el registro.',
+    'Muscle load needs a maximum to be a percentage of, and this recording carries no calibration. Record the session again with the guided flow, which calibrates without stopping the recording.': "La carga muscular necesita un máximo del que ser porcentaje, y este "
+        "registro no trae calibración. Vuelva a grabar la sesión con el "
+        "flujo guiado, que calibra sin parar el registro.",
     'The recording could not be shown for review: {err}': 'No se pudo mostrar el registro para revisarlo: {err}',
     'Recording just finished (review)': 'Registro recién terminado (revisión)',
     'Envelope of the recording (review)': 'Envolvente del registro (revisión)',
-    'Reviewing the recording: {dur:.1f} s. Drag to scroll, wheel to zoom. It goes back to live on the next recording.': 'Revisando el registro: {dur:.1f} s. Arrastra para desplazarte, rueda para acercar. Vuelve a la vista en vivo con el siguiente registro.',
+    'Reviewing the recording: {dur:.1f} s. Drag to scroll, wheel to zoom. It goes back to live on the next recording.': "Revisando el registro: {dur:.1f} s. Arrastre para desplazarse y use "
+        "la rueda para acercar. Vuelve a la vista en vivo con el siguiente "
+        "registro.",
     'warm-up': 'calentamiento',
     'calibration': 'calibración',
     'get ready': 'preparación',
     'recording': 'registro',
     '⚠ «{name}» reaches {peak:.0f} % MVC, and spends {share:.0f} % of the recording above {limit:.0f} %. The calibration did not capture a maximum — the task beat it — so every percentage here is too high.': '⚠ «{name}» llega al {peak:.0f} % de la CVM, y pasa el {share:.0f} % del registro por encima del {limit:.0f} %. La calibración no capturó un máximo —la tarea lo superó—, así que todos los porcentajes de aquí salen inflados.',
-    'Analyse the recording first: what each maximal effort was worth is measured from the signal, not stored in the file.': 'Analiza primero el registro: lo que valió cada esfuerzo máximo se mide sobre la señal, no viene guardado en el fichero.',
+    'Analyse the recording first: what each maximal effort was worth is measured from the signal, not stored in the file.': "Analice primero el registro: lo que valió cada esfuerzo máximo se "
+        "mide sobre la señal, no viene guardado en el fichero.",
     'This recording carries no calibration. Only sessions recorded with the guided flow mark their maximal efforts.': 'Este registro no trae calibración. Solo las sesiones grabadas con el flujo guiado marcan sus esfuerzos máximos.',
     'This recording carries no calibration spans, so the repetition list stays off. Only sessions recorded with the guided flow have them.': 'Este registro no trae tramos de calibración, así que la lista de repeticiones queda apagada. Solo las sesiones grabadas con el flujo guiado los llevan.',
     '{name}: 1 repetition': '{name}: 1 repetición',
@@ -1470,7 +1398,8 @@ _ES = {
     '{pct:.0f} % of the best': '{pct:.0f} % de la mejor',
     'other muscle at {pct:.0f} %': 'el otro músculo al {pct:.0f} %',
     "What the other channel reached during this effort, as a share of its own reference. Some of it is the antagonist steadying the joint and some is this muscle's own signal conducted through the tissue; neither can be separated from two bipolar channels, and around 20 % is normal.": 'Lo que alcanzó el otro canal durante este esfuerzo, como porcentaje de su propia referencia. Una parte es el antagonista estabilizando la articulación y otra es la señal de este mismo músculo conducida por el tejido; con dos canales bipolares no se pueden separar, y en torno al 20 % es normal.',
-    'Keep at least one repetition: a channel with none is not a calibration with a smaller reference, it is no calibration.': 'Conserva al menos una repetición: un canal sin ninguna no es una calibración con una referencia menor, es no haber calibrado.',
+    'Keep at least one repetition: a channel with none is not a calibration with a smaller reference, it is no calibration.': "Conserve al menos una repetición: un canal sin ninguna no es una "
+        "calibración con una referencia menor, es no haber calibrado.",
     'unchanged': 'sin cambios',
     'was {before:.4f} mV, {pct:+.0f} %': 'antes {before:.4f} mV, {pct:+.0f} %',
     'Reference with this selection: {value:.4f} mV — {change}': 'Referencia con esta selección: {value:.4f} mV — {change}',
@@ -1482,28 +1411,15 @@ _ES = {
     "from": "desde",
     "to": "hasta",
     "Cancelling analysis…": "Cancelando análisis…",
-    "Fatigue: DETECTED (MDF −{decline:.1f}%)": "Fatiga: DETECTADA (MDF −{decline:.1f}%)",
     "CSV exported to: {path}": "CSV exportado a: {path}",
-    "{n} fragment(s) selected ({d:.1f} s)": "{n} fragmento(s) seleccionado(s) ({d:.1f} s)",
     "Could not open the fragment editor: {error}":
         "No se pudo abrir el editor de fragmentos: {error}",
     "CSV export error: {error}": "Error al exportar CSV: {error}",
     "Cancelling…": "Cancelando…",
     # -- fragment-selection widget --
     "Select analysis fragments": "Seleccionar fragmentos de análisis",
-    "Band-pass low cut-off (Hz).": "Frecuencia de corte baja del paso-banda (Hz).",
-    "Band-pass high cut-off (Hz).": "Frecuencia de corte alta del paso-banda (Hz).",
-    "Mains-notch frequency (Hz), usually 50 or 60.":
-        "Frecuencia del notch de red (Hz), normalmente 50 o 60.",
     "Envelope low-pass cut-off (Hz): lower = smoother envelope.":
         "Frecuencia de corte del paso-bajo de la envolvente (Hz): menor = envolvente más suave.",
-    "Threshold in robust standard deviations above the resting baseline. Lower = more sensitive (keeps weaker activity).":
-        "Umbral en desviaciones típicas robustas sobre la línea base de reposo. "
-        "Menor = más sensible (conserva actividad más débil).",
-    "Shortest fragment kept; briefer active periods are discarded.":
-        "Fragmento más corto que se conserva; los periodos activos más breves se descartan.",
-    "Active periods separated by less than this are merged into one.":
-        "Los periodos activos separados por menos de esto se fusionan en uno.",
     "Start over": "Empezar de nuevo",
     "Discard the changes and go back to what the app proposed.": "Descarta los cambios y vuelve a la propuesta de la aplicación.",
     "Add fragment": "Añadir fragmento",
@@ -1517,15 +1433,8 @@ _ES = {
     "Keep": "Conservar",
     "Start (s)": "Inicio (s)",
     "End (s)": "Fin (s)",
-    "Reason": "Motivo",
-    "Envelope filter (Hz):": "Filtro de envolvente (Hz):",
     "band": "banda",
-    "notch": "notch",
     "envelope": "envolvente",
-    "Detection:": "Detección:",
-    "sensitivity k": "sensibilidad k",
-    "min. duration": "duración mín.",
-    "merge gap": "hueco de fusión",
     "Whole recording will be analysed.": "Se analizará el registro completo.",
     "{n} fragment(s) — {d:.2f} s of {full:.1f} s": "{n} fragmento(s) — {d:.2f} s de {full:.1f} s",
 
@@ -1535,9 +1444,6 @@ _ES = {
     "Muscle kinematics": "Cinemática muscular",
     "Practical the app is set up for":
         "Práctica para la que la aplicación está configurada",
-    "Advanced options": "Opciones avanzadas",
-    "Show the fine controls shared by every mode":
-        "Muestra los controles finos comunes a todos los modos",
     "One-off setup": "Solo la primera vez",
     "How many EMG sensors are being recorded.":
         "Cuántos sensores de EMG se están registrando.",
@@ -1550,8 +1456,8 @@ _ES = {
     "mode needs two.":
         "Este registro tiene {n} canal(es) de EMG, y el modo agonista / "
         "antagonista necesita dos.",
-    "Choose \"Single-muscle contraction\" or \"Muscle kinematics\" at the top "
-    "of the window, or open a two channels recording.":
+    'Choose "Single-muscle contraction" or "Muscle kinematics" at the top of '
+    "the window, or open a two-channel recording.":
         "Elija «Contracción de un músculo» o «Cinemática muscular» en la parte "
         "superior de la ventana, o abra un registro con dos canales.",
 
@@ -1576,50 +1482,29 @@ _ES = {
         "grabación, la aplicación pide un esfuerzo máximo de cada músculo y lo "
         "escribe en el mismo fichero, antes de la tarea. Esa es la referencia; "
         "aquí no hay que elegir nada más.",
-    "Without a reference recording this tab can still work, but the "
-    "percentages it produces are not percentages of MVC and the muscle-load "
-    "limits do not apply to them.":
-        "Sin registro de referencia esta pestaña funciona igualmente, pero los "
-        "porcentajes que produce no son porcentajes de CVM y los límites de "
-        "carga muscular no se les pueden aplicar.",
+    "A recording with no calibration inside it cannot be normalised: without "
+    "a maximum there is no percentage, and this tab says so rather than "
+    "dividing the signal by itself.":
+        "Un registro sin calibración dentro no se puede normalizar: sin un "
+        "máximo no hay porcentaje, y esta pestaña lo dice en vez de dividir "
+        "la señal por sí misma.",
     "I understand, continue": "Entendido, continuar",
 
     # ── MVC reference picker ───────────────────────────────────────────
     # ── Auto-normalisation confirmation ────────────────────────────────
-    "No MVC reference recording selected":
-        "No se ha seleccionado registro de referencia CVM",
-    "The signal will be normalised to the 95th percentile of itself. The "
-    "values will be shown as \"% MVC\", but they are not percentages of "
-    "maximum voluntary contraction, and the Jonsson muscle-load limits (P10, "
-    "P50, P90) do not apply: a sustained contraction will exceed them by "
-    "construction.":
-        "La señal se normalizará al percentil 95 de sí misma. Los valores "
-        "aparecerán como «% CVM», pero no son porcentajes de contracción "
-        "voluntaria máxima, y los límites de carga muscular de Jonsson (P10, "
-        "P50, P90) no se les pueden aplicar: una contracción mantenida los "
-        "supera por construcción.",
-    "Use this only to see the shape of the signal.":
-        "Usar esta opción solo para ver la forma de la señal.",
-    "Choose a reference recording": "Elegir registro de referencia",
-    "Continue without reference": "Continuar sin referencia",
 
     # ── Auto-normalisation marking (screen and report) ─────────────────
-    "Muscle-load analysis requires an MVC reference recording. Select one to "
-    "interpret these values as muscle load limits.":
-        "El análisis de carga muscular requiere un registro de referencia CVM. "
-        "Hay que seleccionar uno para interpretar estos valores como límites de carga "
-        "muscular.",
     # ── Guided tour: chrome ────────────────────────────────────────────
     "Guide": "Guía",
-    "App and measures tour":
-        "Recorrido por la aplicación y medidas",
+    "Tour of the application and its measurements":
+        "Recorrido por la aplicación y sus medidas",
     "Skip": "Saltar",
     "Back": "Atrás",
     "Next": "Siguiente",
     "Finish": "Terminar",
     "Step {i} of {n}": "Paso {i} de {n}",
     "Stop the recording before starting the guide":
-        "Detener el registro antes de iniciar la guía",
+        "Detenga la grabación antes de iniciar la guía",
 
     # ── Guided tour: teaching content (texto del autor; el resto, borrador) ─
     # -- la sesión en dos fases (phases.py / acquisition.py) --
@@ -1639,12 +1524,12 @@ _ES = {
     'Session flow: practical={mode}, {n} channel(s), references={refs} → calibrate first: {yes}.':
         'Flujo de sesión: práctica={mode}, {n} canal(es), referencias={refs} → calibrar primero: {yes}.',
     'No recording': 'Sin registro',
-    'Reference needed': 'Falta la referencia',
     'Get ready to record': 'Prepárese para grabar',
     'Warm up first': 'Caliente primero',
     'Warming up: {n}': 'Calentando: {n}',
     'Two or three easy contractions of each muscle. The first maximal effort of a session is never the strongest one.':
-        'Dos o tres contracciones suaves de cada músculo. La primera máxima de una sesión nunca es la más fuerte.',
+        "Dos o tres contracciones suaves de cada músculo. El primer esfuerzo "
+        "máximo de una sesión nunca es el más fuerte.",
     'The recording ended before the preparation phase could start, so this file has no recording phase marked.':
         'El registro terminó antes de que pudiera empezar la fase de preparación, así que este fichero no lleva marcada la fase de registro.',
     'Get ready to record: {n}': 'Prepárese para grabar: {n}',
@@ -1659,12 +1544,12 @@ _ES = {
     "The reference has to be made against something that cannot move — the underside of a table, a fixed bar — with the joint held still. Not a hand, and least of all the subject's own other hand: a hand yields, and holding oneself splits the effort between two limbs, which produces less force than either would alone. This is the force-velocity relationship at work: whatever the muscle is allowed to shorten against, it shortens faster and therefore develops less force, so it recruits fewer motor units. A maximum performed in mid-air is submaximal by construction, and every percentage that follows comes out too high in the same proportion.":
         'La referencia hay que hacerla contra algo que no se pueda mover —el canto inferior de una mesa, una barra fija— y con la articulación quieta. No contra una mano, y menos aún contra la otra mano del propio sujeto: una mano cede, y sujetarse uno mismo reparte el esfuerzo entre dos miembros, que juntos dan menos fuerza que cualquiera de los dos por separado. Es la relación fuerza-velocidad en acción: contra lo que el músculo pueda acortarse, se acorta más deprisa y por tanto desarrolla menos fuerza, así que recluta menos unidades motoras. Una máxima hecha en el aire es submáxima por construcción, y todos los porcentajes posteriores salen altos en la misma proporción.',
     'Calibration too weak': 'Calibración demasiado floja',
-    '{muscles}: this is not a maximum. Calibrate again against a resistance the joint cannot move.': '{muscles}: esto no es una máxima. Calibre de nuevo contra una resistencia que la articulación no pueda mover.',
-    "% of this recording's own maximum": '% del máximo del propio registro',
-    'Distribution of effort over time': 'Reparto del esfuerzo en el tiempo',
+    '{muscles}: this is not a maximum. Calibrate again against a resistance the joint cannot move.': "{muscles}: esto no es un máximo. Calibre de nuevo contra una "
+        "resistencia que la articulación no pueda mover.",
     '⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.': '⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.',
     '⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.': '⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.',
-    'These values are not real % MVC: the calibration did not capture a maximum. Calibrate again with a genuinely maximal contraction.': 'Estos valores no son % de CVM reales: la calibración no captó una máxima. Calibre de nuevo con una contracción verdaderamente máxima.',
+    'These values are not real % MVC: the calibration did not capture a maximum. Calibrate again with a genuinely maximal contraction.': "Estos valores no son % de CVM reales: la calibración no recogió un "
+        "máximo. Calibre de nuevo con una contracción verdaderamente máxima.",
     'No contraction detected in «{name}»: it never left its baseline.': 'No se detecta contracción en «{name}»: no sale de su línea base.',
     'Channel separation — while «{muscle}» was at maximum, «{other}» reached {pct:.0f} % of its own reference.': 'Separación entre canales: mientras «{muscle}» estaba al máximo, «{other}» llegó al {pct:.0f} % de su propia referencia.',
     '{other} at {pct:.0f} % during {muscle}': '{other} al {pct:.0f} % durante {muscle}',
@@ -1674,47 +1559,25 @@ _ES = {
     'Co-activation index': 'Índice de coactivación',
     'Mean activation (% MVC)': 'Activación media (% CVM)',
     'not reported — {name} below {floor:.0f} % MVC': 'no se informa — {name} por debajo del {floor:.0f} % de CVM',
-    'not reported — no MVC reference for both channels': 'no se informa — falta referencia de CVM en algún canal',
+    "not reported — no MVC reference for one of the channels": "no se informa — falta la referencia de CVM en uno de los canales",
     'not reported — window too short': 'no se informa — ventana demasiado corta',
     'not reported — no activation above rest': 'no se informa — sin activación por encima del reposo',
-    'Whole recording — mark the phases for a meaningful value': 'Registro completo — marque las fases para obtener un valor con sentido',
+    "Whole recording — accept the fragments for one value per window": "Registro completo — acepte los fragmentos para tener un valor por "
+        "ventana",
     'Window': 'Ventana',
-    "Calibrate the MVC of both muscles while recording and the two envelopes are overlaid in % MVC — the only form in which two different muscles compare at all, since each one's millivolts depend on its own electrodes and on the skin and fat beneath them. Without that reference the panel stays in millivolts and says so. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-contraction, which holds the joint rigid and is typical of an unpractised or uncertain movement.": 'Calibre la CVM de los dos músculos mientras graba y las dos envolventes se superponen en % CVM, que es la única forma en que dos músculos distintos se comparan: los milivoltios de cada uno dependen de sus electrodos y de la piel y la grasa que hay debajo. Sin esa referencia el panel se queda en milivoltios y lo advierte. En un movimiento limpio el agonista se activa mientras el antagonista permanece casi silente; la activación simultánea es co-contracción, que mantiene rígida la articulación y es típica de un movimiento poco entrenado o inseguro.',
     '9. Overlaid envelopes (agonist/antagonist), % MVC': '9. Envolventes superpuestas (agonista/antagonista), % CVM',
-    '9. Env. overlay (% MVC)': '9. Env. superp. (% CVM)',
     'Millivolts are not comparable between two muscles. Calibrate MVC while recording to compare them.': 'Los milivoltios no son comparables entre dos músculos. Calibre la CVM mientras graba para poder compararlos.',
-    'Complexity level': 'Nivel de complejidad',
-    'The coloured band shows the level of the practical: basic, intermediate or advanced. The further along, the more of the reading is interpretation rather than measurement; the fine settings appear only in the advanced one.': 'La banda coloreada indica el nivel de la práctica: básico, intermedio o avanzado. Cuanto más avanzado, más de la lectura es interpretación y no medida; los ajustes finos solo aparecen en el avanzado.',
     'Connecting the sensor': 'Conexión del sensor',
-    'The board has to be switched on and the electrodes connected: the positive and the negative go on the midline of the muscle, while the reference goes on a neutral point, over a bone if possible.': 'La placa tiene que estar encendida y los electrodos conectados: el positivo y el negativo se sitúan sobre la línea media del músculo, mientras que el de referencia se coloca en un punto neutro, a ser posible sobre un hueso.',
     'How to place the accelerometer': 'Cómo situar el acelerómetro',
-    'There are two possibilities: on the muscle it allows the mechanomyogram (MMG) to be measured, which runs in parallel with the electrical signal; on the moving segment of the joint it allows the movement, and the parameters associated with it, to be measured.': 'Hay dos posibilidades: sobre el músculo permite la medida del mecanomiograma (MMG), que irá en paralelo con la señal eléctrica; sobre el segmento móvil de la articulación permite medir el movimiento y los parámetros asociados a éste.',
     'Following the recording remotely': 'Seguimiento del registro de forma remota',
-    'Every member of the group making the recording can watch the trace on their own mobile device. This is done by scanning the QR code the application generates.': 'Cada miembro del grupo que está realizando el registro puede ver el trazado en su dispositivo móvil. Este procedimiento se lleva a cabo capturando el código QR que genera la aplicación.',
-    'Wizard for the force-velocity experiment': 'Asistente para el experimento de fuerza-velocidad',
-    'The step-by-step wizard guides you through the contractions with different loads. With a greater load the velocity is expected to be lower, and this defines an inverse relation which is the force-velocity curve. The product of the two gives the power, which is maximal at intermediate loads.': 'El asistente paso a paso va guiando por las contracciones con diferentes cargas. Con mayor carga se espera que la velocidad sea menor y define una relación inversa que es la curva fuerza-velocidad. El producto de ambas proporciona la potencia, que es máxima con cargas intermedias.',
-    'Rehearsal of the force-velocity experiment': 'Ensayo del experimento fuerza-velocidad',
-    'As this is the longest and most complex procedure in the application, a simulation is provided as a rehearsal, so that what is going to be done live is better understood. It can be followed step by step or watched as an animation, and it can also be replayed to see it better.': 'Dado que es el procedimiento más largo y complejo de la aplicación se proporciona una simulación a modo de ensayo para comprender mejor lo que se va a hacer en vivo. Se puede ir paso a paso o ver como una animación y también se puede repetir para verlo mejor.',
+    'Every member of the group making the recording can watch the trace on their own mobile device. This is done by scanning the QR code the application generates.': "Cada miembro del grupo que hace el registro puede ver el trazado en "
+        "su propio móvil. Basta con escanear el código QR que genera la "
+        "aplicación.",
     'Calibrating the contraction': 'Calibración de la contracción',
     'A maximal voluntary contraction is asked for, and it becomes the reference against which the live load bars and the measurements are expressed, making contractions easier to compare.': 'Se solicita una contracción voluntaria máxima que será la referencia respecto a la que se representan las barras de carga en vivo y las medidas, facilitando la comparación entre contracciones.',
     'The basic panels': 'Paneles básicos',
     'Raw signal: the signal from the set of fibres that are contracting. Normalised envelope: shows how activation changes over time, which is what is compared between efforts. Power spectrum: how the muscle activity is distributed across the different frequencies recorded.': 'Señal en bruto: señal del conjunto de las fibras que se están contrayendo. Envolvente normalizada: muestra cómo cambia la activación en el tiempo, que es lo que se compara entre esfuerzos. Espectro de potencia: cómo se reparte la actividad muscular entre las diferentes frecuencias registradas.',
     "Choose the practical first": "Elegir primero la práctica",
-    "Everything else follows from this. Each mode records what that practical "
-    "needs — one muscle, an agonist/antagonist pair, or a muscle plus the "
-    "accelerometer — and the rest of the interface offers only the "
-    "measurements that make sense for it.":
-        "Todo lo demás se deriva de esto. Cada modo registra lo que esa "
-        "práctica necesita —un músculo, una pareja agonista/antagonista, o un "
-        "músculo más el acelerómetro— y el resto de la interfaz ofrece solo "
-        "las medidas que tienen sentido para ella.",
-    "Everything else is optional": "Lo demás es opcional",
-    "The fine controls — filter cut-offs, fatigue thresholds, region of "
-    "interest — are shared by all three modes and stay out of the way until "
-    "this is ticked.":
-        "Los controles finos —frecuencias de corte, umbrales de fatiga, región "
-        "de interés— son comunes a los tres modos y no estorban hasta que se "
-        "marca esta casilla.",
     "Show this guide next time": "Mostrar la guía la próxima vez",
     "Start recording and ask for the contraction. Watch the live trace: at "
     "rest it should be a flat line with only baseline noise. A signal that "
@@ -1724,14 +1587,6 @@ _ES = {
         "en reposo debe ser una línea plana con solo ruido de base. Una señal "
         "que nunca vuelve a la línea de base suele indicar un electrodo suelto "
         "o mal contacto, no un músculo tónico.",
-    "Press MARK to timestamp an event — the start of an effort, a change of "
-    "load, the moment the subject reports fatigue. The marks travel inside "
-    "the EDF, so each phase can be found again during the analysis.":
-        "Pulsar MARCA para poner una marca temporal en un suceso: el inicio de "
-        "un esfuerzo, un cambio de carga, el momento en que el sujeto refiere "
-        "fatiga. Las marcas viajan dentro del EDF y permiten reencontrar cada "
-        "fase durante el análisis.",
-    "Fatigue lives in the spectrum": "La fatiga está en el espectro",
     "As a sustained contraction fatigues the muscle, the conduction velocity "
     "of the fibres falls and the spectrum shifts towards low frequencies: the "
     "median frequency (MDF) drops while the amplitude often rises, because "
@@ -1744,36 +1599,18 @@ _ES = {
     "Agonist and antagonist": "Agonista y antagonista",
     # (the "Force-velocity study" caption itself is defined with the Analysis
     # tab strings above; only the tour's explanation of it belongs here)
-    "Builds the load-velocity, force-velocity and power curves from a "
-    "recording where several known loads were lifted, and relates them to the "
-    "EMG amplitude — that is, to how many motor units had to be recruited for "
-    "each load.":
-        "Construye las curvas carga-velocidad, fuerza-velocidad y potencia a "
-        "partir de un registro en el que se levantaron varias cargas "
-        "conocidas, y las relaciona con la amplitud EMG, es decir, con cuántas "
-        "unidades motoras hubo que reclutar para cada carga.",
     "Why normalise at all": "Por qué normalizar",
     "Muscle load": "Carga muscular",
 
     # ── Tutorial: texto revisado por el autor (22-ago-2026) ──────────
     'Quick guide':
         'Guía rápida',
-    'The electrical activity of a muscle is recorded and turned into measurements that can be interpreted. The application works with either of two sensors: a BITalino over Bluetooth or an Arduino + MyoWare 2.0 over USB.\n\nFor a short walkthrough of the application, press Yes.':
-        'Se registra la actividad eléctrica de un músculo y se convierte en medidas que se pueden interpretar. Funciona con cualquiera de dos sensores: un BITalino por Bluetooth o un Arduino + MyoWare 2.0 por USB.\n\nPara un recorrido breve por la aplicación, pulsar Sí.',
     'Devices the application supports':
         'Dispositivos soportados por la aplicación',
     'The recording can be made with either of two devices: BITalino (Bluetooth) or Arduino (USB).':
         'El registro se puede hacer con uno cualquiera de dos dispositivos: BITalino (Bluetooth) o Arduino (USB).',
-    'Assign the labels':
-        'Asignar etiquetas',
-    'This name is written into the EDF file as the channel label, so the recording keeps the muscle and the channel identified. The anatomical name is the one to use.':
-        'Este nombre se escribe en el fichero EDF como etiqueta del canal, de modo que el registro mantiene la identificación del músculo y del canal. Conviene usar el nombre anatómico.',
     'Recording':
         'Registro',
-    'Download the results: report and data':
-        'Descargar resultados: informe y datos',
-    "The report gathers the figures and the metrics into a PDF document. The CSV export saves the recording's data.":
-        'El informe reúne las figuras y las métricas en un documento PDF. Exportar CSV permite guardar los datos del registro.',
     'A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working. The maximum is inside the recording: the session calibrates without stopping, so nothing else has to be chosen here.':
         'Una amplitud bruta no se puede comparar entre dos personas, ni entre dos sesiones de la misma persona: depende de los electrodos, de la piel y de la grasa que hay debajo. Expresar cada valor como porcentaje de la contracción máxima cancela todo eso, porque las dos amplitudes comparten los mismos electrodos y la misma piel: lo que queda es cuánto está trabajando el músculo. El máximo está dentro del registro: la sesión calibra sin parar, así que aquí no hay nada más que elegir.',
     'Once the signal is in % MVC, the distribution of load over time can be read against the Jonsson limits: the static level (P10) is the load the muscle stays above 90 % of the time, the background tension it hardly ever lets go of, and the level most associated with sustained-effort discomfort.':
@@ -1793,12 +1630,6 @@ _ES = {
     # Por qué no se puede pulsar «Calcular CVM» todavía.
     "Select the recording to normalise.":
         "Seleccionar el registro que se va a normalizar.",
-    "A reference recording is required to express the signal as % MVC and to "
-    "read it against the Jonsson limits. Tick \"Advanced options\" to "
-    "normalise without one.":
-        "Hace falta un registro de referencia para expresar la señal en % CVM "
-        "y poder leerla frente a los límites de Jonsson. Marcar «Opciones "
-        "avanzadas» para normalizar sin él.",
 
     # Selección de paneles de la pestaña CVM.
     "Panels:": "Paneles:",
@@ -1838,31 +1669,8 @@ _ES = {
         "Registro cargado para normalizar: {path}",
 
     # Normalizar frente al propio registro, ofrecido con su advertencia.
-    "Normalise against this recording itself?":
-        "¿Normalizar frente al propio registro?",
-    "The signal will be divided by the 95th percentile of itself, so the "
-    "strongest moment of this recording becomes 100 % — whatever the muscle "
-    "can really do. Two recordings normalised this way cannot be compared "
-    "with each other, and the Jonsson load limits do not apply: a sustained "
-    "contraction exceeds them by construction.\n\nWhat does survive is the "
-    "shape over time: when the muscle worked harder and when it let go.":
-        "La señal se dividirá por el percentil 95 de sí misma, así que el "
-        "momento más fuerte de este registro pasa a ser el 100 % —sea cual sea "
-        "lo que el músculo pueda dar de verdad—. Dos registros normalizados "
-        "así no se pueden comparar entre sí, y los límites de carga de Jonsson "
-        "no se aplican: una contracción sostenida los supera por "
-        "construcción.\n\nLo que sí se conserva es la forma en el tiempo: "
-        "cuándo trabajó más el músculo y cuándo aflojó.",
-    "Use it, showing the shape only": "Usarlo, solo para ver la forma",
-    "Normalising against the recording itself — shape only, not % MVC.":
-        "Normalizando frente al propio registro: solo la forma, no % CVM.",
-    "A reference recording is required to express the signal as % MVC and to "
-    "read it against the Jonsson limits.":
-        "Hace falta un registro de referencia para expresar la señal en % CVM "
-        "y poder leerla frente a los límites de Jonsson.",
 
     # ── Ensayo del asistente F-V (fv_rehearsal_dialog.py) ─────────
-    'During the recording this panel appears over the plots, at this size:': 'Durante la grabación este panel aparece sobre las gráficas, con este tamaño:',
     'Rehearse…': 'Ensayar…',
     "It emulates the entire guided procedure with the same warnings, in the "
     "same order, with a synthetic record. Each step is explained and ends "
@@ -1882,18 +1690,24 @@ _ES = {
     'Open the study…': 'Abrir el estudio…',
     "Opens the real force-velocity study on the rehearsal's recording.": 'Abre el estudio fuerza-velocidad real sobre el registro del ensayo.',
     'Force-velocity study — rehearsal recording': 'Estudio fuerza-velocidad — registro del ensayo',
-    'maximum': 'máxima',
+    'maximum': "máximo",
     '{kg:g} kg': '{kg:g} kg',
-    'Get ready — the maximum comes first, with no weight.': 'Prepárese: primero la máxima, sin peso.',
-    'A sustained maximum, held for a few seconds.': 'Una máxima sostenida, mantenida unos segundos.',
+    'Get ready — the maximum comes first, with no weight.': "Prepárese: primero el máximo, sin peso.",
+    'A sustained maximum, held for a few seconds.': "Un máximo sostenido, mantenido unos segundos.",
     'Recovery, and the first weight is set up.': 'Recuperación, y se prepara el primer peso.',
     'Prepare {kg:g} kg — take the weight and the starting position.': 'Prepare {kg:g} kg: coja el peso y sitúese en la posición de partida.',
     'Lift {kg:g} kg — one quick movement, not a hold.': 'Levante {kg:g} kg: un movimiento rápido, no un mantenimiento.',
     'Relax, and change the weight.': 'Relaje, y cambie el peso.',
     'Recorded — the loads are already in the file.': 'Registrado: las cargas ya están en el archivo.',
-    'The maximum is recorded before any load: it is the 100 % the other contractions are read against. Doing it first also keeps it clear of the fatigue the loads are about to cause.': 'La máxima se registra antes que ninguna carga: es el 100 % con el que se leen las demás contracciones. Hacerla primero la mantiene además libre de la fatiga que van a producir las cargas.',
-    'Held, because a true maximum takes about a second to reach. It is isometric — nothing moves, so the accelerometer stays flat here. This contraction sets the amplitude reference, not a velocity.': 'Se mantiene porque alcanzar la máxima verdadera lleva alrededor de un segundo. Es isométrica: no se mueve nada, así que aquí el acelerómetro permanece plano. Esta contracción fija la referencia de amplitud, no una velocidad.',
-    'Longer than the pauses between loads: the subject has just given a maximum, and the first load should not be lifted tired.': 'Más larga que las pausas entre cargas: el sujeto acaba de dar una máxima, y la primera carga no debe levantarse ya cansado.',
+    'The maximum is recorded before any load: it is the 100 % the other contractions are read against. Doing it first also keeps it clear of the fatigue the loads are about to cause.': "El máximo se registra antes que ninguna carga: es el 100 % con el "
+        "que se leen las demás contracciones. Hacerlo primero lo mantiene "
+        "además libre de la fatiga que van a producir las cargas.",
+    'Held, because a true maximum takes about a second to reach. It is isometric — nothing moves, so the accelerometer stays flat here. This contraction sets the amplitude reference, not a velocity.': "Se mantiene porque alcanzar un máximo de verdad lleva alrededor de "
+        "un segundo. Es isométrica: no se mueve nada, así que aquí el "
+        "acelerómetro permanece plano. Esta contracción fija la referencia "
+        "de amplitud, no una velocidad.",
+    'Longer than the pauses between loads: the subject has just given a maximum, and the first load should not be lifted tired.': "Más larga que las pausas entre cargas: el sujeto acaba de hacer un "
+        "máximo, y la primera carga no debe levantarse ya cansado.",
     'Nothing is being recorded as a repetition yet. The countdown is there so the load is handed over and the position taken without hurrying.': 'Todavía no se registra nada como repetición. La cuenta atrás está para entregar la carga y tomar la posición sin prisas.',
     'The study reads the shortening velocity from the accelerometer, and a slow or held contraction has none. As this cue appears the application writes a marker into the file with the load — which is why the study can fill the load column by itself.': 'El estudio lee del acelerómetro la velocidad de acortamiento, y una contracción lenta o mantenida no la tiene. Al aparecer este aviso la aplicación escribe en el archivo una marca con la carga: por eso el estudio puede rellenar solo la columna de cargas.',
     'Short on purpose: long enough to change the load, not long enough to lose the thread. If more than one repetition per load was asked for, this is where it goes back for another.': 'Corta a propósito: lo justo para cambiar la carga, no tanto como para perder el hilo. Si se pidió más de una repetición por carga, aquí es donde vuelve a por otra.',
@@ -1907,7 +1721,6 @@ _ES = {
     'Unexpected error': 'Error inesperado',
     'The application hit an error it did not expect. What you were doing may not have been saved.\n\nThe details have been written to:\n{path}\n\nSend that file on, with a note of what you were doing at the time.': 'La aplicación ha encontrado un error que no esperaba. Puede que lo que estaba haciendo no se haya guardado.\n\nLos detalles se han escrito en:\n{path}\n\nEnvíe ese fichero, indicando qué estaba haciendo en ese momento.',
     'The application hit an error it did not expect, and could not write the details to a file.': 'La aplicación ha encontrado un error que no esperaba, y no ha podido escribir los detalles en un fichero.',
-    'What this table is, and where its rows come from': 'Qué es esta tabla y de dónde salen sus filas',
     'What it measures': 'Qué mide',
     'Of all the activity in the two muscles, how much of it was shared — how much they worked at the same time. 0 % means one worked and the other did not; 100 % means both did the same thing throughout.': 'De toda la actividad de los dos músculos, qué parte fue compartida: cuánto trabajaron a la vez. 0 % significa que uno trabajó y el otro no; 100 %, que los dos hicieron lo mismo todo el rato.',
     'Why one row per window': 'Por qué una fila por ventana',

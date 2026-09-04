@@ -192,8 +192,9 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
                 "compared between efforts. Spectrum: how the activity is "
                 "distributed across frequencies — as a sustained contraction "
                 "fatigues the muscle, the median frequency (MDF) falls. The "
-                "cards above the panels carry the numbers with their usual "
-                "ranges, and the table below gives one row per contraction."
+                "cards under the panels carry the numbers with their usual "
+                "ranges, and the table beside them gives one row per "
+                "contraction."
             ),
             lambda: ana._chk_paneles[0],
             tab=TAB_ANA,

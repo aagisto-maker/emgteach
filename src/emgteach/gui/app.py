@@ -206,7 +206,7 @@ class MainWindow(QMainWindow):
         btn_tour = QToolButton()
         btn_tour.setText(tr("Guide"))
         btn_tour.setAutoRaise(True)
-        btn_tour.setToolTip(tr("App and measures tour"))
+        btn_tour.setToolTip(tr("Tour of the application and its measurements"))
         btn_tour.clicked.connect(self.start_tour)
 
         btn_about = QToolButton()
