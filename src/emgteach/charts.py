@@ -63,6 +63,11 @@ def _quitar_marco(ax) -> None:
         ax.spines[lado].set_visible(False)
 
 
+#: What the contraction chart can show: the relation alone (the tab's
+#: default), the series alone, or the two side by side (the report).
+CONTRACTION_VIEWS = ("relation", "series", "both")
+
+
 def draw_contraction_chart(
     fig,
     rows: Sequence[Any],
@@ -71,14 +76,20 @@ def draw_contraction_chart(
     name_2: str = "",
     both_ratio: float = 0.5,
     small: bool = False,
+    view: str = "both",
 ) -> None:
-    """Two panels: the series along time, and the relation to read it by.
+    """The series along time, the relation to read it by, or both.
 
     ``rows`` are :class:`emgteach.contractions.Contraction`; ``both_ratio``
     is the rule under which a contraction counts as co-activation (the
     weaker muscle's peak as a share of the stronger's), drawn as a wedge on
     the two-muscle plane. ``small`` trims the type for the tab's canvas.
+    ``view`` is one of :data:`CONTRACTION_VIEWS`: in the tab one panel at a
+    time fills the box and is read; two side by side in a box that low were
+    a thumbnail of each.
     """
+    if view not in CONTRACTION_VIEWS:
+        raise ValueError(f"view must be one of {CONTRACTION_VIEWS}, not {view!r}")
     fig.clear()
     fs = 7 if small else 8
     if not rows:
@@ -95,10 +106,26 @@ def draw_contraction_chart(
     v1 = np.array([_value(r, 1, use_pct) for r in rows])
     v2 = np.array([_value(r, 2, use_pct) for r in rows]) if dos else None
 
-    gs = fig.add_gridspec(1, 2, width_ratios=[3, 2])
-    ax_t = fig.add_subplot(gs[0])
-    ax_r = fig.add_subplot(gs[1])
+    if view == "both":
+        gs = fig.add_gridspec(1, 2, width_ratios=[3, 2])
+        ax_t = fig.add_subplot(gs[0])
+        ax_r = fig.add_subplot(gs[1])
+    else:
+        ax_t = fig.add_subplot(111) if view == "series" else None
+        ax_r = fig.add_subplot(111) if view == "relation" else None
+    if ax_t is not None:
+        _serie(ax_t, rows, x, v1, v2, name_1, name_2, dos, use_pct, unidad, fs)
+    if ax_r is not None:
+        if dos and v2 is not None:
+            _plano_de_activacion(ax_r, rows, v1, v2, name_1, name_2, unidad,
+                                 both_ratio, fs)
+        else:
+            _jasa(ax_r, rows, v1, unidad, fs)
 
+
+def _serie(ax_t, rows, x, v1, v2, name_1, name_2, dos, use_pct, unidad, fs) -> None:
+    """The series along time, with its trend and the MDF on its own axis."""
+    n = len(rows)
     # ── The series along time, with its trend ─────────────────────────
     # The fitted slope goes into the muscle's own legend entry («FCR +4.5
     # %/contr.»), not into an entry of its own: the legend sits above the
@@ -176,13 +203,6 @@ def draw_contraction_chart(
                     handlelength=1.4, columnspacing=0.9, borderaxespad=0.0,
                     handletextpad=0.4)
 
-    # ── The relation ─────────────────────────────────────────────────
-    if dos and v2 is not None:
-        _plano_de_activacion(ax_r, rows, v1, v2, name_1, name_2, unidad,
-                             both_ratio, fs)
-    else:
-        _jasa(ax_r, rows, v1, unidad, fs)
-
 
 def _plano_de_activacion(ax, rows, v1, v2, name_1, name_2, unidad, ratio, fs) -> None:
     """One muscle against the other, with the co-activation wedge drawn."""
@@ -217,9 +237,11 @@ def _plano_de_activacion(ax, rows, v1, v2, name_1, name_2, unidad, ratio, fs) ->
             ha="center", va="top", fontsize=fs - 1, color=COLOUR_2)
     ax.text(0.72 * lim, 0.72 * lim, tr("Co-activation"), ha="center", va="center",
             fontsize=fs - 1, color=COLOUR_BOTH, rotation=45)
+    # The same limits on both axes, so the dotted diagonal is where the two
+    # muscles are equal — but not a square: forced square in a box three
+    # times wider than tall, the plane was a stamp with white on each side.
     ax.set_xlim(0, lim)
     ax.set_ylim(0, lim)
-    ax.set_aspect("equal", adjustable="box")
     ax.set_xlabel(f"{name_1} · {unidad}", fontsize=fs, color=COLOUR_1)
     ax.set_ylabel(f"{name_2} · {unidad}", fontsize=fs, color=COLOUR_2)
     ax.set_title(tr("Who leads each contraction"), fontsize=fs, pad=3)
@@ -284,14 +306,18 @@ def draw_coactivation_chart(
     name_2: str,
     small: bool = False,
 ) -> None:
-    """One short bar per window: the index, with the two means under the name.
+    """One line per window: its name on the left, the index as a bar, and
+    the two means written after it.
 
     ``results`` are :class:`emgteach.coactivation.CoactivationResult`. A
     window whose index is not reported gets a hatched empty bar and the word.
+    Everything of a window sits on its one line — the first version stacked
+    the means under the name in a second line of tick label, and three
+    windows in a box 150 px high were a smudge.
     """
     fig.clear()
     ax = fig.add_subplot(111)
-    fs = 7 if small else 8
+    fs = 8 if small else 9
     if not results:
         ax.set_axis_off()
         return
@@ -301,23 +327,34 @@ def draw_coactivation_chart(
     for yi, r in zip(y, results, strict=True):
         ini, fin = r.window_s
         tramo = f" ({ini:.0f}–{fin:.0f} s)" if fin > ini else ""  # noqa: RUF001
-        etiquetas.append(
-            f"{r.label}{tramo}\n{name_1} {r.mean_1:.0f} · {name_2} {r.mean_2:.0f}"
-        )
+        etiquetas.append(f"{r.label}{tramo}")
+        medias = f"{name_1} {r.mean_1:.0f} · {name_2} {r.mean_2:.0f}"
         if r.index is not None:
-            ax.barh(yi, float(r.index), height=0.55, color=_COLOUR_INDEX, zorder=2)
-            ax.text(float(r.index) + 2, yi, f"{r.index:.0f} %", va="center",
-                    ha="left", fontsize=fs, fontweight="bold", zorder=3)
+            idx = float(r.index)
+            ax.barh(yi, idx, height=0.6, color=_COLOUR_INDEX, zorder=2)
+            # Inside the bar once there is room, so a high index never runs
+            # into the means written after the scale.
+            if idx >= 30:
+                ax.text(idx - 2, yi, f"{idx:.0f} %", va="center", ha="right",
+                        fontsize=fs, fontweight="bold", color="white", zorder=3)
+            else:
+                ax.text(idx + 2, yi, f"{idx:.0f} %", va="center", ha="left",
+                        fontsize=fs, fontweight="bold", zorder=3)
+            ax.text(103, yi, medias, va="center", ha="left", fontsize=fs - 1,
+                    color="#555555", zorder=3)
         else:
-            ax.barh(yi, 100.0, height=0.55, facecolor="none", edgecolor="#BBBBBB",
+            ax.barh(yi, 100.0, height=0.6, facecolor="white", edgecolor="#CCCCCC",
                     hatch="///", lw=0.6, zorder=2)
             ax.text(2, yi, tr("not reported"), va="center", ha="left", fontsize=fs,
-                    color=_COLOUR_NOT_REPORTED, zorder=3)
+                    color=_COLOUR_NOT_REPORTED, zorder=3,
+                    bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5})
+            ax.text(103, yi, medias, va="center", ha="left", fontsize=fs - 1,
+                    color="#555555", zorder=3)
     ax.set_yticks(y)
     ax.set_yticklabels(etiquetas, fontsize=fs)
     ax.set_ylim(-0.6, n - 0.4)
-    ax.set_xlim(0, 118)
-    ax.set_xticks([0, 25, 50, 75, 100])
+    ax.set_xlim(0, 150)
+    ax.set_xticks([0, 50, 100])
     ax.tick_params(axis="x", labelsize=fs)
     ax.set_xlabel(tr("Index (%) · means in % MVC"), fontsize=fs)
     ax.grid(axis="x", lw=0.4, alpha=0.4, zorder=0)

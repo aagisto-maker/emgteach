@@ -34,6 +34,7 @@ from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QDialog,
@@ -62,28 +63,57 @@ from PySide6.QtWidgets import (
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
 
 #: The tallest the two summary charts (and the tables behind them) get. The
-#: band under the panels is paid for out of the panels' height.
-_ALTO_GRAFICO = 150
+#: band under the panels is paid for out of the panels' height; 165 is what
+#: three co-activation windows need to be read without squinting.
+_ALTO_GRAFICO = 165
 
 
-class _BotonEsquina(QToolButton):
-    """A small checkable button on the title line of a group box, left of
-    the «?», kept in its corner across resizes the way the «?» is."""
+class _SelectorEsquina(QWidget):
+    """Two or three small exclusive buttons on the title line of a group
+    box, left of the «?», kept in the corner across resizes the way the
+    «?» is. One is always down; ``cambiado`` says which."""
 
-    def __init__(self, box: QGroupBox) -> None:
+    cambiado = Signal(str)
+
+    def __init__(self, box: QGroupBox, opciones: list[tuple[str, str]]) -> None:
         super().__init__(box)
         self._box = box
-        self.setCheckable(True)
-        self.setAutoRaise(True)
-        self.setFixedHeight(18)
-        self.setStyleSheet(
-            "QToolButton { font-size: 10px; color: #2E86DE; border: 1px solid "
-            "#2E86DE; border-radius: 9px; background: white; padding: 0 7px; }"
-            "QToolButton:checked { background: #E3F0FB; }"
-        )
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(2)
+        self._grupo = QButtonGroup(self)
+        self._grupo.setExclusive(True)
+        self._botones: dict[str, QToolButton] = {}
+        for clave, texto in opciones:
+            b = QToolButton(self)
+            b.setCheckable(True)
+            b.setAutoRaise(True)
+            b.setFixedHeight(18)
+            b.setText(texto)
+            b.setStyleSheet(
+                "QToolButton { font-size: 10px; color: #2E86DE; border: 1px solid "
+                "#2E86DE; border-radius: 9px; background: white; padding: 0 7px; }"
+                "QToolButton:checked { background: #2E86DE; color: white; }"
+            )
+            b.toggled.connect(lambda on, k=clave: on and self.cambiado.emit(k))
+            self._grupo.addButton(b)
+            self._botones[clave] = b
+            lay.addWidget(b)
         box.installEventFilter(self)
         self.colocar()
         self.raise_()
+
+    def claves(self) -> list[str]:
+        return list(self._botones)
+
+    def vista(self) -> str:
+        return next((k for k, b in self._botones.items() if b.isChecked()),
+                    next(iter(self._botones)))
+
+    def set_vista(self, clave: str) -> None:
+        if clave not in self._botones:
+            clave = next(iter(self._botones))
+        self._botones[clave].setChecked(True)
 
     def eventFilter(self, obj, event) -> bool:
         if obj is self._box and event.type() == QEvent.Type.Resize:
@@ -967,7 +997,10 @@ class AnalysisTab(QWidget):
         self._stack_coact.setMaximumHeight(_ALTO_GRAFICO)
         coact_v.addWidget(self._stack_coact)
         coact_v.addStretch(1)
-        self._btn_tabla_coact = self._boton_tabla(self._box_coact)
+        self._sel_coact = _SelectorEsquina(
+            self._box_coact, [("chart", tr("Chart")), ("table", tr("Table"))])
+        self._sel_coact.setToolTip(tr("The chart, or the numbers behind it."))
+        self._sel_coact.cambiado.connect(self._aplicar_vista_coact)
         self._box_coact.setVisible(False)
         # Joins the bottom band with the other two boxes (see below).
 
@@ -1007,11 +1040,22 @@ class AnalysisTab(QWidget):
         self._stack_contr.setMaximumHeight(_ALTO_GRAFICO)
         contr_v.addWidget(self._stack_contr)
         contr_v.addStretch(1)
-        self._btn_tabla_contr = self._boton_tabla(self._box_contr)
+        # The relation first: it is the panel a conclusion is read off. The
+        # series and the numbers are a click away, on the title line.
+        self._sel_contr = _SelectorEsquina(
+            self._box_contr, [("relation", tr("Relation")), ("series", tr("Series")),
+                              ("table", tr("Table"))])
+        self._sel_contr.setToolTip(tr("Relation, series or the numbers behind them."))
+        self._sel_contr.cambiado.connect(self._aplicar_vista_contr)
+        #: What the contraction chart was last drawn from, so a change of
+        #: view redraws without re-running the analysis.
+        self._filas_contr: list = []
+        self._nombres_contr: tuple[str, str] = ("", "")
         self._box_contr.setVisible(False)
-        self._aplicar_vista_tablas(
-            bool(self._settings.value("analysis/bottom_as_tables", False, type=bool))
-        )
+        self._sel_coact.set_vista(
+            str(self._settings.value("analysis/coact_view", "chart")))
+        self._sel_contr.set_vista(
+            str(self._settings.value("analysis/contr_view", "relation")))
 
         # Bottom band: the contractions on the left, the summary cards on
         # the right, sharing the width. The summary used to sit above the
@@ -1675,7 +1719,7 @@ class AnalysisTab(QWidget):
         # a co-activation index, bold, computed over rest and flexion and
         # extension together.
         self._stack_coact.setVisible(not sin_marcas)
-        self._btn_tabla_coact.setVisible(not sin_marcas)
+        self._sel_coact.setVisible(not sin_marcas)
 
         # And the red line under it went the same way, for the same reason.
         # It is a warning — «this number does not measure anything» — about a
@@ -1751,14 +1795,12 @@ class AnalysisTab(QWidget):
         # panels off the window; beyond it the table scrolls.
         tope = min(_ALTO_GRAFICO - 6, 160 if self.height() >= 850 else 110)
         self._tbl_contr.setMinimumHeight(max(38, min(alto, tope)))
-        draw_contraction_chart(
-            self._fig_contr, filas,
-            name_1=result.get("channel_name") or tr("Muscle {n}").format(n=1),
-            name_2=(result.get("channel_name_2") or "") if dos else "",
-            both_ratio=float((self._detection_kwargs or {}).get("both_ratio", 0.5)),
-            small=True,
+        self._filas_contr = list(filas)
+        self._nombres_contr = (
+            result.get("channel_name") or tr("Muscle {n}").format(n=1),
+            (result.get("channel_name_2") or "") if dos else "",
         )
-        self._canvas_contr.draw_idle()
+        self._dibujar_contracciones()
         resumen = tr("{n} contractions").format(n=len(filas))
         emd = result.get("emd_ms_mean")
         if emd is not None:
@@ -1766,29 +1808,34 @@ class AnalysisTab(QWidget):
         self._lbl_contr_resumen.setText(resumen)
         self._box_contr.setVisible(True)
 
-    def _boton_tabla(self, box: QGroupBox) -> QToolButton:
-        """The small switch in the title line of each box, beside its «?»:
-        the numbers, one click behind. On the title line and not under the
-        chart, because a row of its own under each chart cost the band the
-        height of a line for a button pressed once a session."""
-        btn = _BotonEsquina(box)
-        btn.setText(tr("Table"))
-        btn.setToolTip(tr("Show the numbers behind this chart, or the chart again."))
-        btn.toggled.connect(self._aplicar_vista_tablas)
-        return btn
+    @Slot(str)
+    def _aplicar_vista_coact(self, vista: str) -> None:
+        """The chart or, one click behind, the numbers a report copies."""
+        self._stack_coact.setCurrentIndex(1 if vista == "table" else 0)
+        self._settings.setValue("analysis/coact_view", vista)
 
-    @Slot(bool)
-    def _aplicar_vista_tablas(self, tablas: bool) -> None:
-        """Both boxes together: a student who wants numbers wants them in both."""
-        for stack, btn in ((self._stack_coact, self._btn_tabla_coact),
-                           (self._stack_contr, self._btn_tabla_contr)):
-            stack.setCurrentIndex(1 if tablas else 0)
-            btn.blockSignals(True)
-            btn.setChecked(tablas)
-            btn.setText(tr("Chart") if tablas else tr("Table"))
-            btn.blockSignals(False)
-            btn.colocar()
-        self._settings.setValue("analysis/bottom_as_tables", bool(tablas))
+    @Slot(str)
+    def _aplicar_vista_contr(self, vista: str) -> None:
+        """Relation, series or table, one at a time filling the box. The
+        chart is redrawn from the rows it was last drawn from: a change of
+        view is not a reason to re-run the analysis."""
+        self._stack_contr.setCurrentIndex(1 if vista == "table" else 0)
+        self._settings.setValue("analysis/contr_view", vista)
+        # Only once there is something to draw: restoring the choice at
+        # construction scheduled an idle draw on a canvas a tab torn down
+        # straight away no longer had.
+        if vista != "table" and self._filas_contr:
+            self._dibujar_contracciones()
+
+    def _dibujar_contracciones(self) -> None:
+        vista = self._sel_contr.vista()
+        n1, n2 = self._nombres_contr
+        draw_contraction_chart(
+            self._fig_contr, self._filas_contr, name_1=n1, name_2=n2,
+            both_ratio=float((self._detection_kwargs or {}).get("both_ratio", 0.5)),
+            small=True, view=vista if vista in ("relation", "series") else "relation",
+        )
+        self._canvas_contr.draw_idle()
 
     def _ajustar_alto_coact(self) -> None:
         """Room for the rows it has, and free to fill the rest of its box.

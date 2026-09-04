@@ -278,9 +278,9 @@ class TestTheCharts:
         textos = [t.get_text() for t in ax.texts]
         assert "85 %" in textos
         assert tr("not reported") in textos
-        # The two means sit under the window's name, never the index alone.
-        etiquetas = [t.get_text() for t in ax.get_yticklabels()]
-        assert any("FCR 60" in e and "ECR 55" in e for e in etiquetas)
+        # The two means are written on the window's line, never the index alone.
+        assert any("FCR 60" in t and "ECR 55" in t for t in textos)
+        assert any("FCR 45" in t and "ECR 3" in t for t in textos)
 
 
 @pytest.mark.gui
@@ -290,18 +290,59 @@ class TestTheTabShowsChartsFirst:
         from emgteach.gui.tabs.analysis import AnalysisTab
         from emgteach.gui.widgets.logger import LoggerWidget
 
-        t = AnalysisTab(LoggerWidget(), QSettings("emgteach-test", "charts"))
+        # Cleared first: the view choice is kept across sessions on purpose,
+        # and a run that ended on «series» would otherwise open the next
+        # one's tab on it.
+        ajustes = QSettings("emgteach-test", "charts")
+        ajustes.clear()
+        t = AnalysisTab(LoggerWidget(), ajustes)
         yield t
         t.deleteLater()
+        ajustes.clear()
 
-    def test_the_contraction_box_draws_the_two_panels_and_keeps_the_table(self, tab) -> None:
+    def _llenar(self, tab) -> None:
         tab._refresh_contractions({
             "contractions": _rows(True), "channel_name": "FCR",
             "channel_name_2": "ECR", "emd_ms_mean": 42.0,
         })
+
+    def test_the_contraction_box_opens_on_the_relation_and_keeps_the_table(self, tab) -> None:
+        """The relation is the panel a conclusion is read off, so it is what
+        the box opens on; the series and the numbers are a click away."""
+        self._llenar(tab)
+        assert tab._sel_contr.vista() == "relation"
         assert tab._stack_contr.currentIndex() == 0
-        assert len(tab._fig_contr.axes) == 3
+        # One panel fills the box: the activation plane, on its own.
+        assert len(tab._fig_contr.axes) == 1
+        assert tab._fig_contr.axes[0].get_title() == tr("Who leads each contraction")
         assert tab._tbl_contr.rowCount() == 3
+
+    def test_the_views_rotate_without_re_running_the_analysis(self, tab) -> None:
+        self._llenar(tab)
+        tab._sel_contr.set_vista("series")
+        assert tab._stack_contr.currentIndex() == 0
+        # The series alone: its axis and the MDF twinned on it, no relation.
+        assert len(tab._fig_contr.axes) == 2
+        assert tab._fig_contr.axes[0].get_xlabel() == tr("Contraction")
+        tab._sel_contr.set_vista("table")
+        assert tab._stack_contr.currentIndex() == 1
+        tab._sel_contr.set_vista("relation")
+        assert tab._stack_contr.currentIndex() == 0
+        assert len(tab._fig_contr.axes) == 1
+
+    def test_the_choice_is_kept_for_the_next_session(self, tab, qapp) -> None:
+        from emgteach.gui.tabs.analysis import AnalysisTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+
+        tab._sel_contr.set_vista("series")
+        tab._sel_coact.set_vista("table")
+        otra = AnalysisTab(LoggerWidget(), QSettings("emgteach-test", "charts"))
+        try:
+            assert otra._sel_contr.vista() == "series"
+            assert otra._sel_coact.vista() == "table"
+            assert otra._stack_coact.currentIndex() == 1
+        finally:
+            otra.deleteLater()
 
     def test_the_band_stays_low(self, tab) -> None:
         """The band under the panels is paid for out of the panels' height."""
@@ -312,15 +353,14 @@ class TestTheTabShowsChartsFirst:
         for w in (tab._canvas_contr, tab._canvas_coact, tab._stack_contr,
                   tab._stack_coact):
             assert w.maximumHeight() <= _ALTO_GRAFICO
-        # And the table switch lives on the title line, not on a row of its own.
-        assert tab._btn_tabla_contr.parent() is tab._box_contr
-        assert tab._btn_tabla_contr.y() == 0
+        # And the view switches live on the title line, not on a row of their own.
+        for sel, box in ((tab._sel_contr, tab._box_contr), (tab._sel_coact, tab._box_coact)):
+            assert sel.parent() is box
+            assert sel.y() == 0
 
-    def test_the_table_is_one_click_behind_in_both_boxes(self, tab) -> None:
-        tab._btn_tabla_contr.setChecked(True)
-        assert tab._stack_contr.currentIndex() == 1
+    def test_the_co_activation_box_has_chart_and_table(self, tab) -> None:
+        assert tab._sel_coact.claves() == ["chart", "table"]
+        tab._sel_coact.set_vista("table")
         assert tab._stack_coact.currentIndex() == 1
-        assert tab._btn_tabla_contr.text() == tr("Chart")
-        tab._btn_tabla_coact.setChecked(False)
-        assert tab._stack_contr.currentIndex() == 0
-        assert tab._btn_tabla_contr.text() == tr("Table")
+        tab._sel_coact.set_vista("chart")
+        assert tab._stack_coact.currentIndex() == 0
