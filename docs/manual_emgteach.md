@@ -290,12 +290,18 @@ channels the raw plot is **stacked**, one lane per muscle, and the envelopes
   (fatigue) above; and the live **P10/P50/P90** levels (§5.5).
 
 **The accelerometer** (kinematics only). Recorded as one more channel, in `g`,
-uncalibrated. Its box holds the analogue input selector (A1–A6, default A4), the
-**«Find the ACC channel…»** button that locates it by reading the six inputs live,
-and the placement selector: on the muscle (MMG) or on the moving segment (tremor,
-force-velocity, electromechanical delay). Here too are **«Guided F-V…»**, which
-directs the acquisition of a series of known loads, and **«Rehearse…»**, which runs
-that procedure with no hardware.
+uncalibrated. Its box states the wiring — **muscle on A1, accelerometer on A2**,
+a convention rather than a setting: the input selector and the «find the ACC
+channel» diagnostic that used to sit here found nothing on the bench while the
+convention was right — and holds the placement selector: on the muscle (MMG) or
+on the moving segment (tremor, force-velocity, electromechanical delay). Here too
+are **«Guided F-V…»**, which directs the acquisition of a series of known loads,
+and **«Rehearse…»**, which runs that procedure with no hardware.
+
+**Cancelling a guide.** While the calibration or the force-velocity plan runs,
+**«Cancel guide (Esc)»** appears beside the record button, and Esc does the same
+from anywhere on the tab. The recording goes on; a calibration cut short leaves no
+reference, and its closed repetitions stay in the file.
 
 [Suggested figure: the Acquisition tab during a two-channel recording, pointing
 out the stacked lanes, the load bars and the calibration wizard's cue panel.]
@@ -664,10 +670,10 @@ Each begins by **choosing the practical** in the top-right selector.
 
 ### 7.3 Muscle kinematics (advanced)
 
-1. The accelerometer plot, its box and the fine controls appear. Choose the
-   placement (on the muscle for MMG; on the moving segment for tremor,
-   force-velocity and electromechanical delay); **«Find the ACC channel…»** if the
-   trace does not respond; **«Rehearse…»** runs the procedure with no hardware.
+1. The accelerometer plot, its box and the fine controls appear. Wire the muscle
+   to A1 and the accelerometer to A2, as the box says. Choose the placement (on
+   the muscle for MMG; on the moving segment for tremor, force-velocity and
+   electromechanical delay); **«Rehearse…»** runs the procedure with no hardware.
 2. **«Guided F-V…»** asks for the plan (loads, repetitions per load, preparation),
    starts the recording if needed and directs the series: a 3 s isometric maximum
    without load, then each repetition of each load, marked in the EDF with its

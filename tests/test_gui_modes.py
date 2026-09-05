@@ -125,14 +125,17 @@ def test_a_practical_that_names_its_channels_hides_the_boxes(
     adq._edit_labels[0].setText("FCR")
     adq._edit_labels[1].setText("ECR")
 
+    from emgteach.modes import mode_channels
+
     for mode in (MODE_PAIR, MODE_SINGLE, MODE_KINEMATICS, MODE_PAIR):
         set_mode(main_window, qapp, mode)
         fijas = mode_fixed_labels(mode)
-        assert shown(adq._box_labels) is (not fijas), mode
-        if fijas:
-            assert adq._active_labels()[0] not in ("FCR", "ECR"), mode
-        else:
-            assert adq._active_labels() == ["FCR", "ECR"], mode
+        # Since the bench of 5 September no practical fixes a name: every
+        # one shows the boxes, and a single-muscle practical reads the
+        # first of them.
+        assert not fijas, mode
+        assert shown(adq._box_labels), mode
+        assert adq._active_labels() == ["FCR", "ECR"][:mode_channels(mode)], mode
         # Whatever the practical calls its channels, the operator's own names
         # are still in the boxes when they come back to them.
         assert [e.text() for e in adq._edit_labels[:2]] == ["FCR", "ECR"], mode
@@ -150,14 +153,19 @@ def test_practical_sets_the_accelerometer(main_window, qapp, mode) -> None:
     assert shown(adq._box_fv_guided) is uses_acc
 
 
-def test_accelerometer_wiring_travels_with_the_accelerometer(
+def test_accelerometer_wiring_is_stated_not_chosen(
     main_window, qapp
 ) -> None:
-    """The default input is A4 and a rig may have it elsewhere, so this cannot
-    be tucked away: a first kinematics recording would read nothing at all."""
+    """Muscle on A1, accelerometer on A2: a convention the block states,
+    not a selector with a «find it» diagnostic. On the bench the diagnostic
+    found nothing while the convention was right all along."""
+    from emgteach.gui.tabs.acquisition import _ACC_INPUT
+
     adq = main_window._tab_adq
     set_mode(main_window, qapp, MODE_KINEMATICS)
-    assert shown(adq._box_acc_wiring)
+    assert not shown(adq._box_acc_wiring)
+    assert shown(adq._lbl_acc_wiring)
+    assert adq._combo_acc_channel.currentData() == _ACC_INPUT
     set_mode(main_window, qapp, MODE_SINGLE)
     assert not shown(adq._box_acc_wiring)
 

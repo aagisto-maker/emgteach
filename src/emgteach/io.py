@@ -26,6 +26,7 @@ References
 
 from __future__ import annotations
 
+import unicodedata
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
@@ -37,6 +38,23 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from emgteach.i18n import tr
+
+
+def ascii_label(label: str, limit: int = 16) -> str:
+    """The channel label as the EDF header can hold it: printable ASCII,
+    at most ``limit`` characters.
+
+    EDF stores its labels in the 7-bit ASCII of 1992, and a name with an
+    accent does not survive the trip: «Músculo» — the Spanish default for
+    the single-muscle practical — came back from the file as «MA sculo».
+    Accents are dropped rather than the letters that carry them, so the
+    name still reads («Musculo», «Biceps»); what has no ASCII form at all
+    becomes «?».
+    """
+    plano = unicodedata.normalize("NFKD", str(label))
+    sin_acentos = "".join(c for c in plano if not unicodedata.combining(c))
+    limpio = "".join(c if 32 <= ord(c) < 127 else "?" for c in sin_acentos)
+    return limpio.strip()[:limit]
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -165,7 +183,7 @@ class ChannelInfo:
     def to_pyedflib_header(self) -> dict[str, Any]:
         """Return the header dict expected by ``pyedflib.EdfWriter.setSignalHeader``."""
         return {
-            "label": self.label,
+            "label": ascii_label(self.label),
             "dimension": self.dimension,
             "sample_frequency": self.sample_frequency,
             "physical_min": self.physical_min,

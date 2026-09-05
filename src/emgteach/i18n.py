@@ -1801,6 +1801,17 @@ _ES = {
     'floor 5 %': 'suelo 5 %',
     'Amplitude by load': 'Amplitud por carga',
     'EMD by load': 'EMD por carga',
+    'Velocity by load': 'Velocidad por carga',
+    'Nothing measured for this.': 'No hay medida de esto.',
+    'Muscle on A1 · accelerometer on A2': 'Músculo en A1 · acelerómetro en A2',
+    'Muscle — e.g. biceps': 'Músculo — p. ej. bíceps',
+    'Cancel guide (Esc)': 'Cancelar guía (Esc)',
+    'Stop the guided procedure now; the recording goes on.':
+        'Detiene ahora el procedimiento guiado; la grabación sigue.',
+    'Calibration cancelled; the recording goes on.':
+        'Calibración cancelada; la grabación sigue.',
+    'Force-velocity acquisition cancelled; the recording goes on.':
+        'Adquisición fuerza-velocidad cancelada; la grabación sigue.',
     'MDF by load': 'MDF por carga',
     'This view needs two muscles.': 'Esta vista necesita dos músculos.',
     'The box shows one view at a time, chosen on its title line. «Relation» is the '

@@ -237,9 +237,10 @@ def _dominancia(ax, rows, v1, v2, name_1, name_2, ratio, fs) -> None:
     ax.axvspan(-banda, banda, color=COLOUR_BOTH, alpha=0.10, lw=0, zorder=0)
     ax.barh(y, d, color=_colores(rows, name_1, name_2), height=0.65, zorder=2)
     ax.axvline(0.0, color="#888888", lw=0.6, zorder=1)
-    paso = 2 if n > 12 else 1
-    ax.set_yticks(y[::paso])
-    ax.set_yticklabels([str(r_.n) for r_ in rows][::paso], fontsize=fs - 1)
+    # Every contraction numbered: the box scrolls when there are many, and
+    # numbering every other one read as a different numbering.
+    ax.set_yticks(y)
+    ax.set_yticklabels([str(r_.n) for r_ in rows], fontsize=fs - 1)
     # A row of headroom above the first bar, for the band's name.
     ax.set_ylim(-0.6, n + 0.3)
     ax.set_xlim(-1.05, 1.05)
@@ -277,6 +278,10 @@ def _por_carga(fig, celda, rows, v1, unidad, loads, fs) -> None:
     nombres = [tr("none") if c is None else f"{c:g}" for c in cats]
 
     def dibujar(ax, valores, etiqueta, titulo, color) -> None:
+        if not any(v is not None and np.isfinite(v) for v in valores):
+            _nota(ax, tr("Nothing measured for this."), fs)
+            ax.set_title(titulo, fontsize=fs, pad=3)
+            return
         rng = np.random.default_rng(0)
         for i, c in enumerate(cats):
             vals = np.array([v for v, ld in zip(valores, cargas, strict=True)
@@ -296,11 +301,15 @@ def _por_carga(fig, celda, rows, v1, unidad, loads, fs) -> None:
         ax.grid(axis="y", lw=0.4, alpha=0.4, zorder=0)
         _quitar_marco(ax)
 
+    # The three the kinematics practical asks about: how hard the muscle
+    # worked, how fast the segment moved, and how long the one took to
+    # become the other. The median frequency is the fatigue practical's
+    # question, not this one's.
     dibujar(fig.add_subplot(sub[0]), list(v1), unidad, tr("Amplitude by load"), COLOUR_1)
-    dibujar(fig.add_subplot(sub[1]), [r.emd_ms for r in rows], tr("EMD (ms)"),
+    dibujar(fig.add_subplot(sub[1]), [r.velocity_au for r in rows], tr("Velocity (a.u.)"),
+            tr("Velocity by load"), "#1F77B4")
+    dibujar(fig.add_subplot(sub[2]), [r.emd_ms for r in rows], tr("EMD (ms)"),
             tr("EMD by load"), "#2E7D32")
-    dibujar(fig.add_subplot(sub[2]), [r.mdf_hz for r in rows], tr("MDF (Hz)"),
-            tr("MDF by load"), _COLOUR_MDF)
 
 
 def _serie(ax_t, rows, x, v1, v2, name_1, name_2, dos, use_pct, unidad, fs) -> None:

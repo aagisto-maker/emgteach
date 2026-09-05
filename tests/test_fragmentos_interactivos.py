@@ -317,7 +317,9 @@ class TestTheCharts:
         etiquetas = [t.get_text() for t in fig.axes[0].get_xticklabels()]
         assert etiquetas == ["2", "3", tr("none")]
         assert fig.axes[0].get_xlabel() == tr("Load (kg)")
-        assert fig.axes[1].get_title() == tr("EMD by load")
+        # Amplitude, velocity and delay: what the kinematics practical asks.
+        assert fig.axes[1].get_title() == tr("Velocity by load")
+        assert fig.axes[2].get_title() == tr("EMD by load")
 
     def test_views_that_need_what_the_recording_lacks_say_so(self) -> None:
         fig = Figure()

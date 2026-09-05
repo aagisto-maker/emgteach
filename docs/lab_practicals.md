@@ -205,7 +205,7 @@ mean per manoeuvre with every contraction as a dot, and **«Who leads»**, one b
 per contraction to the right when the first muscle led and to the left when the
 second did, with the co-activation band in the middle. **«Series»** follows the
 contractions in order with the fitted trend and the MDF on the right axis, and in
-kinematics **«By load»** groups amplitude, electromechanical delay and MDF by the
+kinematics **«By load»** groups amplitude, velocity and electromechanical delay by the
 load the wizard marked. **«Table»** is the numbers, which are the ones copied
 into the tables of this guide. The co-activation chart is one line per window:
 the name on the left, the seconds on the right and, between them, the index as
@@ -506,9 +506,10 @@ fatigue verdict of each muscle in the grip (panel 7 draws both).
 
 **Set-up.** One channel over the **biceps brachii**, reference on the olecranon,
 and the BITalino **accelerometer** taped to the **back of the wrist** (the moving
-segment). Selector on **Muscle kinematics**. In the accelerometer box, placement
-«on the moving segment»; if the trace does not respond to tilting the sensor,
-**«Find the ACC channel…»** locates the right input.
+segment). Selector on **Muscle kinematics**. The wiring is a convention the
+accelerometer box states: **muscle on A1, accelerometer on A2**. In that box,
+placement «on the moving segment», and under «Labels» the muscle's name (biceps),
+which goes into the EDF header.
 
 **What the application shows in this practical.** The fine controls appear
 (envelope cut-off, region, refined EDF, force-velocity study). The analysis offers

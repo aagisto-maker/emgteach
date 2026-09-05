@@ -29,7 +29,12 @@ from emgteach.fatigue import (
     fit_mdf_vs_time,
     fit_rms_vs_mdf,
 )
-from emgteach.force_velocity import parse_fv_load_markers
+from emgteach.force_velocity import (
+    movement_onset_signal,
+    parse_fv_load_markers,
+    velocity_from_acc,
+    windows_from_markers,
+)
 from emgteach.i18n import tr
 from emgteach.io import (
     list_edf_channels,
@@ -47,6 +52,11 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
+
+#: How long after its marker a guided-wizard load window reaches, plus a
+#: little: the same reach :func:`emgteach.contractions.load_of_each` uses to
+#: give a contraction its load.
+_VENTANA_CARGA_S = 6.5
 
 
 def _cola_de_la_pausa(envelope, fs: float, phases, profile):
@@ -338,6 +348,19 @@ class AnalysisWorker(QThread):
         i1 = max(i0, min(i1, n_samples))
         return i0, i1, start_s, end_s
 
+    @staticmethod
+    def _ventanas_de_carga(
+        fv_loads: list[tuple[float, float]], fs: float, n_samples: int,
+    ) -> list[Segment] | None:
+        """One segment per lift of the guided force-velocity wizard, from
+        its load markers, in the analysed span's time; ``None`` without
+        markers, so the detector runs as everywhere else. The contraction
+        table trims each to the effort inside it."""
+        if not fv_loads:
+            return None
+        ventanas, _cargas = windows_from_markers(fv_loads, fs, n_samples)
+        return [Segment(i0 / fs, i1 / fs) for i0, i1 in ventanas if i1 > i0] or None
+
     def _resolve_segments(
         self, n_samples: int, fs: float, full_duration: float,
         default_span: tuple[float, float] | None = None,
@@ -451,11 +474,12 @@ class AnalysisWorker(QThread):
             full_duration = float(times[-1])
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
-                default_span=phases.rec_span(full_duration),
+                default_span=phases.rec_span(full_duration, fv_loads),
             )
             if bounds is None:
                 return  # error already emitted
             kept_segments = [(s, e) for (_, _, s, e, _lbl) in bounds]
+            fragmentos_concat: list[Segment] = []
             is_whole = (
                 len(bounds) == 1
                 and bounds[0][0] == 0
@@ -467,8 +491,14 @@ class AnalysisWorker(QThread):
                 times = np.arange(len(emg_raw), dtype=np.float64) / fs
                 new_markers: list[tuple[float, str]] = []
                 new_loads: list[tuple[float, float]] = []
+                # The kept fragments in the concatenated timeline, with
+                # their names: these are the contractions the table gets,
+                # one row each, numbered as the editor numbered them.
+                fragmentos_concat: list[Segment] = []
                 offset = 0.0
                 for i0, i1, seg_a, seg_b, nombre in bounds:
+                    fragmentos_concat.append(
+                        Segment(offset, offset + (i1 - i0) / fs, label=nombre or ""))
                     # A named fragment opens a window of the co-activation
                     # table, at its own start in the concatenated timeline.
                     # This is the whole mechanism: the operator says "this one
@@ -484,9 +514,14 @@ class AnalysisWorker(QThread):
                             new_markers.append((offset + (t - seg_a), label))
                     # The load markers move with the signal they mark, so a
                     # contraction in concatenated time still finds its load.
+                    # A marker sits at the start of its window, half a
+                    # second or more before the effort it announces, so a
+                    # fragment cut tight round the effort leaves it outside:
+                    # one within the window's length before the fragment is
+                    # its load, and lands at the fragment's start.
                     for t, kg in fv_loads:
-                        if seg_a <= t < seg_b:
-                            new_loads.append((offset + (t - seg_a), kg))
+                        if seg_a - _VENTANA_CARGA_S <= t < seg_b:
+                            new_loads.append((offset + max(0.0, t - seg_a), kg))
                     offset += (i1 - i0) / fs
                 markers = sorted(new_markers)
                 fv_loads = sorted(new_loads)
@@ -1024,6 +1059,10 @@ class AnalysisWorker(QThread):
                     result["acc_mmg_envelope"] = mmg_env
                     result["acc_mmg_rms"] = float(np.sqrt(np.mean(mmg_env ** 2)))
                     result["acc_movement_envelope"] = move_env
+                    # The segment's velocity, for the contraction table and
+                    # its chart by load: the force-velocity study's own
+                    # estimate, contraction by contraction.
+                    result["acc_velocity"] = velocity_from_acc(acc_raw, fs)
                     result["acc_tremor_freqs"] = tf
                     result["acc_tremor_psd"] = tpsd
                     result["acc_tremor_peak_hz"] = tpeak
@@ -1057,8 +1096,25 @@ class AnalysisWorker(QThread):
                     name_2=self._channel_name_2 or "",
                     both_label=tr("Co-activation"),
                     **self._detection,
+                    # The fragments the operator accepted are the rows: the
+                    # editor numbered them, and re-detecting inside their
+                    # concatenation renumbered them and split or merged a few.
+                    # Failing those, in the kinematics practical, one row per
+                    # lift of the guided wizard, from its load markers: the
+                    # detector cut a lift with a weight into two, three or
+                    # four windows, and the chart by load counted them all.
+                    segments=(fragmentos_concat if self._roi_segments
+                              else self._ventanas_de_carga(fv_loads, fs, len(emg_raw))),
+                    # For the onset, a fast trace of the movement, not the
+                    # smoothed envelope the panel draws (see
+                    # movement_onset_signal).
                     movement=(
-                        result.get("acc_movement_envelope")
+                        movement_onset_signal(result["acc_raw"], fs)
+                        if self._acc_placement == "limb" and "acc_raw" in result
+                        else None
+                    ),
+                    velocity=(
+                        result.get("acc_velocity")
                         if self._acc_placement == "limb" else None
                     ),
                     f_low=self._f_low, f_high=self._f_high,

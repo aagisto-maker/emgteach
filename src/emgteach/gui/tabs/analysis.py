@@ -270,6 +270,7 @@ from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
+from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.gui.help_texts import text as help_text
 from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
 from emgteach.gui.widgets.canvas import ScrollingCanvas
@@ -1485,8 +1486,9 @@ class AnalysisTab(QWidget):
         ask before opening a dialogue.
         """
         try:
-            fases = parse_phase_markers(read_edf_markers(path))
-            return fases.rec_span(edf_duration(path))
+            marcas = read_edf_markers(path)
+            fases = parse_phase_markers(marcas)
+            return fases.rec_span(edf_duration(path), parse_fv_load_markers(marcas))
         except Exception:
             return None
 

@@ -210,17 +210,35 @@ class SessionPhases:
             r for r in self.cal_reps if r.channel_index == int(channel_index)
         )
 
-    def rec_span(self, duration_s: float) -> tuple[float, float] | None:
-        """The analysed span ``(start, end)``, or ``None`` without a ``REC start``.
+    def rec_span(
+        self, duration_s: float,
+        load_markers: Iterable[tuple[float, float]] = (),
+    ) -> tuple[float, float] | None:
+        """The analysed span ``(start, end)``, or ``None`` when nothing in
+        the file says where the task began.
 
         Everything before the start — calibration and preparation alike — falls
         outside, which is how the preparation pause is kept out of every
-        analysis without a separate list of regions to exclude.
+        analysis without a separate list of regions to exclude. The start is
+        the ``REC start`` mark when the two-phase flow wrote one; failing
+        that, the end of the last closed calibration repetition, since the
+        single-muscle practical calibrates in the middle of its recording and
+        the task is what comes after (on the bench, its analysis took the
+        warm-up and the six maximal efforts for contractions of the task);
+        failing that, a second before the first load marker of the guided
+        force-velocity wizard, so the stray efforts made before it began stay
+        out too.
         """
-        if self.rec_start_s is None:
-            return None
-        start = max(0.0, min(float(self.rec_start_s), float(duration_s)))
-        return (start, float(duration_s))
+        fin = float(duration_s)
+        if self.rec_start_s is not None:
+            return (max(0.0, min(float(self.rec_start_s), fin)), fin)
+        if self.cal_reps:
+            ultimo = max(float(r.end_s) for r in self.cal_reps)
+            return (max(0.0, min(ultimo, fin)), fin)
+        cargas = sorted(float(t) for t, _kg in load_markers)
+        if cargas:
+            return (max(0.0, min(cargas[0] - 1.0, fin)), fin)
+        return None
 
 
 def parse_phase_markers(

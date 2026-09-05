@@ -204,7 +204,7 @@ maniobra con cada contracción como punto, y **«Quién lidera»**, una barra po
 contracción hacia la derecha si llevó el primer músculo y hacia la izquierda si
 llevó el segundo, con la banda de coactivación en medio. **«Serie»** sigue las
 contracciones en orden, con su recta de tendencia y la MDF en el eje derecho, y
-en cinemática **«Por carga»** agrupa amplitud, retraso electromecánico y MDF por
+en cinemática **«Por carga»** agrupa amplitud, velocidad y retraso electromecánico por
 la carga que dejó marcada el asistente. **«Tabla»** son los números, que son los
 que se copian en las tablas de este guion. El de coactivación es una línea por
 ventana: el nombre a la izquierda, los segundos a la derecha y, en medio, el
@@ -507,9 +507,10 @@ presa; veredicto de fatiga de cada músculo en la presa (panel 7 dibuja los dos)
 
 **Montaje.** Un canal sobre el **bíceps braquial**, referencia en el olécranon, y
 el **acelerómetro** del BITalino sujeto con cinta sobre el **dorso de la muñeca**
-(el segmento que se mueve). Selector en **Cinemática muscular**. En la caja del
-acelerómetro, colocación «sobre el segmento que se mueve»; si la traza no responde
-al inclinar el sensor, **«Buscar canal del ACC…»** localiza la entrada correcta.
+(el segmento que se mueve). Selector en **Cinemática muscular**. El cableado es
+una convención que la caja del acelerómetro dice: **el músculo en A1 y el
+acelerómetro en A2**. En esa caja, colocación «sobre el segmento que se mueve», y
+en «Etiquetas» el nombre del músculo (bíceps), que va a la cabecera del EDF.
 
 **Lo que enseña la aplicación en esta práctica.** Los controles finos aparecen
 (corte de la envolvente, región, EDF afinado, estudio fuerza-velocidad). El

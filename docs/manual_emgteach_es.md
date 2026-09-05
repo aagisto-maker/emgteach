@@ -354,6 +354,11 @@ con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
   y después escribe 5 s de preparación y el inicio del registro; en las otras dos
   se lanza con **«Calibrar CVM»** con la grabación en marcha. Todo queda dentro del
   mismo fichero, cada repetición con su tramo marcado (§5.1).
+- **Cancelar una guía.** Mientras corre la calibración o el plan de
+  fuerza-velocidad aparece **«Cancelar guía (Esc)»** junto al botón de grabar, y
+  Esc hace lo mismo desde cualquier punto de la pestaña. La grabación sigue; una
+  calibración cortada no deja referencia, y sus repeticiones cerradas quedan en
+  el fichero.
 - Al terminar cada músculo, el asistente comprueba que la referencia supere al
   menos cinco veces su nivel de reposo (si no, avisa: no fue una contracción
   máxima) y, con dos músculos, mide **cuánto leyó el otro canal** durante el
@@ -365,14 +370,14 @@ con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
   (Significado en §5.5.)
 
 **El acelerómetro** (solo en cinemática muscular). Se registra como un canal más,
-en unidades `g` y sin calibrar. La caja de acelerómetro reúne el selector de
-entrada analógica (A1–A6, por defecto A4), el botón **«Buscar canal del ACC…»** que lo
-localiza leyendo las seis entradas en vivo, y el selector de colocación: sobre el
-músculo (MMG) o sobre el segmento que se mueve (temblor y fuerza-velocidad). El
-selector de entrada está siempre a la vista: el valor por defecto no acierta en
-todas las placas, y esconderlo dejaría un primer registro de cinemática sin leer
-nada. En esta caja están también **«F-V guiada…»**, que dirige la adquisición de
-una serie de cargas conocidas, y **«Ensayar…»**, que corre ese procedimiento sin
+en unidades `g` y sin calibrar. La caja de acelerómetro dice el cableado, **el
+músculo en A1 y el acelerómetro en A2**, que es una convención y no un ajuste: el
+selector de entrada y el diagnóstico «buscar canal del ACC» que había aquí no
+encontraron nada en el banco mientras la convención acertaba. Y reúne el selector
+de colocación: sobre el músculo (MMG) o sobre el segmento que se mueve (temblor,
+fuerza-velocidad y retraso electromecánico). En esta caja están también **«F-V
+guiada…»**, que dirige la adquisición de una serie de cargas conocidas, y
+**«Ensayar…»**, que corre ese procedimiento sin
 hardware sobre una señal simulada.
 
 [Figura sugerida: captura completa de la pestaña de Adquisición durante una
@@ -904,11 +909,11 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 
 1. **Práctica**: *Cinemática muscular* (nivel avanzado). Aparecen la gráfica del
    acelerómetro, su caja de ajustes y los controles finos.
-2. **Colocación del sensor.** Se elige entre sobre el músculo (MMG) o sobre el
-   segmento que se mueve (temblor, fuerza-velocidad, retraso electromecánico). Si
-   la traza no responde al inclinar el sensor, **«Buscar canal del ACC…»** localiza
-   la entrada analógica correcta. **«Ensayar…»** corre el procedimiento de
-   fuerza-velocidad sin hardware, con una señal simulada.
+2. **Cableado y colocación del sensor.** El músculo en A1 y el acelerómetro en A2,
+   como dice la caja. Se elige entre sobre el músculo (MMG) o sobre el segmento
+   que se mueve (temblor, fuerza-velocidad, retraso electromecánico).
+   **«Ensayar…»** corre el procedimiento de fuerza-velocidad sin hardware, con una
+   señal simulada.
 3. **Adquisición.** Para la curva de fuerza-velocidad, **«F-V guiada…»** pide el
    plan (cargas, repeticiones por carga, preparación), inicia la grabación si hace
    falta y dirige la serie: un máximo isométrico sin carga de 3 s y después cada

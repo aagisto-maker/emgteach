@@ -33,9 +33,13 @@ _MIN_S_FOR_MDF = 0.25
 _MOVE_ONSET_FRACTION = 0.20
 
 #: Electromechanical delays outside this range are not delays: a negative
-#: one means the movement began before the muscle fired (a different
-#: movement, or a bounce), and a very long one means no movement followed.
-_EMD_RANGE_MS = (0.0, 400.0)
+#: or a near-zero one means the movement was already under way when the
+#: muscle fired (a different movement, a bounce, the smoothing's own
+#: spread), and a very long one means no movement followed.
+_EMD_RANGE_MS = (5.0, 400.0)
+
+#: How far after the muscle's onset the movement is looked for.
+_MOVE_SEARCH_S = 1.0
 
 #: A proposed window whose peak above rest is below this share of the
 #: recording's strongest peak is noise the detector let through, not a
@@ -72,6 +76,9 @@ class Contraction:
     channel: int = 1
     rms_mv_other: float | None = None
     peak_pct_other: float | None = None
+    #: Peak velocity of the segment over the contraction, in the arbitrary
+    #: units of an uncalibrated accelerometer; ``None`` without one.
+    velocity_au: float | None = None
 
     @property
     def duration_s(self) -> float:
@@ -82,6 +89,69 @@ class Contraction:
         if which == self.channel:
             return self.rms_mv, self.peak_pct
         return (self.rms_mv_other or 0.0), self.peak_pct_other
+
+
+def _movement_after(
+    move: np.ndarray, fs: float, i_emg: int, rest: float,
+) -> float | None:
+    """When the segment began to move once the muscle had fired.
+
+    The first sample past ``i_emg`` above rest plus a fifth of the rise the
+    movement makes in the second that follows. The muscle's own onset is
+    found by walking back from its peak; doing the same for the movement
+    found the lowering of the load as often as the lift — an effort with a
+    weight is two accelerations, and the second is often the bigger — and
+    put the delay at the wrong end of the effort, three hundred
+    milliseconds and more.
+    """
+    fin = min(move.size, i_emg + round(_MOVE_SEARCH_S * fs))
+    if fin <= i_emg or i_emg < 0:
+        return None
+    tramo = move[i_emg:fin]
+    pico = float(np.max(tramo)) - rest
+    if pico <= 0.0:
+        return None
+    umbral = rest + _MOVE_ONSET_FRACTION * pico
+    idx = np.flatnonzero(tramo > umbral)
+    if idx.size == 0:
+        return None
+    return (i_emg + int(idx[0])) / fs
+
+
+def _recortar_al_esfuerzo(
+    seg: Segment, fs: float, actividad: np.ndarray,
+) -> Segment:
+    """The stretch of ``seg`` in which the effort was made: from the first
+    sample above a fifth of the segment's peak activity to the last.
+
+    A fragment is drawn round an effort, not on it — the editor's proposals
+    carry their rise and fall, the wizard's windows start at the cue and
+    run to the next — and a row's RMS over the rest on either side would be
+    the rest's number as much as the effort's. A segment with no activity
+    in it is kept as it is.
+    """
+    i0, i1 = max(0, round(seg.start_s * fs)), min(actividad.size, round(seg.end_s * fs))
+    if i1 <= i0:
+        return seg
+    tramo = actividad[i0:i1]
+    pico = float(np.max(tramo))
+    if pico <= 0.0:
+        return seg
+    activo = np.flatnonzero(tramo > _MOVE_ONSET_FRACTION * pico)
+    if activo.size == 0:
+        return seg
+    return Segment((i0 + int(activo[0])) / fs, (i0 + int(activo[-1]) + 1) / fs,
+                   label=seg.label)
+
+
+def _fast_envelope(x: np.ndarray, fs: float, win_s: float = 0.05) -> np.ndarray:
+    """The rectified signal averaged over ``win_s``: an envelope fast enough
+    to place an onset by. The 5 Hz envelope of the panels spreads each rise
+    tens of milliseconds to either side, which is the size of the delay
+    being measured."""
+    w = max(1, round(win_s * fs))
+    return np.convolve(np.abs(np.asarray(x, dtype=np.float64)), np.ones(w) / w,
+                       mode="same")
 
 
 def _running_mean_max(env: np.ndarray, w: int) -> float:
@@ -95,26 +165,37 @@ def _running_mean_max(env: np.ndarray, w: int) -> float:
 
 
 def _onset_s(
-    signal: np.ndarray, fs: float, i0: int, i1: int, rest: float
+    signal: np.ndarray, fs: float, i0: int, i1: int, rest: float, back: int = 0,
 ) -> float | None:
-    """First moment after ``i0`` where ``signal`` clearly rises.
+    """When the rise that leads to the peak in ``[i0, i1)`` began.
 
-    Used for the muscle and for the limb alike, at the same fraction of
-    each one's own peak: an onset taken at the threshold crossing for one
-    and at a fifth of the peak for the other would put most of the
-    envelope's rise time into the delay.
+    From the peak, back while the signal stays above rest plus a fifth of
+    the peak's height; the search may reach ``back`` samples before ``i0``.
+    Used for the muscle and for the limb alike, at the same fraction of each
+    one's own peak: an onset taken at the threshold crossing for one and at
+    a fifth of the peak for the other would put most of the envelope's rise
+    time into the delay.
+
+    Scanning forward from ``i0`` took the window's first sample for the
+    onset whenever the window began, as the detector's do, on the threshold
+    crossing — the muscle was already up, the limb often too, and the delay
+    came out as zero on the bench. Walking back from the peak finds the rise
+    this contraction made and stops at the rest between it and the one
+    before, instead of running into that one's tail.
     """
-    tramo = signal[i0:i1]
-    if tramo.size == 0:
+    if i1 <= i0 or i0 >= signal.size:
         return None
-    pico = float(np.max(tramo)) - rest
+    i1 = min(i1, signal.size)
+    cima = i0 + int(np.argmax(signal[i0:i1]))
+    pico = float(signal[cima]) - rest
     if pico <= 0.0:
         return None
     umbral = rest + _MOVE_ONSET_FRACTION * pico
-    idx = np.flatnonzero(tramo > umbral)
-    if idx.size == 0:
-        return None
-    return (i0 + int(idx[0])) / fs
+    ini = max(0, i0 - int(back))
+    j = cima
+    while j > ini and signal[j - 1] > umbral:
+        j -= 1
+    return j / fs
 
 
 def load_of_each(
@@ -164,6 +245,8 @@ def contraction_table(
     name_2: str = "",
     both_label: str = "both",
     movement=None,
+    velocity=None,
+    segments: Sequence[Segment] | None = None,
     f_low: float = 20.0,
     f_high: float = 450.0,
     f_notch: float = 50.0,
@@ -189,6 +272,14 @@ def contraction_table(
     clear activity yields an empty list, not a row for the whole recording:
     a table that said «contraction 1: 0.0-18.2 s» would be describing the
     absence of one.
+
+    With ``segments`` — the fragments the operator accepted, in this span's
+    time — nothing is detected: those are the rows, in that order, numbered
+    as the editor numbered them. Detecting again inside their concatenation
+    renumbered them and split or merged a few, and the chart said «7» of
+    what the editor had called «12». ``velocity`` is the segment's velocity
+    from :func:`emgteach.force_velocity.velocity_from_acc`, sampled with the
+    signal; each row takes its peak over the contraction.
     """
     raw = np.asarray(emg_raw, dtype=np.float64).ravel()
     filt = np.asarray(emg_filtered, dtype=np.float64).ravel()
@@ -203,24 +294,39 @@ def contraction_table(
         prominence=prominence,
     )
 
-    segs = [s for s in suggest_significant_segments(raw, fs, **filtros)
-            if s.reason != "whole"]
     dos = emg_raw_2 is not None and envelope_2 is not None
     env2 = np.asarray(envelope_2, dtype=np.float64).ravel() if dos else None
     filt2 = (np.asarray(emg_filtered_2, dtype=np.float64).ravel()
              if dos and emg_filtered_2 is not None else None)
-    if dos:
-        raw2 = np.asarray(emg_raw_2, dtype=np.float64).ravel()
-        segs += [s for s in suggest_significant_segments(raw2, fs, **filtros)
-                 if s.reason != "whole"]
-        segs = normalise_segments(segs, total_s)
+    if segments is not None:
+        # Each fragment trimmed to the effort inside it, on whichever
+        # muscle rose more above its rest.
+        actividad = env - resting_level(env)
+        if env2 is not None:
+            actividad = np.maximum(actividad, env2 - resting_level(env2))
+        segs = [_recortar_al_esfuerzo(s, fs, actividad)
+                for s in segments if s.end_s > s.start_s]
+    else:
+        segs = [s for s in suggest_significant_segments(raw, fs, **filtros)
+                if s.reason != "whole"]
+        if dos:
+            raw2 = np.asarray(emg_raw_2, dtype=np.float64).ravel()
+            segs += [s for s in suggest_significant_segments(raw2, fs, **filtros)
+                     if s.reason != "whole"]
+            segs = normalise_segments(segs, total_s)
     if not segs:
         return []
 
     w = max(1, round(window_s * fs))
     move = np.asarray(movement, dtype=np.float64).ravel() if movement is not None else None
     rest_move = resting_level(move) if move is not None else 0.0
+    vel = np.asarray(velocity, dtype=np.float64).ravel() if velocity is not None else None
     cola = round(0.5 * fs)
+    # Fast envelopes for the onsets alone; every other number comes from
+    # the envelope the panels show.
+    e_rapida = _fast_envelope(filt, fs) if move is not None else None
+    e_rapida2 = (_fast_envelope(filt2, fs) if move is not None and filt2 is not None
+                 else None)
 
     # Each muscle's resting level and its strongest peak above it. A proposed
     # window whose peak is a small fraction of that is the detector reacting
@@ -279,14 +385,20 @@ def contraction_table(
             except Exception:
                 mdf = None
         emd = None
-        if move is not None and move.size >= i1:
+        if move is not None and move.size >= i1 and e_rapida is not None:
             fin = min(move.size, i1 + cola)
-            t_emg = _onset_s(e, fs, i0, fin, resting_level(e))
-            t_move = _onset_s(move, fs, i0, fin, rest_move)
+            e_r = e_rapida2 if (canal == 2 and e_rapida2 is not None) else e_rapida
+            t_emg = _onset_s(e_r, fs, i0, fin, resting_level(e_r), back=cola)
+            t_move = (_movement_after(move, fs, round(t_emg * fs), rest_move)
+                      if t_emg is not None else None)
             if t_emg is not None and t_move is not None:
                 candidato = (t_move - t_emg) * 1000.0
                 if _EMD_RANGE_MS[0] <= candidato <= _EMD_RANGE_MS[1]:
                     emd = candidato
+        velocidad = None
+        if vel is not None and vel.size >= i1:
+            fin_v = min(vel.size, i1 + cola)
+            velocidad = float(np.max(np.abs(vel[i0:fin_v]))) if fin_v > i0 else None
         # The other muscle's own numbers over the same stretch, for the chart
         # that draws the two side by side.
         rms_otro = pico_otro = None
@@ -302,6 +414,7 @@ def contraction_table(
             n=k, start_s=float(s.start_s), end_s=float(s.end_s), muscle=nombre,
             rms_mv=rms, peak_pct=pico, mdf_hz=mdf, emd_ms=emd,
             channel=canal, rms_mv_other=rms_otro, peak_pct_other=pico_otro,
+            velocity_au=velocidad,
         ))
     return filas
 

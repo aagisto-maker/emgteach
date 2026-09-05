@@ -37,7 +37,7 @@ from typing import ClassVar
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QGuiApplication, QPixmap
+from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -167,6 +167,11 @@ _LABEL_FALLBACKS = [lambda: tr("Agonist"), lambda: tr("Antagonist")]
 # still stored in QSettings (this does not overwrite names chosen by the user,
 # only the old defaults). One tuple of superseded defaults per channel.
 _OLD_DEFAULT_LABELS = [("Canal 1", "EMG"), ("Canal 2", "EMG 2")]
+
+#: The analogue input the accelerometer is wired to, as an index: A2. The
+#: muscle takes A1. A convention the tab states rather than a setting it
+#: offers (see the kinematics block of _apply_mode).
+_ACC_INPUT = 1
 
 # With 2 channels the raw plot stacks (one lane per channel) instead of
 # overlapping. The mV axis is no longer absolute, so each lane shows reference
@@ -643,15 +648,22 @@ class AcquisitionTab(QWidget):
         )
         self._combo_acc_place.currentIndexChanged.connect(self._on_acc_place_changed)
         acc_l.addWidget(self._combo_acc_place)
+        # The wiring is a convention, not a setting: the muscle on A1, the
+        # accelerometer on A2. It used to be a selector with a «find it»
+        # diagnostic beside it, and on the bench the diagnostic found nothing
+        # while the convention was right all along.
+        self._lbl_acc_wiring = QLabel(tr("Muscle on A1 · accelerometer on A2"))
+        self._lbl_acc_wiring.setStyleSheet("color: #6B7580; font-size: 11px;")
+        acc_l.addWidget(self._lbl_acc_wiring)
         # Which analogue input the accelerometer is wired to. The BITalino packs
         # enabled channels consecutively, so this must be the physical input;
         # it defaults to A4 but is configurable (see the channel diagnostic).
         self._combo_acc_channel = QComboBox()
         for idx in range(6):
             self._combo_acc_channel.addItem(f"A{idx + 1}", idx)
-        saved_acc_ch = self._settings.value("adquisicion/acc_channel", 3, type=int)
+        saved_acc_ch = self._settings.value("adquisicion/acc_channel", _ACC_INPUT, type=int)
         self._combo_acc_channel.setCurrentIndex(
-            saved_acc_ch if 0 <= saved_acc_ch < 6 else 3
+            saved_acc_ch if 0 <= saved_acc_ch < 6 else _ACC_INPUT
         )
         self._combo_acc_channel.setEnabled(bool(self._acc_enabled))
         self._combo_acc_channel.setToolTip(
@@ -795,6 +807,19 @@ class AcquisitionTab(QWidget):
         self._btn_grabar.setEnabled(False)
         self._btn_grabar.clicked.connect(self._toggle_grabacion)
         ctrl_layout.addWidget(self._btn_grabar)
+        # The way out of a guided procedure — the calibration, the
+        # force-velocity plan — before it ends on its own. Shown only while
+        # one runs; Esc does the same from anywhere on the tab. On the bench
+        # there was no way out but to wait for the six efforts to pass.
+        self._btn_cancelar_guia = QPushButton(tr("Cancel guide (Esc)"))
+        self._btn_cancelar_guia.setVisible(False)
+        self._btn_cancelar_guia.setToolTip(
+            tr("Stop the guided procedure now; the recording goes on."))
+        self._btn_cancelar_guia.clicked.connect(self._cancelar_guiado)
+        ctrl_layout.addWidget(self._btn_cancelar_guia)
+        atajo_esc = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        atajo_esc.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        atajo_esc.activated.connect(self._cancelar_guiado)
 
         self._led = QLabel()
         self._led.setFixedSize(16, 16)
@@ -1289,7 +1314,13 @@ class AcquisitionTab(QWidget):
                 labels.append(tr(fijas[i]))
                 continue
             text = self._edit_labels[i].text().strip()
-            labels.append(text or _LABEL_FALLBACKS[i]())
+            # One muscle has no agonist: its generic name is «Muscle».
+            if text:
+                labels.append(text)
+            elif self._n_channels == 1:
+                labels.append(tr("Muscle"))
+            else:
+                labels.append(_LABEL_FALLBACKS[i]())
         return labels
 
     def _apply_channel_visibility(self) -> None:
@@ -2049,9 +2080,12 @@ class AcquisitionTab(QWidget):
                 acc = next((c for c in todos if c not in nombres), None)
                 if acc is not None:
                     from emgteach.io import read_edf_pyedflib
+                    # «emg_raw» is the reader's name for whatever channel it
+                    # was asked for; under «signal» there was nothing, and
+                    # the accelerometer's panel of the review stayed blank.
                     self._curve_acc.setData(
                         t, np.asarray(read_edf_pyedflib(
-                            edf_path, todos.index(acc))["signal"],
+                            edf_path, todos.index(acc))["emg_raw"],
                             dtype=np.float64)[:n])
             except Exception:
                 self._curve_acc.setData([], [])
@@ -2489,6 +2523,7 @@ class AcquisitionTab(QWidget):
                 self._log(tr("Another guided procedure is already running."))
             return
         self._mvc_active = True
+        self._btn_cancelar_guia.setVisible(True)
         # Pressing «Calibrate MVC» while the session flow is armed is the
         # same calibration the flow was about to run, so it adopts the flow
         # rather than replacing it. Without this the button wins the race —
@@ -2960,6 +2995,7 @@ class AcquisitionTab(QWidget):
         self._mvc_timer.stop()
         self._mvc_active = False
         self._mvc_phase = "done"
+        self._btn_cancelar_guia.setVisible(False)
         ok = [c for c in range(self._n_channels) if self._mvc_ref[c]]
         self._prep_aviso = ""
         self._btn_calibrar.setEnabled(True)
@@ -3061,8 +3097,37 @@ class AcquisitionTab(QWidget):
         self._mvc_flow_pending = False
         self._mvc_phase = ""
         self._mvc_overlay.hide_overlay()
+        self._btn_cancelar_guia.setVisible(False)
         self._update_fv_button()
         self._bcast_calib(False)
+
+    @Slot()
+    def _cancelar_guiado(self) -> None:
+        """Out of whichever guided procedure is running, now.
+
+        The button beside the record button and Esc both land here. The
+        recording itself goes on: what the operator wanted to stop was the
+        guide, and stopping the file with it would throw away the take.
+        A calibration cut short leaves no reference — the closed repetitions
+        stay in the file, and the analysis reads them back as it does for a
+        recording stopped mid-calibration.
+        """
+        if self._mvc_active:
+            self._mvc_cancel()
+            self._prep_aviso = ""
+            if self._worker and self._worker.isRunning():
+                self._btn_calibrar.setEnabled(True)
+                self._btn_grabar.setEnabled(True)
+            self._set_thresholds_enabled(any(bool(r) for r in self._mvc_ref[:self._n_channels]))
+            self._log(tr("Calibration cancelled; the recording goes on."))
+        elif self._fv_active:
+            self._fv_cancel()
+            if self._worker and self._worker.isRunning():
+                self._btn_calibrar.setEnabled(True)
+                self._btn_grabar.setEnabled(True)
+            self._update_fv_button()
+            self._log(tr("Force-velocity acquisition cancelled; the recording goes on."))
+        self._btn_cancelar_guia.setVisible(False)
 
     # -- Guided force-velocity acquisition wizard ----------------------------
 
@@ -3138,6 +3203,7 @@ class AcquisitionTab(QWidget):
         self._fv_prep_s = float(prep_s)
         self._fv_window_s = float(window_s)
         self._fv_active = True
+        self._btn_cancelar_guia.setVisible(True)
         self._fv_idx = 0
         self._fv_rep = 0
         self._fv_mvc_buf = []
@@ -3306,6 +3372,7 @@ class AcquisitionTab(QWidget):
         self._fv_timer.stop()
         self._fv_active = False
         self._fv_phase = "done"
+        self._btn_cancelar_guia.setVisible(False)
         if self._worker and self._worker.isRunning():
             self._btn_grabar.setEnabled(True)
             self._btn_calibrar.setEnabled(True)
@@ -3334,6 +3401,7 @@ class AcquisitionTab(QWidget):
         self._fv_timer.stop()
         self._fv_active = False
         self._fv_phase = ""
+        self._btn_cancelar_guia.setVisible(False)
         if not self._mvc_active:
             self._mvc_overlay.hide_overlay()
 
@@ -3744,16 +3812,24 @@ class AcquisitionTab(QWidget):
         # operator had them, so their own names survive a visit to a practical
         # that does not use them.
         self._box_labels.setVisible(not mode_fixed_labels(mode))
+        # The hint in the first box names what the practical records: one
+        # muscle, or the agonist of a pair.
+        self._edit_labels[0].setPlaceholderText(
+            tr("Muscle — e.g. biceps") if mode_channels(mode) == 1 else _LABEL_HINTS[0]())
 
         # Belongs to the kinematics practical, not to the fine controls.
         uses_acc = mode_uses_acc(mode)
         self._box_acc.setVisible(uses_acc)
         self._box_fv_guided.setVisible(uses_acc)
-        # Which analogue input the sensor is wired to, and the diagnostic that
-        # finds it, stay with the mode rather than behind the advanced flag:
-        # the default is A4 and a BITalino may well have it elsewhere, so
-        # hiding this would make a first kinematics recording read nothing.
-        self._box_acc_wiring.setVisible(uses_acc)
+        # Which analogue input the sensor is wired to is a convention the
+        # block states — muscle on A1, accelerometer on A2 — not a selector:
+        # the selector and its «find it» diagnostic stay built (the recording
+        # code reads the combo) but never shown, and the practical sets it.
+        self._box_acc_wiring.setVisible(False)
+        if uses_acc:
+            fijo = self._combo_acc_channel.findData(_ACC_INPUT)
+            if fijo >= 0:
+                self._combo_acc_channel.setCurrentIndex(fijo)
 
         # The channel count is now decided by the mode, so its selector never
         # appears — it would be a control that cannot disagree with the mode.

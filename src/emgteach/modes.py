@@ -110,7 +110,12 @@ def normalise_mode(value: object) -> str:
 #: The agonist/antagonist practical is the exception, and the reason is the
 #: point of it: there are two muscles, telling them apart *is* the reading, and
 #: the names travel into the co-activation table as its column headings.
-_FIXED_LABELS = {MODE_SINGLE: ("Muscle",), MODE_KINEMATICS: ("Muscle",)}
+# No practical imposes a name any more. The two single-muscle practicals
+# used to fix «Muscle», on the reasoning that there was nothing else to call
+# it — and every recording came back headed «Músculo», which says nothing
+# about which muscle it was. The box is offered in every practical; a name
+# left empty falls back to the practical's generic one.
+_FIXED_LABELS: dict[str, tuple[str, ...]] = {}
 
 
 def mode_channels(mode: str) -> int:
