@@ -1,6 +1,8 @@
 # --- Editor / local tooling ---
-# local Claude Code launch configs (machine-specific paths)
+# local editor and tooling configs (machine-specific paths)
 .claude/
+.vscode/
+.idea/
 
 # --- Python ---
 __pycache__/
