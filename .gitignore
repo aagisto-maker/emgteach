@@ -1,9 +1,3 @@
-# --- Editor / local tooling ---
-# local editor and tooling configs (machine-specific paths)
-.claude/
-.vscode/
-.idea/
-
 # --- Python ---
 __pycache__/
 *.py[cod]
