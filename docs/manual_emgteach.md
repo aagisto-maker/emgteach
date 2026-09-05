@@ -170,6 +170,16 @@ rectified and envelope.]
 
 ### 4.1 Choosing the practical
 
+> **A screenshot without leaving the application.** In that same
+> corner, the **«Screenshot»** button — or **F12** from any tab —
+> saves a picture of the window into the recordings folder, with the
+> date and time in its name. It asks nothing and opens no dialogue:
+> the system snipping tool steals the focus and asks for a folder,
+> and both happen while somebody is holding a contraction. It grabs
+> the window, not the screen, so nothing behind it can get in, while
+> the wizard's cue panel and the next-step panel do, being children
+> of the window. The path goes to the event log.
+
 In the top-right corner, on the same row as the language selector, a drop-down
 with three options. It is the first control touched in a session: it fixes what
 is recorded, and the three tabs configure themselves from it.
