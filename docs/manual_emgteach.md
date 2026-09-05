@@ -159,7 +159,7 @@ analysis, so the file stays small and always reproducible.
 | RMS window | 50 ms | RMS amplitude computation |
 | Fatigue segment | 1 s (50 % overlap) | Windows for RMS/MDF over time |
 | MVC reference window | 0.2 s | The best 0.2 s across the six calibration repetitions (§5.1) |
-| Calibration | 3 × 4 s held + 3 × 1.5 s brief, after 10 s of warm-up | What the wizard asks per muscle |
+| Calibration | 3 × 1.5 s brief maximal efforts, after 10 s of warm-up | What the wizard asks per muscle |
 
 [Suggested figure: four stacked traces of the same segment — raw, filtered,
 rectified and envelope.]
@@ -187,7 +187,7 @@ need a second channel or the accelerometer, which only the BITalino has, so the
 box reads «Device: BITalino» and leaves the address editable.
 
 **The level is the practical.** There is no "advanced options" tick: the fine
-controls (envelope cut-off, region of interest, refined EDF, force-velocity study)
+controls (envelope cut-off, refined EDF, force-velocity study)
 belong to the kinematics practical, which is advanced by its nature, and there
 they take a row of their own. The other two do not show them.
 
@@ -425,7 +425,7 @@ which is what makes muscles, subjects and sessions comparable: absolute
 millivolts depend on skin impedance, electrode position and anatomy.
 
 > **How the reference is measured.** It is the **best sustained 0.2 s** across the
-> six calibration repetitions (three held maxima and three brief squeezes), with
+> three calibration repetitions, with
 > the window's resting level subtracted. Not the instantaneous peak, which one
 > noise sample could set, nor the held half second, which sat on the plateau: a
 > held contraction shows a peak at its start and then a plateau, and the task's
@@ -675,8 +675,8 @@ Each begins by **choosing the practical** in the top-right selector.
    the muscle for MMG; on the moving segment for tremor, force-velocity and
    electromechanical delay).
 2. **The sequence.** The «Force-velocity study» box lists it in its order:
-   **«1 · Rehearse…»** runs the procedure with no hardware, on a synthetic signal
-   (optional, to learn it); **«2 · F-V parameters…»** asks for the plan (loads in
+   **«Rehearse…»** runs the procedure with no hardware, on a synthetic signal
+   (optional, to learn it); **«F-V parameters…»** asks for the plan (loads in
    order, lifts per load, preparation) and keeps it; and **«Start recording»**
    runs the session by itself: file name, calibration of the maximum first (the
    «Calibrate MVC» button does not appear in this practical: the flow does it),

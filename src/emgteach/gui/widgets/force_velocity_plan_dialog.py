@@ -55,7 +55,14 @@ def parse_loads(text: str) -> list[float]:
 class ForceVelocityPlanDialog(QDialog):
     """Collect the load list and timing for the guided force-velocity wizard."""
 
-    def __init__(self, parent=None, placement: str = "limb") -> None:
+    def __init__(self, parent=None, placement: str = "limb", *,
+                 loads: str = "", reps: int = 0, prep_s: float = 0.0,
+                 lift_s: float = 0.0) -> None:
+        """The plan, pre-filled with the one already saved where there is one.
+
+        Reopening the dialogue to change a single load and finding every
+        field back at its default is how a plan gets retyped wrongly.
+        """
         super().__init__(parent)
         self.setWindowTitle(tr("Guided force-velocity acquisition"))
         self.setMinimumWidth(420)
@@ -63,9 +70,9 @@ class ForceVelocityPlanDialog(QDialog):
         root = QVBoxLayout(self)
         intro = QLabel(tr(
             "List the known loads (kg) the subject will lift, lightest to "
-            "heaviest. The wizard first guides an MVC maximum (no load), then "
-            "for each load cues a quick lift ('Lift!' → 'Relax!', no hold), "
-            "marking each so the force-velocity study reads the loads "
+            "heaviest. Recording calibrates the maximum first and then cues a "
+            "quick lift for each load ('Lift!' → 'Relax!', no hold), marking "
+            "each one so the force-velocity study reads the loads "
             "automatically."
         ))
         intro.setWordWrap(True)
@@ -95,7 +102,9 @@ class ForceVelocityPlanDialog(QDialog):
 
         self._spin_reps = QSpinBox()
         self._spin_reps.setRange(1, 5)
-        self._spin_reps.setValue(1)
+        # Three: one lift per load is one number per load, with nothing to say
+        # how much of it is the subject and how much is the attempt.
+        self._spin_reps.setValue(3)
         self._spin_reps.setToolTip(tr(
             "Contractions to perform at each load. The wizard prompts one at a "
             "time; keep it low (1-3) so fatigue does not bias the heavier loads."
@@ -104,7 +113,7 @@ class ForceVelocityPlanDialog(QDialog):
 
         self._spin_prep = QDoubleSpinBox()
         self._spin_prep.setRange(1.0, 20.0)
-        self._spin_prep.setValue(5.0)
+        self._spin_prep.setValue(6.0)
         self._spin_prep.setSuffix(" s")
         self._spin_prep.setToolTip(tr("Countdown to prepare before each contraction."))
         form.addRow(tr("Prepare time:"), self._spin_prep)
@@ -112,14 +121,25 @@ class ForceVelocityPlanDialog(QDialog):
         self._spin_window = QDoubleSpinBox()
         self._spin_window.setRange(0.5, 5.0)
         self._spin_window.setSingleStep(0.5)
-        self._spin_window.setValue(1.5)
+        # One second. The lift is what is being measured and it is quick; a
+        # longer window only adds the rest that follows it to the row.
+        self._spin_window.setValue(1.0)
         self._spin_window.setSuffix(" s")
         self._spin_window.setToolTip(tr(
-            "Time given for each loaded lift — a quick concentric movement, not "
-            "a hold (the MVC maximum is held separately)."
+            "Time given for each loaded lift — a quick concentric movement, "
+            "not a hold."
         ))
         form.addRow(tr("Lift time:"), self._spin_window)
         root.addLayout(form)
+
+        if loads:
+            self._edit_loads.setText(loads)
+        if reps:
+            self._spin_reps.setValue(int(reps))
+        if prep_s:
+            self._spin_prep.setValue(float(prep_s))
+        if lift_s:
+            self._spin_window.setValue(float(lift_s))
 
         self._error = QLabel("")
         self._error.setStyleSheet("color:#b00020; font-size:11px;")

@@ -2184,12 +2184,35 @@ class AnalysisTab(QWidget):
                 acc_flat=acc_plano,
             )
             dlg.exec()
+            self._ofrecer_afinado()
         except Exception as exc:  # pragma: no cover — GUI feedback only
             self._logger.append_error(
                 tr("Could not open the force-velocity study: {error}").format(
                     error=exc
                 )
             )
+
+    def _ofrecer_afinado(self) -> None:
+        """Say to save the tuned recording, once the study has been read.
+
+        Everything the study rests on was decided on screen: which maximal
+        efforts set the reference and which lifts count. None of it is in the
+        file, so the same recording opened tomorrow gives different numbers —
+        and this is the moment it is worth keeping, with the study just read
+        and the decisions still made. Once per recording, and never over a
+        recording that is already a derived one.
+        """
+        if self._paso_mostrado == "afinado" or not self._btn_afinado.isEnabled():
+            return
+        self._paso_mostrado = "afinado"
+        texto = tr(
+            "Next: «{button}». It writes a new recording with the "
+            "repetitions and the fragments you have just chosen, so reopening "
+            "it gives these same numbers. The original is not touched."
+        ).format(button=tr("Save tuned EDF…"))
+        self._lbl_siguiente.setText(texto)
+        self._lbl_siguiente.setVisible(True)
+        self.coach_step.emit(tr("Next step"), texto, self._btn_afinado)
 
     def _warn_channel_quality(self, path: str) -> None:
         """Log a per-channel warning when a loaded channel is flat or saturated.
@@ -3201,7 +3224,12 @@ class AnalysisTab(QWidget):
 
         # Shared by every mode: fine control.
         self._box_fenv.setVisible(advanced)
-        self._box_roi.setVisible(advanced)
+        # The region of interest is never shown. It asks for two numbers the
+        # student does not have, over a recording they are looking at, when
+        # the fragment editor beside it does the same job by pointing. The
+        # widgets stay built — the worker still reads them, and a region set
+        # by a script still works — but nothing on screen offers them.
+        self._box_roi.setVisible(False)
         self._box_tools.setVisible(advanced)
         # Saving a derived EDF is for whoever curates the recordings, not for
         # the student reading one; and its name explains nothing to them.

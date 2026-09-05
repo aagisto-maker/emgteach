@@ -70,8 +70,8 @@ class TestItFitsALaboratoryLaptop:
         finally:
             _cierra(qapp, win)
 
-    def test_no_wizard_sentence_widens_the_window(self, qapp) -> None:
-        """The running commentary of the two wizards cannot push the window.
+    def test_no_wizard_sentence_moves_the_load_box(self, qapp) -> None:
+        """The running commentary of the two wizards cannot push the box.
 
         On the bench of 5 September the force-velocity wizard finished, wrote
         «4 loads recorded. Stop recording, then open…» into the small grey
@@ -81,7 +81,11 @@ class TestItFitsALaboratoryLaptop:
         warning that the windowed build could not print, which is how the
         operator got a crash dialogue out of a resize.
 
-        Every sentence that label is given, in both languages, measured.
+        The label is out of the layout now and the same sentences are on the
+        floating panel instead, so this measures both axes: neither the
+        window's minimum width nor the height of the box the label used to
+        live in may move when the wizard speaks. Every sentence it is given,
+        in both languages.
         """
         from PySide6.QtGui import QFontDatabase
 
@@ -106,7 +110,9 @@ class TestItFitsALaboratoryLaptop:
                 win = _ventana(qapp, "kinematics")
                 try:
                     adq = win._tab_adq
+                    caja = adq._box_fv_guided.parentWidget()
                     vacia = win.layout_minimum_size().width()
+                    alto = caja.sizeHint().height()
                     for plantilla, args in frases:
                         try:
                             texto = tr(plantilla).format(**args)
@@ -115,13 +121,17 @@ class TestItFitsALaboratoryLaptop:
                         adq._lbl_load_info.setText(texto)
                         qapp.processEvents()
                         ancho = win.layout_minimum_size().width()
-                        # Ni un píxel: el rótulo tiene política Ignored, así
-                        # que su contenido no entra en la suma. Con margen
+                        # Ni un píxel, en ninguno de los dos ejes. Con margen
                         # la prueba pasaría en Windows y no en Linux, que es
                         # justo lo que pasó la primera vez.
                         assert ancho <= vacia, (
                             f"{idioma}: «{texto[:40]}…» ensancha la ventana "
                             f"de {vacia} a {ancho} px"
+                        )
+                        assert caja.sizeHint().height() <= alto, (
+                            f"{idioma}: «{texto[:40]}…» hace más alta la caja "
+                            f"de carga, de {alto} a "
+                            f"{caja.sizeHint().height()} px"
                         )
                 finally:
                     _cierra(qapp, win)

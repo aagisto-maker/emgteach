@@ -129,8 +129,16 @@ _ES = {
         "puede usar el Arduino; las otras dos necesitan el segundo canal del "
         "BITalino o su acelerómetro, así que lo fijan y el selector no "
         "aparece.",
-    # --- calibration wizard: brief maximal squeezes ---
+    # --- calibration wizard: brief maximal efforts ---
     " (brief {i}/{n})": " (breve {i}/{n})",
+    "One short, maximal effort when the count reaches 0 — against something "
+    "that cannot move, such as the underside of the table, not against a "
+    "hand.":
+        "Un solo esfuerzo máximo y breve cuando la cuenta llegue a 0, contra "
+        "algo que no se pueda mover —el canto inferior de la mesa, por "
+        "ejemplo—, no contra una mano.",
+    "Maximum, short and hard — {label}{rep}":
+        "¡Máximo, breve y fuerte! — {label}{rep}",
     "Make a single, brief muscle contraction (a twitch) with the greatest "
     "force you can.":
         "Haga una contracción o sacudida muscular simple (breve) con la máxima "
@@ -706,22 +714,22 @@ _ES = {
     "Countdown to prepare before each contraction.":
         "Cuenta atrás para prepararte antes de cada contracción.",
     "Lift time:": "Tiempo de levantamiento:",
-    "Time given for each loaded lift — a quick concentric movement, not "
-    "a hold (the MVC maximum is held separately).":
-        "Tiempo para cada levantamiento con carga — un movimiento concéntrico "
-        "rápido, no un mantenimiento (la CVM máxima se mantiene aparte).",
+    "Time given for each loaded lift — a quick concentric movement, "
+    "not a hold.":
+        "Tiempo para cada levantamiento con carga: un movimiento concéntrico "
+        "rápido, no un mantenimiento.",
     "Enter at least two positive loads (kg), separated by spaces.":
         "Introducir al menos dos cargas positivas (kg), separadas por espacios.",
     "List the known loads (kg) the subject will lift, lightest to "
-    "heaviest. The wizard first guides an MVC maximum (no load), then "
-    "for each load cues a quick lift ('Lift!' → 'Relax!', no hold), "
-    "marking each so the force-velocity study reads the loads "
+    "heaviest. Recording calibrates the maximum first and then cues a "
+    "quick lift for each load ('Lift!' → 'Relax!', no hold), marking "
+    "each one so the force-velocity study reads the loads "
     "automatically.":
-        "Indicar las cargas conocidas (kg) que levantará el sujeto, de menor a "
-        "mayor. El asistente guía primero una CVM máxima (sin carga) y luego, "
-        "para cada carga, indica un levantamiento rápido («¡Levante!» → "
-        "«¡Relaje!», sin mantener), marcando cada uno para que el estudio "
-        "fuerza-velocidad lea las cargas automáticamente.",
+        "Indique las cargas conocidas (kg) que levantará el sujeto, de menor a "
+        "mayor. Al grabar se calibra primero el máximo y después se pide un "
+        "levantamiento rápido por cada carga («¡Levante!» → «¡Relaje!», sin "
+        "mantener), marcando cada uno para que el estudio fuerza-velocidad lea "
+        "las cargas automáticamente.",
     # Config label next to the guided-F-V button (reps · loads).
     "{reps}× · loads: {loads} kg": "{reps}× · cargas: {loads} kg",
     "(loads not set)": "(cargas sin definir)",
@@ -1804,6 +1812,35 @@ _ES = {
     'Velocity by load': 'Velocidad por carga',
     '1 · Rehearse…': '1 · Ensayar…',
     '2 · F-V parameters…': '2 · Parámetros de la F-V…',
+    'F-V parameters…': 'Parámetros de la F-V…',
+    "Optional, and it needs no hardware: it plays the whole procedure over a "
+    "synthetic recording, with the same prompts in the same order, and ends "
+    "in the force-velocity study. Skip it if you know the procedure.":
+        "Opcional, y no necesita hardware: recorre todo el procedimiento sobre "
+        "un registro sintético, con los mismos avisos y en el mismo orden, y "
+        "termina en el estudio fuerza-velocidad. Sáltelo si ya conoce el "
+        "procedimiento.",
+    "Next: «{button}». The loads in order and the lifts per load. Nothing "
+    "starts there; it is kept for the recording.":
+        "Ahora: «{button}». Las cargas en orden y los levantamientos por "
+        "carga. Ahí no empieza nada; se guarda para la grabación.",
+    "Next: «{button}». It asks for the file name, calibrates the maximum, and "
+    "then cues each load in turn. Esc stops the guidance at any point.":
+        "Ahora: «{button}». Pide el nombre del archivo, calibra el máximo y "
+        "después va pidiendo cada carga. Esc interrumpe la guía en cualquier "
+        "momento.",
+    "Next: «{button}». It writes a new recording with the repetitions and the "
+    "fragments you have just chosen, so reopening it gives these same "
+    "numbers. The original is not touched.":
+        "Ahora: «{button}». Escribe un registro nuevo con las repeticiones y "
+        "los fragmentos que acaba de elegir, de modo que al reabrirlo dé estos "
+        "mismos números. El original no se toca.",
+    "Tuned the recording in Analysis? Open the «_tuned» file here with "
+    "«Browse…» and press «Compute MVC»: it carries the repetitions and the "
+    "fragments that were chosen there.":
+        "¿Ha afinado el registro en Análisis? Abra aquí el archivo «_tuned» "
+        "con «Explorar…» y pulse «Calcular CVM»: lleva las repeticiones y los "
+        "fragmentos que se eligieron allí.",
     'Optional: to learn the procedure before anyone holds a weight. Skip it if you know it.':
         'Opcional: para entender el procedimiento antes de que nadie sostenga un peso. Sáltelo si ya lo conoce.',
     'The loads in order, the lifts per load and the seconds of preparation. Kept for the '
@@ -1826,33 +1863,44 @@ _ES = {
         '{n} cargas, {r} levantamientos por carga, de menor a mayor. Prepare la primera carga.',
     'The force-velocity study, step by step': 'El estudio fuerza-velocidad, paso a paso',
     'A muscle shortens more slowly the heavier the load it moves, and the power it delivers '
-    'is greatest at intermediate loads. This box is the sequence that measures it, in the '
-    'order it is done. «1 · Rehearse…» runs the whole procedure with a synthetic signal and '
-    'no hardware, to learn it before anyone holds a weight; skip it if you know it. «2 · F-V '
-    'parameters…» asks for the plan — the loads in order, the lifts per load, the seconds of '
-    'preparation — and keeps it. Then «Start recording» runs the session by itself: it names '
-    'the file, calibrates the maximum first (warm-up, three held maxima and three brief '
-    'squeezes, against the table), announces the study, and cues one quick lift per '
-    'repetition of each load, marking it in the file with its load. No isometric maximum '
-    'without load in between: the calibration was that. «Cancel guide (Esc)» stops the guide '
-    'at any moment; the recording goes on. In the Analysis tab the contraction table holds '
-    'one row per lift, and the force-velocity study reads those rows to draw the '
-    'load-velocity, force-velocity, power and recruitment curves.':
+    'is greatest at intermediate loads. This box is the sequence that measures it. Three '
+    'steps, and only the first two are here.\n\n'
+    'First, «Rehearse…», which is optional and needs no hardware: it plays the whole '
+    'procedure over a synthetic recording, with the same prompts in the same order, and ends '
+    'in the force-velocity study itself. It is worth one run before anyone holds a weight; '
+    'skip it once you know the procedure.\n\n'
+    'Second, «F-V parameters…»: the loads in order, the lifts per load, the seconds to '
+    'prepare each one and the seconds of the lift. Nothing starts there — the plan is kept '
+    'for the recording.\n\n'
+    'Third, «Start recording», in the box to the left. It runs the whole session on its own: '
+    'it asks for the file name, calibrates the maximum first (a warm-up and three brief '
+    'maximal efforts against something that cannot move), announces the study, and then cues '
+    'one quick lift for each repetition of each load, marking every one in the file with its '
+    'load. There is no isometric maximum without load in between: the calibration was that. '
+    '«Cancel guide (Esc)» stops the guidance at any moment and the recording goes on.\n\n'
+    'In the Analysis tab the contraction table then holds one row per lift, and the '
+    'force-velocity study reads those rows to draw the load-velocity, force-velocity, power '
+    'and recruitment curves.':
         'Un músculo se acorta más despacio cuanto mayor es la carga que mueve, y la potencia '
-        'que entrega es máxima con cargas intermedias. Esta caja es la secuencia que lo mide, '
-        'en el orden en que se hace. «1 · Ensayar…» recorre el procedimiento entero con una '
-        'señal simulada y sin hardware, para entenderlo antes de que nadie sostenga un peso; '
-        'sáltelo si ya lo conoce. «2 · Parámetros de la F-V…» pide el plan (las cargas en '
-        'orden, los levantamientos por carga, los segundos de preparación) y lo guarda. '
-        'Después, «Iniciar grabación» lleva la sesión sola: pide el nombre del archivo, '
-        'calibra primero el máximo (calentamiento, tres máximas mantenidas y tres sacudidas '
-        'breves, contra la mesa), anuncia el estudio y va pidiendo un levantamiento rápido por '
-        'repetición de cada carga, marcándolo en el archivo con su carga. No hay máximo '
-        'isométrico en vacío entre medias: la calibración ya lo fue. «Cancelar guía (Esc)» '
-        'detiene la guía en cualquier momento; la grabación sigue. En la pestaña de Análisis '
-        'la tabla de contracciones trae una fila por levantamiento, y el estudio '
-        'fuerza-velocidad lee esas filas para dibujar las curvas carga-velocidad, '
-        'fuerza-velocidad, potencia y reclutamiento.',
+        'que entrega es máxima con cargas intermedias. Esta caja es la secuencia que lo mide. '
+        'Son tres pasos, y aquí solo están los dos primeros.\n\n'
+        'Primero, «Ensayar…», que es opcional y no necesita hardware: recorre el procedimiento '
+        'entero sobre un registro sintético, con los mismos avisos y en el mismo orden, y '
+        'termina en el propio estudio fuerza-velocidad. Merece una pasada antes de que nadie '
+        'sostenga un peso; sáltelo cuando ya conozca el procedimiento.\n\n'
+        'Segundo, «Parámetros de la F-V…»: las cargas en orden, los levantamientos por carga, '
+        'los segundos para preparar cada una y los segundos de levantamiento. Ahí no empieza '
+        'nada: el plan se guarda para la grabación.\n\n'
+        'Tercero, «Iniciar grabación», en la caja de la izquierda. Lleva la sesión entera '
+        'sola: pide el nombre del archivo, calibra primero el máximo (un calentamiento y tres '
+        'esfuerzos máximos breves contra algo que no se pueda mover), anuncia el estudio y '
+        'después va pidiendo un levantamiento rápido por cada repetición de cada carga, '
+        'marcando cada uno en el archivo con su carga. No hay máximo isométrico en vacío entre '
+        'medias: la calibración ya lo fue. «Cancelar guía (Esc)» detiene la guía en cualquier '
+        'momento y la grabación sigue.\n\n'
+        'En la pestaña de Análisis la tabla de contracciones trae entonces una fila por '
+        'levantamiento, y el estudio fuerza-velocidad lee esas filas para dibujar las curvas '
+        'carga-velocidad, fuerza-velocidad, potencia y reclutamiento.',
     'Each point is a contraction, numbered and joined in order; a drift towards the top '
     'left — more amplitude, less frequency — is fatigue.':
         'Cada punto es una contracción, numeradas y unidas en orden; una deriva hacia arriba '

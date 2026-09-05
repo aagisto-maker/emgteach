@@ -202,8 +202,8 @@ es más pequeño y siempre reproducible.
 | Corte de envolvente | 5 Hz | Suavizado del nivel de activación |
 | Ventana RMS | 50 ms | Cálculo de amplitud RMS |
 | Segmento de análisis de fatiga | 1 s (solape 50 %) | Ventanas para RMS/MDF en el tiempo |
-| Ventana de la referencia CVM | 0,2 s | El mejor 0,2 s de las seis repeticiones de calibración (ver §5.1) |
-| Calibración | 3 × 4 s mantenidas + 3 × 1,5 s breves, tras 10 s de calentamiento | Lo que pide el asistente por músculo |
+| Ventana de la referencia CVM | 0,2 s | El mejor 0,2 s de las tres repeticiones de calibración (ver §5.1) |
+| Calibración | 3 × 1,5 s de esfuerzo máximo breve, tras 10 s de calentamiento | Lo que pide el asistente por músculo |
 
 [Figura sugerida: cuatro trazados apilados del mismo tramo —en bruto, filtrado,
 rectificado y envolvente— para ilustrar la cadena de procesado.]
@@ -346,10 +346,12 @@ con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
 
 **Carga muscular (CVM en vivo)**
 - **La calibración es un asistente**, y siempre el mismo: 10 s de calentamiento
-  con dos o tres contracciones suaves; por músculo, **tres contracciones máximas
-  mantenidas** de 4 s («¡Contraiga FCR al máximo!») y **tres sacudidas máximas
-  breves** de 1,5 s («Haga una contracción o sacudida muscular simple (breve) con
-  la máxima fuerza posible»), cada una con su cuenta atrás y sus 2 s de descanso.
+  con dos o tres contracciones suaves y, por músculo, **tres esfuerzos máximos
+  breves** de 1,5 s («¡Máximo, breve y fuerte!»), cada uno con su cuenta atrás
+  y sus 2 s de descanso. Las tres contracciones mantenidas de 4 s que había
+  antes se quitaron el 5 de septiembre de 2026: medida la referencia sobre el
+  pico de 0,2 s, una sacudida da el mismo número y cuesta la cuarta parte de
+  fatiga.
   En la práctica del par lo lanza el propio botón de grabar, antes de la tarea,
   y después escribe 5 s de preparación y el inicio del registro; en las otras dos
   se lanza con **«Calibrar CVM»** con la grabación en marcha. Todo queda dentro del
@@ -595,9 +597,8 @@ depende de factores no fisiológicos (impedancia de la piel, posición exacta de
 electrodos, anatomía); el **% CVM** permite **comparar** entre músculos, sujetos y
 sesiones.
 
-> **Cómo se mide la referencia.** Es el **mejor 0,2 s sostenido** de las seis
-> repeticiones de calibración (tres máximas mantenidas y tres sacudidas breves),
-> con el reposo de la ventana ya descontado. No es el máximo instantáneo, que una
+> **Cómo se mide la referencia.** Es el **mejor 0,2 s sostenido** de las tres
+> repeticiones de calibración, con el reposo de la ventana ya descontado. No es el máximo instantáneo, que una
 > sola muestra de ruido podría fijar, ni el medio segundo mantenido, que se
 > quedaba en la meseta: una contracción mantenida muestra un pico al empezar y
 > luego una meseta, y los esfuerzos breves de la tarea alcanzan ese pico. Medida
@@ -913,8 +914,8 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
    como dice la caja. Se elige entre sobre el músculo (MMG) o sobre el segmento
    que se mueve (temblor, fuerza-velocidad, retraso electromecánico).
 3. **La secuencia.** La caja «Estudio fuerza-velocidad» la lista en su orden:
-   **«1 · Ensayar…»** corre el procedimiento sin hardware, con una señal
-   simulada (opcional, para entenderlo); **«2 · Parámetros de la F-V…»** pide el
+   **«Ensayar…»** corre el procedimiento sin hardware, con una señal
+   simulada (opcional, para entenderlo); **«Parámetros de la F-V…»** pide el
    plan (cargas en orden, levantamientos por carga, preparación) y lo guarda; y
    **«Iniciar grabación»** lleva la sesión sola: nombre del archivo, calibración
    del máximo primero (el botón «Calibrar CVM» no aparece en esta práctica: la
@@ -934,7 +935,7 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 
 1. Conectar e **Iniciar grabación**.
 2. Pulsar **Calibrar CVM** y seguir al asistente: calentamiento, tres máximas
-   mantenidas y tres sacudidas, contra la mesa.
+   esfuerzos máximos breves, contra la mesa.
 3. Realizar la tarea observando las **barras de carga**: si entran en naranja
    (cansancio, más del 40 %) o rojo (fatiga, más del 70 %), conviene intervenir
    (pausa, cambio de postura). Si una contracción cualquiera pasa del 100 %, la

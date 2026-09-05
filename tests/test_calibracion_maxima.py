@@ -4,8 +4,9 @@ El autor vio la tarea al 135 % de una «máxima»: la referencia se medía como
 el medio segundo mantenido más fuerte, es decir, sobre la meseta de una
 contracción sostenida, y los esfuerzos breves de la tarea alcanzan el pico
 inicial, que la meseta no tiene. Ahora la ventana es de 0,2 s y la
-calibración añade tres sacudidas máximas breves tras las tres mantenidas; la
-referencia es la mejor de las seis. Además: PSD de los dos músculos, «Más
+calibración son tres esfuerzos máximos breves —las tres mantenidas se
+quitaron el 5-sep-2026, porque medida en el pico una sacudida da lo mismo
+que una mantenida y cuesta la cuarta parte de fatiga—. Además: PSD de los dos músculos, «Más
 paneles…» en todas las prácticas, tres cuadros abajo con su «?» en la
 esquina, sin ficha de archivo, y la guía sin la frase a medias.
 """
@@ -108,19 +109,31 @@ def adq(qapp):
     widget.close()
 
 
-class TestTheWizardAddsThreeSqueezes:
-    def test_three_held_and_three_brief(self, adq) -> None:
+class TestTheCalibrationIsThreeBriefMaxima:
+    """The three *held* efforts are gone, in every practical.
+
+    They earned their place when the reference was a half-second mean: the
+    task's brief efforts reached a peak the plateau did not have, and came
+    out at 135 % of their own «maximum». The fix for that was to measure the
+    reference over the strongest 0.2 s — and once it is measured there, a
+    held effort gives no higher a peak than a squeeze does. What it does
+    give is four times the fatigue and twice the calibration to sit through,
+    on a subject who has to be maximal at the end of it.
+    """
+
+    def test_three_efforts_and_all_of_them_brief(self, adq) -> None:
         adq._iniciar_calibracion(auto_flow=False)
         try:
-            assert adq._mvc_reps == 3 and adq._mvc_bursts == 3
+            assert adq._mvc_reps == EMG_PROFILE.mvc_bursts == 3
+            assert not hasattr(adq, "_mvc_bursts")
         finally:
             adq._mvc_cancel()
 
-    def test_a_squeeze_lasts_its_own_time_and_is_a_numbered_rep(self, adq) -> None:
+    def test_each_one_lasts_the_squeeze_time(self, adq) -> None:
         adq._iniciar_calibracion(auto_flow=False)
         try:
             adq._mvc_muscle = 0
-            adq._mvc_rep = 3                       # first brief squeeze
+            adq._mvc_rep = 0                       # the first effort
             adq._mvc_phase = "contract"
             adq._mvc_cur_buf = list(_sacudida())
             adq._mvc_elapsed = EMG_PROFILE.mvc_burst_s - 0.3   # a tick adds 0.1 s
@@ -128,28 +141,46 @@ class TestTheWizardAddsThreeSqueezes:
             assert adq._mvc_phase == "contract", "not over before its 1.5 s"
             adq._mvc_elapsed = EMG_PROFILE.mvc_burst_s
             adq._mvc_tick()
-            assert "CAL end ch=1 rep=4" in adq._worker.markers
-            assert adq._mvc_phase == "rest"          # two squeezes to go
+            assert "CAL end ch=1 rep=1" in adq._worker.markers
+            assert adq._mvc_phase == "rest"          # two efforts to go
         finally:
             adq._mvc_cancel()
 
-    def test_the_last_squeeze_closes_the_muscle(self, adq) -> None:
+    def test_the_third_effort_closes_the_muscle(self, adq) -> None:
         adq._iniciar_calibracion(auto_flow=False)
         try:
             adq._mvc_muscle = 0
-            for _ in range(5):
-                adq._mvc_capture[0].append(_mantenida(peak=0.8))
-            adq._mvc_rep = 5                       # third and last squeeze
+            for _ in range(2):
+                adq._mvc_capture[0].append(_sacudida(0.8))
+            adq._mvc_rep = 2                       # third and last
             adq._mvc_phase = "contract"
             adq._mvc_cur_buf = list(_sacudida(1.0))
             adq._mvc_elapsed = EMG_PROFILE.mvc_burst_s
             adq._mvc_tick()
             assert any(m.startswith("MVC ref ch=1") for m in adq._worker.markers)
-            # The squeeze set the reference: it was the strongest 0.2 s.
             assert adq._mvc_ref[0] == pytest.approx(1.0, abs=0.02)
         finally:
             if adq._mvc_active:
                 adq._mvc_cancel()
+
+    def test_the_effort_is_still_asked_for_against_a_resistance(self, adq) -> None:
+        """The one thing the held efforts carried in their wording.
+
+        A maximum performed in mid-air is submaximal by construction — the
+        force-velocity relationship this application teaches in another
+        practical — so the instruction that says to push against something
+        that cannot move had to survive the change.
+        """
+        adq._iniciar_calibracion(auto_flow=False)
+        try:
+            adq._mvc_muscle = 0
+            adq._mvc_phase = "ready"
+            adq._mvc_elapsed = 0.5
+            adq._mvc_tick()
+            texto = adq._mvc_overlay._subtitle.lower()
+            assert "mover" in texto or "move" in texto
+        finally:
+            adq._mvc_cancel()
 
 
 # ---------------------------------------------------------------------------
@@ -245,12 +276,18 @@ class TestTheGuidedForceVelocityExplainsItself:
             assert adq._box_fv_guided.isVisibleTo(adq) == (mode == MODE_KINEMATICS), mode
 
     def test_the_help_says_what_the_two_buttons_do(self) -> None:
+        """And what the third step is, now that the box no longer says it.
+
+        The box is one line of controls; the sequence it belongs to — the
+        rehearsal, the parameters and then the record button, which is not
+        even in this box — is told here and by the floating panel.
+        """
         from emgteach.gui import help_texts
 
         cuerpo = help_texts.text("acq.fv")[1]
-        # The two steps before the record button, named as the box names them.
-        assert tr("1 · Rehearse…") in cuerpo
-        assert tr("2 · F-V parameters…") in cuerpo
+        assert tr("Rehearse…") in cuerpo
+        assert tr("F-V parameters…") in cuerpo
+        assert tr("Start recording") in cuerpo
         assert tr("Cancel guide (Esc)") in cuerpo
 
     def test_the_device_help_names_the_test_identifier(self) -> None:

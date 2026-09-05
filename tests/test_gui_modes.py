@@ -179,18 +179,20 @@ def test_fine_controls_belong_to_the_free_mode(main_window, qapp, mode) -> None:
     decide it in the middle of a physiology exercise, which is a different
     lesson from the one it is teaching.
 
-    Two things have left this list since it was written, both because the
+    Three things have left this list since it was written, all because the
     bench showed they were not refinements at all: **"Best of 3"**, which is
     how a maximum is measured rather than a nicety — one attempt has nothing
     to fall back on, and a bad reference silently corrupts every percentage
-    after it — and the **fragment editor**, since keeping the part of a
-    recording that came out well is hygiene. The numeric region boxes stay,
-    because they ask for two figures the student does not have.
+    after it — the **fragment editor**, since keeping the part of a recording
+    that came out well is hygiene, and the **numeric region boxes**, which
+    are gone from every practical: they asked for two figures the student
+    does not have, over a recording they are looking at, when the fragment
+    editor does the same job by pointing.
     """
     adq, ana, cvm = (
         main_window._tab_adq, main_window._tab_ana, main_window._tab_cvm
     )
-    boxes = [adq._box_thr, ana._box_fenv, ana._box_roi, cvm._box_fenv]
+    boxes = [adq._box_thr, ana._box_fenv, cvm._box_fenv]
     set_mode(main_window, qapp, mode)
     esperado = mode_shows_fine_controls(mode)
     assert esperado is (mode == MODE_KINEMATICS)
@@ -201,6 +203,8 @@ def test_fine_controls_belong_to_the_free_mode(main_window, qapp, mode) -> None:
     # recording with no marks in it at all, and the analysis finds each effort
     # by those marks.
     assert shown(adq._box_autoonset)
+    # And the region of interest is shown in none of them.
+    assert not shown(ana._box_roi)
 
 
 def test_the_advanced_tick_is_gone(main_window) -> None:

@@ -130,17 +130,15 @@ without stopping the recording:
 1. **Warm-up (10 s).** Two or three easy contractions of each muscle. The first
    maximal contraction of a session is never the strongest one, and this corrects
    that in part.
-2. **Three sustained maximal contractions**, 4 s each, with a 3 s countdown and
-   2 s of rest between them. The screen says «Contract FCR at maximum!».
-3. **Three brief maximal squeezes**, 1.5 s each. The screen says «Make a single,
-   brief muscle contraction (a twitch) with the greatest force you can».
-4. With two muscles, the same for the second one.
-5. In the pair practical a 5 s **preparation** follows and the **recording** of
+2. **Three brief maximal efforts**, 1.5 s each, with a 3 s countdown and 2 s of
+   rest between them. The screen says «Maximum, short and hard!».
+3. With two muscles, the same for the second one.
+4. In the pair practical a 5 s **preparation** follows and the **recording** of
    the task begins. In the other two practicals the calibration is launched with
    the **«Calibrate MVC»** button while recording, and the recording goes on.
 
-The reference is **the best 0.2 s across the six repetitions**. Why six, and why
-squeezes? Because a sustained contraction shows a peak at its start and then a
+The reference is **the best 0.2 s across the three repetitions**. Why brief?
+Because a sustained contraction shows a peak at its start and then a
 plateau, and a task's brief efforts reach that peak. Measured on the plateau, the
 reference fell short and the task beat it: 135 % of "maximum" on the bench of 1
 September.
@@ -172,7 +170,7 @@ phases shaded (warm-up, each calibration repetition, preparation, recording), an
 the **Analysis** tab analyses the recording **on its own**, with nothing to
 press. On switching to Analysis a box points at the next step:
 
-1. **«Calibration repetitions…»**: the six repetitions of each muscle with their
+1. **«Calibration repetitions…»**: the three repetitions of each muscle with their
    values. Untick the weak ones and accept; the reference is recomputed. This
    goes first because **every percentage is measured against that reference**.
 2. **«Select fragments…»**: one row per contraction found, with its start, end,
@@ -532,13 +530,14 @@ and the EMG the activation.
 **Procedure.**
 1. Prepare four known loads (for instance 0, 1, 2 and 3 kg: a bottle and
    dumbbells or filled bottles).
-2. The **«Force-velocity study»** box is the sequence, in its order. **«1 ·
-   Rehearse…»** runs the procedure with no hardware; optional, to learn it
-   before anyone holds a weight. **«2 · F-V parameters…»** asks for the **plan**
-   (the loads in order, the lifts per load, two or three, and the preparation
-   seconds) and keeps it. Then **«Start recording»** runs the session by itself:
-   it names the file, **calibrates the maximum first** (warm-up, three held
-   maxima and three brief squeezes, against the table), announces the study and,
+2. The **«Force-velocity study»** box holds the first two steps of the
+   sequence. **«F-V parameters…»** asks for the **plan** (the loads in order,
+   the lifts per load, three by default, and the seconds to prepare and to
+   lift) and keeps it; **«Rehearse…»**, beside it, runs the whole procedure
+   with no hardware, which is optional and worth one run before anyone holds
+   a weight. Then **«Start recording»** runs the session by itself:
+   it names the file, **calibrates the maximum first** (warm-up and three
+   brief maximal efforts, against the table), announces the study and,
    for each load, cues the repetitions of **one quick lift**, each with its
    countdown and marked in the file with its load. No isometric maximum without
    load in between: the calibration was that. Just follow the screen; «Cancel

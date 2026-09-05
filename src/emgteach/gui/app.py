@@ -160,6 +160,10 @@ class MainWindow(QMainWindow):
         self._tab_adq.recording_saved.connect(self._tab_ana.adopt_recording)
         self._tab_ana.file_opened.connect(self._tab_cvm.adopt_recording)
         self._tab_ana.coach_step.connect(self._mostrar_paso_guiado)
+        self._tab_adq.coach_step.connect(
+            lambda t, c, ctrl: self._mostrar_paso_guiado(
+                t, c, ctrl, self._tab_adq)
+        )
         # (connected once the tab widget exists, below)
 
         # Shared styling: each tab's gray background (class selector) is only
@@ -278,29 +282,35 @@ class MainWindow(QMainWindow):
         # that waited behind it comes forward.
         self._coach.finished.connect(self._paso_guiado_pendiente)
 
-    def _mostrar_paso_guiado(self, titulo: str, cuerpo: str, control) -> None:
-        """Float one step of the analysis sequence over the control it names.
+    def _mostrar_paso_guiado(self, titulo: str, cuerpo: str, control,
+                             pestaña=None) -> None:
+        """Float one step of a tab's sequence over the control it names.
 
         The same panel the tour uses, with one step instead of a list: it dims
         the rest of the window and rings the button, so «open this next» points
         at something the reader can see. Never over the tour itself, and never
-        while the analysis tab is not the one on screen.
+        while the tab that asked for it is not the one on screen.
+
+        Both sequences use it — the analysis tab's two editors and the
+        kinematics practical's set-up — so `pestaña` says which tab has to be
+        in front for the panel to make any sense.
         """
+        pestaña = pestaña or self._tab_ana
         if self._coach.isVisible():
             if self._coach.is_tour:
                 # Never over the tour; kept for when it ends.
-                self._paso_pendiente = (titulo, cuerpo, control)
+                self._paso_pendiente = (titulo, cuerpo, control, pestaña)
                 return
             # A single step still on screen is the previous «open this
             # next»; the next one replaces it rather than being dropped.
             self._coach.stop()
-        if self._tabs.currentWidget() is not self._tab_ana:
+        if self._tabs.currentWidget() is not pestaña:
             # Kept rather than dropped. The recording is analysed as soon as
             # it is opened, which happens while the student is still on the
             # acquisition tab, so the step saying what to do next was emitted
             # over a tab nobody was looking at — and the analysis tab, which
             # only emits on a *change* of step, never offered it again.
-            self._paso_pendiente = (titulo, cuerpo, control)
+            self._paso_pendiente = (titulo, cuerpo, control, pestaña)
             return
         self._paso_pendiente = None
         self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
@@ -309,9 +319,9 @@ class MainWindow(QMainWindow):
         """Show the step that was emitted while another tab was on screen."""
         if self._paso_pendiente is None or self._coach.isVisible():
             return
-        if self._tabs.currentWidget() is not self._tab_ana:
+        titulo, cuerpo, control, pestaña = self._paso_pendiente
+        if self._tabs.currentWidget() is not pestaña:
             return
-        titulo, cuerpo, control = self._paso_pendiente
         self._paso_pendiente = None
         self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
 

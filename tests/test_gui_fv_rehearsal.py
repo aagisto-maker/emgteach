@@ -152,10 +152,17 @@ class TestTheButtonInTheApp:
     def test_rehearsing_never_needs_the_hardware(self, tab) -> None:
         """It is enabled with nothing connected — that is the whole point —
         and so is the plan beside it, which is set before anything is
-        connected; and rehearsing comes first in the sequence."""
+        connected.
+
+        The two buttons no longer carry their number in their label: the
+        box is one line and the sequence is told by the floating panel and
+        the «?», not by the buttons. The rehearsal is the second of the two
+        on the line although the guide teaches it first, because by the time
+        anyone needs the box they have either rehearsed or decided not to.
+        """
         assert tab._btn_fv_rehearse.isEnabled()
         assert tab._btn_fv_guided.isEnabled()
-        assert tab._btn_fv_rehearse.text().startswith("1")
+        assert not tab._btn_fv_rehearse.text()[0].isdigit()
 
     def test_the_tour_step_points_at_a_button_that_exists(
         self, main_window, qapp

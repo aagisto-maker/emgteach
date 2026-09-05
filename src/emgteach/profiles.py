@@ -68,8 +68,10 @@ class SignalProfile:
     apda_warning_limit, apda_danger_limit : float
         Load thresholds (% MVC) for the online monitor's tiredness (warning)
         and fatigue (danger) zones.
-    apda_calib_s : float
-        Duration (s) of the quick in-app MVC calibration.
+    mvc_bursts, mvc_burst_s : int, float
+        How many maximal efforts the calibration asks for, and how long each
+        one lasts. Every one of them is brief; see the note on
+        ``mvc_peak_window_s``.
     onset_k : float
         Threshold sensitivity for automatic onset detection, in baseline
         standard deviations (threshold = baseline mean + ``onset_k``*SD).
@@ -131,11 +133,15 @@ class SignalProfile:
     # The reference has to be measured where the peak is. Long enough to
     # exclude a single spike, short enough to hold the initial burst.
     mvc_peak_window_s: float = 0.2
-    # And, for the same reason, the calibration adds three brief maximal
-    # squeezes after the three sustained efforts: a squeeze reaches the
-    # peak without the plateau, and the reference is the best of all six.
+    # And, for the same reason, every effort the calibration asks for is a
+    # brief one: a squeeze reaches the peak without the plateau, so it is
+    # measured where the reference is measured. Three of them, because the
+    # first maximal effort of a session is genuinely submaximal. The three
+    # *held* efforts that used to precede them were dropped once the
+    # reference moved to the 0.2 s peak: they cost four times the fatigue
+    # and twice the calibration and gave no higher a peak.
     mvc_bursts: int = 3
-    mvc_burst_s: float = 1.5               # s — duration of one brief squeeze
+    mvc_burst_s: float = 1.5               # s — duration of one maximal effort
     # And after the fact, by definition: the reference IS the strongest
     # 0.2 s of a maximal effort, so if the task beats it the effort was not
     # maximal. What is compared is the task's own strongest 0.2 s, measured
@@ -181,7 +187,6 @@ class SignalProfile:
     coact_floor_pct: float = 5.0       # % MVC
     apda_warning_limit: float = 40.0   # % MVC — tiredness (warning) zone
     apda_danger_limit: float = 70.0    # % MVC — fatigue (danger) zone
-    apda_calib_s: float = 4.0          # s — quick MVC-calibration duration
     # -- the pause between the two phases of a session --
     # The acquisition does not stop: the file stays continuous and EDF+ never
     # has to represent a gap. These seconds are recorded, marked PREP, and
@@ -246,8 +251,11 @@ class SignalProfile:
                 "Require 0 < apda_warning_limit <= apda_danger_limit; got "
                 f"{self.apda_warning_limit}, {self.apda_danger_limit}."
             )
-        if self.apda_calib_s <= 0:
-            raise ValueError("apda_calib_s must be positive.")
+        if self.mvc_bursts < 1 or self.mvc_burst_s <= 0:
+            raise ValueError(
+                "Require mvc_bursts >= 1 and mvc_burst_s > 0; got "
+                f"{self.mvc_bursts}, {self.mvc_burst_s}."
+            )
 
     def filter_kwargs(self) -> dict[str, float]:
         """Return the four filter cut-offs as keyword arguments.

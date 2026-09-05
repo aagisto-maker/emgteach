@@ -3,8 +3,8 @@
 > **Nota del 3 de septiembre de 2026.** Este documento describe los primeros 14
 > commits de la rama (agosto) y **está superado** en varios puntos: ya no hay
 > casilla de «Opciones avanzadas» (el nivel es la práctica), la guía tiene cinco
-> pasos y no catorce, la calibración pide tres máximas mantenidas y tres
-> sacudidas breves, y el análisis tiene tabla por contracción, fichas con rangos
+> pasos y no catorce, la calibración pide tres esfuerzos máximos breves (y
+> ninguno mantenido), y el análisis tiene tabla por contracción, fichas con rangos
 > y tres cuadros abajo. La descripción al día es la sección «Unreleased» de
 > [`CHANGELOG.md`](../CHANGELOG.md) y los manuales de `docs/`, revisados tras la
 > pasada de banco del 3 de septiembre. Se conserva como registro de por qué se

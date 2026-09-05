@@ -199,6 +199,28 @@ class TestTheLoadsSurviveTheTrimming:
         assert len(cargas) == len(tramos)
         assert cargas[0][0] > REC_S + 1.9    # not on the stray one
 
+    def test_a_fragment_drawn_before_its_cue_still_gets_that_load(
+        self, tmp_path: Path
+    ) -> None:
+        """Decided on the middle of the fragment, as the analysis decides it.
+
+        On the bench recording of 5 September the editor had drawn one lift's
+        fragment starting a little *before* the cue that called for it, and
+        deciding on the start put it under the previous load: the derived
+        file came back with four lifts at 2 kg and two at 3.4.
+        """
+        pytest.importorskip("pyedflib")
+        from emgteach.force_velocity import parse_fv_load_markers
+
+        src, tramos, esperadas = _sesion_fv(tmp_path / "cinematica.edf")
+        # Every fragment opened a second earlier than the cue it belongs to.
+        adelantados = [(cue - 1.0, cue + 4.2) for cue, _kg in esperadas]
+        dst = tuned_path(src)
+        build_tuned_edf(src, dst, fragments=adelantados, when=CUANDO)
+
+        cargas = parse_fv_load_markers(read_edf_markers(dst))
+        assert [kg for _t, kg in cargas] == [kg for _c, kg in esperadas]
+
 
 class TestAnAnnotationIsCutByBytes:
     """One byte of a character is not UTF-8, and it costs the whole file.

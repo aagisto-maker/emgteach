@@ -158,14 +158,12 @@ class MvcTab(QWidget):
         # Analysis tab's — so everything this tab logged used to be written
         # somewhere invisible. That included the flat-channel and saturated-
         # channel warnings, the most common mistake a student makes.
+        # It fills its box: the widget takes whatever height the parameters
+        # box beside it sets and asks for none of its own (see LoggerWidget).
+        # The five-line ceiling this used to carry was the same mistake as
+        # the widget's own three — a box taller than its contents, with the
+        # session's messages scrolled out of sight above the blank part.
         self._local_log = LoggerWidget()
-        # Five lines rather than the widget's three: the parameters box beside
-        # it is three rows tall, and the log used to stop short with blank
-        # box underneath. Not unlimited — left to grow, it stretched the
-        # whole header to its own preferred height.
-        self._local_log.setMaximumHeight(
-            int(self._local_log.fontMetrics().lineSpacing() * 5 + 10)
-        )
 
         # ── Vertical-scale state (3 time-series panels: 0=filtered, 1=envelope, 2=norm) ──
         self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0}
@@ -228,6 +226,24 @@ class MvcTab(QWidget):
         # analysis recomputing from the spans while this one used whatever
         # file happened to be in the box.
         ctrl.addLayout(row_test)
+
+        # Which file to open here, said where the file is chosen. The tuned
+        # recording is the one that carries the decisions — which maximal
+        # efforts set the reference, which contractions count — and opening
+        # the original instead normalises against a different reference
+        # without anything on screen saying so. It arrives from the analysis
+        # tab on its own, so this is for the second visit: the one where the
+        # recording was tuned after it was first normalised.
+        self._lbl_afinado = QLabel(tr(
+            "Tuned the recording in Analysis? Open the «_tuned» file here "
+            "with «Browse…» and press «Compute MVC»: it carries the "
+            "repetitions and the fragments that were chosen there."
+        ))
+        self._lbl_afinado.setStyleSheet("font-size: 10px; color: #6B7580;")
+        self._lbl_afinado.setWordWrap(True)
+        self._lbl_afinado.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        ctrl.addWidget(self._lbl_afinado)
 
         # Same order as the analysis tab: the fragment editor first, then
         # the channel, then the actions and the panel boxes.

@@ -142,6 +142,15 @@ FV_MVC_TO_LOADS_REST_S = 5.0
 #: Seconds the kinematics session announces the loads before cueing the
 #: first, once the calibration and the preparation pause are behind.
 FV_INTRO_S = 4.0
+#: The plan the dialog opens with, and what the recording assumes when no
+#: plan has been saved yet. Three lifts per load, because one lift is one
+#: number per load with nothing to say how much of it is the attempt; six
+#: seconds to get the next weight in hand and set up with it; and one second
+#: of lift, because the lift is what is measured and it is quick — a longer
+#: window only adds the rest that follows it to the row.
+FV_REPS_DEF = 3
+FV_PREP_DEF_S = 6.0
+FV_LIFT_DEF_S = 1.0
 
 # Headroom applied to the live plots when they auto-scale after calibration:
 # the envelope top is this multiple of the MVC reference (so >100 %MVC phasic
@@ -224,6 +233,13 @@ class AcquisitionTab(QWidget):
     #: student almost always wants is to analyse the one they just made.
     recording_saved = Signal(str)
 
+    #: One step of the kinematics sequence: (title, body, the control it
+    #: points at). Emitted rather than shown here because the floating panel
+    #: belongs to the window — it dims everything outside the control it
+    #: explains, which a tab cannot do to its siblings. Same signal, same
+    #: panel and same rule as the analysis tab's.
+    coach_step = Signal(str, str, object)
+
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
         super().__init__(parent)
@@ -301,7 +317,6 @@ class AcquisitionTab(QWidget):
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_reps = 1
-        self._mvc_bursts = 0
         self._mvc_elapsed = 0.0       # seconds spent in the current phase
         self._mvc_peak = 0.0          # running peak of the current contraction
         self._mvc_cur = 0.0           # current (recent) effort of the contraction
@@ -333,6 +348,9 @@ class AcquisitionTab(QWidget):
         #: but it has to exist before anyone calls that — and _flow_needs_
         #: calibration reads it on every press of the record button.
         self._mode = DEFAULT_MODE
+        #: Which step of the kinematics sequence the floating panel last
+        #: offered, so it is offered once and not after every event.
+        self._paso_mostrado = ""
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False    # start it on the first block of data
         #: The kinematics session's second phase — the loads — waiting for
@@ -926,15 +944,18 @@ class AcquisitionTab(QWidget):
         k_l.addWidget(self._spin_k)
         auto_l.addWidget(self._box_k)
         markers_layout.addWidget(self._box_autoonset)
-        markers_layout.addStretch()
-        markers_outer.addLayout(markers_layout)
-        # What k is, in the box and not only in the «?»: the help text
-        # named it, the box did not show it, and a knob that is explained
-        # but absent is worse than either. On its own line under the
-        # controls, where it costs height and not width.
+        # What k is, in the box and not only in the «?»: the help text named
+        # it, the box did not show it, and a knob that is explained but
+        # absent is worse than either. Beside the control it explains rather
+        # than on a line of its own — two lines is what this box is worth in
+        # the tab that holds the live plots.
         self._lbl_k_explica = QLabel(tr("threshold = rest + k × noise (3 is usual)"))
         self._lbl_k_explica.setStyleSheet("font-size: 10px; color: #6B7580;")
-        markers_outer.addWidget(self._lbl_k_explica)
+        self._lbl_k_explica.setWordWrap(True)
+        self._lbl_k_explica.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        markers_layout.addWidget(self._lbl_k_explica, stretch=1)
+        markers_outer.addLayout(markers_layout)
 
         # The last two onsets found, so the detection is visibly working
         # without going to the log for it. Two lines: it is a sign of life,
@@ -950,6 +971,7 @@ class AcquisitionTab(QWidget):
             tr("The most recent onsets detected. They all travel in the EDF.")
         )
         markers_outer.addWidget(self._list_markers)
+        markers_outer.addStretch()
 
         row_actions.addWidget(grp_markers, stretch=1)
 
@@ -1523,7 +1545,7 @@ class AcquisitionTab(QWidget):
     def _refresh_fv_config_label(self) -> None:
         """Show the last-used guided-F-V reps and loads next to the button."""
         loads = self._settings.value("adquisicion/fv_loads", "", type=str)
-        reps = self._settings.value("adquisicion/fv_reps", 1, type=int)
+        reps = self._settings.value("adquisicion/fv_reps", FV_REPS_DEF, type=int)
         if loads:
             self._lbl_fv_config.setText(
                 tr("{reps}× · loads: {loads} kg").format(reps=reps, loads=loads)
@@ -1637,6 +1659,7 @@ class AcquisitionTab(QWidget):
         self._set_led("idle")
         self._update_fv_button()
         self._log(tr("Device configured: {desc}. Press 'Start recording'.").format(desc=desc))
+        self._actualizar_paso_guiado()
 
     def _desconectar(self) -> None:
         self._watchdog_timer.stop()
@@ -2430,18 +2453,19 @@ class AcquisitionTab(QWidget):
         readout, with a status label at the end."""
         grp = QGroupBox(tr("Muscle load (live MVC)"))
         add_help(grp, "acq.load")
-        row = QHBoxLayout(grp)
-        row.setContentsMargins(6, 3, 6, 3)
+        # Two lines, and only two. The first is what is set up before
+        # recording; the second is the live monitor. The box had grown to
+        # four rows of buttons and explanations, which is a page of reading
+        # in the place where the operator is looking for one control.
+        col = QVBoxLayout(grp)
+        col.setContentsMargins(6, 3, 6, 3)
+        col.setSpacing(3)
+
+        fila_sup = QHBoxLayout()
+        fila_sup.setSpacing(8)
+        row = QHBoxLayout()
         row.setSpacing(8)
 
-        # Left column: the MVC-calibration controls and, stacked below them, the
-        # guided force-velocity controls — so the two guided flows read the same
-        # way (a button plus its selection to the right).
-        left_col = QVBoxLayout()
-        left_col.setSpacing(2)
-
-        mvc_row = QHBoxLayout()
-        mvc_row.setSpacing(6)
         self._btn_calibrar = QPushButton(tr("Calibrate MVC"))
         self._btn_calibrar.setEnabled(False)
         self._btn_calibrar.setToolTip(
@@ -2449,14 +2473,12 @@ class AcquisitionTab(QWidget):
                "when prompted; sets the reference for the live load monitor.")
         )
         self._btn_calibrar.clicked.connect(self._on_calibrar)
-        mvc_row.addWidget(self._btn_calibrar)
         # «Best of 3» used to be a checkbox here, off by default. Repeating
         # the maximum and keeping the strongest is not an option: it is how a
         # maximum is measured at all — the first maximal effort of a session
         # is genuinely submaximal, and a single attempt has nothing to fall
         # back on. The protocol said to tick it; the application now does.
-        mvc_row.addStretch()
-        left_col.addLayout(mvc_row)
+        fila_sup.addWidget(self._btn_calibrar)
 
         # Its own box, with its own «?». The guided flow is the kinematics
         # practical's whole procedure, not a detail of the load monitor, and
@@ -2464,76 +2486,59 @@ class AcquisitionTab(QWidget):
         # every other thing on this tab is explained from a corner «?», and a
         # student who has learnt to look there found nothing here. The
         # kinematics practical shows the box; the other two hide it whole.
-        # The kinematics practical as the sequence it is, in the order it
-        # is done: rehearse (optional), set the plan, record. The record
-        # button then runs the whole session — the calibration of the
-        # maximum, then the cues for every load — so nothing here starts
-        # anything; on the bench, with «Calibrate MVC», «Guided F-V…» and
-        # «Rehearse…» side by side, nobody knew which came first, or
-        # whether the calibration was wanted at all.
+        # Its own box, with its own «?», because the guided flow is the
+        # kinematics practical's whole procedure and not a detail of the load
+        # monitor. One line: the parameters, the rehearsal beside them, and
+        # the plan in words. What used to be a third line — «3 · Start
+        # recording: the maximum is calibrated first, then each load is
+        # cued» — is the procedure itself, and the procedure is what the «?»
+        # is for; written here it was a sentence nobody could act on
+        # occupying a third of the box.
         self._box_fv_guided = QGroupBox(tr("Force-velocity study"))
         add_help(self._box_fv_guided, "acq.fv")
-        fv_col = QVBoxLayout(self._box_fv_guided)
-        fv_col.setContentsMargins(6, 3, 6, 3)
-        fv_col.setSpacing(2)
-        _paso_st = "font-size: 10px; color: #555555;"
+        fv_row = QHBoxLayout(self._box_fv_guided)
+        fv_row.setContentsMargins(6, 3, 6, 3)
+        fv_row.setSpacing(6)
 
-        # 1 — Deliberately never disabled: rehearsing is what you do *before*
-        # the device is connected and the subject is holding a weight, so
-        # gating it on the hardware would put it out of reach exactly when
-        # it is useful.
-        fila_1 = QHBoxLayout()
-        fila_1.setSpacing(6)
-        self._btn_fv_rehearse = QPushButton(tr("1 · Rehearse…"))
-        self._btn_fv_rehearse.setToolTip(
-            tr("It emulates the entire guided procedure with the same "
-               "warnings, in the same order, with a synthetic record. Each "
-               "step is explained and ends with the simulated "
-               "force-velocity study.")
-        )
-        self._btn_fv_rehearse.clicked.connect(self._on_fv_rehearse)
-        fila_1.addWidget(self._btn_fv_rehearse)
-        # Wrapped, all three hints: on one line each they set the minimum
-        # width of the whole window past a laboratory laptop's 1366 px.
-        self._lbl_fv_paso1 = QLabel(tr(
-            "Optional: to learn the procedure before anyone holds a weight. "
-            "Skip it if you know it."))
-        self._lbl_fv_paso1.setStyleSheet(_paso_st)
-        self._lbl_fv_paso1.setWordWrap(True)
-        self._lbl_fv_paso1.setMinimumWidth(120)
-        fila_1.addWidget(self._lbl_fv_paso1, stretch=1)
-        fv_col.addLayout(fila_1)
-
-        # 2 — The plan, kept until the record button needs it.
-        fila_2 = QHBoxLayout()
-        fila_2.setSpacing(6)
-        self._btn_fv_guided = QPushButton(tr("2 · F-V parameters…"))
+        # The parameters come first because they are what has to be set; the
+        # rehearsal is second on the line although the guide teaches it
+        # first, because by the time anyone needs the box they have either
+        # rehearsed or decided not to.
+        self._btn_fv_guided = QPushButton(tr("F-V parameters…"))
         self._btn_fv_guided.setToolTip(
             tr("The loads in order, the lifts per load and the seconds of "
                "preparation. Kept for the recording; nothing starts here.")
         )
         self._btn_fv_guided.clicked.connect(self._on_fv_params)
-        fila_2.addWidget(self._btn_fv_guided)
-        # Shows the chosen reps and loads, mirroring "Best of 3" next to MVC.
+        fv_row.addWidget(self._btn_fv_guided)
+
+        # Deliberately never disabled: rehearsing is what you do *before* the
+        # device is connected and the subject is holding a weight, so gating
+        # it on the hardware would put it out of reach exactly when it is
+        # useful.
+        self._btn_fv_rehearse = QPushButton(tr("Rehearse…"))
+        self._btn_fv_rehearse.setToolTip(
+            tr("Optional, and it needs no hardware: it plays the whole "
+               "procedure over a synthetic recording, with the same prompts "
+               "in the same order, and ends in the force-velocity study. "
+               "Skip it if you know the procedure.")
+        )
+        self._btn_fv_rehearse.clicked.connect(self._on_fv_rehearse)
+        fv_row.addWidget(self._btn_fv_rehearse)
+
+        # The plan in words: wrapped and with no minimum, so a long list of
+        # loads can never widen the window (see _lbl_load_info).
         self._lbl_fv_config = QLabel("")
-        self._lbl_fv_config.setStyleSheet(_paso_st)
+        self._lbl_fv_config.setStyleSheet("font-size: 10px; color: #555555;")
         self._lbl_fv_config.setWordWrap(True)
-        self._lbl_fv_config.setMinimumWidth(120)
+        self._lbl_fv_config.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self._refresh_fv_config_label()
-        fila_2.addWidget(self._lbl_fv_config, stretch=1)
-        fv_col.addLayout(fila_2)
+        fv_row.addWidget(self._lbl_fv_config, stretch=1)
 
-        # 3 — What the record button does in this practical.
-        self._lbl_fv_paso3 = QLabel(tr(
-            "3 · Start recording: the maximum is calibrated first, then each "
-            "load is cued."))
-        self._lbl_fv_paso3.setStyleSheet(_paso_st)
-        self._lbl_fv_paso3.setWordWrap(True)
-        self._lbl_fv_paso3.setMinimumWidth(120)
-        fv_col.addWidget(self._lbl_fv_paso3)
-        left_col.addWidget(self._box_fv_guided)
-
-        row.addLayout(left_col)
+        fila_sup.addWidget(self._box_fv_guided, stretch=1)
+        col.addLayout(fila_sup)
+        col.addLayout(row)
 
         # Adjustable warning / danger thresholds (% MVC). Disabled until an MVC
         # is calibrated; changing them updates the bars and the monitor live.
@@ -2603,28 +2608,31 @@ class AcquisitionTab(QWidget):
             self._load_readouts.append(readout)
             row.addWidget(roww, stretch=1)
 
-        self._lbl_load_info = QLabel("")
-        self._lbl_load_info.setStyleSheet("font-size: 9px; color: #555555;")
-        # The running commentary of the two wizards goes here, and some of
-        # those sentences are long. On one line each of them widened the box,
-        # the box widened the window, and the window ended up wider than the
-        # screen: the right-hand edge of the interface went off the display at
-        # the very moment the force-velocity wizard finished. It wraps now,
-        # inside a fixed band of width, so no sentence can push the window
-        # again however long it is.
-        # Wrapping alone is not enough: a wrapped label still asks for its
-        # longest *word*, which on a Linux font came to another 41 px. The
-        # size policy is Ignored, which is the only one that takes the
-        # label's own wishes out of the sum entirely — it takes up to the
-        # 280 px below when the window has them and nothing at all when it
-        # does not, and either way the window's minimum is the same with the
-        # label full as with it empty. What the operator must not miss is on
-        # the floating cue panel, in large type; this line is the aside.
-        self._lbl_load_info.setWordWrap(True)
-        self._lbl_load_info.setMaximumWidth(280)
-        self._lbl_load_info.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-        row.addWidget(self._lbl_load_info)
+        # The running commentary of the two wizards. Written but never laid
+        # out: it is built with the box as its parent and left hidden.
+        #
+        # It used to sit at the end of this line and it was the most
+        # expensive widget in the window. Its sentences are long — «4 loads
+        # recorded. Stop recording, then open the study» — so on one line it
+        # widened the box, the box widened the window, and the right-hand
+        # edge of the interface went off the screen at the very moment the
+        # force-velocity wizard finished. Wrapping it moved the same problem
+        # to the other axis: given whatever width was left it wrapped to four
+        # lines and made the box three times as tall.
+        #
+        # And it was never needed. Every one of those sentences is already on
+        # the floating panel, in large type, over the plots where the person
+        # running the procedure is looking, and the ones worth keeping are in
+        # the event log as well. The wizards still set it — it costs nothing
+        # and the tests read it — and the box stays two lines whatever they
+        # say.
+        self._lbl_load_info = QLabel("", grp)
+        self._lbl_load_info.setVisible(False)
+        # Two lines at the top of the box, not two lines spread over its
+        # height: the row of boxes is as tall as the tallest of them, and
+        # without this the thresholds drifted into the middle of the empty
+        # part with the study above them and nothing between.
+        col.addStretch()
         return grp
 
     @Slot()
@@ -2662,16 +2670,19 @@ class AcquisitionTab(QWidget):
         # phase, which is exactly what the flow exists to write.
         self._mvc_flow_auto = auto_flow or self._mvc_flow_pending
         self._mvc_flow_pending = False
-        # Always three: the first maximal effort of a session is genuinely
-        # submaximal, and with one attempt there is nothing to fall back on.
-        self._mvc_reps = 3
-        # And then three brief maximal squeezes. A held maximum peaks at its
-        # start and settles on a plateau; the task's brief efforts reach the
-        # peak, and on the bench they came out at 135 % of a plateau-based
-        # reference. A squeeze reaches the peak alone, and the reference is
-        # the best 0.2 s across all six, so it is a maximum the task cannot
-        # exceed. Reps 1–3 are the held ones, 4–6 the squeezes.
-        self._mvc_bursts = self._profile.mvc_bursts
+        # Three brief maximal efforts, and only those. The calibration used to
+        # ask for three held maxima as well, six repetitions in all, and the
+        # held ones earned their place: a maximum peaks at its start and then
+        # settles onto a plateau, a mean taken over the plateau is below the
+        # peak, and the task's brief efforts reach the peak — which is how a
+        # task came out at 135 % of its own "maximum". The answer to that was
+        # to measure the reference over the strongest 0.2 s, and once it is
+        # measured there the held effort adds nothing the squeeze does not
+        # already give: the same peak, four times the fatigue, and twice the
+        # calibration to sit through. Three attempts, because the first
+        # maximal effort of a session is genuinely submaximal and with one
+        # there is nothing to fall back on.
+        self._mvc_reps = self._profile.mvc_bursts
         self._mvc_muscle = 0
         self._mvc_rep = 0
         self._mvc_capture = [[] for _ in range(MAX_CHANNELS)]
@@ -2799,14 +2810,7 @@ class AcquisitionTab(QWidget):
     def _mvc_tick(self) -> None:
         self._mvc_elapsed += MVC_TICK_MS / 1000.0
         label = self._mvc_label()
-        # Reps 1..n are the held maxima; the ones after are the brief
-        # squeezes, counted on their own so the subject knows which they are
-        # doing.
-        breve = self._mvc_rep >= self._mvc_reps
-        if breve:
-            rep = tr(" (brief {i}/{n})").format(
-                i=self._mvc_rep - self._mvc_reps + 1, n=self._mvc_bursts)
-        elif self._mvc_reps > 1:
+        if self._mvc_reps > 1:
             rep = tr(" (rep {i}/{n})").format(i=self._mvc_rep + 1, n=self._mvc_reps)
         else:
             rep = ""
@@ -2829,12 +2833,10 @@ class AcquisitionTab(QWidget):
             if self._mvc_elapsed <= MVC_TICK_MS / 1000.0:
                 self._mvc_rest_buf = []      # one baseline per repetition
             count = max(1, int(np.ceil(MVC_READY_S - self._mvc_elapsed)))
-            detalle = (
-                tr("Make a single, brief muscle contraction (a twitch) with "
-                   "the greatest force you can.")
-                if breve else
-                tr("Push as hard as you can when the count reaches 0 — against s"
-                   "omething that cannot move, such as the underside of the table, not against a hand")
+            detalle = tr(
+                "One short, maximal effort when the count reaches 0 — against "
+                "something that cannot move, such as the underside of the "
+                "table, not against a hand."
             )
             self._mvc_overlay.show_ready(
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
@@ -2863,17 +2865,14 @@ class AcquisitionTab(QWidget):
                     cal_start_marker(self._mvc_muscle, self._mvc_rep + 1)
                 )
         elif self._mvc_phase == "contract":
-            # A held maximum lasts the calibration time; a squeeze, a second
-            # and a half: long enough to reach the peak, too short for the
-            # plateau.
-            dur = self._profile.mvc_burst_s if breve else self._profile.apda_calib_s
+            # A second and a half: long enough to reach the peak, too short
+            # to settle onto the plateau that used to drag the reference down.
+            dur = self._profile.mvc_burst_s
             secs_left = max(0.0, dur - self._mvc_elapsed)
             progress = min(1.0, self._mvc_elapsed / dur)
             effort = (self._mvc_cur / self._mvc_peak) if self._mvc_peak > 0 else 0.0
-            titulo = (
-                tr("Make a single, brief contraction of {label} with the "
-                   "greatest force you can{rep}")
-                if breve else tr("Contract {label} at maximum!{rep}")
+            titulo = tr(
+                "Maximum, short and hard — {label}{rep}"
             ).format(label=label, rep=rep)
             self._mvc_overlay.show_contract(titulo, secs_left, progress, effort)
             self._mvc_info(
@@ -2964,7 +2963,7 @@ class AcquisitionTab(QWidget):
                 np.asarray(muestras, dtype=float)
             )
         self._mvc_rep += 1
-        if self._mvc_rep < self._mvc_reps + self._mvc_bursts:
+        if self._mvc_rep < self._mvc_reps:
             self._mvc_phase = "rest"          # rest, then repeat this muscle
             self._mvc_elapsed = 0.0
             return
@@ -3282,7 +3281,13 @@ class AcquisitionTab(QWidget):
         )
 
         placement = self._combo_acc_place.currentData()
-        dlg = ForceVelocityPlanDialog(self, placement=placement)
+        dlg = ForceVelocityPlanDialog(
+            self, placement=placement,
+            loads=self._settings.value("adquisicion/fv_loads", "", type=str),
+            reps=self._settings.value("adquisicion/fv_reps", 0, type=int),
+            prep_s=self._settings.value("adquisicion/fv_prep_s", 0.0, type=float),
+            lift_s=self._settings.value("adquisicion/fv_window_s", 0.0, type=float),
+        )
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return self._plan_fv_guardado() is not None
         loads = dlg.loads()
@@ -3295,7 +3300,47 @@ class AcquisitionTab(QWidget):
         self._settings.setValue("adquisicion/fv_prep_s", float(dlg.prep_seconds()))
         self._settings.setValue("adquisicion/fv_window_s", float(dlg.window_seconds()))
         self._refresh_fv_config_label()
+        self._actualizar_paso_guiado()
         return True
+
+    def _actualizar_paso_guiado(self) -> None:
+        """Float the next step of the kinematics sequence over its control.
+
+        The box used to carry the sequence in writing — three numbered rows,
+        the third of them a sentence about a button somewhere else. A line of
+        small print is read by whoever was already looking at it; the
+        floating panel dims the rest of the window and rings the control it
+        names, which is how the analysis tab says the same kind of thing and
+        is what «so it can be seen better» asks for.
+
+        Only on a *change* of step, and never while recording: the panel is
+        for setting up, and a dimmed window over a subject holding a weight
+        would be the worst possible moment for it.
+        """
+        if self._mode != MODE_KINEMATICS or self.is_recording():
+            self._paso_mostrado = ""
+            return
+        if not self._btn_conectar.isChecked():
+            # Before the device is connected there is nothing to sequence:
+            # the parameters can be set at any time and the tour has just
+            # offered itself. Nagging here would be the third panel in a row.
+            return
+        if self._plan_fv_guardado() is None:
+            paso, boton = "params", self._btn_fv_guided
+            texto = tr(
+                "Next: «{button}». The loads in order and the lifts per load. "
+                "Nothing starts there; it is kept for the recording."
+            ).format(button=tr("F-V parameters…"))
+        else:
+            paso, boton = "record", self._btn_grabar
+            texto = tr(
+                "Next: «{button}». It asks for the file name, calibrates the "
+                "maximum, and then cues each load in turn. Esc stops the "
+                "guidance at any point."
+            ).format(button=tr("Start recording"))
+        if paso != self._paso_mostrado:
+            self._paso_mostrado = paso
+            self.coach_step.emit(tr("Next step"), texto, boton)
 
     def _plan_fv_guardado(self) -> tuple[list[float], int, float, float] | None:
         """The saved force-velocity plan — loads, lifts per load, seconds of
@@ -3307,9 +3352,12 @@ class AcquisitionTab(QWidget):
             return None
         return (
             loads,
-            max(1, int(self._settings.value("adquisicion/fv_reps", 1, type=int))),
-            float(self._settings.value("adquisicion/fv_prep_s", 5.0, type=float)),
-            float(self._settings.value("adquisicion/fv_window_s", 1.5, type=float)),
+            max(1, int(self._settings.value(
+                "adquisicion/fv_reps", FV_REPS_DEF, type=int))),
+            float(self._settings.value(
+                "adquisicion/fv_prep_s", FV_PREP_DEF_S, type=float)),
+            float(self._settings.value(
+                "adquisicion/fv_window_s", FV_LIFT_DEF_S, type=float)),
         )
 
     def _lanzar_estudio_fv(self) -> None:
@@ -4002,6 +4050,9 @@ class AcquisitionTab(QWidget):
         # phase, run by the record button: a button for it beside the
         # sequence was the step nobody knew whether or when to take.
         self._btn_calibrar.setVisible(mode != MODE_KINEMATICS)
+        # A different practical is a different sequence: whatever step was
+        # offered belongs to the one being left.
+        self._paso_mostrado = ""
         # Which analogue input the sensor is wired to is a convention the
         # block states — muscle on A1, accelerometer on A2 — not a selector:
         # the selector and its «find it» diagnostic stay built (the recording

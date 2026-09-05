@@ -127,17 +127,15 @@ fichero, sin parar la grabación:
 1. **Calentamiento (10 s).** Dos o tres contracciones suaves de cada músculo. La
    primera contracción máxima de una sesión nunca es la más fuerte, y esto lo
    corrige en parte.
-2. **Tres contracciones máximas mantenidas**, de 4 s cada una, con cuenta atrás de
-   3 s y 2 s de descanso entre ellas. La pantalla dice «¡Contraiga FCR al máximo!».
-3. **Tres sacudidas máximas breves**, de 1,5 s. La pantalla dice «Haga una
-   contracción o sacudida muscular simple (breve) con la máxima fuerza posible».
-4. Con dos músculos, lo mismo para el segundo.
-5. En la práctica del par, después viene una **preparación** de 5 s y empieza el
+2. **Tres esfuerzos máximos breves**, de 1,5 s cada uno, con cuenta atrás de
+   3 s y 2 s de descanso entre ellos. La pantalla dice «¡Máximo, breve y fuerte!».
+3. Con dos músculos, lo mismo para el segundo.
+4. En la práctica del par, después viene una **preparación** de 5 s y empieza el
    **registro** de la tarea. En las otras dos prácticas la calibración se lanza
    con el botón **«Calibrar CVM»** mientras se graba, y el registro sigue.
 
-La referencia es **el mejor 0,2 s de las seis repeticiones**. ¿Por qué seis y por
-qué sacudidas? Porque una contracción mantenida muestra un pico al empezar y luego
+La referencia es **el mejor 0,2 s de las tres repeticiones**. ¿Por qué breves?
+Porque una contracción mantenida muestra un pico al empezar y luego
 una meseta, y los esfuerzos breves de una tarea alcanzan ese pico. Si la
 referencia se midiera sobre la meseta, la tarea la superaría, y eso es lo que
 pasaba: 135 % de «máximo» en el banco del 1 de septiembre.
@@ -170,7 +168,7 @@ preparación, registro) y la pestaña de **Análisis** analiza el registro **sol
 sin pulsar nada. Al pasar a Análisis aparece un cuadro que señala el paso
 siguiente:
 
-1. **«Repeticiones de la calibración…»**: la lista de las seis repeticiones de
+1. **«Repeticiones de la calibración…»**: la lista de las tres repeticiones de
    cada músculo con su valor. Se desmarcan las que salieron flojas y se acepta;
    la referencia se recalcula. Esto va primero porque **todos los porcentajes se
    miden contra esa referencia**.
@@ -533,14 +531,15 @@ y el EMG la activación.
 **Procedimiento.**
 1. Preparar cuatro cargas conocidas (por ejemplo 0, 1, 2 y 3 kg: una botella y
    mancuernas o botellas llenas).
-2. La caja **«Estudio fuerza-velocidad»** es la secuencia, en su orden. **«1 ·
-   Ensayar…»** recorre el procedimiento sin hardware; es opcional, para
-   entenderlo antes de que nadie sostenga un peso. **«2 · Parámetros de la
-   F-V…»** pide el **plan** (las cargas en orden, cuántos levantamientos por
-   carga, dos o tres, y los segundos de preparación) y lo guarda. Y **«Iniciar
-   grabación»** lleva la sesión sola: pide el nombre del archivo, **calibra
-   primero el máximo** (calentamiento, tres máximas mantenidas y tres sacudidas
-   breves, contra la mesa), anuncia el estudio y, para cada carga, pide las
+2. La caja **«Estudio fuerza-velocidad»** trae los dos primeros pasos de la
+   secuencia. **«Parámetros de la F-V…»** pide el **plan** (las cargas en
+   orden, cuántos levantamientos por carga —tres por defecto— y los segundos
+   de preparación y de levantamiento) y lo guarda; **«Ensayar…»**, a su lado,
+   recorre el procedimiento entero sin hardware, que es opcional y merece una
+   pasada antes de que nadie sostenga un peso. Y **«Iniciar grabación»** lleva
+   la sesión sola: pide el nombre del archivo, **calibra primero el máximo**
+   (calentamiento y tres esfuerzos máximos breves, contra la mesa), anuncia
+   el estudio y, para cada carga, pide las
    repeticiones de **una elevación rápida**, cada una con su cuenta atrás y
    marcada en el fichero con su carga. No hay máximo isométrico en vacío entre
    medias: la calibración ya lo fue. Basta seguir la pantalla; «Cancelar guía

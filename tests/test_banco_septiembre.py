@@ -208,9 +208,12 @@ class TestTheAcquisitionTabAfterTheBench:
         adq.apply_mode(MODE_KINEMATICS, False)
         assert adq._btn_calibrar.isHidden()
         assert not adq._btn_fv_guided.isHidden() and not adq._btn_fv_rehearse.isHidden()
-        assert adq._btn_fv_rehearse.text().startswith("1")
-        assert adq._btn_fv_guided.text().startswith("2")
         assert adq._btn_fv_guided.isEnabled()          # no hardware needed for a plan
+        # And the sequence is not written on the buttons: the box is one
+        # line of controls, and which step comes next is said by the
+        # floating panel, over the control it names.
+        assert not adq._btn_fv_guided.text()[0].isdigit()
+        assert not adq._btn_fv_rehearse.text()[0].isdigit()
         adq.apply_mode(MODE_SINGLE, False)
         assert not adq._btn_calibrar.isHidden()
 
