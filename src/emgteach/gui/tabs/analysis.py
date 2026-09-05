@@ -1090,6 +1090,9 @@ class AnalysisTab(QWidget):
         self._filas_contr: list = []
         self._nombres_contr: tuple[str, str] = ("", "")
         self._cargas_contr: list[float | None] = []
+        #: Where the view choice is kept: one key for recordings with loads
+        #: (the kinematics practical), another for the rest.
+        self._clave_vista = "analysis/contr_view"
         self._box_contr.setVisible(False)
         self._sel_coact.set_vista(
             str(self._settings.value("analysis/coact_view", "chart")))
@@ -1859,6 +1862,13 @@ class AnalysisTab(QWidget):
             vistas.append("load")
         vistas.append("table")
         self._sel_contr.set_disponibles(vistas)
+        # A kinematics recording opens on its own question — the loads —
+        # and remembers its own choice apart from the other practicals':
+        # amplitude against MDF is the fatigue practical's relation, and
+        # opening a series of lifts on it explained nothing.
+        self._clave_vista = "analysis/contr_view_kin" if con_cargas else "analysis/contr_view"
+        self._sel_contr.set_vista(str(self._settings.value(
+            self._clave_vista, "load" if con_cargas else "relation")))
         self._dibujar_contracciones()
         resumen = tr("{n} contractions").format(n=len(filas))
         emd = result.get("emd_ms_mean")
@@ -1879,7 +1889,7 @@ class AnalysisTab(QWidget):
         chart is redrawn from the rows it was last drawn from: a change of
         view is not a reason to re-run the analysis."""
         self._stack_contr.setCurrentIndex(1 if vista == "table" else 0)
-        self._settings.setValue("analysis/contr_view", vista)
+        self._settings.setValue(self._clave_vista, vista)
         # Only once there is something to draw: restoring the choice at
         # construction scheduled an idle draw on a canvas a tab torn down
         # straight away no longer had.

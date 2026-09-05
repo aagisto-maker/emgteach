@@ -150,10 +150,12 @@ class TestTheButtonInTheApp:
         t.close()
 
     def test_rehearsing_never_needs_the_hardware(self, tab) -> None:
-        """It is enabled with nothing connected — that is the whole point, and
-        the guided button beside it is disabled in the same state."""
+        """It is enabled with nothing connected — that is the whole point —
+        and so is the plan beside it, which is set before anything is
+        connected; and rehearsing comes first in the sequence."""
         assert tab._btn_fv_rehearse.isEnabled()
-        assert not tab._btn_fv_guided.isEnabled()
+        assert tab._btn_fv_guided.isEnabled()
+        assert tab._btn_fv_rehearse.text().startswith("1")
 
     def test_the_tour_step_points_at_a_button_that_exists(
         self, main_window, qapp

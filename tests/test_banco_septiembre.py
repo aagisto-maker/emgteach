@@ -199,6 +199,65 @@ class TestTheAcquisitionTabAfterTheBench:
         assert adq._lbl_acc_wiring.parent() is adq._box_acc
         assert "A1" in adq._lbl_acc_wiring.text() and "A2" in adq._lbl_acc_wiring.text()
 
+    def test_kinematics_is_a_sequence_and_the_record_button_runs_it(self, adq) -> None:
+        """No «Calibrate MVC» beside the sequence: the calibration is the
+        session's first phase, and the box lists what comes before it."""
+        from emgteach.modes import mode_requires_calibration
+
+        assert mode_requires_calibration(MODE_KINEMATICS)
+        adq.apply_mode(MODE_KINEMATICS, False)
+        assert adq._btn_calibrar.isHidden()
+        assert not adq._btn_fv_guided.isHidden() and not adq._btn_fv_rehearse.isHidden()
+        assert adq._btn_fv_rehearse.text().startswith("1")
+        assert adq._btn_fv_guided.text().startswith("2")
+        assert adq._btn_fv_guided.isEnabled()          # no hardware needed for a plan
+        adq.apply_mode(MODE_SINGLE, False)
+        assert not adq._btn_calibrar.isHidden()
+
+    def test_the_plan_is_kept_until_the_recording_needs_it(self, adq) -> None:
+        assert adq._plan_fv_guardado() is None
+        adq._settings.setValue("adquisicion/fv_loads", "2, 3.4, 5")
+        adq._settings.setValue("adquisicion/fv_reps", 3)
+        adq._settings.setValue("adquisicion/fv_prep_s", 4.0)
+        adq._settings.setValue("adquisicion/fv_window_s", 2.0)
+        assert adq._plan_fv_guardado() == ([2.0, 3.4, 5.0], 3, 4.0, 2.0)
+
+    def test_the_loads_follow_the_recording_phase_without_a_second_maximum(self, adq) -> None:
+        """After the calibration and its pause the session announces the
+        study and cues the first load; no isometric maximum of its own."""
+        from emgteach.gui.tabs.acquisition import FV_INTRO_S, MVC_TICK_MS
+
+        class _Worker:
+            def __init__(self):
+                self.markers = []
+
+            def isRunning(self):
+                return True
+
+            def add_marker(self, label):
+                self.markers.append(label)
+
+        adq.apply_mode(MODE_KINEMATICS, False)
+        adq._settings.setValue("adquisicion/fv_loads", "2, 4")
+        adq._worker = _Worker()
+        adq._fv_flow_pending = True
+        adq._prep_elapsed = adq._profile.prep_countdown_s
+        adq._prep_tick()
+        assert any("REC start" in m for m in adq._worker.markers)
+        assert adq._fv_active and adq._fv_phase == "intro"
+        assert not adq._fv_flow_pending
+        # The announcement lasts its seconds, then the first load is cued.
+        adq._fv_elapsed = FV_INTRO_S - MVC_TICK_MS / 1000.0
+        adq._fv_tick()
+        assert adq._fv_phase == "ready"
+        adq._fv_cancel()
+
+    def test_cancelling_the_guide_cancels_the_loads_too(self, adq) -> None:
+        adq._fv_flow_pending = True
+        adq._mvc_active = True
+        adq._cancelar_guiado()
+        assert not adq._fv_flow_pending
+
     def test_the_guide_can_be_cancelled(self, adq) -> None:
         """The button appears while a guide runs, and Esc lands on it."""
         assert adq._btn_cancelar_guia.isHidden()

@@ -478,11 +478,19 @@ def _jasa(ax, rows, v1, unidad, fs) -> None:
         (x1, y0, "right", "bottom", tr("recovery")),
     )
     for ex, ey, ha, va, texto in esquinas:
-        ax.text(ex, ey, texto, ha=ha, va=va, fontsize=fs - 1, color="#999999",
+        ax.text(ex, ey, texto, ha=ha, va=va, fontsize=fs, color="#777777",
                 style="italic", zorder=1)
     ax.set_xlabel(tr("MDF (Hz)"), fontsize=fs)
     ax.set_ylabel(unidad, fontsize=fs)
-    ax.set_title(tr("Amplitude against MDF (JASA)"), fontsize=fs, pad=3)
+    # The rule for reading it, under the title: the quadrant words alone
+    # did not say what a point was or which way fatigue runs.
+    ax.set_title(tr("Amplitude against MDF (JASA)"), fontsize=fs, pad=12)
+    ax.text(0.5, 1.01,
+            tr("Each point is a contraction, numbered and joined in order; a "
+               "drift towards the top left — more amplitude, less frequency — "
+               "is fatigue."),
+            transform=ax.transAxes, ha="center", va="bottom", fontsize=fs - 1,
+            color="#555555")
     ax.tick_params(labelsize=fs)
     _quitar_marco(ax)
 

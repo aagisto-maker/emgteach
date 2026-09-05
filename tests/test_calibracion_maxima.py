@@ -248,8 +248,10 @@ class TestTheGuidedForceVelocityExplainsItself:
         from emgteach.gui import help_texts
 
         cuerpo = help_texts.text("acq.fv")[1]
-        assert tr("Guided F-V…") in cuerpo
-        assert tr("Rehearse…") in cuerpo
+        # The two steps before the record button, named as the box names them.
+        assert tr("1 · Rehearse…") in cuerpo
+        assert tr("2 · F-V parameters…") in cuerpo
+        assert tr("Cancel guide (Esc)") in cuerpo
 
     def test_the_device_help_names_the_test_identifier(self) -> None:
         from emgteach.gui import help_texts

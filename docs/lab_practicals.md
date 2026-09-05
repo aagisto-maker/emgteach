@@ -532,12 +532,17 @@ and the EMG the activation.
 **Procedure.**
 1. Prepare four known loads (for instance 0, 1, 2 and 3 kg: a bottle and
    dumbbells or filled bottles).
-2. Press **«Guided F-V…»**. It first asks for the **plan**: the loads in order,
-   how many repetitions per load (two or three) and the preparation seconds; if
-   the recording was not running, it starts it. Then it directs the series: an
-   **isometric maximum without load** of 3 s (elbow at 90°, against the table)
-   and, for each load, the requested repetitions of **one quick lift**, each with
-   its countdown and marked in the file with its load. Just follow the screen.
+2. The **«Force-velocity study»** box is the sequence, in its order. **«1 ·
+   Rehearse…»** runs the procedure with no hardware; optional, to learn it
+   before anyone holds a weight. **«2 · F-V parameters…»** asks for the **plan**
+   (the loads in order, the lifts per load, two or three, and the preparation
+   seconds) and keeps it. Then **«Start recording»** runs the session by itself:
+   it names the file, **calibrates the maximum first** (warm-up, three held
+   maxima and three brief squeezes, against the table), announces the study and,
+   for each load, cues the repetitions of **one quick lift**, each with its
+   countdown and marked in the file with its load. No isometric maximum without
+   load in between: the calibration was that. Just follow the screen; «Cancel
+   guide (Esc)» stops it without stopping the recording.
 3. **Stop**. In Analysis, the contraction table holds one row per lift with
    its load, and **«Force-velocity study…»** reads those rows and returns four
    curves: load-velocity, force-velocity (normalised hyperbola), power and

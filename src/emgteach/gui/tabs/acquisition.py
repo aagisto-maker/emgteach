@@ -80,6 +80,7 @@ from emgteach.io import (
 )
 from emgteach.modes import (
     DEFAULT_MODE,
+    MODE_KINEMATICS,
     MODE_SINGLE,
     mode_channels,
     mode_fixed_labels,
@@ -137,6 +138,9 @@ FV_MVC_HOLD_S = 3.0
 # Longer recovery pause between the (maximal) MVC and the first loaded lift, so
 # the subject recovers from the maximum and sets up the first load in peace.
 FV_MVC_TO_LOADS_REST_S = 5.0
+#: Seconds the kinematics session announces the loads before cueing the
+#: first, once the calibration and the preparation pause are behind.
+FV_INTRO_S = 4.0
 
 # Headroom applied to the live plots when they auto-scale after calibration:
 # the envelope top is this multiple of the MVC reference (so >100 %MVC phasic
@@ -330,6 +334,9 @@ class AcquisitionTab(QWidget):
         self._mode = DEFAULT_MODE
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False    # start it on the first block of data
+        #: The kinematics session's second phase — the loads — waiting for
+        #: the recording phase to begin (see _iniciar_grabacion).
+        self._fv_flow_pending = False
         #: Blocks of data seen while the flow was armed and could not start.
         #: The flow is a convenience; failing to run it must never leave the
         #: session with no way to calibrate at all.
@@ -1534,9 +1541,9 @@ class AcquisitionTab(QWidget):
         connected = self._btn_conectar.isChecked()
         bitalino = self._combo_device_type.currentIndex() == 0
         busy = self._mvc_active or self._fv_active
-        self._btn_fv_guided.setEnabled(
-            connected and bool(self._acc_enabled) and bitalino and not busy
-        )
+        # The plan needs no hardware: it is set before anything is
+        # connected and kept for the recording.
+        self._btn_fv_guided.setEnabled(not busy)
         # The channel diagnostic opens its own connection, so only when idle
         # (connected but not recording) and not during a wizard.
         recording = bool(self._worker and self._worker.isRunning())
@@ -1658,6 +1665,15 @@ class AcquisitionTab(QWidget):
             self._detener_grabacion()
 
     def _iniciar_grabacion(self) -> None:
+        # The kinematics session needs its plan before it starts: the record
+        # button runs the calibration and then cues the loads, and there is
+        # no moment after this one to ask for them.
+        if self._mode == MODE_KINEMATICS and self._plan_fv_guardado() is None:
+            if not self._on_fv_params():
+                self._btn_grabar.setChecked(False)
+                self._log(tr(
+                    "No force-velocity plan: set the loads in «F-V parameters…» first."))
+                return
         # Ask where and under what name to save the EDF (same UX as the
         # "Save figure" dialogs), pre-filled with the destination folder and a
         # timestamped default name. Cancelling aborts the recording start.
@@ -1786,6 +1802,25 @@ class AcquisitionTab(QWidget):
         self._mvc_flow_pending = self._flow_needs_calibration()
         self._mvc_flow_tries = 0
         self._btn_calibrar.setEnabled(not self._mvc_flow_pending)
+        # The kinematics session's second phase, the loads, is armed with
+        # the first: it fires once the recording phase begins (after the
+        # calibration and its pause) or, with the maximum already
+        # calibrated in this session, on the first block of data.
+        self._fv_flow_pending = self._mode == MODE_KINEMATICS
+        self._log(tr("Recording to {file}.").format(file=save_path))
+        if self._fv_flow_pending:
+            plan = self._plan_fv_guardado()
+            if plan is not None:
+                loads, reps, _p, _w = plan
+                resumen = tr("{reps}× · loads: {loads} kg").format(
+                    reps=reps, loads=", ".join(f"{v:g}" for v in loads))
+                self._log(
+                    tr("First the calibration of the maximum; then the "
+                       "force-velocity study: {plan}.").format(plan=resumen)
+                    if self._mvc_flow_pending
+                    else tr("The maximum is already calibrated; the force-velocity "
+                            "study starts now: {plan}.").format(plan=resumen)
+                )
         # Said out loud, with the three things the answer depends on. Three
         # bench sessions came back with no calibration and no way to tell,
         # from the file alone, whether the flow had declined to arm or armed
@@ -1816,6 +1851,7 @@ class AcquisitionTab(QWidget):
         # a maximal effort.
         self._mvc_flow_pending = False
         self._mvc_flow_tries = 0
+        self._fv_flow_pending = False
         # Calibrating needs a recording in progress, so the button follows
         # the recording rather than being left wherever the flow put it.
         self._btn_calibrar.setEnabled(False)
@@ -1852,6 +1888,14 @@ class AcquisitionTab(QWidget):
         # recording came back with no calibration at all and the button left
         # disabled, which is a worse state than either outcome. Retrying on
         # the next block costs nothing: this runs ten times a second.
+        # A kinematics session whose maximum is already calibrated skips
+        # straight to the loads, on the first block, as the calibration
+        # would have. Never while the calibration or its pause runs: those
+        # hand over to the loads themselves, at the recording phase.
+        if (self._fv_flow_pending and not self._mvc_flow_pending
+                and not self._mvc_active and not self._fv_active
+                and not self._prep_timer.isActive()):
+            self._lanzar_estudio_fv()
         if self._mvc_flow_pending and not self._mvc_active:
             self._iniciar_calibracion(auto_flow=True)
             if self._mvc_flow_pending:
@@ -2384,28 +2428,27 @@ class AcquisitionTab(QWidget):
         # every other thing on this tab is explained from a corner «?», and a
         # student who has learnt to look there found nothing here. The
         # kinematics practical shows the box; the other two hide it whole.
-        self._box_fv_guided = QGroupBox(tr("Guided force-velocity acquisition"))
+        # The kinematics practical as the sequence it is, in the order it
+        # is done: rehearse (optional), set the plan, record. The record
+        # button then runs the whole session — the calibration of the
+        # maximum, then the cues for every load — so nothing here starts
+        # anything; on the bench, with «Calibrate MVC», «Guided F-V…» and
+        # «Rehearse…» side by side, nobody knew which came first, or
+        # whether the calibration was wanted at all.
+        self._box_fv_guided = QGroupBox(tr("Force-velocity study"))
         add_help(self._box_fv_guided, "acq.fv")
-        fv_row = QHBoxLayout(self._box_fv_guided)
-        fv_row.setContentsMargins(6, 3, 6, 3)
-        fv_row.setSpacing(6)
-        self._btn_fv_guided = QPushButton(tr("Guided F-V…"))
-        self._btn_fv_guided.setEnabled(False)
-        self._btn_fv_guided.setToolTip(
-            tr("Guided force-velocity acquisition: an MVC maximum first (no "
-               "load), then a discrete 'contract with this load' prompt for "
-               "every repetition of every load. Starts the recording for you "
-               "and marks each contraction with its load so the force-velocity "
-               "study reads them directly. Enable the accelerometer and connect "
-               "the BITalino first.")
-        )
-        self._btn_fv_guided.clicked.connect(self._on_fv_guided)
-        fv_row.addWidget(self._btn_fv_guided)
+        fv_col = QVBoxLayout(self._box_fv_guided)
+        fv_col.setContentsMargins(6, 3, 6, 3)
+        fv_col.setSpacing(2)
+        _paso_st = "font-size: 10px; color: #555555;"
 
-        # Deliberately never disabled: rehearsing is what you do *before* the
-        # device is connected and the subject is holding a weight, so gating it
-        # on the hardware would put it out of reach exactly when it is useful.
-        self._btn_fv_rehearse = QPushButton(tr("Rehearse…"))
+        # 1 — Deliberately never disabled: rehearsing is what you do *before*
+        # the device is connected and the subject is holding a weight, so
+        # gating it on the hardware would put it out of reach exactly when
+        # it is useful.
+        fila_1 = QHBoxLayout()
+        fila_1.setSpacing(6)
+        self._btn_fv_rehearse = QPushButton(tr("1 · Rehearse…"))
         self._btn_fv_rehearse.setToolTip(
             tr("It emulates the entire guided procedure with the same "
                "warnings, in the same order, with a synthetic record. Each "
@@ -2413,14 +2456,37 @@ class AcquisitionTab(QWidget):
                "force-velocity study.")
         )
         self._btn_fv_rehearse.clicked.connect(self._on_fv_rehearse)
-        fv_row.addWidget(self._btn_fv_rehearse)
+        fila_1.addWidget(self._btn_fv_rehearse)
+        self._lbl_fv_paso1 = QLabel(tr(
+            "Optional: to learn the procedure before anyone holds a weight. "
+            "Skip it if you know it."))
+        self._lbl_fv_paso1.setStyleSheet(_paso_st)
+        fila_1.addWidget(self._lbl_fv_paso1, stretch=1)
+        fv_col.addLayout(fila_1)
 
+        # 2 — The plan, kept until the record button needs it.
+        fila_2 = QHBoxLayout()
+        fila_2.setSpacing(6)
+        self._btn_fv_guided = QPushButton(tr("2 · F-V parameters…"))
+        self._btn_fv_guided.setToolTip(
+            tr("The loads in order, the lifts per load and the seconds of "
+               "preparation. Kept for the recording; nothing starts here.")
+        )
+        self._btn_fv_guided.clicked.connect(self._on_fv_params)
+        fila_2.addWidget(self._btn_fv_guided)
         # Shows the chosen reps and loads, mirroring "Best of 3" next to MVC.
         self._lbl_fv_config = QLabel("")
-        self._lbl_fv_config.setStyleSheet("font-size: 9px; color: #555555;")
+        self._lbl_fv_config.setStyleSheet(_paso_st)
         self._refresh_fv_config_label()
-        fv_row.addWidget(self._lbl_fv_config)
-        fv_row.addStretch()
+        fila_2.addWidget(self._lbl_fv_config, stretch=1)
+        fv_col.addLayout(fila_2)
+
+        # 3 — What the record button does in this practical.
+        self._lbl_fv_paso3 = QLabel(tr(
+            "3 · Start recording: the maximum is calibrated first, then each "
+            "load is cued."))
+        self._lbl_fv_paso3.setStyleSheet(_paso_st)
+        fv_col.addWidget(self._lbl_fv_paso3)
         left_col.addWidget(self._box_fv_guided)
 
         row.addLayout(left_col)
@@ -2931,6 +2997,8 @@ class AcquisitionTab(QWidget):
             "Recording phase started. Everything before this point — the "
             "calibration and this pause — stays out of the analysis."
         ))
+        if self._fv_flow_pending:
+            self._lanzar_estudio_fv()
 
     def _write_mvc_ref_marker(self, c: int) -> None:
         """Carry this channel's MVC reference into the EDF as an annotation.
@@ -3112,6 +3180,9 @@ class AcquisitionTab(QWidget):
         stay in the file, and the analysis reads them back as it does for a
         recording stopped mid-calibration.
         """
+        # Esc means «stop guiding me»: a kinematics session whose
+        # calibration is cancelled does not go on to cue the loads either.
+        self._fv_flow_pending = False
         if self._mvc_active:
             self._mvc_cancel()
             self._prep_aviso = ""
@@ -3132,18 +3203,17 @@ class AcquisitionTab(QWidget):
     # -- Guided force-velocity acquisition wizard ----------------------------
 
     @Slot()
-    def _on_fv_guided(self) -> None:
-        """Launch the guided force-velocity acquisition wizard.
+    def _on_fv_params(self) -> bool:
+        """Ask for the force-velocity plan and keep it for the recording.
 
-        Asks for the list of known loads first (this is the load dialog the
-        operator sees), then — starting the recording itself if one is not
-        already running — guides an MVC maximum (no load) followed by a discrete
-        'contract with this load' prompt for every repetition of every load,
-        marking each contraction in the EDF so the Analysis-tab force-velocity
-        study reads the loads directly instead of the operator typing them.
+        The loads in order, the lifts per load, the seconds of preparation
+        and of lift. Nothing starts here: the record button runs the
+        session — the calibration of the maximum first, then the cues for
+        every load — and reads the plan from the settings when it gets
+        there. Returns whether a plan is now saved.
         """
         if self._mvc_active or self._fv_active:
-            return
+            return self._plan_fv_guardado() is not None
         from emgteach.gui.widgets.force_velocity_plan_dialog import (
             ForceVelocityPlanDialog,
         )
@@ -3151,29 +3221,48 @@ class AcquisitionTab(QWidget):
         placement = self._combo_acc_place.currentData()
         dlg = ForceVelocityPlanDialog(self, placement=placement)
         if dlg.exec() != QDialog.DialogCode.Accepted:
-            return
+            return self._plan_fv_guardado() is not None
         loads = dlg.loads()
-        reps, prep_s, window_s = (
-            dlg.reps(), dlg.prep_seconds(), dlg.window_seconds()
-        )
         if len(loads) < 2:
-            return
-        # Remember the plan and show it next to the button (like "Best of 3").
+            return self._plan_fv_guardado() is not None
         self._settings.setValue(
             "adquisicion/fv_loads", ", ".join(f"{v:g}" for v in loads)
         )
-        self._settings.setValue("adquisicion/fv_reps", int(reps))
+        self._settings.setValue("adquisicion/fv_reps", int(dlg.reps()))
+        self._settings.setValue("adquisicion/fv_prep_s", float(dlg.prep_seconds()))
+        self._settings.setValue("adquisicion/fv_window_s", float(dlg.window_seconds()))
         self._refresh_fv_config_label()
-        # Start recording ourselves if the operator has not already — the
-        # wizard needs an active worker to mark the contractions in the EDF.
+        return True
+
+    def _plan_fv_guardado(self) -> tuple[list[float], int, float, float] | None:
+        """The saved force-velocity plan — loads, lifts per load, seconds of
+        preparation, seconds of lift — or ``None`` until one is set."""
+        from emgteach.gui.widgets.force_velocity_plan_dialog import parse_loads
+
+        loads = parse_loads(self._settings.value("adquisicion/fv_loads", "", type=str))
+        if len(loads) < 2:
+            return None
+        return (
+            loads,
+            max(1, int(self._settings.value("adquisicion/fv_reps", 1, type=int))),
+            float(self._settings.value("adquisicion/fv_prep_s", 5.0, type=float)),
+            float(self._settings.value("adquisicion/fv_window_s", 1.5, type=float)),
+        )
+
+    def _lanzar_estudio_fv(self) -> None:
+        """The second phase of a kinematics session: the loads, cued one by
+        one, right after the recording phase has begun. No isometric maximum
+        of its own — the session's calibration was that."""
+        self._fv_flow_pending = False
         if not (self._worker and self._worker.isRunning()):
-            self._btn_grabar.setChecked(True)
-            self._iniciar_grabacion()
-            if not (self._worker and self._worker.isRunning()):
-                # The operator cancelled the save-path dialog (or start failed).
-                self._btn_grabar.setChecked(False)
-                return
-        self._fv_start(loads, reps, prep_s, window_s)
+            return
+        plan = self._plan_fv_guardado()
+        if plan is None:
+            self._log(tr(
+                "No force-velocity plan: set the loads in «F-V parameters…» first."))
+            return
+        loads, reps, prep_s, window_s = plan
+        self._fv_start(loads, reps, prep_s, window_s, con_maximo=False)
 
     @Slot()
     def _on_fv_rehearse(self) -> None:
@@ -3194,8 +3283,16 @@ class AcquisitionTab(QWidget):
         reps: int,
         prep_s: float,
         window_s: float,
+        *,
+        con_maximo: bool = True,
     ) -> None:
-        """Start the guided F-V state machine for a validated load plan."""
+        """Start the guided F-V state machine for a validated load plan.
+
+        ``con_maximo`` opens with an isometric maximum without load, as the
+        stand-alone wizard always did; the kinematics session passes
+        ``False``, because the calibration it has just run *was* the
+        maximum and a second one only costs the subject another effort.
+        """
         if len(loads) < 2 or self._mvc_active or self._fv_active:
             return
         self._fv_loads = list(loads)
@@ -3213,8 +3310,12 @@ class AcquisitionTab(QWidget):
         self._btn_grabar.setEnabled(False)
         self._update_fv_button()          # disabled while the wizard runs
         self._reposition_mvc_overlay()
-        self._fv_phase = "mvc_ready"       # an MVC maximum (no load) comes first
+        self._fv_phase = "mvc_ready" if con_maximo else "intro"
         self._fv_elapsed = 0.0
+        if not con_maximo:
+            self._log(tr(
+                "Force-velocity study: {n} loads, {r} lifts each, lightest first."
+            ).format(n=len(self._fv_loads), r=self._fv_reps))
         self._fv_timer.start()
 
     def _fv_current_load(self) -> float:
@@ -3246,7 +3347,20 @@ class AcquisitionTab(QWidget):
         mvc_hold_s = FV_MVC_HOLD_S       # sustained maximum
         lift_s = self._fv_window_s       # quick loaded lift
 
-        if self._fv_phase == "mvc_ready":
+        if self._fv_phase == "intro":
+            # The announcement between the two phases of a kinematics
+            # session: the maximum is behind, the loads are next.
+            self._mvc_overlay.show_done(
+                tr("Now the force-velocity study"),
+                tr("{n} loads, {r} lifts each, lightest first. "
+                   "Set up the first load.").format(
+                    n=len(self._fv_loads), r=self._fv_reps),
+            )
+            self._fv_info(tr("Now the force-velocity study"))
+            if self._fv_elapsed >= FV_INTRO_S:
+                self._fv_phase = "ready"
+                self._fv_elapsed = 0.0
+        elif self._fv_phase == "mvc_ready":
             count = max(1, int(np.ceil(MVC_READY_S - self._fv_elapsed)))
             self._mvc_overlay.show_ready(
                 tr("Get ready — maximum contraction (no load)"),
@@ -3821,6 +3935,10 @@ class AcquisitionTab(QWidget):
         uses_acc = mode_uses_acc(mode)
         self._box_acc.setVisible(uses_acc)
         self._box_fv_guided.setVisible(uses_acc)
+        # In the kinematics practical the calibration is the session's first
+        # phase, run by the record button: a button for it beside the
+        # sequence was the step nobody knew whether or when to take.
+        self._btn_calibrar.setVisible(mode != MODE_KINEMATICS)
         # Which analogue input the sensor is wired to is a convention the
         # block states — muscle on A1, accelerometer on A2 — not a selector:
         # the selector and its «find it» diagnostic stay built (the recording

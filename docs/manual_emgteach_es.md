@@ -912,14 +912,16 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 2. **Cableado y colocación del sensor.** El músculo en A1 y el acelerómetro en A2,
    como dice la caja. Se elige entre sobre el músculo (MMG) o sobre el segmento
    que se mueve (temblor, fuerza-velocidad, retraso electromecánico).
-   **«Ensayar…»** corre el procedimiento de fuerza-velocidad sin hardware, con una
-   señal simulada.
-3. **Adquisición.** Para la curva de fuerza-velocidad, **«F-V guiada…»** pide el
-   plan (cargas, repeticiones por carga, preparación), inicia la grabación si hace
-   falta y dirige la serie: un máximo isométrico sin carga de 3 s y después cada
-   repetición de cada carga, marcadas en el EDF con su carga. Para el retraso
-   electromecánico bastan flexiones rápidas sueltas; para el temblor, una postura
-   mantenida.
+3. **La secuencia.** La caja «Estudio fuerza-velocidad» la lista en su orden:
+   **«1 · Ensayar…»** corre el procedimiento sin hardware, con una señal
+   simulada (opcional, para entenderlo); **«2 · Parámetros de la F-V…»** pide el
+   plan (cargas en orden, levantamientos por carga, preparación) y lo guarda; y
+   **«Iniciar grabación»** lleva la sesión sola: nombre del archivo, calibración
+   del máximo primero (el botón «Calibrar CVM» no aparece en esta práctica: la
+   hace el flujo), anuncio del estudio y cada repetición de cada carga, marcada
+   en el EDF con su carga; sin máximo isométrico en vacío entre medias, porque la
+   calibración ya lo fue. Para el retraso electromecánico bastan flexiones
+   rápidas sueltas; para el temblor, una postura mantenida.
 4. **Análisis.** Paneles **10. EMG frente a MMG**, **11. Temblor** y **12.
    Movimiento frente a EMG**; la tabla de contracciones con una fila por
    levantamiento (su carga, RMS, velocidad y **EMD**); y **«Estudio

@@ -1802,6 +1802,61 @@ _ES = {
     'Amplitude by load': 'Amplitud por carga',
     'EMD by load': 'EMD por carga',
     'Velocity by load': 'Velocidad por carga',
+    '1 · Rehearse…': '1 · Ensayar…',
+    '2 · F-V parameters…': '2 · Parámetros de la F-V…',
+    'Optional: to learn the procedure before anyone holds a weight. Skip it if you know it.':
+        'Opcional: para entender el procedimiento antes de que nadie sostenga un peso. Sáltelo si ya lo conoce.',
+    'The loads in order, the lifts per load and the seconds of preparation. Kept for the '
+    'recording; nothing starts here.':
+        'Las cargas en orden, los levantamientos por carga y los segundos de preparación. '
+        'Se guardan para la grabación; aquí no empieza nada.',
+    '3 · Start recording: the maximum is calibrated first, then each load is cued.':
+        '3 · Iniciar grabación: primero se calibra el máximo y después se va pidiendo cada carga.',
+    'No force-velocity plan: set the loads in «F-V parameters…» first.':
+        'No hay plan de fuerza-velocidad: fije antes las cargas en «Parámetros de la F-V…».',
+    'Recording to {file}.': 'Grabando en {file}.',
+    'First the calibration of the maximum; then the force-velocity study: {plan}.':
+        'Primero la calibración del máximo; después el estudio fuerza-velocidad: {plan}.',
+    'The maximum is already calibrated; the force-velocity study starts now: {plan}.':
+        'El máximo ya está calibrado; el estudio fuerza-velocidad empieza ahora: {plan}.',
+    'Force-velocity study: {n} loads, {r} lifts each, lightest first.':
+        'Estudio fuerza-velocidad: {n} cargas, {r} levantamientos por carga, de menor a mayor.',
+    'Now the force-velocity study': 'Ahora, el estudio fuerza-velocidad',
+    '{n} loads, {r} lifts each, lightest first. Set up the first load.':
+        '{n} cargas, {r} levantamientos por carga, de menor a mayor. Prepare la primera carga.',
+    'The force-velocity study, step by step': 'El estudio fuerza-velocidad, paso a paso',
+    'A muscle shortens more slowly the heavier the load it moves, and the power it delivers '
+    'is greatest at intermediate loads. This box is the sequence that measures it, in the '
+    'order it is done. «1 · Rehearse…» runs the whole procedure with a synthetic signal and '
+    'no hardware, to learn it before anyone holds a weight; skip it if you know it. «2 · F-V '
+    'parameters…» asks for the plan — the loads in order, the lifts per load, the seconds of '
+    'preparation — and keeps it. Then «Start recording» runs the session by itself: it names '
+    'the file, calibrates the maximum first (warm-up, three held maxima and three brief '
+    'squeezes, against the table), announces the study, and cues one quick lift per '
+    'repetition of each load, marking it in the file with its load. No isometric maximum '
+    'without load in between: the calibration was that. «Cancel guide (Esc)» stops the guide '
+    'at any moment; the recording goes on. In the Analysis tab the contraction table holds '
+    'one row per lift, and the force-velocity study reads those rows to draw the '
+    'load-velocity, force-velocity, power and recruitment curves.':
+        'Un músculo se acorta más despacio cuanto mayor es la carga que mueve, y la potencia '
+        'que entrega es máxima con cargas intermedias. Esta caja es la secuencia que lo mide, '
+        'en el orden en que se hace. «1 · Ensayar…» recorre el procedimiento entero con una '
+        'señal simulada y sin hardware, para entenderlo antes de que nadie sostenga un peso; '
+        'sáltelo si ya lo conoce. «2 · Parámetros de la F-V…» pide el plan (las cargas en '
+        'orden, los levantamientos por carga, los segundos de preparación) y lo guarda. '
+        'Después, «Iniciar grabación» lleva la sesión sola: pide el nombre del archivo, '
+        'calibra primero el máximo (calentamiento, tres máximas mantenidas y tres sacudidas '
+        'breves, contra la mesa), anuncia el estudio y va pidiendo un levantamiento rápido por '
+        'repetición de cada carga, marcándolo en el archivo con su carga. No hay máximo '
+        'isométrico en vacío entre medias: la calibración ya lo fue. «Cancelar guía (Esc)» '
+        'detiene la guía en cualquier momento; la grabación sigue. En la pestaña de Análisis '
+        'la tabla de contracciones trae una fila por levantamiento, y el estudio '
+        'fuerza-velocidad lee esas filas para dibujar las curvas carga-velocidad, '
+        'fuerza-velocidad, potencia y reclutamiento.',
+    'Each point is a contraction, numbered and joined in order; a drift towards the top '
+    'left — more amplitude, less frequency — is fatigue.':
+        'Cada punto es una contracción, numeradas y unidas en orden; una deriva hacia arriba '
+        'a la izquierda (más amplitud, menos frecuencia) es fatiga.',
     'The rows are those of the contraction table: to change them, edit the '
     'fragments in the Analysis tab.':
         'Las filas son las de la tabla de contracciones: para cambiarlas, edite los '

@@ -673,12 +673,17 @@ Each begins by **choosing the practical** in the top-right selector.
 1. The accelerometer plot, its box and the fine controls appear. Wire the muscle
    to A1 and the accelerometer to A2, as the box says. Choose the placement (on
    the muscle for MMG; on the moving segment for tremor, force-velocity and
-   electromechanical delay); **«Rehearse…»** runs the procedure with no hardware.
-2. **«Guided F-V…»** asks for the plan (loads, repetitions per load, preparation),
-   starts the recording if needed and directs the series: a 3 s isometric maximum
-   without load, then each repetition of each load, marked in the EDF with its
-   load. For the electromechanical delay, quick single flexions suffice; for
-   tremor, a held posture.
+   electromechanical delay).
+2. **The sequence.** The «Force-velocity study» box lists it in its order:
+   **«1 · Rehearse…»** runs the procedure with no hardware, on a synthetic signal
+   (optional, to learn it); **«2 · F-V parameters…»** asks for the plan (loads in
+   order, lifts per load, preparation) and keeps it; and **«Start recording»**
+   runs the session by itself: file name, calibration of the maximum first (the
+   «Calibrate MVC» button does not appear in this practical: the flow does it),
+   the announcement of the study and each repetition of each load, marked in
+   the EDF with its load; no isometric maximum without load in between, since
+   the calibration was that. For the electromechanical delay, quick single
+   flexions suffice; for tremor, a held posture.
 3. Analysis: panels **10**, **11** and **12**, the contraction table with one
    row per lift (its load, RMS, velocity and **EMD**), and **«Force-velocity
    study…»**, which reads those very rows — untick a bad lift, type a missing

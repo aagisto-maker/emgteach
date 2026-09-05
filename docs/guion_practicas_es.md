@@ -533,12 +533,18 @@ y el EMG la activación.
 **Procedimiento.**
 1. Preparar cuatro cargas conocidas (por ejemplo 0, 1, 2 y 3 kg: una botella y
    mancuernas o botellas llenas).
-2. Pulsar **«F-V guiada…»**. Primero pide el **plan**: las cargas en orden, cuántas
-   repeticiones por carga (dos o tres) y los segundos de preparación; si la
-   grabación no estaba en marcha, la inicia. Después dirige la serie: un **máximo
-   isométrico sin carga** de 3 s (codo a 90°, contra la mesa) y, para cada carga,
-   las repeticiones pedidas de **una elevación rápida**, cada una con su cuenta
-   atrás y marcada en el fichero con su carga. Basta seguir la pantalla.
+2. La caja **«Estudio fuerza-velocidad»** es la secuencia, en su orden. **«1 ·
+   Ensayar…»** recorre el procedimiento sin hardware; es opcional, para
+   entenderlo antes de que nadie sostenga un peso. **«2 · Parámetros de la
+   F-V…»** pide el **plan** (las cargas en orden, cuántos levantamientos por
+   carga, dos o tres, y los segundos de preparación) y lo guarda. Y **«Iniciar
+   grabación»** lleva la sesión sola: pide el nombre del archivo, **calibra
+   primero el máximo** (calentamiento, tres máximas mantenidas y tres sacudidas
+   breves, contra la mesa), anuncia el estudio y, para cada carga, pide las
+   repeticiones de **una elevación rápida**, cada una con su cuenta atrás y
+   marcada en el fichero con su carga. No hay máximo isométrico en vacío entre
+   medias: la calibración ya lo fue. Basta seguir la pantalla; «Cancelar guía
+   (Esc)» la detiene sin parar la grabación.
 3. **Detener**. En Análisis, la tabla de contracciones trae una fila por
    levantamiento con su carga, y **«Estudio fuerza-velocidad…»** lee esas filas y
    devuelve cuatro curvas: carga-velocidad, fuerza-velocidad (hiperbólica

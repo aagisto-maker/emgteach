@@ -92,21 +92,26 @@ _TEXTS = {
         ),
     ),
     "acq.fv": lambda: (
-        tr("The guided force-velocity study"),
+        tr("The force-velocity study, step by step"),
         tr(
             "A muscle shortens more slowly the heavier the load it moves, and "
-            "the power it delivers is greatest at intermediate loads. «Guided "
-            "F-V…» runs the procedure that measures this: it asks for the plan "
-            "(the loads in order, how many lifts of each, the seconds of "
-            "preparation), starts the recording if it was not running, takes "
-            "an isometric maximum without load as the reference, and then "
-            "prompts one quick lift per repetition, marking each in the file "
-            "with its load. The force-velocity study in the Analysis tab reads "
-            "those marks and draws the load-velocity, force-velocity, power "
-            "and recruitment curves."
-        ) + " " + tr(
-            "«Rehearse…» runs the same prompts with a synthetic signal and no "
-            "hardware, to learn the procedure before anyone holds a weight."
+            "the power it delivers is greatest at intermediate loads. This "
+            "box is the sequence that measures it, in the order it is done. "
+            "«1 · Rehearse…» runs the whole procedure with a synthetic signal "
+            "and no hardware, to learn it before anyone holds a weight; skip "
+            "it if you know it. «2 · F-V parameters…» asks for the plan — the "
+            "loads in order, the lifts per load, the seconds of preparation — "
+            "and keeps it. Then «Start recording» runs the session by itself: "
+            "it names the file, calibrates the maximum first (warm-up, three "
+            "held maxima and three brief squeezes, against the table), "
+            "announces the study, and cues one quick lift per repetition of "
+            "each load, marking it in the file with its load. No isometric "
+            "maximum without load in between: the calibration was that. "
+            "«Cancel guide (Esc)» stops the guide at any moment; the "
+            "recording goes on. In the Analysis tab the contraction table "
+            "holds one row per lift, and the force-velocity study reads "
+            "those rows to draw the load-velocity, force-velocity, power and "
+            "recruitment curves."
         ),
     ),
     "acq.classroom": lambda: (

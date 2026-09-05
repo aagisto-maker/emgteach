@@ -217,15 +217,17 @@ class TestThePauseBetweenThePhases:
 
 
 class TestWhenTheRecordButtonRunsTheWholeSession:
-    def test_only_the_practical_that_compares_two_muscles(self, tab) -> None:
+    def test_the_pair_and_the_kinematics_practical_but_not_the_single(self, tab) -> None:
         """Through apply_mode, the way the application does it.
 
         This used to assign ``tab._mode`` itself — which *created* the
         attribute the application never set, so the test passed on a build
-        where every press of the record button raised."""
+        where every press of the record button raised. The kinematics
+        practical joined the pair on the bench of 5 September 2026: its
+        session is a sequence, the maximum then the loads."""
         for mode, espera in (
             (MODE_PAIR, True), (MODE_SINGLE, False),
-            (MODE_KINEMATICS, False),
+            (MODE_KINEMATICS, True),
         ):
             tab.apply_mode(mode, False)
             tab._mvc_ref = [None] * 8

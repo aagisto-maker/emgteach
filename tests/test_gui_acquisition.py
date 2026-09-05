@@ -235,10 +235,12 @@ def test_guided_force_velocity_marks_each_load(qapp) -> None:
     tab.cleanup()
 
 
-def test_guided_fv_button_enabled_when_connected_with_acc(qapp) -> None:
-    """The guided F-V button is available once a BITalino is connected with the
-    ACC on — before recording and for any placement — so the load dialog can
-    always be reached (the wizard starts the recording itself)."""
+def test_fv_parameters_button_never_needs_the_hardware(qapp) -> None:
+    """The plan is set before anything is connected and kept for the
+    recording, so the button is available in every state — not connected,
+    connected, any placement, ACC off — and only a running guide disables
+    it. (It used to be «Guided F-V…», gated on a connected BITalino with the
+    ACC on, because it started the recording itself.)"""
     from PySide6.QtCore import QSettings
 
     from emgteach.gui.tabs.acquisition import AcquisitionTab
@@ -248,26 +250,25 @@ def test_guided_fv_button_enabled_when_connected_with_acc(qapp) -> None:
     settings.clear()
     tab = AcquisitionTab(LoggerWidget(), settings)
 
-    # Not connected yet -> disabled.
     tab._chk_acc.setChecked(True)
     tab._update_fv_button()
-    assert not tab._btn_fv_guided.isEnabled()
+    assert tab._btn_fv_guided.isEnabled()
 
-    # Connected (BITalino) + ACC on -> enabled even while idle (not recording).
     tab._combo_device_type.setCurrentIndex(0)
     tab._btn_conectar.setChecked(True)
     tab._update_fv_button()
     assert tab._btn_fv_guided.isEnabled()
 
-    # Enabled regardless of placement (muscle) — the dialog warns instead.
     tab._combo_acc_place.setCurrentIndex(0)   # muscle
+    tab._chk_acc.setChecked(False)
     tab._update_fv_button()
     assert tab._btn_fv_guided.isEnabled()
 
-    # ACC off -> disabled.
-    tab._chk_acc.setChecked(False)
+    # A guide running is the one thing that takes it away.
+    tab._fv_active = True
     tab._update_fv_button()
     assert not tab._btn_fv_guided.isEnabled()
+    tab._fv_active = False
     settings.clear()
     tab.cleanup()
 

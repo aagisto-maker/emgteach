@@ -158,14 +158,17 @@ def mode_uses_acc(mode: str) -> bool:
 def mode_requires_calibration(mode: str) -> bool:
     """Whether pressing record has to run the calibration first.
 
-    Only the agonist/antagonist practical: comparing two muscles is comparing
-    two percentages of two different maxima, so without both references there
-    is nothing to compare and the co-activation index cannot be computed at
-    all. The others *offer* calibration — the button is there and the wizard
-    writes its phases the same way — but a recording without it still says
-    something, so it is not imposed.
+    The agonist/antagonist practical: comparing two muscles is comparing two
+    percentages of two different maxima, so without both references there is
+    nothing to compare and the co-activation index cannot be computed at all.
+    And the kinematics practical since the bench of 5 September 2026: its
+    whole session is a sequence — the maximum, then the loads — and left as
+    a button beside the record button the calibration was the step nobody
+    knew whether or when to take. The single-muscle practical *offers* it:
+    the button is there and the wizard writes its phases the same way, but a
+    recording without it still says something, so it is not imposed.
     """
-    return normalise_mode(mode) == MODE_PAIR
+    return normalise_mode(mode) in (MODE_PAIR, MODE_KINEMATICS)
 
 
 def mode_shows_fine_controls(mode: str) -> bool:
