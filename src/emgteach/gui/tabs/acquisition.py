@@ -52,6 +52,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
     QToolButton,
     QVBoxLayout,
@@ -2611,10 +2612,18 @@ class AcquisitionTab(QWidget):
         # the very moment the force-velocity wizard finished. It wraps now,
         # inside a fixed band of width, so no sentence can push the window
         # again however long it is.
-        # No minimum: the label is empty most of the time, and a minimum it
-        # does not need is width taken from the plots for nothing.
+        # Wrapping alone is not enough: a wrapped label still asks for its
+        # longest *word*, which on a Linux font came to another 41 px. The
+        # size policy is Ignored, which is the only one that takes the
+        # label's own wishes out of the sum entirely — it takes up to the
+        # 280 px below when the window has them and nothing at all when it
+        # does not, and either way the window's minimum is the same with the
+        # label full as with it empty. What the operator must not miss is on
+        # the floating cue panel, in large type; this line is the aside.
         self._lbl_load_info.setWordWrap(True)
         self._lbl_load_info.setMaximumWidth(280)
+        self._lbl_load_info.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         row.addWidget(self._lbl_load_info)
         return grp
 

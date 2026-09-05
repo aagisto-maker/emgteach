@@ -115,7 +115,11 @@ class TestItFitsALaboratoryLaptop:
                         adq._lbl_load_info.setText(texto)
                         qapp.processEvents()
                         ancho = win.layout_minimum_size().width()
-                        assert ancho <= vacia + 40, (
+                        # Ni un píxel: el rótulo tiene política Ignored, así
+                        # que su contenido no entra en la suma. Con margen
+                        # la prueba pasaría en Windows y no en Linux, que es
+                        # justo lo que pasó la primera vez.
+                        assert ancho <= vacia, (
                             f"{idioma}: «{texto[:40]}…» ensancha la ventana "
                             f"de {vacia} a {ancho} px"
                         )
