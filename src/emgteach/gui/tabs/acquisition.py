@@ -2154,6 +2154,12 @@ class AcquisitionTab(QWidget):
             duracion, channel_names=dict(enumerate(nombres)),
         )
         alto = 1.15 * pico_env if pico_env > 0 else 1.0
+        # Two rows for the names, and a name is dropped rather than written
+        # over its neighbour. A short stretch beside a long one — «get ready»
+        # between the last calibration rep and the recording — printed the
+        # three words on top of each other and none of them could be read.
+        px_por_s = self._px_por_segundo(duracion)
+        ocupado = [-1e9, -1e9]             # right edge of each row, in pixels
         for tramo in tramos:
             for pw in (self._plot_raw, self._plot_env):
                 region = pg.LinearRegionItem(
@@ -2166,8 +2172,19 @@ class AcquisitionTab(QWidget):
                 pw.addItem(region, ignoreBounds=True)
                 self._revision_items.append((pw, region))
             texto = tramo.label or self._nombre_fase(tramo.kind)
+            if not texto:
+                continue
             etiqueta = pg.TextItem(texto, anchor=(0, 0), color=(90, 90, 90))
-            etiqueta.setPos(tramo.start_s, alto)
+            inicio_px = tramo.start_s * px_por_s
+            ancho_px = etiqueta.boundingRect().width()
+            fila = next(
+                (i for i, fin in enumerate(ocupado) if inicio_px > fin + 4),
+                None,
+            )
+            if fila is None:               # both rows taken: leave it out
+                continue
+            ocupado[fila] = inicio_px + ancho_px
+            etiqueta.setPos(tramo.start_s, alto * (1.0 - 0.10 * fila))
             self._plot_env.addItem(etiqueta, ignoreBounds=True)
             self._revision_items.append((self._plot_env, etiqueta))
 
@@ -2177,6 +2194,24 @@ class AcquisitionTab(QWidget):
             "Reviewing the recording: {dur:.1f} s. Drag to scroll, wheel to "
             "zoom. It goes back to live on the next recording."
         ).format(dur=duracion))
+
+    def _px_por_segundo(self, duracion: float) -> float:
+        """Pixels one second of the review takes on screen, as first drawn.
+
+        Only used to decide which phase names fit beside each other. Zooming
+        afterwards does not re-run the decision: what matters is that the
+        first view, the one the operator actually reads, is legible.
+        """
+        if duracion <= 0:
+            return 0.0
+        ancho = 0
+        try:
+            ancho = int(self._plot_env.getViewBox().width())
+        except Exception:                  # not laid out yet
+            ancho = 0
+        if ancho <= 1:
+            ancho = max(self._plot_env.width(), 900)
+        return ancho / duracion
 
     def _nombre_fase(self, kind: str) -> str:
         """The word for a stretch of the session, for its label on the plot."""
@@ -2569,6 +2604,17 @@ class AcquisitionTab(QWidget):
 
         self._lbl_load_info = QLabel("")
         self._lbl_load_info.setStyleSheet("font-size: 9px; color: #555555;")
+        # The running commentary of the two wizards goes here, and some of
+        # those sentences are long. On one line each of them widened the box,
+        # the box widened the window, and the window ended up wider than the
+        # screen: the right-hand edge of the interface went off the display at
+        # the very moment the force-velocity wizard finished. It wraps now,
+        # inside a fixed band of width, so no sentence can push the window
+        # again however long it is.
+        # No minimum: the label is empty most of the time, and a minimum it
+        # does not need is width taken from the plots for nothing.
+        self._lbl_load_info.setWordWrap(True)
+        self._lbl_load_info.setMaximumWidth(280)
         row.addWidget(self._lbl_load_info)
         return grp
 

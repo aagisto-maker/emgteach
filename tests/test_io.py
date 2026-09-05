@@ -359,6 +359,56 @@ class TestAnnotationRoundTrip:
         assert [t for t in escritas if t not in leidas] == []
 
 
+class TestAnAnnotationIsMeasuredInBytes:
+    """Forty bytes, not forty characters — and never half a character.
+
+    A tuned recording of 5 September carried a lone ``0xE2`` in its
+    annotation channel: the first third of an ellipsis added after a cut
+    made by character count, with the other two bytes past the fortieth.
+    That byte is not UTF-8 and MNE refused the whole file. Every Spanish
+    muscle name is accented, so the same trap is one long fragment name
+    away in any session.
+    """
+
+    def test_a_short_annotation_is_left_alone(self) -> None:
+        from emgteach.io import annotation_text
+
+        assert annotation_text("Inicio (auto) — Músculo") == (
+            "Inicio (auto) — Músculo")
+
+    def test_a_long_one_is_cut_to_forty_bytes(self) -> None:
+        from emgteach.io import MAX_ANNOTATION_BYTES, annotation_text
+
+        cortada = annotation_text("x" * 60)
+        assert len(cortada.encode("utf-8")) <= MAX_ANNOTATION_BYTES
+        assert cortada.endswith("…")
+
+    def test_accents_count_for_what_they_weigh(self) -> None:
+        """Thirty-nine accented characters are seventy-eight bytes."""
+        from emgteach.io import MAX_ANNOTATION_BYTES, annotation_text
+
+        cortada = annotation_text("á" * 39)
+        assert len(cortada.encode("utf-8")) <= MAX_ANNOTATION_BYTES
+
+    def test_the_cut_never_lands_inside_a_character(self) -> None:
+        from emgteach.io import annotation_text
+
+        for n in range(30, 60):
+            texto = annotation_text("á" * n)
+            texto.encode("utf-8").decode("utf-8")     # would raise if halved
+
+    def test_what_is_written_is_what_comes_back(self, out_path: str) -> None:
+        """The end of the round trip: an over-long annotation is readable."""
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        largo = "Contracción sostenida del músculo flexor radial del carpo"
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(np.zeros(2 * FS, dtype=np.float64))
+            writer.add_annotation(0.5, largo)
+
+        leidas = [d for _o, d in read_edf_pyedflib(out_path)["markers"]]
+        assert any(d.startswith("Contracción sostenida") for d in leidas)
+
+
 class TestPhysicalRangeNoClipping:
     """The device-aware physical range must let a wide Arduino signal survive
     the EDF round-trip, whereas the narrow BITalino default clips it — exactly

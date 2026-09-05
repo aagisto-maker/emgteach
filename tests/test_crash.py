@@ -72,6 +72,75 @@ class TestTheTracebackSurvives:
         assert crash.record_exception(*_falla()) is None
 
 
+class TestAWarningIsNotACrash:
+    """The crash dialogue that came out of a Qt *warning*.
+
+    Qt's messages are routed through a handler of ours, which wrote them to
+    stderr. The windowed build has no console and PyInstaller leaves stderr
+    set to None there, so the write raised AttributeError inside the handler
+    — and the operator was shown «the application hit an error it did not
+    expect» while the thing being reported was a warning nobody needed to
+    see. It happened twice on the bench of 5 September, both times at the
+    end of a recording.
+    """
+
+    def test_a_message_with_no_console_does_not_raise(
+        self, registro: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from emgteach.gui import app as gui
+
+        monkeypatch.setattr(sys, "stderr", None)
+        monkeypatch.setattr(gui, "_qt_message_to_log", lambda m: None)
+        gui.qt_message(None, None, "QWindowsWindow::setGeometry: no cabe")
+
+    def test_with_no_console_it_is_kept_in_the_log(
+        self, registro: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Silently dropping it would throw away the one diagnostic that
+        says why the window would not fit."""
+        from emgteach.gui import app as gui
+
+        monkeypatch.setattr(sys, "stderr", None)
+        gui.qt_message(None, None, "QWindowsWindow::setGeometry: no cabe")
+        assert "setGeometry" in registro.read_text(encoding="utf-8")
+
+    def test_with_a_console_it_still_goes_to_stderr(
+        self, registro: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import io
+
+        from emgteach.gui import app as gui
+
+        falso = io.StringIO()
+        monkeypatch.setattr(sys, "stderr", falso)
+        gui.qt_message(None, None, "algo que decir")
+        assert "algo que decir" in falso.getvalue()
+        assert not registro.exists()
+
+    def test_the_noisy_font_warning_is_still_dropped(
+        self, registro: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import io
+
+        from emgteach.gui import app as gui
+
+        falso = io.StringIO()
+        monkeypatch.setattr(sys, "stderr", falso)
+        gui.qt_message(None, None, "QFont::setPointSize: Point size <= 0 (-1)")
+        assert falso.getvalue() == ""
+
+    def test_a_log_that_cannot_be_written_is_not_a_crash_either(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from emgteach.gui import app as gui
+
+        monkeypatch.setattr(
+            crash, "log_path", lambda: tmp_path / "no-existe" / "x.log"
+        )
+        monkeypatch.setattr(sys, "stderr", None)
+        gui.qt_message(None, None, "y ahora tampoco hay disco")
+
+
 class TestTheHookIsInstalled:
     def test_it_chains_to_whatever_was_there(
         self, registro: Path, monkeypatch: pytest.MonkeyPatch

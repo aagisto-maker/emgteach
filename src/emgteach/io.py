@@ -56,6 +56,38 @@ def ascii_label(label: str, limit: int = 16) -> str:
     limpio = "".join(c if 32 <= ord(c) < 127 else "?" for c in sin_acentos)
     return limpio.strip()[:limit]
 
+
+#: What one EDF+ annotation holds: forty **bytes** of UTF-8, and not forty
+#: characters. The distinction is the whole point. Measured against the
+#: writer, which cuts at the fortieth byte without a word.
+MAX_ANNOTATION_BYTES = 40
+
+_ELLIPSIS = "…"
+
+
+def annotation_text(description: str, limit: int = MAX_ANNOTATION_BYTES) -> str:
+    """An annotation trimmed to what the format holds, never mid-character.
+
+    Cutting by characters and storing by bytes is how a derived file ended up
+    with a lone ``0xE2`` in its annotation channel — the first third of an
+    ellipsis, the other two bytes past the fortieth. That byte is not UTF-8,
+    and a reader that checks (MNE does) refuses the **whole file**: a
+    recording of a hundred seconds lost to a typographic flourish in a
+    summary line. Accented text is the same trap by another route, and every
+    Spanish muscle name is accented.
+
+    So: cut on the encoded length, drop whatever character the cut lands in
+    the middle of, and only then add the ellipsis that says it was cut.
+    """
+    texto = str(description)
+    crudo = texto.encode("utf-8")
+    if len(crudo) <= limit:
+        return texto
+    hueco = limit - len(_ELLIPSIS.encode("utf-8"))
+    if hueco <= 0:                       # a limit too small even to say so
+        return crudo[:limit].decode("utf-8", "ignore")
+    return crudo[:hueco].decode("utf-8", "ignore") + _ELLIPSIS
+
 if TYPE_CHECKING:
     import numpy.typing as npt
 
@@ -66,9 +98,11 @@ if TYPE_CHECKING:
 
 __all__ = [
     "EDF_RECORDING_IDENT_BUDGET",
+    "MAX_ANNOTATION_BYTES",
     "BufferedEdfWriter",
     "ChannelInfo",
     "RecordingMetadata",
+    "annotation_text",
     "assess_edf_channels",
     "build_timestamped_path",
     "create_edf_writer",
@@ -563,7 +597,8 @@ class BufferedEdfWriter:
         """
         if self._closed:
             raise RuntimeError("Cannot add annotations after close().")
-        self._writer.writeAnnotation(float(onset_s), -1, str(description))
+        self._writer.writeAnnotation(
+            float(onset_s), -1, annotation_text(description))
 
     def close(self) -> None:
         """Flush the trailing remainder and close the underlying file.

@@ -61,10 +61,70 @@ class TestItFitsALaboratoryLaptop:
             pytest.skip("no fonts available to the offscreen platform")
         win = _ventana(qapp, modo)
         try:
-            ancho = win.minimumSizeHint().width()
+            # El mínimo del diseño, no el de la ventana: la ventana ya no
+            # deja que el diseño le imponga nada (nunca puede quedar más
+            # ancha que la pantalla), así que preguntarle a ella no
+            # cazaría un diseño que no cabe.
+            ancho = win.layout_minimum_size().width()
             assert ancho <= 1366, f"{modo}: mínimo {ancho} px"
         finally:
             _cierra(qapp, win)
+
+    def test_no_wizard_sentence_widens_the_window(self, qapp) -> None:
+        """The running commentary of the two wizards cannot push the window.
+
+        On the bench of 5 September the force-velocity wizard finished, wrote
+        «4 loads recorded. Stop recording, then open…» into the small grey
+        label beside the load bars, and that one sentence took the window's
+        minimum width from 1091 to 1404 px — past the edge of the screen it
+        was running on. The window went off the display and Qt said so in a
+        warning that the windowed build could not print, which is how the
+        operator got a crash dialogue out of a resize.
+
+        Every sentence that label is given, in both languages, measured.
+        """
+        from PySide6.QtGui import QFontDatabase
+
+        from emgteach.i18n import get_language, set_language, tr
+
+        if not QFontDatabase.families():
+            pytest.skip("no fonts available to the offscreen platform")
+
+        antes = get_language()
+
+        frases = [
+            ("Force-velocity: {n} loads recorded. Stop recording, then open "
+             "the Force-velocity study in the Analysis tab.", {"n": 4}),
+            ("Relax. The maximum starts in {s:.0f} s.", {"s": 3}),
+            ("Hold the maximum! {s:.0f} s", {"s": 3}),
+            ("Force-velocity: {kg:g} kg — lift {r} of {rn}.",
+             {"kg": 3.4, "r": 2, "rn": 3}),
+        ]
+        try:
+            for idioma in ("es", "en"):
+                set_language(idioma)
+                win = _ventana(qapp, "kinematics")
+                try:
+                    adq = win._tab_adq
+                    vacia = win.layout_minimum_size().width()
+                    for plantilla, args in frases:
+                        try:
+                            texto = tr(plantilla).format(**args)
+                        except (KeyError, IndexError):
+                            texto = tr(plantilla)
+                        adq._lbl_load_info.setText(texto)
+                        qapp.processEvents()
+                        ancho = win.layout_minimum_size().width()
+                        assert ancho <= vacia + 40, (
+                            f"{idioma}: «{texto[:40]}…» ensancha la ventana "
+                            f"de {vacia} a {ancho} px"
+                        )
+                finally:
+                    _cierra(qapp, win)
+        finally:
+            # El idioma es global: dejarlo cambiado le cambia el resultado a
+            # cualquier prueba que corra después (y el orden es aleatorio).
+            set_language(antes)
 
 
 class TestTheAxesSayMillivolts:

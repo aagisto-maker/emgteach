@@ -16,8 +16,9 @@ Lo que estas pruebas defienden es la trazabilidad, no la comodidad. Un fichero
 Dos hallazgos medidos aquí, no supuestos, y ambos de la misma familia que el
 artículo de la escritura tamponada —pérdida silenciosa en un EDF—:
 
-* **una anotación EDF+ guarda 40 caracteres** y el carácter 41 no da error,
-  simplemente no está al releer;
+* **una anotación EDF+ guarda 40 bytes** y el byte 41 no da error, simplemente
+  no está al releer —y si el corte parte un carácter por la mitad, el fichero
+  entero deja de poder abrirse;
 * **`recording_additional`, `technician` y `equipment` comparten 80 caracteres**,
   y en un registro real están casi gastados: marcar ahí la derivación truncaba
   el protocolo en vez de caber a su lado.
@@ -106,6 +107,131 @@ def _referencia(path: str, canal: int = 0) -> tuple[float | None, str]:
         percentile=EMG_PROFILE.mvc_percentile,
         window_s=EMG_PROFILE.mvc_peak_window_s,
     )
+
+
+def _sesion_fv(path: Path) -> str:
+    """A kinematics session: calibration, then four loads lifted three times."""
+    from emgteach.force_velocity import fv_load_marker
+
+    dur = 120
+    t = np.arange(dur * FS) / FS
+    amp = np.full(t.size, 0.01)
+    for a, b, valor in CAL:
+        amp[int(a * FS) : int(b * FS)] = valor
+    levantamientos = []
+    inicio = 34.0
+    for kg in (2.0, 3.4, 5.0, 7.0):
+        for _ in range(3):
+            levantamientos.append((inicio, kg))
+            amp[int((inicio + 2.0) * FS) : int((inicio + 4.0) * FS)] = 0.30
+            inicio += 7.0
+    senal = np.sin(2 * np.pi * 80 * t) * amp
+    with BufferedEdfWriter(
+        str(path),
+        channels=[ChannelInfo("Musculo", dimension="mV", sample_frequency=FS)],
+    ) as w:
+        w.add_samples(senal)
+        w.add_annotation(0.1, warmup_start_marker())
+        for i, (a, b, _amp) in enumerate(CAL, start=1):
+            w.add_annotation(a, cal_start_marker(0, i))
+            w.add_annotation(b, cal_end_marker(0, i))
+        w.add_annotation(PREP_S, prep_start_marker())
+        w.add_annotation(REC_S, rec_start_marker())
+        for cue, kg in levantamientos:
+            w.add_annotation(cue, fv_load_marker(kg))
+    # The fragments the editor would propose: the effort, not the pause
+    # before it in which the wizard called the load out.
+    tramos = [(cue + 1.8, cue + 4.2) for cue, _kg in levantamientos]
+    return str(path), tramos, levantamientos
+
+
+class TestTheLoadsSurviveTheTrimming:
+    """The wizard writes each load where it *asks* for the lift.
+
+    Which is the pause before it — precisely the stretch the fragment editor
+    throws away. Under the rule «an annotation survives if it falls inside a
+    kept fragment» the tuned recording of 5 September kept four of its twelve
+    loads, silently, and the force-velocity study read from that file would
+    have been a study of four points instead of twelve.
+    """
+
+    def test_every_kept_fragment_carries_its_load(self, tmp_path: Path) -> None:
+        pytest.importorskip("pyedflib")
+        from emgteach.force_velocity import parse_fv_load_markers
+
+        src, tramos, esperadas = _sesion_fv(tmp_path / "cinematica.edf")
+        dst = tuned_path(src)
+        build_tuned_edf(src, dst, fragments=tramos, when=CUANDO)
+
+        cargas = parse_fv_load_markers(read_edf_markers(dst))
+        assert [kg for _t, kg in cargas] == [kg for _c, kg in esperadas]
+
+    def test_each_one_lands_at_the_start_of_its_own_fragment(
+        self, tmp_path: Path
+    ) -> None:
+        """Where the analysis will look for it: the load of a contraction is
+        the last one called before its middle."""
+        pytest.importorskip("pyedflib")
+        from emgteach.force_velocity import parse_fv_load_markers
+
+        src, tramos, _e = _sesion_fv(tmp_path / "cinematica.edf")
+        dst = tuned_path(src)
+        build_tuned_edf(src, dst, fragments=tramos, when=CUANDO)
+
+        cargas = parse_fv_load_markers(read_edf_markers(dst))
+        cursor = REC_S
+        for (a, b), (t, _kg) in zip(tramos, cargas, strict=True):
+            assert t == pytest.approx(cursor, abs=0.05)
+            cursor += b - a
+
+    def test_a_fragment_from_before_the_first_load_is_given_none(
+        self, tmp_path: Path
+    ) -> None:
+        """A stray effort is not guessed at."""
+        pytest.importorskip("pyedflib")
+        from emgteach.force_velocity import parse_fv_load_markers
+
+        src, tramos, _e = _sesion_fv(tmp_path / "cinematica.edf")
+        dst = tuned_path(src)
+        build_tuned_edf(src, dst, fragments=[(31.0, 33.0), *tramos],
+                        when=CUANDO)
+        cargas = parse_fv_load_markers(read_edf_markers(dst))
+        assert len(cargas) == len(tramos)
+        assert cargas[0][0] > REC_S + 1.9    # not on the stray one
+
+
+class TestAnAnnotationIsCutByBytes:
+    """One byte of a character is not UTF-8, and it costs the whole file.
+
+    The line that says what a derived file kept was trimmed to forty
+    *characters* and then given an ellipsis — three bytes — of which only
+    the first fitted in the forty *bytes* the format holds. The recording
+    tuned on 5 September could not be reopened at all: MNE reads the
+    annotation channel strictly and refused the file, a hundred seconds of
+    signal lost to a typographic flourish.
+    """
+
+    def test_the_derived_file_can_be_read_back(self, tmp_path: Path) -> None:
+        pytest.importorskip("pyedflib")
+        pytest.importorskip("mne")
+        from emgteach.io import read_edf_mne
+
+        src = _sesion(tmp_path / "un nombre de fichero larguisimo.edf")
+        dst = tuned_path(src)
+        build_tuned_edf(src, dst, fragments=[(32.0, 36.0)], when=CUANDO)
+        assert len(read_edf_mne(str(dst), "FCR")["emg_raw"]) > 0
+
+    def test_no_annotation_holds_half_a_character(self, tmp_path: Path) -> None:
+        pytest.importorskip("pyedflib")
+        src = _sesion(tmp_path / "un nombre de fichero larguisimo.edf")
+        dst = tuned_path(src)
+        build_tuned_edf(src, dst, fragments=[(32.0, 36.0)],
+                        fragment_labels=["Contracción sostenida del músculo "
+                                         "flexor radial del carpo"],
+                        when=CUANDO)
+        for _t, texto in read_edf_markers(dst):
+            assert len(str(texto).encode("utf-8")) <= 40
+            str(texto).encode("utf-8").decode("utf-8")   # no half characters
 
 
 class TestTheOriginalIsNeverTouched:

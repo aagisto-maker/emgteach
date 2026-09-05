@@ -14,7 +14,15 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QLibraryInfo, QSettings, Qt, QTimer, QTranslator, qInstallMessageHandler
+from PySide6.QtCore import (
+    QLibraryInfo,
+    QSettings,
+    QSize,
+    Qt,
+    QTimer,
+    QTranslator,
+    qInstallMessageHandler,
+)
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -22,6 +30,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QMainWindow,
     QMessageBox,
     QSplashScreen,
@@ -240,6 +249,21 @@ class MainWindow(QMainWindow):
         root.addWidget(tabs, stretch=1)
         self.setCentralWidget(central)
 
+        # The layout no longer imposes its minimum on the window (see
+        # minimumSizeHint). Without this the window refuses to be smaller
+        # than the sum of everything inside it, and a single long sentence
+        # appearing at run time can therefore push its right-hand edge off
+        # the screen — which is what happened at the end of a kinematics
+        # recording, twice.
+        disposicion = self.layout()
+        if disposicion is not None:
+            disposicion.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        # With the layout no longer setting one, the window would have no
+        # minimum at all and could be dragged down to a title bar. This is
+        # the floor instead: small enough for any screen it could be opened
+        # on, large enough to still be an interface.
+        self.setMinimumSize(self._suelo_de_ventana())
+
         # Apply the stored mode once every tab exists and is laid out.
         self._apply_mode()
 
@@ -456,6 +480,55 @@ class MainWindow(QMainWindow):
             f"{tr('Physiology Department, Complutense University of Madrid')}",
         )
 
+    def layout_minimum_size(self):
+        """What the interface itself needs, before any clamping to the screen.
+
+        The honest number: the width below which widgets start being cut.
+        """
+        return QMainWindow.minimumSizeHint(self)
+
+    def _suelo_de_ventana(self):
+        """The smallest window worth showing, never bigger than the screen."""
+        suelo = QSize(880, 560)
+        pantalla = self.screen() or QApplication.primaryScreen()
+        if pantalla is None:
+            return suelo
+        disponible = pantalla.availableGeometry()
+        return QSize(min(suelo.width(), disponible.width()),
+                     min(suelo.height(), disponible.height()))
+
+    def minimumSizeHint(self):
+        """Never ask for more room than the screen has.
+
+        The layout's minimum is the sum of what every visible widget needs,
+        and some of those widgets hold text that only appears while the
+        program runs — the wizard's running commentary above all. One long
+        sentence there and the minimum grew past the screen, at which point
+        Windows could no longer honour the maximised geometry: the right-hand
+        edge of the interface went off the display, and Qt said so in a
+        warning that the windowed build then failed to print (see
+        `_install_qt_message_filter`).
+
+        The individual offenders are fixed where they are built. This is the
+        floor under all of them: whatever the layout asks for, the window
+        stops asking at the size of the screen it is on. Squeezed is
+        recoverable — the operator can still see the window, its edges and
+        its scrollbars — and off-screen is not.
+
+        Because this hides an over-wide layout rather than curing it, what
+        the layout really asks for is still readable through
+        :meth:`layout_minimum_size`, and that is what the regression test
+        measures.
+        """
+        hint = self.layout_minimum_size()
+        pantalla = self.screen() or QApplication.primaryScreen()
+        if pantalla is None:                       # no display at all
+            return hint
+        disponible = pantalla.availableGeometry()
+        hint.setWidth(min(hint.width(), disponible.width()))
+        hint.setHeight(min(hint.height(), disponible.height()))
+        return hint
+
     def closeEvent(self, event) -> None:
         self._tab_adq.cleanup()
         self._tab_ana.cleanup()
@@ -473,13 +546,43 @@ def _install_qt_message_filter() -> None:
     ("QFont::setPointSize: Point size <= 0 (-1)"), emitted while pyqtgraph
     renders axis labels. Everything else is forwarded to stderr unchanged so
     real Qt diagnostics are still visible.
-    """
-    def _handler(mode, context, message) -> None:
-        if "Point size <= 0" in message:
-            return
-        sys.stderr.write(message + "\n")
 
-    qInstallMessageHandler(_handler)
+    The windowed build has no console, and PyInstaller leaves ``sys.stderr``
+    set to None there — so writing to it raised AttributeError *inside a Qt
+    message handler*, which surfaced to the operator as the crash dialogue
+    while the message being reported was itself only a warning. Twice on the
+    bench, both times at the end of a recording. With no stderr the message
+    goes to the error log instead, which is the file the operator already
+    knows to send.
+    """
+    qInstallMessageHandler(qt_message)
+
+
+def qt_message(mode, context, message) -> None:
+    """Where one Qt diagnostic goes. Must never raise: it runs inside Qt."""
+    if "Point size <= 0" in message:
+        return
+    salida = sys.stderr
+    if salida is not None:
+        try:
+            salida.write(message + "\n")
+            return
+        except Exception:          # a closed or unwritable stream
+            pass
+    _qt_message_to_log(message)
+
+
+def _qt_message_to_log(message: str) -> None:
+    """Append one Qt diagnostic to the error log. Never raises."""
+    try:
+        from datetime import datetime
+
+        from emgteach.crash import log_path
+
+        with log_path().open("a", encoding="utf-8") as f:
+            f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S}  Qt: {message}\n")
+    except Exception:              # a read-only home, a full disk
+        pass
 
 
 def install_qt_translations(app: QApplication, language: str) -> QTranslator | None:

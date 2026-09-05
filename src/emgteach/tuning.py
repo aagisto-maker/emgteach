@@ -40,9 +40,12 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.io import (
+    MAX_ANNOTATION_BYTES,
     ChannelInfo,
     RecordingMetadata,
+    annotation_text,
     read_edf_markers,
     read_edf_metadata,
 )
@@ -65,15 +68,22 @@ DERIVED_PREFIX = "DERIVED"
 _SUFIJO = "_tuned"
 
 #: What an EDF+ annotation actually holds. Measured against pyedflib: a
-#: forty-first character does not raise, it simply is not there when the file
+#: forty-first *byte* does not raise, it simply is not there when the file
 #: is read back — which is the same family of silent loss the buffered-write
 #: paper is about.
-_MAX_ANOTACION = 40
+_MAX_ANOTACION = MAX_ANNOTATION_BYTES
 
 
 def _corta(texto: str) -> str:
-    """Trim to what an annotation can hold, saying so when it has to."""
-    return texto if len(texto) <= _MAX_ANOTACION else texto[:_MAX_ANOTACION - 1] + "…"
+    """Trim to what an annotation can hold, saying so when it has to.
+
+    Bytes, not characters: this line used to be cut at the fortieth
+    character, and the ellipsis it then added — three bytes — was itself
+    cut after the first. One byte of a character is not UTF-8, and the
+    tuned recording of 5 September could not be reopened at all because of
+    it. See :func:`emgteach.io.annotation_text`.
+    """
+    return annotation_text(texto, _MAX_ANOTACION)
 
 
 def tuned_path(source: str | Path, *, suffix: str = _SUFIJO) -> Path:
@@ -113,7 +123,7 @@ class TunedSummary:
         """The traceability the derived file carries at t=0.
 
         Three lines, not one, because **an EDF+ annotation holds forty
-        characters** and anything longer comes back silently cut — measured,
+        bytes** and anything longer comes back silently cut — measured,
         not assumed. Each one starts with the same prefix so a reader can
         collect them without knowing how many there are, and each says what it
         is, so an over-long filename costs the origin line and nothing else.
@@ -177,6 +187,15 @@ def _reetiquetar(
     Before ``REC start`` nothing moves. After it, an annotation survives only
     if it falls inside a kept fragment, and it lands where that fragment lands
     once the gaps are closed up.
+
+    The load markers of the force-velocity wizard are the exception, and they
+    have to be: the wizard writes each one when it *asks* for the lift, so it
+    sits in the pause before it, which is exactly the stretch the fragment
+    editor throws away. Under the general rule the recording of 5 September
+    kept four of its twelve loads, and a study of force against velocity with
+    two thirds of the loads missing is not a study of anything. So each kept
+    fragment is given the load that was last called for before it, written at
+    the fragment's own start.
     """
     fases = parse_phase_markers(markers)
     descartadas = set()
@@ -191,10 +210,13 @@ def _reetiquetar(
         fuera.add(cal_start_marker(canal, rep))
         fuera.add(cal_end_marker(canal, rep))
 
+    cargas = parse_fv_load_markers(markers)
     salida: list[tuple[float, str]] = []
     for t, texto in markers:
         if str(texto) in fuera:
             continue
+        if parse_fv_load_markers([(t, texto)]) and t > rec_start_s:
+            continue                       # re-issued per fragment, below
         if t <= rec_start_s:
             # ``REC start`` itself sits exactly here, and "inside a kept
             # fragment" is false for it: the first fragment begins later. Left
@@ -205,6 +227,38 @@ def _reetiquetar(
         desplazado = _en_tiempo_recortado(float(t), tramos, rec_start_s)
         if desplazado is not None:
             salida.append((desplazado, str(texto)))
+    salida.extend(_cargas_por_tramo(cargas, tramos, rec_start_s))
+    return sorted(salida, key=lambda m: m[0])
+
+
+def _cargas_por_tramo(
+    cargas: Sequence[tuple[float, float]],
+    tramos: Sequence[tuple[float, float]],
+    rec_start_s: float,
+) -> list[tuple[float, str]]:
+    """One load marker per kept fragment, at the fragment's own start.
+
+    The load is the last one the wizard called for at or before the fragment
+    begins; a fragment from before the first cue — a stray effort, a
+    rehearsal — is given none rather than a guess.
+    """
+    from emgteach.force_velocity import fv_load_marker
+
+    ordenadas = sorted((float(t), float(kg)) for t, kg in cargas)
+    if not ordenadas:
+        return []
+    salida: list[tuple[float, str]] = []
+    cursor = rec_start_s
+    for a, b in tramos:
+        kg = None
+        for onset, valor in ordenadas:
+            if onset <= a + 0.5:           # half a second of slack for a
+                kg = valor                 # fragment drawn on the cue itself
+            else:
+                break
+        if kg is not None:
+            salida.append((cursor, fv_load_marker(kg)))
+        cursor += b - a
     return salida
 
 
