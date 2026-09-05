@@ -24,17 +24,41 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v1.1.0 adds an **assisted fragment editor** (curate the
-significant EMG fragments of a recording, with editable detection
-parameters and envelope-filter cut-offs applied to the analysis),
-**region-of-interest analysis**, **CSV export**, a **live signal-quality
-check** during recording, and an **ECG signal profile** alongside EMG.
-v1.0.0 reimplemented the BITalino backend over `pyserial` (no PyBluez)
-and shipped a standalone Windows executable. The package ships a Qt-free
-analytic core (io, dsp, fatigue, mvc, apda, profiles, selection, exports,
-reports, i18n), a Qt layer (workers + three-tab PySide6 GUI), and a test
-suite of **216 tests** passing on Linux and Windows across Python
-3.10–3.12. See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
+`emgteach` v3.0.0 is **configured by choosing the practical rather than by
+setting controls one at a time**: three practicals — one muscle,
+agonist/antagonist and muscle kinematics — fix the channel count and the
+accelerometer, and each tab offers only the measurements that suit the
+practical. The **session is one file with its phases marked inside it**
+(warm-up, calibration, preparation, recording), so the maximum every
+percentage is measured against travels with the signal, and the two tabs
+can no longer disagree about the same recording. It adds a **guided tour**
+over the interface, a **«?» on every box**, **one analysis row per
+contraction** with its electromechanical delay, an **agonist/antagonist
+co-activation index** (Falconer-Winter, per marked phase and in % MVC), a
+**rehearsal** of the force-velocity procedure that runs with no hardware,
+and a derived **tuned recording** that carries the decisions taken on
+screen. It also corrects the BITalino front-end gain in the conversion to
+millivolts. See
+[`docs/RELEASE_NOTES_v3.0.0.md`](docs/RELEASE_NOTES_v3.0.0.md).
+
+v2.0.0 added a **kinematic dimension** through the BITalino
+accelerometer: guided force-velocity acquisition, a force-velocity study
+turning one recording of known loads into load-velocity, Hill, power and
+recruitment curves, EMG-vs-MMG, tremor and movement-vs-EMG analysis
+panels, a selectable accelerometer channel and a channel-quality check
+when a recording is opened. v1.4.0 introduced the **classroom
+broadcast**: students follow the live session in their own phone
+browsers, with a per-session access code and a scan-to-join QR. v1.1.0
+added an **assisted fragment editor**, **CSV export** and a **live
+signal-quality check**; v1.0.0 reimplemented the BITalino backend over
+`pyserial` (no PyBluez) and shipped a standalone Windows executable.
+
+The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
+coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
+reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
+test suite of **940 tests** passing on Linux and Windows across Python
+3.10–3.12. See
+[`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 ## Highlights
 
@@ -58,8 +82,6 @@ suite of **216 tests** passing on Linux and Windows across Python
   artefact characterised in [Agis-Torres (2026)](https://doi.org/10.5281/zenodo.20042878)
 - **Robust connectivity**: BITalino watchdog releases blocked
   Bluetooth reads in ~50 ms after disconnection
-- **Reproducible synthetic signals** for class assignments and CI
-  testing without hardware
 - **Open-source firmware** for the Arduino+MyoWare side, included in
   the repository
 
@@ -87,21 +109,23 @@ administrator privileges and configures the PATH automatically.
 
 ### Hardware backends
 
-`emgteach` ships out of the box with the **Arduino + MyoWare** backend
-over USB serial. To use the **BITalino** backend over Bluetooth you
-need to install the optional extra:
+Both backends work out of the box, on every supported Python version.
+Neither needs an optional extra or a compiler: both speak their device
+over `pyserial`, which is a hard dependency.
 
-```bash
-pip install "emgteach[bitalino]"
-```
+**BITalino (revolution)** — Bluetooth. The BITalino is Bluetooth Classic
+(SPP), so pair it in the operating system first; on Windows it then
+appears as a virtual COM port. Identify it in the app by its **MAC
+address**, which is the same on every PC, rather than by a COM number,
+which is not. Leaving the field empty autodetects it.
 
-> ⚠️ **BITalino needs Python ≤ 3.11.** The `bitalino` package depends on
-> `PyBluez-bitalino`, whose C extension does **not** work on Python 3.12
-> (it raises at connection time). Use **Python 3.11** for the BITalino
-> backend. On Windows it also has no precompiled wheel, so it needs
-> Microsoft C++ Build Tools to build from source. The Arduino + MyoWare
-> backend uses `pyserial` (pure Python) and is unaffected — it works on
-> every supported version.
+**Arduino RedBoard Plus + MyoWare 2.0** — USB serial. Flash the sketch in
+[`firmware/emgteach_arduino`](firmware/emgteach_arduino) once, then pick
+its COM port in the app.
+
+Recording, analysis and EDF+ output are identical whichever you use, and
+the choice is a single setting in the acquisition tab — so a class can
+run on whatever hardware it has.
 
 ## Quickstart
 

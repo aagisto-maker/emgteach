@@ -1,21 +1,27 @@
 # emgteach documentation
 
 Welcome to the documentation for **emgteach**, an open-source teaching
-platform for surface electromyography acquisition and analysis with
-Arduino-based hardware.
+platform for surface electromyography acquisition and analysis in the
+physiology teaching laboratory, with a BITalino or an Arduino + MyoWare 2.0.
 
-This site is built with [MkDocs Material](https://squidfunk.github.io/mkdocs-material/)
-and is currently a placeholder. Pages will be expanded as the package
-modules are migrated from the prototype.
+The application is configured by choosing one of **three practicals**; each
+fixes what is recorded and what the analysis offers:
 
-## Sections (planned)
+| Practical | Level | Channels | What it teaches |
+|---|---|---|---|
+| Single-muscle contraction | basic | 1 | amplitude, spectrum, fatigue, muscle load |
+| Agonist / antagonist contraction | intermediate | 2 | two muscles compared in % MVC, co-activation |
+| Muscle kinematics | advanced | 1 + accelerometer | force-velocity, electromechanical delay, tremor |
 
-- **Getting started** — install on Windows, macOS, Linux
-- **Quickstart** — run the GUI, record a session, analyse it offline
-- **Hardware setup** — BITalino pairing, Arduino+MyoWare wiring
-- **Tutorial** — reproducible end-to-end session with synthetic data
-- **API reference** — auto-generated from docstrings via mkdocstrings
-- **Citing emgteach** — see [`CITATION.cff`](https://github.com/aagisto-maker/emgteach/blob/main/CITATION.cff)
+## Where to start
+
+- **Installing and connecting** — the [README](https://github.com/aagisto-maker/emgteach#readme):
+  Python 3.10–3.12, `pip install`, pairing the BITalino and identifying it by its
+  MAC address.
+- **Placing the electrodes** — [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md)
+  (Spanish): the forearm pair, measured from the bony landmarks, and how the
+  maximum has to be made against the table.
+- **Citing emgteach** — [`CITATION.cff`](https://github.com/aagisto-maker/emgteach/blob/main/CITATION.cff).
 
 ## User manual
 

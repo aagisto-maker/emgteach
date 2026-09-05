@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "emgteach"
-version = "2.0.0"
+version = "3.0.0"
 description = "Open-source teaching platform for surface electromyography acquisition and analysis with Arduino-based hardware"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -162,6 +162,9 @@ ignore = [
 "tests/*" = ["B011"]
 # The i18n table holds UI strings with typographic characters (× ÷ — … « »).
 "src/emgteach/i18n.py" = ["RUF001", "RUF002", "RUF003"]
+# Same reason: the figure generator carries its own bilingual string table
+# (⅓, ·, –, °), so the typography lives in the source rather than in tr().
+"tools/generar_electrodos.py" = ["RUF001", "RUF002", "RUF003"]
 "src/emgteach/gui/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007"]
 "src/emgteach/gui/widgets/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007", "N802"]
 "src/emgteach/gui/tabs/*.py" = ["RUF001", "RUF002", "RUF003", "E402", "B905", "B007", "N802"]

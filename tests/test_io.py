@@ -26,6 +26,7 @@ from emgteach import (
     read_edf_pyedflib,
     write_edf_block,
 )
+from emgteach.io import EDF_RECORDING_IDENT_BUDGET
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -337,6 +338,76 @@ class TestAnnotationRoundTrip:
         labels = [desc for _onset, desc in result["markers"]]
         assert "inicio contracción" in labels
 
+    def test_a_crowded_second_keeps_every_annotation(self, out_path: str) -> None:
+        """Twelve marks inside one second must all come back.
+
+        EDF+ keeps annotations inside the data records, so their capacity is a
+        rate: with pyedflib's default single annotation signal only about five
+        per second survive and the rest vanish without an error. A real session
+        crossed that line — the derived file lost ``PREP start`` and
+        ``REC start`` — which is the same silent loss as the buffered-write
+        defect, in a different header field.
+        """
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        escritas = [f"m{i:02d}" for i in range(12)]
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(np.zeros(3 * FS, dtype=np.float64))
+            for i, texto in enumerate(escritas):
+                writer.add_annotation(1.0 + i * 0.05, texto)
+
+        leidas = [desc for _onset, desc in read_edf_pyedflib(out_path)["markers"]]
+        assert [t for t in escritas if t not in leidas] == []
+
+
+class TestAnAnnotationIsMeasuredInBytes:
+    """Forty bytes, not forty characters — and never half a character.
+
+    A tuned recording of 5 September carried a lone ``0xE2`` in its
+    annotation channel: the first third of an ellipsis added after a cut
+    made by character count, with the other two bytes past the fortieth.
+    That byte is not UTF-8 and MNE refused the whole file. Every Spanish
+    muscle name is accented, so the same trap is one long fragment name
+    away in any session.
+    """
+
+    def test_a_short_annotation_is_left_alone(self) -> None:
+        from emgteach.io import annotation_text
+
+        assert annotation_text("Inicio (auto) — Músculo") == (
+            "Inicio (auto) — Músculo")
+
+    def test_a_long_one_is_cut_to_forty_bytes(self) -> None:
+        from emgteach.io import MAX_ANNOTATION_BYTES, annotation_text
+
+        cortada = annotation_text("x" * 60)
+        assert len(cortada.encode("utf-8")) <= MAX_ANNOTATION_BYTES
+        assert cortada.endswith("…")
+
+    def test_accents_count_for_what_they_weigh(self) -> None:
+        """Thirty-nine accented characters are seventy-eight bytes."""
+        from emgteach.io import MAX_ANNOTATION_BYTES, annotation_text
+
+        cortada = annotation_text("á" * 39)
+        assert len(cortada.encode("utf-8")) <= MAX_ANNOTATION_BYTES
+
+    def test_the_cut_never_lands_inside_a_character(self) -> None:
+        from emgteach.io import annotation_text
+
+        for n in range(30, 60):
+            texto = annotation_text("á" * n)
+            texto.encode("utf-8").decode("utf-8")     # would raise if halved
+
+    def test_what_is_written_is_what_comes_back(self, out_path: str) -> None:
+        """The end of the round trip: an over-long annotation is readable."""
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        largo = "Contracción sostenida del músculo flexor radial del carpo"
+        with BufferedEdfWriter(out_path, channels=[ch]) as writer:
+            writer.add_samples(np.zeros(2 * FS, dtype=np.float64))
+            writer.add_annotation(0.5, largo)
+
+        leidas = [d for _o, d in read_edf_pyedflib(out_path)["markers"]]
+        assert any(d.startswith("Contracción sostenida") for d in leidas)
+
 
 class TestPhysicalRangeNoClipping:
     """The device-aware physical range must let a wide Arduino signal survive
@@ -398,3 +469,149 @@ class TestRecordingMetadata:
     def test_is_empty(self) -> None:
         assert RecordingMetadata().is_empty()
         assert not RecordingMetadata(student_name="x").is_empty()
+
+
+# ---------------------------------------------------------------------------
+# The recording-identification budget
+# ---------------------------------------------------------------------------
+
+
+class TestTheProtocolIsNeverTheFieldThatGivesWay:
+    """What the EDF+ recording block does when four fields want eighty chars.
+
+    Measured on ``C:\\Records\\emg_2026-08-31_19-33.edf``: the app wrote the
+    protocol ``"agonist/antagonist"`` and ``getRecordingAdditional()`` gave
+    back ``"agonist/ant"``. The device string, twenty-eight characters of
+    ``"BITalino (98:D3:91:FE:44:E4)"``, had eaten the budget, and pyedflib —
+    whose guard scores that header at 69 of 80 and stays quiet — never said
+    so. Same family as the buffered-write corruption the module documents
+    (Agis-Torres 2026): the file is valid, the loss is silent, and nobody
+    finds out until a marking pile has protocols that name no practice.
+    """
+
+    #: The header as the bench actually wrote it.
+    EQUIPMENT = "BITalino (98:D3:91:FE:44:E4)"
+    PROTOCOL = "agonist/antagonist"
+
+    def _write(self, out_path: str, metadata: RecordingMetadata) -> list[str]:
+        ch = ChannelInfo("EMG", sample_frequency=FS)
+        sig = np.zeros(2 * FS, dtype=np.float64)
+        with BufferedEdfWriter(out_path, channels=[ch], metadata=metadata) as w:
+            w.add_samples(sig)
+            notices = list(w.header_notices)
+        return notices
+
+    def test_the_protocol_comes_back_whole(self, out_path: str) -> None:
+        """The regression itself: write the measured header, read it back."""
+        self._write(
+            out_path,
+            RecordingMetadata(
+                student_name="Ada Lovelace",
+                student_code="A123",
+                protocol=self.PROTOCOL,
+                equipment=self.EQUIPMENT,
+            ),
+        )
+        assert read_edf_metadata(out_path).protocol == self.PROTOCOL
+
+    def test_the_equipment_still_names_the_bench(self, out_path: str) -> None:
+        """Shortened, not dropped: the device and the tail of its MAC stay,
+        which is what tells one bench from the next one along."""
+        self._write(
+            out_path,
+            RecordingMetadata(protocol=self.PROTOCOL, equipment=self.EQUIPMENT),
+        )
+        equipment = read_edf_metadata(out_path).equipment
+        assert equipment.startswith("BITalino")
+        assert equipment.endswith("44:E4")
+
+    def test_the_shortening_is_said_out_loud(self, out_path: str) -> None:
+        """Trimming is a decision; making it in silence is the bug."""
+        notices = self._write(
+            out_path,
+            RecordingMetadata(protocol=self.PROTOCOL, equipment=self.EQUIPMENT),
+        )
+        assert notices, "the header was trimmed and nothing was logged"
+        assert any("BITalino" in n for n in notices), notices
+
+    def test_a_header_that_fits_is_left_alone(self, out_path: str) -> None:
+        """No shortening, and nothing logged, when there is room for all."""
+        notices = self._write(
+            out_path,
+            RecordingMetadata(protocol="iso 30 s", equipment="BITalino"),
+        )
+        meta = read_edf_metadata(out_path)
+        assert meta.equipment == "BITalino"
+        assert meta.protocol == "iso 30 s"
+        assert notices == []
+
+    def test_a_protocol_too_long_on_its_own_is_reported(
+        self, out_path: str
+    ) -> None:
+        """The one case nothing can save. It still must not pass in silence."""
+        protocol = "agonist/antagonist co-activation, elbow, three loads"
+        notices = self._write(
+            out_path,
+            RecordingMetadata(protocol=protocol, equipment=self.EQUIPMENT),
+        )
+        assert notices, "the protocol was truncated and nothing was logged"
+        assert any(str(len(protocol)) in n for n in notices), notices
+        # Everything that could be given up, was: the protocol keeps the
+        # whole budget, so what survives is as much of it as EDF+ allows.
+        assert read_edf_metadata(out_path).protocol == protocol[
+            :EDF_RECORDING_IDENT_BUDGET
+        ]
+
+    def test_the_budget_is_what_the_writer_actually_enforces(
+        self, out_path: str
+    ) -> None:
+        """The constant is measured, not read off the specification, so it is
+        pinned here: a pyedflib that changes the arithmetic fails this test
+        rather than quietly starting to truncate protocols again."""
+        equipment = "E" * EDF_RECORDING_IDENT_BUDGET
+        protocol = "P"
+        self._write(
+            out_path,
+            # Straight to the writer, past the fitting step, to ask edflib
+            # itself where it cuts.
+            RecordingMetadata(protocol="", equipment=equipment),
+        )
+        assert read_edf_metadata(out_path).equipment == equipment
+        self._write(out_path, RecordingMetadata(protocol=protocol, equipment=equipment))
+        meta = read_edf_metadata(out_path)
+        assert len(meta.equipment) + len(meta.protocol) <= (
+            EDF_RECORDING_IDENT_BUDGET
+        )
+
+
+@pytest.mark.parametrize("campo", ["student_name", "student_code"])
+def test_the_recording_carries_the_code_and_not_the_name(tmp_path, campo) -> None:
+    """What the acquisition tab writes, checked at the file.
+
+    The student's name used to go into ``patientname``, so every recording
+    carried it out of the laboratory — into the marking pile, into whatever
+    gets shared with a colleague, into an archive. The tab no longer asks for
+    it; both header fields carry the code, because EDF+ writes 'X' into an
+    empty patientname and a patient block reading 'X' beside a code says less
+    than one that says the code twice.
+    """
+    pytest.importorskip("pyedflib")
+    import numpy as np
+
+    from emgteach.io import (
+        BufferedEdfWriter,
+        ChannelInfo,
+        RecordingMetadata,
+        read_edf_metadata,
+    )
+
+    destino = tmp_path / "sesion.edf"
+    meta = RecordingMetadata(student_name="A1", student_code="A1")
+    with BufferedEdfWriter(
+        str(destino),
+        channels=[ChannelInfo("Muscle", dimension="mV", sample_frequency=1000)],
+        metadata=meta,
+    ) as w:
+        w.add_samples(np.zeros(2000))
+    leido = read_edf_metadata(destino)
+    assert getattr(leido, campo) == "A1"

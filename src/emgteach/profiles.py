@@ -3,7 +3,7 @@
 A :class:`SignalProfile` bundles everything that defines *what a signal
 is* — independent of the hardware that records it: the sampling rate,
 the DSP filter band, the offline-analysis windows, the derived EDF
-channel schema, the on-screen display ranges and the marker vocabulary.
+channel schema and the on-screen display ranges.
 
 The rest of the package (the workers and the GUI) reads its defaults
 from a profile instead of from hardcoded literals scattered across
@@ -68,8 +68,10 @@ class SignalProfile:
     apda_warning_limit, apda_danger_limit : float
         Load thresholds (% MVC) for the online monitor's tiredness (warning)
         and fatigue (danger) zones.
-    apda_calib_s : float
-        Duration (s) of the quick in-app MVC calibration.
+    mvc_bursts, mvc_burst_s : int, float
+        How many maximal efforts the calibration asks for, and how long each
+        one lasts. Every one of them is brief; see the note on
+        ``mvc_peak_window_s``.
     onset_k : float
         Threshold sensitivity for automatic onset detection, in baseline
         standard deviations (threshold = baseline mean + ``onset_k``*SD).
@@ -88,9 +90,6 @@ class SignalProfile:
     ylim_raw, ylim_filtered, ylim_envelope : tuple of float
         Initial vertical display ranges for the realtime acquisition
         plots, in :attr:`dimension` units.
-    marker_presets : tuple of str
-        User-facing (Spanish) preset labels offered by the acquisition
-        tab's event-marker control.
     """
 
     name: str
@@ -118,9 +117,101 @@ class SignalProfile:
     # to flag the "mean activation" readout, not part of the APDF computation.
     apda_mean_limit: float = 10.0
     # Online (real-time) muscle-load monitoring during acquisition.
+    # -- is this "maximum" a maximum? --
+    # A calibration that barely rises above the muscle's own resting level did
+    # not capture a maximal contraction, and every later % MVC is then wrong by
+    # the same factor. Warn below this ratio of reference to resting level.
+    mvc_min_rest_ratio: float = 5.0
+    # The reference is the strongest window the subject actually held, not
+    # a single sample. Anything compared against it has to be measured the
+    # same way or the comparison inflates by itself.
+    #
+    # 0.2 s, not 0.5. A held maximal contraction shows a peak at its start
+    # and then a plateau, and a half-second mean sits on the plateau; the
+    # task's brief efforts reach the peak, so they came out at 135 % of a
+    # "maximum" (bench, 1 September) with nothing wrong in the calibration.
+    # The reference has to be measured where the peak is. Long enough to
+    # exclude a single spike, short enough to hold the initial burst.
+    mvc_peak_window_s: float = 0.2
+    # And, for the same reason, every effort the calibration asks for is a
+    # brief one: a squeeze reaches the peak without the plateau, so it is
+    # measured where the reference is measured. Three of them, because the
+    # first maximal effort of a session is genuinely submaximal. The three
+    # *held* efforts that used to precede them were dropped once the
+    # reference moved to the 0.2 s peak: they cost four times the fatigue
+    # and twice the calibration and gave no higher a peak.
+    mvc_bursts: int = 3
+    mvc_burst_s: float = 1.5               # s — duration of one maximal effort
+    # And after the fact, by definition: the reference IS the strongest
+    # 0.2 s of a maximal effort, so if the task beats it the effort was not
+    # maximal. What is compared is the task's own strongest 0.2 s, measured
+    # the same way.
+    #
+    # The margin is not fitted, it sits in a gap. Across 21 bench recordings,
+    # every session whose calibration was sound peaked at 91-124 % of its own
+    # reference, and every session with a bad one peaked at 179-1308 %.
+    # Nothing landed in between.
+    mvc_implausible_pct: float = 150.0     # % MVC, on the peak
+    # (A second condition — "and for more than 10 % of the analysed time" —
+    # was removed. It is strictly stronger than the peak test at the same
+    # threshold, so it never fired alone, and it silenced the cases that
+    # matter most: a burst task with a three-fold submaximal calibration
+    # spends only 3 % of its time up there. Six of the twenty-one recordings
+    # were bad and quiet enough to slip through.)
+    # -- are the two channels looking at two muscles? --
+    # While one muscle is calibrated the other one is never silent: it stabilises
+    # the joint, and some of its signal is the first muscle's, conducted through
+    # the tissue. On the bench, with the electrodes correctly sited over FCR and
+    # ECR, the resting channel reached 20-26 % of its own reference during the
+    # other muscle's maximum. Above this share the two channels are no longer
+    # telling two muscles apart — an electrode is mis-sited, too close to the
+    # other pair, or the subject is bracing the whole forearm.
+    mvc_crosstalk_pct: float = 50.0        # % of the other muscle's own reference
+    # (A "was the effort held?" check lived here and was withdrawn. It
+    # measured the share of the window above half the window's own peak,
+    # which separated one bench session cleanly — and then fired on the
+    # best calibration of the next one. A maximal contraction held for
+    # four seconds decays, which that measure punishes exactly as it
+    # punishes a brief movement; no threshold separated the two sessions
+    # at any floor. A reference that is too low is still caught after the
+    # fact by mvc_implausible_pct, which is where the evidence for it is.)
+
+    # -- co-activation (Falconer-Winter) --
+    # Below this mean activation the index measures the likeness of two
+    # baselines rather than shared effort, so it is not reported at all.
+    # Measured on a forearm pair with both references maximal: a quiet window
+    # gave a mean of 0.2-0.8 % MVC above rest, an active one 19-30 %. The floor
+    # sits in a gap of about thirtyfold, which is why a round number is enough.
+    # (The muscles' own resting levels were 2 % MVC for the flexor and 4 % for
+    # the extensor, which is what the subtraction removes before this test.)
+    coact_floor_pct: float = 5.0       # % MVC
     apda_warning_limit: float = 40.0   # % MVC — tiredness (warning) zone
     apda_danger_limit: float = 70.0    # % MVC — fatigue (danger) zone
-    apda_calib_s: float = 4.0          # s — quick MVC-calibration duration
+    # -- the pause between the two phases of a session --
+    # The acquisition does not stop: the file stays continuous and EDF+ never
+    # has to represent a gap. These seconds are recorded, marked PREP, and
+    # excluded from every analysis — a few kilobytes of disk against the whole
+    # complexity of a discontinuous recording.
+    prep_countdown_s: float = 5.0
+    # -- warming up before the first maximal effort --
+    # The first maximal contraction of a session is genuinely submaximal:
+    # on the bench the three flexor repetitions came out 57 %, 68 % and
+    # 100 % of each other, still rising at the third, so best-of-three had
+    # nothing better to fall back on. Recorded and marked like the pause,
+    # and out of the analysis for the same reason.
+    warmup_s: float = 10.0
+
+    # -- fatigue verdict (MDF-vs-time regression) --
+    # The median frequency of a resting segment is amplifier noise, and mixing
+    # those into the regression is what let an intermittent forearm recording
+    # report a 26 % MDF decline. Only segments reaching this share of the
+    # selection's own strong-segment RMS are fitted…
+    fatigue_active_ratio: float = 0.30
+    # …and the trend is only called a trend when the line explains this much of
+    # the variance. That same recording, fitted through its active segments,
+    # gave R² = 0.08.
+    fatigue_min_r2: float = 0.30
+    fatigue_min_segments: int = 4
 
     # -- automatic onset detection (baseline + k*SD threshold) --
     onset_k: float = 3.0
@@ -136,15 +227,6 @@ class SignalProfile:
     ylim_raw: tuple[float, float] = (-3.3, 3.3)
     ylim_filtered: tuple[float, float] = (-0.8, 0.8)
     ylim_envelope: tuple[float, float] = (0.0, 0.5)
-
-    # -- UI marker vocabulary (user-facing, Spanish) --
-    marker_presets: tuple[str, ...] = (
-        "Contraction onset",
-        "Contraction end",
-        "Fatigue",
-        "Rest",
-        "Other…",
-    )
 
     def __post_init__(self) -> None:
         if self.sample_frequency <= 0:
@@ -169,8 +251,11 @@ class SignalProfile:
                 "Require 0 < apda_warning_limit <= apda_danger_limit; got "
                 f"{self.apda_warning_limit}, {self.apda_danger_limit}."
             )
-        if self.apda_calib_s <= 0:
-            raise ValueError("apda_calib_s must be positive.")
+        if self.mvc_bursts < 1 or self.mvc_burst_s <= 0:
+            raise ValueError(
+                "Require mvc_bursts >= 1 and mvc_burst_s > 0; got "
+                f"{self.mvc_bursts}, {self.mvc_burst_s}."
+            )
 
     def filter_kwargs(self) -> dict[str, float]:
         """Return the four filter cut-offs as keyword arguments.
@@ -277,14 +362,6 @@ ECG_PROFILE = SignalProfile(
     ylim_raw=(-2.0, 2.0),
     ylim_filtered=(-2.0, 2.0),
     ylim_envelope=(0.0, 2.0),
-    marker_presets=(
-        "P wave",
-        "QRS complex",
-        "T wave",
-        "Arrhythmia",
-        "Rest",
-        "Other…",
-    ),
 )
 
 

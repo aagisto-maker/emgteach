@@ -1,0 +1,376 @@
+"""Agonist/antagonist co-activation, by the index of Falconer and Winter.
+
+Of all the activity recorded in a pair of muscles, what fraction is *shared* —
+exerted by both at once? The index is that fraction, from 0 to 100 %:
+
+.. math::
+
+    CCI = 100 \\cdot \\frac{2 \\int \\min(E_1, E_2)\\,dt}{\\int (E_1 + E_2)\\,dt}
+
+with both envelopes expressed as a percentage of **their own muscle's** MVC.
+The factor of two is what lets the index reach 100 % when the two curves
+coincide; 0 % means one muscle was working and the other was not.
+
+Falconer and Winter's [1]_ is the most cited index by a wide margin, it is
+bounded, it does not ask which of the two muscles is the agonist, and it is
+the most robust of the family to the choice of normalisation [2]_ — which
+matters in teaching, because a student's MVC protocol is not a research
+laboratory's. Rudolph's index would suit a course about joint stiffness or
+energetic cost better; one index explained well beats two to choose between,
+and their values are not comparable anyway.
+
+**This index measures similarity of shape, not amount of activation**, and
+that is its trap: two muscles at rest have similar baseline noise, so the
+index approaches 100 % on a recording where nothing happened. It is the same
+silent failure as auto-normalisation — a number that looks like a finding and
+is not — so the three safeguards below are not optional:
+
+* activation below a floor in *either* channel and the index is not reported
+  at all (never a greyed or parenthesised number: reported or not reported);
+* each envelope has its own resting level subtracted first, so a high
+  baseline cannot smuggle a recording past that floor;
+* the index is computed **per window**, between markers, because it was
+  conceived for short quasi-stationary windows and means nothing spread over
+  a recording that mixes rest, flexion, extension and grip.
+
+This module is Qt-free, like :mod:`emgteach.apda`, so the analysis worker and
+any offline use share it.
+
+.. [1] Falconer K, Winter DA. Quantitative assessment of co-contraction at the
+   ankle joint in walking. *Electromyogr Clin Neurophysiol* 25: 135-149, 1985.
+   PMID 3987606.
+.. [2] Carey HD, De Groote F, Sawers A. A comparative analysis of
+   co-contraction indices using synthetic EMG data: implications for selection
+   and interpretation. *PLoS One* 21: e0343081, 2026.
+   doi:10.1371/journal.pone.0343081.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+import numpy as np
+from scipy.integrate import trapezoid
+
+from emgteach.i18n import tr
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    import numpy.typing as npt
+
+    FloatArray = npt.NDArray[np.float64]
+
+__all__ = [
+    "CoactivationResult",
+    "coactivation_by_window",
+    "coactivation_index",
+    "resting_level",
+]
+
+
+@dataclass(frozen=True)
+class CoactivationResult:
+    """One window's co-activation, with the two means it must be read beside.
+
+    ``index`` is ``None`` whenever the window fails a safeguard, and ``reason``
+    then says which one in words the interface can show in place of a number.
+
+    The two means travel with the index on purpose. A bare 86 % reads as "both
+    muscles were very active" when it may equally mean "both were equally
+    quiet", and in the teaching case the antagonist's mean *is* the finding —
+    the index only summarises it.
+    """
+
+    index: float | None
+    mean_1: float
+    mean_2: float
+    window_s: tuple[float, float]
+    reason: str | None = None
+    #: The marker that opened this window, for the table's first column.
+    label: str = ""
+
+
+def resting_level(envelope) -> float:
+    """The muscle's own resting level, as the 10th percentile of its envelope.
+
+    Estimated over the **whole analysed span**, not per window: a window that
+    is entirely grip has a high 10th percentile, and subtracting that would
+    erase the very activation being measured. What is wanted is the level the
+    muscle returns to, which only the span as a whole can show.
+    """
+    arr = np.asarray(envelope, dtype=np.float64)
+    arr = arr[np.isfinite(arr)]
+    return float(np.percentile(arr, 10.0)) if arr.size else 0.0
+
+
+def _above_rest(envelope, rest: float) -> FloatArray:
+    arr = np.asarray(envelope, dtype=np.float64) - float(rest)
+    return np.clip(arr, 0.0, None)
+
+
+#: Below this ratio between the quieter and the louder muscle, one of them is
+#: doing the work. Measured on the bench recordings of 1 September: where the
+#: manoeuvres alternated cleanly the ratio ran from 0.04 to 0.23, and where
+#: both muscles worked at once it ran from 0.60 to 0.84. Half-way between is a
+#: wide margin on both sides.
+_DOMINANCE = 0.5
+
+
+def dominant_muscle(
+    env_1, env_2, fs: float, window_s: tuple[float, float], *, t0: float = 0.0,
+    ref_1: float | None = None, ref_2: float | None = None,
+    both_ratio: float = _DOMINANCE,
+) -> int | None:
+    """Which of the two muscles led in this window: 1, 2, or None for neither.
+
+    The question the operator was being asked to answer by hand, and the one
+    thing here that a measurement *can* answer. A contraction is not labelled
+    «flexion» by looking at its envelope — that is what the subject was asked
+    to do, and no algorithm knows it — but which muscle is the agonist is
+    simply which one worked harder, and the program has both channels.
+
+    Compared on the peak rather than the mean: a brief hard effort and a long
+    soft one have similar means, and it is the effort that identifies the
+    agonist.
+
+    And compared as a share of **each muscle's own maximum** whenever the
+    recording carries one, which is the same rule the overlay panel and the
+    co-activation index already follow. Millivolts do not compare across two
+    muscles: on the bench recording of 3 September the flexor's reference was
+    0.087 mV and the extensor's 0.286 mV, so a flexion at 100 % of the flexor's
+    own maximum still read *smaller in millivolts* than an extensor sitting at
+    42 % of its own — and every contraction of the series came back labelled
+    «co-contraction». Without references there is nothing better than
+    millivolts, and the label is then as good as the montage.
+    """
+    e1 = np.asarray(env_1, dtype=np.float64)
+    e2 = np.asarray(env_2, dtype=np.float64)
+    a, b = window_s
+    i0, i1 = round((a - t0) * fs), round((b - t0) * fs)
+    i0, i1 = max(0, i0), min(min(e1.size, e2.size), i1)
+    if i1 <= i0:
+        return None
+    p1 = float(np.max(e1[i0:i1])) - resting_level(e1)
+    p2 = float(np.max(e2[i0:i1])) - resting_level(e2)
+    if ref_1 and ref_2:
+        p1, p2 = p1 / float(ref_1), p2 / float(ref_2)
+    alto, bajo = max(p1, p2), min(p1, p2)
+    if alto <= 0.0:
+        return None
+    # ``both_ratio`` is the one number of this rule a student may want to
+    # move, and the fragment editor lets them, with the labels changing as
+    # the slider does: below it one muscle led, at or above it both worked.
+    if bajo / alto >= float(both_ratio):
+        return None  # both worked: this is co-activation
+    return 1 if p1 > p2 else 2
+
+
+def propose_labels(
+    env_1,
+    env_2,
+    fs: float,
+    windows: Sequence[tuple[float, float]],
+    *,
+    name_1: str,
+    name_2: str,
+    both_label: str,
+    t0: float = 0.0,
+    ref_1: float | None = None,
+    ref_2: float | None = None,
+    both_ratio: float = _DOMINANCE,
+) -> list[str]:
+    """A name for each window: the muscle that led it, or ``both_label``.
+
+    Deliberately the muscle's own name and not «flexion» or «extension». The
+    program is told which muscles these are only as the text the operator
+    typed, so it cannot know that FCR is the flexor — and a label that says
+    «extension» over a flexion is worse than no label. Reading «FCR led here,
+    so this was a flexion» off the table is a step the student can take and
+    the program cannot, which is the same division of labour as everywhere
+    else in this practical.
+    """
+    return [
+        {1: name_1, 2: name_2}.get(
+            dominant_muscle(env_1, env_2, fs, w, t0=t0,
+                            ref_1=ref_1, ref_2=ref_2, both_ratio=both_ratio),
+            both_label,
+        )
+        for w in windows
+    ]
+
+
+#: How much quiet to leave after the last activity when the final window is
+#: closed at the end of the effort. Enough not to clip the release of a
+#: contraction, short enough that the pause does not dilute the mean.
+_COLA_S = 0.5
+
+
+def _fin_de_la_actividad(
+    a1: FloatArray, a2: FloatArray, fs: float, floor_pct: float
+) -> int | None:
+    """The last sample where either muscle was working, plus a short tail.
+
+    Every marked window is closed by the *next* mark — the operator saying
+    where that phase ended — except the last one, which runs to wherever the
+    recording happened to be stopped. A student who marks the sustained grip
+    and then rests before pressing stop gets that rest inside the window: it
+    pulls the mean down and can push it under the floor, so the phase they did
+    perform is reported as "not measured".
+
+    "The last time either muscle was above the floor" rather than "the first
+    time both fall below it": the envelope dips between bursts of an
+    intermittent effort, and cutting at the first dip would end the window in
+    the middle of the work.
+
+    Returns ``None`` when nothing rises above the floor, so the window is left
+    alone — a window with no activity in it has a reason of its own to give,
+    and trimming it to nothing would replace that reason with a worse one.
+    """
+    activo = np.flatnonzero((a1 > floor_pct) | (a2 > floor_pct))
+    if not activo.size:
+        return None
+    return int(activo[-1]) + max(1, round(_COLA_S * float(fs)))
+
+
+def coactivation_index(
+    env_1_pct_mvc,
+    env_2_pct_mvc,
+    fs: float,
+    *,
+    floor_pct: float = 5.0,
+    rest_1: float | None = None,
+    rest_2: float | None = None,
+    window_s: tuple[float, float] = (0.0, 0.0),
+    label: str = "",
+    name_1: str = "",
+    name_2: str = "",
+) -> CoactivationResult:
+    """Falconer-Winter co-activation for one window of two %MVC envelopes.
+
+    ``rest_1`` / ``rest_2`` are the muscles' resting levels, normally measured
+    over the whole analysed span with :func:`resting_level` and passed in; when
+    omitted they are taken from this window, which is only right if the window
+    *is* the span.
+    """
+    e1 = np.asarray(env_1_pct_mvc, dtype=np.float64)
+    e2 = np.asarray(env_2_pct_mvc, dtype=np.float64)
+    n = min(e1.size, e2.size)
+    e1, e2 = e1[:n], e2[:n]
+    if n < 2:
+        return CoactivationResult(
+            None, 0.0, 0.0, window_s,
+            tr("not reported — window too short"), label,
+        )
+
+    a1 = _above_rest(e1, resting_level(e1) if rest_1 is None else rest_1)
+    a2 = _above_rest(e2, resting_level(e2) if rest_2 is None else rest_2)
+    mean_1, mean_2 = float(np.mean(a1)), float(np.mean(a2))
+
+    # Safeguard: below the floor the index measures the likeness of two
+    # baselines and climbs towards 100 %. Say why, do not print a number.
+    for mean, name, fallback in (
+        (mean_1, name_1, 1), (mean_2, name_2, 2),
+    ):
+        if mean < floor_pct:
+            return CoactivationResult(
+                None, mean_1, mean_2, window_s,
+                tr("not reported — {name} below {floor:.0f} % MVC").format(
+                    name=name or tr("Muscle {n}").format(n=fallback),
+                    floor=floor_pct,
+                ),
+                label,
+            )
+
+    dx = 1.0 / float(fs)
+    total = float(trapezoid(a1 + a2, dx=dx))
+    if total <= 0.0:
+        return CoactivationResult(
+            None, mean_1, mean_2, window_s,
+            tr("not reported — no activation above rest"), label,
+        )
+    shared = float(trapezoid(np.minimum(a1, a2), dx=dx))
+    index = 100.0 * 2.0 * shared / total
+    return CoactivationResult(
+        min(100.0, max(0.0, index)), mean_1, mean_2, window_s, None, label
+    )
+
+
+def coactivation_by_window(
+    env_1_pct_mvc,
+    env_2_pct_mvc,
+    fs: float,
+    markers: Sequence[tuple[float, str]] | None = None,
+    *,
+    floor_pct: float = 5.0,
+    t0: float = 0.0,
+    name_1: str = "",
+    name_2: str = "",
+) -> tuple[list[CoactivationResult], bool]:
+    """One index per marked window, and whether the windows came from markers.
+
+    Each *change* of name opens a window that runs to the next one. Consecutive
+    marks carrying the same name are one window, not several: the name is the
+    manoeuvre, and the manoeuvre is what fixes which muscle is agonist and
+    which antagonist. Six efforts all named «Flexion» are six samples of one
+    condition — the automatic suggestion offers them one per contraction, which
+    is the right unit for trimming and the wrong one for this table.
+
+    The **last** window is
+    closed at the end of the activity instead of at the end of the recording —
+    see :func:`_fin_de_la_actividad` — because nothing else closes it and the
+    quiet before the stop button is not part of the phase.
+
+    With no markers the whole analysed span is reported as a single window and
+    the second return value is ``False``, which the interface turns into a
+    visible warning: an index over a recording that mixes rest, flexion and
+    grip is not a measurement of anything. That window is deliberately *not*
+    trimmed — it is already labelled as not a measurement, and tidying it
+    would only make it look like one.
+    """
+    e1 = np.asarray(env_1_pct_mvc, dtype=np.float64)
+    e2 = np.asarray(env_2_pct_mvc, dtype=np.float64)
+    n = min(e1.size, e2.size)
+    duration = n / float(fs)
+    # Rest is measured once, over the whole span; see resting_level().
+    rest_1, rest_2 = resting_level(e1), resting_level(e2)
+
+    marks = sorted(
+        (float(t) - t0, str(lbl)) for t, lbl in (markers or [])
+        if 0.0 <= float(t) - t0 < duration
+    )
+    # Only the first of a run of equal names survives; the rest would each
+    # close the window before it and produce a row per contraction.
+    marks = [m for i, m in enumerate(marks) if i == 0 or m[1] != marks[i - 1][1]]
+    if not marks:
+        return [coactivation_index(
+            e1, e2, fs, floor_pct=floor_pct, rest_1=rest_1, rest_2=rest_2,
+            window_s=(t0, t0 + duration), label=tr("Whole recording"),
+            name_1=name_1, name_2=name_2,
+        )], False
+
+    a1, a2 = _above_rest(e1, rest_1), _above_rest(e2, rest_2)
+    bounds = [t for t, _ in marks] + [duration]
+    out: list[CoactivationResult] = []
+    for i, (start, lbl) in enumerate(marks):
+        end = bounds[i + 1]
+        i0, i1 = round(start * fs), round(end * fs)
+        if i == len(marks) - 1:
+            # Only the last one: every other window is closed by the operator's
+            # next mark, which is a statement about the session. This one was
+            # closed by whenever they reached for the stop button.
+            fin = _fin_de_la_actividad(a1[i0:i1], a2[i0:i1], fs, floor_pct)
+            if fin is not None:
+                i1 = min(i1, i0 + fin)
+                end = i1 / float(fs)
+        # A window too short to measure still gets its row. Dropping it left
+        # the student who marked something looking at a table that does not
+        # mention it, which reads as the mark not having been registered.
+        out.append(coactivation_index(
+            e1[i0:i1], e2[i0:i1], fs, floor_pct=floor_pct,
+            rest_1=rest_1, rest_2=rest_2,
+            window_s=(t0 + start, t0 + end), label=lbl,
+            name_1=name_1, name_2=name_2,
+        ))
+    return out, True

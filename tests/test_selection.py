@@ -76,6 +76,66 @@ class TestSuggest:
         )
 
 
+def _series_signal() -> np.ndarray:
+    """Six efforts in a row over a floor that never returns to silence.
+
+    Which is what a muscle asked for six repetitions actually does: between one
+    contraction and the next the envelope falls to a fraction of the peak but
+    stays well above the electrical noise. Reproduced from the bench recording
+    of 1 September (peaks around 0.15 mV, valleys around 0.006, noise floor
+    0.002), because with a synthetic signal that goes properly silent between
+    bursts the defect does not appear at all.
+    """
+    rng = np.random.default_rng(1)
+    n = 10 * FS
+    sig = rng.normal(0.0, 0.002, size=n)
+    t_all = np.arange(n) / FS
+    # A low sustained tone across the whole series: this is what keeps the
+    # envelope above the noise threshold between one effort and the next.
+    i0, i1 = int(1.5 * FS), int(8.5 * FS)
+    sig[i0:i1] += 0.030 * np.sin(2 * np.pi * 90.0 * t_all[i0:i1])
+    for k in range(6):
+        a = 2.0 + k
+        j0, j1 = int(a * FS), int((a + 0.6) * FS)
+        sig[j0:j1] += 0.40 * np.sin(2 * np.pi * 90.0 * t_all[j0:j1])
+    return sig
+
+
+class TestASeriesOfEffortsIsNotOneFragment:
+    """A run of contractions must arrive as one row each.
+
+    The threshold that finds activity asks "is this above the noise?", and
+    across a series the answer stays yes throughout, so the six efforts came
+    back as a single block. A block can only be kept or discarded whole, and
+    discarding one bad repetition is the reason the editor exists.
+    """
+
+    def test_the_six_efforts_come_back_separately(self) -> None:
+        segs = suggest_significant_segments(_series_signal(), FS)
+        assert len(segs) == 6, [f"{s.start_s:.2f}-{s.end_s:.2f}" for s in segs]
+
+    def test_each_one_lands_on_its_own_effort(self) -> None:
+        segs = suggest_significant_segments(_series_signal(), FS)
+        for k, seg in enumerate(segs):
+            a = 2.0 + k
+            assert seg.start_s < a + 0.6 and seg.end_s > a, (
+                f"el fragmento {k} ({seg.start_s:.2f}-{seg.end_s:.2f}) no cae "
+                f"sobre el esfuerzo {a:.1f}-{a + 0.6:.1f}"
+            )
+
+    def test_they_do_not_swallow_the_pauses(self) -> None:
+        """Each row is the contraction, not the contraction plus the rest that
+        follows it — otherwise its RMS reads lower than the effort was."""
+        segs = suggest_significant_segments(_series_signal(), FS)
+        assert all(s.duration_s < 0.9 for s in segs), [
+            round(s.duration_s, 2) for s in segs
+        ]
+
+    def test_a_lone_burst_is_left_exactly_as_it_was(self) -> None:
+        """The split must not disturb what the threshold already separated."""
+        assert len(suggest_significant_segments(_burst_signal(), FS)) == 2
+
+
 class TestNormalise:
     def test_clamps_to_recording(self) -> None:
         segs = normalise_segments([Segment(-1.0, 3.0), Segment(8.0, 20.0)], 10.0)

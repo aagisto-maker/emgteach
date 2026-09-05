@@ -38,6 +38,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Slot
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -47,6 +48,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -56,6 +58,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emgteach.gui.widgets.canvas import ScrollingCanvas
+from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
@@ -63,6 +68,18 @@ from emgteach.io import (
     assess_edf_channels,
     list_edf_channels,
     list_edf_emg_channels,
+    read_edf_markers,
+)
+from emgteach.modes import DEFAULT_MODE
+from emgteach.mvc import (
+    AUTO_COLOR,
+    NO_LOAD_MSG,
+    parse_mvc_ref_markers,
+)
+from emgteach.phases import (
+    NO_CALIBRATION,
+    parse_phase_markers,
+    reference_source_text,
 )
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_mvc_report
@@ -73,8 +90,21 @@ from emgteach.workers import MvcWorker
 _LEVEL_COLORS = {"static": "#2E86C1", "median": "#E67E22", "peak": "#8E44AD"}
 _OUT_COLOR = "#cc0000"
 
+#: The three panels the tab can draw, in order. The identifier is the one the
+#: drawing code uses; the name is what the checkbox says.
+_PANELES: list[tuple[int, str]] = [
+    (0, "1. Filtered and rectified"),
+    (1, "2. Envelope and MVC"),
+    (2, "3. Normalised (% MVC)"),
+]
+
 # Available time-zoom factors (same as tab_analisis)
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
+
+#: Width of the time window the panels open on, in seconds. The panels show a
+#: raw trace, which needs a few seconds of width to be legible; the whole
+#: recording is always reachable from the minimap.
+_DUR_INICIAL_S = 10.0
 
 _BTN_ST = (
     "QToolButton { font-size: 9px; padding: 0px; border: 1px solid #aaa; "
@@ -103,7 +133,37 @@ class MvcTab(QWidget):
         self._worker: MvcWorker | None = None
         self._last_result: dict | None = None
         self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
-        self._last_cvm_dir: str = self._settings.value("cvm/last_cvm_dir", ".")
+        # Recording mode and fine-control flag, and whether the explanatory
+        # entry screen has already been shown in this session (once per
+        # student, reset by "New session").
+        self._mode: str = DEFAULT_MODE
+        self._advanced: bool = False
+        self._entry_shown: bool = False
+        # Whether the user has accepted normalising against the test recording
+        # itself. Per file: a new recording is a new decision.
+        #: The phases the open recording carries, read from its
+        #: annotations without loading a sample. What the tab needs it
+        #: for is to say, before anything is computed, whether there will
+        #: be a % MVC at all.
+        self._fases_en_fichero = parse_phase_markers([])
+        # The references the test file carries in its own annotations, by
+        # channel index — written there by the acquisition wizard when the
+        # calibration was done with the recording already running.
+        self._refs_en_fichero: dict[int, float] = {}
+        # Fragments the muscle-load analysis is restricted to; empty = all.
+        self._selected_segments: list[tuple[float, float]] = []
+
+        # Local logger, as the acquisition tab has. The shared LoggerWidget is
+        # a single widget and Qt can only show it in one layout, which is the
+        # Analysis tab's — so everything this tab logged used to be written
+        # somewhere invisible. That included the flat-channel and saturated-
+        # channel warnings, the most common mistake a student makes.
+        # It fills its box: the widget takes whatever height the parameters
+        # box beside it sets and asks for none of its own (see LoggerWidget).
+        # The five-line ceiling this used to carry was the same mistake as
+        # the widget's own three — a box taller than its contents, with the
+        # session's messages scrolled out of sight above the blank part.
+        self._local_log = LoggerWidget()
 
         # ── Vertical-scale state (3 time-series panels: 0=filtered, 1=envelope, 2=norm) ──
         self._y_accum: dict[int, float] = {0: 1.0, 1: 1.0, 2: 1.0}
@@ -128,10 +188,25 @@ class MvcTab(QWidget):
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
-        root = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        # Entry screen, shown *instead of* the tab the first time it is opened
+        # in each session. A dialog that pops up every time becomes a formality
+        # nobody reads by the third visit; a panel that replaces the tab once
+        # per student gets read.
+        self._entry_panel = self._build_entry_panel()
+        self._entry_panel.setVisible(False)
+        outer.addWidget(self._entry_panel)
+
+        self._box_body = QWidget()
+        outer.addWidget(self._box_body)
+        root = QVBoxLayout(self._box_body)
+        root.setContentsMargins(0, 0, 0, 0)
 
         # ── Controls panel ──────────────────────────────────────────
         grp_ctrl = QGroupBox(tr("MVC normalisation parameters"))
+        add_help(grp_ctrl, "mvc.params")
         ctrl = QVBoxLayout(grp_ctrl)
 
         row_test = QHBoxLayout()
@@ -143,24 +218,36 @@ class MvcTab(QWidget):
         self._btn_abrir = QPushButton(tr("Browse…"))
         self._btn_abrir.clicked.connect(self._seleccionar_edf_prueba)
         row_test.addWidget(self._btn_abrir)
+
+        # There is no second file to ask for. The session marks its own
+        # calibration, so the maximum is inside the recording being opened;
+        # asking for a reference was asking the operator to answer a question
+        # the file already answers, and it let the two tabs disagree — the
+        # analysis recomputing from the spans while this one used whatever
+        # file happened to be in the box.
         ctrl.addLayout(row_test)
 
-        row_cvm = QHBoxLayout()
-        row_cvm.addWidget(QLabel(tr("MVC reference EDF (optional):")))
-        self._edit_cvm_path = QLineEdit()
-        self._edit_cvm_path.setPlaceholderText(tr("Leave empty for auto-normalisation…"))
-        self._edit_cvm_path.setReadOnly(True)
-        row_cvm.addWidget(self._edit_cvm_path)
-        self._btn_abrir_cvm = QPushButton(tr("Browse…"))
-        self._btn_abrir_cvm.clicked.connect(self._seleccionar_edf_cvm)
-        row_cvm.addWidget(self._btn_abrir_cvm)
-        self._btn_limpiar_cvm = QPushButton(tr("Remove"))
-        self._btn_limpiar_cvm.clicked.connect(self._limpiar_cvm)
-        row_cvm.addWidget(self._btn_limpiar_cvm)
-        ctrl.addLayout(row_cvm)
+        # Which file to open here, said where the file is chosen. The tuned
+        # recording is the one that carries the decisions — which maximal
+        # efforts set the reference, which contractions count — and opening
+        # the original instead normalises against a different reference
+        # without anything on screen saying so. It arrives from the analysis
+        # tab on its own, so this is for the second visit: the one where the
+        # recording was tuned after it was first normalised.
+        self._lbl_afinado = QLabel(tr(
+            "Tuned the recording in Analysis? Open the «_tuned» file here "
+            "with «Browse…» and press «Compute MVC»: it carries the "
+            "repetitions and the fragments that were chosen there."
+        ))
+        self._lbl_afinado.setStyleSheet("font-size: 10px; color: #6B7580;")
+        self._lbl_afinado.setWordWrap(True)
+        self._lbl_afinado.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        ctrl.addWidget(self._lbl_afinado)
 
+        # Same order as the analysis tab: the fragment editor first, then
+        # the channel, then the actions and the panel boxes.
         row_params = QHBoxLayout()
-        row_params.addWidget(QLabel(tr("EMG channel:")))
         self._combo_canal = QComboBox()
         self._combo_canal.setEditable(False)
         self._combo_canal.addItem("EMG")
@@ -172,9 +259,36 @@ class MvcTab(QWidget):
                 "this channel — press \"Compute MVC\" after changing it."
             )
         )
+        self._combo_canal.currentIndexChanged.connect(self._on_canal_cambiado)
+
+        # Fragment selection. The muscle-load analysis is about the *task*, and
+        # a recording that opens with three maximal calibration efforts has an
+        # APDF describing those efforts: P90 lands near 100 % because the
+        # maximum really is in there, and the Jonsson limits then say the
+        # subject is overloaded when what they did was calibrate.
+        self._btn_fragmentos = QPushButton(tr("Select fragments…"))
+        self._btn_fragmentos.setEnabled(False)
+        self._btn_fragmentos.setToolTip(
+            tr(
+                "Choose which parts of the recording the muscle load is "
+                "measured over — leave out the calibration and any pause. The "
+                "MVC reference is not affected: it comes from the calibration, "
+                "wherever in the file that is."
+            )
+        )
+        self._btn_fragmentos.clicked.connect(self._editar_fragmentos)
+        row_params.addWidget(self._btn_fragmentos)
+        self._lbl_fragmentos = QLabel("")
+        self._lbl_fragmentos.setStyleSheet("font-size: 11px; color: #333333;")
+        row_params.addWidget(self._lbl_fragmentos)
+        row_params.addSpacing(10)
+        row_params.addWidget(QLabel(tr("EMG channel:")))
         row_params.addWidget(self._combo_canal)
 
-        row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
+        self._box_fenv = QWidget()
+        fenv_l = QHBoxLayout(self._box_fenv)
+        fenv_l.setContentsMargins(0, 0, 0, 0)
+        fenv_l.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
         self._spin_fenv.setSingleStep(0.5)
@@ -183,26 +297,76 @@ class MvcTab(QWidget):
         self._spin_fenv.setToolTip(
             tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
         )
-        row_params.addWidget(self._spin_fenv)
+        fenv_l.addWidget(self._spin_fenv)
+        row_params.addWidget(self._box_fenv)
 
         row_params.addStretch()
+        # The actions on a row of their own. Channel, fragments, envelope
+        # cut-off, three buttons and the panel boxes all shared one row, and
+        # a row cannot wrap: its minimum width was 1083 px on the simplest
+        # practical and 1276 px on the advanced one, which is what set the
+        # whole window's minimum — a 1366-pixel laptop could not show it.
+        row_acciones = QHBoxLayout()
         self._btn_calcular = QPushButton(tr("Compute MVC"))
         self._btn_calcular.setEnabled(False)
         self._btn_calcular.clicked.connect(self._iniciar_calculo)
-        row_params.addWidget(self._btn_calcular)
+        row_acciones.addWidget(self._btn_calcular)
+
+        # A disabled button that does not say why is the worst of both: the
+        # tab looks broken rather than incomplete. So it says what is missing,
+        # right next to the control that cannot be pressed — but in three or
+        # four words. The full sentence used to sit here in a wrapping label
+        # that took a stretch of the row and squeezed every button beside it
+        # out of shape; it is the tooltip now, one hover away.
+        self._lbl_calcular_bloqueado = QLabel()
+        self._lbl_calcular_bloqueado.setStyleSheet(
+            "color: #8a5000; font-size: 11px; padding: 0 4px;"
+        )
+        self._lbl_calcular_bloqueado.setVisible(False)
+        row_acciones.addWidget(self._lbl_calcular_bloqueado)
 
         self._btn_guardar = QPushButton(tr("Save figure (PNG)"))
         self._btn_guardar.setEnabled(False)
         self._btn_guardar.clicked.connect(self._guardar_figura)
-        row_params.addWidget(self._btn_guardar)
+        row_acciones.addWidget(self._btn_guardar)
 
         self._btn_informe = QPushButton(tr("Generate PDF report"))
         self._btn_informe.setEnabled(False)
         self._btn_informe.clicked.connect(self._generar_informe)
-        row_params.addWidget(self._btn_informe)
+        row_acciones.addWidget(self._btn_informe)
 
+        # Which of the three panels to draw continues the same row. The tab
+        # always drew all three, which is a lot of vertical space for a student
+        # who is after one of them — most often the last, the signal in % MVC.
+        row_paneles = row_acciones
+        row_paneles.addSpacing(16)
+        row_paneles.addWidget(QLabel(tr("Panels:")))
+        self._chk_paneles: list[QCheckBox] = []
+        for pid, nombre in _PANELES:
+            chk = QCheckBox(tr(nombre))
+            chk.setChecked(True)
+            chk.toggled.connect(self._on_panel_toggled)
+            row_paneles.addWidget(chk)
+            self._chk_paneles.append(chk)
+        row_paneles.addStretch()
         ctrl.addLayout(row_params)
-        root.addWidget(grp_ctrl)
+        ctrl.addLayout(row_acciones)
+
+        # Event log for this tab. Kept short: what matters is that the
+        # flat-channel and saturated-channel warnings are seen before the
+        # student reads any numbers off a useless recording.
+        grp_log = QGroupBox(tr("Event log"))
+        log_layout = QVBoxLayout(grp_log)
+        log_layout.setContentsMargins(4, 4, 4, 4)
+        log_layout.addWidget(self._local_log)
+
+        # Side by side with the controls rather than under them: stacked, the
+        # log cost the panels a strip of height across the whole width, and
+        # the controls left that width unused anyway.
+        cabecera = QHBoxLayout()
+        cabecera.addWidget(grp_ctrl, stretch=3)
+        cabecera.addWidget(grp_log, stretch=1)
+        root.addLayout(cabecera)
 
         # ── Progress bar + Cancel ──────────────────────────────────
         progress_row = QHBoxLayout()
@@ -222,11 +386,13 @@ class MvcTab(QWidget):
         # Top: the three time-series panels (with the ▲▼ sidebar). Below: the
         # muscle-load APDF on its own square canvas + a structured data panel.
         self._fig = Figure(constrained_layout=True)
-        self._canvas = FigureCanvasQTAgg(self._fig)
+        # The wheel scrolls the page of panels; it no longer rescales the
+        # panel under the cursor. Scale has its buttons in the sidebar.
+        self._canvas = ScrollingCanvas(self._fig)
         self._canvas.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
+        self._mostrar_estado_vacio()
 
         self._y_scale_sidebar = QWidget()
         self._y_scale_sidebar.setFixedWidth(38)
@@ -359,6 +525,7 @@ class MvcTab(QWidget):
         levels — each (where relevant) with its normal range and a short
         explanation; out-of-range values are shown in red."""
         box = QGroupBox(tr("Normalisation and muscle load"))
+        add_help(box, "mvc.load")
         v = QVBoxLayout(box)
         v.setContentsMargins(8, 6, 8, 6)
         v.setSpacing(4)
@@ -432,8 +599,292 @@ class MvcTab(QWidget):
         self._data_box.setMinimumHeight(height)
 
     # ------------------------------------------------------------------
+    # Log helpers — write to the local logger AND the shared one
+    # ------------------------------------------------------------------
+
+    def _log(self, msg: str) -> None:
+        self._local_log.append_log(msg)
+        self._logger.append_log(msg)
+
+    def _err(self, msg: str) -> None:
+        self._local_log.append_error(msg)
+        self._logger.append_error(msg)
+
+    # ------------------------------------------------------------------
+    # Entry screen and interface level
+    # ------------------------------------------------------------------
+
+    def _build_entry_panel(self) -> QWidget:
+        """Panel explaining what an MVC is, shown once per session.
+
+        This is the concept the tab takes for granted everywhere else: the
+        abbreviation appears in the tab title, in two file pickers, on the
+        compute button and on the plot axes, and is never spelled out.
+        """
+        panel = QWidget()
+        lay = QVBoxLayout(panel)
+        lay.setContentsMargins(24, 24, 24, 24)
+        lay.setSpacing(12)
+
+        title = QLabel(tr("Normalising to maximum voluntary contraction (MVC)"))
+        title.setStyleSheet("font-size: 15px; font-weight: bold; color: #1F4E79;")
+        title.setWordWrap(True)
+        lay.addWidget(title)
+
+        for paragraph in (
+            tr(
+                "A raw EMG amplitude cannot be compared between two people, or "
+                "between two sessions of the same person: it depends on the "
+                "electrodes, the skin and the fat layer beneath it. "
+                "Normalisation solves this by expressing every value as a "
+                "percentage of the amplitude that muscle reaches during a "
+                "maximal effort."
+            ),
+            tr(
+                "The maximum is recorded inside the session: when the "
+                "recording starts, the app asks for a maximal effort of each "
+                "muscle and writes it into the same file, before the task. "
+                "That is the reference; nothing else has to be chosen here."
+            ),
+            tr(
+                "The reference has to be made against something that cannot "
+                "move — the underside of a table, a fixed bar — with the joint "
+                "held still. Not a hand, and least of all the subject's own "
+                "other hand: a hand yields, and holding oneself splits the "
+                "effort between two limbs, which produces less force than "
+                "either would alone. This is the force-velocity relationship "
+                "at work: whatever the muscle is allowed to shorten against, "
+                "it shortens faster and therefore develops less force, so it "
+                "recruits fewer motor units. A maximum performed in mid-air "
+                "is submaximal by construction, and every percentage that "
+                "follows comes out too high in the same proportion."
+            ),
+            tr(
+                "A recording with no calibration inside it cannot be "
+                "normalised: without a maximum there is no percentage, and "
+                "this tab says so rather than dividing the signal by itself."
+            ),
+        ):
+            lbl = QLabel(paragraph)
+            lbl.setWordWrap(True)
+            lbl.setStyleSheet("font-size: 13px;")
+            # A measure a reader can follow. Wrapped to the window, each line
+            # ran to some 250 characters across a 1400-pixel screen, and the
+            # eye lost its place on the way back to the left margin.
+            lbl.setMaximumWidth(720)
+            lay.addWidget(lbl)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_continue = QPushButton(tr("I understand, continue"))
+        btn_continue.setMinimumHeight(32)
+        btn_continue.clicked.connect(self._dismiss_entry_screen)
+        btn_row.addWidget(btn_continue)
+        lay.addLayout(btn_row)
+        lay.addStretch()
+        return panel
+
+    def showEvent(self, event) -> None:
+        """Show the entry screen the first time the tab is opened per session.
+
+        Qt delivers this when the tab becomes the current one; note that a
+        Show event never reaches changeEvent(), so this has to live here.
+        """
+        super().showEvent(event)
+        if not self._entry_shown:
+            self._show_entry_screen()
+
+    def _show_entry_screen(self) -> None:
+        self._entry_shown = True
+        self._entry_panel.setVisible(True)
+        self._box_body.setVisible(False)
+
+    def _dismiss_entry_screen(self) -> None:
+        self._entry_panel.setVisible(False)
+        self._box_body.setVisible(True)
+
+    def apply_mode(self, mode: str, advanced: bool) -> None:
+        """Normalisation works the same way in every mode, so nothing here
+        depends on which practical is selected.
+
+        The mode is kept anyway: with two muscles there are two channels to
+        normalise, which the channel picker already handles one at a time.
+
+        The advanced flag reveals the cut-off control and nothing else. It
+        used to decide whether auto-normalisation was on offer; there is no
+        auto-normalisation to offer.
+        """
+        self._mode = mode
+        self._advanced = advanced
+        self._box_fenv.setVisible(advanced)
+        self._refresh_compute_enabled()
+
+    def _tiene_calibracion(self) -> bool:
+        """Whether the open recording can give this channel a maximum.
+
+        Either it marks the calibration — and then the reference is recomputed
+        from those spans — or it carries the cached annotation of a session
+        recorded before that flow. Asked per channel, because a file may hold
+        the flexor's calibration and not the extensor's.
+        """
+        canal = self._combo_canal.currentIndex()
+        return bool(self._fases_en_fichero.reps_for(canal)
+                    or self._refs_en_fichero.get(canal))
+
+    @Slot()
+    def _on_canal_cambiado(self) -> None:
+        """The calibration travels per channel, so the warning follows it."""
+        self._refresh_compute_enabled()
+
+    def _leer_refs_del_fichero(self, path: str) -> None:
+        """Read what the recording says about its own calibration.
+
+        Annotations only — :func:`read_edf_markers` loads no samples — so this
+        runs on picking the file, long before anything is computed, and the
+        tab can say up front whether there will be a % MVC.
+        """
+        self._refs_en_fichero = {}
+        self._fases_en_fichero = parse_phase_markers([])
+        try:
+            markers = read_edf_markers(path)
+        except Exception:
+            return
+        self._refs_en_fichero = parse_mvc_ref_markers(markers)
+        self._fases_en_fichero = parse_phase_markers(markers)
+        if self._fases_en_fichero.cal_reps:
+            n_reps = len(self._fases_en_fichero.cal_reps)
+            self._log((
+                tr("This recording marks its own calibration (1 repetition); "
+                   "the reference is recomputed from it.")
+                if n_reps == 1 else
+                tr("This recording marks its own calibration "
+                   "({n} repetitions); the reference is recomputed from it.")
+            ).format(n=n_reps))
+        elif self._refs_en_fichero:
+            self._log(tr(
+                "This recording carries a calibration recorded with it "
+                "({n} channel(s))."
+            ).format(n=len(self._refs_en_fichero)))
+
+    @Slot()
+    def _editar_fragmentos(self) -> None:
+        path = self._edit_path.text().strip()
+        if not path:
+            return
+        try:
+            dlg = FragmentSelectionDialog.from_edf(
+                path,
+                self._combo_canal.currentText().strip() or "EMG",
+                {"f_low": EMG_PROFILE.f_low, "f_high": EMG_PROFILE.f_high,
+                 "f_notch": EMG_PROFILE.f_notch, "f_env": self._spin_fenv.value()},
+                segments=self._selected_segments or None,
+                # Same as the analysis tab: the calibration is the most active
+                # signal in the file, so an editor allowed to see it proposes
+                # its maximal efforts as fragments of the task.
+                span=self._tramo_de_registro(path),
+                # Naming leads nowhere here: this tab computes one reference
+                # per muscle, and only the co-activation table ever reads a
+                # fragment's name. The dialogue used to ask for it anyway.
+                naming=False,
+                parent=self,
+            )
+        except Exception as exc:
+            self._err(tr("Could not open the fragment editor: {error}").format(error=exc))
+            return
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._selected_segments = dlg.selected_segments()
+            self._spin_fenv.setValue(dlg.filter_kwargs()["f_env"])
+            self._actualizar_etiqueta_fragmentos()
+            # A reference computed over the old selection is worse than none:
+            # every % MVC downstream is measured against it. Recompute.
+            if self._last_result is not None:
+                self._iniciar_calculo()
+
+    def _tramo_de_registro(self, path: str) -> tuple[float, float] | None:
+        """The session's recording phase, from the annotations alone."""
+        from emgteach.io import edf_duration
+
+        try:
+            return self._fases_en_fichero.rec_span(edf_duration(path))
+        except Exception:
+            return None
+
+    def _actualizar_etiqueta_fragmentos(self) -> None:
+        if not self._selected_segments:
+            self._lbl_fragmentos.setText("")
+            return
+        n = len(self._selected_segments)
+        self._lbl_fragmentos.setText(
+            tr("1 fragment selected") if n == 1
+            else tr("{n} fragments selected").format(n=n)
+        )
+
+    def _refresh_compute_enabled(self) -> None:
+        """Enable "Compute MVC", and say what this recording will not give.
+
+        A file with no calibration is still worth computing: the signal and
+        its envelope do not depend on a reference, and they are two of the
+        three panels. What it will not give is the % MVC and the muscle load,
+        and that is said here rather than discovered after pressing.
+        """
+        has_test = bool(self._edit_path.text().strip())
+        self._btn_calcular.setEnabled(has_test)
+        self._btn_fragmentos.setEnabled(has_test)
+
+        # Short on the row, whole in the tooltip: what is missing has to be
+        # readable at a glance, and why it matters has to be readable at all.
+        if not has_test:
+            motivo = tr("No recording")
+            detalle = tr("Select the recording to normalise.")
+        elif not self._tiene_calibracion():
+            motivo = tr("No calibration")
+            detalle = tr(
+                "This recording has no maximal effort in it, so there is no "
+                "maximum to express the signal as a percentage of: no % MVC "
+                "and no muscle-load analysis. The signal and its envelope are "
+                "drawn as usual. Record the session again with the guided "
+                "flow, which calibrates without stopping the recording."
+            )
+        else:
+            motivo = detalle = ""
+        self._lbl_calcular_bloqueado.setText(motivo)
+        self._lbl_calcular_bloqueado.setToolTip(detalle)
+        self._lbl_calcular_bloqueado.setVisible(bool(motivo))
+
+    # ------------------------------------------------------------------
     # File-selection slots
     # ------------------------------------------------------------------
+
+    def adopt_recording(self, path: str, channel: str = "") -> None:
+        """Take this recording as the one to normalise.
+
+        ``channel`` is the muscle already chosen for this file elsewhere. When
+        it is given the tab uses it and asks nothing: normalising a different
+        muscle from the one being analysed is possible but is never what the
+        two-questions-in-a-row flow was offering.
+
+        """
+        if not path or (self._worker is not None and self._worker.isRunning()):
+            return
+        self._edit_path.setText(path)
+        self._last_edf_dir = str(Path(path).parent)
+        self._populate_channels(path, ask=not channel)
+        if channel:
+            idx = self._combo_canal.findText(channel)
+            if idx >= 0:
+                self._combo_canal.setCurrentIndex(idx)
+        self._refresh_compute_enabled()
+        self._btn_guardar.setEnabled(False)
+        self._log(
+            tr("Recording loaded to normalise: {path}").format(path=Path(path).name)
+        )
+        # And compute, as the analysis tab does since it started analysing on
+        # open: a tab that receives a recording and waits for a button press
+        # to show anything is the same "press once to see, again to apply"
+        # that made the sequence hard to follow there.
+        if self._btn_calcular.isEnabled():
+            self._log(tr("Running the first computation…"))
+            self._iniciar_calculo()
 
     @Slot()
     def _seleccionar_edf_prueba(self) -> None:
@@ -442,14 +893,17 @@ class MvcTab(QWidget):
             self._last_edf_dir, tr("EDF files (*.edf *.EDF)"),
         )
         if path:
+            distinto = path != self._edit_path.text().strip()
             self._edit_path.setText(path)
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("cvm/last_edf_dir", self._last_edf_dir)
             self._populate_channels(path)
-            self._btn_calcular.setEnabled(True)
+            self._refresh_compute_enabled()
             self._btn_guardar.setEnabled(False)
+            if distinto:
+                self._olvidar_resultado()
 
-    def _populate_channels(self, path: str) -> None:
+    def _populate_channels(self, path: str, ask: bool = True) -> None:
         """Fill the channel picker with the test file's EMG channels (excludes
         ACC).
 
@@ -458,6 +912,9 @@ class MvcTab(QWidget):
         normalisation is computed for the selected channel — after changing it,
         press "Compute MVC" to recompute for that channel.
         """
+        self._leer_refs_del_fichero(path)
+        self._selected_segments = []      # a new recording, a new selection
+        self._actualizar_etiqueta_fragmentos()
         labels = list_edf_emg_channels(path) or list_edf_channels(path)
         if not labels:
             return
@@ -470,46 +927,51 @@ class MvcTab(QWidget):
         self._combo_canal.blockSignals(False)
         self._combo_canal.setEnabled(len(labels) >= 2)
 
+        # Normalisation is about one muscle. With two in the file, taking the
+        # first without asking would put a reference amplitude, a load
+        # distribution and a PDF report against a muscle nobody chose.
+        if ask and len(labels) >= 2:
+            self._ask_which_channel(labels)
+
         # Warn if a channel is flat (no signal) or saturated (bad contact).
         for label, status in assess_edf_channels(path):
             if status == "flat":
-                self._logger.append_error(
+                self._err(
                     tr("Channel «{ch}»: flat — no signal (electrode not "
                        "connected?).").format(ch=label)
                 )
             elif status == "saturated":
-                self._logger.append_error(
+                self._err(
                     tr("Channel «{ch}»: saturated — the trace is pinned at the "
                        "rails (check the electrode contact or the gain).").format(
                         ch=label
                     )
                 )
 
-    @Slot()
-    def _seleccionar_edf_cvm(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(
-            self, tr("Select MVC reference EDF"),
-            self._last_cvm_dir, tr("EDF files (*.edf *.EDF)"),
-        )
-        if path:
-            self._edit_cvm_path.setText(path)
-            self._last_cvm_dir = str(Path(path).parent)
-            self._settings.setValue("cvm/last_cvm_dir", self._last_cvm_dir)
 
-    @Slot()
-    def _limpiar_cvm(self) -> None:
-        self._edit_cvm_path.clear()
 
     # ------------------------------------------------------------------
     # Launch computation
     # ------------------------------------------------------------------
 
+
+
     @Slot()
     def _iniciar_calculo(self) -> None:
+        # See the analysis tab: `self._worker` is reassigned below, and letting
+        # go of a QThread that is still running kills the process from the C++
+        # side, with no traceback to show for it.
+        if self._worker is not None and self._worker.isRunning():
+            self._log(tr("A calculation is already running; wait for it to "
+                         "finish."))
+            return
         path = self._edit_path.text().strip()
-        cvm_path = self._edit_cvm_path.text().strip()
         f_env = self._spin_fenv.value()
 
+        # There used to be a modal here, asking whether to normalise against
+        # the recording itself. It was the last thing standing between the
+        # student and a set of numbers that were wrong in a way no wording
+        # could fix; the route is gone, so the question is too.
         self._set_controles_habilitados(False)
         self._progress.setVisible(True)
         self._btn_cancelar.setVisible(True)
@@ -519,12 +981,19 @@ class MvcTab(QWidget):
 
         self._worker = MvcWorker(
             edf_path=path,
-            mvc_path=cvm_path,
             f_env=f_env,
             channel_index=self._combo_canal.currentIndex(),
+            roi_segments=self._selected_segments or None,
+            # The whole recording, not the worker's default first 10 s. The
+            # numbers on this tab — mean % MVC, the Jonsson APDF — are computed
+            # over the whole file, so a plot that stopped at 10 s described a
+            # recording the operator could not see, and the minimap below drew
+            # the whole signal against an axis that ended at 10 s: the shape
+            # under the selection was never the shape in the panels.
+            plot_duration_s=0,
         )
         self._worker.result_ready.connect(self._on_result)
-        self._worker.log.connect(self._logger.append_log)
+        self._worker.log.connect(self._log)
         self._worker.error.connect(self._on_error)
         self._worker.finished.connect(self._on_calculo_finished)
         self._worker.start()
@@ -533,7 +1002,7 @@ class MvcTab(QWidget):
     def _cancelar_calculo(self) -> None:
         if self._worker is not None and self._worker.isRunning():
             self._btn_cancelar.setEnabled(False)
-            self._logger.append_log(tr("Cancelling…"))
+            self._log(tr("Cancelling…"))
             self._worker.stop()
 
     @Slot()
@@ -559,13 +1028,20 @@ class MvcTab(QWidget):
         self._btn_informe.setEnabled(True)
         self._actualizar_resumen(result)
 
-        # Initialise the time window: 1/3 of the (plotted) duration.
+        # Initialise the time window. The minimap now spans the whole recording,
+        # which can be minutes long, and a raw trace opened at that width is a
+        # solid block: open on the first 10 s (or the whole file, if shorter)
+        # and let the bar below say where that sits in the recording.
         t_total = float(result["t_plot"][-1]) if len(result["t_plot"]) > 0 else 60.0
         self._duracion_total = t_total
-        dur_ini = t_total / 3.0
+        dur_ini = min(t_total, _DUR_INICIAL_S)
         self._inicio_s = 0.0
         self._duracion_s = dur_ini
         self._time_range.set_total_duration(t_total)
+        # The envelope, not the raw trace: at the width of the bar a raw EMG
+        # is a solid block, while the envelope shows where the efforts are,
+        # which is what the window is being aimed at.
+        self._time_range.set_overview(result.get("emg_envelope"))
         self._time_range.set_range(self._inicio_s, self._duracion_s)
         self._time_range.setEnabled(True)
 
@@ -582,7 +1058,7 @@ class MvcTab(QWidget):
 
     @Slot(str)
     def _on_error(self, msg: str) -> None:
-        self._logger.append_error(msg)
+        self._err(msg)
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
 
@@ -592,27 +1068,50 @@ class MvcTab(QWidget):
 
     def _actualizar_resumen(self, r: dict) -> None:
         dim = r.get("dimension", "")
+        ref = r.get("mvc_amplitude_ref")
         self._d_file.setText(f"<b>{tr('File:')}</b> {Path(r['edf_path']).name}")
         self._d_cvm_ref.setText(
-            f"<b>{tr('MVC reference:')}</b> {r['mvc_amplitude_ref']:.4f} {dim}")
-        self._d_source.setText(f"<b>{tr('MVC source:')}</b> {r['mvc_source']}")
+            f"<b>{tr('MVC reference:')}</b> {ref:.4f} {dim}" if ref
+            else f"<span style='color:{AUTO_COLOR}'><b>"
+                 f"{tr('MVC reference:')}</b> {tr('none')}</span>"
+        )
+        # The provenance is worded from a token, never branched on translated
+        # text — the same rule the analysis tab follows, and the reason the
+        # old ``mvc_is_auto`` flag had to exist beside a translated sentence.
+        self._d_source.setText(
+            f"<b>{tr('Reference from:')}</b> "
+            f"{reference_source_text(r.get('mvc_ref_source', NO_CALIBRATION), int(r.get('cal_reps_n', 0)))}"
+        )
         dur = float(r["tiempo"][-1]) if len(r.get("tiempo", [])) else 0.0
         self._d_duration.setText(f"<b>{tr('Duration:')}</b> {dur:.1f} s")
 
-        self._d_mean.setText(self._metric_html(
-            tr("Mean activation:"), float(r.get("mean_norm", 0.0)),
-            EMG_PROFILE.apda_mean_limit, tr("average activation over the task")))
+        self._d_mean.setText(
+            "" if r.get("mean_norm") is None else self._metric_html(
+                tr("Mean activation:"), float(r["mean_norm"]),
+                EMG_PROFILE.apda_mean_limit,
+                tr("average activation over the task"))
+        )
 
-        apdf = r["apdf"]
-        self._d_static.setText(self._metric_html(
-            tr("Static (P10):"), apdf.static.value, apdf.static.limit,
-            tr("near-continuous background load"), apdf.static.exceeds))
-        self._d_median.setText(self._metric_html(
-            tr("Median (P50):"), apdf.median.value, apdf.median.limit,
-            tr("typical working load"), apdf.median.exceeds))
-        self._d_peak.setText(self._metric_html(
-            tr("Peak (P90):"), apdf.peak.value, apdf.peak.limit,
-            tr("recurrent high-effort load"), apdf.peak.exceeds))
+        if r.get("apdf") is None:
+            # Better no number than a number with a footnote: the number is
+            # what gets copied into the notebook, the footnote is not.
+            self._d_static.setText(
+                f"<span style='color:#777777; font-size:11px'>"
+                f"{tr(NO_LOAD_MSG)}</span>"
+            )
+            self._d_median.setText("")
+            self._d_peak.setText("")
+        else:
+            apdf = r["apdf"]
+            self._d_static.setText(self._metric_html(
+                tr("Static (P10):"), apdf.static.value, apdf.static.limit,
+                tr("near-continuous background load"), apdf.static.exceeds))
+            self._d_median.setText(self._metric_html(
+                tr("Median (P50):"), apdf.median.value, apdf.median.limit,
+                tr("typical working load"), apdf.median.exceeds))
+            self._d_peak.setText(self._metric_html(
+                tr("Peak (P90):"), apdf.peak.value, apdf.peak.limit,
+                tr("recurrent high-effort load"), apdf.peak.exceeds))
 
         # The data panel just grew; re-match the chart height to it.
         self._update_apdf_layout()
@@ -620,6 +1119,53 @@ class MvcTab(QWidget):
     # ------------------------------------------------------------------
     # Drawing the 3 panels
     # ------------------------------------------------------------------
+
+    def _ask_which_channel(self, labels: list[str]) -> None:
+        """Two muscles recorded, one to normalise: let the student say which.
+
+        The buttons carry the channel labels themselves, so the choice is
+        between "Biceps" and "Triceps" rather than between EMG1 and EMG2 —
+        which is the whole reason the labels are typed at recording time.
+        """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle(tr("Which muscle is being normalised?"))
+        msg.setText(
+            tr(
+                "This recording has two muscles. Normalisation is about one of "
+                "them: the reference amplitude, the load distribution and the "
+                "report will all be about the channel chosen here."
+            )
+        )
+        botones = [msg.addButton(name, QMessageBox.ButtonRole.AcceptRole)
+                   for name in labels[:2]]
+        msg.setDefaultButton(botones[0])
+        msg.exec()
+
+        elegido = next(
+            (n for b, n in zip(botones, labels) if msg.clickedButton() is b),
+            labels[0],
+        )
+        idx = self._combo_canal.findText(elegido)
+        if idx >= 0:
+            self._combo_canal.setCurrentIndex(idx)
+        self._log(tr("Normalising {muscle}.").format(muscle=elegido))
+
+    def _paneles_activos(self) -> list[int]:
+        """Identifiers of the ticked panels, in display order.
+
+        Never empty: with nothing ticked the tab would draw a blank canvas and
+        look broken, so the first panel stands in.
+        """
+        activos = [pid for (pid, _), chk in zip(_PANELES, self._chk_paneles)
+                   if chk.isChecked()]
+        return activos or [_PANELES[0][0]]
+
+    @Slot()
+    def _on_panel_toggled(self) -> None:
+        """Redraw with the new selection, if there is anything to redraw."""
+        if self._last_result is not None:
+            self._dibujar_paneles(self._last_result)
 
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
@@ -631,52 +1177,80 @@ class MvcTab(QWidget):
         inicio = self._inicio_s
         fin = inicio + self._duracion_s
 
-        axes = self._fig.subplots(3, 1, sharex=False)
-        self._axes_list = list(axes)
+        ref = r.get("mvc_amplitude_ref")
+        activos = self._paneles_activos()
+        creados = self._fig.subplots(len(activos), 1, sharex=False, squeeze=False)
+        axes = {pid: fila[0] for pid, fila in zip(activos, creados)}
+        self._axes_list = [axes[pid] for pid in activos]
 
         # Panel 1: filtered + rectified signal
-        ax = axes[0]
-        ax.plot(t_full, r["emg_filtered"][:n],
-                color="royalblue", lw=0.8, label=tr("Filtered EMG (20-450 Hz)"))
-        ax.plot(t_full, r["emg_rectified"][:n],
-                color="tomato", lw=0.8, alpha=0.8, label=tr("Rectified EMG"))
-        ax.set_xlim(inicio, fin)
-        ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
-        ax.set_ylabel(tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
-        ax.tick_params(labelsize=7)
-        ax.legend(loc="upper right", fontsize=7)
-        ax.grid(True, color="#DDDDDD", alpha=0.5)
+        if 0 in axes:
+            ax = axes[0]
+            ax.plot(t_full, r["emg_filtered"][:n],
+                    color="royalblue", lw=0.8, label=tr("Filtered EMG (20-450 Hz)"))
+            ax.plot(t_full, r["emg_rectified"][:n],
+                    color="tomato", lw=0.8, alpha=0.8, label=tr("Rectified EMG"))
+            ax.set_xlim(inicio, fin)
+            ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
+            ax.set_ylabel(
+                tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.tick_params(labelsize=7)
+            ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True, color="#DDDDDD", alpha=0.5)
 
         # Panel 2: envelope + MVC line
-        ax = axes[1]
-        ax.plot(t_full, r["emg_envelope"][:n],
-                color="purple", lw=2.0, label=tr("LP envelope (zero-phase)"))
-        ax.axhline(r["mvc_amplitude_ref"], color="red", ls="--", lw=1.5,
-                   label=tr("MVC ref: {value:.4f} {units}").format(
-                       value=r["mvc_amplitude_ref"], units=r.get("dimension", "")))
-        ax.set_xlim(inicio, fin)
-        ax.set_title(tr("2. Envelope and MVC reference amplitude"), fontsize=9)
-        ax.set_ylabel(tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
-        ax.tick_params(labelsize=7)
-        ax.legend(loc="upper right", fontsize=7)
-        ax.grid(True, color="#DDDDDD", alpha=0.5)
+        if 1 in axes:
+            ax = axes[1]
+            ax.plot(t_full, r["emg_envelope"][:n],
+                    color="purple", lw=2.0, label=tr("LP envelope (zero-phase)"))
+            if ref:
+                ax.axhline(ref, color="red", ls="--", lw=1.5,
+                           label=tr("MVC ref: {value:.4f} {units}").format(
+                               value=ref, units=r.get("dimension", "")))
+            ax.set_xlim(inicio, fin)
+            ax.set_title(
+                tr("2. Envelope and MVC reference amplitude") if ref
+                else tr("2. Envelope (no calibration in this recording)"),
+                fontsize=9,
+            )
+            ax.set_ylabel(
+                tr("Amplitude ({units})").format(units=r.get('dimension', '')), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.tick_params(labelsize=7)
+            ax.legend(loc="upper right", fontsize=7)
+            ax.grid(True, color="#DDDDDD", alpha=0.5)
 
         # Panel 3: signal normalised % MVC
-        ax = axes[2]
-        ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25, color="darkorange")
-        ax.plot(t_full, r["emg_norm"][:n],
-                color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
-        ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7, label=tr("100 % MVC"))
-        ax.set_xlim(inicio, fin)
-        ax.set_title(tr("3. EMG signal normalised to MVC (% MVC)"), fontsize=9)
-        ax.set_ylabel(tr("% MVC"), fontsize=8)
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
-        ax.set_ylim(0, r["ylim_max"])
-        ax.tick_params(labelsize=7)
-        ax.legend(loc="upper right", fontsize=7)
-        ax.grid(True, color="#DDDDDD", alpha=0.5)
+        if 2 in axes:
+            ax = axes[2]
+            if r.get("emg_norm") is None:
+                # The panel keeps its place rather than vanishing: a tab that
+                # silently shows two panels where it showed three teaches
+                # nothing, and the student who forgot to calibrate needs to
+                # read why, not to wonder what happened.
+                ax.text(0.5, 0.5, tr(NO_LOAD_MSG), ha="center", va="center",
+                        fontsize=9, color=AUTO_COLOR, wrap=True,
+                        transform=ax.transAxes)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title(tr("3. Signal as % MVC — not available"), fontsize=9)
+            else:
+                ax.fill_between(t_full, r["emg_norm"][:n], alpha=0.25,
+                                color="darkorange")
+                ax.plot(t_full, r["emg_norm"][:n],
+                        color="darkorange", lw=1.8, label=tr("Activation (% MVC)"))
+                ax.axhline(100.0, color="red", ls=":", lw=1.2, alpha=0.7,
+                           label=tr("100 % MVC"))
+                ax.set_xlim(inicio, fin)
+                ax.set_title(
+                    tr("3. EMG signal normalised to MVC (% MVC)"), fontsize=9)
+                ax.set_ylabel(tr("% MVC"), fontsize=8)
+                ax.set_xlabel(tr("Time (s)"), fontsize=8)
+                ax.set_ylim(0, r["ylim_max"])
+                ax.tick_params(labelsize=7)
+                ax.legend(loc="upper right", fontsize=7)
+                ax.grid(True, color="#DDDDDD", alpha=0.5)
 
         # Save the initial ylims and reset the accumulators
         self._y_initial_lims = {i: ax.get_ylim() for i, ax in enumerate(self._axes_list)}
@@ -703,7 +1277,21 @@ class MvcTab(QWidget):
         """
         self._apdf_fig.clear()
         ax = self._apdf_fig.add_subplot(111)
-        apdf = r["apdf"]
+
+        apdf = r.get("apdf")
+        if apdf is None:
+            # No curve at all, not a grey one. The APDF's x axis is "% MVC";
+            # without a maximum there is no axis to draw it against, and a
+            # distribution against the recording's own peak is a different
+            # quantity wearing this one's chart.
+            ax.text(0.5, 0.5, tr(NO_LOAD_MSG), ha="center", va="center",
+                    fontsize=8, color=AUTO_COLOR, wrap=True,
+                    transform=ax.transAxes)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            self._apdf_canvas.draw_idle()
+            return
+
         ax.plot(apdf.load, apdf.cumulative, color="#0047AB", lw=1.8)
         for prob in (10, 50, 90):
             ax.axhline(prob, color="#cccccc", ls=":", lw=0.7)
@@ -774,49 +1362,57 @@ class MvcTab(QWidget):
                 lambda checked=False, a=ax, pi=panel_idx: self._y_zoom(pi, a, False)
             )
 
+            # Time scale beside the amplitude, as in the analysis tab: the
+            # wheel scrolls the page now, and the scale is a button.
+            btn_in = QToolButton()
+            btn_in.setText("▶◀")
+            btn_in.setFixedSize(32, 18)
+            btn_in.setStyleSheet(_BTN_ST)
+            btn_in.setToolTip(tr("Narrow the window (more detail)"))
+            btn_in.clicked.connect(self._on_tiempo_reducir)
+            btn_out = QToolButton()
+            btn_out.setText("◀▶")
+            btn_out.setFixedSize(32, 18)
+            btn_out.setStyleSheet(_BTN_ST)
+            btn_out.setToolTip(tr("Widen the window (see more time)"))
+            btn_out.clicked.connect(self._on_tiempo_ampliar)
+
             slot_vbox.addStretch()
             slot_vbox.addWidget(btn_up, alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addWidget(lbl,    alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addWidget(btn_dn, alignment=Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addSpacing(4)
+            slot_vbox.addWidget(btn_in, alignment=Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addWidget(btn_out, alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addStretch()
 
             self._y_scale_sidebar_layout.addWidget(slot, stretch=1)
 
     def _y_zoom(self, panel_idx: int, ax, zoom_in: bool) -> None:
-        """Adjust the Y range of panel `panel_idx` by a factor of ×1.5."""
+        """Change the amplitude of panel ``panel_idx`` by ×1.5.
+
+        Anchored on **zero**, not on the middle of the current view. These
+        signals sit on a baseline of zero — an envelope and a % MVC cannot be
+        negative — so scaling about the midpoint lifts the floor off zero and
+        the trace appears to *move up* rather than grow, which is exactly what
+        it did. The analysis tab always scaled about zero; this one did not.
+        """
         factor = 1.5
         accum = self._y_accum.get(panel_idx, 1.0)
-        if zoom_in:
-            new_accum = accum / factor
-            if new_accum < 0.01:
-                return
-            ymin, ymax = ax.get_ylim()
-            centro = (ymin + ymax) / 2
-            half = (ymax - ymin) / 2 / factor
-            ax.set_ylim(centro - half, centro + half)
-        else:
-            new_accum = accum * factor
-            if new_accum > 100.0:
-                return
-            ymin, ymax = ax.get_ylim()
-            centro = (ymin + ymax) / 2
-            half = (ymax - ymin) / 2 * factor
-            ax.set_ylim(centro - half, centro + half)
-        self._y_accum[panel_idx] = new_accum
-        self._canvas.draw_idle()
-
-    def _on_scroll_zoom(self, event) -> None:
-        """Mouse-wheel zoom on the panel under the cursor (X and Y), centred
-        on the cursor position."""
-        ax = event.inaxes
-        if ax is None or event.xdata is None or event.ydata is None:
+        escala = 1.0 / factor if zoom_in else factor
+        nuevo = accum * escala
+        if not 0.01 <= nuevo <= 100.0:
             return
-        scale = 1.0 / 1.2 if event.button == "up" else 1.2
-        x, y = event.xdata, event.ydata
-        x0, x1 = ax.get_xlim()
-        y0, y1 = ax.get_ylim()
-        ax.set_xlim(x - (x - x0) * scale, x + (x1 - x) * scale)
-        ax.set_ylim(y - (y - y0) * scale, y + (y1 - y) * scale)
+        ymin, ymax = ax.get_ylim()
+        if ymin <= 0.0 <= ymax:
+            ax.set_ylim(ymin * escala, ymax * escala)
+        else:
+            # A window that does not straddle zero has no baseline to hold, so
+            # its own centre is the only sensible anchor.
+            centro = (ymin + ymax) / 2.0
+            media = (ymax - ymin) / 2.0 * escala
+            ax.set_ylim(centro - media, centro + media)
+        self._y_accum[panel_idx] = nuevo
         self._canvas.draw_idle()
 
     # ------------------------------------------------------------------
@@ -913,7 +1509,7 @@ class MvcTab(QWidget):
         )
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
-            self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
+            self._log(tr("Figure saved to: {path}").format(path=ruta))
 
     def _pedir_rango_informe(self) -> tuple[float, float] | None:
         """Small dialog to pick the time range plotted in the report,
@@ -975,15 +1571,26 @@ class MvcTab(QWidget):
         if not ruta.lower().endswith(".pdf"):
             ruta += ".pdf"
         out = Path(ruta)
+        # The identifier travels in the EDF header since recording time;
+        # a file from before that carries none, and the acquisition tab's
+        # current one is the best guess left.
+        from emgteach.io import read_edf_metadata
+
+        try:
+            codigo = read_edf_metadata(self._edit_path.text().strip()).student_code
+        except Exception:
+            codigo = ""
         meta = {
-            "student": self._settings.value("analisis/student", ""),
-            "student_code": self._settings.value("analisis/student_code", ""),
+            "student": "",
+            "student_code": codigo or str(
+                self._settings.value("adquisicion/student_code", "") or ""
+            ),
         }
         try:
             build_mvc_report(out, self._last_result, meta, time_range=rango)
-            self._logger.append_log(tr("PDF report generated: {path}").format(path=out))
+            self._log(tr("PDF report generated: {path}").format(path=out))
         except Exception as exc:
-            self._logger.append_error(
+            self._err(
                 tr("Error generating the PDF report: {error}").format(error=exc)
             )
 
@@ -993,15 +1600,59 @@ class MvcTab(QWidget):
 
     def _set_controles_habilitados(self, habilitado: bool) -> None:
         self._btn_abrir.setEnabled(habilitado)
-        self._btn_abrir_cvm.setEnabled(habilitado)
-        self._btn_limpiar_cvm.setEnabled(habilitado)
-        self._btn_calcular.setEnabled(habilitado and bool(self._edit_path.text()))
+        if habilitado:
+            self._refresh_compute_enabled()
+        else:
+            self._btn_calcular.setEnabled(False)
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
 
     # ------------------------------------------------------------------
     # New-session reset
     # ------------------------------------------------------------------
+
+    def _mostrar_estado_vacio(self, mensaje: str = "") -> None:
+        """One line in the middle of the empty panel, saying what comes next.
+
+        Same idea as the analysis tab: a white rectangle with nothing on it
+        is a question, and the answer costs one sentence.
+        """
+        ax = self._fig.add_subplot(111)
+        ax.axis("off")
+        ax.text(
+            0.5, 0.5,
+            mensaje or tr("Open a recording with calibration, or record one in "
+                          "Acquisition: the reference is computed on its own."),
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=11, color="#7A8590",
+        )
+
+    def _olvidar_resultado(self) -> None:
+        """Take the numbers off the screen: they are the previous file's.
+
+        Opening a second recording here — the tuned one, which is the whole
+        point of the hint above the file box — left the panels, the load
+        distribution and the summary card exactly as they were, under the new
+        file's name in the path box and the old one's inside the card. Two
+        recordings on one screen, and nothing saying which was which.
+        Reported from the bench on 5 September with the tuned recording of
+        18:13 open and the original's 142 s still on the panels.
+        """
+        self._last_result = None
+        for la in (self._d_file, self._d_cvm_ref, self._d_source,
+                   self._d_duration, self._d_mean, self._d_static,
+                   self._d_median, self._d_peak):
+            la.setText("—")
+        self._btn_guardar.setEnabled(False)
+        self._btn_informe.setEnabled(False)
+        self._axes_list = []
+        self._fig.clear()
+        self._mostrar_estado_vacio(
+            tr("Press «Compute MVC» to normalise this recording.")
+        )
+        self._canvas.draw_idle()
+        self._apdf_fig.clear()
+        self._apdf_canvas.draw_idle()
 
     def reset(self) -> None:
         """Clear the tab to its just-opened state (new student): loaded files,
@@ -1015,15 +1666,30 @@ class MvcTab(QWidget):
         self._inicio_s = 0.0
         self._duracion_s = 60.0
 
+        self._local_log.clear()
+
+        # Once per run of the application, and «New session» does not bring
+        # it back. It used to, on the grounds that a new session is a new
+        # student — but from the operator's seat the panel they had already
+        # dismissed reappeared over a tab they were using, which reads as the
+        # tab changing its mind. Dismissed stays dismissed; never opened, it
+        # still greets the first opening.
+        self._dismiss_entry_screen()
+
         self._edit_path.clear()
-        self._edit_cvm_path.clear()
         self._spin_fenv.setValue(5.0)
         self._combo_canal.blockSignals(True)
         self._combo_canal.clear()
         self._combo_canal.addItem("EMG")
         self._combo_canal.blockSignals(False)
 
+        self._refs_en_fichero = {}
+        self._fases_en_fichero = parse_phase_markers([])
+        self._selected_segments = []
+        self._actualizar_etiqueta_fragmentos()
+
         self._btn_calcular.setEnabled(False)
+        self._btn_fragmentos.setEnabled(False)
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._progress.setVisible(False)
@@ -1034,6 +1700,7 @@ class MvcTab(QWidget):
             la.setText("—")
 
         self._fig.clear()
+        self._mostrar_estado_vacio()
         self._canvas.draw_idle()
         self._apdf_fig.clear()
         self._apdf_canvas.draw_idle()

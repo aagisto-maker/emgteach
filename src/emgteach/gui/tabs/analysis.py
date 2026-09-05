@@ -28,31 +28,132 @@ except Exception:
     # Headless environment (e.g. CI without a display): the GUI is never
     # rendered there, and the tabs create FigureCanvasQTAgg explicitly.
     pass
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import QSettings, Qt, QTimer, Slot
-from PySide6.QtGui import QFontMetrics
+from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Signal, Slot
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QAbstractScrollArea,
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
     QFileDialog,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStackedWidget,
+    QTableWidget,
+    QTableWidgetItem,
     QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
 _ZOOM_FACTORS = [1, 2, 3, 5, 10, 20, 50, 100, 200, 500, 1000]
+
+#: The height of the band under the panels, fixed: each of its three boxes
+#: fills it, and each chart fills its box. It is paid for out of the
+#: panels' height, so it is as much as three co-activation windows and
+#: nine summary cards need and not a pixel more. Capping the charts instead
+#: let a long table's size hint set the band, and left the co-activation
+#: chart short of the box it sat in.
+_ALTO_BANDA = 250
+
+#: Pixels per line a chart asks for beyond the box, so a long series
+#: scrolls instead of shrinking into a smudge (see _pedir_espacio).
+_PX_POR_VENTANA = 26
+_PX_POR_BARRA = 15
+_PX_POR_CONTRACCION = 22
+
+
+def _en_dos_lineas(texto: str) -> str:
+    """«Detected (MDF −12 %)» as «Detected» over «(MDF −12 %)»: the summary
+    cards wrap, and a break before the parenthesis is where a reader would
+    put it."""
+    return texto.replace(" (", "\n(", 1)
+
+
+class _SelectorEsquina(QWidget):
+    """Two or three small exclusive buttons on the title line of a group
+    box, left of the «?», kept in the corner across resizes the way the
+    «?» is. One is always down; ``cambiado`` says which."""
+
+    cambiado = Signal(str)
+
+    def __init__(self, box: QGroupBox, opciones: list[tuple[str, str]]) -> None:
+        super().__init__(box)
+        self._box = box
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(2)
+        self._grupo = QButtonGroup(self)
+        self._grupo.setExclusive(True)
+        self._botones: dict[str, QToolButton] = {}
+        for clave, texto in opciones:
+            b = QToolButton(self)
+            b.setCheckable(True)
+            b.setAutoRaise(True)
+            b.setFixedHeight(18)
+            b.setText(texto)
+            b.setStyleSheet(
+                "QToolButton { font-size: 10px; color: #2E86DE; border: 1px solid "
+                "#2E86DE; border-radius: 9px; background: white; padding: 0 7px; }"
+                "QToolButton:checked { background: #2E86DE; color: white; }"
+            )
+            b.toggled.connect(lambda on, k=clave: on and self.cambiado.emit(k))
+            self._grupo.addButton(b)
+            self._botones[clave] = b
+            lay.addWidget(b)
+        box.installEventFilter(self)
+        self.colocar()
+        self.raise_()
+
+    def claves(self) -> list[str]:
+        return list(self._botones)
+
+    def visibles(self) -> list[str]:
+        return [k for k, b in self._botones.items() if not b.isHidden()]
+
+    def set_disponibles(self, claves: list[str]) -> None:
+        """Show only these; a recording decides which views it supports. If
+        the one that was down is no longer offered, the first offered one
+        goes down instead."""
+        ofrecidas = [k for k in claves if k in self._botones]
+        for k, b in self._botones.items():
+            b.setVisible(k in ofrecidas)
+        if ofrecidas and self.vista() not in ofrecidas:
+            self.set_vista(ofrecidas[0])
+        self.colocar()
+
+    def vista(self) -> str:
+        return next((k for k, b in self._botones.items() if b.isChecked()),
+                    next(iter(self._botones)))
+
+    def set_vista(self, clave: str) -> None:
+        if clave not in self._botones:
+            clave = next(iter(self._botones))
+        self._botones[clave].setChecked(True)
+
+    def eventFilter(self, obj, event) -> bool:
+        if obj is self._box and event.type() == QEvent.Type.Resize:
+            self.colocar()
+        return False
+
+    def colocar(self) -> None:
+        self.adjustSize()
+        # Right of the box, leaving room for the «?» (18 px) and its margin.
+        self.move(self._box.width() - 18 - 6 - 8 - self.width(), 0)
+        self.raise_()
 
 # Teaching panel layout. The three panels relevant to physiology students
 # (raw, normalised envelope, PSD) come first, renumbered 1A, 2, 3 and checked
@@ -68,11 +169,16 @@ _OVERLAY_PID = 8
 _MMG_PID = 9
 _TREMOR_PID = 10
 _MOVEMENT_PID = 11
+#: Raw trace of the second muscle. Only the agonist/antagonist practical
+#: records two, and there the point is to see each muscle before comparing
+#: them, so one raw panel is not enough.
+_RAW2_PID = 12
 # Panels that require an accelerometer channel to be usable.
 _ACC_PIDS = (_MMG_PID, _TREMOR_PID, _MOVEMENT_PID)
 
 _PANEL_LAYOUT: list[tuple[int, str]] = [
     (0, "1A"),  # raw signal
+    (_RAW2_PID, "1B"),  # raw signal of the second muscle (agonist/antagonist)
     (3, "2"),   # normalised envelope
     (4, "3"),   # PSD with MNF/MDF
     (1, "4"),   # filtered + rectified
@@ -89,9 +195,19 @@ _PANEL_LAYOUT: list[tuple[int, str]] = [
 # The overlay panel (8) is checked dynamically when a 2nd channel is compared.
 _DEFAULT_PANELS: tuple[int, ...] = (0, 3, 4)
 
+# Panels always offered, in _PANEL_LAYOUT display order: 1A. Raw,
+# 2. Env. norm. and 3. PSD — the same three that are checked by default and
+# the teaching core of the tab. What follows depends on mode and flag.
+#: The teaching core, by identifier rather than by position: raw signal,
+#: normalised envelope and PSD. Positions moved when the second muscle's raw
+#: trace was inserted after the first, and an index-based rule would have
+#: silently changed which panels counted as basic.
+_CORE_PIDS: tuple[int, ...] = (0, 3, 4)
+
 # Full panel names (report dialog), in display order and renumbered.
 _PANEL_NOMBRES = [
     "1A. Raw signal",
+    "1B. Raw signal — 2nd muscle",
     "2. Normalised envelope",
     "3. PSD with MNF/MDF",
     "4. Filtered + rectified",
@@ -108,6 +224,7 @@ _PANEL_NOMBRES = [
 # Short labels (on-screen checkbox row), in display order and renumbered.
 _PANEL_SHORT_LABELS = [
     "1A. Raw",
+    "1B. Raw (2nd)",
     "2. Env. norm.",
     "3. PSD",
     "4. Filt.+rect.",
@@ -143,11 +260,22 @@ _PANEL_TOOLTIPS = {
     5: "RMS amplitude per window: how the intensity evolves.",
     6: "Median frequency over time; a fall indicates fatigue.",
     7: "Amplitude-frequency relation (force vs fatigue).",
+    _RAW2_PID: "Raw EMG signal of the second muscle, unfiltered (needs a 2nd "
+               "channel).",
 }
 
 from emgteach.broadcast import BroadcastServer
+from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
+from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
+from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
+from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
+from emgteach.force_velocity import parse_fv_load_markers
+from emgteach.gui.help_texts import text as help_text
+from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
+from emgteach.gui.widgets.canvas import ScrollingCanvas
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.i18n import tr
@@ -157,14 +285,39 @@ from emgteach.io import (
     find_edf_acc_channel,
     list_edf_channels,
     list_edf_emg_channels,
+    read_edf_markers,
     read_edf_metadata,
+)
+from emgteach.modes import (
+    DEFAULT_MODE,
+    MODE_KINEMATICS,
+    MODE_PAIR,
+    MODE_SINGLE,
+    mode_uses_acc,
+)
+from emgteach.mvc import mark_excess_over_100, overlay_curves
+from emgteach.phases import (
+    NO_CALIBRATION,
+    parse_phase_markers,
+    reference_source_text,
 )
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
+from emgteach.tuning import build_tuned_edf, tuned_path
 from emgteach.workers import AnalysisWorker
 
 
 class AnalysisTab(QWidget):
+    #: Emitted with the path of the EDF opened here and the muscle chosen for
+    #: it, so the MVC tab uses the same recording *and* the same muscle without
+    #: asking a question that has just been answered.
+    file_opened = Signal(str, str)
+    #: One step of the guided sequence: (title, body, the control it points at).
+    #: Emitted rather than shown here because the floating panel belongs to the
+    #: window — it dims everything outside the control it explains, which a tab
+    #: cannot do to its siblings.
+    coach_step = Signal(str, str, object)
+
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
         super().__init__(parent)
@@ -200,9 +353,12 @@ class AnalysisTab(QWidget):
 
         # --- Top row: Parameters (stretch 3) + Log (stretch 2) ---
         grp_ctrl = QGroupBox(tr("Analysis parameters"))
+        add_help(grp_ctrl, "ana.params")
         ctrl = QVBoxLayout(grp_ctrl)
         ctrl.setSpacing(4)
-        ctrl.setContentsMargins(6, 4, 6, 4)
+        # A little more room under the last row: with the panel chips there,
+        # the row sat against the frame and looked cut off.
+        ctrl.setContentsMargins(6, 4, 6, 8)
 
         # Line 1: EDF file + Analyse + Save
         row_file = QHBoxLayout()
@@ -216,6 +372,9 @@ class AnalysisTab(QWidget):
         self._btn_abrir.clicked.connect(self._seleccionar_archivo)
         row_file.addWidget(self._btn_abrir)
         self._btn_analizar = QPushButton(tr("Analyse"))
+        self._btn_analizar.setToolTip(tr(
+        "Re-run the analysis with the settings changed since the last one. It lights up only when there is something to redo: opening a file analyses it, and the two editors re-analyse when you accept them."
+        ))
         self._btn_analizar.setEnabled(False)
         self._btn_analizar.clicked.connect(self._iniciar_analisis)
         row_file.addWidget(self._btn_analizar)
@@ -231,6 +390,24 @@ class AnalysisTab(QWidget):
         self._btn_csv.setEnabled(False)
         self._btn_csv.clicked.connect(self._exportar_csv)
         row_file.addWidget(self._btn_csv)
+
+        # Beside the exports, because that is what it is: the recording
+        # written out with the decisions taken on screen inside it. Until
+        # now those decisions — which repetitions count, which stretch is
+        # the task — lived only in this tab, so the same file opened
+        # anywhere else told a different story.
+        self._btn_afinado = QPushButton(tr("Save tuned EDF…"))
+        self._btn_afinado.setEnabled(False)
+        self._btn_afinado.setToolTip(tr(
+            "Write a new recording carrying the current selection: the "
+            "calibration repetitions kept and the fragments of the task. "
+            "The original is never touched, and the new file says where "
+            "it came from."
+        ))
+        self._btn_afinado.clicked.connect(self._guardar_afinado)
+        # Added to the second row further down, with the other two tools for
+        # afterwards: on the first row, with eight buttons across, the path
+        # field was squeezed to sixty pixels on a 1366 px screen.
         # Force-velocity study (needs an accelerometer channel in the file).
         self._btn_fv = QPushButton(tr("Force-velocity study…"))
         self._btn_fv.setEnabled(False)
@@ -242,7 +419,7 @@ class AnalysisTab(QWidget):
             )
         )
         self._btn_fv.clicked.connect(self._abrir_estudio_fv)
-        row_file.addWidget(self._btn_fv)
+        # Same: goes on the second row (see below).
         ctrl.addLayout(row_file)
 
         # Line 2: channel + f_env
@@ -251,7 +428,7 @@ class AnalysisTab(QWidget):
         self._combo_canal = QComboBox()
         self._combo_canal.setEditable(False)  # pick one of the file's channels
         self._combo_canal.addItem("EMG")
-        self._combo_canal.setFixedWidth(150)
+        self._combo_canal.setFixedWidth(110)
         self._combo_canal.setToolTip(
             tr(
                 "EMG channel to analyse. Every panel and the report use only "
@@ -262,11 +439,27 @@ class AnalysisTab(QWidget):
         self._combo_canal.currentIndexChanged.connect(
             self._on_primary_channel_changed
         )
+        # These five feed the worker and none of them re-runs it, which is
+        # why the Analyse button survives. It lights up here and nowhere
+        # else, so in a session that only opens the two editors it stays
+        # dark from beginning to end.
+        self._combo_canal.currentIndexChanged.connect(self._marcar_pendiente)
         row_params.addWidget(self._combo_canal)
         # Optional second channel: overlay the agonist/antagonist envelopes. The
         # partner channel is chosen automatically (the other one), so the picker
         # is read-only; it only lights up when comparing is on.
+        self._box_compare = QWidget()
+        compare_l = QHBoxLayout(self._box_compare)
+        compare_l.setContentsMargins(0, 0, 0, 0)
+        # Shown only in the agonist/antagonist mode, where comparing the two
+        # channels is the point of the practical. The pair comes from the
+        # recording, so it is stated rather than asked for.
+        # No caption on a line this full: the partner is stated in the
+        # read-only box beside the channel, and its tooltip says what it is.
+        # Kept to drive the overlay logic and gate panel 9, but never shown:
+        # in this mode there is nothing to opt into.
         self._chk_compare2 = QCheckBox(tr("Compare channels:"))
+        self._chk_compare2.setVisible(False)
         self._chk_compare2.setToolTip(
             tr(
                 "Overlay the envelope of the two channels (agonist/antagonist). "
@@ -275,15 +468,22 @@ class AnalysisTab(QWidget):
             )
         )
         self._chk_compare2.setEnabled(False)
-        row_params.addWidget(self._chk_compare2)
+        compare_l.addWidget(self._chk_compare2)
         self._combo_canal2 = QComboBox()
         self._combo_canal2.setEditable(False)
-        self._combo_canal2.setFixedWidth(150)
+        self._combo_canal2.setFixedWidth(100)
         self._combo_canal2.setEnabled(False)   # read-only: shows the partner
         self._combo_canal2.setToolTip(tr("Partner channel (chosen automatically)."))
         self._chk_compare2.toggled.connect(self._on_compare2_toggled)
-        row_params.addWidget(self._combo_canal2)
-        row_params.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
+        self._chk_compare2.toggled.connect(self._marcar_pendiente)
+        self._combo_canal2.currentIndexChanged.connect(self._marcar_pendiente)
+        compare_l.addWidget(self._combo_canal2)
+        row_params.addWidget(self._box_compare)
+
+        self._box_fenv = QWidget()
+        fenv_l = QHBoxLayout(self._box_fenv)
+        fenv_l.setContentsMargins(0, 0, 0, 0)
+        fenv_l.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
         self._spin_fenv = QDoubleSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
         self._spin_fenv.setSingleStep(0.5)
@@ -292,30 +492,25 @@ class AnalysisTab(QWidget):
         self._spin_fenv.setToolTip(
             tr("Envelope low-pass cut-off (Hz): lower = smoother envelope.")
         )
-        row_params.addWidget(self._spin_fenv)
-        row_params.addWidget(QLabel(tr("Student:")))
-        self._edit_student = QLineEdit()
-        self._edit_student.setFixedWidth(150)
-        self._edit_student.setText(self._settings.value("analisis/student", ""))
-        self._edit_student.textChanged.connect(
-            lambda v: self._settings.setValue("analisis/student", v)
-        )
-        row_params.addWidget(self._edit_student)
-        row_params.addWidget(QLabel(tr("Code:")))
-        self._edit_student_code = QLineEdit()
-        self._edit_student_code.setFixedWidth(90)
-        self._edit_student_code.setText(
-            self._settings.value("analisis/student_code", "")
-        )
-        self._edit_student_code.textChanged.connect(
-            lambda v: self._settings.setValue("analisis/student_code", v)
-        )
-        row_params.addWidget(self._edit_student_code)
-        row_params.addStretch()
-        ctrl.addLayout(row_params)
+        fenv_l.addWidget(self._spin_fenv)
+        # Goes on the advanced row with the region and the two tools (see
+        # below): it is a fine control, and on the editors' line it took
+        # the width the panel chips needed in the one practical that has
+        # six of them.
+        # No identifier field here: it was typed at recording time and
+        # travels in the EDF header, where the report reads it. Asking for
+        # it a second time let the two disagree.
+        self._student_code: str = ""
+        # row_params is not a row of its own any more: it goes into the
+        # single line below, after the two editors.
 
-        # Line 3: region of interest (optional analysis sub-window)
-        row_roi = QHBoxLayout()
+        # Line 3: region of interest (optional analysis sub-window) and the
+        # fragment editor. The whole row is advanced, so it lives in a named
+        # container the basic level can hide in one call — its "from"/"to"
+        # captions are plain labels that could not be hidden individually.
+        self._box_roi = QWidget()
+        row_roi = QHBoxLayout(self._box_roi)
+        row_roi.setContentsMargins(0, 0, 0, 0)
         self._chk_roi = QCheckBox(tr("Analyse only a region:"))
         self._chk_roi.setToolTip(
             tr(
@@ -342,10 +537,53 @@ class AnalysisTab(QWidget):
         self._spin_roi_end.setFixedWidth(96)
         self._spin_roi_end.setEnabled(False)
         row_roi.addWidget(self._spin_roi_end)
+        self._chk_roi.toggled.connect(self._marcar_pendiente)
+        self._spin_roi_start.valueChanged.connect(self._marcar_pendiente)
+        self._spin_roi_end.valueChanged.connect(self._marcar_pendiente)
+        self._spin_fenv.valueChanged.connect(self._marcar_pendiente)
         self._chk_roi.toggled.connect(self._spin_roi_start.setEnabled)
         self._chk_roi.toggled.connect(self._spin_roi_end.setEnabled)
-        row_roi.addSpacing(12)
-        # Assisted multi-fragment selection (auto-suggested, user-edited).
+        row_roi.addStretch()
+
+        # The envelope cut-off and the advanced practical's two tools, on an
+        # advanced row of their own. Sharing the region row fitted on a
+        # Windows font and not on the Linux runner's wider one: 1439 px.
+        self._box_tools = QWidget()
+        row_tools = QHBoxLayout(self._box_tools)
+        row_tools.setContentsMargins(0, 0, 0, 0)
+        row_tools.addWidget(self._box_fenv)
+        row_tools.addSpacing(12)
+        row_tools.addWidget(self._btn_afinado)
+        row_tools.addWidget(self._btn_fv)
+        row_tools.addStretch()
+
+        # The fragment editor sits in its own container, offered in every
+        # practical. Keeping the part of a recording that came out well is not
+        # a fine adjustment: a first attempt in a teaching laboratory arrives
+        # with movement artefacts, a loose electrode or a false start more
+        # often than not, and throwing that away is hygiene rather than
+        # expertise. The numeric "from"/"to" boxes above stay a fine control:
+        # they ask for two figures the student does not have, where the editor
+        # shows the recording and lets them point.
+        # One line, in the order things are done: the calibration
+        # repetitions first (they fix the reference every % MVC is measured
+        # in), then the fragments, then the channels, then which panels to
+        # draw — and, in the advanced practical, its two extra tools.
+        self._box_fragmentos = QWidget()
+        row_frag = QHBoxLayout(self._box_fragmentos)
+        row_frag.setContentsMargins(0, 0, 0, 0)
+        # Deliberately not part of the fragment editor: the recording is
+        # continuous signal and the calibration is a handful of discrete
+        # efforts. Two editions, two tools.
+        self._btn_reps = QPushButton(tr("Calibration repetitions…"))
+        self._btn_reps.setEnabled(False)
+        self._btn_reps.clicked.connect(self._editar_repeticiones)
+        self._actualizar_ayuda_reps()
+        row_frag.addWidget(self._btn_reps)
+        self._lbl_reps = QLabel("")
+        self._lbl_reps.setStyleSheet("font-size: 11px; color: #8a5000;")
+        row_frag.addWidget(self._lbl_reps)
+
         self._btn_fragmentos = QPushButton(tr("Select fragments…"))
         self._btn_fragmentos.setToolTip(
             tr(
@@ -355,15 +593,62 @@ class AnalysisTab(QWidget):
         )
         self._btn_fragmentos.setEnabled(False)
         self._btn_fragmentos.clicked.connect(self._editar_fragmentos)
-        row_roi.addWidget(self._btn_fragmentos)
+        row_frag.addWidget(self._btn_fragmentos)
         self._lbl_fragmentos = QLabel("")
-        row_roi.addWidget(self._lbl_fragmentos)
+        self._lbl_fragmentos.setStyleSheet("font-size: 11px; color: #205080;")
+        row_frag.addWidget(self._lbl_fragmentos)
+
+        row_frag.addSpacing(10)
+        row_frag.addLayout(row_params)
+        row_frag.addSpacing(10)
+        # The panel boxes are inserted here once built (see below).
+        self._pos_paneles = row_frag.count()
+        # The two tools of the advanced practical go on the region row above,
+        # which only that practical shows and which has the room; here they
+        # squeezed the panel chips to a sliver at 1366 px. No trailing
+        # stretch: whatever width is left goes to the chips.
+        # Which of the two to do next, said in one line. Both buttons light up
+        # together at the end of the first analysis, and nothing said that the
+        # calibration comes first — but it does, and not by convention: the
+        # reference it fixes is the yardstick for every % MVC the fragments are
+        # then measured in, so choosing the fragments first means choosing them
+        # against a reference that is about to change.
+        self._lbl_siguiente = QLabel("")
+        self._lbl_siguiente.setWordWrap(True)
+        self._lbl_siguiente.setStyleSheet("font-size: 11px; color: #205080;")
+        self._lbl_siguiente.setVisible(False)
         self._selected_segments: list[tuple[float, float]] = []
+        #: What the operator calls each fragment, aligned with the list
+        #: above. A named fragment is a window of the co-activation table;
+        #: an unnamed one is only signal worth keeping.
+        self._segment_labels: list[str] = []
+        #: Calibration repetitions kept, by channel index. Empty means all
+        #: of them, which is what a recording starts as.
+        self._cal_keep: dict[int, set[int]] = {}
         # Filter cut-offs chosen in the fragment editor; when set they drive
         # the actual analysis (not just detection). None = use the tab defaults.
         self._analysis_filter_kwargs: dict[str, float] | None = None
+        # The detection settings the fragment editor was left on, so the
+        # contraction table is built with the numbers the student tuned by
+        # eye there. None = the core defaults.
+        self._detection_kwargs: dict[str, float] | None = None
+        # Whether a setting has changed since the last analysis. The
+        # button used to be a step of the sequence — press it once to see
+        # the recording, and again after each editor — and pressing the
+        # same control for two different reasons is what made the sequence
+        # hard to follow. It cannot go: the channel, the second channel,
+        # the accelerometer panels, the envelope smoothing and the region
+        # of interest all feed the analysis and none of them re-runs it.
+        # So it stays for exactly those, and stays dark otherwise.
+        self._pendiente = False
+        #: Which step of the guided sequence the floating panel last showed,
+        #: so it appears when the step changes and not after every re-analysis.
+        self._paso_mostrado: str = ""
         row_roi.addStretch()
-        ctrl.addLayout(row_roi)
+        ctrl.addWidget(self._box_roi)
+        ctrl.addWidget(self._box_tools)
+        ctrl.addWidget(self._box_fragmentos)
+        ctrl.addWidget(self._lbl_siguiente)
 
         # Log to the right of the parameters
         grp_log_top = QGroupBox(tr("Event log"))
@@ -373,37 +658,24 @@ class AnalysisTab(QWidget):
 
         top_row = QHBoxLayout()
         top_row.setSpacing(4)
-        top_row.addWidget(grp_ctrl, stretch=3)
-        top_row.addWidget(grp_log_top, stretch=2)
+        # The log takes the height of the parameters box and little of the
+        # width: it is a strip of a few lines, not a quarter of the screen.
+        top_row.addWidget(grp_ctrl, stretch=6)
+        top_row.addWidget(grp_log_top, stretch=1)
         root.addLayout(top_row)
 
-        # --- Panel selection — one compact line with horizontal scroll ---
-        grp_paneles = QGroupBox(tr("Panels to show"))
-        # Box identical to the others (same steel fill and border), like
-        # "Markers". Each panel description sits in a white chip; its tick box
-        # is white and fills blue when checked.
-        grp_paneles.setStyleSheet(
-            "QGroupBox {"
-            "  background-color: #DCE7F4;"
-            "  border: 1px solid #A7C2DF;"
-            "  border-radius: 6px;"
-            "  margin-top: 16px;"
-            "  padding-top: 4px;"
-            "  font-weight: bold;"
-            "}"
-            "QGroupBox::title {"
-            "  subcontrol-origin: margin;"
-            "  subcontrol-position: top left;"
-            "  left: 8px;"
-            "  padding: 0 4px;"
-            "  color: #1F4E79;"
-            "}"
+        # --- Panel selection: chips on the same line as the editors and the
+        # channels. It used to be a box of its own under the parameters, a
+        # row that cost the panels its height for a handful of tick boxes.
+        # Each panel sits in a white chip; its tick fills blue when checked.
+        paneles_inner = QWidget()
+        paneles_inner.setStyleSheet(
             "QCheckBox {"
             "  background-color: #FFFFFF;"
             "  border: 1px solid #A7C2DF;"
             "  border-radius: 4px;"
-            "  padding: 3px 8px;"
-            "  font-size: 11px;"
+            "  padding: 2px 5px;"
+            "  font-size: 10px;"
             "}"
             "QCheckBox::indicator {"
             "  width: 14px; height: 14px;"
@@ -416,16 +688,25 @@ class AnalysisTab(QWidget):
             "  border: 1px solid #2E50B0;"
             "}"
         )
-        paneles_inner = QWidget()
         paneles_layout = QHBoxLayout(paneles_inner)
         paneles_layout.setContentsMargins(2, 0, 2, 0)
         paneles_layout.setSpacing(6)
+        lbl_paneles = QLabel(tr("Panels:"))
+        lbl_paneles.setToolTip(help_text("ana.panels")[1])
+        paneles_layout.addWidget(lbl_paneles)
         # Checkboxes in teaching display order; original panel index per
         # checkbox is kept in _panel_pids so the plotting/report code can map
         # back to the canonical panel identity. Only the teaching panels are
         # checked by default.
         self._panel_pids: list[int] = [pid for pid, _ in _PANEL_LAYOUT]
         self._chk_paneles: list[QCheckBox] = []
+        # Tick state of panels the current mode hides, keyed by display index,
+        # so switching back to a mode that offers them restores the selection.
+        self._hidden_panels_checked: dict[int, bool] = {}
+        # Set by apply_mode; initialised here because loading a file consults
+        # the mode and may happen before the first apply_mode call.
+        self._mode: str = DEFAULT_MODE
+        self._advanced: bool = False
         for (pid, _num), label in zip(_PANEL_LAYOUT, _PANEL_SHORT_LABELS):
             chk = QCheckBox(tr(label))
             chk.setChecked(pid in _DEFAULT_PANELS)
@@ -434,61 +715,68 @@ class AnalysisTab(QWidget):
             # the accelerometer panels only when the file has an ACC channel.
             if pid in (_OVERLAY_PID, *_ACC_PIDS):
                 chk.setEnabled(False)
+            if pid in _ACC_PIDS:
+                # The only panels whose checkbox changes what is
+                # *computed* rather than what is drawn: the worker reads
+                # the accelerometer only when one of them is on.
+                chk.toggled.connect(self._marcar_pendiente)
             paneles_layout.addWidget(chk)
+            # Ticking a box redraws; there is no button to press afterwards.
+            chk.toggled.connect(self._redibujar)
             self._chk_paneles.append(chk)
         paneles_layout.addStretch()
-        self._btn_redibujar = QPushButton(tr("Redraw"))
-        self._btn_redibujar.setEnabled(False)
-        self._btn_redibujar.clicked.connect(self._redibujar)
-        paneles_layout.addWidget(self._btn_redibujar)
+        # The advanced practical owns twelve panels, and twelve boxes do not
+        # fit on a row at 1400 px: they overflowed into a scroll bar, which
+        # is a developer's menu, not a student's. By default it shows its
+        # own six — the teaching core and the accelerometer three — and this
+        # reveals the rest: the further EMG analyses and the two-muscle
+        # panels, for whoever wants them.
+        self._mas_paneles = False
+        self._btn_mas_paneles = QToolButton()
+        self._btn_mas_paneles.setText(tr("More panels…"))
+        self._btn_mas_paneles.setCheckable(True)
+        self._btn_mas_paneles.setAutoRaise(True)
+        self._btn_mas_paneles.setStyleSheet("font-size: 11px;")
+        self._btn_mas_paneles.toggled.connect(self._on_mas_paneles)
+        self._btn_mas_paneles.setVisible(False)
+        paneles_layout.addWidget(self._btn_mas_paneles)
+        # No «Redraw» button: the boxes redraw as they are ticked (see the
+        # loop above). A button that has to be pressed after every change is
+        # a second step for the same intention.
 
+        # Into the editors' line, after the channels. There used to be a
+        # «Markers (n): [list] Go» box beside this one, to jump the view to
+        # one marker; jumping to a marker is an expert's move, and the
+        # student's markers are the automatic onsets, drawn on the panels.
+        # Inside a frameless scroll area, as before: a scroll area's minimum
+        # width does not depend on what it holds, so thirteen chips — ten
+        # of them hidden by the practical — cannot set the window's minimum.
         paneles_scroll = QScrollArea()
         paneles_scroll.setWidget(paneles_inner)
         paneles_scroll.setWidgetResizable(True)
         paneles_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         paneles_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         paneles_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        # Transparent viewport: let the box's steel background show in the gaps
-        # between chips (otherwise an inner light-gray rectangle remains).
         paneles_scroll.viewport().setStyleSheet("background: transparent;")
-        _fm = QFontMetrics(self.font())
-        paneles_scroll.setFixedHeight(_fm.lineSpacing() * 2 + 10)
-
-        paneles_outer = QVBoxLayout(grp_paneles)
-        paneles_outer.setContentsMargins(4, 2, 4, 2)
-        paneles_outer.addWidget(paneles_scroll)
-
-        # --- Second row: Markers (stretch=2) + Panels to show (stretch=5),
-        #     just below Parameters and Event log ---
-        bottom_row = QHBoxLayout()
-        bottom_row.setSpacing(4)
-
-        grp_markers_bar = QGroupBox(tr("Markers"))
-        markers_inner = QHBoxLayout(grp_markers_bar)
-        markers_inner.setContentsMargins(6, 2, 6, 2)
-        markers_inner.setSpacing(6)
-        self._lbl_markers_bar = QLabel(tr("Markers ({n}):").format(n=0))
-        self._lbl_markers_bar.setStyleSheet("font-size: 11px;")
-        markers_inner.addWidget(self._lbl_markers_bar)
-        self._combo_markers = QComboBox()
-        self._combo_markers.setStyleSheet("font-size: 11px;")
-        self._combo_markers.setSizePolicy(
+        # Measured off the chips themselves, not off this widget's font: the
+        # chips carry their own font size, padding and border in a style
+        # sheet, so a height derived from the tab's line spacing clipped
+        # them by a couple of pixels at the bottom on other machines.
+        _alto_chip = max(
+            [c.sizeHint().height() for c in self._chk_paneles]
+            + [self._btn_mas_paneles.sizeHint().height()]
+        )
+        # And with room for the horizontal scrollbar. A scroll area of fixed
+        # height pays for the bar out of its viewport, so the moment «More
+        # panels…» made the row overflow the bar appeared and the chips lost
+        # their bottom edge behind it. Reserved always, so the row keeps one
+        # height whether the bar is there or not.
+        _alto_barra = paneles_scroll.horizontalScrollBar().sizeHint().height()
+        paneles_scroll.setFixedHeight(_alto_chip + 8 + _alto_barra)
+        paneles_scroll.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
-        self._combo_markers.setEnabled(False)
-        self._combo_markers.addItem(tr("No markers"))
-        markers_inner.addWidget(self._combo_markers, stretch=1)
-        self._btn_ir_marcador = QPushButton(tr("Go"))
-        self._btn_ir_marcador.setFixedWidth(40)
-        self._btn_ir_marcador.setFixedHeight(26)
-        self._btn_ir_marcador.setStyleSheet("font-size: 11px;")
-        self._btn_ir_marcador.setEnabled(False)
-        self._btn_ir_marcador.clicked.connect(self._on_ir_marcador)
-        markers_inner.addWidget(self._btn_ir_marcador)
-        bottom_row.addWidget(grp_markers_bar, stretch=2)
-
-        bottom_row.addWidget(grp_paneles, stretch=5)
-        root.addLayout(bottom_row)
+        row_frag.insertWidget(self._pos_paneles, paneles_scroll, stretch=1)
 
         # --- Display-window navigator widgets (assembled in the bottom row) ---
         # No box title (its meaning is obvious) and no reset button (the window
@@ -541,80 +829,137 @@ class AnalysisTab(QWidget):
         progress_row.addWidget(self._btn_cancelar)
         root.addLayout(progress_row)
 
-        # --- Numeric summary panel (one row) ---
+        # --- Numeric summary: a grid of cards ---
+        # One card per figure, the caption above and the value below. The
+        # old version was a single row of nine "Label: value" pairs with
+        # pipes between them, inside a scroll area: to find a number the
+        # student had to read a sentence, and the sentence was 11 px high.
+        # Here the number is the thing on the card. Two rows of five so the
+        # panel keeps its width on a 1366 px screen.
         grp_resumen = QGroupBox(tr("Analysis summary"))
-        grp_resumen.setContentsMargins(4, 2, 4, 2)
-        resumen_inner = QWidget()
-        resumen_row = QHBoxLayout(resumen_inner)
-        resumen_row.setContentsMargins(4, 0, 4, 0)
-        resumen_row.setSpacing(0)
+        add_help(grp_resumen, "ana.summary")
+        resumen_grid = QGridLayout(grp_resumen)
+        resumen_grid.setContentsMargins(6, 2, 6, 6)
+        resumen_grid.setHorizontalSpacing(8)
+        resumen_grid.setVerticalSpacing(0)
 
-        _st = "font-size: 11px; padding: 0 6px;"
-        _sep_st = "font-size: 11px; color: #999999; padding: 0 2px;"
+        # A point smaller than the rest of the band, because these nine
+        # cards buy their width from the two charts beside them and a
+        # number reads perfectly well at 12 px.
+        _cap_st = "font-size: 9px; color: #6B7580;"
+        _val_st = "font-size: 12px; font-weight: 600;"
 
-        def _sep():
-            s = QLabel("|")
-            s.setStyleSheet(_sep_st)
-            return s
+        # Three rows per card: the caption, the value and — where one
+        # exists — the usual range in small grey. A median frequency of
+        # 130 Hz means nothing to a student who has never seen one; «usual
+        # 60–120 Hz» beside it is what turns the number into a reading. The
+        # ranges are orientative values for surface EMG, not limits.
+        _rango_st = "font-size: 8px; color: #8A94A0;"
 
-        self._lbl_mnf = QLabel(f"{tr('Mean frequency (MNF):')} —")
-        self._lbl_mdf = QLabel(f"{tr('Median frequency (MDF):')} —")
-        self._lbl_fatiga = QLabel(f"{tr('Fatigue:')} —")
-        self._lbl_pendiente = QLabel(f"{tr('MDF slope:')} —")
-        self._lbl_rms_global = QLabel(f"{tr('Global RMS:')} —")
-        self._lbl_iemg = QLabel("iEMG: —")
-        self._lbl_iemg.setToolTip(
-            tr("Integral of the rectified EMG — total muscle activation.")
+        def _ficha(fila: int, col: int, caption: str, tooltip: str = "",
+                   ayuda: QToolButton | None = None, rango: str = "") -> QLabel:
+            cap = QLabel(caption)
+            cap.setStyleSheet(_cap_st)
+            cap.setWordWrap(True)
+            val = QLabel("—")
+            val.setStyleSheet(_val_st)
+            # Wrapped, not elided: the fatigue verdict and the provenance of
+            # the MVC are sentences, not numbers, and on one line they set
+            # the width of the whole panel — or got cut off.
+            val.setWordWrap(True)
+            val.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            if tooltip:
+                cap.setToolTip(tooltip)
+                val.setToolTip(tooltip)
+            base = 3 * fila
+            if ayuda is None:
+                resumen_grid.addWidget(cap, base, col)
+            else:
+                cabecera = QHBoxLayout()
+                cabecera.setContentsMargins(0, 0, 0, 0)
+                cabecera.setSpacing(2)
+                cabecera.addWidget(cap)
+                cabecera.addWidget(ayuda)
+                cabecera.addStretch()
+                resumen_grid.addLayout(cabecera, base, col)
+            resumen_grid.addWidget(val, base + 1, col)
+            if rango:
+                lbl_rango = QLabel(rango)
+                lbl_rango.setStyleSheet(_rango_st)
+                lbl_rango.setWordWrap(True)
+                resumen_grid.addWidget(lbl_rango, base + 2, col)
+            return val
+
+        # The fatigue verdict is explained in the box's own «?», with the
+        # rest of the cards: one help per box, in the corner, all alike.
+
+        self._lbl_mnf = _ficha(
+            0, 0, tr("Mean frequency (MNF)"),
+            tr("Mean spectral frequency; tends to fall with fatigue."),
+            rango=tr("usual 80–170 Hz"),
         )
-        self._lbl_duracion = QLabel(f"{tr('Duration:')} —")
-        self._lbl_archivo = QLabel("")
-
-        # Didactic tooltips: what each summary metric means.
-        self._lbl_mnf.setToolTip(tr("Mean spectral frequency; tends to fall with fatigue."))
-        self._lbl_mdf.setToolTip(
+        self._lbl_mdf = _ficha(
+            0, 1, tr("Median frequency (MDF)"),
             tr("Frequency that splits the spectrum into two equal-power halves; "
-               "falls with fatigue.")
+               "falls with fatigue."),
+            rango=tr("usual 60–150 Hz"),
         )
-        self._lbl_fatiga.setToolTip(tr("Fatigue indicator from the MDF trend over time."))
-        self._lbl_pendiente.setToolTip(tr("Slope of MDF over time (Hz/s); negative = fatigue."))
-        self._lbl_rms_global.setToolTip(
-            tr("Global RMS amplitude: mean intensity of the activation.")
+        self._lbl_pendiente = _ficha(
+            0, 2, tr("MDF slope"),
+            tr("Slope of MDF over time (Hz/s); negative = fatigue."),
         )
-        self._lbl_duracion.setToolTip(tr("Analysed signal duration."))
-        self._lbl_archivo.setToolTip(tr("Analysed EDF file."))
-
-        for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga, self._lbl_pendiente,
-                    self._lbl_rms_global, self._lbl_iemg, self._lbl_duracion, self._lbl_archivo):
-            lbl.setStyleSheet(_st)
-
-        for lbl in (self._lbl_mnf, _sep(), self._lbl_mdf, _sep(), self._lbl_fatiga, _sep(),
-                    self._lbl_pendiente, _sep(), self._lbl_rms_global, _sep(),
-                    self._lbl_iemg, _sep(), self._lbl_duracion, _sep(), self._lbl_archivo):
-            resumen_row.addWidget(lbl)
-        resumen_row.addStretch()
-
-        resumen_scroll = QScrollArea()
-        resumen_scroll.setWidget(resumen_inner)
-        resumen_scroll.setWidgetResizable(True)
-        resumen_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        resumen_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        resumen_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        resumen_scroll.setFixedHeight(36)
-
-        resumen_vbox = QVBoxLayout(grp_resumen)
-        resumen_vbox.setContentsMargins(0, 0, 0, 0)
-        resumen_vbox.addWidget(resumen_scroll)
-
-        root.addWidget(grp_resumen)
+        self._lbl_fatiga = _ficha(
+            1, 0, tr("Fatigue"),
+            tr("Fatigue indicator from the MDF trend over time."),
+        )
+        # What the task reached against the reference, sustained over the
+        # same half second the reference is measured on. Computed for every
+        # analysis and, until now, only used to decide whether to warn.
+        self._lbl_pico = _ficha(
+            1, 1, tr("Task maximum"),
+            tr("Highest sustained level ({w:.1f} s) of the task, as % of the "
+               "maximal contraction. Well above 100 % means the calibration "
+               "was not a maximum.").format(w=EMG_PROFILE.mvc_peak_window_s),
+            rango=tr("a task effort is usually 20–80 %"),
+        )
+        self._lbl_rms_global = _ficha(
+            1, 2, tr("Global RMS"),
+            tr("Global RMS amplitude: mean intensity of the activation."),
+            rango=tr("rest ≈ 0.01 mV · effort 0.1–1 mV"),
+        )
+        self._lbl_iemg = _ficha(
+            2, 0, "iEMG",
+            tr("Integral of the rectified EMG — total muscle activation."),
+        )
+        self._lbl_duracion = _ficha(
+            2, 1, tr("Duration"), tr("Analysed signal duration."),
+        )
+        # Where the yardstick came from. Shown beside the numbers it scales,
+        # because a reference the student cannot trace is the same trap as an
+        # auto-normalised one, only quieter.
+        self._lbl_cvm = _ficha(
+            2, 2, tr("MVC"),
+            tr("The maximal contraction every % MVC on this recording is "
+               "measured against, and where it came from."),
+        )
+        # No file card: the name is in the path field at the top of the tab.
+        # Kept as a label that sits in no layout, since the code that fills
+        # the cards writes to it.
+        self._lbl_archivo = QLabel("")
+        resumen_grid.setColumnStretch(2, 1)
+        # Placed at the bottom, beside the contraction table (see below):
+        # above the panels it cost them a strip of height on every screen.
+        self._grp_resumen = grp_resumen
 
         # --- Matplotlib canvas with scroll (the 7 panels are tall) ---
         self._fig = Figure(constrained_layout=True)
-        self._canvas = FigureCanvasQTAgg(self._fig)
+        # The wheel scrolls the page of panels; it no longer rescales the
+        # panel under the cursor. Scale has its buttons in the sidebar.
+        self._canvas = ScrollingCanvas(self._fig)
         self._canvas.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
-        # Mouse-wheel zoom on the panel under the cursor.
-        self._canvas.mpl_connect("scroll_event", self._on_scroll_zoom)
+        self._mostrar_estado_vacio()
 
         # Vertical-scale sidebar: one ▲▼ pair per active panel
         self._y_scale_sidebar = QWidget()
@@ -634,6 +979,144 @@ class AnalysisTab(QWidget):
         scroll.setWidget(canvas_container)
         scroll.setWidgetResizable(True)
         root.addWidget(scroll, stretch=1)
+
+        # --- Co-activation table, directly under the panels ---------------
+        # Hidden unless the recording can actually support an index: two
+        # muscles, and an MVC reference for each. It is a table and not a
+        # single figure because the index is computed per marked phase — one
+        # number for a recording that mixes rest, flexion and grip would not
+        # be a measurement of anything.
+        # The method's name is in the «?» beside it, not in the title: a box
+        # headed «Falconer-Winter» names two authors the student has never
+        # heard of before it names the thing measured.
+        self._box_coact = QGroupBox(tr("Co-activation"))
+        coact_v = QVBoxLayout(self._box_coact)
+        coact_v.setContentsMargins(6, 4, 6, 6)
+        coact_v.setSpacing(4)
+        # A «?» in the corner, like every other box. What this table needs
+        # explaining is not the index but the windows: that they come from the
+        # names in the fragment editor, which is a different tab of the same
+        # dialogue and not anywhere near this box. Nobody was going to guess
+        # that, and the warning that said «mark the phases» named an action
+        # that appears nowhere in the interface under that name.
+        add_help(self._box_coact, "ana.coact")
+        self._lbl_coact_aviso = QLabel("")
+        self._lbl_coact_aviso.setWordWrap(True)
+        self._lbl_coact_aviso.setStyleSheet("color:#B0243A; font-size:11px;")
+        self._lbl_coact_aviso.setVisible(False)
+        coact_v.addWidget(self._lbl_coact_aviso)
+        self._tbl_coact = QTableWidget(0, 4)
+        self._tbl_coact.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._tbl_coact.verticalHeader().setVisible(False)
+        self._tbl_coact.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )
+        # Sized to what it holds, not to a fixed 150 px. The practical
+        # produces three rows at most and usually one, and the rest of that
+        # height was blank table taking room the raw traces needed: with two
+        # muscles there are two of those to fit.
+        self._tbl_coact.setSizeAdjustPolicy(
+            QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self._tbl_coact.verticalHeader().setVisible(False)
+        self._ajustar_alto_coact()
+        # A chart in front of the table: one line per window with the index
+        # as a bar; the table stays one click behind, for the numbers a
+        # report copies. See emgteach.charts. It fills the box, and when a
+        # recording has more windows than the box has lines for, the canvas
+        # grows and the box scrolls under the wheel, as the table does.
+        self._fig_coact = Figure(figsize=(3.4, 1.6), constrained_layout=True)
+        self._canvas_coact = ScrollingCanvas(self._fig_coact)
+        self._scroll_coact = self._envolver_en_scroll(self._canvas_coact)
+        self._stack_coact = QStackedWidget()
+        self._stack_coact.addWidget(self._scroll_coact)
+        self._stack_coact.addWidget(self._tbl_coact)
+        coact_v.addWidget(self._stack_coact, stretch=1)
+        self._sel_coact = _SelectorEsquina(
+            self._box_coact, [("chart", tr("Chart")), ("table", tr("Table"))])
+        self._sel_coact.setToolTip(tr("The chart, or the numbers behind it."))
+        self._sel_coact.cambiado.connect(self._aplicar_vista_coact)
+        self._box_coact.setVisible(False)
+        # Joins the bottom band with the other two boxes (see below).
+
+        # One row per contraction. The student makes six efforts and used to
+        # receive one global RMS: the figure showed six bursts and the number
+        # described the eighteen seconds around them. This is the table a
+        # laboratory report is built from, so it is the one the student can
+        # copy — and the one place the electromechanical delay is given.
+        self._box_contr = QGroupBox(tr("Contractions"))
+        contr_v = QVBoxLayout(self._box_contr)
+        contr_v.setContentsMargins(6, 4, 6, 6)
+        contr_v.setSpacing(4)
+        add_help(self._box_contr, "ana.contr")
+        self._lbl_contr_resumen = QLabel("")
+        self._lbl_contr_resumen.setStyleSheet("font-size: 11px; color: #6B7580;")
+        contr_v.addWidget(self._lbl_contr_resumen)
+        self._tbl_contr = QTableWidget(0, 7)
+        self._tbl_contr.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._tbl_contr.verticalHeader().setVisible(False)
+        self._tbl_contr.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self._tbl_contr.setSizeAdjustPolicy(
+            QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self._tbl_contr.setMinimumHeight(38)
+        # Two panels: the series along time with its trend, and the relation
+        # to read it by — amplitude against MDF for one muscle, one muscle
+        # against the other for two. A conclusion is read off a relation,
+        # not off a row of bars. See emgteach.charts.
+        self._fig_contr = Figure(figsize=(5.2, 1.6), constrained_layout=True)
+        self._canvas_contr = ScrollingCanvas(self._fig_contr)
+        self._scroll_contr = self._envolver_en_scroll(self._canvas_contr)
+        self._stack_contr = QStackedWidget()
+        self._stack_contr.addWidget(self._scroll_contr)
+        self._stack_contr.addWidget(self._tbl_contr)
+        contr_v.addWidget(self._stack_contr, stretch=1)
+        # The relation first: it is the panel a conclusion is read off. The
+        # series and the numbers are a click away, on the title line.
+        # Every view the chart has; the recording then decides which are
+        # offered (two muscles for the categories and the dominance, load
+        # markers for the load), see _refresh_contractions.
+        self._sel_contr = _SelectorEsquina(
+            self._box_contr, [("relation", tr("Relation")), ("category", tr("Category")),
+                              ("dominance", tr("Who leads")), ("series", tr("Series")),
+                              ("load", tr("By load")), ("table", tr("Table"))])
+        self._sel_contr.setToolTip(
+            tr("One view at a time; the numbers behind them are the last."))
+        self._sel_contr.cambiado.connect(self._aplicar_vista_contr)
+        #: What the contraction chart was last drawn from, so a change of
+        #: view redraws without re-running the analysis.
+        self._filas_contr: list = []
+        self._nombres_contr: tuple[str, str] = ("", "")
+        self._cargas_contr: list[float | None] = []
+        #: Where the view choice is kept: one key for recordings with loads
+        #: (the kinematics practical), another for the rest.
+        self._clave_vista = "analysis/contr_view"
+        self._box_contr.setVisible(False)
+        self._sel_coact.set_vista(
+            str(self._settings.value("analysis/coact_view", "chart")))
+        self._sel_contr.set_vista(
+            str(self._settings.value("analysis/contr_view", "relation")))
+
+        # Bottom band: the contractions on the left, the summary cards on
+        # the right, sharing the width. The summary used to sit above the
+        # panels and the table below them, and between the two the panels
+        # got a hundred pixels on a laptop.
+        # The width goes where a chart needs it. The co-activation box holds
+        # a name, a bar, a chip and a time on every line, and it had the
+        # narrowest share of the three; the summary is nine short cards
+        # that read fine in less width once the long values wrap, and the
+        # less width they take the squarer the box.
+        self._banda = QWidget()
+        self._banda.setFixedHeight(_ALTO_BANDA)
+        bottom_boxes = QHBoxLayout(self._banda)
+        bottom_boxes.setContentsMargins(0, 0, 0, 0)
+        bottom_boxes.setSpacing(6)
+        bottom_boxes.addWidget(self._box_coact, stretch=7)
+        bottom_boxes.addWidget(self._box_contr, stretch=7)
+        bottom_boxes.addWidget(self._grp_resumen, stretch=4)
+        root.addWidget(self._banda)
 
         # Display-window navigator at the very bottom: the minimap takes ~80 %
         # of the width; a compact two-row cluster (start/duration labels on top,
@@ -675,6 +1158,56 @@ class AnalysisTab(QWidget):
     # Control slots
     # ------------------------------------------------------------------
 
+    def _olvidar_lo_elegido(self) -> None:
+        """What was chosen for the previous recording does not carry over.
+
+        Opening a file cleared the fragments but kept the calibration
+        repetitions that had been discarded, and the record of which guided
+        step had been shown. From the bench of 3 September: with the discards
+        of the previous file still in hand the new one opened as if its
+        calibration had already been reviewed, so the step it offered was
+        «select fragments» — the same step the previous file had ended on —
+        and a step that has not changed is not offered again. No guidance,
+        and repetitions of one recording being discarded by number in
+        another.
+        """
+        self._cal_keep = {}
+        self._actualizar_ayuda_reps()
+        self._selected_segments = []
+        self._segment_labels = []
+        self._analysis_filter_kwargs = None
+        self._detection_kwargs = None
+        self._actualizar_etiqueta_fragmentos()
+        self._paso_mostrado = ""
+
+    def adopt_recording(self, path: str) -> None:
+        """Take the recording just made as the file to analyse, and analyse it.
+
+        It used to only fill the path in, on the grounds that a run nobody
+        asked for would fight whatever the student was reading. But they are
+        still on the acquisition tab when this fires, so nothing is fought —
+        and arriving at the analysis tab to find a file loaded and no results,
+        with a button that has to be pressed once now and again after each
+        editor, is the sequence that was hard to follow.
+
+        This is where the muscle gets chosen for a two-channel recording, and
+        the choice travels on from here: asking again in the MVC tab would be
+        putting the same question twice in a row.
+        """
+        if not path or (self._worker is not None and self._worker.isRunning()):
+            return
+        self._edit_path.setText(path)
+        self._last_edf_dir = str(Path(path).parent)
+        self._populate_channels(path)
+        self.file_opened.emit(path, self._combo_canal.currentText().strip())
+        self._btn_fragmentos.setEnabled(True)
+        self._olvidar_lo_elegido()
+        self._logger.append_log(
+            tr("Recording loaded for analysis: {path}").format(path=Path(path).name)
+        )
+        self._logger.append_log(tr("Running the first analysis…"))
+        self._iniciar_analisis()
+
     @Slot()
     def _seleccionar_archivo(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -687,18 +1220,25 @@ class AnalysisTab(QWidget):
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("analisis/last_dir", self._last_edf_dir)
             self._populate_channels(path)
-            self._btn_analizar.setEnabled(True)
+            self.file_opened.emit(path, self._combo_canal.currentText().strip())
             self._btn_fragmentos.setEnabled(True)
-            # A new file invalidates any previous fragment selection and its
-            # associated filter cut-offs.
-            self._selected_segments = []
-            self._analysis_filter_kwargs = None
-            self._actualizar_etiqueta_fragmentos()
+            # A new file invalidates whatever was chosen for the last one.
+            self._olvidar_lo_elegido()
             self._btn_guardar.setEnabled(False)
             self._btn_informe.setEnabled(False)
             self._btn_csv.setEnabled(False)
+            self._btn_afinado.setEnabled(False)
             self._progress.setValue(0)
             self._progress.setFormat(tr("Ready"))
+            # And analyse it, without being asked. Opening a recording in
+            # order not to analyse it is not a thing anyone does, and making
+            # the first run a button press gave that button two meanings: the
+            # first time it means «show me the recording», and afterwards it
+            # means «apply what I have just chosen». Pressing the same control
+            # twice for two different reasons is what made the sequence hard
+            # to follow — so the first one goes.
+            self._logger.append_log(tr("Running the first analysis…"))
+            self._iniciar_analisis()
 
     def _populate_channels(self, path: str) -> None:
         """Fill the channel picker with the file's EMG channels (excludes ACC).
@@ -726,7 +1266,9 @@ class AnalysisTab(QWidget):
         self._combo_canal2.addItems(labels)
         self._combo_canal2.blockSignals(False)
 
-        # One channel -> no comparison possible; two -> allow it (off by default).
+        # One channel -> no comparison possible; two -> the agonist/antagonist
+        # mode turns it on by itself (_sync_compare_to_mode), since the pair is
+        # a property of the recording rather than something to opt into.
         has_two = len(labels) >= 2
         self._chk_compare2.blockSignals(True)
         self._chk_compare2.setChecked(False)
@@ -734,6 +1276,14 @@ class AnalysisTab(QWidget):
         self._chk_compare2.blockSignals(False)
         self._sync_second_channel()
         self._gate_overlay_panel(active=False)   # overlay only when comparing
+        self._sync_compare_to_mode()
+        if self._mode == MODE_PAIR and not has_two:
+            self._warn_mode_mismatch(len(labels))
+        elif has_two and self._mode != MODE_PAIR:
+            # Two muscles in the file, a practical that studies one: without
+            # asking, the tab quietly takes the first channel and every panel,
+            # metric and report is about a muscle nobody chose.
+            self._ask_which_channel(labels)
 
         # Warn if any channel is flat (no signal) or saturated (bad contact).
         self._warn_channel_quality(path)
@@ -755,14 +1305,14 @@ class AnalysisTab(QWidget):
             self._spin_roi_start.setValue(0.0)
             self._spin_roi_end.setValue(dur)
 
-        # Pre-fill student/protocol from the EDF+ header written at recording
-        # time, without clobbering anything the user already typed here.
+        # The identifier and the protocol come from the EDF+ header written
+        # at recording time; a file recorded before the header carried one
+        # falls back to whatever the acquisition tab has.
         meta = read_edf_metadata(path)
         self._edf_protocol = meta.protocol
-        if meta.student_name and not self._edit_student.text().strip():
-            self._edit_student.setText(meta.student_name)
-        if meta.student_code and not self._edit_student_code.text().strip():
-            self._edit_student_code.setText(meta.student_code)
+        self._student_code = meta.student_code or str(
+            self._settings.value("adquisicion/student_code", "") or ""
+        )
 
     @Slot()
     def _editar_fragmentos(self) -> None:
@@ -778,7 +1328,34 @@ class AnalysisTab(QWidget):
             filter_kwargs["f_env"] = self._spin_fenv.value()
         try:
             dlg = FragmentSelectionDialog.from_edf(
-                path, canal, filter_kwargs, segments=self._selected_segments or None,
+                path, canal, filter_kwargs,
+                segments=self._selected_segments or None,
+                labels=self._segment_labels or None,
+                # The recording phase, so the editor cannot reach into the
+                # calibration and offer its maximal efforts as fragments of
+                # the task.
+                span=self._tramo_de_registro(path),
+                # A name is only ever read by the co-activation table, which
+                # needs the agonist and the antagonist. Analysing one muscle,
+                # the column asked for something nothing would look at.
+                naming=self._hay_segundo_canal(),
+                # And with the antagonist to hand, the editor can fill the
+                # column in itself: which muscle led a contraction is a
+                # measurement, not a reading.
+                channel_name_2=(
+                    self._combo_canal2.currentText().strip()
+                    if self._hay_segundo_canal() else None
+                ),
+                # And each muscle's own maximum, so «who led this one» is
+                # decided as a share of it. Two different muscles do not
+                # compare in millivolts: on the bench of 3 September the
+                # flexor's reference was a third of the extensor's, and
+                # every flexion came back named «co-contraction».
+                mvc_ref=(self._last_result or {}).get("mvc_ref"),
+                mvc_ref_2=(self._last_result or {}).get("mvc_ref_2"),
+                # Where the sliders were left last time, so a second visit
+                # starts from the first one's result.
+                detection=self._detection_kwargs,
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -788,34 +1365,254 @@ class AnalysisTab(QWidget):
             return
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self._selected_segments = dlg.selected_segments()
+            self._segment_labels = dlg.labels()
+            self._detection_kwargs = dlg.detection_kwargs()
             # Adopt the cut-offs tuned in the editor for the actual analysis so
             # what was previewed is what gets analysed. Reflect f_env in the tab.
             self._analysis_filter_kwargs = dlg.filter_kwargs()
             self._spin_fenv.setValue(self._analysis_filter_kwargs["f_env"])
             self._actualizar_etiqueta_fragmentos()
+            # Re-analyse for the same reason the repetitions dialogue does: the
+            # panels on screen were computed over the old selection, so leaving
+            # them up beside "12 fragment(s) selected" showed two answers to the
+            # same question — a table reading "Whole recording" under a label
+            # promising twelve fragments.
+            if self._last_result is not None:
+                self._iniciar_analisis()
+
+    @Slot()
+    def _editar_repeticiones(self) -> None:
+        """Offer the calibration efforts to keep or discard, then re-analyse.
+
+        Re-analysing is not optional politeness: the reference is the yardstick
+        for every % MVC on screen, so leaving the old panels up beside a new
+        selection would show two answers to the same question.
+        """
+        r = self._last_result or {}
+        valores = r.get("cal_rep_values") or {}
+        if not valores:
+            return
+        etiquetas = self._labels_por_canal()
+        inverso = {n: i for i, n in etiquetas.items()}
+        refs = {}
+        for nombre, clave in ((r.get("channel_name"), "mvc_ref"),
+                              (r.get("channel_name_2"), "mvc_ref_2")):
+            canal = inverso.get(str(nombre or "").strip())
+            if canal is not None and r.get(clave):
+                refs[canal] = float(r[clave])
+        dlg = CalibrationRepsDialog(
+            valores, etiquetas, references=refs,
+            keep=self._cal_keep or None, parent=self,
+        )
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        self._cal_keep = dlg.keep()
+        self._actualizar_etiqueta_reps()
+        self._iniciar_analisis()
+
+    def _actualizar_siguiente_paso(self) -> None:
+        """One line saying which of the two editors to open next.
+
+        They light up together at the end of the first analysis, side by side,
+        and nothing said that one of them comes first. One does: the
+        calibration fixes the reference, and every % MVC the fragments are
+        then measured in is measured against it — so choosing the fragments
+        first means choosing them against a reference that is about to change,
+        and the numbers move under you when you go back for the calibration.
+        """
+        r = self._last_result or {}
+        if not r:
+            self._lbl_siguiente.setVisible(False)
+            return
+        hay_reps = bool(r.get("cal_rep_values"))
+        reps_hechas = bool(self._cal_keep)
+        frags_hechos = bool(self._selected_segments)
+
+        if hay_reps and not reps_hechas:
+            paso, boton = "reps", self._btn_reps
+            texto = tr(
+                "Next: «{button}». It decides which maximal efforts set the "
+                "reference, and every % MVC below is measured against it — so "
+                "it goes before choosing the fragments."
+            ).format(button=tr("Calibration repetitions…"))
+        elif not frags_hechos:
+            paso, boton = "frags", self._btn_fragmentos
+            texto = tr(
+                "Next: «{button}», to drop any contraction that did not come "
+                "out well. Press «Use these fragments» even if you change "
+                "nothing: that is what applies them."
+            ).format(button=tr("Select fragments…"))
+        else:
+            paso, boton, texto = "", None, ""
+        self._lbl_siguiente.setText(texto)
+        self._lbl_siguiente.setVisible(bool(texto))
+
+        # And the same thing again, floating over the control it names. A line
+        # of small print under two buttons is read by whoever was already
+        # looking there; the floating panel dims everything else and rings the
+        # button, which is what «to see it better» asks for. Only on a *change*
+        # of step, or it would come back after every re-analysis.
+        if paso and paso != self._paso_mostrado:
+            self._paso_mostrado = paso
+            self.coach_step.emit(tr("Next step"), texto, boton)
+        elif not paso:
+            self._paso_mostrado = ""
+
+    @Slot()
+    @Slot()
+    def _marcar_pendiente(self) -> None:
+        """A setting changed: there is now something to re-run."""
+        if self._edit_path.text().strip():
+            self._pendiente = True
+            self._actualizar_boton_analizar()
+
+    def _actualizar_boton_analizar(self) -> None:
+        corriendo = self._worker is not None and self._worker.isRunning()
+        self._btn_analizar.setEnabled(
+            bool(self._edit_path.text().strip())
+            and self._pendiente
+            and not corriendo
+        )
+
+    def _hay_segundo_canal(self) -> bool:
+        """Whether this analysis has an antagonist, and so a co-activation
+        table for a fragment's name to feed."""
+        if not self._chk_compare2.isChecked():
+            return False
+        c2 = self._combo_canal2.currentText().strip()
+        return bool(c2) and c2 != self._combo_canal.currentText().strip()
+
+    def _tramo_de_registro(self, path: str) -> tuple[float, float] | None:
+        """The session's recording phase, or ``None`` for a file without one.
+
+        Read from the annotations alone — no samples — so it costs nothing to
+        ask before opening a dialogue.
+        """
+        try:
+            marcas = read_edf_markers(path)
+            fases = parse_phase_markers(marcas)
+            return fases.rec_span(edf_duration(path), parse_fv_load_markers(marcas))
+        except Exception:
+            return None
+
+    def _labels_por_canal(self) -> dict[int, str]:
+        """Channel index to the name the recording gave it."""
+        try:
+            nombres = list_edf_emg_channels(self._edit_path.text().strip())
+        except Exception:
+            nombres = []
+        return dict(enumerate(nombres))
+
+    def _actualizar_ayuda_reps(self) -> None:
+        """Explain the button's state, including — above all — when it is off.
+
+        It sits next to «Select fragments…», which lights as soon as a file is
+        chosen, and the asymmetry reads as a fault: the repetitions come from
+        the *analysis* of the file, not from the file, because what the dialog
+        offers is what each effort was worth and that is measured, not stored.
+        A disabled control that does not say why is a question the operator
+        has to answer by guessing.
+        """
+        if self._btn_reps.isEnabled():
+            self._btn_reps.setToolTip(tr(
+                "Keep or discard the maximal efforts the reference is "
+                "computed from. Discarding one moves the reference and every "
+                "% MVC with it — which is what makes a weak repetition worth "
+                "spotting."
+            ))
+        elif self._last_result is None:
+            self._btn_reps.setToolTip(tr(
+                "Analyse the recording first: what each maximal effort was "
+                "worth is measured from the signal, not stored in the file."
+            ))
+        else:
+            self._btn_reps.setToolTip(tr(
+                "This recording carries no calibration. Only sessions "
+                "recorded with the guided flow mark their maximal efforts."
+            ))
+
+    def _diagnostico_repeticiones(self, r: dict) -> None:
+        """Say out loud what the file brought, every time it is analysed.
+
+        A control that is simply grey says nothing about why. This is the same
+        lesson the acquisition wizard taught: deducing the cause of a disabled
+        button from the outside costs bench sessions, and one line in the log
+        settles it. It is also useful in its own right — "this recording
+        carries no calibration" is a fact the operator wants at the moment of
+        opening the file, not after hunting for a missing panel.
+        """
+        valores = r.get("cal_rep_values") or {}
+        etiquetas = self._labels_por_canal()
+        if not valores:
+            self._logger.append_log(tr(
+                "This recording carries no calibration spans, so the "
+                "repetition list stays off. Only sessions recorded with the "
+                "guided flow have them."
+            ))
+            return
+        detalle = ", ".join(
+            (tr("{name}: 1 repetition") if len(v) == 1
+             else tr("{name}: {n} repetitions")).format(
+                name=etiquetas.get(c, str(c + 1)), n=len(v))
+            for c, v in sorted(valores.items())
+        )
+        self._logger.append_log(tr(
+            "Calibration in the file — {detail}. The repetition list is "
+            "available."
+        ).format(detail=detalle))
+
+    def _actualizar_etiqueta_reps(self) -> None:
+        """Say when the reference is no longer the whole calibration."""
+        valores = (self._last_result or {}).get("cal_rep_values") or {}
+        descartadas = sum(
+            len(v) - len(self._cal_keep.get(c, {x.rep for x in v}))
+            for c, v in valores.items()
+        )
+        if not descartadas:
+            texto = ""
+        elif descartadas == 1:
+            texto = tr("1 repetition discarded")
+        else:
+            texto = tr("{n} repetitions discarded").format(n=descartadas)
+        self._lbl_reps.setText(texto)
 
     def _actualizar_etiqueta_fragmentos(self) -> None:
         n = len(self._selected_segments)
         if n == 0:
             self._lbl_fragmentos.setText("")
         else:
-            total = sum(b - a for a, b in self._selected_segments)
+            # The least that says it: how many. The seconds and the count of
+            # named ones were detail nobody read on a row this full.
             self._lbl_fragmentos.setText(
-                tr("{n} fragment(s) selected ({d:.1f} s)").format(n=n, d=total)
+                tr("1 fragment selected") if n == 1
+                else tr("{n} fragments selected").format(n=n)
             )
             # A fragment selection overrides the single-region control.
             self._chk_roi.setChecked(False)
 
     @Slot()
     def _iniciar_analisis(self) -> None:
+        # Never start a second run over a first. Further down, `self._worker`
+        # is reassigned; if the previous QThread were still running, dropping
+        # the last reference to it destroys a live thread, and that kills the
+        # process from the C++ side — no traceback, no crash log, nothing.
+        # The Analyse button is disabled while a run is in flight, so this only
+        # matters for the callers that are not the button: the fragment and
+        # repetition dialogues, which re-analyse when they are accepted.
+        if self._worker is not None and self._worker.isRunning():
+            self._logger.append_log(
+                tr("An analysis is already running; wait for it to finish.")
+            )
+            return
         path = self._edit_path.text().strip()
         canal = self._combo_canal.currentText().strip() or "EMG"
-        # Optional second channel for the agonist/antagonist overlay.
-        canal2 = None
-        if self._chk_compare2.isChecked():
-            c2 = self._combo_canal2.currentText().strip()
-            if c2 and c2 != canal:
-                canal2 = c2
+        # Optional second channel for the agonist/antagonist overlay. Same
+        # question the fragment editor asks to decide whether naming is worth
+        # offering, so both ask it in one place.
+        canal2 = (
+            self._combo_canal2.currentText().strip()
+            if self._hay_segundo_canal() else None
+        )
         # Accelerometer channel — only analysed when an ACC panel is selected.
         acc_channel = None
         if self._acc_channel_name and self._any_acc_panel_checked():
@@ -837,12 +1634,14 @@ class AnalysisTab(QWidget):
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)
-        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
-        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
-        self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
+        self._btn_afinado.setEnabled(False)
+        self._lbl_mnf.setText("—")
+        self._lbl_mdf.setText("—")
+        self._lbl_fatiga.setText("—")
 
         roi_start = roi_end = None
         roi_segments = self._selected_segments or None
+        roi_labels = self._segment_labels if roi_segments else None
         if roi_segments is None and self._chk_roi.isChecked():
             roi_start = self._spin_roi_start.value()
             roi_end = self._spin_roi_end.value()
@@ -858,9 +1657,12 @@ class AnalysisTab(QWidget):
             f_notch=f_notch,
             f_env=f_env,
             plot_duration_s=0,
+            cal_keep=self._cal_keep or None,
+            roi_labels=roi_labels or None,
             roi_start_s=roi_start,
             roi_end_s=roi_end,
             roi_segments=roi_segments,
+            detection_kwargs=self._detection_kwargs,
         )
         self._worker.result_ready.connect(self._on_result)
         self._worker.progress.connect(self._on_progress)
@@ -901,17 +1703,278 @@ class AnalysisTab(QWidget):
         self._progress.setValue(value)
 
     @Slot(dict)
+    def _refresh_coactivation(self, result: dict) -> None:
+        """Fill the co-activation table, or hide it.
+
+        The two mean activations sit beside every index on purpose: a bare
+        86 % reads as "both muscles worked hard" when it may equally mean
+        "both were equally quiet", and in this practical the antagonist's mean
+        *is* the finding — the index only summarises it.
+        """
+        tabla = result.get("coactivation")
+        if not tabla:
+            self._box_coact.setVisible(False)
+            return
+
+        n1 = result.get("channel_name") or tr("Muscle {n}").format(n=1)
+        n2 = result.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+        # Two lines per heading: the muscle on the first, what is measured on
+        # the second. On one line «FCR — Mean activation (% MVC)» was elided
+        # to something unreadable at any width this box gets.
+        # Short on purpose: the box is a fifth of the window and four columns
+        # have to fit. What the figure is stands in the «?»; the report,
+        # which has the width, keeps the long wording.
+        cabecera = tr("mean % MVC")
+        self._tbl_coact.setHorizontalHeaderLabels([
+            tr("Window"), f"{n1}\n{cabecera}", f"{n2}\n{cabecera}",
+            tr("Co-activation\nindex"),
+        ])
+        self._tbl_coact.setRowCount(len(tabla))
+        for fila, res in enumerate(tabla):
+            valor = res.reason or f"{res.index:.0f} %"
+            # The seconds beside the name, because the window is not always
+            # what the marks imply: the last one is closed at the end of the
+            # effort rather than at the end of the recording, and a table that
+            # showed only "Grip" would hide that it was measured over eleven
+            # seconds and not twenty-six.
+            ini, fin = res.window_s
+            ventana = res.label
+            if fin > ini:
+                ventana = f"{res.label}  ({ini:.1f}–{fin:.1f} s)".strip()
+            celdas = [
+                ventana, f"{res.mean_1:.0f}", f"{res.mean_2:.0f}", valor,
+            ]
+            for col, texto in enumerate(celdas):
+                item = QTableWidgetItem(texto)
+                if col:
+                    # Figures under a centred heading, as in the contraction
+                    # table; the window's name stays left, it is prose.
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                if col == 3 and res.index is None:
+                    item.setForeground(QColor("#8A6500"))
+                elif col == 3:
+                    font = item.font()
+                    font.setBold(True)
+                    item.setFont(font)
+                self._tbl_coact.setItem(fila, col, item)
+
+        draw_coactivation_chart(self._fig_coact, tabla, name_1=n1, name_2=n2,
+                                small=True)
+        self._pedir_espacio(self._canvas_coact, alto=_PX_POR_VENTANA * len(tabla) + 70)
+        self._canvas_coact.draw_idle()
+
+        sin_marcas = not result.get("coactivation_from_markers", True)
+        # Without windows the table holds one row, over the whole recording,
+        # and its number is not a measurement of anything — the module says so
+        # itself. Since the first analysis now runs on its own when the file is
+        # opened, that row was the *first* thing the student saw of this panel:
+        # a co-activation index, bold, computed over rest and flexion and
+        # extension together.
+        self._stack_coact.setVisible(not sin_marcas)
+        self._sel_coact.setVisible(not sin_marcas)
+
+        # And the red line under it went the same way, for the same reason.
+        # It is a warning — «this number does not measure anything» — about a
+        # number the student has not asked for yet and can no longer see, at
+        # the one moment they have done nothing wrong: the file has just been
+        # opened. What to do next is already said twice over, in the line
+        # under the two editors and in the panel that floats over the button.
+        #
+        # It still has a case to answer, and only one: fragments were chosen
+        # and every name was cleared. That is a deliberate act with a
+        # consequence worth stating, so the warning survives for it — and with
+        # it the whole panel, which is otherwise empty and simply waits.
+        ha_elegido = bool(self._selected_segments)
+        avisar = sin_marcas and ha_elegido
+        self._lbl_coact_aviso.setText(
+            tr(
+                "Whole recording: with no named windows this number does not "
+                "measure anything. Open «{button}» and accept what it proposes."
+            ).format(button=tr("Select fragments…"))
+            if avisar else ""
+        )
+        self._lbl_coact_aviso.setVisible(avisar)
+        self._ajustar_alto_coact()
+        self._box_coact.setVisible(not sin_marcas or avisar)
+
+    def _refresh_contractions(self, result: dict) -> None:
+        """Fill the per-contraction table, or hide it.
+
+        Hidden rather than empty: a heading over a blank table asks a
+        question, and on a recording with no clear efforts the answer is
+        that there were none — which the log already says.
+        """
+        filas = result.get("contractions") or []
+        if not filas:
+            self._box_contr.setVisible(False)
+            return
+        dos = bool(result.get("channel_name_2"))
+        con_emd = any(f.emd_ms is not None for f in filas)
+        cabeceras = [
+            "#", tr("Start (s)"), tr("Duration (s)"), tr("Muscle"),
+            tr("RMS (mV)"), tr("Peak (% MVC)"), tr("MDF (Hz)"),
+        ]
+        if con_emd:
+            cabeceras.append(tr("EMD (ms)"))
+        self._tbl_contr.setColumnCount(len(cabeceras))
+        self._tbl_contr.setHorizontalHeaderLabels(cabeceras)
+        self._tbl_contr.setColumnHidden(3, not dos)
+        self._tbl_contr.setRowCount(len(filas))
+        for i, f in enumerate(filas):
+            celdas = [
+                str(f.n), f"{f.start_s:.1f}", f"{f.duration_s:.2f}", f.muscle,
+                f"{f.rms_mv:.3f}",
+                "—" if f.peak_pct is None else f"{f.peak_pct:.0f}",
+                "—" if f.mdf_hz is None else f"{f.mdf_hz:.0f}",
+            ]
+            if con_emd:
+                celdas.append("—" if f.emd_ms is None else f"{f.emd_ms:.0f}")
+            for col, texto in enumerate(celdas):
+                item = QTableWidgetItem(texto)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                if col == 5 and f.peak_pct is not None and f.peak_pct > 100.0:
+                    item.setForeground(QColor("#B0243A"))
+                self._tbl_contr.setItem(i, col, item)
+        # As tall as its rows, up to a ceiling: a series of twenty efforts
+        # scrolls instead of pushing the panels off the window.
+        alto = self._tbl_contr.horizontalHeader().height() + 4
+        for i in range(len(filas)):
+            alto += self._tbl_contr.rowHeight(i)
+        # The rows set a floor and the layout hands it the rest of the box,
+        # as the co-activation table does: pinned to a fixed height it sat
+        # at the bottom of a taller box with a strip of empty box above it.
+        # The ceiling on the floor keeps a long series from pushing the
+        # panels off the window; beyond it the table scrolls.
+        tope = 160 if self.height() >= 850 else 110
+        self._tbl_contr.setMinimumHeight(max(38, min(alto, tope)))
+        self._filas_contr = list(filas)
+        self._nombres_contr = (
+            result.get("channel_name") or tr("Muscle {n}").format(n=1),
+            (result.get("channel_name_2") or "") if dos else "",
+        )
+        self._cargas_contr = load_of_each(filas, result.get("fv_loads") or [])
+        con_cargas = any(c is not None for c in self._cargas_contr)
+        vistas = ["relation"]
+        if dos:
+            vistas += ["category", "dominance"]
+        vistas.append("series")
+        if con_cargas:
+            vistas.append("load")
+        vistas.append("table")
+        self._sel_contr.set_disponibles(vistas)
+        # A kinematics recording opens on its own question — the loads —
+        # and remembers its own choice apart from the other practicals':
+        # amplitude against MDF is the fatigue practical's relation, and
+        # opening a series of lifts on it explained nothing.
+        self._clave_vista = "analysis/contr_view_kin" if con_cargas else "analysis/contr_view"
+        self._sel_contr.set_vista(str(self._settings.value(
+            self._clave_vista, "load" if con_cargas else "relation")))
+        self._dibujar_contracciones()
+        resumen = tr("{n} contractions").format(n=len(filas))
+        emd = result.get("emd_ms_mean")
+        if emd is not None:
+            resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
+        self._lbl_contr_resumen.setText(resumen)
+        self._box_contr.setVisible(True)
+
+    @Slot(str)
+    def _aplicar_vista_coact(self, vista: str) -> None:
+        """The chart or, one click behind, the numbers a report copies."""
+        self._stack_coact.setCurrentIndex(1 if vista == "table" else 0)
+        self._settings.setValue("analysis/coact_view", vista)
+
+    @Slot(str)
+    def _aplicar_vista_contr(self, vista: str) -> None:
+        """Relation, series or table, one at a time filling the box. The
+        chart is redrawn from the rows it was last drawn from: a change of
+        view is not a reason to re-run the analysis."""
+        self._stack_contr.setCurrentIndex(1 if vista == "table" else 0)
+        self._settings.setValue(self._clave_vista, vista)
+        # Only once there is something to draw: restoring the choice at
+        # construction scheduled an idle draw on a canvas a tab torn down
+        # straight away no longer had.
+        if vista != "table" and self._filas_contr:
+            self._dibujar_contracciones()
+
+    def _dibujar_contracciones(self) -> None:
+        vista = self._sel_contr.vista()
+        n1, n2 = self._nombres_contr
+        panel = vista if vista != "table" else "relation"
+        draw_contraction_chart(
+            self._fig_contr, self._filas_contr, name_1=n1, name_2=n2,
+            both_ratio=float((self._detection_kwargs or {}).get("both_ratio", 0.5)),
+            small=True, view=panel, loads=self._cargas_contr,
+        )
+        # The two views with one line or one point per contraction ask for
+        # room to keep them apart; the rest fit any box.
+        n = len(self._filas_contr)
+        if panel == "dominance":
+            self._pedir_espacio(self._canvas_contr, alto=_PX_POR_BARRA * n + 60)
+        elif panel == "series":
+            self._pedir_espacio(self._canvas_contr, ancho=_PX_POR_CONTRACCION * n + 90)
+        else:
+            self._pedir_espacio(self._canvas_contr)
+        self._canvas_contr.draw_idle()
+
+    @staticmethod
+    def _envolver_en_scroll(canvas: ScrollingCanvas) -> QScrollArea:
+        """A frameless scroll area round a chart canvas. The canvas takes the
+        viewport's size until it asks for more (see _pedir_espacio); then
+        the box scrolls under the wheel, which the canvas passes on."""
+        scroll = QScrollArea()
+        scroll.setWidget(canvas)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setStyleSheet("QScrollArea { background: transparent; }")
+        return scroll
+
+    @staticmethod
+    def _pedir_espacio(canvas: ScrollingCanvas, *, alto: int = 0, ancho: int = 0) -> None:
+        """What the drawing needs beyond the box: a floor on the canvas's
+        size, in pixels. Zero on either axis means «whatever the box gives»."""
+        canvas.setMinimumSize(max(0, int(ancho)), max(0, int(alto)))
+
+    def _ajustar_alto_coact(self) -> None:
+        """Room for the rows it has, and free to fill the rest of its box.
+
+        It used to be pinned to a fixed height, so it stopped short of the
+        bottom of its own box while the two boxes beside it in the band were
+        taller: a strip of empty box under the last row. Now the rows set a
+        floor and the layout hands it whatever height the band has.
+        """
+        filas = self._tbl_coact.rowCount()
+        cabecera = max(
+            self._tbl_coact.horizontalHeader().height(),
+            self._tbl_coact.horizontalHeader().sizeHint().height(),
+        )
+        alto = cabecera + 4
+        for i in range(filas):
+            alto += self._tbl_coact.rowHeight(i)
+        # A floor so an empty table is not a sliver, and a ceiling so a
+        # recording marked into many phases scrolls instead of pushing the
+        # panels off the window.
+        tope = 160 if self.height() >= 850 else 110
+        self._tbl_coact.setMinimumHeight(max(38, min(alto, tope)))
+
     def _on_result(self, result: dict) -> None:
         self._last_result = result
+        self._pendiente = False
+        self._refresh_coactivation(result)
+        self._refresh_contractions(result)
+        self._actualizar_siguiente_paso()
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)
         self._btn_informe.setEnabled(True)
         self._btn_csv.setEnabled(True)
-        self._btn_redibujar.setEnabled(True)
+        self._btn_afinado.setEnabled(True)
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
         self._time_range.set_total_duration(duracion_total)
+        # The envelope, not the raw trace: at the width of the bar the raw
+        # interference pattern is a solid block, while the envelope shows
+        # where the efforts are, which is what the window is aimed at.
+        self._time_range.set_overview(result.get("emg_envelope"))
         # The window selector defaults to the whole recording; narrow it with
         # the minimap (or the ◀▶ / zoom controls) to inspect a segment.
         _dur_ini = duracion_total
@@ -919,7 +1982,6 @@ class AnalysisTab(QWidget):
         self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
         self._lbl_duracion_info.setText(f"{tr('Duration:')}{_dur_ini:.1f} s")
         self._markers = result.get("markers", [])
-        self._actualizar_lista_marcadores()
         self._update_combo_items()
         self._sync_combo_zoom()
         self._actualizar_resumen(result)
@@ -974,7 +2036,11 @@ class AnalysisTab(QWidget):
             "rms": round(float(r.get("rms_global", 0.0)), 3),
             "iemg": round(float(r.get("iemg", 0.0)), 1),
             "duration": round(float(r.get("duration", 0.0)), 1),
-            "fatigue": int(r.get("fat_slope_sign", 0)),
+            # Same three states as the summary label, in the wire format the
+            # phones already speak: -1 fatigue, +1 none, 0 not conclusive.
+            "fatigue": {FATIGUE: -1, NO_FATIGUE: 1}.get(
+                r.get("fat_verdict", INCONCLUSIVE), 0
+            ),
         })
 
     def _bcast_download(self, kind: str, path: str, data: bytes,
@@ -992,32 +2058,100 @@ class AnalysisTab(QWidget):
     # ------------------------------------------------------------------
 
     def _actualizar_resumen(self, r: dict) -> None:
-        self._lbl_archivo.setText(f"{tr('File:')} {Path(r['edf_path']).name}")
-        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')}{r['mnf']:.1f} Hz")
-        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')}{r['mdf']:.1f} Hz")
+        self._lbl_archivo.setText(Path(r["edf_path"]).name)
+        self._lbl_mnf.setText(f"{r['mnf']:.1f} Hz")
+        self._lbl_mdf.setText(f"{r['mdf']:.1f} Hz")
         pendiente = r.get("mdf_slope", 0.0)
         r2 = r.get("fat_r_squared", 0.0)
         signo = "+" if pendiente >= 0 else ""
-        self._lbl_pendiente.setText(
-            f"{tr('MDF slope:')}{signo}{pendiente:.2f} Hz/s  (R²={r2:.2f})"
-        )
-        self._lbl_rms_global.setText(f"{tr('Global RMS:')}{r.get('rms_global', 0.0):.2f} mV")
-        self._lbl_iemg.setText(f"iEMG: {r.get('iemg', 0.0):.1f} mV·s")
-        self._lbl_duracion.setText(f"{tr('Duration:')}{r.get('duration', 0.0):.1f} s")
+        self._lbl_pendiente.setText(f"{signo}{pendiente:.2f} Hz/s\n(R²={r2:.2f})")
+        self._lbl_rms_global.setText(f"{r.get('rms_global', 0.0):.2f} mV")
+        self._lbl_iemg.setText(f"{r.get('iemg', 0.0):.1f} mV·s")
+        self._lbl_duracion.setText(f"{r.get('duration', 0.0):.1f} s")
+        self._actualizar_pico_tarea(r)
+        self._actualizar_procedencia_cvm(r)
+        self._btn_reps.setEnabled(bool(r.get("cal_rep_values")))
+        self._actualizar_etiqueta_reps()
+        self._actualizar_ayuda_reps()
+        self._diagnostico_repeticiones(r)
 
-        sign = r["fat_slope_sign"]
         decline = r.get("fat_pct_decline", 0.0)
-        if sign < 0:
-            texto = tr("Fatigue: DETECTED (MDF −{decline:.1f}%)").format(decline=decline)
-            color = "#cc0000"
-        elif sign > 0:
-            texto = tr("Fatigue: Not detected (MDF stable or increasing)")
-            color = "#007700"
+        veredicto = r.get("fat_verdict", INCONCLUSIVE)
+        if veredicto == FATIGUE:
+            texto = tr("Detected (MDF −{decline:.1f} %)").format(decline=decline)
+            color = "#B0243A"
+        elif veredicto == NO_FATIGUE:
+            texto = tr("Not detected (MDF stable or rising)")
+            color = "#1E7A3C"
         else:
-            texto = tr("Fatigue: Undetermined (insufficient signal)")
-            color = "#885500"
-        self._lbl_fatiga.setText(texto)
-        self._lbl_fatiga.setStyleSheet(f"font-size: 9px; padding: 0 4px; color: {color};")
+            # Not the same as "no fatigue", and it must not be read as one: the
+            # recording does not answer the question. It says the fit, because
+            # a bare "undetermined" gives the operator nothing to act on.
+            texto = tr("Not conclusive (trend does not fit, R²={r2:.2f})").format(r2=r2)
+            color = "#8A5A00"
+        # The verdict on one line, its reason in parentheses on the next: on
+        # one line the reason set the width of the whole panel.
+        self._lbl_fatiga.setText(_en_dos_lineas(texto))
+        self._lbl_fatiga.setStyleSheet(
+            f"font-size: 12px; font-weight: 600; color: {color};"
+        )
+
+    def _actualizar_pico_tarea(self, r: dict) -> None:
+        """What the task reached against the reference, on its own card.
+
+        The worker has always computed this to decide whether to warn, and
+        the warning only fired past 150 %. A task at 135 % of "maximum" got
+        no word at all, and the student read the panel as if the maximum
+        had been one. Now the number is shown every time, red when it says
+        the calibration was not maximal.
+        """
+        picos = r.get("task_peak_pct") or {}
+        partes = []
+        for nombre in (r.get("channel_name"), r.get("channel_name_2")):
+            if nombre and nombre in picos:
+                partes.append(f"{picos[nombre]:.0f} %")
+        if not partes:
+            self._lbl_pico.setText("—")
+            self._lbl_pico.setStyleSheet("font-size: 12px; font-weight: 600;")
+            return
+        texto = " / ".join(partes) + " " + tr("MVC")
+        if r.get("mvc_implausible"):
+            self._lbl_pico.setText(texto + "\n" + tr("not a maximum"))
+            self._lbl_pico.setStyleSheet(
+                "font-size: 12px; font-weight: 600; color: #B0243A;"
+            )
+            self._lbl_pico.setToolTip(tr(
+                "The task went well past the reference: the calibration did "
+                "not capture a maximum, so every % MVC here is too high in the "
+                "same proportion. Calibrate again, against something that "
+                "cannot move."
+            ))
+        else:
+            self._lbl_pico.setText(texto)
+            self._lbl_pico.setStyleSheet("font-size: 12px; font-weight: 600;")
+
+    def _actualizar_procedencia_cvm(self, r: dict) -> None:
+        """The reference and where it came from, in the summary bar.
+
+        Amber rather than red when there is none: a recording with no
+        calibration is not a fault, it is a recording that cannot answer the
+        questions that need one — and saying which is the point.
+        """
+        ref = r.get("mvc_ref")
+        fuente = r.get("mvc_ref_source", NO_CALIBRATION)
+        n_reps = len(r.get("cal_reps", {}).get(0, ()) or ())
+        if ref:
+            # Three short lines — the value, «calibration», «(6 repetitions)»
+            # — where one long one set the width of the whole panel.
+            self._lbl_cvm.setText(
+                f"{ref:.3f} mV\n{reference_source_text(fuente, n_reps, short=True)}"
+            )
+            self._lbl_cvm.setStyleSheet("font-size: 12px; font-weight: 600;")
+            return
+        self._lbl_cvm.setText(reference_source_text(NO_CALIBRATION, short=True))
+        self._lbl_cvm.setStyleSheet(
+            "font-size: 12px; font-weight: 600; color: #8A5A00;"
+        )
 
     # ------------------------------------------------------------------
     # Drawing the 7 panels (replicates analisis_emg_completo.py)
@@ -1034,17 +2168,51 @@ class AnalysisTab(QWidget):
                 ForceVelocityDialog,
             )
 
+            # The study reads the contraction table's rows — one per lift,
+            # with its load, RMS and velocity — so table, chart by load and
+            # study say the same thing. With no rows yet (no analysis has
+            # run) it segments the file itself, as it always did.
+            filas = list(self._filas_contr) or None
+            acc = (self._last_result or {}).get("acc_raw")
+            acc_plano = bool(
+                acc is not None and len(acc)
+                and float(acc.max() - acc.min()) < 0.02)
             dlg = ForceVelocityDialog(
                 path, canal, self._acc_channel_name,
                 f_env=self._spin_fenv.value(), parent=self,
+                rows=filas, loads=list(self._cargas_contr) if filas else None,
+                acc_flat=acc_plano,
             )
             dlg.exec()
+            self._ofrecer_afinado()
         except Exception as exc:  # pragma: no cover — GUI feedback only
             self._logger.append_error(
                 tr("Could not open the force-velocity study: {error}").format(
                     error=exc
                 )
             )
+
+    def _ofrecer_afinado(self) -> None:
+        """Say to save the tuned recording, once the study has been read.
+
+        Everything the study rests on was decided on screen: which maximal
+        efforts set the reference and which lifts count. None of it is in the
+        file, so the same recording opened tomorrow gives different numbers —
+        and this is the moment it is worth keeping, with the study just read
+        and the decisions still made. Once per recording, and never over a
+        recording that is already a derived one.
+        """
+        if self._paso_mostrado == "afinado" or not self._btn_afinado.isEnabled():
+            return
+        self._paso_mostrado = "afinado"
+        texto = tr(
+            "Next: «{button}». It writes a new recording with the "
+            "repetitions and the fragments you have just chosen, so reopening "
+            "it gives these same numbers. The original is not touched."
+        ).format(button=tr("Save tuned EDF…"))
+        self._lbl_siguiente.setText(texto)
+        self._lbl_siguiente.setVisible(True)
+        self.coach_step.emit(tr("Next step"), texto, self._btn_afinado)
 
     def _warn_channel_quality(self, path: str) -> None:
         """Log a per-channel warning when a loaded channel is flat or saturated.
@@ -1185,7 +2353,25 @@ class AnalysisTab(QWidget):
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
-        # --- 1B: Filtered + rectified ---
+        # --- 1B: Raw signal of the second muscle ---
+        if _RAW2_PID in ax_map:
+            ax = ax_map[_RAW2_PID]
+            crudo2 = r.get("emg_raw_2")
+            if crudo2 is not None:
+                ax.plot(times, crudo2, color="#333333", lw=0.8, alpha=0.7)
+            nombre2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+            ax.set_title(
+                tr("1B. Raw EMG signal — {muscle}").format(muscle=nombre2),
+                fontsize=9,
+            )
+            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            ax.set_xlim(inicio_s, fin_s)
+            ax.tick_params(labelsize=7)
+            ax.grid(True, **_grid)
+            self._dibujar_marcadores(ax, inicio_s, fin_s)
+
+        # --- Filtered + rectified ---
         if 1 in ax_map:
             ax = ax_map[1]
             ax.plot(times, r["emg_filtered"],
@@ -1238,26 +2424,42 @@ class AnalysisTab(QWidget):
         # --- Overlaid envelopes (agonist/antagonist) ---
         if _OVERLAY_PID in ax_map:
             ax = ax_map[_OVERLAY_PID]
+            # The one panel that puts two *different* muscles on a single axis.
+            # Their millivolts are not comparable — surface amplitude depends
+            # on the skin and fat between muscle and electrode, so a biceps can
+            # sit above a triceps by anatomy rather than by activation — so the
+            # two are drawn in % MVC whenever the recording carries a reference
+            # for both. That is the case worth reaching, and the one the MVC
+            # calibration exists to make possible.
+            env1, env2 = overlay_curves(r)
             lbl1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
-            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8, label=lbl1)
-            env2 = r.get("emg_envelope_2")
+            ax.plot(times, env1.data, color="#4169E1", lw=1.8, label=lbl1)
             if env2 is not None:
                 lbl2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-                ax.plot(times, env2, color="#D62728", lw=1.8, label=lbl2)
+                ax.plot(times, env2.data, color="#D62728", lw=1.8, label=lbl2)
             else:
                 ax.text(
                     0.5, 0.5,
-                    tr("Enable “Compare 2nd channel” to overlay the antagonist."),
+                    tr("This panel needs a recording with two muscles."),
                     transform=ax.transAxes, ha="center", va="center",
                     fontsize=8, color="#888888",
                 )
-            ax.set_title(tr("9. Overlaid envelopes (agonist/antagonist)"), fontsize=9)
-            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
+            # Extra pad so the fallback warning fits between title and axes.
+            ax.set_title(env1.title, fontsize=9,
+                         pad=16 if env1.warning else 6)
+            ax.set_ylabel(env1.ylabel, fontsize=8)
+            if env1.warning:
+                # In the figure, not in a tooltip: the figure travels on its
+                # own inside the PDF the student hands in.
+                ax.text(0.5, 1.005, env1.warning, transform=ax.transAxes,
+                        ha="center", va="bottom", fontsize=7,
+                        color="#B0243A")
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.legend(loc="upper right", fontsize=7)
             ax.grid(True, **_grid)
+            mark_excess_over_100(ax, env1.ylabel)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
         # --- EMG vs MMG (electrical vs mechanical) ---
@@ -1335,6 +2537,7 @@ class AnalysisTab(QWidget):
                 ax2.tick_params(axis="y", labelsize=7, colors="#D35400")
                 ax2.set_xlim(inicio_s, fin_s)
                 ax2.legend(loc="upper right", fontsize=7)
+                draw_emd_note(ax, r)
                 # The accelerometer is uncalibrated, so the movement trace is in
                 # arbitrary units — the point is that it tracks the contraction.
                 ax.text(0.5, 0.98,
@@ -1361,11 +2564,27 @@ class AnalysisTab(QWidget):
         # --- 4: PSD ---
         if 4 in ax_map:
             ax = ax_map[4]
-            ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.8)
-            ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=2.0,
-                       label=f"MNF: {r['mnf']:.1f} Hz")
-            ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
-                       label=f"MDF: {r['mdf']:.1f} Hz")
+            dos = r.get("psd_2") is not None
+            if dos:
+                # Both muscles, in the colours of the overlay panel, each
+                # with its own median frequency; the raw spectrum and the
+                # single-muscle markers would only clutter the comparison.
+                n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
+                n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+                ax.plot(r["frequencies"], r["psd"], color="#4169E1", lw=1.8,
+                        label=f"{n1}  (MDF {r['mdf']:.0f} Hz)")
+                ax.plot(r["frequencies_2"], r["psd_2"], color="#D62728", lw=1.8,
+                        label=f"{n2}  (MDF {r['mdf_2']:.0f} Hz)")
+                ax.axvline(r["mdf"], color="#4169E1", ls="--", lw=1.4, alpha=0.8)
+                ax.axvline(r["mdf_2"], color="#D62728", ls="--", lw=1.4, alpha=0.8)
+            else:
+                draw_spectrum_before_filter(ax, r)
+                ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.8,
+                        label=tr("After the filter"))
+                ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=2.0,
+                           label=f"MNF: {r['mnf']:.1f} Hz")
+                ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
+                           label=f"MDF: {r['mdf']:.1f} Hz")
             ax.set_title(tr("3. Power spectral density (PSD)"), fontsize=9)
             ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
             ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
@@ -1392,13 +2611,28 @@ class AnalysisTab(QWidget):
         # --- 6: MDF vs time ---
         if 6 in ax_map:
             ax = ax_map[6]
+            dos = r.get("mdf_seg_2") is not None
+            n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
             ax.scatter(r["t_seg"], r["mdf_seg"],
-                       s=20, alpha=0.7, color="#666666",
-                       label=tr("Median frequency per window"))
+                       s=20, alpha=0.7, color="#4169E1" if dos else "#666666",
+                       label=(tr("{muscle}: MDF per window").format(muscle=n1)
+                              if dos else tr("Median frequency per window")))
             if len(r["t_seg"]) >= 2:
                 ax.plot(r["t_seg"], r["fat_fitted"],
-                        color="#E74C3C", lw=2.5,
-                        label=tr("Trend (degree-2 polynomial)"))
+                        color="#4169E1" if dos else "#E74C3C", lw=2.5,
+                        label=(tr("{muscle}: trend").format(muscle=n1)
+                               if dos else tr("Trend (degree-2 polynomial)")))
+            if dos:
+                # Both muscles on one axis, in the colours of the overlay
+                # panel: the question here is whether one tires and the
+                # other does not.
+                n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
+                ax.scatter(r["t_seg_2"], r["mdf_seg_2"], s=20, alpha=0.7,
+                           color="#D62728",
+                           label=tr("{muscle}: MDF per window").format(muscle=n2))
+                if len(r["t_seg_2"]) >= 2:
+                    ax.plot(r["t_seg_2"], r["fat_fitted_2"], color="#D62728",
+                            lw=2.5, label=tr("{muscle}: trend").format(muscle=n2))
             ax.set_title(
                 tr(
                     "7. Fatigue trend: median frequency vs. time\n"
@@ -1460,6 +2694,61 @@ class AnalysisTab(QWidget):
         if ruta:
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
+
+    @Slot()
+    def _guardar_afinado(self) -> None:
+        """Write the recording out with this analysis's decisions inside it.
+
+        The name is proposed rather than asked for, and it never lands on the
+        original: tuning throws signal away, so its input has to stay
+        recoverable. The dialogue is still shown, because where a file goes is
+        the operator's decision — but the default answer is the safe one.
+        """
+        origen = self._edit_path.text().strip()
+        r = self._last_result or {}
+        if not origen or not r:
+            return
+        propuesta = tuned_path(origen)
+        destino, _ = QFileDialog.getSaveFileName(
+            self, tr("Save tuned recording"), str(propuesta),
+            tr("EDF files (*.edf *.EDF)"),
+        )
+        if not destino:
+            return
+        if Path(destino).resolve() == Path(origen).resolve():
+            self._err(tr(
+                "The tuned recording cannot replace the one it comes from: "
+                "tuning discards signal, so its source has to stay."
+            ))
+            return
+        etiquetas = self._labels_por_canal()
+        inverso = {n: i for i, n in etiquetas.items()}
+        refs = {}
+        for nombre, clave in ((r.get("channel_name"), "mvc_ref"),
+                              (r.get("channel_name_2"), "mvc_ref_2")):
+            canal = inverso.get(str(nombre or "").strip())
+            if canal is not None and r.get(clave):
+                refs[canal] = float(r[clave])
+        try:
+            resumen = build_tuned_edf(
+                origen, destino,
+                keep=self._cal_keep or None,
+                fragments=self._selected_segments or None,
+                fragment_labels=self._segment_labels or None,
+                references=refs or None,
+                when=datetime.now(),
+            )
+        except Exception as exc:
+            self._err(tr("Could not write the tuned recording: {err}")
+                      .format(err=exc))
+            return
+        self._logger.append_log(tr(
+            "Tuned recording saved: {name} — {kept}/{total} calibration "
+            "repetition(s), {secs:.1f} s of {full:.1f} s of the task. The "
+            "original is untouched."
+        ).format(name=Path(destino).name, kept=resumen.reps_kept,
+                 total=resumen.reps_total, secs=resumen.kept_s,
+                 full=resumen.full_s))
 
     @Slot()
     def _exportar_csv(self) -> None:
@@ -1621,8 +2910,7 @@ class AnalysisTab(QWidget):
             ruta += ".pdf"
         out = Path(ruta)
         meta = {
-            "student": self._edit_student.text().strip(),
-            "student_code": self._edit_student_code.text().strip(),
+            "student_code": self._student_code.strip(),
             "protocol": getattr(self, "_edf_protocol", ""),
         }
         try:
@@ -1640,62 +2928,30 @@ class AnalysisTab(QWidget):
     # Marcadores
     # ------------------------------------------------------------------
 
-    def _on_scroll_zoom(self, event) -> None:
-        """Mouse-wheel zoom on the panel under the cursor (X and Y), centred
-        on the cursor position — mirrors the pyqtgraph behaviour of the
-        acquisition tab."""
-        ax = event.inaxes
-        if ax is None or event.xdata is None or event.ydata is None:
-            return
-        scale = 1.0 / 1.2 if event.button == "up" else 1.2
-        x, y = event.xdata, event.ydata
-        x0, x1 = ax.get_xlim()
-        y0, y1 = ax.get_ylim()
-        ax.set_xlim(x - (x - x0) * scale, x + (x1 - x) * scale)
-        ax.set_ylim(y - (y - y0) * scale, y + (y1 - y) * scale)
-        self._canvas.draw_idle()
-
     def _dibujar_marcadores(self, ax, inicio_s: float, fin_s: float) -> None:
+        """Marks on the signal: a line each, and a word only where a word says
+        something.
+
+        The automatic onsets came with «Onset (auto)» written up each line,
+        rotated — twenty-four of them across an eighteen-second recording,
+        over the trace they were meant to point at. They are all the same
+        word. A thin line places the onset; what it was is in the legend of
+        the phase markers, which do keep their text, since «REC start» or a
+        named manoeuvre is information the line alone does not carry.
+        """
         for t_mark, lbl_mark in self._markers:
-            if inicio_s <= t_mark <= fin_s:
-                ax.axvline(t_mark, color="#E67E22", linestyle="--",
-                           linewidth=1.2, alpha=0.8)
-                txt = (lbl_mark[:15] + "…") if len(lbl_mark) > 15 else lbl_mark
-                ax.text(t_mark, ax.get_ylim()[1], txt,
-                        fontsize=7, rotation=90, va="top", ha="right",
-                        color="#E67E22")
-
-    def _actualizar_lista_marcadores(self) -> None:
-        sorted_m = sorted(self._markers, key=lambda x: x[0])
-        n = len(sorted_m)
-        self._lbl_markers_bar.setText(tr("Markers ({n}):").format(n=n))
-        self._combo_markers.blockSignals(True)
-        self._combo_markers.clear()
-        if sorted_m:
-            for tiempo, etiqueta in sorted_m:
-                self._combo_markers.addItem(f"t={tiempo:.1f} s — {etiqueta}")
-            self._combo_markers.setEnabled(True)
-            self._btn_ir_marcador.setEnabled(True)
-        else:
-            self._combo_markers.addItem(tr("No markers"))
-            self._combo_markers.setEnabled(False)
-            self._btn_ir_marcador.setEnabled(False)
-        self._combo_markers.blockSignals(False)
-
-    def _on_ir_marcador(self) -> None:
-        sorted_m = sorted(self._markers, key=lambda x: x[0])
-        idx = self._combo_markers.currentIndex()
-        if idx < 0 or idx >= len(sorted_m):
-            return
-        tiempo, _ = sorted_m[idx]
-        _, dur = self._time_range.get_range()
-        nuevo_inicio = max(0.0, min(tiempo - dur / 2, self._duracion_total - dur))
-        self._time_range.set_range(nuevo_inicio, dur)
-        self._lbl_inicio_info.setText(f"{tr('Start:')}{nuevo_inicio:.1f} s")
-        self._lbl_duracion_info.setText(f"{tr('Duration:')}{dur:.1f} s")
-        self._sync_combo_zoom()
-        if self._last_result is not None:
-            self._dibujar_paneles(self._last_result)
+            if not (inicio_s <= t_mark <= fin_s):
+                continue
+            automatica = "(auto)" in str(lbl_mark)
+            ax.axvline(t_mark, color="#E67E22", linestyle="--",
+                       linewidth=0.7 if automatica else 1.2,
+                       alpha=0.45 if automatica else 0.8)
+            if automatica:
+                continue
+            txt = (lbl_mark[:15] + "…") if len(lbl_mark) > 15 else lbl_mark
+            ax.text(t_mark, ax.get_ylim()[1], txt,
+                    fontsize=7, rotation=90, va="top", ha="right",
+                    color="#E67E22")
 
     # ------------------------------------------------------------------
     # Per-panel vertical scale
@@ -1733,10 +2989,29 @@ class AnalysisTab(QWidget):
                 lambda checked=False, a=ax, pi=panel_idx: self._y_zoom(pi, a, False)
             )
 
+            # Time scale beside the amplitude, where the hand already is. The
+            # wheel used to do this over whichever panel it was on; now it
+            # scrolls the page, and the scale is a button like the rest.
+            btn_in = QToolButton()
+            btn_in.setText("▶◀")
+            btn_in.setFixedSize(32, 18)
+            btn_in.setStyleSheet("font-size: 9px;")
+            btn_in.setToolTip(tr("Narrow the time window (÷2)"))
+            btn_in.clicked.connect(self._on_tiempo_reducir)
+            btn_out = QToolButton()
+            btn_out.setText("◀▶")
+            btn_out.setFixedSize(32, 18)
+            btn_out.setStyleSheet("font-size: 9px;")
+            btn_out.setToolTip(tr("Widen the time window (×2)"))
+            btn_out.clicked.connect(self._on_tiempo_ampliar)
+
             slot_vbox.addStretch()
             slot_vbox.addWidget(btn_up, alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addWidget(lbl, alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addWidget(btn_dn, alignment=Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addSpacing(4)
+            slot_vbox.addWidget(btn_in, alignment=Qt.AlignmentFlag.AlignHCenter)
+            slot_vbox.addWidget(btn_out, alignment=Qt.AlignmentFlag.AlignHCenter)
             slot_vbox.addStretch()
 
             self._y_scale_sidebar_layout.addWidget(slot, stretch=1)
@@ -1832,7 +3107,7 @@ class AnalysisTab(QWidget):
 
     def _set_controles_habilitados(self, habilitado: bool) -> None:
         self._btn_abrir.setEnabled(habilitado)
-        self._btn_analizar.setEnabled(habilitado and bool(self._edit_path.text()))
+        self._actualizar_boton_analizar()
         self._combo_canal.setEnabled(habilitado)
         self._spin_fenv.setEnabled(habilitado)
         self._chk_roi.setEnabled(habilitado)
@@ -1852,16 +3127,32 @@ class AnalysisTab(QWidget):
     # New-session reset
     # ------------------------------------------------------------------
 
+    def _mostrar_estado_vacio(self) -> None:
+        """A blank canvas says nothing; this one says what to do.
+
+        Before the first analysis the panel area was a white rectangle two
+        thirds of the screen tall, with no word on it. The next action is one
+        line, and it goes in the middle of the space it is about.
+        """
+        self._fig.clear()
+        ax = self._fig.add_subplot(111)
+        ax.axis("off")
+        ax.text(
+            0.5, 0.5,
+            tr("Open a recording, or record one in Acquisition: it is "
+               "analysed on its own."),
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=11, color="#7A8590",
+        )
+        self._canvas.draw_idle()
+
     def _reset_summary_labels(self) -> None:
-        _st = "font-size: 11px; padding: 0 6px;"
-        self._lbl_mnf.setText(f"{tr('Mean frequency (MNF):')} —")
-        self._lbl_mdf.setText(f"{tr('Median frequency (MDF):')} —")
-        self._lbl_fatiga.setText(f"{tr('Fatigue:')} —")
-        self._lbl_fatiga.setStyleSheet(_st)
-        self._lbl_pendiente.setText(f"{tr('MDF slope:')} —")
-        self._lbl_rms_global.setText(f"{tr('Global RMS:')} —")
-        self._lbl_iemg.setText("iEMG: —")
-        self._lbl_duracion.setText(f"{tr('Duration:')} —")
+        _st = "font-size: 12px; font-weight: 600;"
+        for lbl in (self._lbl_mnf, self._lbl_mdf, self._lbl_fatiga,
+                    self._lbl_pendiente, self._lbl_rms_global, self._lbl_iemg,
+                    self._lbl_duracion, self._lbl_pico, self._lbl_cvm):
+            lbl.setText("—")
+            lbl.setStyleSheet(_st)
         self._lbl_archivo.setText("")
 
     def reset(self) -> None:
@@ -1876,10 +3167,7 @@ class AnalysisTab(QWidget):
         self._duracion_total = 60.0
 
         self._edit_path.clear()
-        # Clearing the student fields also clears their persisted QSettings
-        # values (textChanged is wired to setValue).
-        self._edit_student.clear()
-        self._edit_student_code.clear()
+        self._student_code = ""
         self._spin_fenv.setValue(5.0)
         self._combo_canal.blockSignals(True)
         self._combo_canal.clear()
@@ -1888,23 +3176,22 @@ class AnalysisTab(QWidget):
 
         self._btn_analizar.setEnabled(False)
         self._btn_fragmentos.setEnabled(False)
-        self._selected_segments = []
-        self._analysis_filter_kwargs = None
-        self._actualizar_etiqueta_fragmentos()
+        self._btn_reps.setEnabled(False)
+        self._olvidar_lo_elegido()
         self._btn_guardar.setEnabled(False)
         self._btn_informe.setEnabled(False)
         self._btn_csv.setEnabled(False)
-        self._btn_redibujar.setEnabled(False)
+        self._btn_afinado.setEnabled(False)
 
         self._reset_summary_labels()
-        self._actualizar_lista_marcadores()
+        self._box_contr.setVisible(False)
+        self._tbl_contr.setRowCount(0)
 
         self._progress.setVisible(False)
         self._progress.setValue(0)
         self._progress.setFormat(tr("Ready"))
 
-        self._fig.clear()
-        self._canvas.draw_idle()
+        self._mostrar_estado_vacio()
         self._axes_list = []
         self._rebuild_y_sidebar([])
 
@@ -1916,6 +3203,176 @@ class AnalysisTab(QWidget):
         self._combo_zoom.setEnabled(False)
         self._lbl_inicio_info.setText(f"{tr('Start:')} 0.0 s")
         self._lbl_duracion_info.setText(f"{tr('Duration:')} 10.0 s")
+
+    def apply_mode(self, mode: str, advanced: bool) -> None:
+        """Offer the analyses that belong to one practical.
+
+        Whole containers are hidden rather than individual widgets: the region
+        and cut-off controls sit beside plain QLabels ("from", "to", "Envelope
+        cutoff frequency (Hz):") that are not kept as attributes and would
+        otherwise be left behind.
+        """
+        self._mode = mode
+        self._advanced = advanced
+
+        # Comparing two channels only means something with two of them, and
+        # the force-velocity study needs the accelerometer.
+        self._box_compare.setVisible(mode == MODE_PAIR)
+        # Shares its row with Save / PDF / CSV, which stay; it carries its own
+        # caption, so hiding it alone leaves nothing behind.
+        self._btn_fv.setVisible(mode_uses_acc(mode))
+
+        # Shared by every mode: fine control.
+        self._box_fenv.setVisible(advanced)
+        # The region of interest is never shown. It asks for two numbers the
+        # student does not have, over a recording they are looking at, when
+        # the fragment editor beside it does the same job by pointing. The
+        # widgets stay built — the worker still reads them, and a region set
+        # by a script still works — but nothing on screen offers them.
+        self._box_roi.setVisible(False)
+        self._box_tools.setVisible(advanced)
+        # Saving a derived EDF is for whoever curates the recordings, not for
+        # the student reading one; and its name explains nothing to them.
+        self._btn_afinado.setVisible(advanced)
+        # Offered in every practical; see where it is built.
+        self._box_fragmentos.setVisible(True)
+
+        self._sync_compare_to_mode()
+        # Every practical has panels to reveal; see _panel_is_offered.
+        self._btn_mas_paneles.setVisible(True)
+        self._apply_panel_visibility(mode, advanced)
+
+    def _sync_compare_to_mode(self) -> None:
+        """Comparing follows the mode and the file, never a separate tick.
+
+        In the agonist/antagonist mode the two channels come from the
+        recording, so the overlay is simply on whenever the file really has
+        two. Any other mode leaves it off.
+        """
+        # setEnabled() tracks whether the loaded file has a second channel.
+        want = self._mode == MODE_PAIR and self._chk_compare2.isEnabled()
+        if self._chk_compare2.isChecked() != want:
+            self._chk_compare2.setChecked(want)
+
+    def _warn_mode_mismatch(self, n_channels: int) -> None:
+        """The file cannot support the chosen practical — say so, and say what
+        to do about it. Left to itself the tab would silently behave as a
+        single-channel analysis while the mode still claimed two muscles."""
+        msg = tr(
+            "This recording has {n} EMG channel(s), and the agonist / "
+            "antagonist mode needs two."
+        ).format(n=n_channels)
+        self._logger.append_error(msg)
+        QMessageBox.warning(
+            self,
+            tr("The recording does not match the mode"),
+            msg
+            + "\n\n"
+            + tr(
+                "Choose \"Single-muscle contraction\" or \"Muscle "
+                "kinematics\" at the top of the window, or open a "
+                "two-channel recording."
+            ),
+        )
+
+    def _ask_which_channel(self, labels: list[str]) -> None:
+        """Two muscles recorded, one to be analysed: let the student say which.
+
+        The buttons carry the channel labels themselves, so the choice is
+        between "Biceps" and "Triceps" rather than between EMG1 and EMG2 —
+        which is the whole reason the labels are typed at recording time.
+        """
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle(tr("Which muscle is being analysed?"))
+        msg.setText(
+            tr(
+                "This recording has two muscles. This practical studies one at "
+                "a time, so every panel, metric and report will be about the "
+                "channel chosen here."
+            )
+        )
+        botones = [msg.addButton(name, QMessageBox.ButtonRole.AcceptRole)
+                   for name in labels[:2]]
+        msg.setDefaultButton(botones[0])
+        msg.exec()
+
+        elegido = next(
+            (n for b, n in zip(botones, labels) if msg.clickedButton() is b),
+            labels[0],
+        )
+        idx = self._combo_canal.findText(elegido)
+        if idx >= 0:
+            self._combo_canal.setCurrentIndex(idx)
+        self._logger.append_log(
+            tr("Analysing {muscle}.").format(muscle=elegido)
+        )
+
+    def _panel_is_offered(self, index: int, mode: str, advanced: bool) -> bool:
+        """Whether the panel at this display position suits mode and flag.
+
+        The agonist/antagonist practical is a closed set: the raw trace of
+        each muscle and the two envelopes overlaid, and nothing else. Adding a
+        spectrum or a fatigue slope there would be about one of the two
+        muscles, which is not what the practical is asking.
+
+        Elsewhere the first three (raw, normalised envelope, PSD) are the
+        teaching core and are always offered; the next five are further EMG
+        analyses that apply to any practical, so they follow the fine-control
+        level; the rest belong to one practical each.
+        """
+        pid = self._panel_pids[index]
+        # Each practical opens on its own set; «More panels…» reveals the
+        # rest in every practical, since a curious student is not confined
+        # to the advanced one. Panels that need what the recording does not
+        # have (a second muscle, an accelerometer) stay hidden regardless.
+        if mode == MODE_KINEMATICS:
+            propios = pid in _CORE_PIDS or pid in _ACC_PIDS
+        elif mode == MODE_PAIR:
+            # Raw trace of each muscle, the two envelopes overlaid, and the
+            # spectrum and the fatigue trend of both: whether one tires and
+            # the other does not is a question only a pair can answer.
+            propios = pid in (0, _RAW2_PID, _OVERLAY_PID, 4, 6)
+        else:
+            propios = pid in _CORE_PIDS
+        if propios:
+            return True
+        if not self._mas_paneles:
+            return False
+        if pid in (_RAW2_PID, _OVERLAY_PID):
+            return mode != MODE_SINGLE       # both need a second muscle
+        if pid in _ACC_PIDS:
+            return mode_uses_acc(mode)
+        return True
+
+    @Slot(bool)
+    def _on_mas_paneles(self, checked: bool) -> None:
+        """Reveal or fold the panels outside the practical's own six."""
+        self._mas_paneles = bool(checked)
+        self._apply_panel_visibility(self._mode, self._advanced)
+
+    def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:
+        """Hide the panels this practical does not use, and untick them.
+
+        Hiding the checkbox is not enough: the plotting code selects panels by
+        isChecked(), so a panel ticked under one mode would still be drawn
+        under another, with no visible way to turn it off. What gets hidden is
+        remembered, so coming back restores the selection.
+        """
+        for i, chk in enumerate(self._chk_paneles):
+            offered = self._panel_is_offered(i, mode, advanced)
+            if offered:
+                chk.setVisible(True)
+                was = self._hidden_panels_checked.pop(i, None)
+                # Panels unavailable for the loaded file (overlay without a
+                # second channel, ACC panels without an ACC channel) stay off.
+                if was and chk.isEnabled():
+                    chk.setChecked(True)
+            else:
+                if i not in self._hidden_panels_checked:
+                    self._hidden_panels_checked[i] = chk.isChecked()
+                chk.setChecked(False)
+                chk.setVisible(False)
 
     def cleanup(self) -> None:
         """Called by MainWindow.closeEvent — cancels and waits for the worker."""

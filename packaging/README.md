@@ -20,7 +20,6 @@ From the **project root**, inside the project venv (Python 3.10–3.12):
 ```powershell
 pip install -e ".[build]"        # installs PyInstaller
 pip install reportlab            # hard runtime dep, needed in the bundle
-pip install bitalino --no-deps   # pure-Python BITalino module (no PyBluez)
 pyinstaller --noconfirm --clean packaging\emgteach.spec
 ```
 
@@ -53,16 +52,16 @@ one-file bundle self-extracts to a temp folder). No install, no admin rights.
 ### Hardware backends in the .exe
 
 - **Arduino + MyoWare** — over USB serial (`pyserial`). Works out of the box.
-- **BITalino (revolution)** — bundled via the pure-Python `bitalino` module,
-  which talks to the device over the **Windows Bluetooth virtual COM port**
-  (e.g. `COM5`), so **PyBluez is not required**.
+- **BITalino (revolution)** — over the **Windows Bluetooth virtual COM port**
+  (e.g. `COM5`), using `pyserial`. The backend speaks the BITalino protocol
+  itself, so no external `bitalino` module and no PyBluez are bundled.
 
   **How to connect:** pair the BITalino in Windows Bluetooth settings first;
   Windows then exposes an outgoing COM port for it. In the acquisition tab,
-  enter that **`COMx` port** in the device-address field (instead of the MAC
-  address). If a MAC address is entered, the bundled library cannot open it
-  without PyBluez and reports: *"Please connect using the Virtual COM Port…"* —
-  this is expected, not a crash.
+  prefer the device's **MAC address** — it is the same on every PC, whereas
+  the COM number is assigned per machine and can change. The app resolves the
+  MAC to the current COM port by reading the port list. An explicit `COMx` is
+  also accepted, and an empty field autodetects.
 
 ## Notes / limitations
 

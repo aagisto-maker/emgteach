@@ -235,10 +235,12 @@ def test_guided_force_velocity_marks_each_load(qapp) -> None:
     tab.cleanup()
 
 
-def test_guided_fv_button_enabled_when_connected_with_acc(qapp) -> None:
-    """The guided F-V button is available once a BITalino is connected with the
-    ACC on — before recording and for any placement — so the load dialog can
-    always be reached (the wizard starts the recording itself)."""
+def test_fv_parameters_button_never_needs_the_hardware(qapp) -> None:
+    """The plan is set before anything is connected and kept for the
+    recording, so the button is available in every state — not connected,
+    connected, any placement, ACC off — and only a running guide disables
+    it. (It used to be «Guided F-V…», gated on a connected BITalino with the
+    ACC on, because it started the recording itself.)"""
     from PySide6.QtCore import QSettings
 
     from emgteach.gui.tabs.acquisition import AcquisitionTab
@@ -248,26 +250,25 @@ def test_guided_fv_button_enabled_when_connected_with_acc(qapp) -> None:
     settings.clear()
     tab = AcquisitionTab(LoggerWidget(), settings)
 
-    # Not connected yet -> disabled.
     tab._chk_acc.setChecked(True)
     tab._update_fv_button()
-    assert not tab._btn_fv_guided.isEnabled()
+    assert tab._btn_fv_guided.isEnabled()
 
-    # Connected (BITalino) + ACC on -> enabled even while idle (not recording).
     tab._combo_device_type.setCurrentIndex(0)
     tab._btn_conectar.setChecked(True)
     tab._update_fv_button()
     assert tab._btn_fv_guided.isEnabled()
 
-    # Enabled regardless of placement (muscle) — the dialog warns instead.
     tab._combo_acc_place.setCurrentIndex(0)   # muscle
+    tab._chk_acc.setChecked(False)
     tab._update_fv_button()
     assert tab._btn_fv_guided.isEnabled()
 
-    # ACC off -> disabled.
-    tab._chk_acc.setChecked(False)
+    # A guide running is the one thing that takes it away.
+    tab._fv_active = True
     tab._update_fv_button()
     assert not tab._btn_fv_guided.isEnabled()
+    tab._fv_active = False
     settings.clear()
     tab.cleanup()
 
@@ -318,3 +319,151 @@ def test_reset_clears_acquisition_view(qapp) -> None:
     assert tab._total_samples == 0
     assert not tab._spin_warning.isEnabled()
     tab.cleanup()
+
+
+@pytest.mark.gui
+def test_a_new_session_leaves_the_plots_empty(qapp) -> None:
+    """No leftover lines across the plots.
+
+    Reported from the bench as looking careless, and it was: the ring buffers
+    are *filled* with zeros rather than emptied, and reset() forces a redraw.
+    Fresh from start-up nobody sees it, because no redraw is forced before the
+    first samples arrive; after «New session» one is, so the tab came back with
+    a flat line along the envelope and, stacked, one along each lane.
+    """
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    settings = QSettings("emgteach-test", "acq-lineas")
+    settings.clear()
+    tab = AcquisitionTab(LoggerWidget(), settings)
+    tab._n_channels = 2
+    tab._apply_channel_visibility()
+
+    # Some signal on the plots, as after a recording.
+    tab._total_samples = 5 * 1000
+    tab._new_data = True
+    tab._refresh_plots(force=True)
+    assert any(c.getData()[0] is not None and len(c.getData()[0])
+               for c in tab._curves_env[:2])
+
+    tab.reset()
+
+    for nombre, curvas in (("raw", tab._curves_raw), ("env", tab._curves_env)):
+        for i, curva in enumerate(curvas):
+            x, _y = curva.getData()
+            assert x is None or len(x) == 0, (
+                f"la curva {nombre}[{i}] sigue dibujada tras «Nueva sesión»"
+            )
+
+    # The axis is the live window, not whatever was there before…
+    izq, der = tab._plot_raw.getViewBox().viewRange()[0]
+    assert der - izq == pytest.approx(tab._n_visible / 1000, abs=0.6)
+
+    # …and it can still follow the next recording. Setting an explicit range
+    # turns pyqtgraph's auto-range off, and an axis stuck at five seconds while
+    # the window is widened is the same "advancing over an empty canvas" the
+    # session review already had to fix once.
+    for pw in (tab._plot_raw, tab._plot_env):
+        assert pw.getViewBox().autoRangeEnabled()[0], (
+            "el auto-rango del eje X se ha quedado apagado"
+        )
+    tab.cleanup()
+
+
+@pytest.mark.gui
+class TestTheTimeWindowControls:
+    """The two arrow buttons and the zoom combo, pressed while idle.
+
+    Reported from the bench as "I click and the time scale does not change".
+    It was true, and only when idle: the handlers changed the number of
+    visible samples and left the repaint to the next frame that carried new
+    samples. Recording, that frame arrives in thirty milliseconds and nobody
+    notices; standing still it never arrives, so the caption moved and the
+    plot did not. The vertical ▲▼ buttons in the same corner had always
+    forced the repaint.
+    """
+
+    @pytest.fixture
+    def tab(self, qapp):
+        from PySide6.QtCore import QSettings
+
+        from emgteach.gui.tabs.acquisition import AcquisitionTab
+        from emgteach.gui.widgets.logger import LoggerWidget
+
+        ajustes = QSettings("emgteach-test", "ventana-tiempo")
+        ajustes.clear()
+        widget = AcquisitionTab(LoggerWidget(), ajustes)
+        widget.show()
+        # With something recorded, which is the situation the complaint came
+        # from: the plots hold a trace and pressing ◀▶ does not move it. An
+        # empty tab draws nothing at all now — the ring buffers are filled with
+        # zeros rather than emptied, and drawing those put phantom lines across
+        # a fresh session — so measuring the drawn extent there would measure
+        # the absence of a bug that used to be one.
+        widget._total_samples = 30 * 1000
+        qapp.processEvents()
+        yield widget
+        widget.cleanup()
+
+    @staticmethod
+    def _span(tab) -> float:
+        x, _y = tab._curves_raw[0].getData()
+        return 0.0 if x is None or not len(x) else float(x[-1])
+
+    def test_widening_moves_the_axis_with_nothing_recording(self, tab, qapp):
+        tab._refresh_plots(force=True)
+        antes = self._span(tab)
+        tab._on_tiempo_ampliar()
+        qapp.processEvents()
+        assert self._span(tab) > antes
+
+    def test_narrowing_moves_it_back(self, tab, qapp):
+        tab._refresh_plots(force=True)
+        antes = self._span(tab)
+        tab._on_tiempo_reducir()
+        qapp.processEvents()
+        assert self._span(tab) < antes
+
+    def test_the_combo_moves_it_too(self, tab, qapp):
+        tab._refresh_plots(force=True)
+        antes = self._span(tab)
+        tab._on_combo_zoom_changed(0)      # the whole buffer
+        qapp.processEvents()
+        assert self._span(tab) > antes
+
+    def test_the_caption_says_the_window_that_is_set(self, tab):
+        """It opened claiming "30 s visible" over a five-second window, so the
+        first press of ◀▶ looked like it shrank the window: the caption fell
+        from 30 to 10 while the window doubled."""
+        assert tab._lbl_ventana_info.text().startswith("5")
+        tab._on_tiempo_ampliar()
+        assert tab._lbl_ventana_info.text().startswith("10")
+
+
+@pytest.mark.gui
+def test_the_colour_key_is_offered_only_with_two_channels(qapp) -> None:
+    """With one channel it named the only trace on screen, in the colour that
+    trace already is. With two it is the only key the envelope plot has: the
+    raw plot writes each muscle's name inside its own lane, the envelope
+    overlays both curves and names neither."""
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+    from emgteach.modes import MODE_PAIR, MODE_SINGLE
+
+    ajustes = QSettings("emgteach-test", "leyenda")
+    ajustes.clear()
+    tab = AcquisitionTab(LoggerWidget(), ajustes)
+    tab.show()
+    qapp.processEvents()
+    try:
+        tab.apply_mode(MODE_SINGLE, False)
+        assert tab._lbl_legend.isHidden()
+        tab.apply_mode(MODE_PAIR, False)
+        assert not tab._lbl_legend.isHidden()
+    finally:
+        tab.cleanup()

@@ -35,6 +35,7 @@ __all__ = [
     "assign_loads_to_reps",
     "force_velocity_curves",
     "fv_load_marker",
+    "movement_onset_signal",
     "parse_fv_load_markers",
     "rep_metrics",
     "segment_contractions",
@@ -158,6 +159,32 @@ def velocity_from_acc(
     a_hp = sosfiltfilt(sos, a)
     v = cumulative_trapezoid(a_hp, dx=1.0 / fs, initial=0.0)
     return sosfiltfilt(sos, v)
+
+
+def movement_onset_signal(
+    acc: np.ndarray, fs: float, hp_cutoff: float = 0.5, win_s: float = 0.05
+) -> np.ndarray:
+    """A fast trace of how much the segment is moving, for finding when it
+    began to: the high-passed acceleration, rectified and averaged over
+    ``win_s``.
+
+    The movement *envelope* the panels draw is smoothed at 3 Hz with zero
+    phase, which spreads every rise a hundred milliseconds to each side —
+    more than the electromechanical delay it was being used to measure, so
+    the movement seemed to begin before the muscle did. Fifty milliseconds
+    of averaging is enough to ride over the accelerometer's noise and short
+    enough to leave the onset where it was.
+    """
+    a = np.asarray(acc, dtype=np.float64)
+    if a.size < 10:
+        return np.zeros_like(a)
+    a = a - float(np.mean(a))
+    sos = iirfilter(
+        2, hp_cutoff, btype="high", fs=fs, ftype="butter", output="sos"
+    )
+    mag = np.abs(sosfiltfilt(sos, a))
+    w = max(1, round(win_s * fs))
+    return np.convolve(mag, np.ones(w) / w, mode="same")
 
 
 def segment_contractions(

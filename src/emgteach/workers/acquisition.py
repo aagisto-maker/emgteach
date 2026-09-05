@@ -340,6 +340,11 @@ class AcquisitionWorker(QThread):
                 edf_path, channels=channels, metadata=self._metadata
             )
             self.log.emit(tr("Recording to: {path}").format(path=edf_path))
+            # What the EDF+ identification block could not hold. Said here,
+            # while the bench can still act on it, rather than discovered at
+            # marking from a protocol that names half a practice.
+            for notice in writer.header_notices:
+                self.log.emit(notice)
 
             sleep_ms = max(1, int(self._n_per_read / fs * 500))
             self._running = True

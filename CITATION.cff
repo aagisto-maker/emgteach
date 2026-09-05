@@ -21,10 +21,20 @@ abstract: >-
   movement-versus-EMG analysis panel, a guided force-velocity acquisition wizard
   (an MVC maximum followed by cued quick lifts, each auto-marked with its load)
   and a force-velocity study that turns one recording into the load-velocity,
-  Hill force-velocity, power and recruitment curves.
+  Hill force-velocity, power and recruitment curves. Version 3.0.0 configures
+  the application by choosing the practical rather than by setting controls one
+  at a time: three practicals (one muscle, agonist/antagonist and muscle
+  kinematics) fix the channel count, the accelerometer and what each tab
+  offers. The session becomes a single file with its phases marked inside it,
+  so the maximum voluntary contraction every percentage is measured against
+  travels with the signal; it adds a guided tour, contextual help on every
+  box, one analysis row per contraction with its electromechanical delay, an
+  agonist/antagonist co-activation index (Falconer-Winter) computed per marked
+  phase in %MVC, and a derived "tuned" recording that carries the decisions
+  taken on screen.
 type: software
-version: 2.0.0
-date-released: "2026-07-19"
+version: 3.0.0
+date-released: "2026-09-05"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
@@ -66,7 +76,7 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.21440569
     description: "Version-specific DOI for emgteach v2.0.0"
-  # (History: v1.4.1 = 10.5281/zenodo.21362249; v1.3.0 = 10.5281/zenodo.21292858; v1.2.1 = 10.5281/zenodo.21289905; v1.2.0 = 10.5281/zenodo.21281048; v1.1.1 = 10.5281/zenodo.21197452; v1.1.0 = 10.5281/zenodo.21197169; v1.0.0 = 10.5281/zenodo.21002298.)
+  # (History: v1.4.1 = 10.5281/zenodo.21362249; v1.4.0 = 10.5281/zenodo.21361921; v1.3.0 = 10.5281/zenodo.21292858; v1.2.1 = 10.5281/zenodo.21289905; v1.2.0 = 10.5281/zenodo.21281048; v1.1.2 = 10.5281/zenodo.21203730; v1.1.1 = 10.5281/zenodo.21197452; v1.1.0 = 10.5281/zenodo.21197169; v1.0.0 = 10.5281/zenodo.21002298; v0.3.0 = 10.5281/zenodo.20723266; v0.1.0 = 10.5281/zenodo.20110846.)
 keywords:
   - electromyography
   - EMG

@@ -44,15 +44,6 @@ class TestEmgProfileValues:
         assert p.ylim_filtered == (-0.8, 0.8)
         assert p.ylim_envelope == (0.0, 0.5)
 
-    def test_marker_presets(self) -> None:
-        # The acquisition tab historically offered exactly these labels.
-        assert EMG_PROFILE.marker_presets == (
-            "Contraction onset",
-            "Contraction end",
-            "Fatigue",
-            "Rest",
-            "Other…",
-        )
 
 
 class TestFilterKwargs:
@@ -156,9 +147,6 @@ class TestEcgProfile:
         (ch,) = ECG_PROFILE.build_channels()
         assert ch.label == "ECG"
         assert ch.sample_frequency == ECG_PROFILE.sample_frequency
-
-    def test_ecg_marker_presets(self) -> None:
-        assert "QRS complex" in ECG_PROFILE.marker_presets
 
     def test_registry_contains_both_profiles(self) -> None:
         assert PROFILES["EMG"] is EMG_PROFILE

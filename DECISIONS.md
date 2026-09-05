@@ -200,7 +200,8 @@ contraction → 95th-percentile reference per channel) feeds an ``OnlineLoad``
 accumulator (``emgteach.apda``), and a compact panel shows a per-channel
 **load bar** with tiredness (warning) / fatigue (danger) zones plus the running
 static / median / peak. Thresholds (``apda_warning_limit`` /
-``apda_danger_limit``) and the calibration duration (``apda_calib_s``) live in
+``apda_danger_limit``) and the calibration's shape (``mvc_bursts``,
+``mvc_burst_s``: three brief maximal efforts, 1.5 s each) live in
 the ``SignalProfile``. Calibration happens during recording (envelope only
 streams then); the calibration contraction is part of the EDF, which is
 acceptable for the teaching use case.

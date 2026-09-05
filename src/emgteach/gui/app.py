@@ -14,12 +14,23 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QSettings, Qt, QTimer, qInstallMessageHandler
+from PySide6.QtCore import (
+    QLibraryInfo,
+    QSettings,
+    QSize,
+    Qt,
+    QTimer,
+    QTranslator,
+    qInstallMessageHandler,
+)
 from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QHBoxLayout,
+    QLabel,
+    QLayout,
     QMainWindow,
     QMessageBox,
     QSplashScreen,
@@ -34,8 +45,20 @@ from emgteach.broadcast import BroadcastServer
 from emgteach.gui.tabs.acquisition import AcquisitionTab
 from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
+from emgteach.gui.tour import build_tour
+from emgteach.gui.widgets.coach import CoachMark, CoachStep
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.i18n import get_language, resolve_startup_language, set_language, tr
+from emgteach.modes import (
+    DEFAULT_MODE,
+    MODE_SINGLE,
+    MODES,
+    mode_complexity_colour,
+    mode_complexity_label,
+    mode_label,
+    mode_shows_fine_controls,
+    normalise_mode,
+)
 
 # ---------------------------------------------------------------------------
 # Splash screen
@@ -126,6 +149,23 @@ class MainWindow(QMainWindow):
         self._tab_ana = AnalysisTab(self._logger, settings, broadcast=self._broadcast)
         self._tab_cvm = MvcTab(self._logger, settings)
 
+        # What a student almost always wants is to analyse and normalise the
+        # recording they just made, so it travels between the tabs instead of
+        # being hunted for three times. Opening a file by hand in Analysis
+        # feeds the MVC tab the same way.
+        # One chain, not two branches: the recording reaches the MVC tab
+        # *through* the Analysis tab, carrying the muscle chosen there. Wiring
+        # both tabs to the acquisition directly made each ask which muscle,
+        # so the same question came up twice in a row.
+        self._tab_adq.recording_saved.connect(self._tab_ana.adopt_recording)
+        self._tab_ana.file_opened.connect(self._tab_cvm.adopt_recording)
+        self._tab_ana.coach_step.connect(self._mostrar_paso_guiado)
+        self._tab_adq.coach_step.connect(
+            lambda t, c, ctrl: self._mostrar_paso_guiado(
+                t, c, ctrl, self._tab_adq)
+        )
+        # (connected once the tab widget exists, below)
+
         # Shared styling: each tab's gray background (class selector) is only
         # painted if the widget has WA_StyledBackground.
         for tab in (self._tab_adq, self._tab_ana, self._tab_cvm):
@@ -137,14 +177,50 @@ class MainWindow(QMainWindow):
         tabs.addTab(self._tab_ana, tr("Analysis"))
         tabs.addTab(self._tab_cvm, tr("MVC normalisation"))
 
-        # Tab-bar corner: language selector + "About" button (no status bar,
-        # zero vertical cost).
+        # Tab-bar corner: mode, advanced toggle, language and "About" (no
+        # status bar, zero vertical cost).
+        # The mode says which practical this is. It fixes the channel count and
+        # whether the accelerometer is used, and the tabs offer only what that
+        # practical needs. Unlike the language, it applies without restarting.
+        self._combo_mode = QComboBox()
+        for mode in MODES:
+            self._combo_mode.addItem(mode_label(mode), mode)
+        self._combo_mode.setCurrentIndex(MODES.index(self._mode()))
+        self._combo_mode.setToolTip(tr("Practical the app is set up for"))
+        self._combo_mode.currentIndexChanged.connect(self._on_mode_changed)
+
+        # The level of detail is a property of the practical, not a second
+        # switch beside it: two independent axes meant the user had to hold
+        # both in mind to know why a control was on screen or not. The fine
+        # controls belong to the kinematics practical, and this says which
+        # level the current one is at.
+        #
+        # It used to be a band across the whole window. That is a lot of
+        # emphasis for a caption that repeats what the selector beside it
+        # already implies — the practicals are in order, so choosing one is
+        # choosing its level — and the emphasis is what a reader takes as
+        # importance. It sits beside the selector now, at the selector's own
+        # width: same colour, same words, a fifth of the room.
+        self._lbl_nivel = QLabel()
+        self._lbl_nivel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._lbl_nivel.setContentsMargins(8, 3, 8, 3)
+        self._lbl_nivel.setFixedWidth(self._combo_mode.sizeHint().width())
+
         self._combo_lang = QComboBox()
         self._combo_lang.addItem("English", "en")
         self._combo_lang.addItem("Español", "es")
         self._combo_lang.setCurrentIndex(0 if get_language() == "en" else 1)
         self._combo_lang.setToolTip(tr("Interface language"))
         self._combo_lang.currentIndexChanged.connect(self._on_language_changed)
+
+        # Relaunches the guided tour at any time. Offered once on a first run
+        # and then never again by itself: a tour that reappears becomes a
+        # formality to dismiss rather than something anyone reads.
+        btn_tour = QToolButton()
+        btn_tour.setText(tr("Guide"))
+        btn_tour.setAutoRaise(True)
+        btn_tour.setToolTip(tr("Tour of the application and its measurements"))
+        btn_tour.clicked.connect(self.start_tour)
 
         btn_about = QToolButton()
         btn_about.setText("?")
@@ -164,7 +240,10 @@ class MainWindow(QMainWindow):
         corner_lay.setContentsMargins(0, 0, 4, 0)
         corner_lay.setSpacing(2)
         corner_lay.addWidget(btn_reset)
+        corner_lay.addWidget(self._combo_mode)
+        corner_lay.addWidget(self._lbl_nivel)
         corner_lay.addWidget(self._combo_lang)
+        corner_lay.addWidget(btn_tour)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
 
@@ -173,6 +252,191 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(4, 4, 4, 4)
         root.addWidget(tabs, stretch=1)
         self.setCentralWidget(central)
+
+        # The layout no longer imposes its minimum on the window (see
+        # minimumSizeHint). Without this the window refuses to be smaller
+        # than the sum of everything inside it, and a single long sentence
+        # appearing at run time can therefore push its right-hand edge off
+        # the screen — which is what happened at the end of a kinematics
+        # recording, twice.
+        disposicion = self.layout()
+        if disposicion is not None:
+            disposicion.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        # With the layout no longer setting one, the window would have no
+        # minimum at all and could be dragged down to a title bar. This is
+        # the floor instead: small enough for any screen it could be opened
+        # on, large enough to still be an interface.
+        self.setMinimumSize(self._suelo_de_ventana())
+
+        # Apply the stored mode once every tab exists and is laid out.
+        self._apply_mode()
+
+        self._tabs = tabs
+        self._coach = CoachMark(self)
+        #: A guided step emitted while another tab was on screen, waiting for
+        #: the analysis tab to come forward.
+        self._paso_pendiente: tuple[str, str, object] | None = None
+        tabs.currentChanged.connect(self._cerrar_paso_guiado)
+        tabs.currentChanged.connect(lambda _i: self._paso_guiado_pendiente())
+        # And when whatever was on screen (the tour, a «?») closes, the step
+        # that waited behind it comes forward.
+        self._coach.finished.connect(self._paso_guiado_pendiente)
+
+    def _mostrar_paso_guiado(self, titulo: str, cuerpo: str, control,
+                             pestaña=None) -> None:
+        """Float one step of a tab's sequence over the control it names.
+
+        The same panel the tour uses, with one step instead of a list: it dims
+        the rest of the window and rings the button, so «open this next» points
+        at something the reader can see. Never over the tour itself, and never
+        while the tab that asked for it is not the one on screen.
+
+        Both sequences use it — the analysis tab's two editors and the
+        kinematics practical's set-up — so `pestaña` says which tab has to be
+        in front for the panel to make any sense.
+        """
+        pestaña = pestaña or self._tab_ana
+        if self._coach.isVisible():
+            if self._coach.is_tour:
+                # Never over the tour; kept for when it ends.
+                self._paso_pendiente = (titulo, cuerpo, control, pestaña)
+                return
+            # A single step still on screen is the previous «open this
+            # next»; the next one replaces it rather than being dropped.
+            self._coach.stop()
+        if self._tabs.currentWidget() is not pestaña:
+            # Kept rather than dropped. The recording is analysed as soon as
+            # it is opened, which happens while the student is still on the
+            # acquisition tab, so the step saying what to do next was emitted
+            # over a tab nobody was looking at — and the analysis tab, which
+            # only emits on a *change* of step, never offered it again.
+            self._paso_pendiente = (titulo, cuerpo, control, pestaña)
+            return
+        self._paso_pendiente = None
+        self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
+
+    def _paso_guiado_pendiente(self) -> None:
+        """Show the step that was emitted while another tab was on screen."""
+        if self._paso_pendiente is None or self._coach.isVisible():
+            return
+        titulo, cuerpo, control, pestaña = self._paso_pendiente
+        if self._tabs.currentWidget() is not pestaña:
+            return
+        self._paso_pendiente = None
+        self._coach.start([CoachStep(titulo, cuerpo, target=lambda: control)])
+
+    def _cerrar_paso_guiado(self, _index: int) -> None:
+        """A contextual step does not survive a change of tab.
+
+        Seen on the bench: the «next step» panel raised over the analysis tab
+        stayed up when the student went back to Acquisition, dimming the
+        session review and pointing at a button that was no longer on screen.
+        The tour is different — it changes tabs itself — and is left alone.
+        """
+        if self._coach.isVisible() and not self._coach.is_tour:
+            self._coach.stop()
+
+    # ------------------------------------------------------------------
+    # Guided tour
+    # ------------------------------------------------------------------
+
+    def maybe_offer_tour(self) -> None:
+        """Offer the tour at start-up, unless it has been turned off.
+
+        Kept on by default rather than shown once: a teaching machine sees a
+        different student most sessions, and each of them is a first run. The
+        tick box is how the person who owns the machine turns it off, so the
+        decision belongs to them and not to whoever happened to open the app
+        first.
+        """
+        if not self._settings.value("app/tour_offer", True, type=bool):
+            return
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Question)
+        msg.setWindowTitle(tr("Quick guide"))
+        # The sensor named is the one the chosen practical can be done with.
+        # Only the single-muscle practical works over the Arduino + MyoWare;
+        # the pair needs two channels and the kinematics one the
+        # accelerometer, so both are BITalino, and offering the other board
+        # there is offering hardware that cannot record what is about to be
+        # recorded.
+        sensores = (
+            tr("either of two sensors: a BITalino over Bluetooth or an "
+               "Arduino + MyoWare 2.0 over USB")
+            if self._mode() == MODE_SINGLE
+            else tr("a BITalino over Bluetooth")
+        )
+        msg.setText(
+            tr(
+                "The electrical activity of a muscle is recorded and turned "
+                "into measurements that can be interpreted. The application "
+                "works with {sensors}.\n\nFor a short walkthrough "
+                "of the application, press Yes."
+            ).format(sensors=sensores)
+        )
+        chk = QCheckBox(tr("Show this guide next time"))
+        chk.setChecked(True)
+        msg.setCheckBox(chk)
+        msg.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        msg.setDefaultButton(QMessageBox.StandardButton.Yes)
+        answer = msg.exec()
+
+        self._settings.setValue("app/tour_offer", chk.isChecked())
+        if answer == QMessageBox.StandardButton.Yes:
+            self.start_tour()
+
+    def start_tour(self) -> None:
+        """Run the walkthrough for the mode currently selected."""
+        if self._tab_adq.is_recording():
+            QMessageBox.information(
+                self,
+                tr("Guide"),
+                tr("Stop the recording before starting the guide"),
+            )
+            return
+        self._coach.start(build_tour(self), on_tab=self._tabs.setCurrentIndex)
+
+    def _mode(self) -> str:
+        """Stored recording mode, defaulting to the single-muscle practical."""
+        return normalise_mode(self._settings.value("app/mode", DEFAULT_MODE))
+
+    def _advanced(self) -> bool:
+        """Whether the fine controls are on screen — now a property of the mode.
+
+        Kept as a method because the tabs and the tour ask the window for it;
+        what changed is that nothing can set it independently of the practical.
+        """
+        return mode_shows_fine_controls(self._mode())
+
+    def _apply_mode(self) -> None:
+        mode = self._mode()
+        for tab in (self._tab_adq, self._tab_ana, self._tab_cvm):
+            tab.apply_mode(mode, mode_shows_fine_controls(mode))
+        self._refresh_nivel_band()
+
+    def _refresh_nivel_band(self) -> None:
+        """Colour and caption of the level tag beside the practical selector.
+
+        The full caption is kept as the tooltip: at the selector's width a
+        long translation would be elided, and the word that gets cut is the
+        one that says the level.
+        """
+        mode = self._mode()
+        color = mode_complexity_colour(mode)
+        texto = mode_complexity_label(mode)
+        self._lbl_nivel.setText(texto)
+        self._lbl_nivel.setToolTip(texto)
+        self._lbl_nivel.setStyleSheet(
+            f"background-color: {color}; color: white; font-weight: bold; "
+            "font-size: 11px; border-radius: 3px;"
+        )
+
+    def _on_mode_changed(self, index: int) -> None:
+        self._settings.setValue("app/mode", self._combo_mode.itemData(index))
+        self._apply_mode()
 
     def _on_language_changed(self, index: int) -> None:
         code = self._combo_lang.itemData(index)
@@ -226,6 +490,55 @@ class MainWindow(QMainWindow):
             f"{tr('Physiology Department, Complutense University of Madrid')}",
         )
 
+    def layout_minimum_size(self):
+        """What the interface itself needs, before any clamping to the screen.
+
+        The honest number: the width below which widgets start being cut.
+        """
+        return QMainWindow.minimumSizeHint(self)
+
+    def _suelo_de_ventana(self):
+        """The smallest window worth showing, never bigger than the screen."""
+        suelo = QSize(880, 560)
+        pantalla = self.screen() or QApplication.primaryScreen()
+        if pantalla is None:
+            return suelo
+        disponible = pantalla.availableGeometry()
+        return QSize(min(suelo.width(), disponible.width()),
+                     min(suelo.height(), disponible.height()))
+
+    def minimumSizeHint(self):
+        """Never ask for more room than the screen has.
+
+        The layout's minimum is the sum of what every visible widget needs,
+        and some of those widgets hold text that only appears while the
+        program runs — the wizard's running commentary above all. One long
+        sentence there and the minimum grew past the screen, at which point
+        Windows could no longer honour the maximised geometry: the right-hand
+        edge of the interface went off the display, and Qt said so in a
+        warning that the windowed build then failed to print (see
+        `_install_qt_message_filter`).
+
+        The individual offenders are fixed where they are built. This is the
+        floor under all of them: whatever the layout asks for, the window
+        stops asking at the size of the screen it is on. Squeezed is
+        recoverable — the operator can still see the window, its edges and
+        its scrollbars — and off-screen is not.
+
+        Because this hides an over-wide layout rather than curing it, what
+        the layout really asks for is still readable through
+        :meth:`layout_minimum_size`, and that is what the regression test
+        measures.
+        """
+        hint = self.layout_minimum_size()
+        pantalla = self.screen() or QApplication.primaryScreen()
+        if pantalla is None:                       # no display at all
+            return hint
+        disponible = pantalla.availableGeometry()
+        hint.setWidth(min(hint.width(), disponible.width()))
+        hint.setHeight(min(hint.height(), disponible.height()))
+        return hint
+
     def closeEvent(self, event) -> None:
         self._tab_adq.cleanup()
         self._tab_ana.cleanup()
@@ -243,16 +556,73 @@ def _install_qt_message_filter() -> None:
     ("QFont::setPointSize: Point size <= 0 (-1)"), emitted while pyqtgraph
     renders axis labels. Everything else is forwarded to stderr unchanged so
     real Qt diagnostics are still visible.
-    """
-    def _handler(mode, context, message) -> None:
-        if "Point size <= 0" in message:
-            return
-        sys.stderr.write(message + "\n")
 
-    qInstallMessageHandler(_handler)
+    The windowed build has no console, and PyInstaller leaves ``sys.stderr``
+    set to None there — so writing to it raised AttributeError *inside a Qt
+    message handler*, which surfaced to the operator as the crash dialogue
+    while the message being reported was itself only a warning. Twice on the
+    bench, both times at the end of a recording. With no stderr the message
+    goes to the error log instead, which is the file the operator already
+    knows to send.
+    """
+    qInstallMessageHandler(qt_message)
+
+
+def qt_message(mode, context, message) -> None:
+    """Where one Qt diagnostic goes. Must never raise: it runs inside Qt."""
+    if "Point size <= 0" in message:
+        return
+    salida = sys.stderr
+    if salida is not None:
+        try:
+            salida.write(message + "\n")
+            return
+        except Exception:          # a closed or unwritable stream
+            pass
+    _qt_message_to_log(message)
+
+
+def _qt_message_to_log(message: str) -> None:
+    """Append one Qt diagnostic to the error log. Never raises."""
+    try:
+        from datetime import datetime
+
+        from emgteach.crash import log_path
+
+        with log_path().open("a", encoding="utf-8") as f:
+            f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S}  Qt: {message}\n")
+    except Exception:              # a read-only home, a full disk
+        pass
+
+
+def install_qt_translations(app: QApplication, language: str) -> QTranslator | None:
+    """Translate Qt's own strings — the standard dialog buttons above all.
+
+    "Yes", "No", "OK", "Cancel" and "Save" do not come from
+    :mod:`emgteach.i18n`: Qt draws them itself and translates them from its own
+    catalogue, so with no translator installed a Spanish interface still
+    asks the user to press "Yes". PySide6 ships qtbase_es, which is all it
+    takes.
+
+    The translator is returned so the caller can keep a reference to it:
+    dropping it uninstalls the translations.
+    """
+    if language == "en":
+        return None
+    translator = QTranslator()
+    path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+    if not translator.load(f"qtbase_{language}", path):
+        return None
+    app.installTranslator(translator)
+    return translator
 
 
 def main() -> None:
+    # Before anything else: a crash from here on leaves a traceback on disk and
+    # says so, instead of vanishing into a console the windowed build lacks.
+    from emgteach.crash import install_crash_log
+
+    install_crash_log()
     _install_qt_message_filter()
     app = QApplication(sys.argv)
     app.setApplicationName("EMG Bioinstrumentacion")
@@ -260,7 +630,10 @@ def main() -> None:
 
     settings = QSettings("Bioinstrumentacion", "EMGApp")
     # Set the language (saved or auto-detected) before building the interface.
-    set_language(resolve_startup_language(settings))
+    language = resolve_startup_language(settings)
+    set_language(language)
+    # Kept on the application so it is not garbage-collected.
+    app._qt_translator = install_qt_translations(app, language)
 
     splash = _make_splash()
     splash.show()
@@ -273,6 +646,12 @@ def main() -> None:
     # space within the window instead of pushing it off-screen).
     QTimer.singleShot(1500, splash.close)
     QTimer.singleShot(1500, window.showMaximized)
+    # Offered from here rather than from the window's constructor: it is
+    # start-up behaviour, and a modal opened while the window is still being
+    # built would block anything that creates a MainWindow without a user in
+    # front of it. It also has to wait until the controls have a position, or
+    # the coach mark would have nothing to point at.
+    QTimer.singleShot(1600, window.maybe_offer_tour)
 
     sys.exit(app.exec())
 

@@ -226,6 +226,33 @@ class TestSpectralMetrics:
         assert abs(result["mnf"] - 80.0) < 2.0, f"MNF={result['mnf']}"
         assert abs(result["mdf"] - 80.0) < 2.0, f"MDF={result['mdf']}"
 
+    def test_the_median_survives_a_window_shorter_than_a_second(self) -> None:
+        """Found on the bench recording of 3 September: two rows of the
+        contraction table read «MDF 0 Hz» on contractions of 0.42 s that had
+        a perfectly ordinary spectrum.
+
+        The median was located by comparing a running *sum* of the bins
+        against half of an *integral*, and the two differ by the frequency
+        spacing. A one-second window gives 1 Hz bins, where they coincide;
+        anything shorter gives coarser bins, no bin ever reaches half, and
+        the median came back as zero. It is now read off the same integral.
+        """
+        sig = _sinusoid(80.0, duration_s=0.4)
+        for nperseg in (None, 400, 256):
+            kw = {} if nperseg is None else {"nperseg": nperseg}
+            r = compute_psd_mnf_mdf(sig, FS, **kw)
+            assert abs(r["mdf"] - 80.0) < 8.0, f"nperseg={nperseg}: MDF={r['mdf']}"
+
+    def test_a_signal_shorter_than_the_default_window_is_still_a_spectrum(
+        self,
+    ) -> None:
+        """Welch shortens an over-long window on its own but keeps the overlap
+        it was handed, and an overlap that is no longer smaller than the window
+        raises. Anything under a second therefore crashed the analysis instead
+        of returning a coarser spectrum."""
+        r = compute_psd_mnf_mdf(_sinusoid(80.0, duration_s=0.3), FS)
+        assert r["frequencies"].size and abs(r["mdf"] - 80.0) < 10.0
+
     def test_psd_returns_band_only(self) -> None:
         sig = _sinusoid(100.0, duration_s=4.0)
         result = compute_psd_mnf_mdf(sig, FS, f_low=20.0, f_high=450.0)
@@ -574,11 +601,24 @@ class TestMVC:
 
     def test_adaptive_ylim_minimum_110(self) -> None:
         env_norm = np.full(100, 50.0)  # all values at 50 %MVC
-        # 99th percentile is 50; 50 * 1.10 = 55 < 110, so floor kicks in
+        # 50 * 1.10 = 55 < 110, so the floor kicks in and the 100 % line has
+        # room above it.
         assert adaptive_ylim(env_norm, n_plot=100) == 110.0
 
-    def test_adaptive_ylim_scales_with_p99(self) -> None:
+    def test_adaptive_ylim_scales_with_the_maximum(self) -> None:
         env_norm = np.full(100, 200.0)  # peak well above MVC
         result = adaptive_ylim(env_norm, n_plot=100, margin=0.10)
-        # 200 * 1.10 = 220 > 110, so we get the scaled value
         assert result == pytest.approx(220.0, rel=0.01)
+
+    def test_adaptive_ylim_never_clips_a_brief_peak(self) -> None:
+        """The regression this replaced: the limit came from the 99th
+        percentile, and a short maximal effort is exactly the sample above it.
+        The peak of the contraction was drawn past the top of the axis and the
+        student read a flat top where the real maximum was."""
+        env_norm = np.full(1000, 40.0)
+        env_norm[500:502] = 300.0            # 0.2 % of the window
+        limite = adaptive_ylim(env_norm, n_plot=1000)
+        assert limite >= 300.0, "the peak is cut off"
+
+    def test_adaptive_ylim_survives_an_empty_window(self) -> None:
+        assert adaptive_ylim(np.array([]), n_plot=0) == 110.0
