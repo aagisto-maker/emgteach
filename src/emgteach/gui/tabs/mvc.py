@@ -893,12 +893,15 @@ class MvcTab(QWidget):
             self._last_edf_dir, tr("EDF files (*.edf *.EDF)"),
         )
         if path:
+            distinto = path != self._edit_path.text().strip()
             self._edit_path.setText(path)
             self._last_edf_dir = str(Path(path).parent)
             self._settings.setValue("cvm/last_edf_dir", self._last_edf_dir)
             self._populate_channels(path)
             self._refresh_compute_enabled()
             self._btn_guardar.setEnabled(False)
+            if distinto:
+                self._olvidar_resultado()
 
     def _populate_channels(self, path: str, ask: bool = True) -> None:
         """Fill the channel picker with the test file's EMG channels (excludes
@@ -1608,7 +1611,7 @@ class MvcTab(QWidget):
     # New-session reset
     # ------------------------------------------------------------------
 
-    def _mostrar_estado_vacio(self) -> None:
+    def _mostrar_estado_vacio(self, mensaje: str = "") -> None:
         """One line in the middle of the empty panel, saying what comes next.
 
         Same idea as the analysis tab: a white rectangle with nothing on it
@@ -1618,11 +1621,38 @@ class MvcTab(QWidget):
         ax.axis("off")
         ax.text(
             0.5, 0.5,
-            tr("Open a recording with calibration, or record one in "
-               "Acquisition: the reference is computed on its own."),
+            mensaje or tr("Open a recording with calibration, or record one in "
+                          "Acquisition: the reference is computed on its own."),
             transform=ax.transAxes, ha="center", va="center",
             fontsize=11, color="#7A8590",
         )
+
+    def _olvidar_resultado(self) -> None:
+        """Take the numbers off the screen: they are the previous file's.
+
+        Opening a second recording here — the tuned one, which is the whole
+        point of the hint above the file box — left the panels, the load
+        distribution and the summary card exactly as they were, under the new
+        file's name in the path box and the old one's inside the card. Two
+        recordings on one screen, and nothing saying which was which.
+        Reported from the bench on 5 September with the tuned recording of
+        18:13 open and the original's 142 s still on the panels.
+        """
+        self._last_result = None
+        for la in (self._d_file, self._d_cvm_ref, self._d_source,
+                   self._d_duration, self._d_mean, self._d_static,
+                   self._d_median, self._d_peak):
+            la.setText("—")
+        self._btn_guardar.setEnabled(False)
+        self._btn_informe.setEnabled(False)
+        self._axes_list = []
+        self._fig.clear()
+        self._mostrar_estado_vacio(
+            tr("Press «Compute MVC» to normalise this recording.")
+        )
+        self._canvas.draw_idle()
+        self._apdf_fig.clear()
+        self._apdf_canvas.draw_idle()
 
     def reset(self) -> None:
         """Clear the tab to its just-opened state (new student): loaded files,

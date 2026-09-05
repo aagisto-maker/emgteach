@@ -1139,6 +1139,8 @@ _ES = {
     "Test EDF:": "EDF de prueba:",
     "Select the EDF file to normalise…": "Seleccionar el archivo EDF a normalizar…",
     "Compute MVC": "Calcular CVM",
+    "Press «Compute MVC» to normalise this recording.":
+        "Pulse «Calcular CVM» para normalizar este registro.",
     "MVC reference:": "CVM referencia:",
     "Mean activation:": "Activación media:",
     "1. Filtered and rectified EMG signal": "1. Señal EMG filtrada y rectificada",

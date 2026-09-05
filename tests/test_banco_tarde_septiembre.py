@@ -262,3 +262,22 @@ class TestWhatTheAnalysisAsksForNext:
         texto = cvm._lbl_afinado.text()
         assert "_tuned" in texto
         assert tr("Compute MVC") in texto
+
+    def test_a_second_recording_does_not_inherit_the_first_ones_numbers(
+        self, main_window
+    ) -> None:
+        """Opening the tuned recording left the previous file's panels, load
+        distribution and summary card on screen, under the new file's name in
+        the path box and the old one's inside the card. Seen on the bench of
+        5 September with the tuned recording of 18:13 open and the original's
+        142 s still being shown."""
+        cvm = main_window._tab_cvm
+        cvm._last_result = {"cualquier": "cosa"}
+        cvm._d_file.setText("emg_2026-09-05_18-13.edf")
+        cvm._d_duration.setText("142.0 s")
+        cvm._btn_guardar.setEnabled(True)
+        cvm._olvidar_resultado()
+        assert cvm._last_result is None
+        assert cvm._d_file.text() == "—"
+        assert cvm._d_duration.text() == "—"
+        assert not cvm._btn_guardar.isEnabled()
