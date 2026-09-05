@@ -2457,10 +2457,14 @@ class AcquisitionTab(QWidget):
         )
         self._btn_fv_rehearse.clicked.connect(self._on_fv_rehearse)
         fila_1.addWidget(self._btn_fv_rehearse)
+        # Wrapped, all three hints: on one line each they set the minimum
+        # width of the whole window past a laboratory laptop's 1366 px.
         self._lbl_fv_paso1 = QLabel(tr(
             "Optional: to learn the procedure before anyone holds a weight. "
             "Skip it if you know it."))
         self._lbl_fv_paso1.setStyleSheet(_paso_st)
+        self._lbl_fv_paso1.setWordWrap(True)
+        self._lbl_fv_paso1.setMinimumWidth(120)
         fila_1.addWidget(self._lbl_fv_paso1, stretch=1)
         fv_col.addLayout(fila_1)
 
@@ -2477,6 +2481,8 @@ class AcquisitionTab(QWidget):
         # Shows the chosen reps and loads, mirroring "Best of 3" next to MVC.
         self._lbl_fv_config = QLabel("")
         self._lbl_fv_config.setStyleSheet(_paso_st)
+        self._lbl_fv_config.setWordWrap(True)
+        self._lbl_fv_config.setMinimumWidth(120)
         self._refresh_fv_config_label()
         fila_2.addWidget(self._lbl_fv_config, stretch=1)
         fv_col.addLayout(fila_2)
@@ -2486,6 +2492,8 @@ class AcquisitionTab(QWidget):
             "3 · Start recording: the maximum is calibrated first, then each "
             "load is cued."))
         self._lbl_fv_paso3.setStyleSheet(_paso_st)
+        self._lbl_fv_paso3.setWordWrap(True)
+        self._lbl_fv_paso3.setMinimumWidth(120)
         fv_col.addWidget(self._lbl_fv_paso3)
         left_col.addWidget(self._box_fv_guided)
 
