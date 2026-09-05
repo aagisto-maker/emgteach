@@ -23,6 +23,17 @@ def _app_version() -> str:
         return "?"
 
 
+def _di(mensaje: str, salida) -> None:
+    """Say it on the console, if this launch has one. Never raises."""
+    if salida is None:
+        return
+    try:
+        salida.write(mensaje + "\n")
+        salida.flush()
+    except Exception:  # pragma: no cover - a closed or unwritable stream
+        pass
+
+
 def _selftest_log_path() -> str:
     base = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.getcwd()
     return os.path.join(base, "emgteach_selftest.log")
@@ -73,6 +84,13 @@ def _selftest() -> int:
     The frozen build is *windowed* (no console), so the result is written
     to ``emgteach_selftest.log`` next to the executable and mirrored to
     stdout for source runs.
+
+    "Mirrored" and not "printed": a windowed build started without a console
+    of its own has ``sys.stdout`` set to None, and printing to it raises —
+    which turned a passing self-test into a non-zero exit and would have
+    hidden the traceback of a failing one behind a second, unrelated error.
+    The log file is the report; the console is a convenience when there is
+    one.
     """
     import traceback
 
@@ -86,7 +104,7 @@ def _selftest() -> int:
                 fh.write(f"SELFTEST FAILED: emgteach {_app_version()}\n\n{tb}")
         except OSError:
             pass
-        print(f"SELFTEST FAILED:\n{tb}", file=sys.stderr)
+        _di(f"SELFTEST FAILED:\n{tb}", sys.stderr)
         return 1
 
     msg = f"SELFTEST OK: emgteach {_app_version()} (frozen={getattr(sys, 'frozen', False)})"
@@ -95,7 +113,7 @@ def _selftest() -> int:
             fh.write(msg + "\n")
     except OSError:
         pass
-    print(msg)
+    _di(msg, sys.stdout)
     return 0
 
 
