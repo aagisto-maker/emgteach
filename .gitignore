@@ -52,6 +52,11 @@ packaging/build.log
 # --- EDF recordings — never versioned ---
 *.edf
 *.bdf
+# The one exception, and it is deliberate: the recording the report for the
+# Sourcebook article is written from. A paper that describes what the
+# software measures has to ship the file it measured, or the numbers cannot
+# be checked. It is one recording of 140 s, 611 kB.
+!docs/informe-sourcebook/*.edf
 
 # --- Local data files ---
 data/
@@ -59,6 +64,8 @@ local/
 salida/
 output/
 *.csv
+# Igual que el EDF: la exportación CSV que el informe cita como adjunto.
+!docs/informe-sourcebook/*.csv
 *.npy
 *.npz
 !tests/**/*.npy

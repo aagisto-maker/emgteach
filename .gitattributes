@@ -1,0 +1,19 @@
+# Binary files, declared as such.
+#
+# Without this, git guesses. It guessed wrong on the PDF report attached to
+# `docs/informe-sourcebook/` and announced that it would rewrite its line
+# endings on checkout, which for a PDF means a file that no longer opens.
+# The recordings are the same risk with worse consequences: an EDF whose
+# 0x0A bytes were rewritten is a corrupted recording, and this repository
+# exists partly to say that recordings must not be corrupted silently.
+
+*.pdf   binary
+*.edf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.docx  binary
+*.xlsx  binary
+*.exe   binary
+*.svg   text eol=lf

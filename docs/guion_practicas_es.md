@@ -177,7 +177,7 @@ siguiente:
    las que no merezca la pena analizar (un movimiento mal hecho, un tirón del
    cable) y se pulsa **«Usar estos fragmentos»** aunque no se cambie nada. En la
    práctica de un músculo, si la calibración se hizo con el botón, aquí se
-   desmarcan también los seis esfuerzos de calibración para quedarse con la tarea.
+   desmarcan también los tres esfuerzos de calibración para quedarse con la tarea.
    El cuadro se ajusta mirando: dos deslizadores, la **sensibilidad** (cuántas
    contracciones encuentra; la línea discontinua sobre la envolvente es el umbral
    que fija) y, en el par, el **umbral de coactivación** (a partir de qué fracción
@@ -271,7 +271,7 @@ pero **no lineal**, y ver para qué sirve normalizar.
 
 **Procedimiento.**
 1. **Iniciar grabación** y pulsar **«Calibrar CVM»** de inmediato: el asistente
-   pide el calentamiento y los seis esfuerzos máximos (apartado 4). Después, las
+   pide el calentamiento y los tres esfuerzos máximos (apartado 4). Después, las
    **barras de carga** de la caja «Carga muscular» muestran el % CVM en vivo.
 2. Guiándose por la barra, hacer cuatro contracciones isométricas de 4 s contra la
    mesa a **25, 50, 75 y 100 %** de la barra, con 5 s de reposo entre ellas.

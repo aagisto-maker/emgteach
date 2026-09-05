@@ -177,7 +177,7 @@ press. On switching to Analysis a box points at the next step:
    duration and, with two muscles, which one led it. Untick those not worth
    analysing (a badly made movement, a cable tug) and press **«Use these
    fragments»** even if nothing changed. In the single-muscle practical, if the
-   calibration was made with the button, also untick the six calibration efforts
+   calibration was made with the button, also untick the three calibration efforts
    to keep the task.
    The dialogue is adjusted by looking: two sliders, the **sensitivity** (how
    many contractions it finds; the dashed line over the envelope is the

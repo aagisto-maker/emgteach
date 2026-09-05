@@ -158,7 +158,7 @@ analysis, so the file stays small and always reproducible.
 | Envelope cut-off | 5 Hz | Smoothing of the activation level |
 | RMS window | 50 ms | RMS amplitude computation |
 | Fatigue segment | 1 s (50 % overlap) | Windows for RMS/MDF over time |
-| MVC reference window | 0.2 s | The best 0.2 s across the six calibration repetitions (§5.1) |
+| MVC reference window | 0.2 s | The best 0.2 s across the three calibration repetitions (§5.1) |
 | Calibration | 3 × 1.5 s brief maximal efforts, after 10 s of warm-up | What the wizard asks per muscle |
 
 [Suggested figure: four stacked traces of the same segment — raw, filtered,
@@ -645,7 +645,7 @@ Each begins by **choosing the practical** in the top-right selector.
    are marked by themselves. *Stop recording*.
 2. Analysis runs on its own. Follow the two guided boxes: review the
    **calibration repetitions** and, in the **fragments**, keep only the task
-   (unticking the six calibration efforts if there were any). Read the
+   (unticking the three calibration efforts if there were any). Read the
    contraction table, the cards against their ranges, panels 1A, 2 and 3; for
    fatigue, panel 7 from «More panels…». Check the «Task maximum» card. Generate
    the **PDF report**.
