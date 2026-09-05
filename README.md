@@ -24,32 +24,34 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v2.0.0 adds a **kinematic dimension** through the BITalino
+`emgteach` v3.0.0 is **configured by choosing the practical rather than by
+setting controls one at a time**: three practicals — one muscle,
+agonist/antagonist and muscle kinematics — fix the channel count and the
+accelerometer, and each tab offers only the measurements that suit the
+practical. The **session is one file with its phases marked inside it**
+(warm-up, calibration, preparation, recording), so the maximum every
+percentage is measured against travels with the signal, and the two tabs
+can no longer disagree about the same recording. It adds a **guided tour**
+over the interface, a **«?» on every box**, **one analysis row per
+contraction** with its electromechanical delay, an **agonist/antagonist
+co-activation index** (Falconer-Winter, per marked phase and in % MVC), a
+**rehearsal** of the force-velocity procedure that runs with no hardware,
+and a derived **tuned recording** that carries the decisions taken on
+screen. It also corrects the BITalino front-end gain in the conversion to
+millivolts. See
+[`docs/RELEASE_NOTES_v3.0.0.md`](docs/RELEASE_NOTES_v3.0.0.md).
+
+v2.0.0 added a **kinematic dimension** through the BITalino
 accelerometer: guided force-velocity acquisition, a force-velocity study
 turning one recording of known loads into load-velocity, Hill, power and
 recruitment curves, EMG-vs-MMG, tremor and movement-vs-EMG analysis
-panels, a selectable accelerometer channel with a live diagnostic, and a
-channel-quality check when a recording is opened. v1.4.0 introduced the
-**classroom broadcast**: students follow the live session in their own
-phone browsers, with a per-session access code and a scan-to-join QR.
-v1.1.0 added an **assisted fragment editor**, **region-of-interest
-analysis**, **CSV export** and a **live signal-quality check**; v1.0.0
-reimplemented the BITalino backend over `pyserial` (no PyBluez) and
-shipped a standalone Windows executable.
-
-On this development branch the application is **configured by choosing
-the practical rather than by setting controls one at a time**: three
-practicals — one muscle, agonist/antagonist and muscle kinematics — fix
-the channel count and the accelerometer, and each tab offers only the
-measurements that suit the practical, with the fine controls reachable in
-the kinematics practical alone, which is advanced by its own nature. It also gains a **guided
-tour** over the interface itself, a **rehearsal** of the guided force-velocity procedure that runs
-with no hardware, and an **agonist/antagonist co-activation index**
-(Falconer-Winter) built on an MVC reference that now travels inside the
-EDF, so the two muscles are compared in % MVC rather than in
-millivolts. It corrects the BITalino front-end gain in the conversion to
-millivolts. See
-[`docs/NOVEDADES-rama-feat-ui-levels.md`](docs/NOVEDADES-rama-feat-ui-levels.md).
+panels, a selectable accelerometer channel and a channel-quality check
+when a recording is opened. v1.4.0 introduced the **classroom
+broadcast**: students follow the live session in their own phone
+browsers, with a per-session access code and a scan-to-join QR. v1.1.0
+added an **assisted fragment editor**, **CSV export** and a **live
+signal-quality check**; v1.0.0 reimplemented the BITalino backend over
+`pyserial` (no PyBluez) and shipped a standalone Windows executable.
 
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,

@@ -5,8 +5,9 @@
 > casilla de «Opciones avanzadas» (el nivel es la práctica), la guía tiene cinco
 > pasos y no catorce, la calibración pide tres esfuerzos máximos breves (y
 > ninguno mantenido), y el análisis tiene tabla por contracción, fichas con rangos
-> y tres cuadros abajo. La descripción al día es la sección «Unreleased» de
-> [`CHANGELOG.md`](../CHANGELOG.md) y los manuales de `docs/`, revisados tras la
+> y tres cuadros abajo. La descripción al día es la sección [3.0.0] de
+> [`CHANGELOG.md`](../CHANGELOG.md), [`RELEASE_NOTES_v3.0.0.md`](RELEASE_NOTES_v3.0.0.md)
+> y los manuales de `docs/`, revisados tras la
 > pasada de banco del 3 de septiembre. Se conserva como registro de por qué se
 > tomaron las decisiones de la primera tanda.
 
@@ -186,6 +187,12 @@ aplicación. Corregido.
 ---
 
 ## Pendiente de decidir
+
+> **Resuelto en la 3.0.0** (5 de septiembre de 2026). Los tres puntos de
+> abajo se hicieron: el README describe la versión que es, los manuales se
+> reescribieron sobre las tres prácticas y la rúbrica y el guion se revisaron
+> con ellos. Se dejan como estaban porque son el registro de lo que había que
+> decidir, no una lista de tareas viva.
 
 - **El README sigue describiendo la v1.1.0** en su sección «Status», cuando el
   paquete va por la **2.0.0**. Nunca se actualizó para la 2.0.0 (acelerómetro y

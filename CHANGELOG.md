@@ -7,10 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Work on branch `feat/ui-levels`, exercised against the hardware on 1, 3 and
-5 September 2026 — the three bench sessions several entries below refer to. See
+## [3.0.0] — 2026-09-05
+
+**The application is configured by choosing the practical.** Three of them —
+one muscle, agonist/antagonist and muscle kinematics — fix the channel count,
+the accelerometer and what each tab offers, and the controls that used to be
+set one at a time are gone from the interface. That is the breaking change,
+and it is what makes this a major version: a session is no longer assembled
+out of settings, it is chosen.
+
+Around it: the session is **one file with its phases marked inside it**
+(warm-up, calibration, preparation, recording), so the maximum every
+percentage is measured against travels with the signal; a **guided tour** and
+a «?» on every box; **one row per contraction** with its electromechanical
+delay; an **agonist/antagonist co-activation index**; and the kinematics
+practical as the sequence it is, from the plan to the force-velocity curves.
+
+Exercised against the hardware on 1, 3 and 5 September 2026 — the bench
+sessions many entries below refer to — and the numbers in them are measured,
+not estimated. See
+[`docs/RELEASE_NOTES_v3.0.0.md`](docs/RELEASE_NOTES_v3.0.0.md) for the
+release summary and
 [`docs/NOVEDADES-rama-feat-ui-levels.md`](docs/NOVEDADES-rama-feat-ui-levels.md)
-for the user-facing summary the manuals are written from.
+for the first-round notes the manuals were written from.
 
 ### Added
 - **The application is configured by choosing the practical, not by setting controls.** Three recording modes — **single-muscle contraction** (1 channel), **agonist/antagonist contraction** (2 channels) and **muscle kinematics** (1 channel + accelerometer) — are selected from a combo box in the window's top-right corner, applied without restarting. The mode *drives* what is recorded rather than filtering the view of it: it fixes the channel count and whether the accelerometer is used, and every tab offers only the measurements that suit that practical. The channel-count selector and the accelerometer checkbox are therefore **gone from the interface**, since they could only ever contradict the chosen mode — hiding the selector while leaving the count alone was a real defect, letting a two-muscle set-up survive into a screen that could neither show nor change it. The fine controls (filter cut-offs, region of interest, envelope smoothing) are not behind a tick of their own: they belong to the kinematics practical, whose reader is already past that point, and a coloured band beside the selector names the level — basic, intermediate, advanced. Two rules that fell out of testing: what a mode hides it also **unticks**, restoring the selection on the way back, because a panel left ticked would still be drawn with no visible way to turn it off; and a feature that is **already running is never hidden**, since an automatic marker nobody can stop is worse than one extra widget. The connection box is revealed regardless of the flag while no device is saved, so a fresh install can still connect. Opening a single-channel recording in the agonist/antagonist mode now **warns and names the mode that fits the file** instead of silently behaving as a one-channel analysis. New `emgteach.modes` module; `tests/test_gui_modes.py` (29 cases).
@@ -414,7 +433,9 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/aagisto-maker/emgteach/compare/v2.0.0...v3.0.0
+[2.0.0]: https://github.com/aagisto-maker/emgteach/compare/v1.4.1...v2.0.0
 [1.4.1]: https://github.com/aagisto-maker/emgteach/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/aagisto-maker/emgteach/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/aagisto-maker/emgteach/compare/v1.2.1...v1.3.0
