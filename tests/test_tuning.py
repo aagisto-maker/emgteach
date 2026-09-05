@@ -212,7 +212,7 @@ class TestTheLoadsSurviveTheTrimming:
         pytest.importorskip("pyedflib")
         from emgteach.force_velocity import parse_fv_load_markers
 
-        src, tramos, esperadas = _sesion_fv(tmp_path / "cinematica.edf")
+        src, _tramos, esperadas = _sesion_fv(tmp_path / "cinematica.edf")
         # Every fragment opened a second earlier than the cue it belongs to.
         adelantados = [(cue - 1.0, cue + 4.2) for cue, _kg in esperadas]
         dst = tuned_path(src)
