@@ -214,6 +214,17 @@ rectificado y envolvente— para ilustrar la cadena de procesado.]
 
 ### 4.1 Elegir la práctica
 
+> **Una captura de pantalla sin salir de la aplicación.** En esa misma
+> esquina, el botón **«Captura»** —o la tecla **F12** desde cualquier
+> pestaña— guarda una imagen de la ventana en la carpeta de los
+> registros, con la fecha y la hora en el nombre. No pregunta nada y no
+> abre ningún diálogo: la herramienta de recortes del sistema roba el
+> foco y pide una carpeta, y las dos cosas pasan mientras alguien
+> sostiene una contracción. Captura la ventana, no la pantalla, así que
+> no se cuela nada de detrás, y sí salen el cartel del asistente y el
+> del paso siguiente, que son hijos de la ventana. La ruta queda escrita
+> en el registro de eventos.
+
 En la esquina superior derecha de la ventana, en la misma fila que el selector de
 idioma, hay un desplegable con tres opciones. Es el primer control que se toca en
 cada sesión: fija qué se registra, y las tres pestañas se configuran a partir de
@@ -223,7 +234,7 @@ ahí.
 |---|---|---|---|---|---|
 | **Contracción de un músculo** | básico (verde) | 1 | no | BITalino o Arduino + MyoWare | con el botón «Calibrar CVM» |
 | **Contracción agonista / antagonista** | intermedio (naranja) | 2 | no | BITalino | automática al iniciar la grabación |
-| **Cinemática muscular** | avanzado (violeta) | 1 | sí | BITalino | con el botón «Calibrar CVM» |
+| **Cinemática muscular** | avanzado (violeta) | 1 | sí | BITalino | automática al iniciar la grabación |
 
 La práctica **decide lo que se registra**, y no se limita a filtrar lo que se ve.
 Fija el número de canales y el uso del acelerómetro, y cada pestaña ofrece solo

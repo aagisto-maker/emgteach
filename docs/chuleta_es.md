@@ -28,6 +28,8 @@ se recalcula.* Fondo de escala BITalino ±1,635 mV.
 2. **Iniciar grabación**. En el par, el asistente calibra los dos músculos antes
    de la tarea. En las otras dos, **«Calibrar CVM»** mientras se graba.
 3. **Detener**: se guarda el EDF y aparece la sesión entera con sus tramos.
+- **Captura de pantalla**: botón «Captura» en la esquina superior derecha
+  o **F12**. Guarda la ventana en la carpeta de los registros, sin preguntar.
 - **Calibración**: 10 s de calentamiento; por músculo, **3 esfuerzos máximos
   breves** (1,5 s). Referencia = el mejor 0,2 s de los tres.
 - **El máximo se hace contra la mesa, nunca contra una mano.** FCR: **puño

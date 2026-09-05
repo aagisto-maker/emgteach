@@ -1139,6 +1139,17 @@ _ES = {
     "Test EDF:": "EDF de prueba:",
     "Select the EDF file to normalise…": "Seleccionar el archivo EDF a normalizar…",
     "Compute MVC": "Calcular CVM",
+    # --- captura de pantalla desde la propia aplicación ---
+    "Screenshot": "Captura",
+    "Save a picture of the window (F12). It goes to the recordings folder "
+    "with the date and time in its name; nothing is asked.":
+        "Guarda una imagen de la ventana (F12). Va a la carpeta de los "
+        "registros, con la fecha y la hora en el nombre; no pregunta nada.",
+    "Screenshot saved: {path}": "Captura guardada: {path}",
+    "The screenshot could not be saved: {error}":
+        "No se pudo guardar la captura: {error}",
+    "The screenshot could not be saved to: {path}":
+        "No se pudo guardar la captura en: {path}",
     "Press «Compute MVC» to normalise this recording.":
         "Pulse «Calcular CVM» para normalizar este registro.",
     "MVC reference:": "CVM referencia:",

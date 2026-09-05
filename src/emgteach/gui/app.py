@@ -13,6 +13,7 @@ changes it for the next restart (see emgteach.i18n).
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import (
     QLibraryInfo,
@@ -21,9 +22,10 @@ from PySide6.QtCore import (
     Qt,
     QTimer,
     QTranslator,
+    Slot,
     qInstallMessageHandler,
 )
-from PySide6.QtGui import QColor, QFont, QPainter, QPixmap
+from PySide6.QtGui import QColor, QFont, QKeySequence, QPainter, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -222,6 +224,19 @@ class MainWindow(QMainWindow):
         btn_tour.setToolTip(tr("Tour of the application and its measurements"))
         btn_tour.clicked.connect(self.start_tour)
 
+        # A picture of the window, saved where the recordings go, with no
+        # dialogue of any kind. The operator was taking screenshots with the
+        # system tool during a session: it steals the focus, it asks where to
+        # put the file, and both things happen while a subject is holding a
+        # contraction. One key, one file, one line in the log.
+        btn_captura = QToolButton()
+        btn_captura.setText(tr("Screenshot"))
+        btn_captura.setAutoRaise(True)
+        btn_captura.setToolTip(tr(
+            "Save a picture of the window (F12). It goes to the recordings "
+            "folder with the date and time in its name; nothing is asked."))
+        btn_captura.clicked.connect(self._guardar_captura)
+
         btn_about = QToolButton()
         btn_about.setText("?")
         btn_about.setAutoRaise(True)
@@ -243,9 +258,16 @@ class MainWindow(QMainWindow):
         corner_lay.addWidget(self._combo_mode)
         corner_lay.addWidget(self._lbl_nivel)
         corner_lay.addWidget(self._combo_lang)
+        corner_lay.addWidget(btn_captura)
         corner_lay.addWidget(btn_tour)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
+
+        # One key, and the same one from any tab: during a manoeuvre the
+        # mouse is somewhere else and the operator is watching the subject.
+        self._atajo_captura = QShortcut(QKeySequence("F12"), self)
+        self._atajo_captura.setContext(Qt.ShortcutContext.WindowShortcut)
+        self._atajo_captura.activated.connect(self._guardar_captura)
 
         central = QWidget()
         root = QVBoxLayout(central)
@@ -489,6 +511,71 @@ class MainWindow(QMainWindow):
             "Dr. Agis-Torres et al. — UCM<br>"
             f"{tr('Physiology Department, Complutense University of Madrid')}",
         )
+
+    def _carpeta_de_capturas(self) -> Path:
+        """Where the pictures go: the same folder the recordings go to.
+
+        Read from the box in the acquisition tab rather than from the saved
+        setting, because the operator may have just typed a folder there and
+        not started a recording yet; the setting is the fallback.
+        """
+        try:
+            escrita = self._tab_adq._edit_dir.text().strip()
+        except Exception:      # the tab is not built (tests, tooling)
+            escrita = ""
+        guardada = str(self._settings.value("adquisicion/save_dir", "") or "")
+        return Path(escrita or guardada or ".")
+
+    def _mensaje_en_las_tres(self, texto: str, error: bool = False) -> None:
+        """Say it in every log, because it must be read from any tab."""
+        registros = [self._logger]
+        for tab in (self._tab_adq, self._tab_cvm):
+            propio = getattr(tab, "_local_log", None)
+            if propio is not None:
+                registros.append(propio)
+        for reg in registros:
+            (reg.append_error if error else reg.append_log)(texto)
+
+    @Slot()
+    def _guardar_captura(self) -> None:
+        """A picture of the window, saved without asking anything.
+
+        Reported from the bench: taking screenshots with the system tool
+        during a session steals the focus and opens a file dialogue, and both
+        happen while somebody is holding a contraction — «maniobras que hacen
+        perder el control de la app». So: no dialogue, no file picker, no
+        confirmation. It grabs the *window*, not the screen, so nothing that
+        happens to be behind it can end up in the figure, and the floating
+        cue panel and the guided step, which are children of the window, do.
+
+        The name carries the date and time down to the second, so a burst of
+        pictures during one manoeuvre keeps its order and nothing is
+        overwritten.
+        """
+        from datetime import datetime
+
+        destino = self._carpeta_de_capturas()
+        marca = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        ruta = destino / f"emgteach_captura_{marca}.png"
+        n = 2
+        while ruta.exists():
+            ruta = destino / f"emgteach_captura_{marca}_{n}.png"
+            n += 1
+        try:
+            destino.mkdir(parents=True, exist_ok=True)
+            guardada = bool(self.grab().save(str(ruta)))
+        except Exception as exc:  # a read-only folder, a full disk
+            self._mensaje_en_las_tres(
+                tr("The screenshot could not be saved: {error}").format(
+                    error=exc), error=True)
+            return
+        if not guardada:
+            self._mensaje_en_las_tres(
+                tr("The screenshot could not be saved to: {path}").format(
+                    path=ruta), error=True)
+            return
+        self._mensaje_en_las_tres(
+            tr("Screenshot saved: {path}").format(path=ruta))
 
     def layout_minimum_size(self):
         """What the interface itself needs, before any clamping to the screen.

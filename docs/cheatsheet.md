@@ -28,6 +28,8 @@ recomputed.* BITalino full scale ±1.635 mV.
 2. **Start recording**. In the pair, the wizard calibrates both muscles before the
    task. In the other two, **«Calibrate MVC»** while recording.
 3. **Stop**: the EDF is saved and the whole session appears with its phases.
+- **Screenshot**: «Screenshot» button in the top-right corner, or **F12**.
+  Saves the window into the recordings folder, asking nothing.
 - **Calibration**: 10 s warm-up; per muscle, **3 brief maximal efforts**
   (1.5 s). Reference = the best 0.2 s of the three.
 - **The maximum is made against the table, never against a hand.** FCR: **fist

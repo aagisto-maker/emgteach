@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **A screenshot button, and F12 from any tab.** Reported from the bench: taking a picture for the notebook meant the system snipping tool, which steals the focus and opens a file dialogue, and both of those happen while somebody is holding a contraction. So it asks nothing: one key, one PNG in the recordings folder with the date and time in its name, one line in every log saying where it went. It grabs the *window* rather than the screen, so nothing behind it can get into the figure, while the wizard's cue panel and the next-step panel do, being children of the window.
+
 ### Fixed
 - **«Calibrate MVC» is a button again in the two practicals that have no force-velocity box.** Laying the box out as two lines left the button alone on the top line with nothing else asking for width, so it stretched across the whole box and read as a banner. Caught while rebuilding the manuals' screenshots, which is what those figures are for.
 

@@ -19,12 +19,21 @@ Donde algo no está hecho o no lo sé, lo dice.
 | | |
 |---|---|
 | Rama | `main` |
-| Último commit | `56a67f5` (fusión del PR #8) |
-| Etiqueta publicada | `v3.0.0`, 5 de septiembre de 2026 |
-| DOI de esta versión | 10.5281/zenodo.22365602 |
+| **Versión que describe el artículo** | `v3.0.0`, publicada el 5 de septiembre de 2026 |
+| DOI de esa versión | 10.5281/zenodo.22365602 |
 | DOI de concepto | 10.5281/zenodo.21002297 |
-| Pruebas automáticas | **940 recogidas, 939 pasan y 1 se salta**; ninguna falla |
+| Commit de la etiqueta | `155fb07` |
+| Pruebas en la etiqueta | **940 recogidas, 939 pasan y 1 se salta** |
 | Análisis estático | `ruff check .` limpio |
+
+Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
+guiado) se leen del **código de `main` en el momento de generarlos**, que puede
+ir por delante de la etiqueta. Lo que ha entrado después de la 3.0.0 está en la
+sección «Unreleased» de `CHANGELOG.md`; a día de hoy son dos cosas, ninguna de
+ellas cambia una medida: el botón «Calibrar CVM» recupera su tamaño en las dos
+prácticas sin caja de fuerza-velocidad, y se añade un **botón de captura de
+pantalla** (F12) que guarda la ventana en la carpeta de los registros sin abrir
+ningún diálogo. Con ellas la suite pasa a 946 pruebas.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:161`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
@@ -498,7 +507,7 @@ tendencia no ajusta, con su R².
 
 <<<AVISOS>>>
 
-Son **77** mensajes distintos. Se listan tal como están en el código, sin reordenar ni resumir.
+Son **79** mensajes distintos. Se listan tal como están en el código, sin reordenar ni resumir.
 
 - **`src/emgteach/charts.py:587`**
   - EN: not reported
@@ -537,6 +546,12 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/exports.py:41`**
   - EN: not conclusive (the MDF trend does not fit)
   - ES: no concluyente (la tendencia de MDF no ajusta)
+- **`src/emgteach/gui/app.py:569`**
+  - EN: The screenshot could not be saved: {error}
+  - ES: No se pudo guardar la captura: {error}
+- **`src/emgteach/gui/app.py:574`**
+  - EN: The screenshot could not be saved to: {path}
+  - ES: No se pudo guardar la captura en: {path}
 - **`src/emgteach/gui/help_texts.py:32`**
   - EN: The application supports two devices: the BITalino over Bluetooth and the Arduino + MyoWare 2.0 over USB. Only the single-muscle practical can use the Arduino; the other two need the BITalino's second channel or its accelerometer, so they fix it and the selector does not appear.
   - ES: La aplicación admite dos dispositivos: el BITalino por Bluetooth y el Arduino + MyoWare 2.0 por USB. Solo la práctica de un músculo puede usar el Arduino; las otras dos necesitan el segundo canal del BITalino o su acelerómetro, así que lo fijan y el selector no aparece.
