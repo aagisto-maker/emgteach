@@ -679,9 +679,11 @@ Each begins by **choosing the practical** in the top-right selector.
    without load, then each repetition of each load, marked in the EDF with its
    load. For the electromechanical delay, quick single flexions suffice; for
    tremor, a held posture.
-3. Analysis: panels **10**, **11** and **12**, the contraction table with the
-   **EMD** column, and **«Force-velocity study…»**, which returns the
-   load-velocity, force-velocity, power and recruitment curves.
+3. Analysis: panels **10**, **11** and **12**, the contraction table with one
+   row per lift (its load, RMS, velocity and **EMD**), and **«Force-velocity
+   study…»**, which reads those very rows — untick a bad lift, type a missing
+   load — and returns the load-velocity, force-velocity, power and recruitment
+   curves. Table, the «By load» view and the study say the same thing.
 
 ### 7.4 Live load monitoring (ergonomics)
 

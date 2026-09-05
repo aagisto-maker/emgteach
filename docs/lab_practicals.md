@@ -538,9 +538,10 @@ and the EMG the activation.
    **isometric maximum without load** of 3 s (elbow at 90°, against the table)
    and, for each load, the requested repetitions of **one quick lift**, each with
    its countdown and marked in the file with its load. Just follow the screen.
-3. **Stop**. In Analysis, **«Force-velocity study…»** returns four curves:
-   load-velocity, force-velocity (normalised hyperbola), power and recruitment
-   (EMG amplitude against load).
+3. **Stop**. In Analysis, the contraction table holds one row per lift with
+   its load, and **«Force-velocity study…»** reads those rows and returns four
+   curves: load-velocity, force-velocity (normalised hyperbola), power and
+   recruitment (EMG amplitude against load).
 
 **Data to record.**
 

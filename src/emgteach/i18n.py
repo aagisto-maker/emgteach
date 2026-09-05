@@ -1802,6 +1802,10 @@ _ES = {
     'Amplitude by load': 'Amplitud por carga',
     'EMD by load': 'EMD por carga',
     'Velocity by load': 'Velocidad por carga',
+    'The rows are those of the contraction table: to change them, edit the '
+    'fragments in the Analysis tab.':
+        'Las filas son las de la tabla de contracciones: para cambiarlas, edite los '
+        'fragmentos en la pestaña de Análisis.',
     'Nothing measured for this.': 'No hay medida de esto.',
     'Muscle on A1 · accelerometer on A2': 'Músculo en A1 · acelerómetro en A2',
     'Muscle — e.g. biceps': 'Músculo — p. ej. bíceps',

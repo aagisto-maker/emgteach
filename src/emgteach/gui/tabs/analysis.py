@@ -2158,9 +2158,20 @@ class AnalysisTab(QWidget):
                 ForceVelocityDialog,
             )
 
+            # The study reads the contraction table's rows — one per lift,
+            # with its load, RMS and velocity — so table, chart by load and
+            # study say the same thing. With no rows yet (no analysis has
+            # run) it segments the file itself, as it always did.
+            filas = list(self._filas_contr) or None
+            acc = (self._last_result or {}).get("acc_raw")
+            acc_plano = bool(
+                acc is not None and len(acc)
+                and float(acc.max() - acc.min()) < 0.02)
             dlg = ForceVelocityDialog(
                 path, canal, self._acc_channel_name,
                 f_env=self._spin_fenv.value(), parent=self,
+                rows=filas, loads=list(self._cargas_contr) if filas else None,
+                acc_flat=acc_plano,
             )
             dlg.exec()
         except Exception as exc:  # pragma: no cover — GUI feedback only

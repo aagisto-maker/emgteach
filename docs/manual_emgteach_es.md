@@ -921,9 +921,12 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
    electromecánico bastan flexiones rápidas sueltas; para el temblor, una postura
    mantenida.
 4. **Análisis.** Paneles **10. EMG frente a MMG**, **11. Temblor** y **12.
-   Movimiento frente a EMG**; la tabla de contracciones con la columna **EMD**; y
-   **«Estudio fuerza-velocidad…»**, que devuelve las curvas carga-velocidad,
-   fuerza-velocidad, potencia y reclutamiento.
+   Movimiento frente a EMG**; la tabla de contracciones con una fila por
+   levantamiento (su carga, RMS, velocidad y **EMD**); y **«Estudio
+   fuerza-velocidad…»**, que lee esas mismas filas (desmarque un levantamiento
+   malo, escriba una carga que falte) y devuelve las curvas carga-velocidad,
+   fuerza-velocidad, potencia y reclutamiento. Tabla, vista «Por carga» y
+   estudio dicen lo mismo.
 
 ### 7.4 Monitorización de carga en vivo (ergonomía)
 

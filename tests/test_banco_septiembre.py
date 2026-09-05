@@ -140,6 +140,33 @@ class TestTheNameOfTheMuscle:
             assert mode_fixed_labels(mode) == ()
 
 
+class TestTheStudyReadsTheRows:
+    """Table, chart by load and force-velocity study say the same thing."""
+
+    def test_the_dialog_takes_the_table_rows_as_they_are(self, qapp) -> None:
+        from emgteach.gui.widgets.force_velocity_dialog import ForceVelocityDialog
+
+        filas = [
+            Contraction(k, 2.0 * k, 2.0 * k + 1.0, "Biceps", 0.1 + 0.02 * k, None, 60.0,
+                        velocity_au=0.01 * k)
+            for k in range(1, 7)
+        ]
+        cargas = [2.0, 2.0, 3.4, 3.4, 5.0, None]
+        # No file is read: the path does not even exist.
+        dlg = ForceVelocityDialog("no-such-file.edf", "Biceps", "ACC (limb)",
+                                  rows=filas, loads=cargas)
+        try:
+            assert dlg._table.rowCount() == 6
+            assert [dlg._table.item(i, 1).text() for i in range(6)] == [str(k) for k in range(1, 7)]
+            assert [dlg._table.item(i, 2).text() for i in range(6)] == ["2", "2", "3.4", "3.4", "5", ""]
+            assert dlg._table.item(0, 3).text() == "0.120"      # the row's RMS
+            assert dlg._table.item(2, 4).text() == "0.030"      # the row's velocity
+            dlg._redraw()
+            assert len(dlg._fig.get_axes()) == 4
+        finally:
+            dlg.close()
+
+
 @pytest.fixture
 def adq(qapp):
     from emgteach.gui.tabs.acquisition import AcquisitionTab

@@ -1,12 +1,16 @@
 """Force-velocity / load-velocity study dialog.
 
 Opened from the Analysis tab on a recording that has an accelerometer channel.
-The subject has lifted several **known** loads in one recording (one rep per
-load); the dialog auto-detects the repetitions from the EMG envelope, lets the
-user type the load (kg) of each, and draws the four muscle-function curves:
-load-velocity, normalised force-velocity (Hill), power, and load-vs-EMG
-(recruitment). See :mod:`emgteach.force_velocity` for the maths and the caveats
-(velocity in arbitrary units, force = the known external load).
+The subject has lifted several **known** loads in one recording; the dialog
+takes the rows of the tab's contraction table — one per lift, with the load
+its marker gave it, its RMS and the segment's peak velocity — lets the user
+untick a bad one or type a missing load, and draws the four muscle-function
+curves: load-velocity, normalised force-velocity (Hill), power, and
+load-vs-EMG (recruitment). It used to segment the recording on its own, from
+the markers or the envelope, and drew a table that did not match the one
+beside it; segmenting from the file remains as the fallback for a recording
+opened with no analysis run. See :mod:`emgteach.force_velocity` for the maths
+and the caveats (velocity in arbitrary units, force = the known external load).
 """
 
 from __future__ import annotations
@@ -53,6 +57,10 @@ class ForceVelocityDialog(QDialog):
         acc_channel: str,
         f_env: float = 5.0,
         parent=None,
+        *,
+        rows=None,
+        loads=None,
+        acc_flat: bool = False,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Force-velocity study"))
@@ -63,6 +71,11 @@ class ForceVelocityDialog(QDialog):
         self._f_env = float(f_env)
         self._emg_amp = np.asarray([])
         self._peak_vel = np.asarray([])
+        #: The contraction table's rows and the load of each, when the tab
+        #: hands them over; ``None`` reads the file and segments it here.
+        self._rows = list(rows) if rows else None
+        self._rows_loads = list(loads) if loads is not None else None
+        self._acc_flat_dado = bool(acc_flat)
 
         root = QHBoxLayout(self)
 
@@ -80,12 +93,18 @@ class ForceVelocityDialog(QDialog):
         self._table.setMinimumWidth(400)
         left.addWidget(self._table, stretch=1)
 
-        note = QLabel(tr(
+        nota = tr(
             "Untick any contraction that is clearly not valid, then Redraw. "
             "Repetitions at the same load are averaged. Velocity is in "
             "arbitrary units (the accelerometer is uncalibrated); force is the "
             "entered load."
-        ))
+        )
+        if self._rows:
+            nota += " " + tr(
+                "The rows are those of the contraction table: to change them, "
+                "edit the fragments in the Analysis tab."
+            )
+        note = QLabel(nota)
         note.setWordWrap(True)
         note.setStyleSheet("color:#666; font-size:11px;")
         left.addWidget(note)
@@ -121,10 +140,51 @@ class ForceVelocityDialog(QDialog):
         right.addWidget(buttons)
         root.addLayout(right, stretch=3)
 
-        self._load_and_segment()
+        if self._rows:
+            self._load_from_rows()
+        else:
+            self._load_and_segment()
         self._redraw()
 
     # -- data ----------------------------------------------------------------
+
+    def _load_from_rows(self) -> None:
+        """The rows of the contraction table, as they are.
+
+        One per lift, numbered as the table numbers them, with the load its
+        marker gave it (blank where none did, for typing), its RMS as the
+        EMG amplitude and the segment's peak velocity — the same numbers the
+        table and the chart by load show, so the three say the same thing.
+        """
+        filas = self._rows
+        self._fs = 0.0
+        self._load_markers = []
+        self._windows = [(0, 0)] * len(filas)
+        cargas = self._rows_loads or []
+        self._marker_loads = [
+            float(cargas[i]) if i < len(cargas) and cargas[i] is not None else None
+            for i in range(len(filas))
+        ]
+        self._emg_amp = np.asarray([float(r.rms_mv) for r in filas])
+        self._peak_vel = np.asarray([
+            float(r.velocity_au) if r.velocity_au is not None else 0.0 for r in filas
+        ])
+        self._acc_flat = self._acc_flat_dado
+        self._avisar_acc_plano()
+        self._fill_table(reps=[int(r.n) for r in filas])
+
+    def _avisar_acc_plano(self) -> None:
+        """Flag a flat / rail-pinned accelerometer: then every velocity is ~0
+        (the column of 0.000 the operator sees), which is a placement
+        problem, not a bug."""
+        if self._acc_flat:
+            self._acc_warn.setText(tr(
+                "⚠ The accelerometer barely moved (flat / pinned at a rail), so "
+                "the velocities are ~0. Put it on the moving segment, oriented "
+                "so its resting value sits mid-range (not at ±1 g), and lift "
+                "quickly."
+            ))
+        self._acc_warn.setVisible(self._acc_flat)
 
     def _load_and_segment(self) -> None:
         """Read the EMG + ACC, compute the envelope/velocity and detect reps."""
@@ -148,18 +208,9 @@ class ForceVelocityDialog(QDialog):
         except Exception:
             acc_raw = np.zeros_like(self._emg_env)
         self._velocity = velocity_from_acc(acc_raw, fs)
-        # Flag a flat / rail-pinned accelerometer: then every velocity is ~0
-        # (the column of 0.000 the operator sees), which is a placement problem,
-        # not a bug. ~0.02 g of peak-to-peak is essentially no movement.
+        # ~0.02 g of peak-to-peak is essentially no movement.
         self._acc_flat = bool(acc_raw.size and float(np.ptp(acc_raw)) < 0.02)
-        if self._acc_flat:
-            self._acc_warn.setText(tr(
-                "⚠ The accelerometer barely moved (flat / pinned at a rail), so "
-                "the velocities are ~0. Put it on the moving segment, oriented "
-                "so its resting value sits mid-range (not at ±1 g), and lift "
-                "quickly."
-            ))
-        self._acc_warn.setVisible(self._acc_flat)
+        self._avisar_acc_plano()
 
         # A guided recording carries one marker per contraction: take the rep
         # windows straight from the markers (robust to the amplitude gap between
@@ -178,7 +229,9 @@ class ForceVelocityDialog(QDialog):
         )
         self._fill_table()
 
-    def _fill_table(self) -> None:
+    def _fill_table(self, reps: list[int] | None = None) -> None:
+        """``reps`` numbers the rows as the contraction table does; without
+        it they count from one."""
         n = len(self._windows)
         self._table.setRowCount(n)
         read_only = ~Qt.ItemFlag.ItemIsEditable
@@ -199,7 +252,7 @@ class ForceVelocityDialog(QDialog):
             )
             use.setCheckState(Qt.CheckState.Checked)   # valid by default
             self._table.setItem(i, 0, use)
-            rep = QTableWidgetItem(str(i + 1))
+            rep = QTableWidgetItem(str(reps[i] if reps is not None else i + 1))
             rep.setFlags(rep.flags() & read_only)
             self._table.setItem(i, 1, rep)
             kg = marker_loads[i] if i < len(marker_loads) else None

@@ -539,9 +539,10 @@ y el EMG la activación.
    isométrico sin carga** de 3 s (codo a 90°, contra la mesa) y, para cada carga,
    las repeticiones pedidas de **una elevación rápida**, cada una con su cuenta
    atrás y marcada en el fichero con su carga. Basta seguir la pantalla.
-3. **Detener**. En Análisis, **«Estudio fuerza-velocidad…»** devuelve cuatro
-   curvas: carga-velocidad, fuerza-velocidad (hiperbólica normalizada), potencia y
-   reclutamiento (amplitud EMG frente a carga).
+3. **Detener**. En Análisis, la tabla de contracciones trae una fila por
+   levantamiento con su carga, y **«Estudio fuerza-velocidad…»** lee esas filas y
+   devuelve cuatro curvas: carga-velocidad, fuerza-velocidad (hiperbólica
+   normalizada), potencia y reclutamiento (amplitud EMG frente a carga).
 
 **Datos a recoger.**
 
