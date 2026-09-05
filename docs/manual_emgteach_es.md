@@ -871,11 +871,11 @@ el acelerómetro y las medidas que se ofrecen después.
 2. **Adquisición.** Conectar, escribir el identificador de prueba, *Iniciar
    grabación*. Si el ejercicio necesita % CVM (escalones de esfuerzo, fatiga,
    carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
-   calentamiento y los seis esfuerzos máximos contra la mesa, con el puño cerrado.
+   calentamiento y los tres esfuerzos máximos contra la mesa, con el puño cerrado.
    Después, la tarea; los inicios se marcan solos. *Detener grabación*.
 3. **Análisis.** Se analiza solo. Seguir los dos cuadros guiados: revisar las
    **repeticiones de la calibración** y, en los **fragmentos**, dejar solo la tarea
-   (desmarcando los seis esfuerzos de calibración si los hubo). Leer la tabla de
+   (desmarcando los tres esfuerzos de calibración si los hubo). Leer la tabla de
    contracciones (una fila por esfuerzo, con RMS, pico en % CVM y MDF), las fichas
    del resumen contra sus rangos, y los paneles 1A, 2 y 3; para la fatiga, el
    panel 7 desde «Más paneles…». Comprobar la ficha «Máximo de la tarea». Generar
@@ -1163,7 +1163,7 @@ porque la pila científica no tiene *wheels*.
   máximo, en % de su propia referencia.
 - **Retraso electromecánico (EMD)**: tiempo entre el inicio de la señal eléctrica y
   el inicio del movimiento.
-- **Repetición de calibración**: cada uno de los seis esfuerzos máximos por músculo
+- **Repetición de calibración**: cada uno de los tres esfuerzos máximos por músculo
   (tres mantenidos, tres breves) marcados en el fichero.
 
 ---
