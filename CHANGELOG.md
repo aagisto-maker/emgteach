@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **«Calibrate MVC» is a button again in the two practicals that have no force-velocity box.** Laying the box out as two lines left the button alone on the top line with nothing else asking for width, so it stretched across the whole box and read as a banner. Caught while rebuilding the manuals' screenshots, which is what those figures are for.
+
 ## [3.0.0] — 2026-09-05
 
 **The application is configured by choosing the practical.** Three of them —

@@ -2537,6 +2537,12 @@ class AcquisitionTab(QWidget):
         fv_row.addWidget(self._lbl_fv_config, stretch=1)
 
         fila_sup.addWidget(self._box_fv_guided, stretch=1)
+        # And a spacer behind it, for the two practicals that hide the box:
+        # with nothing else on the line asking for width, «Calibrate MVC»
+        # stretched across the whole box and read as a banner rather than a
+        # button. The spacer has no stretch factor of its own, so while the
+        # study box is there the width still goes to the box.
+        fila_sup.addStretch(0)
         col.addLayout(fila_sup)
         col.addLayout(row)
 
