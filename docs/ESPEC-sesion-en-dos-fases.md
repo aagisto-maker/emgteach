@@ -1,6 +1,6 @@
 # emgteach — la sesión pasa a tener dos fases dentro del mismo archivo
 
-Especificación para Claude Code. Escrita el 31 de agosto de 2026 sobre la rama `feat/ui-levels`,
+Especificación de implementación. Escrita el 31 de agosto de 2026 sobre la rama `feat/ui-levels`,
 commit 7234b02. Sustituye por completo al modelo de «archivo de calibración aparte».
 
 **Léela entera antes de tocar nada.** No es una lista de arreglos: cambia el modelo de datos, y de ahí

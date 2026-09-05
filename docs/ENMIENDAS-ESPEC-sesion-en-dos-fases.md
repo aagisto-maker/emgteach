@@ -1,6 +1,6 @@
 # Enmiendas a `ESPEC-sesion-en-dos-fases.md`
 
-Escrito por Claude Code el 31 de agosto de 2026, tras revisar la especificación y hablarlo con Ángel.
+Escrito el 31 de agosto de 2026, tras revisar la especificación y hablarlo con Ángel.
 **Se lee junto a la espec, no la sustituye.** La espec queda como se escribió; aquí está lo que cambia,
 lo que ya estaba hecho antes de que la espec se escribiera, y una decisión nueva.
 

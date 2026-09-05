@@ -1,6 +1,6 @@
 # emgteach — que el panel de envolventes superpuestas hable en %CVM
 
-Especificación para implementar con Claude Code. Escrita el 30 de agosto de 2026 sobre la rama
+Especificación de implementación. Escrita el 30 de agosto de 2026 sobre la rama
 `feat/ui-levels` tal como está en `C:\Users\aagis\Documents\EMG\...\emgteach\src`. Las líneas citadas se
 han comprobado en ese árbol; si el fichero cambia, localizar por nombre de función, no por número.
 
