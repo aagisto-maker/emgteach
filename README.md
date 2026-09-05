@@ -185,14 +185,6 @@ development setup, the test/lint commands, the branch and commit
 conventions, and how to add or translate user-facing strings (the UI is
 bilingual: English-canonical source plus a Spanish translation map).
 
-## Development
-
-Parts of this software were developed with the assistance of an AI
-coding assistant (Anthropic's Claude) under the direction and review of
-the author, who set all requirements, took the design decisions and is
-responsible for the released code. The AI assistant is a tool and is not
-an author; see [`AUTHORS.md`](AUTHORS.md).
-
 ## Related work
 
 - [edf-buffered-write](https://doi.org/10.5281/zenodo.20042878) —
