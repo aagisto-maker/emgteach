@@ -938,6 +938,24 @@ la tarea, 117 % CVM.
   hizo sin cronómetro porque el operador ya llevaba encima grabar, contraer y
   capturar a la vez, que fue justo lo que motivó el botón `Auto`.
 
+  **Es una sola medida y no tres.** Montaje es lo que va del sujeto sin nada
+  encima a dos canales dando señal limpia: preparación de la piel, los dos
+  pares de electrodos y la referencia, encender la placa, conectar y la
+  comprobación de calidad. **Lo que dura el registro no se cronometra porque
+  ya se sabe**: 10 s de calentamiento, 17,5 del primer músculo, 19,5 del
+  segundo y 5 de preparación, unos 52 s hasta `REC start` más la tarea. Eso es
+  una constante del programa —la secuencia la lleva él y no la persona—, sale
+  del código y está en el §4. Cronometrarlo sería medir dos veces lo mismo.
+
+  Conviene además **dejar fuera el emparejamiento Bluetooth**, que es de una
+  vez por ordenador y no de cada sesión; contarlo dentro infla la cifra para
+  quien la lea pensando en su clase.
+
+  Y cuando se mida, será **un límite inferior con operador experto**, no una
+  comparación. La comparación que interesa —lo que tarda un docente frente a
+  un alumno la primera vez— necesita la cohorte, y va en el estudio de
+  pilotaje del curso 2026/27, no aquí.
+
 > El índice de coactivación por maniobra y el porcentaje del extensor en la
 > presa estaban aquí hasta el 6 de septiembre. Los mide el §8.2.
 
