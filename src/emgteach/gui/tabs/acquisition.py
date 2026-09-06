@@ -29,6 +29,7 @@ The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread)
 
 from __future__ import annotations
 
+import re
 from collections import deque
 from datetime import datetime
 from pathlib import Path
@@ -198,6 +199,31 @@ _CALIB_MV = {0: 1.0}
 # across PCs; BitalinoDevice resolves it to the local virtual COM port. The
 # field also accepts an explicit COMx, or empty for autodetection.
 DEFAULT_BITALINO_ADDR = "98:D3:91:FE:44:E4"
+
+#: Longest prefix taken from the test identifier for a file name. Long enough
+#: for a subject code or «bench 3, attempt 2», short enough that the date and
+#: time after it stay readable in a file dialogue.
+MAX_ID_EN_NOMBRE = 24
+
+
+def nombre_por_defecto(codigo: str, sello: str) -> str:
+    """The file name the save dialogue opens with.
+
+    From the bench of 6 September: the identifier had been typed into the box,
+    the recording still came out as ``emg_<date>.edf``, and it had to be
+    renamed by hand — which is exactly the moment to get it wrong. When there
+    is an identifier the file carries it, so the recording and its screenshots
+    share a name from the start.
+
+    The identifier is free text, so only what a file name can hold survives:
+    letters, digits, dash, underscore and dot; anything else becomes a dash,
+    runs collapse, and the result is trimmed. An identifier that leaves
+    nothing usable — punctuation only — falls back to the old name rather
+    than to something unreadable.
+    """
+    limpio = re.sub(r"[^0-9A-Za-z_.-]+", "-", str(codigo)).strip("-._")
+    limpio = limpio[:MAX_ID_EN_NOMBRE].strip("-._")
+    return f"{limpio}_{sello}.edf" if limpio else f"emg_{sello}.edf"
 
 # Interval (ms) after the last received data beyond which there is considered
 # to be no traffic (the LED goes from green to yellow).
@@ -1707,7 +1733,9 @@ class AcquisitionTab(QWidget):
         # "Save figure" dialogs), pre-filled with the destination folder and a
         # timestamped default name. Cancelling aborts the recording start.
         save_dir = self._edit_dir.text().strip() or "."
-        default_name = f"emg_{datetime.now():%Y-%m-%d_%H-%M}.edf"
+        default_name = nombre_por_defecto(
+            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M}"
+        )
         ruta, _ = QFileDialog.getSaveFileName(
             self, tr("Save EDF recording as…"),
             str(Path(save_dir) / default_name),

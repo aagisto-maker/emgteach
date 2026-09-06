@@ -97,6 +97,13 @@ def _make_splash() -> QSplashScreen:
     return splash
 
 
+#: How often the automatic screenshot fires, in milliseconds. Three seconds
+#: over a session of a hundred is some thirty pictures — enough that no moment
+#: of the protocol goes unphotographed, few enough to look through afterwards.
+#: Shorter than the shortest thing worth catching: a maximal effort lasts 1.5 s
+#: and the guided cue before it 3 s.
+AUTO_CAPTURA_MS = 3000
+
 # ---------------------------------------------------------------------------
 # Shared styling for all tabs
 # ---------------------------------------------------------------------------
@@ -237,6 +244,33 @@ class MainWindow(QMainWindow):
             "under its name plus the date and time; nothing is asked."))
         btn_captura.clicked.connect(self._guardar_captura)
 
+        # Reported from the bench of 6 September: «me lío con grabar,
+        # contraer, capturar, tiempo; no me da para hacerlo con calma y se me
+        # pasan algunos pasos». In this practical the subject and the operator
+        # are the same person, so a key that has to be pressed at the right
+        # instant is one thing too many — and it is the picture that gets
+        # missed, never the contraction. Armed once, this takes them by
+        # itself, and afterwards the best one is chosen with time to spare.
+        self._btn_auto_captura = QToolButton()
+        self._btn_auto_captura.setText(tr("Auto"))
+        self._btn_auto_captura.setCheckable(True)
+        self._btn_auto_captura.setAutoRaise(True)
+        self._btn_auto_captura.setToolTip(tr(
+            "Take a picture by itself every {s:.0f} s, but only while a "
+            "recording is running. It needs no switching off: outside a "
+            "recording it does nothing.").format(s=AUTO_CAPTURA_MS / 1000))
+        self._btn_auto_captura.toggled.connect(self._auto_captura_conmutada)
+
+        #: Runs while the button is down, and only writes during a recording.
+        #: Driving it off the clock rather than off the record button means
+        #: there is nothing to switch on at the start of a session and nothing
+        #: to remember to switch off at the end of it.
+        self._timer_captura = QTimer(self)
+        self._timer_captura.setInterval(AUTO_CAPTURA_MS)
+        self._timer_captura.timeout.connect(self._tic_captura)
+        self._auto_grabando = False
+        self._auto_hechas = 0
+
         btn_about = QToolButton()
         btn_about.setText("?")
         btn_about.setAutoRaise(True)
@@ -259,6 +293,7 @@ class MainWindow(QMainWindow):
         corner_lay.addWidget(self._lbl_nivel)
         corner_lay.addWidget(self._combo_lang)
         corner_lay.addWidget(btn_captura)
+        corner_lay.addWidget(self._btn_auto_captura)
         corner_lay.addWidget(btn_tour)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
@@ -553,8 +588,45 @@ class MainWindow(QMainWindow):
         for reg in registros:
             (reg.append_error if error else reg.append_log)(texto)
 
+    @Slot(bool)
+    def _auto_captura_conmutada(self, armada: bool) -> None:
+        if armada:
+            self._timer_captura.start()
+            self._mensaje_en_las_tres(tr(
+                "Automatic screenshots armed: one every {s:.0f} s while "
+                "recording.").format(s=AUTO_CAPTURA_MS / 1000))
+        else:
+            self._timer_captura.stop()
+            self._auto_grabando = False
+            self._mensaje_en_las_tres(tr("Automatic screenshots off."))
+
     @Slot()
-    def _guardar_captura(self) -> None:
+    def _tic_captura(self) -> None:
+        """One picture, if a recording is running.
+
+        Nothing is written between sessions: the button can stay down all
+        afternoon and only the recordings are photographed. The count is
+        reported once, when the recording ends, rather than a line per
+        picture — thirty lines would bury the markers the log is for.
+        """
+        try:
+            grabando = bool(self._tab_adq.is_recording())
+        except Exception:      # the tab is not built (tests, tooling)
+            grabando = False
+        if grabando:
+            if not self._auto_grabando:
+                self._auto_grabando = True
+                self._auto_hechas = 0
+            if self._guardar_captura(silenciosa=True):
+                self._auto_hechas += 1
+        elif self._auto_grabando:
+            self._auto_grabando = False
+            self._mensaje_en_las_tres(tr(
+                "{n} automatic screenshots saved with the recording."
+            ).format(n=self._auto_hechas))
+
+    @Slot()
+    def _guardar_captura(self, silenciosa: bool = False) -> bool:
         """A picture of the window, saved without asking anything.
 
         Reported from the bench: taking screenshots with the system tool
@@ -586,14 +658,18 @@ class MainWindow(QMainWindow):
             self._mensaje_en_las_tres(
                 tr("The screenshot could not be saved: {error}").format(
                     error=exc), error=True)
-            return
+            return False
         if not guardada:
             self._mensaje_en_las_tres(
                 tr("The screenshot could not be saved to: {path}").format(
                     path=ruta), error=True)
-            return
-        self._mensaje_en_las_tres(
-            tr("Screenshot saved: {path}").format(path=ruta))
+            return False
+        # A failure is always said, whoever asked for the picture; a success
+        # only when a person pressed the key.
+        if not silenciosa:
+            self._mensaje_en_las_tres(
+                tr("Screenshot saved: {path}").format(path=ruta))
+        return True
 
     def layout_minimum_size(self):
         """What the interface itself needs, before any clamping to the screen.

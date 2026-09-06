@@ -122,6 +122,76 @@ def analiza(edf: Path) -> dict:
     return result
 
 
+def inicio_del_registro(edf: Path) -> float:
+    """Segundo del archivo en el que empieza la fase de registro.
+
+    El análisis se queda con la fase `REC` y **rebasa su tiempo a cero**, así
+    que un tramo leído en la pantalla de revisión —donde los segundos son los
+    del archivo— no cae donde uno cree. Los tramos de `--ventana` se dan en
+    segundos del archivo, que es como se leen, y se trasladan aquí.
+    """
+    import mne
+
+    mne.set_log_level("ERROR")
+    crudo = mne.io.read_raw_edf(str(edf), preload=False)
+    for cuando, que in zip(crudo.annotations.onset,
+                           crudo.annotations.description, strict=False):
+        if str(que).strip() == "REC start":
+            return float(cuando)
+    return 0.0
+
+
+def ventanas_a_mano(result: dict, pedidas, presa: re.Pattern):
+    """Ventanas dictadas por el operador sobre el registro **sin recortar**.
+
+    Hace falta porque el EDF afinado y el original no dan el mismo número, y
+    la diferencia no es un detalle. El afinado concatena los fragmentos y tira
+    lo que hay entre ellos, así que la media del músculo activo sube y la del
+    otro baja: sobre el original del 6 de septiembre la flexión da 28 % y la
+    presa 78 %, y sobre el afinado la flexión se queda sin número —el ECR cae
+    por debajo del suelo del 5 %— y la extensión y la presa quedan en 63 % y
+    67 %, que ya no distinguen nada.
+
+    El índice de Falconer-Winter se lee sobre la fase de movimiento con su
+    curso temporal, reposos incluidos; concatenar las contracciones mide otra
+    cosa. Así que para la figura del artículo se dan aquí los tramos, en
+    segundos del registro original.
+    """
+    from emgteach.coactivation import coactivation_index
+
+    e1 = np.asarray(result.get("emg_envelope", []), dtype=float)
+    bruto2 = result.get("emg_envelope_2")
+    e2 = np.asarray(bruto2 if bruto2 is not None else [], dtype=float)
+    r1 = float(result.get("mvc_ref") or 0)
+    r2 = float(result.get("mvc_ref_2") or 0)
+    times = np.asarray(result.get("times", []), dtype=float)
+    fs = float(result.get("fs", 1000.0))
+    if not (e1.size and e2.size and r1 and r2):
+        raise SystemExit("el registro no trae las dos referencias de CVM")
+    p1, p2 = 100.0 * e1 / r1, 100.0 * e2 / r2
+
+    arriba, abajo = [], []
+    for nombre, a, b in pedidas:
+        dentro = (times >= a) & (times < b)
+        res = coactivation_index(
+            p1[dentro], p2[dentro], fs, window_s=(a, b), label=nombre,
+            name_1=result.get("channel_name", ""),
+            name_2=result.get("channel_name_2", ""),
+        )
+        (abajo if presa.search(nombre) else arriba).append(res)
+    return arriba, abajo
+
+
+def _pedida(texto: str) -> tuple[str, float, float]:
+    """``Flexion=57.5:70`` -> ``("Flexion", 57.5, 70.0)``."""
+    nombre, _, tramo = texto.partition("=")
+    a, _, b = tramo.partition(":")
+    try:
+        return nombre.strip(), float(a), float(b)
+    except ValueError:
+        raise SystemExit(f"no entiendo la ventana «{texto}»; use Nombre=a:b") from None
+
+
 def ventanas(result: dict, presa: re.Pattern) -> tuple[list, list]:
     """Reparte las ventanas con nombre entre los dos paneles."""
     tabla = list(result.get("coactivation") or [])
@@ -190,8 +260,11 @@ def _dibuja_panel(ax, result: dict, tramos, span, largo: float, techo: float,
 
 
 def dibuja(result: dict, salida: Path, nombre: str, presa: re.Pattern,
-           txt: dict) -> None:
-    reciproco, de_presa = ventanas(result, presa)
+           txt: dict, pedidas=None) -> None:
+    if pedidas:
+        reciproco, de_presa = ventanas_a_mano(result, pedidas, presa)
+    else:
+        reciproco, de_presa = ventanas(result, presa)
     span_a, span_b = _span(reciproco), _span(de_presa)
     largos = [s[1] - s[0] for s in (span_a, span_b) if s]
     largo = max(largos) if largos else 1.0
@@ -234,7 +307,7 @@ def dibuja(result: dict, salida: Path, nombre: str, presa: re.Pattern,
             print(f"  {etiqueta} {w.label:<22} {w.window_s[0]:6.1f} a "
                   f"{w.window_s[1]:6.1f} s   coactivación {indice}   "
                   f"(medias {w.mean_1:.1f} % y {w.mean_2:.1f} % CVM)")
-    if not result.get("coactivation_from_markers", True):
+    if not pedidas and not result.get("coactivation_from_markers", True):
         print("\n  !! el registro no tiene fragmentos con nombre: lo que se "
               "dibuja es el tramo entero,\n     que no es una medida de nada. "
               "Sirve para probar la herramienta, no como figura.")
@@ -250,14 +323,24 @@ def main() -> None:
     ap.add_argument("--lang", choices=("es", "en"), default="en")
     ap.add_argument("--presa", default=r"presa|grip",
                     help="con qué nombre reconocer la ventana de la presa")
+    ap.add_argument("--ventana", action="append", metavar="Nombre=a:b",
+                    help="tramo en segundos del registro SIN recortar; "
+                         "repetible. Con esto no se leen los fragmentos del "
+                         "archivo: se dibuja sobre el original, que es donde "
+                         "el índice se lee con su curso temporal")
     args = ap.parse_args()
 
     if not args.edf.exists():
         raise SystemExit(f"no encuentro {args.edf}")
     set_language(args.lang)
     print(f"figura 6 desde: {args.edf}")
+    pedidas = [_pedida(v) for v in (args.ventana or [])]
+    if pedidas:
+        off = inicio_del_registro(args.edf)
+        print(f"la fase de registro empieza en {off:.1f} s del archivo")
+        pedidas = [(n, a - off, b - off) for n, a, b in pedidas]
     dibuja(analiza(args.edf), args.salida, args.nombre,
-           re.compile(args.presa, re.IGNORECASE), ROTULOS[args.lang])
+           re.compile(args.presa, re.IGNORECASE), ROTULOS[args.lang], pedidas)
 
 
 if __name__ == "__main__":
