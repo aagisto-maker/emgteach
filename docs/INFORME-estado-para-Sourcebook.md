@@ -933,26 +933,24 @@ la tarea, 117 % CVM.
 
 ### 8.4 Lo que no está medido
 
-- **El tiempo de montaje no está cronometrado** en ninguna sesión. Es el único
-  punto de este apartado que sigue en blanco.
+- **El tiempo de montaje no se da, y no es un hueco pendiente: se mide con los
+  alumnos.** Cronometrar a quien escribió el programa no responde la pregunta
+  que un departamento se hace, que es cuánto tarda alguien que llega nuevo.
+  Una cifra con n = 1 y operador experto sería un límite inferior sin
+  comparación posible, y presentarla invitaría a leerla como lo que no es. Va
+  al estudio de pilotaje del curso 2026/27, con la cohorte, junto al resto de
+  los datos de uso (§9.8).
 
-  **Es una sola medida y no tres.** Montaje es lo que va del sujeto sin nada
-  encima a dos canales dando señal limpia: preparación de la piel, los dos
-  pares de electrodos y la referencia, encender la placa, conectar y la
-  comprobación de calidad. **Lo que dura el registro no se cronometra porque
-  ya se sabe**: 10 s de calentamiento, 17,5 del primer músculo, 19,5 del
-  segundo y 5 de preparación, unos 52 s hasta `REC start` más la tarea. Eso es
-  una constante del programa —la secuencia la lleva él y no la persona—, sale
-  del código y está en el §4. Cronometrarlo sería medir dos veces lo mismo.
-
-  Conviene además **dejar fuera el emparejamiento Bluetooth**, que es de una
-  vez por ordenador y no de cada sesión; contarlo dentro infla la cifra para
-  quien la lea pensando en su clase.
-
-  Y cuando se mida, será **un límite inferior con operador experto**, no una
-  comparación. La comparación que interesa —lo que tarda un docente frente a
-  un alumno la primera vez— necesita la cohorte, y va en el estudio de
-  pilotaje del curso 2026/27, no aquí.
+  Queda dicho, para cuando se mida, **qué cuenta como montaje**: del sujeto sin
+  nada encima a dos canales dando señal limpia — preparación de la piel, los
+  dos pares de electrodos y la referencia, encender la placa, conectar y la
+  comprobación de calidad. **Fuera el emparejamiento Bluetooth**, que es de una
+  vez por ordenador y no de cada sesión. Y **fuera lo que dura el registro**,
+  que no se cronometra porque ya se sabe: 10 s de calentamiento, 17,5 del
+  primer músculo, 19,5 del segundo y 5 de preparación, unos 52 s hasta
+  `REC start` más la tarea. Eso es una constante del programa —la secuencia la
+  lleva él y no la persona—, sale del código y está en el §4, y sale idéntica
+  para un docente y para un alumno.
 
 > El índice de coactivación por maniobra y el porcentaje del extensor en la
 > presa estaban aquí hasta que se midieron. Los da el §8.2.
