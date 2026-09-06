@@ -192,7 +192,7 @@ bilingual: English-canonical source plus a Spanish translation map).
 - [BITalino](https://www.bitalino.com/) — commercial Bluetooth
   biopotential acquisition device
 - [SparkFun MyoWare 2.0](https://www.sparkfun.com/products/21265) —
-  open-hardware sEMG 
+  open-hardware sEMG sensor
 
 ## How this software was developed
 
