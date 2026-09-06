@@ -282,6 +282,11 @@ class AcquisitionTab(QWidget):
         self._revisando = False
         #: The pyqtgraph items the review added, to take back out again.
         self._revision_items: list = []
+        #: The EDF this tab is recording into, or the one it is showing after
+        #: a recording. Screenshots are named after it, so a picture taken
+        #: during a manoeuvre files itself beside the signal it belongs to
+        #: instead of under a generic name nobody can match up afterwards.
+        self._ruta_registro: str = ""
 
         # Events for drawing live lines: (time_s, label). The total number of
         # acquired samples places each marker within the sliding window.
@@ -1714,6 +1719,9 @@ class AcquisitionTab(QWidget):
         if not ruta.lower().endswith(".edf"):
             ruta += ".edf"
         save_path = ruta
+        # Named now, before a single sample arrives: a screenshot taken during
+        # the calibration has to carry the same base name as the recording.
+        self._ruta_registro = ruta
         save_dir = str(Path(ruta).parent)
         self._edit_dir.setText(save_dir)
         self._settings.setValue("adquisicion/save_dir", save_dir)
@@ -2096,6 +2104,7 @@ class AcquisitionTab(QWidget):
         A failure here loses the review and nothing else: the recording is on
         disk and the analysis tab is untouched.
         """
+        self._ruta_registro = edf_path
         try:
             nombres = list_edf_emg_channels(edf_path)
             if not nombres:
@@ -3978,6 +3987,9 @@ class AcquisitionTab(QWidget):
         if self.is_recording():
             return
         self._salir_revision()
+        # A new student: the previous recording's name must not follow them
+        # into their screenshots.
+        self._ruta_registro = ""
         self._reset_buffers()
         self._marker_events.clear()
         self._list_markers.clear()

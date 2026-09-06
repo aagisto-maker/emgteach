@@ -233,8 +233,8 @@ class MainWindow(QMainWindow):
         btn_captura.setText(tr("Screenshot"))
         btn_captura.setAutoRaise(True)
         btn_captura.setToolTip(tr(
-            "Save a picture of the window (F12). It goes to the recordings "
-            "folder with the date and time in its name; nothing is asked."))
+            "Save a picture of the window (F12). It goes beside the recording, "
+            "under its name plus the date and time; nothing is asked."))
         btn_captura.clicked.connect(self._guardar_captura)
 
         btn_about = QToolButton()
@@ -526,6 +526,23 @@ class MainWindow(QMainWindow):
         guardada = str(self._settings.value("adquisicion/save_dir", "") or "")
         return Path(escrita or guardada or ".")
 
+    def _base_de_capturas(self) -> tuple[Path, str]:
+        """Where the picture goes and what it is called, before the timestamp.
+
+        When there is a recording — being written now, or the one on screen
+        after it finished — the picture goes beside it and takes its base
+        name, so `P01.edf` gets `P01_2026-09-08_10-31-05.png` and the two
+        never have to be matched up by hand later. With no recording yet, the
+        folder is the one the recordings go to and the name is the
+        application's, which is all there is to go on.
+        """
+        registro = str(getattr(self._tab_adq, "_ruta_registro", "") or "")
+        if registro:
+            archivo = Path(registro)
+            if archivo.stem:
+                return archivo.parent, archivo.stem
+        return self._carpeta_de_capturas(), "emgteach_captura"
+
     def _mensaje_en_las_tres(self, texto: str, error: bool = False) -> None:
         """Say it in every log, because it must be read from any tab."""
         registros = [self._logger]
@@ -548,18 +565,19 @@ class MainWindow(QMainWindow):
         happens to be behind it can end up in the figure, and the floating
         cue panel and the guided step, which are children of the window, do.
 
-        The name carries the date and time down to the second, so a burst of
-        pictures during one manoeuvre keeps its order and nothing is
-        overwritten.
+        The name is the recording's own, plus the date and time down to the
+        second: a burst of pictures during one manoeuvre keeps its order,
+        nothing is overwritten, and every picture says which recording it
+        belongs to without anyone having to write it down.
         """
         from datetime import datetime
 
-        destino = self._carpeta_de_capturas()
+        destino, base = self._base_de_capturas()
         marca = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        ruta = destino / f"emgteach_captura_{marca}.png"
+        ruta = destino / f"{base}_{marca}.png"
         n = 2
         while ruta.exists():
-            ruta = destino / f"emgteach_captura_{marca}_{n}.png"
+            ruta = destino / f"{base}_{marca}_{n}.png"
             n += 1
         try:
             destino.mkdir(parents=True, exist_ok=True)

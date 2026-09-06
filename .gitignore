@@ -60,8 +60,10 @@ local/
 salida/
 output/
 *.csv
-# Igual que el EDF: la exportación CSV que el informe cita como adjunto.
+# Igual que el EDF: la exportación CSV que el informe cita como adjunto, y su
+# equivalente en inglés, que es material suplementario del artículo.
 !docs/informe-sourcebook/*.csv
+!docs/articulo-advances/*.csv
 *.npy
 *.npz
 !tests/**/*.npy

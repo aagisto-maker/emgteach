@@ -29,11 +29,14 @@ Donde algo no está hecho o no lo sé, lo dice.
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leen del **código de `main` en el momento de generarlos**, que puede
 ir por delante de la etiqueta. Lo que ha entrado después de la 3.0.0 está en la
-sección «Unreleased» de `CHANGELOG.md`; a día de hoy son dos cosas, ninguna de
+sección «Unreleased» de `CHANGELOG.md`; a día de hoy son tres cosas, ninguna de
 ellas cambia una medida: el botón «Calibrar CVM» recupera su tamaño en las dos
-prácticas sin caja de fuerza-velocidad, y se añade un **botón de captura de
-pantalla** (F12) que guarda la ventana en la carpeta de los registros sin abrir
-ningún diálogo. Con ellas la suite pasa a 946 pruebas.
+prácticas sin caja de fuerza-velocidad, se añade un **botón de captura de
+pantalla** (F12) que guarda la ventana sin abrir ningún diálogo, y esa captura
+**toma el nombre del registro** al que pertenece (`P01.edf` da
+`P01_2026-09-08_10-31-05.png`, en la carpeta del propio registro). Con ellas, y
+con las pruebas de las dos herramientas de material del artículo, la suite pasa
+a 958 pruebas.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:161`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
@@ -904,7 +907,15 @@ la tarea, 117 % CVM.
   `ESPEC-niveles-y-avisos-emgteach.md` y `ESPEC-panel9-en-CVM.md`. Antes vivían
   solo en la carpeta del artículo.
 - **El README no menciona ninguna ruta sintética.** Dice la versión correcta
-  (3.0.0) y el número correcto de pruebas (940).
+  (3.0.0) y el número correcto de pruebas (958 hoy; 940 en la etiqueta). No es
+  cuestión de disciplina: `tests/test_readme.py::test_the_test_count_is_current`
+  cuenta las pruebas recogidas y falla si el README dice otra cosa.
+- **El material del artículo se genera aparte del del informe**, en
+  `docs/articulo-advances/`, con `tools/informe_material.py --articulo` y
+  `tools/figura6.py`. Va en inglés, con la ventana a 1150 px —a 1920 el texto
+  de la interfaz cae por debajo de 3 puntos al ancho de página de la revista— y
+  conducido desde una ruta neutra, de modo que ninguna captura ni la cabecera
+  del CSV enseñan una ruta de usuario. El detalle, en el README de esa carpeta.
 - Los dos documentos docentes en Word (Guía del docente v2.3 y Cuaderno de
   prácticas v2.3) están al día con sus PDF, con las capturas rehechas contra
   la 3.0.0.
