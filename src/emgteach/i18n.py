@@ -1141,11 +1141,21 @@ _ES = {
     "Compute MVC": "Calcular CVM",
     # --- captura de pantalla desde la propia aplicación ---
     "Screenshot": "Captura",
-    "Save a picture of the window (F12). It goes to the recordings folder "
-    "with the date and time in its name; nothing is asked.":
-        "Guarda una imagen de la ventana (F12). Va a la carpeta de los "
-        "registros, con la fecha y la hora en el nombre; no pregunta nada.",
+    "Save a picture of the window (F12). It goes beside the recording, "
+    "under its name plus the date and time; nothing is asked.":
+        "Guarda una imagen de la ventana (F12). Va junto al registro, con el "
+        "nombre de este más la fecha y la hora; no pregunta nada.",
     "Screenshot saved: {path}": "Captura guardada: {path}",
+    "Auto": "Auto",
+    "Take a picture by itself every {s:.0f} s, but only while a recording is "
+    "running. It needs no switching off: outside a recording it does nothing.":
+        "Hace una captura sola cada {s:.0f} s, pero solo mientras se graba. No "
+        "hay que desactivarlo: fuera de una grabación no hace nada.",
+    "Automatic screenshots armed: one every {s:.0f} s while recording.":
+        "Capturas automáticas activadas: una cada {s:.0f} s mientras se graba.",
+    "Automatic screenshots off.": "Capturas automáticas desactivadas.",
+    "{n} automatic screenshots saved with the recording.":
+        "{n} capturas automáticas guardadas con el registro.",
     "The screenshot could not be saved: {error}":
         "No se pudo guardar la captura: {error}",
     "The screenshot could not be saved to: {path}":

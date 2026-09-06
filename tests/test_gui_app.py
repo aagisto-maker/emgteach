@@ -9,6 +9,8 @@ smoke tests cannot catch (e.g. passing the window positionally into
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 pytestmark = pytest.mark.gui
@@ -157,6 +159,47 @@ class TestTheScreenshotButton:
         ventana._guardar_captura()
         assert len(list(otra.glob("*.png"))) == 1
         assert not list(tmp_path.glob("*.png"))
+
+    def test_it_takes_the_name_of_the_recording(self, ventana, tmp_path) -> None:
+        """Pedido para el artículo: la imagen tiene que decir por sí sola a qué
+        registro pertenece, sin que nadie lo anote a mano."""
+        ventana._tab_adq._ruta_registro = str(tmp_path / "P01.edf")
+        ventana._guardar_captura()
+        hechas = list(tmp_path.glob("*.png"))
+        assert len(hechas) == 1
+        assert hechas[0].name.startswith("P01_")
+        # La marca de tiempo entera, hasta el segundo.
+        assert re.fullmatch(r"P01_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png",
+                            hechas[0].name)
+
+    def test_it_files_the_picture_beside_the_recording(
+        self, ventana, tmp_path
+    ) -> None:
+        """Junto al EDF, no en la carpeta que ponga la casilla: durante una
+        maniobra puede haberse grabado en otro sitio."""
+        otra = tmp_path / "sesion"
+        otra.mkdir()
+        ventana._tab_adq._edit_dir.setText(str(tmp_path))
+        ventana._tab_adq._ruta_registro = str(otra / "P01.edf")
+        ventana._guardar_captura()
+        assert len(list(otra.glob("P01_*.png"))) == 1
+        assert not list(tmp_path.glob("*.png"))
+
+    def test_without_a_recording_it_still_saves(self, ventana, tmp_path) -> None:
+        """Antes de grabar nada no hay nombre que heredar, y la captura tiene
+        que salir igual: la pestaña de Análisis se usa sin grabar."""
+        assert ventana._tab_adq._ruta_registro == ""
+        ventana._guardar_captura()
+        hechas = list(tmp_path.glob("*.png"))
+        assert len(hechas) == 1
+        assert hechas[0].name.startswith("emgteach_captura_")
+
+    def test_a_new_session_forgets_the_previous_name(self, ventana) -> None:
+        """«Nueva sesión» es otro alumno: sus capturas no pueden salir con el
+        nombre del registro del anterior."""
+        ventana._tab_adq._ruta_registro = "C:/Records/P01.edf"
+        ventana._tab_adq.reset()
+        assert ventana._tab_adq._ruta_registro == ""
 
     def test_it_says_so_in_every_log(self, ventana) -> None:
         """El registro compartido se ve en Análisis; cada pestaña tiene el

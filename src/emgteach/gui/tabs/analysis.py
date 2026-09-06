@@ -1576,8 +1576,32 @@ class AnalysisTab(QWidget):
             texto = tr("{n} repetitions discarded").format(n=descartadas)
         self._lbl_reps.setText(texto)
 
+    def _refrescar_visibilidad_afinado(self) -> None:
+        """Offer «Save tuned EDF…» once there is a tuned recording to save.
+
+        It used to be gated on the advanced practical alone, on the grounds
+        that a derived EDF is for whoever curates the recordings and not for
+        the student reading one. That reasoning holds for the student and
+        breaks for the practical: from the bench of 6 September, in the
+        agonist/antagonist practical the fragments were named — Flexion,
+        Extension, Grip — the co-activation table came out per manoeuvre, and
+        then there was no way to save any of it. The per-manoeuvre result is
+        the point of that practical, and a result that cannot leave the screen
+        cannot be checked, redrawn or handed on.
+
+        So the gate is the state and not the mode: choosing fragments is what
+        creates a recording worth saving, and until someone does that the
+        button stays out of the way in the two teaching practicals.
+        """
+        hay_que_guardar = bool(self._selected_segments)
+        self._btn_afinado.setVisible(self._advanced or hay_que_guardar)
+        # The row also carries the envelope cut-off, which stays advanced-only
+        # by its own rule above; showing the row does not reveal it.
+        self._box_tools.setVisible(self._advanced or hay_que_guardar)
+
     def _actualizar_etiqueta_fragmentos(self) -> None:
         n = len(self._selected_segments)
+        self._refrescar_visibilidad_afinado()
         if n == 0:
             self._lbl_fragmentos.setText("")
         else:
@@ -3230,10 +3254,7 @@ class AnalysisTab(QWidget):
         # widgets stay built — the worker still reads them, and a region set
         # by a script still works — but nothing on screen offers them.
         self._box_roi.setVisible(False)
-        self._box_tools.setVisible(advanced)
-        # Saving a derived EDF is for whoever curates the recordings, not for
-        # the student reading one; and its name explains nothing to them.
-        self._btn_afinado.setVisible(advanced)
+        self._refrescar_visibilidad_afinado()
         # Offered in every practical; see where it is built.
         self._box_fragmentos.setVisible(True)
 

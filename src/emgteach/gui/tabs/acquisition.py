@@ -29,6 +29,7 @@ The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread)
 
 from __future__ import annotations
 
+import re
 from collections import deque
 from datetime import datetime
 from pathlib import Path
@@ -199,6 +200,31 @@ _CALIB_MV = {0: 1.0}
 # field also accepts an explicit COMx, or empty for autodetection.
 DEFAULT_BITALINO_ADDR = "98:D3:91:FE:44:E4"
 
+#: Longest prefix taken from the test identifier for a file name. Long enough
+#: for a subject code or «bench 3, attempt 2», short enough that the date and
+#: time after it stay readable in a file dialogue.
+MAX_ID_EN_NOMBRE = 24
+
+
+def nombre_por_defecto(codigo: str, sello: str) -> str:
+    """The file name the save dialogue opens with.
+
+    From the bench of 6 September: the identifier had been typed into the box,
+    the recording still came out as ``emg_<date>.edf``, and it had to be
+    renamed by hand — which is exactly the moment to get it wrong. When there
+    is an identifier the file carries it, so the recording and its screenshots
+    share a name from the start.
+
+    The identifier is free text, so only what a file name can hold survives:
+    letters, digits, dash, underscore and dot; anything else becomes a dash,
+    runs collapse, and the result is trimmed. An identifier that leaves
+    nothing usable — punctuation only — falls back to the old name rather
+    than to something unreadable.
+    """
+    limpio = re.sub(r"[^0-9A-Za-z_.-]+", "-", str(codigo)).strip("-._")
+    limpio = limpio[:MAX_ID_EN_NOMBRE].strip("-._")
+    return f"{limpio}_{sello}.edf" if limpio else f"emg_{sello}.edf"
+
 # Interval (ms) after the last received data beyond which there is considered
 # to be no traffic (the LED goes from green to yellow).
 LED_IDLE_MS = 500
@@ -282,6 +308,11 @@ class AcquisitionTab(QWidget):
         self._revisando = False
         #: The pyqtgraph items the review added, to take back out again.
         self._revision_items: list = []
+        #: The EDF this tab is recording into, or the one it is showing after
+        #: a recording. Screenshots are named after it, so a picture taken
+        #: during a manoeuvre files itself beside the signal it belongs to
+        #: instead of under a generic name nobody can match up afterwards.
+        self._ruta_registro: str = ""
 
         # Events for drawing live lines: (time_s, label). The total number of
         # acquired samples places each marker within the sliding window.
@@ -1702,7 +1733,9 @@ class AcquisitionTab(QWidget):
         # "Save figure" dialogs), pre-filled with the destination folder and a
         # timestamped default name. Cancelling aborts the recording start.
         save_dir = self._edit_dir.text().strip() or "."
-        default_name = f"emg_{datetime.now():%Y-%m-%d_%H-%M}.edf"
+        default_name = nombre_por_defecto(
+            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M}"
+        )
         ruta, _ = QFileDialog.getSaveFileName(
             self, tr("Save EDF recording as…"),
             str(Path(save_dir) / default_name),
@@ -1714,6 +1747,9 @@ class AcquisitionTab(QWidget):
         if not ruta.lower().endswith(".edf"):
             ruta += ".edf"
         save_path = ruta
+        # Named now, before a single sample arrives: a screenshot taken during
+        # the calibration has to carry the same base name as the recording.
+        self._ruta_registro = ruta
         save_dir = str(Path(ruta).parent)
         self._edit_dir.setText(save_dir)
         self._settings.setValue("adquisicion/save_dir", save_dir)
@@ -2096,6 +2132,7 @@ class AcquisitionTab(QWidget):
         A failure here loses the review and nothing else: the recording is on
         disk and the analysis tab is untouched.
         """
+        self._ruta_registro = edf_path
         try:
             nombres = list_edf_emg_channels(edf_path)
             if not nombres:
@@ -3978,6 +4015,9 @@ class AcquisitionTab(QWidget):
         if self.is_recording():
             return
         self._salir_revision()
+        # A new student: the previous recording's name must not follow them
+        # into their screenshots.
+        self._ruta_registro = ""
         self._reset_buffers()
         self._marker_events.clear()
         self._list_markers.clear()

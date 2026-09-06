@@ -29,11 +29,20 @@ Donde algo no está hecho o no lo sé, lo dice.
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leen del **código de `main` en el momento de generarlos**, que puede
 ir por delante de la etiqueta. Lo que ha entrado después de la 3.0.0 está en la
-sección «Unreleased» de `CHANGELOG.md`; a día de hoy son dos cosas, ninguna de
-ellas cambia una medida: el botón «Calibrar CVM» recupera su tamaño en las dos
-prácticas sin caja de fuerza-velocidad, y se añade un **botón de captura de
-pantalla** (F12) que guarda la ventana en la carpeta de los registros sin abrir
-ningún diálogo. Con ellas la suite pasa a 946 pruebas.
+sección «Unreleased» de `CHANGELOG.md`. Ninguna de ellas cambia una medida:
+el botón «Calibrar CVM» recupera su tamaño en las dos prácticas sin caja de
+fuerza-velocidad; hay un **botón de captura de pantalla** (F12) que guarda la
+ventana sin abrir ningún diálogo y **toma el nombre del registro** al que
+pertenece; un botón **`Auto`** que hace esas capturas solo, cada tres segundos
+y únicamente mientras se graba; **«Guardar EDF afinado…» se ofrece en todas las
+prácticas** en cuanto hay fragmentos elegidos, y no solo en la avanzada; y el
+registro **se nombra con el identificador de prueba**. Con ellas y con sus
+pruebas la suite pasa a 976.
+
+Las cuatro últimas salieron del banco del 6 de septiembre, y las cuatro se
+comprobaron en la sesión siguiente del mismo día: el archivo salió nombrado
+solo, el botón de guardar el afinado estaba donde tenía que estar y el registro
+de eventos anotó «32 automatic screenshots saved with the recording».
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:161`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
@@ -835,7 +844,75 @@ protocolo de maniobra ya corregido.
 medias de 14,4 % y 11,1 % CVM. Correlación de las dos envolventes:
 **r = 0,126**.
 
-### 8.2 Registro de ejemplo: la cinemática
+### 8.2 Las tres maniobras: coactivación por maniobra
+
+`ejemplo_tres_maniobras.edf`, dos canales, 100,0 s, del **6 de septiembre de
+2026**, con el protocolo y la calibración actuales: tres esfuerzos breves por
+músculo, `REC start` en el segundo 57,3 y 42,7 s de tarea. El protocolo pedido
+al sujeto fue **seis flexiones de muñeca contra resistencia, dos segundos de
+quietud, seis extensiones contra resistencia, dos segundos de quietud y una
+presa sostenida de unos ocho segundos con la muñeca neutra**.
+
+| Medida | Canal 1 (FCR) | Canal 2 (ECR) |
+|---|---|---|
+| Referencia de CVM | 0,1468 mV | 0,3558 mV |
+| Procedencia | recalculada de los tramos `CAL` | recalculada de los tramos `CAL` |
+| Nivel de reposo | 1,6 % CVM | 2,1 % CVM |
+| Máximo de la tarea | 81 % CVM | 47 % CVM |
+
+Los dos máximos de tarea quedan **por debajo del 100 %**, que es la
+comprobación de que la calibración capturó de verdad un máximo y de que los
+porcentajes de abajo significan lo que dicen.
+
+| Maniobra | Tramo | Índice de coactivación | Medias (FCR / ECR) |
+|---|---|---|---|
+| Flexión | 57,5–70,0 s | **28 %** | 14,2 / 5,5 % CVM |
+| Extensión | 72,0–85,0 s | **no reportada** | 3,9 / 5,9 % CVM |
+| Presa | 88,0–97,0 s | **76 %** | 14,3 / 9,1 % CVM |
+
+**Durante la presa el extensor llega al 32 % CVM** y el flexor al 69 %.
+
+Los dos números que el §8.4 declaraba imposibles son ese 28 % frente a 76 % y
+ese 32 %. La figura que los dibuja está en
+`docs/articulo-advances/figura6.png`, y se rehace con
+
+```
+python tools/figura6.py --edf docs/informe-sourcebook/ejemplo_tres_maniobras.edf \
+    --ventana Flexion=57.5:70 --ventana Extension=72:85 --ventana Grip=88:97 \
+    --salida docs/articulo-advances
+```
+
+El registro va adjunto —`ejemplo_tres_maniobras.edf`— junto con su versión
+afinada, `ejemplo_tres_maniobras_tuned.edf`, que es donde están los trece
+fragmentos con nombre: seis `FCR`, seis `ECR` y un `Grip`.
+
+**La extensión no da número, y el motivo importa.** El programa dice «FCR
+below 5 % MVC»: el flexor se quedó en 3,6 % de media, por debajo del suelo de
+`coact_floor_pct`. No es una maniobra fallida sino la salvaguarda funcionando
+— con el antagonista prácticamente en reposo el índice sería ruido dividido
+por ruido. Dicho de otro modo, la extensión fue el más limpiamente recíproco
+de los tres movimientos, y el precio de serlo es no tener índice.
+
+**Tres avisos sobre estas cifras**, los tres descubiertos al calcularlas:
+
+1. **El EDF afinado y el original no dan el mismo número.** Sobre el afinado
+   de este mismo registro salen «sin número» para la flexión, 63 % para la
+   extensión y 67 % para la presa. El afinado concatena los fragmentos y tira
+   lo que hay entre ellos, así que la media del músculo activo sube y la del
+   otro baja. El índice de Falconer-Winter se lee sobre la fase de movimiento
+   con su curso temporal, reposos incluidos; concatenar las contracciones mide
+   otra cosa. **Las cifras publicables son las del registro sin recortar.**
+2. **El índice depende del borde de la ventana.** Estrechando la presa 0,8 s
+   por delante pasa de 76 % a 70 %. Las ventanas de la tabla son las de la
+   maniobra completa, de la primera activación a la última relajación.
+3. **Una segunda sesión del mismo día (`P02`, 10:17) se descartó**: sus
+   extensiones salieron mejor —índice de 43 %— pero la calibración del flexor
+   no capturó un máximo (referencia 0,089 mV y máximo de tarea 185 % CVM), y
+   con el denominador mal ningún porcentaje de ella es publicable. El programa
+   lo avisó en pantalla al analizarla. Queda anotado porque explica por qué la
+   tabla sale de la sesión de las 09:53 y no de la última.
+
+### 8.3 Registro de ejemplo: la cinemática
 
 `C:\Records\emg_2026-09-05_18-13.edf`, un canal más acelerómetro, 178,0 s, del
 5 de septiembre. Calibración de tres repeticiones, referencia 0,2705 mV,
@@ -854,17 +931,15 @@ máximo en cargas intermedias, que es la forma de Hill. Retraso electromecánico
 mediano de 42 ms, dentro del rango de 30 a 100 ms de la literatura. Máximo de
 la tarea, 117 % CVM.
 
-### 8.3 Lo que no está medido
+### 8.4 Lo que no está medido
 
-- **El índice de coactivación por maniobra** (flexión, extensión, presa) **no
-  se puede dar todavía.** Ninguno de los registros que hay en disco tiene las
-  tres maniobras marcadas como ventanas con nombre, y ponerles nombre ahora
-  sería una inferencia mía sobre la traza, no el protocolo que se le pidió al
-  sujeto. Hace falta una sesión con el protocolo y los fragmentos nombrados en
-  la pestaña de Análisis; el mecanismo está implementado y probado.
-- **El porcentaje del máximo del extensor durante la presa** depende de lo
-  mismo.
-- **El tiempo de montaje no está cronometrado** en ninguna sesión.
+- **El tiempo de montaje no está cronometrado** en ninguna sesión. Es el único
+  punto de este apartado que sigue en blanco: la sesión del 6 de septiembre se
+  hizo sin cronómetro porque el operador ya llevaba encima grabar, contraer y
+  capturar a la vez, que fue justo lo que motivó el botón `Auto`.
+
+> El índice de coactivación por maniobra y el porcentaje del extensor en la
+> presa estaban aquí hasta el 6 de septiembre. Los mide el §8.2.
 
 ---
 
@@ -877,16 +952,29 @@ la tarea, 117 % CVM.
 2. **`coact_floor_pct = 5 % CVM` está medido sobre una sola sesión**
    (30 de agosto): ventana quieta con medias de 0,2 % y 0,8 % sobre reposo
    frente a 19–30 % en ventana activa. El umbral cae en un hueco de un factor
-   treinta, pero con una sola sesión detrás.
-3. **La discrepancia entre la referencia anotada y la recalculada** es
+   treinta, pero con una sola sesión detrás. **El 6 de septiembre se vio su
+   otra cara**: en un movimiento recíproco limpio el antagonista queda por
+   debajo del suelo y la ventana se queda sin índice (§8.2). Es coherente
+   —sin antagonista no hay coactivación que medir— pero significa que el caso
+   más favorable del punto de vista fisiológico es el que no da número.
+3. **El índice se mide sobre el registro sin recortar, no sobre el afinado.**
+   Concatenar los fragmentos cambia las medias y con ellas el índice, hasta el
+   punto de invertir qué ventana tiene número (§8.2, aviso 1). La aplicación
+   calcula lo que se le da; la elección de qué darle no está guiada en la
+   interfaz, y es una decisión con consecuencias.
+4. **El índice es sensible al borde de la ventana**: 0,8 s de reposo de más
+   por delante de la presa lo mueven de 76 % a 70 %. No hay una regla escrita
+   de dónde empieza y acaba una maniobra más allá de «de la primera activación
+   a la última relajación».
+5. **La discrepancia entre la referencia anotada y la recalculada** es
    esperada y está documentada, pero no está cuantificada sobre una serie de
    registros: se sabe que es de unidades de por ciento.
-4. **macOS no se prueba de forma automática** y no se ha usado con hardware.
-5. **La práctica de cinemática se ha validado con un solo sujeto** y en cuatro
+6. **macOS no se prueba de forma automática** y no se ha usado con hardware.
+7. **La práctica de cinemática se ha validado con un solo sujeto** y en cuatro
    sesiones del mismo día.
-6. **No hay datos de pilotaje con alumnos.** Todo lo de este informe sale de
+8. **No hay datos de pilotaje con alumnos.** Todo lo de este informe sale de
    pruebas de banco del autor.
-7. Del §13 de la especificación sigue vigente el aviso de que **este era el
+9. Del §13 de la especificación sigue vigente el aviso de que **este era el
    último cambio de arquitectura antes de la publicación**: la 3.0.0 ya está
    publicada, así que a partir de aquí solo corrección de errores.
 
@@ -904,7 +992,15 @@ la tarea, 117 % CVM.
   `ESPEC-niveles-y-avisos-emgteach.md` y `ESPEC-panel9-en-CVM.md`. Antes vivían
   solo en la carpeta del artículo.
 - **El README no menciona ninguna ruta sintética.** Dice la versión correcta
-  (3.0.0) y el número correcto de pruebas (940).
+  (3.0.0) y el número correcto de pruebas (958 hoy; 940 en la etiqueta). No es
+  cuestión de disciplina: `tests/test_readme.py::test_the_test_count_is_current`
+  cuenta las pruebas recogidas y falla si el README dice otra cosa.
+- **El material del artículo se genera aparte del del informe**, en
+  `docs/articulo-advances/`, con `tools/informe_material.py --articulo` y
+  `tools/figura6.py`. Va en inglés, con la ventana a 1150 px —a 1920 el texto
+  de la interfaz cae por debajo de 3 puntos al ancho de página de la revista— y
+  conducido desde una ruta neutra, de modo que ninguna captura ni la cabecera
+  del CSV enseñan una ruta de usuario. El detalle, en el README de esa carpeta.
 - Los dos documentos docentes en Word (Guía del docente v2.3 y Cuaderno de
   prácticas v2.3) están al día con sus PDF, con las capturas rehechas contra
   la 3.0.0.
