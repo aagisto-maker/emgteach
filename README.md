@@ -193,3 +193,12 @@ bilingual: English-canonical source plus a Spanish translation map).
   biopotential acquisition device
 - [SparkFun MyoWare 2.0](https://www.sparkfun.com/products/21265) —
   open-hardware sEMG 
+
+## How this software was developed
+
+emgteach was developed with the assistance of an AI coding tool (Claude Code, Anthropic).
+The author defined the physiological and teaching requirements, wrote the functional
+specifications, selected the signal-processing methods and their parameters from the
+published literature, reviewed every change and validated the application on hardware.
+The specifications that guided development are in `docs/` (files named `ESPEC-*.md`),
+and the automated test suite is part of the repository.
