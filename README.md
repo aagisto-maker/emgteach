@@ -45,8 +45,9 @@ v2.0.0 added a **kinematic dimension** through the BITalino
 accelerometer: guided force-velocity acquisition, a force-velocity study
 turning one recording of known loads into load-velocity, Hill, power and
 recruitment curves, EMG-vs-MMG, tremor and movement-vs-EMG analysis
-panels, a selectable accelerometer channel and a channel-quality check
-when a recording is opened. v1.4.0 introduced the **classroom
+panels and a channel-quality check when a recording is opened. Since
+v3.0.0 the accelerometer's input is a stated convention — muscle on A1,
+accelerometer on A2 — rather than a selectable channel. v1.4.0 introduced the **classroom
 broadcast**: students follow the live session in their own phone
 browsers, with a per-session access code and a scan-to-join QR. v1.1.0
 added an **assisted fragment editor**, **CSV export** and a **live

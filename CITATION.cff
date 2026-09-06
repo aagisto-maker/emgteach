@@ -17,7 +17,6 @@ abstract: >-
   assisted fragment selection with an editable fragment editor, region-of-interest
   analysis, CSV export, a live signal-quality check and an ECG signal profile.
   Version 2.0.0 adds a kinematic dimension via the BITalino accelerometer: a
-  selectable ACC channel with a live channel-finder diagnostic, a
   movement-versus-EMG analysis panel, a guided force-velocity acquisition wizard
   (an MVC maximum followed by cued quick lifts, each auto-marked with its load)
   and a force-velocity study that turns one recording into the load-velocity,
