@@ -244,13 +244,11 @@ class MainWindow(QMainWindow):
             "under its name plus the date and time; nothing is asked."))
         btn_captura.clicked.connect(self._guardar_captura)
 
-        # Reported from the bench of 6 September: «me lío con grabar,
-        # contraer, capturar, tiempo; no me da para hacerlo con calma y se me
-        # pasan algunos pasos». In this practical the subject and the operator
-        # are the same person, so a key that has to be pressed at the right
-        # instant is one thing too many — and it is the picture that gets
-        # missed, never the contraction. Armed once, this takes them by
-        # itself, and afterwards the best one is chosen with time to spare.
+        # In this practical the subject and the operator are the same person,
+        # so a key that has to be pressed at the right instant is one thing
+        # too many — and it is the picture that gets missed, never the
+        # contraction. Armed once, this takes them by itself, and afterwards
+        # the best one is chosen with time to spare.
         self._btn_auto_captura = QToolButton()
         self._btn_auto_captura.setText(tr("Auto"))
         self._btn_auto_captura.setCheckable(True)
@@ -385,7 +383,7 @@ class MainWindow(QMainWindow):
     def _cerrar_paso_guiado(self, _index: int) -> None:
         """A contextual step does not survive a change of tab.
 
-        Seen on the bench: the «next step» panel raised over the analysis tab
+        The «next step» panel raised over the analysis tab
         stayed up when the student went back to Acquisition, dimming the
         session review and pointing at a button that was no longer on screen.
         The tour is different — it changes tabs itself — and is left alone.
@@ -629,10 +627,9 @@ class MainWindow(QMainWindow):
     def _guardar_captura(self, silenciosa: bool = False) -> bool:
         """A picture of the window, saved without asking anything.
 
-        Reported from the bench: taking screenshots with the system tool
-        during a session steals the focus and opens a file dialogue, and both
-        happen while somebody is holding a contraction — «maniobras que hacen
-        perder el control de la app». So: no dialogue, no file picker, no
+        Taking screenshots with the system tool during a session steals the
+        focus and opens a file dialogue, and both happen while somebody is
+        holding a contraction. So: no dialogue, no file picker, no
         confirmation. It grabs the *window*, not the screen, so nothing that
         happens to be behind it can end up in the figure, and the floating
         cue panel and the guided step, which are children of the window, do.
@@ -741,8 +738,8 @@ def _install_qt_message_filter() -> None:
     The windowed build has no console, and PyInstaller leaves ``sys.stderr``
     set to None there — so writing to it raised AttributeError *inside a Qt
     message handler*, which surfaced to the operator as the crash dialogue
-    while the message being reported was itself only a warning. Twice on the
-    bench, both times at the end of a recording. With no stderr the message
+    while the message being reported was itself only a warning, at the end
+    of a recording. With no stderr the message
     goes to the error log instead, which is the file the operator already
     knows to send.
     """

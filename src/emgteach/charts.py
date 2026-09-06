@@ -1,8 +1,8 @@
 """The two summary charts of the analysis: contractions, and co-activation.
 
 They replaced two tables, and their first version was the tables drawn as
-bars: one bar per contraction. The author's verdict on that was exact — no
-conclusion comes out of it. A chart earns its place by showing a *relation*
+bars: one bar per contraction, and no conclusion comes out of that. A chart
+earns its place by showing a *relation*
 from which a conclusion can be read, so the contraction chart is now two
 small panels: the series along time, with the trend fitted and its slope
 written down, and a relation plane. For one muscle the plane is amplitude

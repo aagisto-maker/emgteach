@@ -934,9 +934,7 @@ la tarea, 117 % CVM.
 ### 8.4 Lo que no está medido
 
 - **El tiempo de montaje no está cronometrado** en ninguna sesión. Es el único
-  punto de este apartado que sigue en blanco: la sesión del 6 de septiembre se
-  hizo sin cronómetro porque el operador ya llevaba encima grabar, contraer y
-  capturar a la vez, que fue justo lo que motivó el botón `Auto`.
+  punto de este apartado que sigue en blanco.
 
   **Es una sola medida y no tres.** Montaje es lo que va del sujeto sin nada
   encima a dos canales dando señal limpia: preparación de la piel, los dos

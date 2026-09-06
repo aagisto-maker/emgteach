@@ -138,10 +138,10 @@ La referencia es **el mejor 0,2 s de las tres repeticiones**. ¿Por qué breves?
 Porque una contracción mantenida muestra un pico al empezar y luego
 una meseta, y los esfuerzos breves de una tarea alcanzan ese pico. Si la
 referencia se midiera sobre la meseta, la tarea la superaría, y eso es lo que
-pasaba: 135 % de «máximo» en el banco del 1 de septiembre.
+pasaba: 135 % de «máximo» en un registro.
 
-> **La maniobra del máximo es lo que decide la práctica.** Comprobado en el banco
-> el 3 de septiembre con cuatro registros seguidos:
+> **La maniobra del máximo es lo que decide la práctica.** Comprobado con cuatro
+> registros seguidos:
 >
 > - **Contra algo que no ceda.** El canto inferior de la mesa, no una mano.
 >   Antebrazo apoyado del todo. Sin resistencia el músculo se acorta a su
@@ -394,7 +394,7 @@ ventana, la activación media de cada músculo y el **índice de Falconer-Winter
 
 **Por qué en % CVM y no en milivoltios.** Los milivoltios de dos músculos distintos
 no se comparan: dependen de dónde quedaron los electrodos y de cuánta piel y grasa
-hay debajo. En el banco del 3 de septiembre la referencia del flexor era un tercio
+hay debajo. En un registro la referencia del flexor era un tercio
 de la del extensor; una flexión al 100 % del flexor leía *menos milivoltios* que el
 extensor al 42 %. Todo lo que compara dos músculos en esta práctica lo hace en
 porcentaje del máximo de cada uno.

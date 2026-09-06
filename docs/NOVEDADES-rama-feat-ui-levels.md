@@ -7,9 +7,8 @@
 > ninguno mantenido), y el análisis tiene tabla por contracción, fichas con rangos
 > y tres cuadros abajo. La descripción al día es la sección [3.0.0] de
 > [`CHANGELOG.md`](../CHANGELOG.md), [`RELEASE_NOTES_v3.0.0.md`](RELEASE_NOTES_v3.0.0.md)
-> y los manuales de `docs/`, revisados tras la
-> pasada de banco del 3 de septiembre. Se conserva como registro de por qué se
-> tomaron las decisiones de la primera tanda.
+> y los manuales de `docs/`, revisados después con el hardware. Se conserva
+> como registro de la primera tanda.
 
 Material de trabajo para actualizar los manuales y la presentación de la
 aplicación. Recoge lo que cambia **de cara al usuario** en los 14 commits de la

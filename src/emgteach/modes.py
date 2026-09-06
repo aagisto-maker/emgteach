@@ -161,7 +161,7 @@ def mode_requires_calibration(mode: str) -> bool:
     The agonist/antagonist practical: comparing two muscles is comparing two
     percentages of two different maxima, so without both references there is
     nothing to compare and the co-activation index cannot be computed at all.
-    And the kinematics practical since the bench of 5 September 2026: its
+    And the kinematics practical: its
     whole session is a sequence — the maximum, then the loads — and left as
     a button beside the record button the calibration was the step nobody
     knew whether or when to take. The single-muscle practical *offers* it:

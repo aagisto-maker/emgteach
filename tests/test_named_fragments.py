@@ -1,9 +1,8 @@
 """Fragmentos con nombre: el §2 de las enmiendas, y lo que lo obliga.
 
-De los siete registros del banco de los días 30 y 31 de agosto **ninguno tiene
-una sola marca de fase**: todas las anotaciones son `Onset (auto)` y `MVC ref`.
-Por eso la tabla de coactivación ha dicho siempre «registro completo — marque
-las fases», y por eso siguen faltando dos de los cuatro números del banco.
+Ningún registro anterior tiene **una sola marca de fase**: todas las
+anotaciones son `Onset (auto)` y `MVC ref`. Por eso la tabla de coactivación
+decía siempre «registro completo — marque las fases».
 
 Y lo automático solo no puede producirlos, **nunca**. El detector dice «aquí
 empezó una contracción»; el índice necesita «esta ventana es la presa». La
@@ -133,7 +132,7 @@ class TestANamedFragmentIsAWindowOfTheTable:
     def test_without_names_there_is_only_the_whole_recording(
         self, qapp, tmp_path: Path
     ) -> None:
-        """Where every bench recording so far has been. The automatic onsets
+        """Where every recording so far has been. The automatic onsets
         are filtered out on purpose — one row per burst is not a phase."""
         r = _analizar(qapp, _sesion(tmp_path / "sesion.edf"))
         assert r["coactivation_from_markers"] is False
@@ -178,7 +177,7 @@ class TestANamedFragmentIsAWindowOfTheTable:
     def test_repeating_a_name_makes_one_window_of_the_several_fragments(
         self, qapp, tmp_path: Path
     ) -> None:
-        """The answer to the objection the naming raised on the bench.
+        """The answer to the objection the naming raises.
 
         Auto-suggest yields one fragment per *contraction*, so a run of six
         flexions arrives as six fragments; but the muscle that is agonist and
@@ -370,8 +369,8 @@ class TestTheAppFillsInWhichMuscleLed:
 
     Naming twelve contractions by hand is twelve decisions, all of them the
     same one, and the one thing in it that is a *measurement* — which of the
-    two muscles worked harder — the program can settle itself. Measured on the
-    bench recordings: where the manoeuvres alternated cleanly the quieter
+    two muscles worked harder — the program can settle itself. Measured on real
+    recordings: where the manoeuvres alternated cleanly the quieter
     muscle ran at 4-23 % of the louder, and where both worked at once it ran at
     60-84 %; the cut is at 50 %.
 
@@ -432,7 +431,7 @@ class TestTheAppFillsInWhichMuscleLed:
         """Millivolts do not compare across two muscles, and this was the one
         place still comparing them.
 
-        From the bench recording of 3 September: the flexor's reference came
+        On a real recording the flexor's reference came
         to 0.087 mV and the extensor's to 0.286 mV, three times larger, so a
         flexion at its own maximum read *smaller in millivolts* than an
         extensor sitting at 42 % of its own. Ten of the twelve contractions

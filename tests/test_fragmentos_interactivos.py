@@ -224,8 +224,8 @@ class TestTheLoadOfEachContraction:
 
 class TestTheCharts:
     """A chart earns its place by showing a relation a conclusion can be read
-    off. The first version was the table drawn as bars, and the author's
-    verdict was exact: nothing came out of it."""
+    off. The first version was the table drawn as bars, and nothing came out
+    of it."""
 
     def test_two_muscles_get_the_series_and_the_activation_plane(self) -> None:
         fig = Figure()

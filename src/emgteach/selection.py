@@ -101,7 +101,7 @@ def _find_runs(active: np.ndarray) -> list[tuple[int, int]]:
 
 #: How far a peak must stand out of its surroundings, as a fraction of the
 #: tallest peak in the same run, to count as a contraction of its own. At 0.25
-#: the four efforts of a bench run (peaks 117, 155, 73 and 65, in thousandths
+#: the four efforts of a real run (peaks 117, 155, 73 and 65, in thousandths
 #: of a millivolt) all clear it and the ripples between them, of about 13, do
 #: not. It is deliberately not a control on screen: see _separate_contractions.
 _PROMINENCE_FRACTION = 0.25
@@ -173,7 +173,7 @@ def _separate_contractions(
     stretch of the run it occupies. They differ only for a piece that came out
     of a split, and the caller measures ``min_duration_s`` against the second
     pair — otherwise the floor, meant to reject noise, drops brisk efforts
-    instead, which is how the strongest contraction of a bench run went
+    instead, which is how the strongest contraction of a real run went
     missing.
     """
     from scipy.signal import find_peaks

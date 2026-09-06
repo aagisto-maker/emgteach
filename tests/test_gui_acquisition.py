@@ -325,7 +325,7 @@ def test_reset_clears_acquisition_view(qapp) -> None:
 def test_a_new_session_leaves_the_plots_empty(qapp) -> None:
     """No leftover lines across the plots.
 
-    Reported from the bench as looking careless, and it was: the ring buffers
+    It looked careless, and it was: the ring buffers
     are *filled* with zeros rather than emptied, and reset() forces a redraw.
     Fresh from start-up nobody sees it, because no redraw is forced before the
     first samples arrive; after «New session» one is, so the tab came back with
@@ -377,8 +377,7 @@ def test_a_new_session_leaves_the_plots_empty(qapp) -> None:
 class TestTheTimeWindowControls:
     """The two arrow buttons and the zoom combo, pressed while idle.
 
-    Reported from the bench as "I click and the time scale does not change".
-    It was true, and only when idle: the handlers changed the number of
+    Clicking did not change the time scale, and only when idle: the handlers changed the number of
     visible samples and left the repaint to the next frame that carried new
     samples. Recording, that frame arrives in thirty milliseconds and nobody
     notices; standing still it never arrives, so the caption moved and the

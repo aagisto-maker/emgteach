@@ -1001,15 +1001,15 @@ class AnalysisWorker(QThread):
                     continue
                 # Like with like: the reference is the strongest 0.5 s the
                 # subject held, so what is compared against it is the same
-                # running mean and not the instantaneous envelope. On the bench
-                # that difference alone accounted for a peak of 384 % where the
+                # running mean and not the instantaneous envelope. On one
+                # recording that difference alone accounted for a peak of 384 % where the
                 # honest figure was 234 %.
                 pct = _sustained(
                     env, fs, self._profile.mvc_peak_window_s
                 ) / float(ref) * 100.0
                 pico = float(pct.max())
-                # Always reported, not only when it crosses the line. On the
-                # bench a task peaked at 212 % of its reference on the
+                # Always reported, not only when it crosses the line. On one
+                # recording a task peaked at 212 % of its reference on the
                 # instantaneous envelope and 135 % sustained: under the limit,
                 # so nothing was said — and the student saw an axis running
                 # past 200 % with no number to hang it on. The sustained

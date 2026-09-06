@@ -195,7 +195,7 @@ El orden importa, porque la aplicación depende de él.
    > porque una contracción mantenida hace un pico al empezar y luego una meseta,
    > y los esfuerzos breves de la tarea alcanzan ese pico: medida sobre la
    > meseta, la referencia se quedaba corta (135 % de tarea el 1 de septiembre).
-   > En el banco del 3 de septiembre una sacudida fijó la referencia del flexor
+   > En un registro real una sacudida fijó la referencia del flexor
    > un 22 % por encima de la mejor mantenida.
    >
    > **Y no se salte el calentamiento.** La calibración abre con 10 s pidiendo
@@ -241,7 +241,7 @@ El orden importa, porque la aplicación depende de él.
    si la traza dice otra cosa, y pulse «Usar estos fragmentos».
 
    > La comparación se hace en % CVM, no en milivoltios, y no es un detalle: en
-   > el banco del 3 de septiembre la referencia del flexor era un tercio de la
+   > un registro la referencia del flexor era un tercio de la
    > del extensor, y comparando milivoltios diez de las doce flexiones salían
    > como «coactivación». Lo que la aplicación no puede saber es qué se le pidió
    > al sujeto —eso no está en la envolvente—, así que las ventanas llevan el

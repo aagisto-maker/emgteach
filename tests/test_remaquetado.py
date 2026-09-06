@@ -251,7 +251,7 @@ class TestTheNormalisationTabFollows:
 
 
 # ---------------------------------------------------------------------------
-# Lo visto en el banco del 3 de septiembre, segunda tanda
+# Segunda tanda de correcciones de la maquetación
 # ---------------------------------------------------------------------------
 
 
@@ -331,7 +331,7 @@ class TestWhatTheSecondBenchSessionShowed:
     def test_a_new_recording_forgets_what_the_last_one_chose(
         self, tab, qapp, tmp_path: Path
     ) -> None:
-        """Bench, 3 September, fourth recording: no guided box at all.
+        """Fourth recording: no guided box at all.
 
         Opening a file cleared the fragments but kept the discarded
         calibration repetitions and the record of which step had been shown,

@@ -38,7 +38,7 @@ quoted below are measured on those recordings, not estimated.
 - **One analysis row per contraction**, with when it began, how long it
   lasted, which muscle led it, its RMS, its peak as a share of the maximum,
   its median frequency and — where the accelerometer sits on the moving
-  segment — its **electromechanical delay**. Median 42 ms on the bench, in the
+  segment — its **electromechanical delay**. Median 42 ms on a real recording, in the
   30–100 ms range the literature gives.
 - **Agonist/antagonist co-activation** by the Falconer-Winter index, computed
   per marked phase and in % MVC of each muscle's own reference, with three

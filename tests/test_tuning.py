@@ -204,7 +204,7 @@ class TestTheLoadsSurviveTheTrimming:
     ) -> None:
         """Decided on the middle of the fragment, as the analysis decides it.
 
-        On the bench recording of 5 September the editor had drawn one lift's
+        On one recording the editor had drawn one lift's
         fragment starting a little *before* the cue that called for it, and
         deciding on the start put it under the previous load: the derived
         file came back with four lifts at 2 kg and two at 3.4.

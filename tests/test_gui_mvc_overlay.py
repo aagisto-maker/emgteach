@@ -1,7 +1,7 @@
 """Every message the calibration panel can show has to fit inside it.
 
-Reported from the bench: «algunos mensajes de la calibración se salen de la
-ventana negra flotante». The panel was 460x210 fixed and only the "done"
+Some of the calibration messages ran out of the floating black panel. It
+was 460x210 fixed and only the "done"
 message was word-wrapped; every other subtitle was drawn as a single centred
 line into a strip 28 px tall, so anything long ran off both edges — and the
 long messages are the ones that explain what went wrong, which are exactly the
@@ -193,7 +193,7 @@ def _altura_minima() -> int:
 
 #: Every title the wizard passes to the overlay, by mode, with the longest
 #: label and repetition tag actually used. The brief-squeeze instruction is
-#: the author's sentence, word for word, and in Spanish it is twice the
+#: taken word for word, and in Spanish it is twice the
 #: panel's width at the title's size.
 def _titulos() -> list[tuple[str, str]]:
     from emgteach.i18n import tr
@@ -224,9 +224,8 @@ def _mostrar_titulo(overlay, modo: str, titulo: str) -> None:
 
 
 class TestNoTitleLeavesThePanel:
-    """Reported a second time from the bench, after the messages were fixed:
-    the brief-squeeze instruction is drawn as the *title*, and the title was
-    still a single bold line."""
+    """After the messages were fixed, the brief-squeeze instruction is drawn
+    as the *title*, and the title was still a single bold line."""
 
     def test_every_real_title_fits_its_band(self, overlay, idioma) -> None:
         malos = []

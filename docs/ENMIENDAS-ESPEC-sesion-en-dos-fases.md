@@ -1,6 +1,6 @@
 # Enmiendas a `ESPEC-sesion-en-dos-fases.md`
 
-Escrito el 31 de agosto de 2026, tras revisar la especificación y hablarlo con Ángel.
+Escrito el 31 de agosto de 2026, tras revisar la especificación.
 **Se lee junto a la espec, no la sustituye.** La espec queda como se escribió; aquí está lo que cambia,
 lo que ya estaba hecho antes de que la espec se escribiera, y una decisión nueva.
 
@@ -79,8 +79,8 @@ anotación». Documentar en `phases.py` que la discrepancia es esperada y por qu
 
 ## 2. Decisión nueva (31-ago): las marcas se ponen **después** del registro
 
-Acordado con Ángel. Motivo suyo, textual: *«el registro va más rápido del posible proceso de marcar
-manualmente»*. Nunca ha usado el botón MARK en ninguna sesión.
+El registro va más rápido que el proceso de marcar a mano, y el botón MARK no se ha usado en
+ninguna sesión.
 
 ### 2.1 El dato que obliga a decidirlo
 

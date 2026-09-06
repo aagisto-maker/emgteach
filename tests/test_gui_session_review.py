@@ -200,8 +200,8 @@ class TestTheReviewOnTheAcquisitionTab:
     def test_the_next_recording_gets_its_own_axis_back(
         self, qapp, tmp_path: Path
     ) -> None:
-        """Reported from the bench: after a new session the recording was
-        "advancing over an empty canvas, very small".
+        """After a new session the recording advanced over an empty canvas,
+        very small.
 
         Showing the session sets an explicit X range, and in pyqtgraph that
         *turns auto-range off*. The live view has no range of its own — it

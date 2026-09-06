@@ -1,7 +1,7 @@
 # emgteach: niveles de interfaz y avisos de uso avanzado
 
 Especificación de implementación. Escrita el 20 de agosto de 2026 sobre el código
-de `src/emgteach` tal como está en el disco de Angel. Todas las líneas citadas se han comprobado
+de `src/emgteach` de ese momento. Todas las líneas citadas se han comprobado
 en ese código; si el fichero cambia, hay que localizar el control por nombre de variable, no por
 número de línea.
 

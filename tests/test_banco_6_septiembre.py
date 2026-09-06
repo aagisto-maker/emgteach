@@ -1,12 +1,12 @@
-"""Lo que salió mal en el banco del 6 de septiembre, práctica del par.
+"""Dos fallos de la práctica del par, los dos de la aplicación y ninguno de la
+señal, y una función que sale de ellos:
 
-Dos cosas, las dos de la aplicación y ninguna de la señal:
-
-1. Los fragmentos se nombraron, la tabla de coactivación salió por maniobra
-   — Flexion 31 %, Grip 81 % — y **no había forma de guardar nada de eso**:
-   «Save tuned EDF…» solo se mostraba en la práctica de cinemática.
-2. El identificador de prueba estaba escrito en su casilla y el archivo salió
-   igualmente como `emg_<fecha>.edf`, así que hubo que renombrarlo a mano.
+1. Con los fragmentos nombrados y la tabla de coactivación por maniobra,
+   **no había forma de guardar nada de eso**: «Save tuned EDF…» solo se
+   mostraba en la práctica de cinemática.
+2. Con el identificador de prueba escrito en su casilla, el archivo salía
+   igualmente como `emg_<fecha>.edf` y había que renombrarlo a mano.
+3. La captura automática mientras se graba.
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ import pytest
 
 
 class TestTheDefaultFileName:
-    """«tampoco guarda el archivo con p01, he tenido que añadirlo»."""
+    """El archivo se nombra con el identificador de prueba."""
 
     @pytest.fixture
     def nombre(self):
@@ -86,7 +86,7 @@ class TestTheDefaultFileName:
 
 
 class TestTheAutomaticScreenshot:
-    """«me lío con grabar, contraer, capturar, tiempo».
+    """La captura automática mientras se graba.
 
     El sujeto y el operador son la misma persona, así que una tecla que hay
     que pulsar en el instante justo es una cosa de más — y lo que se pierde es

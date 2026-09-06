@@ -288,7 +288,7 @@ la siguen, guardar el EDF afinado, cerrarlo, reabrirlo, y comprobar en la pesta�
 
 ---
 
-## 13. Dos avisos para Ángel, no para el implementador
+## 13. Dos avisos, no para el implementador
 
 **Esto es más grande que las dos especificaciones anteriores juntas.** Toca adquisición, el formato del
 archivo, las tres pestañas, los informes y las exportaciones. El diseño es el correcto y el momento de

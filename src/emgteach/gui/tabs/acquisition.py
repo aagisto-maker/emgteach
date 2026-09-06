@@ -209,9 +209,9 @@ MAX_ID_EN_NOMBRE = 24
 def nombre_por_defecto(codigo: str, sello: str) -> str:
     """The file name the save dialogue opens with.
 
-    From the bench of 6 September: the identifier had been typed into the box,
-    the recording still came out as ``emg_<date>.edf``, and it had to be
-    renamed by hand — which is exactly the moment to get it wrong. When there
+    With the identifier typed into its box the recording still came out as
+    ``emg_<date>.edf`` and had to be renamed by hand — which is exactly the
+    moment to get it wrong. When there
     is an identifier the file carries it, so the recording and its screenshots
     share a name from the start.
 
@@ -707,8 +707,8 @@ class AcquisitionTab(QWidget):
         acc_l.addWidget(self._combo_acc_place)
         # The wiring is a convention, not a setting: the muscle on A1, the
         # accelerometer on A2. It used to be a selector with a «find it»
-        # diagnostic beside it, and on the bench the diagnostic found nothing
-        # while the convention was right all along.
+        # diagnostic beside it, and the diagnostic found nothing while the
+        # convention was right all along.
         self._lbl_acc_wiring = QLabel(tr("Muscle on A1 · accelerometer on A2"))
         self._lbl_acc_wiring.setStyleSheet("color: #6B7580; font-size: 11px;")
         acc_l.addWidget(self._lbl_acc_wiring)
@@ -866,8 +866,8 @@ class AcquisitionTab(QWidget):
         ctrl_layout.addWidget(self._btn_grabar)
         # The way out of a guided procedure — the calibration, the
         # force-velocity plan — before it ends on its own. Shown only while
-        # one runs; Esc does the same from anywhere on the tab. On the bench
-        # there was no way out but to wait for the six efforts to pass.
+        # one runs; Esc does the same from anywhere on the tab. Before, there
+        # was no way out but to wait for the six efforts to pass.
         self._btn_cancelar_guia = QPushButton(tr("Cancel guide (Esc)"))
         self._btn_cancelar_guia.setVisible(False)
         self._btn_cancelar_guia.setToolTip(
@@ -909,8 +909,8 @@ class AcquisitionTab(QWidget):
 
         # — Event markers —
         #
-        # Marking by hand during the recording is gone. It was never used on
-        # the bench: the recording runs faster than anyone can label it, and
+        # Marking by hand during the recording is gone. It was never used:
+        # the recording runs faster than anyone can label it, and
         # the honest place to name a stretch is afterwards, over a signal you
         # can see. What is left is the detection the application does by
         # itself — a checkbox and its threshold — and a short list of what it
@@ -1882,7 +1882,7 @@ class AcquisitionTab(QWidget):
                             "study starts now: {plan}.").format(plan=resumen)
                 )
         # Said out loud, with the three things the answer depends on. Three
-        # bench sessions came back with no calibration and no way to tell,
+        # sessions came back with no calibration and no way to tell,
         # from the file alone, whether the flow had declined to arm or armed
         # and failed to start. One line here separates them.
         self._log(tr(
@@ -2053,8 +2053,8 @@ class AcquisitionTab(QWidget):
             # long as it was — and what used to bring it back was auto-range
             # refitting itself around those phantom zeros. With nothing drawn
             # there is nothing to fit, so the empty tab would have kept the
-            # last session's axis: the same "advancing over an empty canvas"
-            # reported from the bench, arriving by the other door.
+            # last session's axis: the same "advancing over an empty canvas",
+            # arriving by the other door.
             #
             # And auto-range straight back on afterwards: setXRange turns it
             # off, which is the very thing that stranded the live view inside
@@ -2121,8 +2121,8 @@ class AcquisitionTab(QWidget):
     def _mostrar_registro(self, edf_path: str) -> None:
         """Put the recording that has just finished on the plots, whole.
 
-        Asked for from the bench: after stopping, being able to scroll back
-        over what was just recorded without leaving the tab. The live plots
+        After stopping, the operator can scroll back over what was just
+        recorded without leaving the tab. The live plots
         show a thirty-second ring buffer, so the session is read back from the
         EDF rather than kept in memory — the file is the record of truth, it
         is already written and closed, and what is reviewed is then exactly
@@ -2302,7 +2302,7 @@ class AcquisitionTab(QWidget):
             # auto-range to follow the sliding window. Left off, the next
             # recording drew its five seconds inside the ninety-two of the
             # session before it: a sliver of signal creeping across an empty
-            # canvas. Reported from the bench in exactly those words.
+            # canvas.
             pw.enableAutoRange(axis="x")
         self._plot_raw.setTitle(tr("Raw EMG signal (mV)"))
         self._plot_env.setTitle(
@@ -2832,7 +2832,7 @@ class AcquisitionTab(QWidget):
         """A few easy contractions before the first maximal one.
 
         The first maximal effort of a session is genuinely submaximal, and
-        best-of-three cannot rescue it: on the bench the three flexor
+        best-of-three cannot rescue it: on one recording the three flexor
         repetitions came out at 57 %, 68 % and 100 % of each other, still
         rising at the third, so the best of them was still not a maximum.
         Recorded and marked rather than waited out off the clock — the
@@ -3249,8 +3249,8 @@ class AcquisitionTab(QWidget):
         if self._mvc_flow_auto and self._worker and self._worker.isRunning():
             # The session continues into its second phase, and it does so
             # here rather than on a timer two seconds from now. A deferred
-            # hand-over is one more thing that can fail to happen — on the
-            # bench it did, leaving a file with its calibration marked and no
+            # hand-over is one more thing that can fail to happen — and it
+            # did, leaving a file with its calibration marked and no
             # recording phase at all — and it bought nothing: the verdict is
             # carried into the countdown, which is on screen far longer than
             # the two seconds it used to get on its own.
@@ -3875,8 +3875,7 @@ class AcquisitionTab(QWidget):
     # frame that carried new samples — so while recording it worked with a
     # thirty-millisecond delay nobody could notice, and standing idle it did
     # nothing at all: the caption said "5 s visible" and the plot went on
-    # showing thirty. Reported from the bench as "I click and the time scale
-    # does not change", which is exactly what happened.
+    # showing thirty: the click changed nothing on screen.
     #
     # The vertical ▲▼ buttons beside each plot had always forced it. Two
     # controls in the same corner, one working and one not.
@@ -4053,7 +4052,7 @@ class AcquisitionTab(QWidget):
         # It was read and never stored, so _flow_needs_calibration raised
         # AttributeError inside a Qt slot — which prints to stderr and is
         # invisible in the running app — and aborted the rest of
-        # _iniciar_grabacion in silence. Four bench recordings came back with
+        # _iniciar_grabacion in silence. Four recordings came back with
         # no calibration because of this one missing assignment.
         self._mode = normalise_mode(mode)
         self._apply_mode_channels(mode)

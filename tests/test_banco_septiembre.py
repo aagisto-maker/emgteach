@@ -1,4 +1,4 @@
-"""What the bench of 5 September 2026 showed, with the hardware.
+"""Seven faults that three recordings on the hardware exposed.
 
 Three recordings — one of the single-muscle practical, two of the kinematics
 one — and a list: the analysis took the warm-up and the six maximal efforts

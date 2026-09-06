@@ -819,14 +819,14 @@ no un fallo.
 | Medida | Rango orientativo | Fuente |
 |---|---|---|
 | Frecuencia media (MNF) | 80–170 Hz | el grueso de la energía del EMG de superficie está entre 50 y 150 Hz; la MNF queda algo por encima de la MDF por la cola del espectro (Phinyomark, 2012) |
-| Frecuencia mediana (MDF) | 60–150 Hz; en el antebrazo, 90–150 | la misma banda; banco de emgteach: FCR y ECR entre 86 y 127 Hz con buen montaje, 176 Hz con el electrodo mal situado |
+| Frecuencia mediana (MDF) | 60–150 Hz; en el antebrazo, 90–150 | la misma banda; registros de emgteach: FCR y ECR entre 86 y 127 Hz con buen montaje, 176 Hz con el electrodo mal situado |
 | RMS en reposo | ≈ 0,005–0,02 mV | ruido de fondo del amplificador y la piel, ≥ 8 µV pico a pico en el mejor caso (McManus, 2020) |
 | RMS en esfuerzo | 0,1–1 mV; máximos hasta ~1,5 mV | electrodos de superficie sobre músculos de extremidad |
 | Esfuerzo de tarea | 20–80 % CVM | esfuerzos submáximos típicos |
-| Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones de banco de emgteach; aviso en rojo a partir del 150 % |
+| Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones registradas con emgteach; aviso en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 % CVM; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
 | Índice de coactivación | recíproco: «no se informa»; presa firme: 60–95 % | Falconer y Winter (1985); Ervilha (2012) sobre coactivación voluntaria |
-| Separación entre canales | ≤ 20–25 % de la propia referencia | banco de emgteach con electrodos bien situados |
+| Separación entre canales | ≤ 20–25 % de la propia referencia | registros de emgteach con electrodos bien situados |
 | Carga estática, mediana, pico | ≤ 2–5, 10–14, 50–70 % CVM (la aplicación: 5, 14, 70) | Jonsson (1978, 1982) |
 | Retraso electromecánico | 30–100 ms; voluntario 35–80 | Cavanagh y Komi (1979): bíceps 41 ± 13 ms, tríceps 26 ± 11 ms |
 | Temblor fisiológico | pico a 8–12 Hz | acelerometría de la postura mantenida |

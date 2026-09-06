@@ -115,7 +115,7 @@ def test_the_minimap_and_the_panels_speak_of_the_same_recording(
 
 # ---------------------------------------------------------------------------
 # The reference the recording brings with it, and the fragments the muscle-load
-# analysis is measured over. Both come from the same bench observation: a
+# analysis is measured over. Both come from the same observation: a
 # session that calibrates with the recording already running has its maximum
 # *inside the file*, and everything before the task is calibration.
 # ---------------------------------------------------------------------------

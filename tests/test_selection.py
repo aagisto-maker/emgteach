@@ -81,8 +81,8 @@ def _series_signal() -> np.ndarray:
 
     Which is what a muscle asked for six repetitions actually does: between one
     contraction and the next the envelope falls to a fraction of the peak but
-    stays well above the electrical noise. Reproduced from the bench recording
-    of 1 September (peaks around 0.15 mV, valleys around 0.006, noise floor
+    stays well above the electrical noise. Reproduced from a real recording
+    (peaks around 0.15 mV, valleys around 0.006, noise floor
     0.002), because with a synthetic signal that goes properly silent between
     bursts the defect does not appear at all.
     """

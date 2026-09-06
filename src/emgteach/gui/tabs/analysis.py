@@ -1163,8 +1163,8 @@ class AnalysisTab(QWidget):
 
         Opening a file cleared the fragments but kept the calibration
         repetitions that had been discarded, and the record of which guided
-        step had been shown. From the bench of 3 September: with the discards
-        of the previous file still in hand the new one opened as if its
+        step had been shown. With the discards of the previous file still in
+        hand the new one opened as if its
         calibration had already been reviewed, so the step it offered was
         «select fragments» — the same step the previous file had ended on —
         and a step that has not changed is not offered again. No guidance,
@@ -1348,9 +1348,9 @@ class AnalysisTab(QWidget):
                 ),
                 # And each muscle's own maximum, so «who led this one» is
                 # decided as a share of it. Two different muscles do not
-                # compare in millivolts: on the bench of 3 September the
-                # flexor's reference was a third of the extensor's, and
-                # every flexion came back named «co-contraction».
+                # compare in millivolts: with a flexor's reference a third of
+                # the extensor's, every flexion came back named
+                # «co-contraction».
                 mvc_ref=(self._last_result or {}).get("mvc_ref"),
                 mvc_ref_2=(self._last_result or {}).get("mvc_ref_2"),
                 # Where the sliders were left last time, so a second visit
@@ -1536,7 +1536,7 @@ class AnalysisTab(QWidget):
 
         A control that is simply grey says nothing about why. This is the same
         lesson the acquisition wizard taught: deducing the cause of a disabled
-        button from the outside costs bench sessions, and one line in the log
+        button from the outside costs sessions, and one line in the log
         settles it. It is also useful in its own right — "this recording
         carries no calibration" is a fact the operator wants at the moment of
         opening the file, not after hunting for a missing panel.
@@ -1582,10 +1582,10 @@ class AnalysisTab(QWidget):
         It used to be gated on the advanced practical alone, on the grounds
         that a derived EDF is for whoever curates the recordings and not for
         the student reading one. That reasoning holds for the student and
-        breaks for the practical: from the bench of 6 September, in the
-        agonist/antagonist practical the fragments were named — Flexion,
-        Extension, Grip — the co-activation table came out per manoeuvre, and
-        then there was no way to save any of it. The per-manoeuvre result is
+        breaks for the practical: in the agonist/antagonist practical the
+        fragments are named — Flexion, Extension, Grip —, the co-activation
+        table comes out per manoeuvre, and there was then no way to save any
+        of it. The per-manoeuvre result is
         the point of that practical, and a result that cannot leave the screen
         cannot be checked, redrawn or handed on.
 

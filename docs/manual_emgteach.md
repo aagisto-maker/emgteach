@@ -302,7 +302,7 @@ channels the raw plot is **stacked**, one lane per muscle, and the envelopes
 **The accelerometer** (kinematics only). Recorded as one more channel, in `g`,
 uncalibrated. Its box states the wiring — **muscle on A1, accelerometer on A2**,
 a convention rather than a setting: the input selector and the «find the ACC
-channel» diagnostic that used to sit here found nothing on the bench while the
+channel» diagnostic that used to sit here found nothing while the
 convention was right — and holds the placement selector: on the muscle (MMG) or
 on the moving segment (tremor, force-velocity, electromechanical delay). Here too
 are **«Guided F-V…»**, which directs the acquisition of a series of known loads,
@@ -440,7 +440,7 @@ millivolts depend on skin impedance, electrode position and anatomy.
 > noise sample could set, nor the held half second, which sat on the plateau: a
 > held contraction shows a peak at its start and then a plateau, and the task's
 > brief efforts reach that peak. Measured on the plateau, the task beat the
-> reference with the calibration correctly made (135 % at the bench). The task
+> reference with the calibration correctly made (135 % on one recording). The task
 > maximum and every contraction's peak are measured with the same 0.2 s window,
 > so the comparison uses one yardstick.
 >
@@ -601,14 +601,14 @@ fault.
 | Measure | Orientative range | Source |
 |---|---|---|
 | Mean frequency (MNF) | 80–170 Hz | most sEMG power lies between 50 and 150 Hz; MNF sits a little above MDF (Phinyomark, 2012) |
-| Median frequency (MDF) | 60–150 Hz; forearm 90–150 | emgteach bench: FCR and ECR 86–127 Hz with a good montage, 176 Hz with a misplaced electrode |
+| Median frequency (MDF) | 60–150 Hz; forearm 90–150 | emgteach recordings: FCR and ECR 86–127 Hz with a good montage, 176 Hz with a misplaced electrode |
 | RMS at rest | ≈ 0.005–0.02 mV | amplifier and skin noise, ≥ 8 µV peak to peak at best (McManus, 2020) |
 | RMS in effort | 0.1–1 mV; maxima up to ~1.5 mV | surface electrodes over limb muscles |
 | Task effort | 20–80 % MVC | typical submaximal efforts |
-| Task maximum with a sound calibration | 90–125 % MVC | emgteach bench sessions; red warning from 150 % |
+| Task maximum with a sound calibration | 90–125 % MVC | emgteach recorded sessions; red warning from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 % MVC; finger extensor during wrist flexion at 75 % ≈ 15 % |
 | Co-activation index | reciprocal: «not reported»; firm grip: 60–95 % | Falconer and Winter (1985); Ervilha (2012) on voluntary co-activation |
-| Channel separation | ≤ 20–25 % of its own reference | emgteach bench with well-placed electrodes |
+| Channel separation | ≤ 20–25 % of its own reference | emgteach recordings with well-placed electrodes |
 | Static, median, peak load | ≤ 2–5, 10–14, 50–70 % MVC (the application: 5, 14, 70) | Jonsson (1978, 1982) |
 | Electromechanical delay | 30–100 ms; voluntary 35–80 | Cavanagh and Komi (1979): biceps 41 ± 13 ms, triceps 26 ± 11 ms |
 | Physiological tremor | peak at 8–12 Hz | accelerometry of maintained posture |

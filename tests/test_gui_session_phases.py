@@ -178,7 +178,7 @@ class TestThePauseBetweenThePhases:
         would pass on an application that never starts the second phase.
 
         It used to be deferred two seconds on a timer so the verdict panel
-        could be read. On the bench that hand-over simply did not happen, and
+        could be read. That hand-over simply did not happen, and
         the recording came back with its calibration marked and no recording
         phase at all. It is a direct call now, and this is what says so."""
         tab._iniciar_calibracion(auto_flow=True)
@@ -223,7 +223,7 @@ class TestWhenTheRecordButtonRunsTheWholeSession:
         This used to assign ``tab._mode`` itself — which *created* the
         attribute the application never set, so the test passed on a build
         where every press of the record button raised. The kinematics
-        practical joined the pair on the bench of 5 September 2026: its
+        practical joined the pair: its
         session is a sequence, the maximum then the loads."""
         for mode, espera in (
             (MODE_PAIR, True), (MODE_SINGLE, False),
@@ -273,8 +273,8 @@ class TestWarmingUpBeforeTheFirstMaximum:
     """The auto flow took away the window the operator used to have.
 
     Before, you connected, recorded, did a few contractions and then pressed
-    Calibrate. Now the record button starts the countdown, and the bench showed
-    what that costs: the flexor's three repetitions came out 57 %, 68 % and
+    Calibrate. Now the record button starts the countdown, and one recording
+    showed what that costs: the flexor's three repetitions came out 57 %, 68 % and
     100 % of each other, still rising at the third.
     """
 
@@ -401,7 +401,7 @@ class TestTheArmedSessionSurvivesABouncedAttempt:
 
 
 class TestFailingToStartIsNotADeadEnd:
-    """Three bench sessions in a row came back with no calibration at all.
+    """Three sessions in a row came back with no calibration at all.
 
     Each had a different cause, but they shared a shape: the flow armed, did
     not start, and left «Calibrate MVC» disabled — so there was no calibration
@@ -448,7 +448,7 @@ class TestFailingToStartIsNotADeadEnd:
 
 
 class TestTheTabRemembersWhichPracticalItIs:
-    """The one missing assignment that cost four bench recordings.
+    """The one missing assignment that cost four recordings.
 
     ``_flow_needs_calibration`` read ``self._mode`` and nothing ever set it, so
     every press of the record button raised AttributeError inside a Qt slot —

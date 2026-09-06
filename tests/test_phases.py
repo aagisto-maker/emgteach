@@ -323,7 +323,7 @@ class TestTheWarmUpIsAPhaseToo:
 
     A few easy contractions before the first maximal one, because the first
     maximal effort of a session is submaximal and best-of-three cannot rescue
-    it: on the bench the three flexor repetitions came out 57 %, 68 % and
+    it: on one recording the three flexor repetitions came out 57 %, 68 % and
     100 % of each other, still rising at the third.
     """
 

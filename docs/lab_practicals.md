@@ -140,11 +140,11 @@ without stopping the recording:
 The reference is **the best 0.2 s across the three repetitions**. Why brief?
 Because a sustained contraction shows a peak at its start and then a
 plateau, and a task's brief efforts reach that peak. Measured on the plateau, the
-reference fell short and the task beat it: 135 % of "maximum" on the bench of 1
-September.
+reference fell short and the task beat it: 135 % of "maximum" on one
+recording.
 
-> **The manoeuvre of the maximum decides the practical.** Checked at the bench on 3
-> September with four consecutive recordings:
+> **The manoeuvre of the maximum decides the practical.** Checked with four
+> consecutive recordings:
 >
 > - **Against something that does not give.** The underside of the table edge,
 >   not a hand. Forearm fully rested. Without resistance the muscle shortens at
@@ -396,8 +396,8 @@ mean activation of each muscle and the **Falconer-Winter index**.
 
 **Why in % MVC and not in millivolts.** The millivolts of two different muscles do
 not compare: they depend on where the electrodes ended up and how much skin and
-fat lies beneath. On the bench of 3 September the flexor's reference was a third
-of the extensor's; a flexion at 100 % of the flexor read *fewer millivolts* than
+fat lies beneath. On one recording the flexor's reference was a third of the
+extensor's; a flexion at 100 % of the flexor read *fewer millivolts* than
 the extensor at 42 %. Everything that compares two muscles in this practical
 does so as a percentage of each one's maximum.
 
@@ -615,15 +615,15 @@ grey under the summary cards and in the «?» of the tables.
 | Measure | Orientative range | Where it comes from |
 |---|---|---|
 | Mean frequency (MNF) | 80–170 Hz | most of the surface-EMG power lies between 50 and 150 Hz; MNF is always a little above MDF because of the spectrum's tail |
-| Median frequency (MDF) | 60–150 Hz; in the forearm rather 90–150 | the same band; at the bench (FCR and ECR) 86–127 Hz with a good montage, 176 Hz with a misplaced electrode |
+| Median frequency (MDF) | 60–150 Hz; in the forearm rather 90–150 | the same band; measured (FCR and ECR) 86–127 Hz with a good montage, 176 Hz with a misplaced electrode |
 | MDF fall with fatigue | clear negative slope; no universal magnitude threshold | the application requires not an amount but a trend that fits (R² ≥ 0.30, ≥ 4 one-second windows) |
 | RMS at rest | ≈ 0.005–0.02 mV | background noise of amplifier and skin (≥ 8 µV peak to peak at best) |
 | RMS in firm effort | 0.1–1 mV; maxima up to ~1.5 mV | surface electrodes over limb muscles |
 | Task effort | 20–80 % MVC | a typical submaximal effort; > 100 % sustained says the calibration was not maximal |
-| Task maximum with a sound calibration | 90–125 % MVC | bench sessions with a correct calibration; the application warns in red from 150 % |
+| Task maximum with a sound calibration | 90–125 % MVC | recorded sessions with a correct calibration; the application warns in red from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 %; finger extensor during wrist flexion at 75 % ≈ 15 % |
 | Co-activation index (Falconer-Winter) | reciprocal movement: «not reported»; firm grip: 60–95 % | the index measures shared activity; in a clean flexion the antagonist stays below the 5 % floor |
-| Channel separation (cross-talk) | ≤ 20–25 % of its own reference | bench with well-placed electrodes; > 50 %, «channels not separated» |
+| Channel separation (cross-talk) | ≤ 20–25 % of its own reference | measured with well-placed electrodes; > 50 %, «channels not separated» |
 | Static load (P10) | ≤ 2–5 % MVC (the application uses 5) | Jonsson 1978, 1982 |
 | Median load (P50) | ≤ 10–14 % MVC (the application uses 14) | Jonsson 1978, 1982 |
 | Peak load (P90) | ≤ 50–70 % MVC (the application uses 70) | Jonsson 1978, 1982 |

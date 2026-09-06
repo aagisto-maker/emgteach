@@ -1635,8 +1635,8 @@ class MvcTab(QWidget):
         distribution and the summary card exactly as they were, under the new
         file's name in the path box and the old one's inside the card. Two
         recordings on one screen, and nothing saying which was which.
-        Reported from the bench on 5 September with the tuned recording of
-        18:13 open and the original's 142 s still on the panels.
+        Seen with a tuned recording open and the original's 142 s still on
+        the panels.
         """
         self._last_result = None
         for la in (self._d_file, self._d_cvm_ref, self._d_source,

@@ -179,8 +179,8 @@ class TestThereIsNoThirdWay:
 class TestTheAmplitudeArrows:
     """The ▲▼ sidebar changes the amplitude; it does not pan.
 
-    Reported from the bench: in the MVC tab the arrows moved the trace up and
-    down instead of making it taller. The zoom held the *midpoint* of the view
+    In the MVC tab the arrows moved the trace up and down instead of making
+    it taller. The zoom held the *midpoint* of the view
     fixed, and panels 2 and 3 carry non-negative signals drawn from zero — so
     halving the range about its midpoint lifted the floor off zero and slid the
     trace upwards. The analysis tab had always scaled about zero.
@@ -265,7 +265,7 @@ class TestJudgingAReferenceFairly:
     def test_the_running_mean_matches_the_reference_statistic(self) -> None:
         """The reference is the strongest 0.5 s the subject held, so a
         recording is judged by its own strongest 0.5 s and not by an
-        instantaneous peak. On the second bench recording that difference
+        instantaneous peak. On one recording that difference
         alone turned an honest 234 % into an alarming 384 %.
         """
         from emgteach.mvc import mvc_peak_hold
@@ -290,7 +290,7 @@ class TestJudgingAReferenceFairly:
 
 @pytest.mark.gui
 class TestBestOfThreeAndTheFinalPanel:
-    """Two things the third bench session exposed.
+    """Two things one session exposed.
 
     The flexor calibration came out right that day — 38 times its resting
     level, with the recording's strongest half-second reaching 111 % of it,
@@ -419,7 +419,7 @@ class TestAreTheTwoChannelsSeeingTwoMuscles:
     def test_the_figure_is_a_share_of_the_other_muscles_own_reference(
         self, tab
     ) -> None:
-        """The bench pair: 0.036 mV on the extensor against its own 0.171."""
+        """One recorded pair: 0.036 mV on the extensor against its own 0.171."""
         tab._mvc_ref[0], tab._mvc_ref[1] = 0.0979, 0.1712
         self._cross(tab, 0.036)
         cruce = tab._mvc_crosstalk()

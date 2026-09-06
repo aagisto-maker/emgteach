@@ -130,7 +130,7 @@ def test_a_practical_that_names_its_channels_hides_the_boxes(
     for mode in (MODE_PAIR, MODE_SINGLE, MODE_KINEMATICS, MODE_PAIR):
         set_mode(main_window, qapp, mode)
         fijas = mode_fixed_labels(mode)
-        # Since the bench of 5 September no practical fixes a name: every
+        # No practical fixes a name: every
         # one shows the boxes, and a single-muscle practical reads the
         # first of them.
         assert not fijas, mode
@@ -157,8 +157,8 @@ def test_accelerometer_wiring_is_stated_not_chosen(
     main_window, qapp
 ) -> None:
     """Muscle on A1, accelerometer on A2: a convention the block states,
-    not a selector with a «find it» diagnostic. On the bench the diagnostic
-    found nothing while the convention was right all along."""
+    not a selector with a «find it» diagnostic. The diagnostic found
+    nothing while the convention was right all along."""
     from emgteach.gui.tabs.acquisition import _ACC_INPUT
 
     adq = main_window._tab_adq
@@ -180,7 +180,7 @@ def test_fine_controls_belong_to_the_free_mode(main_window, qapp, mode) -> None:
     lesson from the one it is teaching.
 
     Three things have left this list since it was written, all because the
-    bench showed they were not refinements at all: **"Best of 3"**, which is
+    recordings showed they were not refinements at all: **"Best of 3"**, which is
     how a maximum is measured rather than a nicety — one attempt has nothing
     to fall back on, and a bad reference silently corrupts every percentage
     after it — the **fragment editor**, since keeping the part of a recording

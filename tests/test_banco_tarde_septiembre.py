@@ -1,4 +1,4 @@
-"""La segunda ronda del banco del 5-sep-2026, con el exe.
+"""Segunda ronda de correcciones de la práctica de cinemática, con el exe.
 
 La cinemática ya funcionaba de principio a fin —doce levantamientos con sus
 cargas, el acelerómetro dentro del fichero— y lo que quedaba era cómo se ve y
@@ -17,7 +17,7 @@ cómo se cuenta:
 * y, después del estudio F-V, el aviso de guardar el EDF afinado, que es lo
   único que conserva las decisiones tomadas en pantalla.
 
-Y una decisión de fondo: **se quitan las contracciones mantenidas de la
+Y un cambio de fondo: **se quitan las contracciones mantenidas de la
 calibración**. Estaban ahí porque la referencia se medía sobre la meseta;
 medida sobre el pico de 0,2 s, una sacudida da lo mismo y cuesta la cuarta
 parte de fatiga.
@@ -268,9 +268,8 @@ class TestWhatTheAnalysisAsksForNext:
     ) -> None:
         """Opening the tuned recording left the previous file's panels, load
         distribution and summary card on screen, under the new file's name in
-        the path box and the old one's inside the card. Seen on the bench of
-        5 September with the tuned recording of 18:13 open and the original's
-        142 s still being shown."""
+        the path box and the old one's inside the card. Seen with a tuned
+        recording open and the original's 142 s still being shown."""
         cvm = main_window._tab_cvm
         cvm._last_result = {"cualquier": "cosa"}
         cvm._d_file.setText("emg_2026-09-05_18-13.edf")

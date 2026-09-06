@@ -4,8 +4,8 @@ This is where most of the old seventeen-step tour went. Each entry is a
 title and a body, looked up by a short key from the box that owns it, and
 shown over that box by :class:`emgteach.gui.widgets.help_button.HelpButton`.
 Kept in one file, like the tour, so the teaching text can be revised without
-touching interface code. Wording is the author's; the entries that came
-from the tour carry his text unchanged.
+touching interface code. The teaching text is the software author's; the
+entries that came from the tour carry it unchanged.
 """
 
 from __future__ import annotations

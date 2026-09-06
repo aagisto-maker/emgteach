@@ -73,7 +73,7 @@ class TestItFitsALaboratoryLaptop:
     def test_no_wizard_sentence_moves_the_load_box(self, qapp) -> None:
         """The running commentary of the two wizards cannot push the box.
 
-        On the bench of 5 September the force-velocity wizard finished, wrote
+        The force-velocity wizard finished, wrote
         «4 loads recorded. Stop recording, then open…» into the small grey
         label beside the load bars, and that one sentence took the window's
         minimum width from 1091 to 1404 px — past the edge of the screen it
@@ -217,7 +217,7 @@ class TestTheFolderFieldHasAName:
 
 
 class TestTheContextualStepLeavesWithTheTab:
-    """Seen on the bench: the «next step» panel raised over the analysis tab
+    """The «next step» panel raised over the analysis tab
     stayed up when the student went back to Acquisition, dimming the session
     review and pointing at a button that was no longer on screen."""
 

@@ -96,12 +96,12 @@ class TestTheSuiteSettingsAreItsOwn:
 
 
 class TestTheScreenshotButton:
-    """«Una captura sin desviar la atención».
+    """Una captura sin desviar la atención.
 
-    Del banco: para llevar una figura al cuaderno había que usar la
-    herramienta de recortes del sistema, que roba el foco y abre un diálogo
-    preguntando dónde guardar, y las dos cosas pasan mientras alguien
-    sostiene una contracción. De ahí que esto no pregunte nada.
+    Para llevar una figura al cuaderno había que usar la herramienta de
+    recortes del sistema, que roba el foco y abre un diálogo preguntando
+    dónde guardar, y las dos cosas pasan mientras alguien sostiene una
+    contracción. De ahí que esto no pregunte nada.
     """
 
     @pytest.fixture
@@ -161,8 +161,8 @@ class TestTheScreenshotButton:
         assert not list(tmp_path.glob("*.png"))
 
     def test_it_takes_the_name_of_the_recording(self, ventana, tmp_path) -> None:
-        """Pedido para el artículo: la imagen tiene que decir por sí sola a qué
-        registro pertenece, sin que nadie lo anote a mano."""
+        """La imagen tiene que decir por sí sola a qué registro pertenece, sin
+        que nadie lo anote a mano."""
         ventana._tab_adq._ruta_registro = str(tmp_path / "P01.edf")
         ventana._guardar_captura()
         hechas = list(tmp_path.glob("*.png"))

@@ -120,7 +120,7 @@ class TestTheEditorStaysInsideTheRecordingPhase:
     Run over the whole file, the automatic suggestion proposed the six maximal
     efforts of the calibration as fragments of the work: they are the most
     active signal in the recording, so they win every activity test there is.
-    On the bench session of 1 September, nine of the ten fragments it offered
+    On one recording, nine of the ten fragments it offered
     were the warm-up and the calibration.
 
     Which is the one decision this application exists to take out of the

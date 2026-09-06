@@ -15,7 +15,7 @@ halves and only one of them is visible in the value:
 * what it was worth, in mV and as a share of the best — a repetition well below
   the others is a subject still warming up, or one that slipped;
 * **what the other muscle reached during it**, as a share of *its* own
-  reference. On the bench, the extensor's first repetition carried 41 % of the
+  reference. On one recording the extensor's first repetition carried 41 % of the
   flexor while its second and third carried 23 % and 20 %: same value, quite
   different repetition.
 

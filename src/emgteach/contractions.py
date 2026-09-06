@@ -179,7 +179,7 @@ def _onset_s(
     Scanning forward from ``i0`` took the window's first sample for the
     onset whenever the window began, as the detector's do, on the threshold
     crossing — the muscle was already up, the limb often too, and the delay
-    came out as zero on the bench. Walking back from the peak finds the rise
+    came out as zero on real recordings. Walking back from the peak finds the rise
     this contraction made and stops at the rest between it and the one
     before, instead of running into that one's tail.
     """

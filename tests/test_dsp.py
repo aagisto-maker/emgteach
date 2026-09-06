@@ -227,7 +227,7 @@ class TestSpectralMetrics:
         assert abs(result["mdf"] - 80.0) < 2.0, f"MDF={result['mdf']}"
 
     def test_the_median_survives_a_window_shorter_than_a_second(self) -> None:
-        """Found on the bench recording of 3 September: two rows of the
+        """Found on a real recording: two rows of the
         contraction table read «MDF 0 Hz» on contractions of 0.42 s that had
         a perfectly ordinary spectrum.
 

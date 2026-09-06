@@ -223,7 +223,7 @@ class SessionPhases:
         the ``REC start`` mark when the two-phase flow wrote one; failing
         that, the end of the last closed calibration repetition, since the
         single-muscle practical calibrates in the middle of its recording and
-        the task is what comes after (on the bench, its analysis took the
+        the task is what comes after (before this, its analysis took the
         warm-up and the six maximal efforts for contractions of the task);
         failing that, a second before the first load marker of the guided
         force-velocity wizard, so the stray efforts made before it began stay

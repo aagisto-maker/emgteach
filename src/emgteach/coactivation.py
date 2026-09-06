@@ -111,7 +111,7 @@ def _above_rest(envelope, rest: float) -> FloatArray:
 
 
 #: Below this ratio between the quieter and the louder muscle, one of them is
-#: doing the work. Measured on the bench recordings of 1 September: where the
+#: doing the work. Measured on real recordings: where the
 #: manoeuvres alternated cleanly the ratio ran from 0.04 to 0.23, and where
 #: both muscles worked at once it ran from 0.60 to 0.84. Half-way between is a
 #: wide margin on both sides.
@@ -138,7 +138,7 @@ def dominant_muscle(
     And compared as a share of **each muscle's own maximum** whenever the
     recording carries one, which is the same rule the overlay panel and the
     co-activation index already follow. Millivolts do not compare across two
-    muscles: on the bench recording of 3 September the flexor's reference was
+    muscles: on one recording the flexor's reference was
     0.087 mV and the extensor's 0.286 mV, so a flexion at 100 % of the flexor's
     own maximum still read *smaller in millivolts* than an extensor sitting at
     42 % of its own — and every contraction of the series came back labelled

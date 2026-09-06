@@ -5,7 +5,7 @@ is a definition, not a heuristic: if the task's own strongest half second beats
 it, the effort was not maximal. What the threshold buys is only a margin for
 the honest overshoot of a brisk contraction against an isometric maximum.
 
-The margin is not fitted. Across twenty-one bench recordings, every session
+The margin is not fitted. Across twenty-one recordings, every session
 whose calibration was sound peaked at 91-124 % of its own reference and every
 session with a bad one peaked at 179-1308 %; 150 % sits in the empty gap.
 

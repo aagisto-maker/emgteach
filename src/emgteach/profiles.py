@@ -129,7 +129,7 @@ class SignalProfile:
     # 0.2 s, not 0.5. A held maximal contraction shows a peak at its start
     # and then a plateau, and a half-second mean sits on the plateau; the
     # task's brief efforts reach the peak, so they came out at 135 % of a
-    # "maximum" (bench, 1 September) with nothing wrong in the calibration.
+    # "maximum" on one recording with nothing wrong in the calibration.
     # The reference has to be measured where the peak is. Long enough to
     # exclude a single spike, short enough to hold the initial burst.
     mvc_peak_window_s: float = 0.2
@@ -147,7 +147,7 @@ class SignalProfile:
     # maximal. What is compared is the task's own strongest 0.2 s, measured
     # the same way.
     #
-    # The margin is not fitted, it sits in a gap. Across 21 bench recordings,
+    # The margin is not fitted, it sits in a gap. Across 21 recordings,
     # every session whose calibration was sound peaked at 91-124 % of its own
     # reference, and every session with a bad one peaked at 179-1308 %.
     # Nothing landed in between.
@@ -161,7 +161,7 @@ class SignalProfile:
     # -- are the two channels looking at two muscles? --
     # While one muscle is calibrated the other one is never silent: it stabilises
     # the joint, and some of its signal is the first muscle's, conducted through
-    # the tissue. On the bench, with the electrodes correctly sited over FCR and
+    # the tissue. With the electrodes correctly sited over FCR and
     # ECR, the resting channel reached 20-26 % of its own reference during the
     # other muscle's maximum. Above this share the two channels are no longer
     # telling two muscles apart — an electrode is mis-sited, too close to the
@@ -169,7 +169,7 @@ class SignalProfile:
     mvc_crosstalk_pct: float = 50.0        # % of the other muscle's own reference
     # (A "was the effort held?" check lived here and was withdrawn. It
     # measured the share of the window above half the window's own peak,
-    # which separated one bench session cleanly — and then fired on the
+    # which separated one session cleanly — and then fired on the
     # best calibration of the next one. A maximal contraction held for
     # four seconds decays, which that measure punishes exactly as it
     # punishes a brief movement; no threshold separated the two sessions
@@ -195,7 +195,7 @@ class SignalProfile:
     prep_countdown_s: float = 5.0
     # -- warming up before the first maximal effort --
     # The first maximal contraction of a session is genuinely submaximal:
-    # on the bench the three flexor repetitions came out 57 %, 68 % and
+    # on one recording the three flexor repetitions came out 57 %, 68 % and
     # 100 % of each other, still rising at the third, so best-of-three had
     # nothing better to fall back on. Recorded and marked like the pause,
     # and out of the analysis for the same reason.

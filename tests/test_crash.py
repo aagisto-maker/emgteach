@@ -80,8 +80,7 @@ class TestAWarningIsNotACrash:
     set to None there, so the write raised AttributeError inside the handler
     — and the operator was shown «the application hit an error it did not
     expect» while the thing being reported was a warning nobody needed to
-    see. It happened twice on the bench of 5 September, both times at the
-    end of a recording.
+    see. It happened at the end of a recording.
     """
 
     def test_a_message_with_no_console_does_not_raise(

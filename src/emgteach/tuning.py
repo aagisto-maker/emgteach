@@ -243,7 +243,7 @@ def _cargas_por_tramo(
     its load (:func:`emgteach.contractions.load_of_each`), and it has to be
     the same one or the derived file would disagree with the table it was
     derived from. Deciding it on the fragment's *start* instead put one lift
-    of the bench recording of 5 September under the previous load, because
+    of one recording under the previous load, because
     the editor had drawn that fragment a little before its cue.
 
     A fragment whose middle falls before the first cue — a stray effort, a
