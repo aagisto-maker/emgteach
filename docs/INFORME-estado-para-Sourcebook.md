@@ -39,10 +39,10 @@ prácticas** en cuanto hay fragmentos elegidos, y no solo en la avanzada; y el
 registro **se nombra con el identificador de prueba**. Con ellas y con sus
 pruebas la suite pasa a 976.
 
-Las cuatro últimas salieron del banco del 6 de septiembre, y las cuatro se
-comprobaron en la sesión siguiente del mismo día: el archivo salió nombrado
-solo, el botón de guardar el afinado estaba donde tenía que estar y el registro
-de eventos anotó «32 automatic screenshots saved with the recording».
+Las cuatro últimas se comprobaron después sobre un registro completo: el
+archivo salió nombrado solo, el botón de guardar el afinado estaba donde tenía
+que estar y el registro de eventos anotó «32 automatic screenshots saved with
+the recording».
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:161`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
@@ -70,8 +70,8 @@ Son **97 commits**. Lo que cambia de cara al artículo:
   auto-normalización en el análisis de carga muscular.
 - **La referencia se mide sobre el mejor 0,2 s** y la calibración pide **tres
   esfuerzos máximos breves** por músculo. Las tres contracciones mantenidas de
-  4 s que hubo entre el 3 y el 5 de septiembre se quitaron: medida en el pico,
-  una sacudida da el mismo número.
+  4 s que hubo en una versión intermedia se quitaron: medida en el pico, una
+  sacudida da el mismo número.
 - **Una fila por contracción** en el análisis, con retraso electromecánico
   donde hay acelerómetro; **índice de coactivación** de Falconer-Winter por
   ventana marcada y en % CVM; **estudio fuerza-velocidad** que lee esas filas.
@@ -826,7 +826,7 @@ puño cerrado). El tramo analizado son los 23,3 s de la fase de registro.
 
 **Aviso sobre este archivo:** se grabó con el protocolo de calibración de
 entonces, **seis repeticiones por músculo** (tres mantenidas y tres breves).
-Desde el 5 de septiembre la calibración son tres esfuerzos breves. La
+Desde la 3.0.0 la calibración son tres esfuerzos breves. La
 referencia se calcula igual —el mejor 0,2 s de las repeticiones conservadas—,
 así que las cifras de abajo son comparables, pero el archivo dice «6
 repeticiones» donde uno nuevo diría «3». Se conserva como ejemplo porque es el
@@ -848,8 +848,8 @@ medias de 14,4 % y 11,1 % CVM. Correlación de las dos envolventes:
 
 `ejemplo_tres_maniobras.edf`, dos canales, 100,0 s, del **6 de septiembre de
 2026**, con el protocolo y la calibración actuales: tres esfuerzos breves por
-músculo, `REC start` en el segundo 57,3 y 42,7 s de tarea. El protocolo pedido
-al sujeto fue **seis flexiones de muñeca contra resistencia, dos segundos de
+músculo, `REC start` en el segundo 57,3 y 42,7 s de tarea. El protocolo fue
+**seis flexiones de muñeca contra resistencia, dos segundos de
 quietud, seis extensiones contra resistencia, dos segundos de quietud y una
 presa sostenida de unos ocho segundos con la muñeca neutra**.
 
@@ -905,12 +905,12 @@ de los tres movimientos, y el precio de serlo es no tener índice.
 2. **El índice depende del borde de la ventana.** Estrechando la presa 0,8 s
    por delante pasa de 76 % a 70 %. Las ventanas de la tabla son las de la
    maniobra completa, de la primera activación a la última relajación.
-3. **Una segunda sesión del mismo día (`P02`, 10:17) se descartó**: sus
-   extensiones salieron mejor —índice de 43 %— pero la calibración del flexor
-   no capturó un máximo (referencia 0,089 mV y máximo de tarea 185 % CVM), y
-   con el denominador mal ningún porcentaje de ella es publicable. El programa
-   lo avisó en pantalla al analizarla. Queda anotado porque explica por qué la
-   tabla sale de la sesión de las 09:53 y no de la última.
+3. **Un segundo registro del mismo protocolo se descartó**: sus extensiones
+   salieron mejor —índice de 43 %— pero la calibración del flexor no capturó
+   un máximo (referencia 0,089 mV y máximo de tarea 185 % CVM), y con el
+   denominador mal ningún porcentaje de él es publicable. El programa lo avisó
+   en pantalla al analizarlo. Queda anotado porque explica por qué la tabla
+   sale del registro adjunto y no del más reciente.
 
 ### 8.3 Registro de ejemplo: la cinemática
 
@@ -955,20 +955,20 @@ la tarea, 117 % CVM.
   pilotaje del curso 2026/27, no aquí.
 
 > El índice de coactivación por maniobra y el porcentaje del extensor en la
-> presa estaban aquí hasta el 6 de septiembre. Los mide el §8.2.
+> presa estaban aquí hasta que se midieron. Los da el §8.2.
 
 ---
 
 ## 9. Limitaciones conocidas y asuntos abiertos
 
 1. **La amplitud del EMG baja al subir la carga** en los dos registros de
-   cinemática del 5 de septiembre, que es lo contrario de lo esperable por
+   cinemática disponibles (§8.3), que es lo contrario de lo esperable por
    reclutamiento. La velocidad y la potencia sí salen como deben. Es cuestión
    de la maniobra o del montaje, no del cálculo, y está sin resolver.
-2. **`coact_floor_pct = 5 % CVM` está medido sobre una sola sesión**
-   (30 de agosto): ventana quieta con medias de 0,2 % y 0,8 % sobre reposo
-   frente a 19–30 % en ventana activa. El umbral cae en un hueco de un factor
-   treinta, pero con una sola sesión detrás. **El 6 de septiembre se vio su
+2. **`coact_floor_pct = 5 % CVM` está medido sobre un solo registro**:
+   ventana quieta con medias de 0,2 % y 0,8 % sobre reposo frente a 19–30 %
+   en ventana activa. El umbral cae en un hueco de un factor treinta, pero con
+   un solo registro detrás. **Y el registro de las tres maniobras enseña su
    otra cara**: en un movimiento recíproco limpio el antagonista queda por
    debajo del suelo y la ventana se queda sin índice (§8.2). Es coherente
    —sin antagonista no hay coactivación que medir— pero significa que el caso
@@ -987,9 +987,9 @@ la tarea, 117 % CVM.
    registros: se sabe que es de unidades de por ciento.
 6. **macOS no se prueba de forma automática** y no se ha usado con hardware.
 7. **La práctica de cinemática se ha validado con un solo sujeto** y en cuatro
-   sesiones del mismo día.
+   registros.
 8. **No hay datos de pilotaje con alumnos.** Todo lo de este informe sale de
-   pruebas de banco del autor.
+   registros de banco de un solo sujeto.
 9. Del §13 de la especificación sigue vigente el aviso de que **este era el
    último cambio de arquitectura antes de la publicación**: la 3.0.0 ya está
    publicada, así que a partir de aquí solo corrección de errores.
