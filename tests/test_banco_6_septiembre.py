@@ -110,6 +110,10 @@ class TestTheAutomaticScreenshot:
         try:
             yield win
         finally:
+            # Desarmado antes de cerrar: el reloj vive mientras viva la
+            # ventana, y una prueba que lo deje corriendo se lo pasa a las
+            # siguientes.
+            win._btn_auto_captura.setChecked(False)
             s.clear()
             win.close()
             win.deleteLater()

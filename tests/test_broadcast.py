@@ -73,9 +73,23 @@ def test_broadcast_reaches_a_follower(qapp) -> None:
     ws.connected.connect(on_open)
     ws.open(QUrl(f"ws://127.0.0.1:8113/?k={srv._token}"))
 
+    # Espera a que lleguen los dos mensajes, con un techo de tres segundos, en
+    # vez de esperar 600 ms fijos y mirar. Los 600 ms bastaban para una vuelta
+    # por localhost en una máquina ociosa, y en el corredor de Linux, con la
+    # suite entera por delante, no siempre bastan: la prueba fallaba por el
+    # presupuesto, no por el servidor —`client_count()` daba 1, o sea que la
+    # conexión estaba hecha y solo faltaba que llegara el texto—. Esperando
+    # por la condición sigue tardando lo mismo cuando todo va rápido.
     loop = QEventLoop()
     QTimer.singleShot(3000, loop.quit)
-    QTimer.singleShot(600, loop.quit)   # enough for localhost round-trip
+
+    def _ya_estan() -> None:
+        if any('"t":"config"' in m for m in received) and any(
+            '"t":"data"' in m for m in received
+        ):
+            loop.quit()
+
+    ws.textMessageReceived.connect(lambda _m: _ya_estan())
     loop.exec()
 
     assert srv.client_count() == 1
