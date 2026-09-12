@@ -46,11 +46,11 @@ Casilla **«Difundir a móviles (en laboratorio)»** → **QR** o enlace
 Al abrir el registro se analiza solo. Seguir los cuadros que aparecen, en orden:
 1. **«Repeticiones de la calibración…»**: quitar las flojas. Primero, porque fija
    la referencia de todos los porcentajes.
-2. **«Seleccionar fragmentos…»**: una fila por contracción; desmarcar las malas
-   (y, en la práctica de un músculo, los esfuerzos de calibración) y **«Usar estos
-   fragmentos»**. Dos deslizadores en vivo: **sensibilidad** y, en el par, **umbral
-   de coactivación**; pulsar sobre un tramo sombreado lo quita o lo repone; el
-   ajuste fino, plegado.
+2. **«Seleccionar fragmentos…»**, en tres pasos que marca la línea amarilla:
+   **sensibilidad** hasta que cuadre el recuento; **cada contracción** con ▶ o con
+   un clic: Mantener, Eliminar, Dividir (dos picos) o arrastrarla a su sitio (un
+   tramo punteado se añade con un clic; en el par, confirmar quién la llevó); y
+   **«Usar estos fragmentos»**. La calibración queda fuera sola.
 
 Después leer: **paneles** (rueda del ratón para desplazar; ▲▼ amplitud, ▶◀ tiempo),
 **gráfico de contracciones** (una vista cada vez, en su título: **Relación**,

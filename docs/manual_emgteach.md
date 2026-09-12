@@ -332,6 +332,28 @@ out the stacked lanes, the load bars and the calibration wizard's cue panel.]
   the Acquisition tab wrote it, and goes to the report. Under the box, one line
   says what the next step is.
 
+**The fragment editor («Select fragments…»).** It proposes one row per
+contraction inside the recording phase — the calibration is left out on its
+own — and takes you through three steps. A yellow line over the plot says
+which one you are on and what it asks for, and the box's «?» repeats them.
+1. **Sensitivity** (k), above the plot, with a **counter** beside it: marked /
+   expected of each kind. The expected numbers come from the practical — 6
+   flexions, 6 extensions and 1 grip in the pair; in kinematics, one per lift
+   the wizard marked; none in the single-muscle practical — and can be edited.
+   The pair opens on k = 4.4 and the others on 3.0; the k used goes into the
+   report and the CSV.
+2. **Each contraction in turn**, with ◀ ▶ or by clicking it on the plot; it is
+   highlighted without the axes moving. **Keep it**, **Drop it** (it stays
+   hatched and Keep it brings it back) and **Split it**, offered only when the
+   row holds two peaks — the smaller at least half the height, the valley below
+   half the smaller — and cutting at the valley, marked first with a
+   dash-dotted line. A mark can be **dragged**: on release it takes the bounds
+   of the activity it is dropped over, and goes back if that is rest. **Dotted**
+   stretches are activity the threshold left out and no row covers: a click
+   adds one. In the pair, one button per muscle confirms who led each.
+3. **«Use these fragments»** applies the selection; nothing changes until then.
+   Once everything is reviewed and the count matches, the button turns bold.
+
 **The thirteen analysis panels.** Each practical opens on its own and **«More
 panels…»** reveals the rest, minus those the recording cannot feed. The panels
 stack on a page the mouse wheel scrolls; beside each, ▲▼ change the amplitude
@@ -654,7 +676,7 @@ Each begins by **choosing the practical** in the top-right selector.
    are marked by themselves. *Stop recording*.
 2. Analysis runs on its own. Follow the two guided boxes: review the
    **calibration repetitions** and, in the **fragments**, keep only the task
-   (unticking the three calibration efforts if there were any). Read the
+   (the calibration is left out on its own). Read the
    contraction table, the cards against their ranges, panels 1A, 2 and 3; for
    fatigue, panel 7 from «More panels…». Check the «Task maximum» card. Generate
    the **PDF report**.

@@ -169,6 +169,36 @@ _TEXTS = {
             "hover over «Panels:» for what each one shows."
         ),
     ),
+    "ana.fragments": lambda: (
+        tr("Choosing the contractions to analyse"),
+        "<p><b>" + tr("1 · The sensitivity") + "</b><br>" + tr(
+            "Move it until the count beside it matches what was done: in the "
+            "agonist/antagonist practical, six flexions, six extensions and "
+            "one grip; in kinematics, one per lift. In the single-muscle "
+            "practical there is no fixed number: write it in «expected» if "
+            "you know it. The dashed line over the envelope is the threshold "
+            "it sets."
+        ) + "</p><p><b>" + tr("2 · Each contraction in turn") + "</b><br>" + tr(
+            "▶ takes you to the next one; a click on the plot selects the one "
+            "under it. «Keep it» if it is right. «Drop it» if it should not "
+            "count: it stays on the plot, hatched, and «Keep it» brings it "
+            "back. «Split it» when one shaded stretch holds two peaks; the "
+            "dash-dotted line shows where it will cut. A mark in the wrong "
+            "place can be dragged onto the right contraction: it snaps onto "
+            "the activity it is dropped over, and goes back if there is none."
+        ) + " " + tr(
+            "A dotted stretch is activity the threshold left out: a click "
+            "adds it. With two muscles, one button per muscle confirms who "
+            "led each contraction; the app has already proposed it."
+        ) + "</p><p><b>" + tr("3 · Use these fragments") + "</b><br>" + tr(
+            "The yellow line above the plot says which step you are on. When "
+            "every contraction has been reviewed and the count matches, "
+            "press «Use these fragments»: nothing is applied until you do."
+        ) + "</p><p><b>" + tr("If you get lost") + "</b><br>" + tr(
+            "«Start over» goes back to what the app proposed, and «Reset» "
+            "puts the sensitivity back to the practical's own value."
+        ) + "</p>",
+    ),
     "ana.panels": lambda: (
         tr("The basic panels"),
         tr(

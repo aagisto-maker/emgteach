@@ -174,18 +174,27 @@ press. On switching to Analysis a box points at the next step:
    values. Untick the weak ones and accept; the reference is recomputed. This
    goes first because **every percentage is measured against that reference**.
 2. **«Select fragments…»**: one row per contraction found, with its start, end,
-   duration and, with two muscles, which one led it. Untick those not worth
-   analysing (a badly made movement, a cable tug) and press **«Use these
-   fragments»** even if nothing changed. In the single-muscle practical, if the
-   calibration was made with the button, also untick the three calibration efforts
-   to keep the task.
-   The dialogue is adjusted by looking: two sliders, the **sensitivity** (how
-   many contractions it finds; the dashed line over the envelope is the
-   threshold it sets) and, in the pair, the **co-activation threshold** (from
-   what share of the stronger muscle the weaker one counts as co-activating).
-   Every move redraws the shading and the rows at once, and a click on a shaded
-   stretch drops or restores it. The **fine adjustment** (minimum duration, gap
-   joining, split between contractions) stays folded and is rarely needed.
+   duration and, with two muscles, which one led it. The calibration is left out
+   on its own. The dialogue takes you through **three steps**, and a yellow line
+   over its plot says which one you are on:
+   1. **Sensitivity.** Move it until the count beside it matches what was done:
+      in the pair, 6 flexions, 6 extensions and 1 grip; in kinematics, one per
+      lift. The dashed line is the threshold.
+   2. **Each contraction in turn**, with ▶ or by clicking it on the plot:
+      **Keep it** if it is right, **Drop it** if it should not count (it stays
+      hatched and can be brought back), **Split it** if one stretch holds two
+      peaks (a dash-dotted line shows the cut first), or **drag it** onto the
+      right contraction, where it snaps into place. A **dotted** stretch is
+      activity the threshold left out: a click adds it. In the pair, one button
+      per muscle confirms who led it.
+   3. **«Use these fragments»**, once everything is reviewed and the count
+      matches. Nothing is applied until then.
+
+   In the pair there is also the **co-activation threshold** (from what share
+   of the stronger muscle the weaker one counts as co-activating), which
+   changes the names and not the rows. The **fine adjustment** (minimum
+   duration, gap joining, split between contractions) stays folded and is
+   rarely needed. The dialogue's «?» repeats these steps.
 
 Then read. The tab has three areas: the **panels** (top; the mouse wheel scrolls
 them; the ▲▼ and ▶◀ buttons on the left change the scales), the **contraction

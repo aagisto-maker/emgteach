@@ -81,6 +81,7 @@ from PySide6.QtWidgets import (
 from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.coactivation import _DOMINANCE, propose_labels
 from emgteach.dsp import process_offline
+from emgteach.gui.widgets.help_button import add_help
 from emgteach.i18n import tr
 from emgteach.selection import (
     DEFAULT_DETECTION,
@@ -131,6 +132,27 @@ def default_detection(k: float | None = None) -> dict[str, float]:
     if k is not None:
         d["k"] = float(k)
     return d
+
+
+def _en_centesimas(filas: list[Segment]) -> list[Segment]:
+    """Rows as the table holds them — hundredths of a second — and at least a
+    hundredth apart.
+
+    The detector's split pieces share their boundary sample, so two rows could
+    touch, and fragments that touch are merged before the analysis: the editor
+    showed a contraction more than the analysis measured, without a word.
+    Rounding the ends inward, and moving a touching start past the end before
+    it, keeps each row its own fragment.
+    """
+    out: list[Segment] = []
+    for f in sorted(filas, key=lambda s: s.start_s):
+        a = float(np.ceil(round(f.start_s * 100.0, 6))) / 100.0
+        b = float(np.floor(round(f.end_s * 100.0, 6))) / 100.0
+        if out and a <= out[-1].end_s:
+            a = round(out[-1].end_s + 0.01, 2)
+        if b > a:
+            out.append(Segment(a, b, f.score, f.reason, f.label))
+    return out
 
 
 class FragmentSelectionDialog(QDialog):
@@ -245,6 +267,9 @@ class FragmentSelectionDialog(QDialog):
         #: A mark being dragged: its row, where the press was and how far the
         #: pointer has gone since. None when nothing is.
         self._arrastre: dict[str, Any] | None = None
+        #: The rows gone through — with the arrows, a click or the table — by
+        #: their bounds: what the guide counts to say whether step 2 is done.
+        self._revisadas: set[tuple[float, float]] = set()
         self._esperadas_iniciales = tuple(int(n) for n in (expected or ()))
 
         # Envelope for the preview (downsampled when drawing).
@@ -419,6 +444,18 @@ class FragmentSelectionDialog(QDialog):
         # is set looking at the whole recording and at the count.
         root.addWidget(self._build_adjustments())
 
+        # Which of the three steps this is and what it asks for, worked out
+        # again at every change. The paragraph above says it once; a student
+        # who looked away needs to be told where they are, not the whole way.
+        self._lbl_guia = QLabel()
+        self._lbl_guia.setWordWrap(True)
+        self._lbl_guia.setTextFormat(Qt.TextFormat.RichText)
+        self._lbl_guia.setStyleSheet(
+            "background:#FFF4D6; color:#3A2E00; border:1px solid #E6C66A;"
+            " border-radius:4px; padding:4px 8px;"
+        )
+        root.addWidget(self._lbl_guia)
+
         # Preview plot — the control, not a decoration: the shaded stretches
         # are the rows, the dotted ones are what a click can add, the dashed
         # line is the sensitivity.
@@ -454,6 +491,7 @@ class FragmentSelectionDialog(QDialog):
             # row builder and the readers, and one practical having a column
             # the others do not is not worth two sets of indices.
             self._table.setColumnHidden(4, True)
+            header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         root.addWidget(self._table, stretch=2)
 
         # Action buttons.
@@ -498,6 +536,7 @@ class FragmentSelectionDialog(QDialog):
     def _build_adjustments(self) -> QGroupBox:
         """The two levels of adjustment: two sliders, and a folded fine row."""
         grp = QGroupBox(tr("Adjust the proposal"))
+        add_help(grp, "ana.fragments")
         lay = QGridLayout(grp)
         lay.setContentsMargins(8, 4, 8, 6)
         lay.setHorizontalSpacing(8)
@@ -892,7 +931,7 @@ class FragmentSelectionDialog(QDialog):
                 for x in detecta(self._raw_2)
             ]
             filas = normalise_segments(filas, self._full_duration)
-        return filas
+        return _en_centesimas(filas)
 
     def _buscar_candidatos(self) -> None:
         """Where each envelope clears the line half the sensitivity draws.
@@ -968,6 +1007,7 @@ class FragmentSelectionDialog(QDialog):
         it was arriving back as a suggestion.
         """
         self._timer.stop()
+        self._revisadas.clear()
         self._buscar_candidatos()
         filas = self._detectar(self._det["k"])
         if self._naming:
@@ -1134,6 +1174,7 @@ class FragmentSelectionDialog(QDialog):
         n = len(self._row_widgets)
         self._fila_actual = max(0, min(n - 1, fila)) if n else -1
         if self._fila_actual >= 0:
+            self._revisadas.add(self._clave(self._row_widgets[self._fila_actual]))
             self._table.blockSignals(True)
             self._table.setCurrentCell(self._fila_actual, 3)
             self._table.blockSignals(False)
@@ -1154,6 +1195,7 @@ class FragmentSelectionDialog(QDialog):
         """A row picked in the table is the one under review too."""
         if fila != self._fila_actual and 0 <= fila < len(self._row_widgets):
             self._fila_actual = fila
+            self._revisadas.add(self._clave(self._row_widgets[fila]))
             self._refrescar_navegacion()
             self._redraw_preview()
 
@@ -1310,6 +1352,91 @@ class FragmentSelectionDialog(QDialog):
             if hay and not divisible
             else tr("Cut this row in two at the deepest valley between its peaks.")
         )
+        self._refrescar_guia()
+
+    @staticmethod
+    def _clave(w: dict[str, Any]) -> tuple[float, float]:
+        """A row by its bounds, as the table holds them."""
+        return (round(w["start"].value(), 2), round(w["end"].value(), 2))  # type: ignore[attr-defined]
+
+    def _refrescar_guia(self) -> None:
+        """Say which of the three steps this is, and what it asks for now.
+
+        Step 1 until the first contraction is looked at; step 2 until every
+        row has been looked at and the counter matches; step 3 then, with the
+        button that applies it all in bold.
+        """
+        n = len(self._row_widgets)
+        revisadas = sum(1 for w in self._row_widgets if self._clave(w) in self._revisadas)
+        con_objetivo = any(s.value() for _c, _e, s in self._contadores)
+        desajustes = [
+            tr("{name} {n} of {m}").format(
+                name=c if c is not None else tr("Contractions"), n=k, m=s.value()
+            )
+            for (c, _e, s), k in zip(self._contadores, self._cuenta(), strict=True)
+            if s.value() and k != s.value()
+        ]
+        detalle = "; ".join(desajustes)
+        if n == 0:
+            paso, texto = 1, tr(
+                "No contraction is marked: lower the sensitivity, or click a "
+                "dotted stretch to add it."
+            )
+        elif revisadas == 0:
+            paso = 1
+            if desajustes:
+                texto = tr(
+                    "The count does not match ({detail}). Move the sensitivity "
+                    "until it does, or as close as it gets; what is left is put "
+                    "right in step 2. Then press ▶."
+                ).format(detail=detalle)
+            elif con_objetivo:
+                texto = tr(
+                    "The count matches. Press ▶ to go through the contractions "
+                    "one by one."
+                )
+            else:
+                texto = tr(
+                    "Move the sensitivity until each contraction has its own "
+                    "shaded stretch. If you know how many there were, write it "
+                    "in «expected». Then press ▶."
+                )
+        elif revisadas < n or desajustes:
+            paso = 2
+            texto = tr(
+                "Reviewed {r} of {n}. For each one: «Keep it» if it is right, "
+                "«Drop it» if it should not count, «Split it» if it holds two "
+                "peaks, or drag it onto the right contraction."
+            ).format(r=revisadas, n=n)
+            if self._btns_nombre:
+                texto += " " + tr("Then confirm who led it.")
+            if desajustes:
+                texto += " " + tr(
+                    "The count does not match yet ({detail}): look for what is "
+                    "missing among the dotted stretches, or drop what is left "
+                    "over."
+                ).format(detail=detalle)
+        else:
+            paso = 3
+            texto = (
+                tr("Everything reviewed and the count matches: press «Use these fragments».")
+                if con_objetivo
+                else tr("Everything reviewed: press «Use these fragments».")
+            )
+        i = self._fila_actual
+        if (0 <= i < n and self._span[0] > 0
+                and self._row_widgets[i]["start"].value() <= self._span[0] + 0.02):  # type: ignore[attr-defined]
+            # Activity already under way when the analysed stretch opens: in the
+            # single-muscle practical that stretch starts where the calibration
+            # ends, and the first row can be the last maximal effort's tail.
+            texto += " " + tr(
+                "This one starts right where the analysed stretch does: it may "
+                "be the end of an earlier effort, such as the last maximal one."
+            )
+        self._lbl_guia.setText(
+            tr("<b>Step {k} of 3</b> · {text}").format(k=paso, text=texto)
+        )
+        self._btn_ok.setStyleSheet("font-weight: bold;" if paso == 3 else "")
 
     def _shade_colour(self, label: str) -> str:
         if not self._naming or self._env_2 is None:

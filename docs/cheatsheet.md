@@ -48,11 +48,11 @@ The recording is analysed on its own when opened. Follow the boxes that appear, 
 order:
 1. **«Calibration repetitions…»**: drop the weak ones. First, because it fixes the
    reference of every percentage.
-2. **«Select fragments…»**: one row per contraction; untick the bad ones (and, in
-   the single-muscle practical, the calibration efforts) and **«Use these
-   fragments»**. Two live sliders: **sensitivity** and, in the pair, the
-   **co-activation threshold**; a click on a shaded stretch drops or restores
-   it; the fine adjustment stays folded.
+2. **«Select fragments…»**, in three steps shown by the yellow line: the
+   **sensitivity** until the count matches; **each contraction** with ▶ or a
+   click: Keep it, Drop it, Split it (two peaks) or drag it into place (a dotted
+   stretch is added with a click; in the pair, confirm who led it); and **«Use
+   these fragments»**. The calibration is left out on its own.
 
 Then read: **panels** (mouse wheel to scroll; ▲▼ amplitude, ▶◀ time), the
 **contraction chart** (one view at a time, on its title: **Relation**, amplitude

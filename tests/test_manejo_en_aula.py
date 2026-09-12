@@ -929,3 +929,148 @@ class TestTheCalibrationHelpDescribesTheProtocolTheCodeRuns:
             c = cuerpo.lower()
             assert "six maximal" not in c, clave
             assert "sustained maximal" not in c, clave
+
+
+def _prefijo_paso(k):
+    from emgteach.i18n import tr
+
+    return tr("<b>Step {k} of 3</b> · {text}").format(k=k, text="")
+
+
+class TestTheEditorSaysWhichStepThisIs:
+    """Para que nadie se pierda: una línea encima del gráfico dice en qué paso
+    se está y qué pide, y el botón que lo aplica se pone en negrita al final."""
+
+    def test_it_opens_on_step_one_with_what_the_count_is_missing(self, qapp) -> None:
+        from emgteach.i18n import tr
+
+        dlg = _par(expected=(6, 6, 1))
+        guia = dlg._lbl_guia.text()
+        assert guia.startswith(_prefijo_paso(1))
+        assert tr("{name} {n} of {m}").format(name="FCR", n=2, m=6) in guia
+        dlg.deleteLater()
+
+    def test_going_through_them_is_step_two_and_the_end_is_step_three(
+        self, qapp
+    ) -> None:
+        dlg = _dialogo(expected=(2,))
+        assert dlg._lbl_guia.text().startswith(_prefijo_paso(1))
+        dlg._siguiente()
+        assert dlg._lbl_guia.text().startswith(_prefijo_paso(2))
+        assert "1" in dlg._lbl_guia.text()
+        assert dlg._btn_ok.styleSheet() == ""
+        dlg._siguiente()
+        assert dlg._lbl_guia.text().startswith(_prefijo_paso(3))
+        assert "bold" in dlg._btn_ok.styleSheet()
+        dlg.deleteLater()
+
+    def test_everything_reviewed_but_the_count_off_stays_on_step_two(
+        self, qapp
+    ) -> None:
+        dlg = _dialogo(expected=(3,))
+        dlg._siguiente()
+        dlg._siguiente()
+        assert dlg._lbl_guia.text().startswith(_prefijo_paso(2))
+        dlg.deleteLater()
+
+    def test_without_a_target_the_end_just_asks_to_apply(self, qapp) -> None:
+        from emgteach.i18n import tr
+
+        dlg = _dialogo()
+        dlg._siguiente()
+        dlg._siguiente()
+        assert dlg._lbl_guia.text().endswith(
+            tr("Everything reviewed: press «Use these fragments».")
+        )
+        dlg.deleteLater()
+
+    def test_the_second_half_of_a_split_is_left_to_review(self, qapp) -> None:
+        c1, c2 = _dos_seguidas()
+        dlg = _dialogo(c1, raw_2=c2, name_1="FCR", name_2="ECR",
+                       segments=[(1.8, 4.7)])
+        dlg._clic_en(3.0)
+        assert dlg._lbl_guia.text().startswith(_prefijo_paso(3))
+        dlg._dividir()
+        assert dlg._lbl_guia.text().startswith(_prefijo_paso(2))
+        dlg.deleteLater()
+
+    def test_a_row_at_the_start_of_the_stretch_is_pointed_out(self, qapp) -> None:
+        from emgteach.i18n import tr
+
+        aviso = tr(
+            "This one starts right where the analysed stretch does: it may "
+            "be the end of an earlier effort, such as the last maximal one."
+        )
+        dlg = _dialogo(span=(2.2, 9.0))
+        dlg._ir_a(0)
+        assert aviso in dlg._lbl_guia.text()
+        dlg._ir_a(1)
+        assert aviso not in dlg._lbl_guia.text()
+        dlg.deleteLater()
+
+    def test_the_editor_has_its_own_help(self, qapp) -> None:
+        from emgteach.gui.widgets.help_button import help_buttons
+
+        dlg = _dialogo()
+        assert "help:ana.fragments" in {b.objectName() for b in help_buttons(dlg)}
+        dlg.deleteLater()
+
+    def test_in_spanish_it_speaks_spanish(self, qapp) -> None:
+        from emgteach.i18n import get_language, set_language
+
+        anterior = get_language()
+        try:
+            set_language("es")
+            dlg = _dialogo()
+            assert dlg._lbl_guia.text().startswith("<b>Paso 1 de 3</b>")
+            assert dlg._btn_mantener.text() == "Mantener"
+            dlg.deleteLater()
+        finally:
+            set_language(anterior)
+
+
+class TestRowsThatTouchStayApart:
+    def test_touching_proposals_are_kept_as_two_fragments(self) -> None:
+        from emgteach.gui.widgets.fragment_selection import _en_centesimas
+        from emgteach.selection import Segment, normalise_segments
+
+        filas = _en_centesimas([Segment(1.0, 2.0005), Segment(2.0, 3.0)])
+        assert len(filas) == 2
+        assert filas[1].start_s > filas[0].end_s
+        assert len(normalise_segments(filas, 10.0)) == 2
+
+    def test_the_editor_shows_as_many_rows_as_the_analysis_gets(self, qapp) -> None:
+        dlg = _dialogo()
+        assert len(dlg._row_widgets) == len(dlg.selected_segments())
+        dlg.deleteLater()
+
+
+class TestKinematicsCountsTheLifts:
+    """En cinemática lo esperado es un levantamiento por marca de carga del
+    asistente: es el registro de lo que se pidió."""
+
+    def test_one_contraction_expected_per_marked_lift(
+        self, main_window, tmp_path
+    ) -> None:
+        from emgteach.fv_rehearsal import synthetic_trial, write_rehearsal_edf
+        from emgteach.modes import MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE
+
+        ruta = tmp_path / "fv.edf"
+        write_rehearsal_edf(synthetic_trial([2.0, 4.0], reps=2), ruta)
+        ana = main_window._tab_ana
+        anterior = ana._mode
+        try:
+            ana._mode = MODE_KINEMATICS
+            assert ana._esperadas_de_la_sesion(str(ruta)) == (4,)
+            ana._mode = MODE_PAIR
+            assert ana._esperadas_de_la_sesion(str(ruta)) == (6, 6, 1)
+            ana._mode = MODE_SINGLE
+            assert ana._esperadas_de_la_sesion(str(ruta)) == ()
+        finally:
+            ana._mode = anterior
+
+    def test_a_new_recording_forgets_the_previous_targets(self, main_window) -> None:
+        ana = main_window._tab_ana
+        ana._esperadas = (9,)
+        ana._olvidar_lo_elegido()
+        assert ana._esperadas is None

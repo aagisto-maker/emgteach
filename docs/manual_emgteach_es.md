@@ -420,6 +420,30 @@ Analiza en profundidad un registro EDF ya guardado.
   donde lo escribió la pestaña de Adquisición, y va al informe. Debajo de la
   caja, una línea dice cuál es el siguiente paso.
 
+**El editor de fragmentos («Seleccionar fragmentos…»).** Propone una fila por
+contracción dentro de la fase de registro —la calibración queda fuera sola— y
+lleva por tres pasos. Una línea amarilla sobre el gráfico dice en cuál se está y
+qué pide, y el «?» del cuadro los repite.
+1. **Sensibilidad** (k), encima del gráfico, con un **contador** al lado:
+   marcadas / esperadas de cada tipo. Lo esperado sale de la práctica —6
+   flexiones, 6 extensiones y 1 presa en el par; en cinemática, una por
+   levantamiento marcado por el asistente; en la de un músculo, ninguno— y se
+   puede editar. El par abre en k = 4,4 y las demás en 3,0; la k usada queda en
+   el informe y en el CSV.
+2. **Cada contracción por turno**, con ◀ ▶ o pulsándola en el gráfico; se
+   resalta sin que los ejes se muevan. **Mantener**, **Eliminar** (queda rayada
+   y se recupera con Mantener) y **Dividir**, que solo se ofrece cuando la fila
+   guarda dos picos —el menor, al menos la mitad de la altura; el valle, por
+   debajo de la mitad del menor— y corta por el valle, marcado antes con una
+   línea de trazo y punto. Una marca se puede **arrastrar**: al soltarla toma
+   los límites de la actividad sobre la que cae, y si cae sobre reposo vuelve a
+   su sitio. Los tramos **punteados** son actividad que el umbral dejó fuera y
+   que ninguna fila cubre: un clic los añade. En el par, un botón por músculo
+   confirma quién llevó cada una.
+3. **«Usar estos fragmentos»** aplica la selección; hasta entonces no cambia
+   nada. Cuando todo está revisado y el recuento coincide, el botón se pone en
+   negrita.
+
 **Los trece paneles de análisis** y su significado. Cada práctica abre con los
 suyos y **«Más paneles…»** revela el resto, salvo los que el registro no puede
 alimentar. Los paneles se apilan en una página que se desplaza con la rueda del
@@ -886,7 +910,7 @@ el acelerómetro y las medidas que se ofrecen después.
    Después, la tarea; los inicios se marcan solos. *Detener grabación*.
 3. **Análisis.** Se analiza solo. Seguir los dos cuadros guiados: revisar las
    **repeticiones de la calibración** y, en los **fragmentos**, dejar solo la tarea
-   (desmarcando los tres esfuerzos de calibración si los hubo). Leer la tabla de
+   (la calibración ya queda fuera sola). Leer la tabla de
    contracciones (una fila por esfuerzo, con RMS, pico en % CVM y MDF), las fichas
    del resumen contra sus rangos, y los paneles 1A, 2 y 3; para la fatiga, el
    panel 7 desde «Más paneles…». Comprobar la ficha «Máximo de la tarea». Generar

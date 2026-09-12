@@ -1180,6 +1180,9 @@ class AnalysisTab(QWidget):
         another.
         """
         self._cal_keep = {}
+        # The counter's targets too: another recording can ask for another
+        # number of lifts.
+        self._esperadas = None
         self._actualizar_ayuda_reps()
         self._selected_segments = []
         self._segment_labels = []
@@ -1365,10 +1368,11 @@ class AnalysisTab(QWidget):
                 # starts from the first one's result.
                 detection=self._detection_kwargs,
                 # The practical's own sensitivity and series: the pair opens
-                # on k = 4.4 and counts against six, six and one.
+                # on k = 4.4 and counts against six, six and one; kinematics
+                # against the lifts its guided wizard marked in the file.
                 default_k=mode_detection_k(self._mode),
                 expected=(self._esperadas
-                          or mode_expected_contractions(self._mode)),
+                          or self._esperadas_de_la_sesion(path)),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -1452,9 +1456,11 @@ class AnalysisTab(QWidget):
         elif not frags_hechos:
             paso, boton = "frags", self._btn_fragmentos
             texto = tr(
-                "Next: «{button}», to drop any contraction that did not come "
-                "out well. Press «Use these fragments» even if you change "
-                "nothing: that is what applies them."
+                "Next: «{button}». It proposes one row per contraction, and the "
+                "yellow line over its plot takes you through three steps: the "
+                "sensitivity, each contraction in turn, and «Use these "
+                "fragments», which is what applies them even if you change "
+                "nothing."
             ).format(button=tr("Select fragments…"))
         else:
             paso, boton, texto = "", None, ""
@@ -1487,6 +1493,23 @@ class AnalysisTab(QWidget):
             and self._pendiente
             and not corriendo
         )
+
+    def _esperadas_de_la_sesion(self, path: str) -> tuple[int, ...]:
+        """How many contractions the session asked for: the pair's protocol,
+        or in kinematics one per lift the guided wizard marked.
+
+        The wizard's load markers are the record of what was asked, so the
+        count comes from the recording, not from a setting that may have
+        changed since it was made.
+        """
+        if self._mode == MODE_KINEMATICS:
+            try:
+                cargas = parse_fv_load_markers(read_edf_markers(path))
+            except Exception:
+                cargas = []
+            if cargas:
+                return (len(cargas),)
+        return mode_expected_contractions(self._mode)
 
     def _deteccion_por_defecto(self) -> dict[str, float]:
         """The detection settings when the fragment editor was never opened:
