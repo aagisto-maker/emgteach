@@ -41,6 +41,8 @@ __all__ = [
     "mode_complexity",
     "mode_complexity_colour",
     "mode_complexity_label",
+    "mode_detection_k",
+    "mode_expected_contractions",
     "mode_fixed_labels",
     "mode_label",
     "mode_protocol",
@@ -72,6 +74,20 @@ _CHANNELS = {MODE_SINGLE: 1, MODE_PAIR: 2, MODE_KINEMATICS: 1}
 # the muscle (MMG) or on the moving segment (tremor, force-velocity) stays a
 # choice inside the mode, since both are the same practical set-up.
 _USES_ACC = {MODE_SINGLE: False, MODE_PAIR: False, MODE_KINEMATICS: True}
+
+#: The detector's sensitivity each practical opens on (the k of
+#: :func:`emgteach.selection.activity_threshold`). One global value served the
+#: single-muscle practicals and not the pair: there 4.4 is the value that gives
+#: one row per manoeuvre of the protocol's series in the recordings it was
+#: tried on. It is where the editor starts, not a limit: the slider still
+#: moves, and whatever it is left on travels into the report and the CSV.
+_DETECTION_K = {MODE_SINGLE: 3.0, MODE_PAIR: 4.4, MODE_KINEMATICS: 3.0}
+
+#: How many contractions the practical's protocol asks for, in the order the
+#: fragment editor counts them — led by the first muscle, by the second, by
+#: both. The pair's series is six flexions, six extensions and one grip. Empty
+#: where the protocol sets no number; the editor then counts without a target.
+_EXPECTED = {MODE_PAIR: (6, 6, 1)}
 
 #: How much the practical asks of the reader, for the band across the top. The
 #: point is not to rank the practicals but to warn: the further down this list,
@@ -153,6 +169,16 @@ def mode_protocol(mode: str) -> str:
 
 def mode_uses_acc(mode: str) -> bool:
     return _USES_ACC.get(normalise_mode(mode), False)
+
+
+def mode_detection_k(mode: str) -> float:
+    """The detection sensitivity the fragment editor opens on in this practical."""
+    return _DETECTION_K.get(normalise_mode(mode), 3.0)
+
+
+def mode_expected_contractions(mode: str) -> tuple[int, ...]:
+    """Contractions the protocol asks for (first muscle, second, both), or ``()``."""
+    return _EXPECTED.get(normalise_mode(mode), ())
 
 
 def mode_requires_calibration(mode: str) -> bool:

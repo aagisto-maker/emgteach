@@ -79,6 +79,16 @@ def lan_ipv4() -> str:
     return best
 
 
+def hay_red_utilizable() -> bool:
+    """Whether the phones have any way at all to reach this computer.
+
+    :func:`lan_ipv4` falls back to ``127.0.0.1`` when no interface is up — an
+    address that, typed on a phone, means the phone itself. A follower link
+    built on it can never load.
+    """
+    return lan_ipv4() != "127.0.0.1"
+
+
 # Served (with 403) when a request carries a wrong/expired session code.
 _DENIED_HTML = (
     b"<!doctype html><meta charset=utf-8>"

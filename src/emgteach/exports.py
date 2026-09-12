@@ -86,6 +86,11 @@ def write_analysis_csv(
         (tr("MDF decline (%)"), f"{float(result.get('fat_pct_decline', 0.0)):.3f}"),
         (tr("Fatigue"), _fatigue_verdict(result)),
     ]
+    k = (result.get("detection") or {}).get("k")
+    if k is not None:
+        # Beside the window it helped decide: the contractions, and the
+        # co-activation windows read off them, move with it.
+        summary.insert(4, (tr("Detection sensitivity (k)"), f"{float(k):.1f}"))
 
     t_seg = result.get("t_seg", [])
     rms_seg = result.get("rms_seg", [])

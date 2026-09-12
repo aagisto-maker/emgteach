@@ -91,9 +91,25 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
+# Something on screen from the first second. A one-file build spends its first
+# seconds unpacking itself before Python even starts, and on a slow classroom
+# computer that silence is what made students click again and start a second
+# copy. The bootloader shows this image while it unpacks; the application
+# closes it once its own splash is up (emgteach.instancia).
+splash = Splash(  # noqa: F821  (injected by PyInstaller)
+    os.path.join(ROOT, "packaging", "splash.png"),
+    binaries=a.binaries,
+    datas=a.datas,
+    text_pos=None,
+    minify_script=True,
+    always_on_top=True,
+)
+
 exe = EXE(
     pyz,
     a.scripts,
+    splash,
+    splash.binaries,
     a.binaries,
     a.datas,
     [],

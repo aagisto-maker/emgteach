@@ -19,7 +19,23 @@ The fine level, folded away until asked for, adds the minimum duration, the
 gap that joins two pieces, and how readily a run is split into separate
 contractions. The threshold the sensitivity sets is drawn as a dashed line
 over the envelope, so it is set by eye, which is the only way a number of
-that kind ever gets set. A click on a shaded stretch keeps or drops it.
+that kind ever gets set.
+
+**Three steps, and the screen holds still.** The sensitivity comes first,
+above the plot, with a counter beside it: how many contractions of each kind
+are marked against how many the protocol asks for, so a missing flexion is
+seen without anyone having to look for it. Then the marks are corrected by
+clicking — a shaded stretch is dropped, or brought back. Then ◀ ▶ go through
+the rows one by one, and one button per muscle confirms or corrects who led
+each. Going through them moves a highlight; the axes do not move.
+
+**Correcting never places a mark by hand.** Dropping a wrong mark that sits
+beside a contraction the detector missed left that contraction unrepresented,
+and dragging the mark onto it measures whatever window the hand let go of.
+Instead, the stretches that clear the line half the sensitivity would draw,
+and that no row covers, are drawn dotted, and a click makes one a row. A mark
+therefore always sits on activity the threshold located — much what lowering
+k would do, applied to one contraction instead of the whole recording.
 
 The dialog is constructible directly from signal arrays (so it can be unit
 tested headless) or from an EDF file via :meth:`FragmentSelectionDialog.from_edf`.
@@ -27,6 +43,7 @@ tested headless) or from an EDF file via :meth:`FragmentSelectionDialog.from_edf
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
@@ -46,6 +63,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QSlider,
+    QSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QToolButton,
@@ -60,6 +78,7 @@ from emgteach.i18n import tr
 from emgteach.selection import (
     DEFAULT_DETECTION,
     Segment,
+    _find_runs,
     activity_threshold,
     normalise_segments,
     suggest_significant_segments,
@@ -73,16 +92,33 @@ _SHADE_2 = COLOUR_2
 _SHADE_BOTH = "#8E44AD"
 _SHADE_PLAIN = "#4CAF50"
 _SHADE_DROPPED = "#9E9E9E"
+#: The dotted outline of a candidate, and the outline of the row under review.
+_EDGE_CANDIDATE = "#6B7580"
+_EDGE_CURRENT = "#1A2A3A"
+#: The counter, when the count matches the protocol and when it does not.
+_COUNT_OK = "#2E7D32"
+_COUNT_OFF = "#B9770E"
+
+#: Candidates are looked for at this share of the sensitivity, and never
+#: below the floor, under which the resting noise itself clears the line.
+_K_CANDIDATE = 0.5
+_K_CANDIDATE_MIN = 1.0
 
 #: How long after the last slider move the proposal is rebuilt. Long enough
 #: that dragging does not rebuild at every pixel, short enough to feel live.
 _DEBOUNCE_MS = 150
 
 
-def default_detection() -> dict[str, float]:
-    """The detection settings the dialogue opens on, co-activation rule included."""
+def default_detection(k: float | None = None) -> dict[str, float]:
+    """The detection settings the dialogue opens on, co-activation rule included.
+
+    ``k`` is the practical's own sensitivity (see
+    :func:`emgteach.modes.mode_detection_k`); without it, the core default.
+    """
     d = dict(DEFAULT_DETECTION)
     d["both_ratio"] = float(_DOMINANCE)
+    if k is not None:
+        d["k"] = float(k)
     return d
 
 
@@ -104,6 +140,12 @@ class FragmentSelectionDialog(QDialog):
     detection : dict, optional
         The settings to open the sliders on — what the editor was left on
         last time — so a second visit starts where the first ended.
+    default_k : float, optional
+        The sensitivity this practical opens on, and the one «Reset» goes
+        back to. ``detection`` wins over it when both are given.
+    expected : sequence of int, optional
+        How many contractions the protocol asks for: led by the first
+        muscle, by the second and by both — or one total, with one muscle.
     parent : QWidget, optional
         Parent widget.
     """
@@ -123,6 +165,8 @@ class FragmentSelectionDialog(QDialog):
         mvc_ref: float | None = None,
         mvc_ref_2: float | None = None,
         detection: dict[str, float] | None = None,
+        default_k: float | None = None,
+        expected: Sequence[int] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -131,7 +175,7 @@ class FragmentSelectionDialog(QDialog):
         # which a twelve-second series occupies six hundred pixels is one in
         # which the stretches can be told apart and clicked.
         self.setMinimumSize(960, 640)
-        self.resize(1120, 740)
+        self.resize(1120, 780)
 
         self._raw = np.asarray(raw, dtype=np.float64).ravel()
         self._fs = float(fs)
@@ -170,17 +214,30 @@ class FragmentSelectionDialog(QDialog):
         self._mvc_ref = mvc_ref
         self._mvc_ref_2 = mvc_ref_2
         self._row_widgets: list[dict[str, Any]] = []
+        #: The practical's sensitivity: where the slider opens and where
+        #: «Reset» takes it back to.
+        self._k_defecto = (
+            float(default_k) if default_k is not None
+            else float(DEFAULT_DETECTION["k"])
+        )
         #: The detection settings, as the sliders have them.
-        self._det = default_detection()
+        self._det = default_detection(self._k_defecto)
         if detection:
             self._det.update({k: float(v) for k, v in detection.items()
                               if k in self._det})
         self._both_label = tr("Co-activation")
+        #: Each envelope over the span and where it clears the lower line
+        #: (see _buscar_candidatos), for the candidates a click can promote.
+        self._bajo: list[tuple[np.ndarray, np.ndarray]] = []
+        #: The row being gone through, or -1 when none is.
+        self._fila_actual = -1
+        self._esperadas_iniciales = tuple(int(n) for n in (expected or ()))
 
         # Envelope for the preview (downsampled when drawing).
         self._env = self._envolvente(self._raw)
         self._t = np.arange(len(self._env)) / self._fs
         self._env_2 = self._envolvente(self._raw_2)
+        self._techo = self._techo_de_la_senal()
 
         # Rebuilding the proposal is a filter pass over the whole span; a
         # slider being dragged asks for it at every pixel. One timer, armed
@@ -194,6 +251,7 @@ class FragmentSelectionDialog(QDialog):
 
         if segments:
             nombres = labels or []
+            self._buscar_candidatos()
             self._set_rows([
                 Segment(a, b, reason="manual",
                         label=nombres[i] if i < len(nombres) else "")
@@ -218,6 +276,23 @@ class FragmentSelectionDialog(QDialog):
         except Exception:  # pragma: no cover — very short/degenerate signal
             return np.abs(raw)
 
+    def _techo_de_la_senal(self) -> float:
+        """The top of the preview, fixed for the life of the dialogue.
+
+        Going through the rows must move the highlight and nothing else; an
+        axis that rescaled itself at every redraw shifted the whole trace
+        under the eye of whoever was reading it.
+        """
+        a, b = self._span
+        i0, i1 = round(a * self._fs), round(b * self._fs)
+        picos = [
+            float(np.nanmax(e[i0:i1]))
+            for e in (self._env, self._env_2)
+            if e is not None and e[i0:i1].size
+        ]
+        alto = max(picos) if picos else 0.0
+        return 1.08 * alto if np.isfinite(alto) and alto > 0 else 1.0
+
     def _nombres_propuestos(self, segs: list[Segment]) -> list[str]:
         """Which muscle led each proposal, where that can be measured.
 
@@ -240,6 +315,12 @@ class FragmentSelectionDialog(QDialog):
             both_ratio=self._det["both_ratio"],
         )
 
+    def _categorias(self) -> list[str | None]:
+        """What the counter counts: each name the app proposes, or every row."""
+        if self._naming and self._env_2 is not None:
+            return [self._name_1, self._name_2, self._both_label]
+        return [None]
+
     # -- construction --------------------------------------------------------
 
     @classmethod
@@ -256,6 +337,8 @@ class FragmentSelectionDialog(QDialog):
         mvc_ref: float | None = None,
         mvc_ref_2: float | None = None,
         detection: dict[str, float] | None = None,
+        default_k: float | None = None,
+        expected: Sequence[int] | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
@@ -282,20 +365,24 @@ class FragmentSelectionDialog(QDialog):
             mvc_ref=mvc_ref,
             mvc_ref_2=mvc_ref_2,
             detection=detection,
+            default_k=default_k,
+            expected=expected,
             parent=parent,
         )
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
 
-        # What it is for, in the words a student would use. Two sentences:
-        # this dialogue is used by students and most sessions never open it.
+        # What it is for, in the words a student would use, in the order the
+        # screen is used: the sensitivity, the clicks, the walk through.
         texto = tr(
-            "Each row is one contraction found in the recording. Uncheck the "
-            "ones not worth analysing — a movement done wrong, a tug on the "
-            "cable — and only the rest is analysed, joined up as if recorded "
-            "in one go. Press «Use these fragments» even if you change "
-            "nothing: that is what applies them."
+            "Each row is one contraction found in the recording. Set the "
+            "sensitivity until the count beside it matches what was done; "
+            "correct the marks by clicking the plot — a shaded stretch to "
+            "drop it, a dotted one to add it; then go through them with ◀ ▶. "
+            "Only the kept rows are analysed, joined up as if recorded in one "
+            "go. Press «Use these fragments» even if you change nothing: that "
+            "is what applies them."
         )
         if self._naming:
             texto += " " + tr(
@@ -309,9 +396,13 @@ class FragmentSelectionDialog(QDialog):
         info.setWordWrap(True)
         root.addWidget(info)
 
+        # The sensitivity before the plot: it decides what is marked, and it
+        # is set looking at the whole recording and at the count.
+        root.addWidget(self._build_adjustments())
+
         # Preview plot — the control, not a decoration: the shaded stretches
-        # are the rows, the dashed line is the sensitivity, and a click on a
-        # stretch keeps or drops it.
+        # are the rows, the dotted ones are what a click can add, the dashed
+        # line is the sensitivity.
         self._fig = Figure(figsize=(9.0, 3.0), constrained_layout=True)
         self._canvas = FigureCanvasQTAgg(self._fig)
         self._canvas.setMinimumHeight(220)
@@ -319,7 +410,7 @@ class FragmentSelectionDialog(QDialog):
         self._canvas.mpl_connect("button_press_event", self._on_click)
         root.addWidget(self._canvas, stretch=3)
 
-        root.addWidget(self._build_adjustments())
+        root.addLayout(self._build_navigation())
 
         # Fragment table.
         # No «Reason» column: it said «activity» / «manual» / «whole
@@ -334,6 +425,7 @@ class FragmentSelectionDialog(QDialog):
         ])
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self._table.currentCellChanged.connect(self._al_cambiar_fila)
         header = self._table.horizontalHeader()
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         if not self._naming:
@@ -405,6 +497,35 @@ class FragmentSelectionDialog(QDialog):
         pista_k.setStyleSheet("color:#6B7580; font-size:10px;")
         lay.addWidget(pista_k, 0, 3)
 
+        # The count, beside the setting that moves it: how many of each kind
+        # are marked, over how many the protocol asks for.
+        cabecera = QLabel(tr("Marked / expected"))
+        cabecera.setToolTip(tr(
+            "Kept rows of each kind, over how many the protocol asks for."
+        ))
+        lay.addWidget(cabecera, 1, 0)
+        cuenta = QHBoxLayout()
+        cuenta.setSpacing(6)
+        self._contadores: list[tuple[str | None, QLabel, QSpinBox]] = []
+        for i, categoria in enumerate(self._categorias()):
+            etiqueta = QLabel()
+            spin = QSpinBox()
+            spin.setRange(0, 99)
+            spin.setSpecialValueText("—")
+            if i < len(self._esperadas_iniciales):
+                spin.setValue(self._esperadas_iniciales[i])
+            spin.setToolTip(tr(
+                "How many the protocol asks for. Change it if a series was "
+                "repeated; «—» counts without a target."
+            ))
+            spin.valueChanged.connect(self._refrescar_contador)
+            cuenta.addWidget(etiqueta)
+            cuenta.addWidget(spin)
+            cuenta.addSpacing(12)
+            self._contadores.append((categoria, etiqueta, spin))
+        cuenta.addStretch()
+        lay.addLayout(cuenta, 1, 1, 1, 3)
+
         # Basic 2, only with two muscles: the co-activation rule. Holds the
         # ratio in percent.
         self._sld_ratio = QSlider(Qt.Orientation.Horizontal)
@@ -418,7 +539,7 @@ class FragmentSelectionDialog(QDialog):
             self._sld_ratio, self._lbl_ratio, QLabel(tr("% of the stronger")),
         ]
         for col, w in enumerate(self._fila_ratio):
-            lay.addWidget(w, 1, col)
+            lay.addWidget(w, 2, col)
             w.setVisible(self._naming and self._env_2 is not None)
 
         # The fine level, folded. A toggle button rather than a checkbox,
@@ -428,17 +549,20 @@ class FragmentSelectionDialog(QDialog):
         self._btn_fino.setAutoRaise(True)
         self._btn_fino.setText("▸ " + tr("Fine adjustment"))
         self._btn_fino.toggled.connect(self._toggle_fino)
-        lay.addWidget(self._btn_fino, 2, 0, 1, 2)
+        lay.addWidget(self._btn_fino, 3, 0, 1, 2)
         self._btn_reset = QPushButton(tr("Reset"))
         self._btn_reset.setToolTip(tr(
             "Moving a setting rebuilds the proposal; rows edited by hand are "
             "replaced."
         ))
         self._btn_reset.clicked.connect(self._reset_detection)
-        lay.addWidget(self._btn_reset, 2, 2)
-        pista = QLabel(tr("Click a shaded stretch to keep or drop it."))
+        lay.addWidget(self._btn_reset, 3, 2)
+        pista = QLabel(tr(
+            "Click a shaded stretch to drop it or bring it back; a dotted "
+            "one, to add it."
+        ))
         pista.setStyleSheet("color:#6B7580; font-size:10px;")
-        lay.addWidget(pista, 2, 3)
+        lay.addWidget(pista, 3, 3)
 
         self._box_fino = QWidget()
         fino = QGridLayout(self._box_fino)
@@ -477,12 +601,48 @@ class FragmentSelectionDialog(QDialog):
         pista_p.setStyleSheet("color:#6B7580; font-size:10px;")
         fino.addWidget(pista_p, 1, 3)
         self._box_fino.setVisible(False)
-        lay.addWidget(self._box_fino, 3, 0, 1, 4)
+        lay.addWidget(self._box_fino, 4, 0, 1, 4)
         lay.setColumnStretch(1, 1)
         lay.setColumnStretch(3, 1)
 
         self._refresh_setting_labels()
         return grp
+
+    def _build_navigation(self) -> QHBoxLayout:
+        """◀ ▶ through the rows, and one button per name to confirm who led."""
+        nav = QHBoxLayout()
+        self._btn_prev = QPushButton("◀")
+        self._btn_prev.setFixedWidth(40)
+        self._btn_prev.setToolTip(tr("Previous contraction"))
+        self._btn_prev.clicked.connect(self._anterior)
+        nav.addWidget(self._btn_prev)
+        self._lbl_nav = QLabel()
+        self._lbl_nav.setMinimumWidth(240)
+        self._lbl_nav.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        nav.addWidget(self._lbl_nav)
+        self._btn_next = QPushButton("▶")
+        self._btn_next.setFixedWidth(40)
+        self._btn_next.setToolTip(tr("Next contraction"))
+        self._btn_next.clicked.connect(self._siguiente)
+        nav.addWidget(self._btn_next)
+        # Confirming is choosing, not typing: the three things the column can
+        # say, one click each, and the click moves on to the next row.
+        self._btns_nombre: dict[str, QPushButton] = {}
+        if self._naming and self._env_2 is not None:
+            nav.addSpacing(16)
+            nav.addWidget(QLabel(tr("Led by:")))
+            for nombre, color in ((self._name_1, _SHADE_1),
+                                  (self._name_2, _SHADE_2),
+                                  (self._both_label, _SHADE_BOTH)):
+                b = QPushButton(nombre)
+                b.setCheckable(True)
+                b.setStyleSheet(f"QPushButton:checked {{ border: 2px solid {color}; }}")
+                b.setToolTip(tr("Name this contraction and go on to the next."))
+                b.clicked.connect(lambda _c=False, n=nombre: self._etiquetar(n))
+                nav.addWidget(b)
+                self._btns_nombre[nombre] = b
+        nav.addStretch()
+        return nav
 
     # -- the settings --------------------------------------------------------
 
@@ -517,7 +677,7 @@ class FragmentSelectionDialog(QDialog):
         self._btn_fino.setText(("▾ " if on else "▸ ") + tr("Fine adjustment"))
 
     def _reset_detection(self) -> None:
-        self._det = default_detection()
+        self._det = default_detection(self._k_defecto)
         for w in (self._sld_k, self._sld_ratio, self._sld_prom,
                   self._spin_min, self._spin_gap):
             w.blockSignals(True)
@@ -536,14 +696,25 @@ class FragmentSelectionDialog(QDialog):
         """The settings the editor was left on, for the analysis to reuse."""
         return dict(self._det)
 
+    def expected_counts(self) -> tuple[int, ...]:
+        """The targets the counter was left on, for the next visit."""
+        return tuple(spin.value() for _c, _l, spin in self._contadores)
+
     # -- row management ------------------------------------------------------
 
     def _set_rows(self, segments: list[Segment]) -> None:
         """Replace the table contents with ``segments``."""
+        self._reconstruir([(seg, True) for seg in segments])
+
+    def _reconstruir(self, filas: list[tuple[Segment, bool]]) -> None:
+        """Replace the table contents; no row is under review afterwards."""
+        self._table.blockSignals(True)
         self._table.setRowCount(0)
         self._row_widgets = []
-        for seg in segments:
-            self._append_row(seg, keep=True)
+        for seg, keep in filas:
+            self._append_row(seg, keep=keep)
+        self._table.blockSignals(False)
+        self._fila_actual = -1
         self._refresh_derived()
 
     def _append_row(self, seg: Segment, keep: bool) -> None:
@@ -568,7 +739,7 @@ class FragmentSelectionDialog(QDialog):
         self._table.setCellWidget(row, 2, spin_end)
 
         dur_item = QTableWidgetItem(f"{seg.duration_s:.2f}")
-        dur_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+        dur_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
         self._table.setItem(row, 3, dur_item)
 
         # The three things this column can say, which are the three the app
@@ -614,6 +785,15 @@ class FragmentSelectionDialog(QDialog):
                 segs.append(Segment(a, b, label=nombre))
         return segs
 
+    def _filas_con_estado(self) -> list[tuple[Segment, bool]]:
+        """Every row as it stands, kept or not, for a rebuild that keeps them."""
+        return [
+            (Segment(w["start"].value(), w["end"].value(), reason="manual",
+                     label=w["label"].currentText().strip()),
+             w["keep"].isChecked())
+            for w in self._row_widgets
+        ]
+
     def _relabel_rows(self) -> None:
         """Name every row again under the current co-activation rule."""
         if not self._naming or self._env_2 is None:
@@ -631,16 +811,8 @@ class FragmentSelectionDialog(QDialog):
 
     # -- actions -------------------------------------------------------------
 
-    def _auto_suggest(self) -> None:
-        """Propose the active stretches — inside the span, and only there.
-
-        Run over the whole file it proposed the calibration's maximal efforts
-        as fragments of the task: they are the most active signal in the
-        recording, so they win every activity test there is. Which is exactly
-        the decision this application takes out of the operator's hands, and
-        it was arriving back as a suggestion.
-        """
-        self._timer.stop()
+    def _detectar(self, k: float) -> list[Segment]:
+        """What the detector finds at sensitivity ``k``, in the file's clock."""
         a, b = self._span
         i0, i1 = round(a * self._fs), round(b * self._fs)
 
@@ -652,17 +824,16 @@ class FragmentSelectionDialog(QDialog):
                 f_high=self._f_high,
                 f_notch=self._f_notch,
                 f_env=self._f_env,
-                k=self._det["k"],
+                k=k,
                 min_duration_s=self._det["min_duration_s"],
                 merge_gap_s=self._det["merge_gap_s"],
                 prominence=self._det["prominence"],
             )
 
         # Back into the file's own clock: the worker crops by these numbers.
-        segs = detecta(self._raw)
         filas = [
             Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
-            for x in segs
+            for x in detecta(self._raw)
         ]
         if self._raw_2 is not None:
             # Both muscles, not just the one on display. The selection crops
@@ -674,6 +845,82 @@ class FragmentSelectionDialog(QDialog):
                 for x in detecta(self._raw_2)
             ]
             filas = normalise_segments(filas, self._full_duration)
+        return filas
+
+    def _buscar_candidatos(self) -> None:
+        """Where each envelope clears the line half the sensitivity draws.
+
+        Not the detector run again at a lower k: its splitting step weighs a
+        peak against the tallest one in the same run, so a weak contraction
+        between two strong ones, found at one k, was lost again at a lower
+        one once the three had merged into a single run. The line alone has
+        no such step. None when k is already at the floor.
+        """
+        self._bajo = []
+        k = max(_K_CANDIDATE_MIN, self._det["k"] * _K_CANDIDATE)
+        if k >= self._det["k"]:
+            return
+        a, b = self._span
+        i0, i1 = round(a * self._fs), round(b * self._fs)
+        for env in (self._env, self._env_2):
+            if env is None:
+                continue
+            tramo = np.asarray(env[i0:i1], dtype=np.float64)
+            _base, umbral = activity_threshold(tramo, k)
+            self._bajo.append((tramo, tramo > umbral))
+
+    def _candidatos_libres(self) -> list[Segment]:
+        """The stretches over the lower line that no row covers.
+
+        Worked out at every call because the rows move. What is left of a
+        row's own contraction once the row is taken out — the rise into it,
+        the fall out of it — is not a candidate: it peaks where it touches
+        the row. A stretch that rises again before falling is another
+        contraction, and stays even when it touches one.
+        """
+        if not self._bajo:
+            return []
+        a = self._span[0]
+        filas = [
+            (w["start"].value(), w["end"].value())  # type: ignore[attr-defined]
+            for w in self._row_widgets
+        ]
+        min_n = max(1, round(self._det["min_duration_s"] * self._fs))
+        hallados: list[Segment] = []
+        for tramo, activo in self._bajo:
+            libre = activo.copy()
+            for ini, fin in filas:
+                j0 = max(0, int(np.floor((ini - a) * self._fs)))
+                j1 = min(len(libre), int(np.ceil((fin - a) * self._fs)) + 1)
+                if j1 > j0:
+                    libre[j0:j1] = False
+            for s, e in _find_runs(libre):  # inclusive ends
+                if e - s + 1 < min_n:
+                    continue
+                pico = s + int(np.argmax(tramo[s:e + 1]))
+                margen = max(1, (e - s) // 20)
+                ladera = (
+                    (s > 0 and activo[s - 1] and pico - s <= margen)
+                    or (e + 1 < len(activo) and activo[e + 1] and e - pico <= margen)
+                )
+                if not ladera:
+                    hallados.append(Segment(a + s / self._fs,
+                                            a + (e + 1) / self._fs,
+                                            reason="candidate"))
+        return normalise_segments(hallados, self._full_duration)
+
+    def _auto_suggest(self) -> None:
+        """Propose the active stretches — inside the span, and only there.
+
+        Run over the whole file it proposed the calibration's maximal efforts
+        as fragments of the task: they are the most active signal in the
+        recording, so they win every activity test there is. Which is exactly
+        the decision this application takes out of the operator's hands, and
+        it was arriving back as a suggestion.
+        """
+        self._timer.stop()
+        self._buscar_candidatos()
+        filas = self._detectar(self._det["k"])
         if self._naming:
             filas = [
                 Segment(f.start_s, f.end_s, f.score, f.reason, nombre)
@@ -682,6 +929,17 @@ class FragmentSelectionDialog(QDialog):
                 )
             ]
         self._set_rows(filas)
+
+    def _promover(self, candidato: Segment) -> None:
+        """Make a candidate a row, named like the rest, in its place in time."""
+        nombre = (self._nombres_propuestos([candidato])[0]
+                  if self._naming else "")
+        nueva = Segment(candidato.start_s, candidato.end_s, candidato.score,
+                        "candidate", nombre)
+        filas = sorted([*self._filas_con_estado(), (nueva, True)],
+                       key=lambda f: f[0].start_s)
+        self._reconstruir(filas)
+        self._ir_a(next(i for i, (s, _k) in enumerate(filas) if s is nueva))
 
     def _add_fragment(self) -> None:
         # A 1 s fragment centred on the span, ready to be dragged. Centred on
@@ -696,8 +954,13 @@ class FragmentSelectionDialog(QDialog):
     def _remove_selected(self) -> None:
         row = self._table.currentRow()
         if 0 <= row < len(self._row_widgets):
+            # Quiet while the row goes: the table announces its new current
+            # row before the row's widgets have left the list.
+            self._table.blockSignals(True)
             self._table.removeRow(row)
+            self._table.blockSignals(False)
             del self._row_widgets[row]
+            self._fila_actual = -1
             self._refresh_derived()
 
     def _use_whole(self) -> None:
@@ -709,14 +972,59 @@ class FragmentSelectionDialog(QDialog):
         self._toggle_at(float(event.xdata))
 
     def _toggle_at(self, x: float) -> None:
-        """Keep or drop the row whose stretch contains ``x`` seconds."""
-        for w in self._row_widgets:
+        """A click at ``x`` seconds: a row's stretch is dropped or brought
+        back, a dotted candidate becomes a row, anywhere else does nothing.
+        A mark never lands where the detector found nothing."""
+        for i, w in enumerate(self._row_widgets):
             a = w["start"].value()  # type: ignore[attr-defined]
             b = w["end"].value()  # type: ignore[attr-defined]
             if a <= x <= b:
                 chk = w["keep"]
                 chk.setChecked(not chk.isChecked())  # type: ignore[attr-defined]
+                self._ir_a(i)
                 return
+        for c in self._candidatos_libres():
+            if c.start_s <= x <= c.end_s:
+                self._promover(c)
+                return
+
+    # -- going through the rows ----------------------------------------------
+
+    def _ir_a(self, fila: int) -> None:
+        """Put row ``fila`` under review: highlighted, selected, in view."""
+        n = len(self._row_widgets)
+        self._fila_actual = max(0, min(n - 1, fila)) if n else -1
+        if self._fila_actual >= 0:
+            self._table.blockSignals(True)
+            self._table.setCurrentCell(self._fila_actual, 3)
+            self._table.blockSignals(False)
+            item = self._table.item(self._fila_actual, 3)
+            if item is not None:
+                self._table.scrollToItem(item)
+        self._refrescar_navegacion()
+        self._redraw_preview()
+
+    def _siguiente(self) -> None:
+        self._ir_a(self._fila_actual + 1 if self._fila_actual >= 0 else 0)
+
+    def _anterior(self) -> None:
+        self._ir_a(max(0, self._fila_actual - 1))
+
+    def _al_cambiar_fila(self, fila: int, _col: int, _fila_ant: int,
+                         _col_ant: int) -> None:
+        """A row picked in the table is the one under review too."""
+        if fila != self._fila_actual and 0 <= fila < len(self._row_widgets):
+            self._fila_actual = fila
+            self._refrescar_navegacion()
+            self._redraw_preview()
+
+    def _etiquetar(self, nombre: str) -> None:
+        """Name the row under review and go on: confirming is one click."""
+        i = self._fila_actual
+        if not 0 <= i < len(self._row_widgets):
+            return
+        self._row_widgets[i]["label"].setCurrentText(nombre)  # type: ignore[attr-defined]
+        self._siguiente()
 
     # -- derived state (duration cells, total label, preview) ----------------
 
@@ -737,7 +1045,61 @@ class FragmentSelectionDialog(QDialog):
                     n=len(kept), d=total, full=self._full_duration
                 )
             )
+        self._refrescar_contador()
+        self._refrescar_navegacion()
         self._redraw_preview()
+
+    def _cuenta(self) -> list[int]:
+        """Kept rows of each kind, in the counter's order."""
+        filas = self._current_segments(only_kept=True)
+        categorias = self._categorias()
+        if categorias == [None]:
+            return [len(filas)]
+        return [sum(1 for s in filas if s.label == c) for c in categorias]
+
+    def _refrescar_contador(self) -> None:
+        for (categoria, etiqueta, spin), n in zip(
+            self._contadores, self._cuenta(), strict=True
+        ):
+            nombre = categoria if categoria is not None else tr("Contractions")
+            etiqueta.setText(f"{nombre}: {n} /")
+            esperadas = spin.value()
+            if esperadas == 0:
+                color, aviso = "", ""
+            elif n == esperadas:
+                color, aviso = _COUNT_OK, ""
+            else:
+                color = _COUNT_OFF
+                aviso = tr(
+                    "{n} marked and {m} expected: look for the missing one "
+                    "among the dotted stretches, or drop the extra one."
+                ).format(n=n, m=esperadas)
+            etiqueta.setStyleSheet(
+                f"color:{color}; font-weight:600;" if color else ""
+            )
+            etiqueta.setToolTip(aviso)
+
+    def _refrescar_navegacion(self) -> None:
+        n = len(self._row_widgets)
+        i = self._fila_actual
+        if n == 0:
+            texto = tr("No contraction marked.")
+        elif i < 0:
+            texto = tr("▶ goes through the contractions one by one.")
+        else:
+            texto = tr("Contraction {i} of {n}").format(i=i + 1, n=n)
+            if not self._row_widgets[i]["keep"].isChecked():  # type: ignore[attr-defined]
+                texto += " · " + tr("dropped")
+        self._lbl_nav.setText(texto)
+        self._btn_prev.setEnabled(n > 0 and i > 0)
+        self._btn_next.setEnabled(n > 0 and i < n - 1)
+        actual = (
+            self._row_widgets[i]["label"].currentText().strip()  # type: ignore[attr-defined]
+            if 0 <= i < n else None
+        )
+        for nombre, b in self._btns_nombre.items():
+            b.setEnabled(0 <= i < n)
+            b.setChecked(nombre == actual)
 
     def _shade_colour(self, label: str) -> str:
         if not self._naming or self._env_2 is None:
@@ -763,6 +1125,7 @@ class FragmentSelectionDialog(QDialog):
         # The threshold the sensitivity sets, over the span the detector
         # sees, so a slider move is a line move before it is a row change.
         _base, umbral = activity_threshold(self._env[i0:i1], self._det["k"])
+        umbrales = [umbral]
         self._ax.axhline(umbral, color=COLOUR_1, lw=0.8, ls="--", alpha=0.7,
                          label=tr("activity threshold"))
         if self._env_2 is not None:
@@ -772,6 +1135,7 @@ class FragmentSelectionDialog(QDialog):
                 linewidth=0.8, label=self._name_2,
             )
             _b2, umbral2 = activity_threshold(self._env_2[i0:i1], self._det["k"])
+            umbrales.append(umbral2)
             self._ax.axhline(umbral2, color=COLOUR_2, lw=0.8, ls="--", alpha=0.7)
         # Every row, kept or not: the dropped ones in grey, so the click
         # that dropped one can bring it back.
@@ -787,9 +1151,27 @@ class FragmentSelectionDialog(QDialog):
             else:
                 self._ax.axvspan(ini, fin, color=_SHADE_DROPPED, alpha=0.15,
                                  hatch="//", lw=0)
-        if self._env_2 is not None or True:
-            self._ax.legend(loc="upper right", fontsize=8, frameon=False)
+        # What a click can add: outlined, not filled, so they never read as
+        # marks.
+        for j, c in enumerate(self._candidatos_libres()):
+            self._ax.axvspan(
+                c.start_s, c.end_s, fill=False, edgecolor=_EDGE_CANDIDATE,
+                lw=1.0, ls=":",
+                label=tr("below the threshold: click to add") if j == 0 else None,
+            )
+        i = self._fila_actual
+        if 0 <= i < len(self._row_widgets):
+            ini = self._row_widgets[i]["start"].value()  # type: ignore[attr-defined]
+            fin = self._row_widgets[i]["end"].value()  # type: ignore[attr-defined]
+            if fin > ini:
+                self._ax.axvspan(ini, fin, fill=False, edgecolor=_EDGE_CURRENT,
+                                 lw=2.0)
+        self._ax.legend(loc="upper right", fontsize=8, frameon=False)
+        # Fixed axes: the span across, the signal's own top upwards — raised
+        # only when the threshold line would otherwise leave the plot.
+        techo = max([self._techo] + [1.05 * u for u in umbrales])
         self._ax.set_xlim(a, max(b, a + 1e-6))
+        self._ax.set_ylim(-0.02 * techo, techo)
         self._ax.set_xlabel(tr("Time (s)"))
         self._ax.set_ylabel(tr("Envelope (mV)"))
         self._canvas.draw_idle()

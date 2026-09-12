@@ -795,14 +795,33 @@ def install_qt_translations(app: QApplication, language: str) -> QTranslator | N
     return translator
 
 
-def main() -> None:
+def _al_frente(window: QMainWindow) -> None:
+    """Bring the window forward: another copy was started and has left."""
+    if window.isMinimized():
+        window.showMaximized()
+    window.show()
+    window.raise_()
+    window.activateWindow()
+    # Windows refuses to hand the foreground to a background process; the
+    # taskbar button flashing is then what tells the student it worked.
+    QApplication.alert(window)
+
+
+def main(app: QApplication | None = None, guardia=None) -> None:
+    """Run the application.
+
+    ``app`` and ``guardia`` come from :func:`emgteach.instancia.lanzar`,
+    which has already checked that no other copy is running; called on its
+    own, this starts the application without that check.
+    """
     # Before anything else: a crash from here on leaves a traceback on disk and
     # says so, instead of vanishing into a console the windowed build lacks.
     from emgteach.crash import install_crash_log
 
     install_crash_log()
     _install_qt_message_filter()
-    app = QApplication(sys.argv)
+    if app is None:
+        app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("EMG Bioinstrumentacion")
     app.setOrganizationName("Bioinstrumentacion")
 
@@ -816,8 +835,15 @@ def main() -> None:
     splash = _make_splash()
     splash.show()
     app.processEvents()
+    # The bootloader's splash covered the unpacking and the imports; ours is
+    # up now, so the hand-over leaves no gap with nothing on screen.
+    from emgteach.instancia import cerrar_splash_de_arranque
+
+    cerrar_splash_de_arranque()
 
     window = MainWindow(settings)
+    if guardia is not None:
+        guardia.activar.connect(lambda: _al_frente(window))
 
     # Close the splash and show the window after 1.5 s. Start maximised so the
     # whole interface fits the screen (and toggling the ACC plot redistributes

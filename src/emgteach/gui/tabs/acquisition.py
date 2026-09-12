@@ -37,7 +37,7 @@ from typing import ClassVar
 
 import numpy as np
 import pyqtgraph as pg
-from PySide6.QtCore import QSettings, Qt, QTimer, Signal, Slot
+from PySide6.QtCore import QSettings, QStandardPaths, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -52,6 +52,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSpinBox,
@@ -61,7 +62,7 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach.apda import OnlineLoad
-from emgteach.broadcast import BroadcastServer
+from emgteach.broadcast import BroadcastServer, hay_red_utilizable
 from emgteach.devices import (
     BACKEND_ARDUINO,
     BACKEND_BITALINO,
@@ -107,6 +108,7 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE
 from emgteach.workers import AcquisitionWorker
+from emgteach.workers.acquisition import mensaje_fallo_guardado
 
 # Number of samples in the ring buffer (= 30 s at 1000 Hz)
 # The visible window can be smaller thanks to the time-zoom control.
@@ -158,6 +160,18 @@ FV_LIFT_DEF_S = 1.0
 # bursts stay visible), the raw plot spans ±(peak × factor).
 AUTOSCALE_ENV_FACTOR = 1.5
 AUTOSCALE_RAW_FACTOR = 1.25
+
+#: How the live envelope's vertical scale follows the signal. The top rises at
+#: once to keep the highest point of the visible window in view with this
+#: margin above it, and once that peak has scrolled away falls back towards the
+#: base scale by this factor per redraw (about thirty a second).
+ENV_SIGUE_MARGEN = 1.15
+ENV_SIGUE_CAIDA = 0.97
+
+#: How long the classroom broadcast waits for its first follower before saying
+#: that the phones may not be reaching this computer. Long enough to scan a
+#: QR code and open a page; short enough to still be useful in the session.
+ESPERA_SEGUIDORES_MS = 90_000
 
 # Style per live signal-quality status code (green ok / red saturation /
 # amber flat-disconnected).
@@ -224,6 +238,65 @@ def nombre_por_defecto(codigo: str, sello: str) -> str:
     limpio = re.sub(r"[^0-9A-Za-z_.-]+", "-", str(codigo)).strip("-._")
     limpio = limpio[:MAX_ID_EN_NOMBRE].strip("-._")
     return f"{limpio}_{sello}.edf" if limpio else f"emg_{sello}.edf"
+
+
+def carpeta_por_defecto() -> str:
+    """Where recordings go until someone picks a folder: the user's Documents.
+
+    Not the working directory. An executable started from a shortcut can have
+    a system folder there, where a student cannot write, and the failure then
+    arrives at the first recording rather than at start-up.
+    """
+    docs = QStandardPaths.writableLocation(
+        QStandardPaths.StandardLocation.DocumentsLocation
+    )
+    return docs or "."
+
+
+def preparar_carpeta(ruta: str) -> str | None:
+    """Make sure the recording's folder exists; say why when it cannot.
+
+    The save dialogue opens on the folder the last recording went to, and on a
+    classroom computer that folder can be gone — a pen drive taken out, a
+    directory tidied away. The dialogue still hands the path back, and the
+    writer then failed on a folder that did not exist. It is created here when
+    it can be; when it cannot, the reason comes back in words the operator can
+    act on, before a single sample is lost. Returns ``None`` when ready.
+    """
+    carpeta = Path(ruta).parent
+    try:
+        carpeta.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return mensaje_fallo_guardado(ruta, exc)
+    return None
+
+
+def aviso_sin_red() -> str:
+    """Said when the broadcast starts on a computer with no network at all."""
+    return tr(
+        "This computer is not connected to any network, so the phones cannot "
+        "reach it. Connect it to the network the phones use, or share this "
+        "computer's own connection (Windows: Settings › Network & internet › "
+        "Mobile hotspot) and connect the phones to that."
+    )
+
+
+def aviso_sin_seguidores() -> str:
+    """Said once when nobody has joined a while after the broadcast started.
+
+    The two usual causes in a university cannot be seen or fixed from here:
+    the wired computers and the Wi-Fi on separate networks that do not route
+    to each other, or a Wi-Fi that keeps its clients from seeing one another.
+    What can be said is the one arrangement that always works.
+    """
+    return tr(
+        "Nobody has joined the broadcast yet. If the phones do not load the "
+        "page, this computer and the Wi-Fi may be on separate networks, or the "
+        "Wi-Fi may keep devices from seeing each other — both are common in "
+        "universities, and neither can be fixed from here. What always works: "
+        "share this computer's own connection (Windows: Settings › Network & "
+        "internet › Mobile hotspot) and connect the phones to that."
+    )
 
 # Interval (ms) after the last received data beyond which there is considered
 # to be no traffic (the LED goes from green to yellow).
@@ -442,6 +515,10 @@ class AcquisitionTab(QWidget):
         # plot: the ▲▼ zoom multiplies the signal while keeping the lanes fixed,
         # instead of scaling the ViewBox. Unused in 1-channel mode.
         self._y_gain: list[float] = [1.0, 1.0]
+        #: The live envelope's current top, while it follows the signal
+        #: (see _escala_envolvente_en_vivo); None until the first redraw.
+        self._env_techo: float | None = None
+        self._ultimo_pico_env = 0.0
 
         # ---- Time-scale state ----
         # Number of visible samples in each plot. Starts showing 5 s.
@@ -597,7 +674,9 @@ class AcquisitionTab(QWidget):
         cfg_row2.addWidget(QLabel(tr("Output path and file:")))
         self._edit_dir = QLineEdit()
         self._edit_dir.setPlaceholderText(tr("EDF destination folder"))
-        self._edit_dir.setText(self._settings.value("adquisicion/save_dir", "."))
+        self._edit_dir.setText(
+            self._settings.value("adquisicion/save_dir", carpeta_por_defecto())
+        )
         cfg_row2.addWidget(self._edit_dir, stretch=1)
         btn_dir = QPushButton(tr("Browse…"))
         btn_dir.setFixedWidth(84)
@@ -1746,6 +1825,14 @@ class AcquisitionTab(QWidget):
             return
         if not ruta.lower().endswith(".edf"):
             ruta += ".edf"
+        motivo = preparar_carpeta(ruta)
+        if motivo:
+            # Said before anything starts, in a box as well as in the log: at
+            # this moment the student is looking at the subject, not the log.
+            self._err(motivo)
+            QMessageBox.warning(self, tr("The recording cannot be saved"), motivo)
+            self._btn_grabar.setChecked(False)
+            return
         save_path = ruta
         # Named now, before a single sample arrives: a screenshot taken during
         # the calibration has to carry the same base name as the recording.
@@ -2075,6 +2162,7 @@ class AcquisitionTab(QWidget):
         # lane and scaled by the gain: displayed = baseline + gain·signal.
         stacked_raw = self._is_stacked(0)
 
+        pico_env = 0.0
         for c in range(self._n_channels):
             arr_raw = np.array(list(self._buf_raw[c]))[-n:]
             arr_env = np.array(list(self._buf_env[c]))[-n:]
@@ -2082,6 +2170,10 @@ class AcquisitionTab(QWidget):
                 arr_raw = self._lane_baseline(0, c) + self._y_gain[0] * arr_raw
             self._curves_raw[c].setData(t, arr_raw)
             self._curves_env[c].setData(t, arr_env)
+            if arr_env.size:
+                pico_env = max(pico_env, float(np.nanmax(arr_env)))
+        self._ultimo_pico_env = pico_env
+        self._escala_envolvente_en_vivo(pico_env)
 
         if self._acc_enabled:
             arr_acc = np.array(list(self._buf_acc))[-n:]
@@ -2363,15 +2455,44 @@ class AcquisitionTab(QWidget):
                 )
                 self._btn_aula_qr.setEnabled(True)
                 self._bcast_config()
+                # A panel that stays empty on twenty phones with nothing to say
+                # why is the worst thing this can do in front of a class.
+                if not hay_red_utilizable():
+                    self._err(aviso_sin_red())
+                    self._lbl_aula.setText(
+                        tr("No network: the phones cannot reach this computer.")
+                    )
+                else:
+                    self._vigilar_seguidores(True)
             else:
                 self._chk_aula.setChecked(False)
                 self._err(tr("Could not start classroom mode (port busy?)."))
         else:
+            self._vigilar_seguidores(False)
             self._broadcast.stop()
             self._lbl_aula.setText("")
             self._btn_copy_url.setVisible(False)
             self._btn_aula_qr.setEnabled(False)
             self._log(tr("Classroom mode off — previous follower links are now invalid."))
+
+    def _vigilar_seguidores(self, activo: bool) -> None:
+        """Arm or disarm the «nobody has joined yet» warning."""
+        reloj = getattr(self, "_timer_sin_seguidores", None)
+        if reloj is None:
+            reloj = QTimer(self)
+            reloj.setSingleShot(True)
+            reloj.setInterval(ESPERA_SEGUIDORES_MS)
+            reloj.timeout.connect(self._avisar_sin_seguidores)
+            self._timer_sin_seguidores = reloj
+        if activo:
+            reloj.start()
+        else:
+            reloj.stop()
+
+    @Slot()
+    def _avisar_sin_seguidores(self) -> None:
+        if self._broadcast.is_running() and self._broadcast.client_count() == 0:
+            self._err(aviso_sin_seguidores())
 
     @Slot()
     def _copy_broadcast_url(self) -> None:
@@ -2429,6 +2550,8 @@ class AcquisitionTab(QWidget):
 
     @Slot(int)
     def _on_broadcast_clients(self, n: int) -> None:
+        if n > 0:
+            self._vigilar_seguidores(False)
         if self._broadcast.is_running():
             url = self._broadcast.follower_url()
             self._lbl_aula.setText(
@@ -3800,6 +3923,18 @@ class AcquisitionTab(QWidget):
             self._refresh_plots(force=True)
             return
 
+        if idx == 1 and not self._revisando:
+            # The live envelope follows its own peak; ▲▼ move the base scale
+            # that following starts from, so the signal stays in view either
+            # way. The finished recording under review keeps the plain zoom.
+            nuevo = self._y_accum[1] / factor if zoom_in else self._y_accum[1] * factor
+            if not 0.01 <= nuevo <= 100.0:
+                return
+            self._y_accum[1] = nuevo
+            self._env_techo = None
+            self._escala_envolvente_en_vivo(self._ultimo_pico_env)
+            return
+
         pw = self._plots_widgets[idx]
         accum = self._y_accum[idx]
 
@@ -3829,12 +3964,40 @@ class AcquisitionTab(QWidget):
         self._y_accum = [1.0, 1.0]
         self._y_gain = [1.0, 1.0]
         # Envelope: never stacked, direct initial range.
+        self._env_techo = None
         self._plot_env.setYRange(*self._y_ranges_init[1], padding=0)
         # Raw: the mode (stacked or overlaid) sets range and annotations.
         self._apply_stacking_mode()
         # ACC: drop the manual zoom back to the full ±1 g.
         self._acc_zoom = 1.0
         self._plot_acc.setYRange(-1.0, 1.0, padding=0)
+
+    def _escala_envolvente_en_vivo(self, pico: float) -> None:
+        """Keep the live envelope inside its axes, as the phones' view does.
+
+        The scale used to be fixed — from the profile, or from the calibration
+        — and a contraction above it was drawn off the top of the plot. That is
+        the plot the student watches to know whether the effort is right, and
+        the one the figures are taken from. The follower view on the phones
+        never had the problem because it follows the peak, and so does this
+        now: the top rises at once to keep the highest point of the visible
+        window in view, and falls back gradually once that peak has scrolled
+        away, never below the base scale (the calibrated one, times the ▲▼
+        zoom).
+        """
+        ini_bajo, ini_alto = self._y_ranges_init[1]
+        base = ini_alto * self._y_accum[1]
+        objetivo = max(base, float(pico) * ENV_SIGUE_MARGEN)
+        previo = self._env_techo
+        if previo is None or objetivo >= previo:
+            techo = objetivo
+        else:
+            techo = max(objetivo, previo * ENV_SIGUE_CAIDA)
+        if previo is not None and abs(techo - previo) <= 1e-9 * max(1.0, techo):
+            return
+        self._env_techo = techo
+        suelo = (ini_bajo / ini_alto) * techo if ini_alto > 0 else 0.0
+        self._plot_env.setYRange(suelo, techo, padding=0)
 
     def _autoscale_after_calibration(self, channels: list[int]) -> None:
         """Fit the live plots to this subject once the MVC is known.

@@ -69,8 +69,12 @@ def install_crash_log() -> None:
     """Route unhandled exceptions to the log and to a dialogue.
 
     Chains to the previous hook so nothing that was already being reported
-    stops being reported.
+    stops being reported. Installing it twice is a no-op: the launcher and
+    the application both call it, and a hook chained onto itself would write
+    every crash to the log twice.
     """
+    if getattr(sys.excepthook, "_emgteach_crash_log", False):
+        return
     anterior = sys.excepthook
 
     def gancho(exc_type, exc, tb) -> None:
@@ -81,6 +85,7 @@ def install_crash_log() -> None:
         _avisar(exc, destino)
         anterior(exc_type, exc, tb)
 
+    gancho._emgteach_crash_log = True  # type: ignore[attr-defined]
     sys.excepthook = gancho
 
 

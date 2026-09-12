@@ -37,6 +37,24 @@ if TYPE_CHECKING:
     from emgteach.devices import AcquisitionDevice
 
 
+def mensaje_fallo_guardado(ruta: str | Path, motivo: object) -> str:
+    """What the operator reads when a recording cannot be written.
+
+    The writer's own words — «can not open file, no such file or directory» —
+    used to reach the screen as the whole message: no file, no folder and
+    nothing to do next, so what got written down was «not found» and the fix
+    was found by trying another name. The message now names the file and the
+    folder, keeps the system's reason, and says what to do.
+    """
+    p = Path(str(ruta))
+    razon = getattr(motivo, "strerror", None) or str(motivo)
+    return tr(
+        "The recording «{name}» could not be saved in the folder {folder} "
+        "({reason}). Choose another folder — Documents, for example — or "
+        "another name, and press record again."
+    ).format(name=p.name, folder=str(p.parent), reason=razon)
+
+
 class AcquisitionWorker(QThread):
     """QThread that streams from an :class:`AcquisitionDevice` to an EDF+ file.
 
@@ -336,9 +354,12 @@ class AcquisitionWorker(QThread):
                     physical_min=device.physical_min,
                     physical_max=device.physical_max,
                 )
-            writer = BufferedEdfWriter(
-                edf_path, channels=channels, metadata=self._metadata
-            )
+            try:
+                writer = BufferedEdfWriter(
+                    edf_path, channels=channels, metadata=self._metadata
+                )
+            except OSError as exc:
+                raise OSError(mensaje_fallo_guardado(edf_path, exc)) from exc
             self.log.emit(tr("Recording to: {path}").format(path=edf_path))
             # What the EDF+ identification block could not hold. Said here,
             # while the bench can still act on it, rather than discovered at

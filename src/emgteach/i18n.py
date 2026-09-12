@@ -1156,6 +1156,41 @@ _ES = {
     "Automatic screenshots off.": "Capturas automáticas desactivadas.",
     "{n} automatic screenshots saved with the recording.":
         "{n} capturas automáticas guardadas con el registro.",
+    # --- guardar el registro: qué archivo, en qué carpeta y qué hacer ---
+    "The recording «{name}» could not be saved in the folder {folder} "
+    "({reason}). Choose another folder — Documents, for example — or "
+    "another name, and press record again.":
+        "El registro «{name}» no se ha podido guardar en la carpeta {folder} "
+        "({reason}). Elija otra carpeta —Documentos, por ejemplo— u otro "
+        "nombre, y vuelva a pulsar grabar.",
+    "The recording cannot be saved": "No se puede guardar el registro",
+    # --- difusión al aula: que el profesor no se quede a ciegas ---
+    "This computer is not connected to any network, so the phones cannot "
+    "reach it. Connect it to the network the phones use, or share this "
+    "computer's own connection (Windows: Settings › Network & internet › "
+    "Mobile hotspot) and connect the phones to that.":
+        "Este equipo no está conectado a ninguna red, así que los móviles no "
+        "pueden llegar a él. Conéctelo a la red que usan los móviles, o "
+        "comparta la conexión del propio equipo (Windows: Configuración › Red "
+        "e Internet › Zona con cobertura inalámbrica móvil) y conecte los "
+        "móviles a ella.",
+    "Nobody has joined the broadcast yet. If the phones do not load the "
+    "page, this computer and the Wi-Fi may be on separate networks, or the "
+    "Wi-Fi may keep devices from seeing each other — both are common in "
+    "universities, and neither can be fixed from here. What always works: "
+    "share this computer's own connection (Windows: Settings › Network & "
+    "internet › Mobile hotspot) and connect the phones to that.":
+        "Todavía no se ha conectado nadie. Si a los móviles no les carga la "
+        "página, puede que este equipo y la wifi estén en redes separadas, o "
+        "que la wifi no deje que los dispositivos se vean entre sí; las dos "
+        "cosas son habituales en una universidad y ninguna se arregla desde "
+        "aquí. Lo que siempre funciona: compartir la conexión del propio "
+        "equipo (Windows: Configuración › Red e Internet › Zona con cobertura "
+        "inalámbrica móvil) y conectar los móviles a ella.",
+    "No network: the phones cannot reach this computer.":
+        "Sin red: los móviles no pueden llegar a este equipo.",
+    "The report for the phones could not be made: {error}":
+        "No se ha podido preparar el informe para los móviles: {error}",
     "The screenshot could not be saved: {error}":
         "No se pudo guardar la captura: {error}",
     "The screenshot could not be saved to: {path}":
@@ -1770,7 +1805,7 @@ _ES = {
     'Which muscle led this contraction. The app works it out by comparing the two; change it if you disagree, or empty it to leave the contraction out of the co-activation table.': 'Qué músculo llevó esta contracción. La aplicación lo deduce comparándolos; cámbielo si no está de acuerdo, o déjelo vacío para que la contracción no entre en la tabla de coactivación.',
     'Re-run the analysis with the settings changed since the last one. It lights up only when there is something to redo: opening a file analyses it, and the two editors re-analyse when you accept them.': 'Vuelve a hacer el análisis con los ajustes que hayan cambiado desde el anterior. Solo se enciende cuando hay algo que rehacer: abrir un fichero lo analiza, y los dos editores reanalizan al aceptarlos.',
     # --- fragment editor with live adjustment, and the two summary charts ---
-    'Each row is one contraction found in the recording. Uncheck the ones not worth analysing — a movement done wrong, a tug on the cable — and only the rest is analysed, joined up as if recorded in one go. Press «Use these fragments» even if you change nothing: that is what applies them.': 'Cada fila es una contracción encontrada en el registro. Desmarque las que no merezca la pena analizar (un movimiento mal hecho, un tirón del cable) y se analiza solo el resto, unido como si se hubiera registrado de una vez. Pulse «Usar estos fragmentos» aunque no cambie nada: es lo que los aplica.',
+    'Each row is one contraction found in the recording. Set the sensitivity until the count beside it matches what was done; correct the marks by clicking the plot — a shaded stretch to drop it, a dotted one to add it; then go through them with ◀ ▶. Only the kept rows are analysed, joined up as if recorded in one go. Press «Use these fragments» even if you change nothing: that is what applies them.': 'Cada fila es una contracción encontrada en el registro. Ajuste la sensibilidad hasta que el recuento de al lado coincida con lo que se hizo; corrija las marcas pulsando sobre el gráfico —un tramo sombreado para descartarlo, uno punteado para añadirlo— y después recórralas con ◀ ▶. Solo se analizan las filas conservadas, unidas como si se hubieran registrado de una vez. Pulse «Usar estos fragmentos» aunque no cambie nada: es lo que los aplica.',
     'Adjust the proposal': 'Ajustar la propuesta',
     'Sensitivity': 'Sensibilidad',
     'lower finds more contractions; higher, fewer': 'más baja encuentra más contracciones; más alta, menos',
@@ -1783,7 +1818,22 @@ _ES = {
     'lower splits a series more readily; higher keeps it together': 'más baja separa una serie con más facilidad; más alta la mantiene unida',
     'Reset': 'Restablecer',
     'Moving a setting rebuilds the proposal; rows edited by hand are replaced.': 'Al mover un ajuste se rehace la propuesta; las filas editadas a mano se sustituyen.',
-    'Click a shaded stretch to keep or drop it.': 'Pulse sobre un tramo sombreado para conservarlo o descartarlo.',
+    'Click a shaded stretch to drop it or bring it back; a dotted one, to add it.': 'Pulse sobre un tramo sombreado para descartarlo o recuperarlo; sobre uno punteado, para añadirlo.',
+    # --- the fragment editor: the count, the candidates, the walk through ---
+    'Marked / expected': 'Marcadas / esperadas',
+    'Kept rows of each kind, over how many the protocol asks for.': 'Filas conservadas de cada tipo, sobre cuántas pide el protocolo.',
+    'How many the protocol asks for. Change it if a series was repeated; «—» counts without a target.': 'Cuántas pide el protocolo. Cámbielo si se repitió una serie; con «—» se cuenta sin objetivo.',
+    '{n} marked and {m} expected: look for the missing one among the dotted stretches, or drop the extra one.': '{n} marcadas y {m} esperadas: busque la que falta entre los tramos punteados, o descarte la que sobra.',
+    'below the threshold: click to add': 'bajo el umbral: pulse para añadir',
+    'Previous contraction': 'Contracción anterior',
+    'Next contraction': 'Contracción siguiente',
+    'Led by:': 'Quién la lleva:',
+    'Name this contraction and go on to the next.': 'Da este nombre a la contracción y pasa a la siguiente.',
+    'No contraction marked.': 'Ninguna contracción marcada.',
+    '▶ goes through the contractions one by one.': '▶ recorre las contracciones una a una.',
+    'Contraction {i} of {n}': 'Contracción {i} de {n}',
+    'dropped': 'descartada',
+    'Detection sensitivity (k)': 'Sensibilidad de detección (k)',
     'activity threshold': 'umbral de actividad',
     'Table': 'Tabla',
     'Chart': 'Gráfico',
