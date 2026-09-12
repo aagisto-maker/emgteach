@@ -272,7 +272,7 @@ signal.
 
 **Procedure.**
 1. **Start recording** and press **«Calibrate MVC»** at once: the wizard asks for
-   the warm-up and the six maximal efforts (section 4). Afterwards the **load
+   the warm-up and the three maximal efforts (section 4). Afterwards the **load
    bars** in the «Muscle load» box show % MVC live.
 2. Guided by the bar, make four 4 s isometric contractions against the table at
    **25, 50, 75 and 100 %** of the bar, with 5 s of rest between them.

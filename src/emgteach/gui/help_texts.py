@@ -10,7 +10,7 @@ entries that came from the tour carry it unchanged.
 
 from __future__ import annotations
 
-from emgteach.i18n import tr
+from emgteach.i18n import get_language, tr
 from emgteach.profiles import EMG_PROFILE
 
 
@@ -21,6 +21,38 @@ def text(key: str) -> tuple[str, str]:
 
 def keys() -> list[str]:
     return list(_TEXTS)
+
+
+def _cifra(x: float) -> str:
+    """A number as the interface writes it: 1.5 in English, 1,5 in Spanish."""
+    texto = f"{x:g}"
+    return texto.replace(".", ",") if get_language() == "es" else texto
+
+
+def _protocolo_de_calibracion() -> str:
+    """The calibration as the application runs it, written from the constants
+    the wizard itself uses.
+
+    The text was written once and the protocol changed under it: it went on
+    describing three held efforts and three brief ones, six in all, after the
+    wizard had come down to three brief efforts. Built from the numbers, it
+    cannot describe a protocol the application no longer follows.
+    """
+    from emgteach.gui.tabs.acquisition import MVC_READY_S, MVC_REST_S
+
+    p = EMG_PROFILE
+    return tr(
+        "After {warm} s of warm-up, {n} brief maximal efforts of {dur} s are "
+        "recorded for each muscle, each announced {cue} s ahead and followed "
+        "by {rest} s of rest. The reference is the strongest {win} s across "
+        "the repetitions kept, so it is a maximum the task cannot exceed; a "
+        "repetition that came out weak can be discarded afterwards in the "
+        "analysis."
+    ).format(
+        warm=_cifra(p.warmup_s), n=p.mvc_bursts, dur=_cifra(p.mvc_burst_s),
+        cue=_cifra(MVC_READY_S), rest=_cifra(MVC_REST_S),
+        win=_cifra(p.mvc_peak_window_s),
+    )
 
 
 # Functions rather than strings so tr() runs at the moment of showing, in
@@ -82,14 +114,7 @@ _TEXTS = {
             "A maximal voluntary contraction is asked for, and it becomes the "
             "reference against which the live load bars and the measurements "
             "are expressed, making contractions easier to compare."
-        ) + " " + tr(
-            "Three sustained maximal efforts are recorded, then three brief "
-            "maximal squeezes: a held contraction shows a peak at its start "
-            "and then a plateau, and a brief squeeze reaches that peak alone. "
-            "The reference is the strongest 0.2 s across all six, so it is a "
-            "maximum the task cannot exceed; a repetition that came out weak "
-            "can be discarded afterwards in the analysis."
-        ),
+        ) + " " + _protocolo_de_calibracion(),
     ),
     "acq.fv": lambda: (
         tr("The force-velocity study, step by step"),

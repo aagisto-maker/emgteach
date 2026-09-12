@@ -32,9 +32,11 @@ moves a highlight; the axes do not move.
 
 **Correcting never places a mark by hand.** Dropping a wrong mark that sits
 beside a contraction the detector missed left that contraction unrepresented,
-and dragging the mark onto it measures whatever window the hand let go of.
-Instead, the stretches that clear the line half the sensitivity would draw,
-and that no row covers, are drawn dotted, and a click makes one a row. A mark
+and a mark dragged freely onto it would measure whatever window the hand let
+go of. Instead, the stretches that clear the line half the sensitivity would
+draw, and that no row covers, are drawn dotted: a click makes one a row, and a
+mark dragged over one lands on it — on its bounds, not the hand's — or goes
+back where it was when there is none. A mark
 therefore always sits on activity the threshold located — much what lowering
 k would do, applied to one contraction instead of the whole recording. A
 split, likewise, goes to the valley the envelopes show between the two peaks
@@ -101,6 +103,9 @@ _SHADE_DROPPED = "#9E9E9E"
 #: The dotted outline of a candidate, and the outline of the row under review.
 _EDGE_CANDIDATE = "#6B7580"
 _EDGE_CURRENT = "#1A2A3A"
+#: While a mark is dragged: where it will land, or that it will land nowhere.
+_EDGE_LANDING = "#2E7D32"
+_EDGE_NOWHERE = "#C0392B"
 #: The counter, when the count matches the protocol and when it does not.
 _COUNT_OK = "#2E7D32"
 _COUNT_OFF = "#B9770E"
@@ -237,6 +242,9 @@ class FragmentSelectionDialog(QDialog):
         self._bajo: list[tuple[np.ndarray, np.ndarray]] = []
         #: The row being gone through, or -1 when none is.
         self._fila_actual = -1
+        #: A mark being dragged: its row, where the press was and how far the
+        #: pointer has gone since. None when nothing is.
+        self._arrastre: dict[str, Any] | None = None
         self._esperadas_iniciales = tuple(int(n) for n in (expected or ()))
 
         # Envelope for the preview (downsampled when drawing).
@@ -419,6 +427,8 @@ class FragmentSelectionDialog(QDialog):
         self._canvas.setMinimumHeight(220)
         self._ax = self._fig.add_subplot(111)
         self._canvas.mpl_connect("button_press_event", self._on_click)
+        self._canvas.mpl_connect("motion_notify_event", self._on_motion)
+        self._canvas.mpl_connect("button_release_event", self._on_release)
         root.addWidget(self._canvas, stretch=3)
 
         root.addLayout(self._build_navigation())
@@ -568,7 +578,10 @@ class FragmentSelectionDialog(QDialog):
         ))
         self._btn_reset.clicked.connect(self._reset_detection)
         lay.addWidget(self._btn_reset, 3, 2)
-        pista = QLabel(tr("Click a stretch to select it; a dotted one, to add it."))
+        pista = QLabel(tr(
+            "Click a stretch to select it, or drag it onto other activity; "
+            "click a dotted one to add it."
+        ))
         pista.setStyleSheet("color:#6B7580; font-size:10px;")
         lay.addWidget(pista, 3, 3)
 
@@ -903,7 +916,7 @@ class FragmentSelectionDialog(QDialog):
             _base, umbral = activity_threshold(tramo, k)
             self._bajo.append((tramo, tramo > umbral))
 
-    def _candidatos_libres(self) -> list[Segment]:
+    def _candidatos_libres(self, excluir: int | None = None) -> list[Segment]:
         """The stretches over the lower line that no row covers.
 
         Worked out at every call because the rows move. What is left of a
@@ -915,9 +928,11 @@ class FragmentSelectionDialog(QDialog):
         if not self._bajo:
             return []
         a = self._span[0]
+        # ``excluir``: the row being dragged, whose own place is then one of
+        # the places it can land.
         filas = [
             (w["start"].value(), w["end"].value())  # type: ignore[attr-defined]
-            for w in self._row_widgets
+            for i, w in enumerate(self._row_widgets) if i != excluir
         ]
         min_n = max(1, round(self._det["min_duration_s"] * self._fs))
         hallados: list[Segment] = []
@@ -1003,7 +1018,15 @@ class FragmentSelectionDialog(QDialog):
     def _on_click(self, event) -> None:
         if event.inaxes is not self._ax or event.xdata is None:
             return
-        self._clic_en(float(event.xdata))
+        if getattr(event, "button", 1) != 1:
+            return
+        x = float(event.xdata)
+        self._clic_en(x)
+        # The press that selects a mark is also the one that may drag it.
+        fila = self._fila_en(x)
+        self._arrastre = (
+            {"fila": fila, "x0": x, "dx": 0.0} if fila is not None else None
+        )
 
     def _clic_en(self, x: float) -> None:
         """A click at ``x`` seconds: a row's stretch is selected, for the
@@ -1013,16 +1036,96 @@ class FragmentSelectionDialog(QDialog):
         The click used to drop the row outright, which made the plot a switch
         rather than a way to pick a contraction and look at it. And a mark
         still never lands where the detector found nothing."""
-        for i, w in enumerate(self._row_widgets):
-            a = w["start"].value()  # type: ignore[attr-defined]
-            b = w["end"].value()  # type: ignore[attr-defined]
-            if a <= x <= b:
-                self._ir_a(i)
-                return
+        fila = self._fila_en(x)
+        if fila is not None:
+            self._ir_a(fila)
+            return
         for c in self._candidatos_libres():
             if c.start_s <= x <= c.end_s:
                 self._promover(c)
                 return
+
+    def _fila_en(self, x: float) -> int | None:
+        """The row whose stretch contains ``x`` seconds, or None."""
+        for i, w in enumerate(self._row_widgets):
+            if w["start"].value() <= x <= w["end"].value():  # type: ignore[attr-defined]
+                return i
+        return None
+
+    # -- dragging a mark -----------------------------------------------------
+
+    def _umbral_arrastre(self) -> float:
+        """How far the pointer must go before a press becomes a drag: a
+        hundredth of the span, so a click that trembles stays a click."""
+        return 0.01 * max(1e-6, self._span[1] - self._span[0])
+
+    def _on_motion(self, event) -> None:
+        arr = self._arrastre
+        if arr is None or event.inaxes is not self._ax or event.xdata is None:
+            return
+        dx = float(event.xdata) - arr["x0"]
+        if not arr["dx"] and abs(dx) < self._umbral_arrastre():
+            return
+        arr["dx"] = dx
+        self._redraw_preview()
+
+    def _on_release(self, _event) -> None:
+        arr, self._arrastre = self._arrastre, None
+        if arr is None or not arr["dx"]:
+            return
+        if abs(arr["dx"]) < self._umbral_arrastre():
+            self._redraw_preview()
+            return
+        self._soltar(arr["fila"], arr["dx"])
+
+    def _destino(self, fila: int, dx: float) -> Segment | None:
+        """Where row ``fila`` moved by ``dx`` seconds lands: the stretch of
+        activity it overlaps most, among those no other row covers — its own
+        place included, so a mark barely moved goes back to it. None over
+        rest."""
+        if not 0 <= fila < len(self._row_widgets):
+            return None
+        w = self._row_widgets[fila]
+        a = w["start"].value() + dx  # type: ignore[attr-defined]
+        b = w["end"].value() + dx  # type: ignore[attr-defined]
+        solapes = [
+            (min(b, c.end_s) - max(a, c.start_s), c)
+            for c in self._candidatos_libres(excluir=fila)
+        ]
+        solapes = [(s, c) for s, c in solapes if s > 0]
+        return max(solapes, key=lambda t: t[0])[1] if solapes else None
+
+    def _soltar(self, fila: int, dx: float) -> None:
+        """Let go of row ``fila`` moved by ``dx`` seconds: it takes the bounds
+        of the stretch of activity under it, or goes back where it was.
+
+        A mark let go at a free point would measure whatever window the hand
+        chose, and that does not show on the screen."""
+        w = self._row_widgets[fila]
+        ini, fin = w["start"].value(), w["end"].value()  # type: ignore[attr-defined]
+        destino = self._destino(fila, dx)
+        a = b = 0.0
+        if destino is not None and not (destino.start_s < fin and ini < destino.end_s):
+            # Hundredths inward, as the table holds them: bounds a sample off a
+            # neighbour would round onto it and be joined downstream.
+            a = float(np.ceil(destino.start_s * 100.0)) / 100.0
+            b = float(np.floor(destino.end_s * 100.0)) / 100.0
+        if b <= a:
+            self._redraw_preview()
+            if destino is None:
+                self._lbl_nav.setText(
+                    tr("There is no activity there: the mark stays where it was.")
+                )
+            return
+        filas = self._filas_con_estado()
+        vieja, conservar = filas[fila]
+        nueva = Segment(a, b, reason="moved", label=vieja.label)
+        if self._naming and self._env_2 is not None:
+            nueva = Segment(a, b, 0.0, "moved", self._nombres_propuestos([nueva])[0])
+        filas[fila] = (nueva, conservar)
+        filas.sort(key=lambda f: f[0].start_s)
+        self._reconstruir(filas)
+        self._ir_a(next(i for i, (s, _k) in enumerate(filas) if s is nueva))
 
     # -- going through the rows ----------------------------------------------
 
@@ -1282,6 +1385,21 @@ class FragmentSelectionDialog(QDialog):
                 # Where «Split it» would cut, before it does.
                 self._ax.axvline((corte[0][1] + corte[1][0]) / 2.0,
                                  color=_EDGE_CURRENT, lw=1.0, ls="-.")
+        arr = self._arrastre
+        if arr is not None and arr["dx"] and 0 <= arr["fila"] < len(self._row_widgets):
+            w = self._row_widgets[arr["fila"]]
+            ini = w["start"].value() + arr["dx"]  # type: ignore[attr-defined]
+            fin = w["end"].value() + arr["dx"]  # type: ignore[attr-defined]
+            destino = self._destino(arr["fila"], arr["dx"])
+            # Where the hand is, and where the mark will land: not the same
+            # thing, and the second is the one that counts.
+            self._ax.axvspan(
+                ini, fin, fill=False, lw=1.5, ls="--",
+                edgecolor=_EDGE_CURRENT if destino is not None else _EDGE_NOWHERE,
+            )
+            if destino is not None:
+                self._ax.axvspan(destino.start_s, destino.end_s, fill=False,
+                                 edgecolor=_EDGE_LANDING, lw=2.5)
         self._ax.legend(loc="upper right", fontsize=8, frameon=False)
         # Fixed axes: the span across, the signal's own top upwards — raised
         # only when the threshold line would otherwise leave the plot.

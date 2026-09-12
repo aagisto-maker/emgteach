@@ -798,3 +798,134 @@ class TestTheSplitSurvivesTheTable:
         assert len(filas) == 2
         assert filas[0][1] < filas[1][0]
         dlg.deleteLater()
+
+
+def _raton(dlg, x):
+    """Lo que matplotlib entrega en un evento de ratón sobre el gráfico."""
+    from types import SimpleNamespace
+
+    return SimpleNamespace(inaxes=dlg._ax, xdata=x, button=1)
+
+
+def _arrastrar(dlg, desde, hasta, pasos=5):
+    dlg._on_click(_raton(dlg, desde))
+    for j in range(1, pasos + 1):
+        dlg._on_motion(_raton(dlg, desde + (hasta - desde) * j / pasos))
+    dlg._on_release(_raton(dlg, hasta))
+
+
+class TestDraggingAMark:
+    """La marca se puede desplazar arrastrándola, y al soltarla encaja en la
+    actividad sobre la que cae: nunca en un punto libre."""
+
+    @staticmethod
+    def _con_marca_mal_puesta():
+        # Una marca sobre reposo (3,6 a 4,2 s), junto a una contracción débil
+        # (4,3 a 5,0 s) que el umbral dejó fuera.
+        return _dialogo(_serie(0.008), detection={"k": 4.4},
+                        segments=[(2.0, 3.5), (3.6, 4.2), (6.0, 7.5)])
+
+    def test_dropped_on_the_missed_contraction_it_takes_its_bounds(
+        self, qapp
+    ) -> None:
+        dlg = self._con_marca_mal_puesta()
+        (candidata,) = dlg._candidatos_libres()
+        _arrastrar(dlg, 3.9, 4.6)
+        filas = dlg.selected_segments()
+        assert len(filas) == 3
+        a, b = filas[1]
+        assert a == pytest.approx(candidata.start_s, abs=0.011)
+        assert b == pytest.approx(candidata.end_s, abs=0.011)
+        assert dlg._fila_actual == 1
+        assert dlg._candidatos_libres() == []
+        dlg.deleteLater()
+
+    def test_dropped_over_rest_it_goes_back(self, qapp) -> None:
+        from emgteach.i18n import tr
+
+        dlg = self._con_marca_mal_puesta()
+        antes = dlg.selected_segments()
+        _arrastrar(dlg, 6.5, 9.2)
+        assert dlg.selected_segments() == antes
+        assert dlg._lbl_nav.text() == tr(
+            "There is no activity there: the mark stays where it was."
+        )
+        dlg.deleteLater()
+
+    def test_barely_moved_it_stays_as_it_was(self, qapp) -> None:
+        dlg = self._con_marca_mal_puesta()
+        antes = dlg.selected_segments()
+        _arrastrar(dlg, 6.5, 6.9)
+        assert dlg.selected_segments() == antes
+        dlg.deleteLater()
+
+    def test_a_trembling_click_is_still_a_click(self, qapp) -> None:
+        dlg = self._con_marca_mal_puesta()
+        antes = dlg.selected_segments()
+        _arrastrar(dlg, 2.5, 2.52)
+        assert dlg.selected_segments() == antes
+        assert dlg._fila_actual == 0
+        dlg.deleteLater()
+
+    def test_while_dragging_the_landing_is_drawn(self, qapp) -> None:
+        dlg = self._con_marca_mal_puesta()
+        dlg._on_click(_raton(dlg, 3.9))
+        dlg._on_motion(_raton(dlg, 4.6))
+        destinos = [p for p in dlg._ax.patches
+                    if not p.get_fill() and p.get_linewidth() == pytest.approx(2.5)]
+        assert len(destinos) == 1
+        dlg._on_release(_raton(dlg, 4.6))
+        dlg.deleteLater()
+
+    def test_a_moved_mark_in_the_pair_is_named_again(self, qapp) -> None:
+        from emgteach.i18n import tr
+
+        dlg = _dialogo(_serie(0.008), raw_2=_serie(seed=1) * 0.3,
+                       name_1="FCR", name_2="ECR", detection={"k": 4.4},
+                       segments=[(2.0, 3.5), (3.6, 4.2), (6.0, 7.5)],
+                       labels=["FCR", "ECR", "FCR"])
+        _arrastrar(dlg, 3.9, 4.6)
+        assert len(dlg.selected_segments()) == 3
+        nombre = dlg._row_widgets[1]["label"].currentText()
+        assert nombre in {"FCR", "ECR", tr("Co-activation")}
+        dlg.deleteLater()
+
+
+class TestTheCalibrationHelpDescribesTheProtocolTheCodeRuns:
+    """El texto de ayuda de la calibración siguió contando tres esfuerzos
+    mantenidos y tres breves, seis en total, cuando el asistente ya pedía tres
+    breves. Se ha desfasado dos veces; esta prueba lo vigila."""
+
+    @pytest.mark.parametrize("idioma", ["en", "es"])
+    def test_it_gives_the_numbers_the_wizard_uses(self, idioma) -> None:
+        from emgteach.gui.help_texts import text
+        from emgteach.gui.tabs.acquisition import MVC_READY_S, MVC_REST_S
+        from emgteach.i18n import get_language, set_language
+        from emgteach.profiles import EMG_PROFILE
+
+        anterior = get_language()
+        try:
+            set_language(idioma)
+            _titulo, cuerpo = text("acq.load")
+        finally:
+            set_language(anterior)
+        p = EMG_PROFILE
+        for x in (p.warmup_s, p.mvc_burst_s, MVC_READY_S, MVC_REST_S,
+                  p.mvc_peak_window_s):
+            cifra = f"{x:g}"
+            if idioma == "es":
+                cifra = cifra.replace(".", ",")
+            assert f"{cifra} s" in cuerpo, cifra
+        assert f" {p.mvc_bursts} " in cuerpo
+        for viejo in ("six", "sustained", "squeez", "held",
+                      "seis", "mantenid", "sacudid"):
+            assert viejo not in cuerpo.lower(), viejo
+
+    def test_no_help_text_counts_six_maximal_efforts(self) -> None:
+        from emgteach.gui.help_texts import keys, text
+
+        for clave in keys():
+            _titulo, cuerpo = text(clave)
+            c = cuerpo.lower()
+            assert "six maximal" not in c, clave
+            assert "sustained maximal" not in c, clave

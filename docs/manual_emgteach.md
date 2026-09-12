@@ -282,10 +282,9 @@ channels the raw plot is **stacked**, one lane per muscle, and the envelopes
 
 **Muscle load (live MVC)**
 - **The calibration is a wizard**, always the same: 10 s of warm-up with two or
-  three easy contractions; per muscle, **three sustained maximal contractions** of
-  4 s («Contract FCR at maximum!») and **three brief maximal squeezes** of 1.5 s
-  («Make a single, brief muscle contraction (a twitch) with the greatest force
-  you can»), each with its countdown and 2 s of rest. In the pair practical the
+  three easy contractions; per muscle, **three brief maximal efforts** of 1.5 s
+  («Maximum, short and hard — FCR»), each announced by a 3 s countdown and
+  followed by 2 s of rest. In the pair practical the
   record button itself launches it before the task and then writes 5 s of
   preparation and the start of the recording; in the other two it is launched
   with **«Calibrate MVC»** while recording. Everything stays inside the same
@@ -651,7 +650,7 @@ Each begins by **choosing the practical** in the top-right selector.
 
 1. Connect, type the test identifier, *Start recording*. If the exercise needs %
    MVC (graded effort, fatigue, load), press **«Calibrate MVC»** at once: warm-up
-   and six maximal efforts against the table, fist closed. Then the task; onsets
+   and three maximal efforts against the table, fist closed. Then the task; onsets
    are marked by themselves. *Stop recording*.
 2. Analysis runs on its own. Follow the two guided boxes: review the
    **calibration repetitions** and, in the **fragments**, keep only the task
@@ -809,8 +808,8 @@ Python 3.10–3.12; 3.13 is not supported yet.
 - **MVC / % MVC**: maximum voluntary contraction and amplitude as its percentage.
 - **Task maximum**: the strongest 0.2 s of the task as a percentage of the
   reference; above 150 %, the calibration was not maximal.
-- **Calibration repetition**: each of the six maximal efforts per muscle (three
-  held, three brief) marked in the file.
+- **Calibration repetition**: each of the three brief maximal efforts per
+  muscle, marked in the file.
 - **Co-activation index (Falconer-Winter)**: fraction of the two muscles'
   activity that was shared, per window; «not reported» when one did not work.
 - **Channel separation**: what one channel reads of the other muscle during its

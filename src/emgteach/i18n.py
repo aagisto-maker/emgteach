@@ -280,19 +280,18 @@ _ES = {
         "es su envolvente, la señal rectificada y suavizada, que sigue cuánto "
         "trabaja el músculo y es sobre lo que se construyen las barras de "
         "carga y el análisis.",
-    "Three sustained maximal efforts are recorded, then three brief maximal "
-    "squeezes: a held contraction shows a peak at its start and then a "
-    "plateau, and a brief squeeze reaches that peak alone. The reference is "
-    "the strongest 0.2 s across all six, so it is a maximum the task cannot "
-    "exceed; a repetition that came out weak can be discarded afterwards in "
-    "the analysis.":
-        "Se graban tres esfuerzos máximos mantenidos y después tres "
-        "sacudidas máximas breves: una contracción mantenida muestra un pico "
-        "al inicio y luego una meseta, y una sacudida breve alcanza ese pico "
-        "sin más. La referencia es el tramo de 0,2 s más fuerte de las seis "
-        "repeticiones, de modo que es un máximo que la tarea no puede "
-        "superar; una repetición que salió floja puede descartarse después "
-        "en el análisis.",
+    "After {warm} s of warm-up, {n} brief maximal efforts of {dur} s are "
+    "recorded for each muscle, each announced {cue} s ahead and followed by "
+    "{rest} s of rest. The reference is the strongest {win} s across the "
+    "repetitions kept, so it is a maximum the task cannot exceed; a "
+    "repetition that came out weak can be discarded afterwards in the "
+    "analysis.":
+        "Tras {warm} s de calentamiento se graban {n} esfuerzos máximos "
+        "breves de {dur} s por músculo, cada uno anunciado con {cue} s de "
+        "antelación y seguido de {rest} s de descanso. La referencia es el "
+        "tramo de {win} s más fuerte de las repeticiones que se conservan, de "
+        "modo que es un máximo que la tarea no puede superar; una repetición "
+        "que salió floja puede descartarse después en el análisis.",
     "Opening a recording": "Abrir un registro",
     "Open a recording and it is analysed on its own; the channel to study is "
     "the muscle's name from the file. The two buttons underneath are for "
@@ -1818,7 +1817,8 @@ _ES = {
     'lower splits a series more readily; higher keeps it together': 'más baja separa una serie con más facilidad; más alta la mantiene unida',
     'Reset': 'Restablecer',
     'Moving a setting rebuilds the proposal; rows edited by hand are replaced.': 'Al mover un ajuste se rehace la propuesta; las filas editadas a mano se sustituyen.',
-    'Click a stretch to select it; a dotted one, to add it.': 'Pulse un tramo para seleccionarlo; uno punteado, para añadirlo.',
+    'Click a stretch to select it, or drag it onto other activity; click a dotted one to add it.': 'Pulse un tramo para seleccionarlo, o arrástrelo sobre otra actividad; pulse uno punteado para añadirlo.',
+    'There is no activity there: the mark stays where it was.': 'Ahí no hay actividad: la marca se queda donde estaba.',
     'Keep it': 'Mantener',
     'Drop it': 'Eliminar',
     'Split it': 'Dividir',

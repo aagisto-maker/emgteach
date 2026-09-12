@@ -185,18 +185,19 @@ El orden importa, porque la aplicación depende de él.
    > calibración salió diez veces menor que las contracciones posteriores del
    > mismo registro, y el análisis daba picos del 1509 % de CVM.
    >
-   > **Seis repeticiones por músculo, y se queda con la mejor.** Ya no hay
-   > casilla que marcar: el asistente pide siempre **tres contracciones máximas
-   > mantenidas** de 4 s y después **tres sacudidas máximas breves** de 1,5 s
-   > («Haga una contracción o sacudida muscular simple (breve) con la máxima
-   > fuerza posible»), y la referencia es el mejor 0,2 s de las seis. La primera
-   > contracción máxima de una sesión es genuinamente submáxima, y con un solo
-   > intento no hay nada a lo que recurrir cuando sale mal. Las sacudidas están
-   > porque una contracción mantenida hace un pico al empezar y luego una meseta,
-   > y los esfuerzos breves de la tarea alcanzan ese pico: medida sobre la
-   > meseta, la referencia se quedaba corta (135 % de tarea el 1 de septiembre).
-   > En un registro real una sacudida fijó la referencia del flexor
-   > un 22 % por encima de la mejor mantenida.
+   > **Tres esfuerzos breves por músculo, y se queda con el mejor.** Ya no hay
+   > casilla que marcar: el asistente pide siempre **tres esfuerzos máximos
+   > breves** de 1,5 s, cada uno con 3 s de aviso y 2 s de descanso, y la
+   > referencia es el mejor 0,2 s de las repeticiones que se conservan. La
+   > primera contracción máxima de una sesión es genuinamente submáxima, y con
+   > un solo intento no hay nada a lo que recurrir cuando sale mal. Son breves
+   > porque una contracción mantenida hace un pico al empezar y luego una
+   > meseta, y los esfuerzos breves de la tarea alcanzan ese pico: medida sobre
+   > la meseta, la referencia se quedaba corta (135 % de tarea el 1 de
+   > septiembre). En un registro real un esfuerzo breve fijó la referencia del
+   > flexor un 22 % por encima de la mejor contracción mantenida, y hasta la
+   > 3.0.0 se pedían también tres mantenidas de 4 s: medida sobre el pico de
+   > 0,2 s, la breve da la misma referencia en la cuarta parte del tiempo.
    >
    > **Y no se salte el calentamiento.** La calibración abre con 10 s pidiendo
    > dos o tres contracciones suaves de cada músculo; hágalas. Repetir no basta
