@@ -23,12 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The picture is named after the recording it belongs to.** `P01.edf` gets `P01_2026-09-08_10-31-05.png`, in the recording's own folder, from the moment the file is named — so a picture taken during the calibration already carries it. Before, every picture was called `emgteach_captura_…` and matching one to its session was a job for whoever kept the notebook. With no recording yet, that generic name is still what there is to go on.
 
 ### Changed
+- **The credits name the department and the faculty**: «Department of Physiology. Faculty of Pharmacy. UCM», and in Spanish «Departamento de Fisiología. Facultad de Farmacia. UCM».
 - **In kinematics the counter expects one contraction per lift** the guided wizard marked in the recording, and a newly opened recording starts from its own targets rather than the previous one's.
 - **The detection sensitivity is set per practical, and it is part of the result.** The agonist/antagonist practical opens the fragment editor on k = 4.4, the value that gives one row per manoeuvre of its series, and «Reset» returns there; the other practicals keep 3.0. The analysis uses the same value when the editor is never opened, and the k used is written into the report's «Configuration used» table and into the CSV header, since the rows — and the co-activation windows read off them — move with it.
 - **The sensitivity sits above the plot in the fragment editor**, where it is set first, with the count beside it.
 - **Recordings go to Documents until another folder is chosen** — or to the home folder where there is no Documents folder — rather than to the working directory, which for a shortcut can be a folder the user cannot write to.
 
 ### Fixed
+- **The fragment editor's pressed buttons can be read on Windows.** A checked button took the system's accent blue, and the muscle's colour was only the text laid over it — red on blue. The navigation bar is now drawn by the application: a muscle's button pressed takes the muscle's colour with white text, «Keep it» green and «Drop it» grey, each with a contrast of at least 4.5 to 1.
 - **The guides no longer say the calibration efforts are held for four seconds.** They are brief — 1.5 s, flat out until the count reaches 0 — in the practical guides, the manuals and the cheat sheets alike.
 - **Rows that touch are kept apart.** The detector's split pieces share their boundary sample, and fragments that touch are merged before the analysis, so the editor could show a contraction more than was analysed. Proposals are now held in hundredths of a second and at least a hundredth apart.
 - **The guides no longer ask to untick the calibration efforts** in the single-muscle practical: the analysed stretch already starts after the calibration.

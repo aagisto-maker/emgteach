@@ -542,7 +542,7 @@ class MainWindow(QMainWindow):
             f"<b>{tr('EMG Bioinstrumentation')}</b><br>"
             f"{tr('Version')} {__version__}<br><br>"
             "Dr. Agis-Torres et al. — UCM<br>"
-            f"{tr('Physiology Department, Complutense University of Madrid')}",
+            f"{tr('Department of Physiology. Faculty of Pharmacy. UCM')}",
         )
 
     def _carpeta_de_capturas(self) -> Path:

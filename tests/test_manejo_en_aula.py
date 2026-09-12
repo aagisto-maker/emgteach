@@ -1143,3 +1143,68 @@ class TestTheTourShowsWhatToDo:
         assert '"gui", "assets", "recorrido"' in spec
         prueba = (raiz / "packaging" / "run_emgteach.py").read_text(encoding="utf-8")
         assert "tour picture missing" in prueba
+
+
+def _luminancia(color: str) -> float:
+    canales = (int(color[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    r, g, b = (c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+               for c in canales)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _contraste(a: str, b: str) -> float:
+    claro, oscuro = sorted((_luminancia(a), _luminancia(b)), reverse=True)
+    return (claro + 0.05) / (oscuro + 0.05)
+
+
+class TestTheEditorButtonsReadInAnyStyle:
+    """En Windows un botón pulsado se pinta con el azul del sistema, y el
+    color del músculo encima como texto —rojo sobre azul— no se leía."""
+
+    def test_every_pressed_state_is_drawn_with_enough_contrast(self, qapp) -> None:
+        import re
+
+        dlg = _par()
+        for b in (dlg._btn_mantener, dlg._btn_eliminar, *dlg._btns_nombre.values()):
+            m = re.search(
+                r"QPushButton:checked \{ background: (#[0-9A-Fa-f]{6}); "
+                r"color: (#[0-9A-Fa-f]{6});",
+                b.styleSheet(),
+            )
+            assert m, b.text()
+            assert _contraste(m.group(1), m.group(2)) >= 4.5, b.text()
+        dlg.deleteLater()
+
+    def test_the_rest_of_the_bar_shares_the_look(self, qapp) -> None:
+        dlg = _par()
+        for b in (dlg._btn_prev, dlg._btn_next, dlg._btn_dividir):
+            assert "QPushButton {" in b.styleSheet()
+        dlg.deleteLater()
+
+
+class TestTheCredits:
+    @pytest.mark.parametrize("idioma, texto", [
+        ("en", "Department of Physiology. Faculty of Pharmacy. UCM"),
+        ("es", "Departamento de Fisiología. Facultad de Farmacia. UCM"),
+    ])
+    def test_the_about_box_names_the_department_and_the_faculty(
+        self, main_window, monkeypatch, idioma, texto
+    ) -> None:
+        import emgteach.gui.app as app_mod
+        from emgteach.i18n import get_language, set_language
+
+        visto: dict[str, str] = {}
+
+        class _Caja:
+            @staticmethod
+            def about(_padre, _titulo, cuerpo):
+                visto["cuerpo"] = cuerpo
+
+        monkeypatch.setattr(app_mod, "QMessageBox", _Caja)
+        anterior = get_language()
+        try:
+            set_language(idioma)
+            main_window._show_about()
+        finally:
+            set_language(anterior)
+        assert texto in visto["cuerpo"]
