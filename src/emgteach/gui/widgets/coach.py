@@ -17,9 +17,10 @@ useless.
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QRect, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -36,6 +37,10 @@ _BG = QColor(20, 20, 28, 240)       # panel, matching MvcOverlay
 _ACCENT = QColor(46, 134, 222)
 
 _PANEL_W = 430
+#: With a picture the panel widens, so the picture is read rather than
+#: squinted at, and never takes more than this share of the window's height.
+_PANEL_W_IMG = 560
+_IMG_MAX_FRAC = 0.5
 _GAP = 14                            # panel-to-target clearance
 _MARGIN = 10                         # panel-to-window clearance
 
@@ -56,11 +61,16 @@ class CoachStep:
         target: Callable[[], QWidget | None] | None = None,
         tab: int | None = None,
         on_enter: Callable[[], None] | None = None,
+        image: Callable[[], str | None] | str | None = None,
     ) -> None:
         self.title = title
         self.body = body
         self.target = target
         self.tab = tab
+        # A picture to show with the text: a path, or a callable returning
+        # one, so a step can pick the picture in the language selected at the
+        # moment it is shown.
+        self.image = image
         # Run before the target is resolved, for a step that has to clear
         # something out of the way first — a panel covering the control it is
         # about to explain, say.
@@ -73,6 +83,11 @@ class CoachStep:
             self.on_enter()
         except Exception:
             pass
+
+    def image_path(self) -> str | None:
+        """The picture's file, or None when the step has none or it is gone."""
+        ruta = self.image() if callable(self.image) else self.image
+        return ruta if ruta and Path(ruta).is_file() else None
 
     def widget(self) -> QWidget | None:
         if self.target is None:
@@ -99,6 +114,7 @@ class CoachMark(QWidget):
         self._index = 0
         self._hole: QRect | None = None
         self._on_tab: Callable[[int], None] | None = None
+        self._con_imagen = False
 
         self._panel = QFrame(self)
         self._panel.setObjectName("coachPanel")
@@ -128,6 +144,11 @@ class CoachMark(QWidget):
         self._lbl_title.setWordWrap(True)
         self._lbl_title.setStyleSheet("font-size: 14px; font-weight: bold;")
         lay.addWidget(self._lbl_title)
+
+        # Between the title and the text: what to do, before how it is said.
+        self._lbl_img = QLabel()
+        self._lbl_img.hide()
+        lay.addWidget(self._lbl_img, 0, Qt.AlignmentFlag.AlignHCenter)
 
         self._lbl_body = QLabel()
         self._lbl_body.setWordWrap(True)
@@ -221,6 +242,7 @@ class CoachMark(QWidget):
 
         self._lbl_title.setText(step.title)
         self._lbl_body.setText(step.body)
+        self._poner_imagen(step.image_path())
         # A single step — a «?» on a box, or the next step of the analysis —
         # is not a tour: «Step 1 of 1», a disabled Back and a Skip beside a
         # Finish are three controls for one action, which is closing it.
@@ -242,6 +264,41 @@ class CoachMark(QWidget):
         self._reposition()
         self.update()
 
+    def _ancho(self) -> int:
+        return _PANEL_W_IMG if self._con_imagen else _PANEL_W
+
+    def _interior(self, ancho: int) -> int:
+        """Width left for the labels inside a panel ``ancho`` wide."""
+        m = self._panel.layout().contentsMargins()
+        frame = self._panel.contentsMargins()
+        return ancho - frame.left() - frame.right() - m.left() - m.right()
+
+    def _poner_imagen(self, ruta: str | None) -> None:
+        """Show the step's picture at the panel's width, or hide the slot.
+
+        Scaled for the screen's pixel density, so it stays sharp on a
+        high-resolution display, and capped in height so a tall picture on a
+        small window still leaves the text and the buttons in view.
+        """
+        pix = QPixmap(ruta) if ruta else QPixmap()
+        self._con_imagen = not pix.isNull()
+        if not self._con_imagen:
+            self._lbl_img.clear()
+            self._lbl_img.hide()
+            return
+        ancho = self._interior(_PANEL_W_IMG)
+        alto_max = max(160, int(self._host.height() * _IMG_MAX_FRAC))
+        escala = min(ancho / pix.width(), alto_max / pix.height())
+        w, h = max(1, int(pix.width() * escala)), max(1, int(pix.height() * escala))
+        dpr = self.devicePixelRatioF() or 1.0
+        pm = pix.scaled(int(w * dpr), int(h * dpr),
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation)
+        pm.setDevicePixelRatio(dpr)
+        self._lbl_img.setPixmap(pm)
+        self._lbl_img.setFixedSize(w, h)
+        self._lbl_img.show()
+
     def _panel_height(self) -> int:
         """Height the panel needs for its text at the width it is pinned to.
 
@@ -258,12 +315,14 @@ class CoachMark(QWidget):
         # it has to be counted separately — leaving it out is what cost the
         # body its last line, two pixels at a time.
         frame = self._panel.contentsMargins()
-        inner = _PANEL_W - frame.left() - frame.right() - m.left() - m.right()
+        inner = self._interior(self._ancho())
+        imagen = self._lbl_img.height() + lay.spacing() if self._con_imagen else 0
         needed = (
             frame.top()
             + m.top()
             + self._lbl_title.heightForWidth(inner)
             + lay.spacing()
+            + imagen
             + self._lbl_body.heightForWidth(inner)
             + lay.spacing()
             + self._btn_next.sizeHint().height()
@@ -280,7 +339,7 @@ class CoachMark(QWidget):
             top_left = target.mapTo(self._host, QPoint(0, 0))
             self._hole = QRect(top_left, target.size()).adjusted(-4, -4, 4, 4)
 
-        self._panel.setFixedWidth(_PANEL_W)
+        self._panel.setFixedWidth(self._ancho())
         self._panel.setFixedHeight(self._panel_height())
         pw, ph = self._panel.width(), self._panel.height()
         area = self.rect()

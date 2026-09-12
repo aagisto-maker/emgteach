@@ -280,19 +280,18 @@ _ES = {
         "es su envolvente, la señal rectificada y suavizada, que sigue cuánto "
         "trabaja el músculo y es sobre lo que se construyen las barras de "
         "carga y el análisis.",
-    "Three sustained maximal efforts are recorded, then three brief maximal "
-    "squeezes: a held contraction shows a peak at its start and then a "
-    "plateau, and a brief squeeze reaches that peak alone. The reference is "
-    "the strongest 0.2 s across all six, so it is a maximum the task cannot "
-    "exceed; a repetition that came out weak can be discarded afterwards in "
-    "the analysis.":
-        "Se graban tres esfuerzos máximos mantenidos y después tres "
-        "sacudidas máximas breves: una contracción mantenida muestra un pico "
-        "al inicio y luego una meseta, y una sacudida breve alcanza ese pico "
-        "sin más. La referencia es el tramo de 0,2 s más fuerte de las seis "
-        "repeticiones, de modo que es un máximo que la tarea no puede "
-        "superar; una repetición que salió floja puede descartarse después "
-        "en el análisis.",
+    "After {warm} s of warm-up, {n} brief maximal efforts of {dur} s are "
+    "recorded for each muscle, each announced {cue} s ahead and followed by "
+    "{rest} s of rest. The reference is the strongest {win} s across the "
+    "repetitions kept, so it is a maximum the task cannot exceed; a "
+    "repetition that came out weak can be discarded afterwards in the "
+    "analysis.":
+        "Tras {warm} s de calentamiento se graban {n} esfuerzos máximos "
+        "breves de {dur} s por músculo, cada uno anunciado con {cue} s de "
+        "antelación y seguido de {rest} s de descanso. La referencia es el "
+        "tramo de {win} s más fuerte de las repeticiones que se conservan, de "
+        "modo que es un máximo que la tarea no puede superar; una repetición "
+        "que salió floja puede descartarse después en el análisis.",
     "Opening a recording": "Abrir un registro",
     "Open a recording and it is analysed on its own; the channel to study is "
     "the muscle's name from the file. The two buttons underneath are for "
@@ -1156,6 +1155,41 @@ _ES = {
     "Automatic screenshots off.": "Capturas automáticas desactivadas.",
     "{n} automatic screenshots saved with the recording.":
         "{n} capturas automáticas guardadas con el registro.",
+    # --- guardar el registro: qué archivo, en qué carpeta y qué hacer ---
+    "The recording «{name}» could not be saved in the folder {folder} "
+    "({reason}). Choose another folder — Documents, for example — or "
+    "another name, and press record again.":
+        "El registro «{name}» no se ha podido guardar en la carpeta {folder} "
+        "({reason}). Elija otra carpeta —Documentos, por ejemplo— u otro "
+        "nombre, y vuelva a pulsar grabar.",
+    "The recording cannot be saved": "No se puede guardar el registro",
+    # --- difusión al aula: que el profesor no se quede a ciegas ---
+    "This computer is not connected to any network, so the phones cannot "
+    "reach it. Connect it to the network the phones use, or share this "
+    "computer's own connection (Windows: Settings › Network & internet › "
+    "Mobile hotspot) and connect the phones to that.":
+        "Este equipo no está conectado a ninguna red, así que los móviles no "
+        "pueden llegar a él. Conéctelo a la red que usan los móviles, o "
+        "comparta la conexión del propio equipo (Windows: Configuración › Red "
+        "e Internet › Zona con cobertura inalámbrica móvil) y conecte los "
+        "móviles a ella.",
+    "Nobody has joined the broadcast yet. If the phones do not load the "
+    "page, this computer and the Wi-Fi may be on separate networks, or the "
+    "Wi-Fi may keep devices from seeing each other — both are common in "
+    "universities, and neither can be fixed from here. What always works: "
+    "share this computer's own connection (Windows: Settings › Network & "
+    "internet › Mobile hotspot) and connect the phones to that.":
+        "Todavía no se ha conectado nadie. Si a los móviles no les carga la "
+        "página, puede que este equipo y la wifi estén en redes separadas, o "
+        "que la wifi no deje que los dispositivos se vean entre sí; las dos "
+        "cosas son habituales en una universidad y ninguna se arregla desde "
+        "aquí. Lo que siempre funciona: compartir la conexión del propio "
+        "equipo (Windows: Configuración › Red e Internet › Zona con cobertura "
+        "inalámbrica móvil) y conectar los móviles a ella.",
+    "No network: the phones cannot reach this computer.":
+        "Sin red: los móviles no pueden llegar a este equipo.",
+    "The report for the phones could not be made: {error}":
+        "No se ha podido preparar el informe para los móviles: {error}",
     "The screenshot could not be saved: {error}":
         "No se pudo guardar la captura: {error}",
     "The screenshot could not be saved to: {path}":
@@ -1765,12 +1799,11 @@ _ES = {
     'More panels…': 'Más paneles…',
     'The rectified signal smoothed with a 5 Hz low-pass filter, computed as the samples arrive: it follows the level of activation.': 'La señal rectificada y suavizada con un filtro paso-bajo de 5 Hz, calculada según llegan las muestras: sigue el nivel de activación.',
     'Next: «{button}». It decides which maximal efforts set the reference, and every % MVC below is measured against it — so it goes before choosing the fragments.': 'Siguiente: «{button}». Decide qué esfuerzos máximos fijan la referencia, y todos los % CVM de abajo se miden contra ella, así que va antes de elegir los fragmentos.',
-    'Next: «{button}», to drop any contraction that did not come out well. Press «Use these fragments» even if you change nothing: that is what applies them.': 'Siguiente: «{button}», para quitar las contracciones que no salieran bien. Pulse «Usar estos fragmentos» aunque no cambie nada: es lo que las aplica.',
     'The «Muscle» column says which of the two led each contraction; the app fills it in by comparing them. Change it if you disagree. Consecutive rows with the same name become a single window of the co-activation table, so a run of flexions is measured as one.': 'La columna «Músculo» dice cuál de los dos llevó cada contracción; la aplicación la rellena comparándolos. Cámbiela si no está de acuerdo. Las filas seguidas con el mismo nombre pasan a ser una sola ventana de la tabla de coactivación, de modo que una serie de flexiones se mide como una.',
     'Which muscle led this contraction. The app works it out by comparing the two; change it if you disagree, or empty it to leave the contraction out of the co-activation table.': 'Qué músculo llevó esta contracción. La aplicación lo deduce comparándolos; cámbielo si no está de acuerdo, o déjelo vacío para que la contracción no entre en la tabla de coactivación.',
     'Re-run the analysis with the settings changed since the last one. It lights up only when there is something to redo: opening a file analyses it, and the two editors re-analyse when you accept them.': 'Vuelve a hacer el análisis con los ajustes que hayan cambiado desde el anterior. Solo se enciende cuando hay algo que rehacer: abrir un fichero lo analiza, y los dos editores reanalizan al aceptarlos.',
     # --- fragment editor with live adjustment, and the two summary charts ---
-    'Each row is one contraction found in the recording. Uncheck the ones not worth analysing — a movement done wrong, a tug on the cable — and only the rest is analysed, joined up as if recorded in one go. Press «Use these fragments» even if you change nothing: that is what applies them.': 'Cada fila es una contracción encontrada en el registro. Desmarque las que no merezca la pena analizar (un movimiento mal hecho, un tirón del cable) y se analiza solo el resto, unido como si se hubiera registrado de una vez. Pulse «Usar estos fragmentos» aunque no cambie nada: es lo que los aplica.',
+    'Each row is one contraction found in the recording. Set the sensitivity until the count beside it matches what was done. Then go through the contractions with ◀ ▶, or click one on the plot, and keep it, drop it or split it in two; a click on a dotted stretch adds it. Only the kept rows are analysed, joined up as if recorded in one go. Press «Use these fragments» even if you change nothing: that is what applies them.': 'Cada fila es una contracción encontrada en el registro. Ajuste la sensibilidad hasta que el recuento de al lado coincida con lo que se hizo. Después recorra las contracciones con ◀ ▶, o pulse una en el gráfico, y consérvela, elimínela o divídala en dos; al pulsar un tramo punteado se añade. Solo se analizan las filas conservadas, unidas como si se hubieran registrado de una vez. Pulse «Usar estos fragmentos» aunque no cambie nada: es lo que los aplica.',
     'Adjust the proposal': 'Ajustar la propuesta',
     'Sensitivity': 'Sensibilidad',
     'lower finds more contractions; higher, fewer': 'más baja encuentra más contracciones; más alta, menos',
@@ -1783,7 +1816,54 @@ _ES = {
     'lower splits a series more readily; higher keeps it together': 'más baja separa una serie con más facilidad; más alta la mantiene unida',
     'Reset': 'Restablecer',
     'Moving a setting rebuilds the proposal; rows edited by hand are replaced.': 'Al mover un ajuste se rehace la propuesta; las filas editadas a mano se sustituyen.',
-    'Click a shaded stretch to keep or drop it.': 'Pulse sobre un tramo sombreado para conservarlo o descartarlo.',
+    'Click a stretch to select it, or drag it onto other activity; click a dotted one to add it.': 'Pulse un tramo para seleccionarlo, o arrástrelo sobre otra actividad; pulse uno punteado para añadirlo.',
+    'There is no activity there: the mark stays where it was.': 'Ahí no hay actividad: la marca se queda donde estaba.',
+    # --- the fragment editor's guide and its «?» ---
+    '{name} {n} of {m}': '{name} {n} de {m}',
+    '<b>Step {k} of 3</b> · {text}': '<b>Paso {k} de 3</b> · {text}',
+    'No contraction is marked: lower the sensitivity, or click a dotted stretch to add it.': 'No hay ninguna contracción marcada: baje la sensibilidad, o pulse un tramo punteado para añadirlo.',
+    'The count does not match ({detail}). Move the sensitivity until it does, or as close as it gets; what is left is put right in step 2. Then press ▶.': 'El recuento no coincide ({detail}). Mueva la sensibilidad hasta que coincida, o hasta lo más cerca posible; lo que quede se corrige en el paso 2. Después pulse ▶.',
+    'The count matches. Press ▶ to go through the contractions one by one.': 'El recuento coincide. Pulse ▶ para recorrer las contracciones una a una.',
+    'Move the sensitivity until each contraction has its own shaded stretch. If you know how many there were, write it in «expected». Then press ▶.': 'Mueva la sensibilidad hasta que cada contracción tenga su propio tramo sombreado. Si sabe cuántas hubo, escríbalo en «esperadas». Después pulse ▶.',
+    'Reviewed {r} of {n}. For each one: «Keep it» if it is right, «Drop it» if it should not count, «Split it» if it holds two peaks, or drag it onto the right contraction.': 'Revisadas {r} de {n}. En cada una: «Mantener» si está bien, «Eliminar» si no debe contar, «Dividir» si guarda dos picos, o arrástrela sobre la contracción buena.',
+    'Then confirm who led it.': 'Después confirme quién la llevó.',
+    'The count does not match yet ({detail}): look for what is missing among the dotted stretches, or drop what is left over.': 'El recuento aún no coincide ({detail}): busque lo que falta entre los tramos punteados, o elimine lo que sobra.',
+    'Everything reviewed and the count matches: press «Use these fragments».': 'Todo revisado y el recuento coincide: pulse «Usar estos fragmentos».',
+    'Everything reviewed: press «Use these fragments».': 'Todo revisado: pulse «Usar estos fragmentos».',
+    'This one starts right where the analysed stretch does: it may be the end of an earlier effort, such as the last maximal one.': 'Esta empieza justo donde empieza el tramo analizado: puede ser el final de un esfuerzo anterior, como el último máximo.',
+    'Next: «{button}». It proposes one row per contraction, and the yellow line over its plot takes you through three steps: the sensitivity, each contraction in turn, and «Use these fragments», which is what applies them even if you change nothing.': 'Siguiente: «{button}». Propone una fila por contracción, y la línea amarilla sobre su gráfico lleva por tres pasos: la sensibilidad, cada contracción por turno y «Usar estos fragmentos», que es lo que los aplica aunque no se cambie nada.',
+    'Choosing the contractions to analyse': 'Elegir las contracciones que se analizan',
+    '1 · The sensitivity': '1 · La sensibilidad',
+    'Move it until the count beside it matches what was done: in the agonist/antagonist practical, six flexions, six extensions and one grip; in kinematics, one per lift. In the single-muscle practical there is no fixed number: write it in «expected» if you know it. The dashed line over the envelope is the threshold it sets.': 'Muévala hasta que el recuento de al lado coincida con lo que se hizo: en la práctica agonista/antagonista, seis flexiones, seis extensiones y una presa; en cinemática, una por levantamiento. En la práctica de un músculo no hay un número fijo: escríbalo en «esperadas» si lo conoce. La línea discontinua sobre la envolvente es el umbral que fija.',
+    '2 · Each contraction in turn': '2 · Cada contracción por turno',
+    '▶ takes you to the next one; a click on the plot selects the one under it. «Keep it» if it is right. «Drop it» if it should not count: it stays on the plot, hatched, and «Keep it» brings it back. «Split it» when one shaded stretch holds two peaks; the dash-dotted line shows where it will cut. A mark in the wrong place can be dragged onto the right contraction: it snaps onto the activity it is dropped over, and goes back if there is none.': '▶ lleva a la siguiente; un clic en el gráfico selecciona la que queda debajo. «Mantener» si está bien. «Eliminar» si no debe contar: sigue en el gráfico, rayada, y «Mantener» la recupera. «Dividir» cuando un tramo sombreado guarda dos picos; la línea de trazo y punto indica por dónde cortará. Una marca mal puesta se puede arrastrar sobre la contracción buena: encaja en la actividad sobre la que se suelta, y vuelve a su sitio si no hay ninguna.',
+    'A dotted stretch is activity the threshold left out: a click adds it. With two muscles, one button per muscle confirms who led each contraction; the app has already proposed it.': 'Un tramo punteado es actividad que el umbral dejó fuera: un clic lo añade. Con dos músculos, un botón por músculo confirma quién llevó cada contracción; la aplicación ya lo ha propuesto.',
+    '3 · Use these fragments': '3 · Usar estos fragmentos',
+    'The yellow line above the plot says which step you are on. When every contraction has been reviewed and the count matches, press «Use these fragments»: nothing is applied until you do.': 'La línea amarilla sobre el gráfico indica en qué paso está. Cuando todas las contracciones estén revisadas y el recuento coincida, pulse «Usar estos fragmentos»: hasta entonces no se aplica nada.',
+    'If you get lost': 'Si se pierde',
+    "«Start over» goes back to what the app proposed, and «Reset» puts the sensitivity back to the practical's own value.": '«Empezar de nuevo» vuelve a lo que propuso la aplicación, y «Restablecer» devuelve la sensibilidad al valor propio de la práctica.',
+    'Keep it': 'Mantener',
+    'Drop it': 'Eliminar',
+    'Split it': 'Dividir',
+    'Keep this contraction in the analysis and go on to the next.': 'Mantiene esta contracción en el análisis y pasa a la siguiente.',
+    'Leave this contraction out of the analysis and go on to the next. It stays on the plot, hatched, and «Keep it» brings it back.': 'Deja esta contracción fuera del análisis y pasa a la siguiente. Sigue en el gráfico, rayada, y «Mantener» la recupera.',
+    'Cut this row in two at the deepest valley between its peaks.': 'Corta esta fila en dos por el valle más hondo entre sus picos.',
+    'This row has a single peak: there is nothing to split.': 'Esta fila tiene un solo pico: no hay nada que dividir.',
+    # --- the fragment editor: the count, the candidates, the walk through ---
+    'Marked / expected': 'Marcadas / esperadas',
+    'Kept rows of each kind, over how many the protocol asks for.': 'Filas conservadas de cada tipo, sobre cuántas pide el protocolo.',
+    'How many the protocol asks for. Change it if a series was repeated; «—» counts without a target.': 'Cuántas pide el protocolo. Cámbielo si se repitió una serie; con «—» se cuenta sin objetivo.',
+    '{n} marked and {m} expected: look for the missing one among the dotted stretches, or drop the extra one.': '{n} marcadas y {m} esperadas: busque la que falta entre los tramos punteados, o descarte la que sobra.',
+    'below the threshold: click to add': 'bajo el umbral: pulse para añadir',
+    'Previous contraction': 'Contracción anterior',
+    'Next contraction': 'Contracción siguiente',
+    'Led by:': 'Quién la lleva:',
+    'Name this contraction and go on to the next.': 'Da este nombre a la contracción y pasa a la siguiente.',
+    'No contraction marked.': 'Ninguna contracción marcada.',
+    '▶ goes through the contractions one by one.': '▶ recorre las contracciones una a una.',
+    'Contraction {i} of {n}': 'Contracción {i} de {n}',
+    'dropped': 'descartada',
+    'Detection sensitivity (k)': 'Sensibilidad de detección (k)',
     'activity threshold': 'umbral de actividad',
     'Table': 'Tabla',
     'Chart': 'Gráfico',

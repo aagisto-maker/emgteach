@@ -788,6 +788,10 @@ class AnalysisWorker(QThread):
                 "channel_name": self._channel_name,
                 "markers": markers,
                 "fv_loads": fv_loads,
+                # The detection settings the contractions are found with. Part
+                # of the result, not of the plumbing: the rows, and with them
+                # the co-activation windows, move with k.
+                "detection": dict(self._detection),
                 # DSP/analysis parameters actually used, so a report can show
                 # the "configuration used" without re-deriving it.
                 "config": {

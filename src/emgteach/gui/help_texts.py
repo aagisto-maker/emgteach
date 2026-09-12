@@ -10,7 +10,7 @@ entries that came from the tour carry it unchanged.
 
 from __future__ import annotations
 
-from emgteach.i18n import tr
+from emgteach.i18n import get_language, tr
 from emgteach.profiles import EMG_PROFILE
 
 
@@ -21,6 +21,38 @@ def text(key: str) -> tuple[str, str]:
 
 def keys() -> list[str]:
     return list(_TEXTS)
+
+
+def _cifra(x: float) -> str:
+    """A number as the interface writes it: 1.5 in English, 1,5 in Spanish."""
+    texto = f"{x:g}"
+    return texto.replace(".", ",") if get_language() == "es" else texto
+
+
+def _protocolo_de_calibracion() -> str:
+    """The calibration as the application runs it, written from the constants
+    the wizard itself uses.
+
+    The text was written once and the protocol changed under it: it went on
+    describing three held efforts and three brief ones, six in all, after the
+    wizard had come down to three brief efforts. Built from the numbers, it
+    cannot describe a protocol the application no longer follows.
+    """
+    from emgteach.gui.tabs.acquisition import MVC_READY_S, MVC_REST_S
+
+    p = EMG_PROFILE
+    return tr(
+        "After {warm} s of warm-up, {n} brief maximal efforts of {dur} s are "
+        "recorded for each muscle, each announced {cue} s ahead and followed "
+        "by {rest} s of rest. The reference is the strongest {win} s across "
+        "the repetitions kept, so it is a maximum the task cannot exceed; a "
+        "repetition that came out weak can be discarded afterwards in the "
+        "analysis."
+    ).format(
+        warm=_cifra(p.warmup_s), n=p.mvc_bursts, dur=_cifra(p.mvc_burst_s),
+        cue=_cifra(MVC_READY_S), rest=_cifra(MVC_REST_S),
+        win=_cifra(p.mvc_peak_window_s),
+    )
 
 
 # Functions rather than strings so tr() runs at the moment of showing, in
@@ -82,14 +114,7 @@ _TEXTS = {
             "A maximal voluntary contraction is asked for, and it becomes the "
             "reference against which the live load bars and the measurements "
             "are expressed, making contractions easier to compare."
-        ) + " " + tr(
-            "Three sustained maximal efforts are recorded, then three brief "
-            "maximal squeezes: a held contraction shows a peak at its start "
-            "and then a plateau, and a brief squeeze reaches that peak alone. "
-            "The reference is the strongest 0.2 s across all six, so it is a "
-            "maximum the task cannot exceed; a repetition that came out weak "
-            "can be discarded afterwards in the analysis."
-        ),
+        ) + " " + _protocolo_de_calibracion(),
     ),
     "acq.fv": lambda: (
         tr("The force-velocity study, step by step"),
@@ -143,6 +168,36 @@ _TEXTS = {
             "The chips at the end of that line choose which panels are drawn; "
             "hover over «Panels:» for what each one shows."
         ),
+    ),
+    "ana.fragments": lambda: (
+        tr("Choosing the contractions to analyse"),
+        "<p><b>" + tr("1 · The sensitivity") + "</b><br>" + tr(
+            "Move it until the count beside it matches what was done: in the "
+            "agonist/antagonist practical, six flexions, six extensions and "
+            "one grip; in kinematics, one per lift. In the single-muscle "
+            "practical there is no fixed number: write it in «expected» if "
+            "you know it. The dashed line over the envelope is the threshold "
+            "it sets."
+        ) + "</p><p><b>" + tr("2 · Each contraction in turn") + "</b><br>" + tr(
+            "▶ takes you to the next one; a click on the plot selects the one "
+            "under it. «Keep it» if it is right. «Drop it» if it should not "
+            "count: it stays on the plot, hatched, and «Keep it» brings it "
+            "back. «Split it» when one shaded stretch holds two peaks; the "
+            "dash-dotted line shows where it will cut. A mark in the wrong "
+            "place can be dragged onto the right contraction: it snaps onto "
+            "the activity it is dropped over, and goes back if there is none."
+        ) + " " + tr(
+            "A dotted stretch is activity the threshold left out: a click "
+            "adds it. With two muscles, one button per muscle confirms who "
+            "led each contraction; the app has already proposed it."
+        ) + "</p><p><b>" + tr("3 · Use these fragments") + "</b><br>" + tr(
+            "The yellow line above the plot says which step you are on. When "
+            "every contraction has been reviewed and the count matches, "
+            "press «Use these fragments»: nothing is applied until you do."
+        ) + "</p><p><b>" + tr("If you get lost") + "</b><br>" + tr(
+            "«Start over» goes back to what the app proposed, and «Reset» "
+            "puts the sensitivity back to the practical's own value."
+        ) + "</p>",
     ),
     "ana.panels": lambda: (
         tr("The basic panels"),

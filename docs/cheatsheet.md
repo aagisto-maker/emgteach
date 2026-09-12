@@ -48,11 +48,11 @@ The recording is analysed on its own when opened. Follow the boxes that appear, 
 order:
 1. **«Calibration repetitions…»**: drop the weak ones. First, because it fixes the
    reference of every percentage.
-2. **«Select fragments…»**: one row per contraction; untick the bad ones (and, in
-   the single-muscle practical, the calibration efforts) and **«Use these
-   fragments»**. Two live sliders: **sensitivity** and, in the pair, the
-   **co-activation threshold**; a click on a shaded stretch drops or restores
-   it; the fine adjustment stays folded.
+2. **«Select fragments…»**, in three steps shown by the yellow line: the
+   **sensitivity** until the count matches; **each contraction** with ▶ or a
+   click: Keep it, Drop it, Split it (two peaks) or drag it into place (a dotted
+   stretch is added with a click; in the pair, confirm who led it); and **«Use
+   these fragments»**. The calibration is left out on its own.
 
 Then read: **panels** (mouse wheel to scroll; ▲▼ amplitude, ▶◀ time), the
 **contraction chart** (one view at a time, on its title: **Relation**, amplitude
@@ -90,7 +90,7 @@ limits.
 - **No signal / flat line** → electrode contact, reference, correct channel.
 - **50 Hz noise** → improve contact; move away from chargers and mains cables.
 - **«not a maximum»** (in red, Task maximum) → recalibrate against the table, fist
-  closed, hold the 4 s.
+  closed, flat out until the count reaches 0.
 - **The co-activation table says «not reported»** → in a clean flexion or
   extension that is correct; a **grip** is needed for a number.
 - **The grip does not co-activate** → the wrist is resting on the table. It has to

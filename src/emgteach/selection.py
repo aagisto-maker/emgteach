@@ -38,6 +38,7 @@ __all__ = [
     "Segment",
     "activity_threshold",
     "normalise_segments",
+    "split_fragment",
     "suggest_significant_segments",
     "total_duration_s",
 ]
@@ -217,6 +218,116 @@ def _separate_contractions(
             start + p0, start + p1,
         ))
     return piezas or [(start, end, start, end)]
+
+
+#: When :func:`split_fragment` sees two contractions in one fragment, all as
+#: shares of the fragment's height: peaks are looked for at a tenth of it; the
+#: smaller of the two must reach half of it; the valley between them must dip
+#: below half the smaller peak; and each piece must last 0.3 s. On test
+#: recordings of the agonist/antagonist series these pick out the fragments
+#: that hold two contractions and leave the single ones alone — the ripples on
+#: a plateau and the tail a contraction leaves as it relaxes included, which a
+#: looser rule offered to cut.
+_SPLIT_PROMINENCE = 0.10
+_SPLIT_SMALLER_PEAK = 0.5
+_SPLIT_DEPTH = 0.5
+_SPLIT_MIN_PIECE_S = 0.3
+
+
+def split_fragment(
+    envelopes: list[np.ndarray],
+    bases: list[float],
+    fs: float,
+    start_s: float,
+    end_s: float,
+    *,
+    prominence: float = _SPLIT_PROMINENCE,
+    smaller_peak: float = _SPLIT_SMALLER_PEAK,
+    depth: float = _SPLIT_DEPTH,
+    min_piece_s: float = _SPLIT_MIN_PIECE_S,
+) -> tuple[tuple[float, float], tuple[float, float]] | None:
+    """Cut one fragment in two at the deepest valley between two of its peaks.
+
+    The detector keeps a run whole unless a peak stands out by a quarter of the
+    tallest, and with two muscles it joins what either channel found, so a
+    fragment can hold two contractions: two peaks on the plot, one row in the
+    table. Cutting it at a point chosen by eye would measure whatever window
+    the hand picked; this finds the cut instead.
+
+    Each channel's envelope is taken as a share of its own height over the
+    fragment, above its own resting baseline, and the larger share is
+    followed, so a contraction led by either muscle counts. The cut goes to the
+    valley that dips furthest below the lower of the two peaks beside it, and
+    each piece is trimmed back from the cut to its own effort — as the detector
+    trims the pieces it splits (see :func:`_separate_contractions`) — so
+    neither carries the pause between them. The outer ends stay where they
+    were. The pieces are kept at least one sample apart, since fragments that
+    touch are merged downstream.
+
+    Parameters
+    ----------
+    envelopes, bases : list
+        The envelope of each channel over the whole recording, and its resting
+        baseline (see :func:`activity_threshold`), in the same order.
+    fs : float
+        Sampling frequency (Hz).
+    start_s, end_s : float
+        The fragment, in seconds on the recording's clock.
+    prominence : float, optional
+        How far a peak must stand out, as a share of the fragment's height.
+    smaller_peak, depth, min_piece_s : float, optional
+        What makes two peaks two contractions; see ``_SPLIT_SMALLER_PEAK``.
+
+    Returns
+    -------
+    ((start, end), (start, end)) or None
+        The two pieces, or ``None`` when the fragment holds one contraction.
+    """
+    from scipy.signal import find_peaks
+
+    i0 = max(0, round(start_s * fs))
+    i1 = round(end_s * fs)
+    curvas: list[np.ndarray] = []
+    for env, base in zip(envelopes, bases, strict=True):
+        tramo = np.asarray(env[i0:i1], dtype=np.float64)
+        if tramo.size < 3:
+            continue
+        alto = float(tramo.max()) - float(base)
+        if alto > 0.0:
+            curvas.append(np.clip((tramo - float(base)) / alto, 0.0, None))
+    if not curvas:
+        return None
+    n = min(c.size for c in curvas)
+    curva = np.max(np.vstack([c[:n] for c in curvas]), axis=0)
+
+    picos, _ = find_peaks(curva, prominence=float(prominence))
+    if picos.size < 2:
+        return None
+    min_n = max(1, round(float(min_piece_s) * fs))
+    corte, hondura = -1, -np.inf
+    for a, b in pairwise(picos):
+        if b <= a + 1:
+            continue
+        v = int(a + 1 + np.argmin(curva[a + 1 : b]))
+        menor = float(min(curva[a], curva[b]))
+        if menor < smaller_peak or v < min_n or n - v < min_n:
+            continue
+        h = (menor - float(curva[v])) / menor
+        if h >= depth and h > hondura:
+            corte, hondura = v, h
+    if corte <= 0 or corte >= n - 1:
+        return None
+
+    izq, der = curva[: corte + 1], curva[corte:]
+    fin_izq = int(np.flatnonzero(izq > _ONSET_FRACTION * izq.max())[-1])
+    ini_der = corte + int(np.flatnonzero(der > _ONSET_FRACTION * der.max())[0])
+    if ini_der <= fin_izq + 1:
+        # A valley that never dips below the onset level: cut at its floor.
+        fin_izq, ini_der = corte - 1, corte + 1
+    return (
+        (float(start_s), (i0 + fin_izq + 1) / fs),
+        ((i0 + ini_der) / fs, float(end_s)),
+    )
 
 
 def suggest_significant_segments(

@@ -62,7 +62,7 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 - Electrodos **desechables**, uno por persona; limpiar la piel con alcohol y dejar
   secar. No reutilizar electrodos entre sujetos.
 - Personas con lesiones cutáneas en la zona deben abstenerse.
-- Los esfuerzos máximos son breves (cuatro segundos) y se hacen contra la mesa,
+- Los esfuerzos máximos son breves (1,5 s) y se hacen contra la mesa,
   no contra otra persona. Quien note dolor articular, para.
 
 ---
@@ -153,8 +153,8 @@ pasaba: 135 % de «máximo» en un registro.
 >   el puño cerrado, la tarea quedó al 109 %.
 > - **Extensor (ECR): dorso de la mano** contra el tablero, antebrazo pronado,
 >   muñeca unos 20° en flexión, dedos relajados.
-> - **Mantener los cuatro segundos.** Si la envolvente hace una púa y cae, la
->   repetición no vale; la aplicación permite descartarla después.
+> - **A tope hasta que la cuenta llegue a 0** (1,5 s). Una repetición que salga
+>   floja no vale; la aplicación permite descartarla después.
 > - **Comprobación inmediata:** al terminar la tarea, el resumen del análisis dice
 >   el **máximo de la tarea** en % CVM. Si pasa del 150 % lo marca en rojo, «no fue
 >   un máximo», y hay que repetir la calibración. Entre el 90 y el 125 % es lo que
@@ -173,18 +173,27 @@ siguiente:
    la referencia se recalcula. Esto va primero porque **todos los porcentajes se
    miden contra esa referencia**.
 2. **«Seleccionar fragmentos…»**: una fila por contracción encontrada, con su
-   inicio, fin, duración y, con dos músculos, cuál llevó cada una. Se desmarcan
-   las que no merezca la pena analizar (un movimiento mal hecho, un tirón del
-   cable) y se pulsa **«Usar estos fragmentos»** aunque no se cambie nada. En la
-   práctica de un músculo, si la calibración se hizo con el botón, aquí se
-   desmarcan también los tres esfuerzos de calibración para quedarse con la tarea.
-   El cuadro se ajusta mirando: dos deslizadores, la **sensibilidad** (cuántas
-   contracciones encuentra; la línea discontinua sobre la envolvente es el umbral
-   que fija) y, en el par, el **umbral de coactivación** (a partir de qué fracción
-   del músculo mayor el menor cuenta como coactivación). Cada movimiento redibuja
-   el sombreado y las filas al momento, y pulsar sobre un tramo sombreado lo
-   descarta o lo repone. El **ajuste fino** (duración mínima, unión de huecos,
-   separación entre contracciones) está plegado y rara vez hace falta.
+   inicio, fin, duración y, con dos músculos, cuál llevó cada una. La calibración
+   ya queda fuera sola. El cuadro lleva por **tres pasos**, y una línea amarilla
+   sobre el gráfico dice en cuál se está:
+   1. **Sensibilidad.** Moverla hasta que el recuento de al lado coincida con lo
+      que se hizo: en el par, 6 flexiones, 6 extensiones y 1 presa; en
+      cinemática, una por levantamiento. La línea discontinua es el umbral.
+   2. **Cada contracción por turno**, con ▶ o pulsándola en el gráfico:
+      **Mantener** si está bien, **Eliminar** si no debe contar (queda rayada y
+      se recupera), **Dividir** si un tramo guarda dos picos (una línea de trazo
+      y punto marca antes el corte), o **arrastrarla** sobre la contracción
+      buena, donde encaja sola. Un tramo **punteado** es actividad que el umbral
+      dejó fuera: un clic lo añade. En el par, un botón por músculo confirma
+      quién la llevó.
+   3. **«Usar estos fragmentos»**, cuando todo está revisado y el recuento
+      coincide. Hasta entonces no se aplica nada.
+
+   En el par hay además el **umbral de coactivación** (a partir de qué fracción
+   del músculo mayor el menor cuenta como coactivación), que cambia los nombres y
+   no las filas. El **ajuste fino** (duración mínima, unión de huecos, separación
+   entre contracciones) está plegado y rara vez hace falta. El «?» del cuadro
+   repite estos pasos.
 
 Después se lee. La pestaña tiene tres zonas: los **paneles** (arriba, con la rueda
 del ratón se desplazan; los botones ▲▼ y ▶◀ de la izquierda cambian las escalas),

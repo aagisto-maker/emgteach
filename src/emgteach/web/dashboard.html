@@ -51,6 +51,8 @@
                 border-bottom:1px solid #222838; padding:5px 0; }
   #results .m span { color:#aeb6c4; }
   #resDl { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .hint { color:#aeb6c4; font-size:13px; margin:4px 0 8px; }
+  button.secondary { opacity:.8; font-size:13px; }
 </style>
 </head>
 <body>
@@ -72,13 +74,14 @@
   </div>
   <div id="wait"></div>
   <div id="chs"></div>
-  <div id="tools">
-    <button id="btnCsv"></button>
-  </div>
   <div id="results" class="ch" style="display:none">
     <h2 id="resultsTitle"></h2>
     <div class="resgrid" id="resMetrics"></div>
     <div id="resDl"></div>
+  </div>
+  <div id="tools">
+    <div id="pdfHint" class="hint"></div>
+    <button id="btnCsv" class="secondary"></button>
   </div>
 </main>
 <footer id="foot"></footer>
@@ -95,7 +98,9 @@ const M = {
   reconnecting:      ["reconnecting…",                     "reconectando…"],
   effort:            ["Effort",                            "Esfuerzo"],
   waiting:           ["Waiting for the instructor's data…", "Esperando datos del profesor…"],
-  btnCsv:            ["⬇️ Download session (CSV)",          "⬇️ Descargar sesión (CSV)"],
+  btnCsv:            ["⬇️ Raw session data (CSV)",          "⬇️ Datos en bruto de la sesión (CSV)"],
+  pdfHint:           ["The PDF report will appear here as soon as the instructor analyses the recording.",
+                      "El informe en PDF aparecerá aquí en cuanto el profesor analice el registro."],
   resultsTitle:      ["📊 Analysis results",               "📊 Resultados del análisis"],
   footer:            ["Follower view (read-only) · emgteach", "Vista de seguimiento (solo lectura) · emgteach"],
   mvcUnit:           ["% MVC",                             "% CVM"],
@@ -127,6 +132,7 @@ function applyStaticText() {
   document.getElementById("cEffortLbl").textContent = t("effort");
   document.getElementById("wait").textContent = t("waiting");
   document.getElementById("btnCsv").textContent = t("btnCsv");
+  document.getElementById("pdfHint").textContent = t("pdfHint");
   document.getElementById("resultsTitle").textContent = t("resultsTitle");
   document.getElementById("foot").textContent = t("footer");
 }
@@ -337,8 +343,11 @@ function addDownload(m) {
   let a = document.getElementById(id);
   if (!a) {
     a = document.createElement("a"); a.id = id; a.className = "dlbtn";
-    document.getElementById("resDl").appendChild(a);
+    const box = document.getElementById("resDl");
+    // The report first: it is what a student takes home and reads.
+    if (m.kind === "report") box.prepend(a); else box.appendChild(a);
   }
+  if (m.kind === "report") document.getElementById("pdfHint").style.display = "none";
   a.href = m.url + location.search; a.setAttribute("download", m.name || "");
   a.textContent = m.kind === "report" ? t("dlReport") : t("dlResults");
 }

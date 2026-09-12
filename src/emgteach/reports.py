@@ -793,6 +793,11 @@ def build_session_report(
             [tr("Envelope (low-pass)"), f"{cfg.get('f_env')} Hz"],
             [tr("RMS window"), f"{cfg.get('rms_window_ms')} ms"],
         ]
+    k = (result.get("detection") or {}).get("k")
+    if k is not None:
+        # What the contractions were found with: the rows, and the
+        # co-activation windows read off them, move with it.
+        config_rows.append([tr("Detection sensitivity (k)"), f"{float(k):.1f}"])
     config_rows.append(
         [tr("Device"), device or tr("not stored in the EDF")]
     )

@@ -274,7 +274,10 @@ from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.gui.help_texts import text as help_text
 from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
 from emgteach.gui.widgets.canvas import ScrollingCanvas
-from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+from emgteach.gui.widgets.fragment_selection import (
+    FragmentSelectionDialog,
+    default_detection,
+)
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
@@ -293,6 +296,8 @@ from emgteach.modes import (
     MODE_KINEMATICS,
     MODE_PAIR,
     MODE_SINGLE,
+    mode_detection_k,
+    mode_expected_contractions,
     mode_uses_acc,
 )
 from emgteach.mvc import mark_excess_over_100, overlay_curves
@@ -632,6 +637,9 @@ class AnalysisTab(QWidget):
         # contraction table is built with the numbers the student tuned by
         # eye there. None = the core defaults.
         self._detection_kwargs: dict[str, float] | None = None
+        #: The fragment editor's counter targets as it was left, for the
+        #: next visit; the practical's own until someone changes them.
+        self._esperadas: tuple[int, ...] | None = None
         # Whether a setting has changed since the last analysis. The
         # button used to be a step of the sequence — press it once to see
         # the recording, and again after each editor — and pressing the
@@ -1172,6 +1180,9 @@ class AnalysisTab(QWidget):
         another.
         """
         self._cal_keep = {}
+        # The counter's targets too: another recording can ask for another
+        # number of lifts.
+        self._esperadas = None
         self._actualizar_ayuda_reps()
         self._selected_segments = []
         self._segment_labels = []
@@ -1356,6 +1367,12 @@ class AnalysisTab(QWidget):
                 # Where the sliders were left last time, so a second visit
                 # starts from the first one's result.
                 detection=self._detection_kwargs,
+                # The practical's own sensitivity and series: the pair opens
+                # on k = 4.4 and counts against six, six and one; kinematics
+                # against the lifts its guided wizard marked in the file.
+                default_k=mode_detection_k(self._mode),
+                expected=(self._esperadas
+                          or self._esperadas_de_la_sesion(path)),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -1367,6 +1384,7 @@ class AnalysisTab(QWidget):
             self._selected_segments = dlg.selected_segments()
             self._segment_labels = dlg.labels()
             self._detection_kwargs = dlg.detection_kwargs()
+            self._esperadas = dlg.expected_counts()
             # Adopt the cut-offs tuned in the editor for the actual analysis so
             # what was previewed is what gets analysed. Reflect f_env in the tab.
             self._analysis_filter_kwargs = dlg.filter_kwargs()
@@ -1438,9 +1456,11 @@ class AnalysisTab(QWidget):
         elif not frags_hechos:
             paso, boton = "frags", self._btn_fragmentos
             texto = tr(
-                "Next: «{button}», to drop any contraction that did not come "
-                "out well. Press «Use these fragments» even if you change "
-                "nothing: that is what applies them."
+                "Next: «{button}». It proposes one row per contraction, and the "
+                "yellow line over its plot takes you through three steps: the "
+                "sensitivity, each contraction in turn, and «Use these "
+                "fragments», which is what applies them even if you change "
+                "nothing."
             ).format(button=tr("Select fragments…"))
         else:
             paso, boton, texto = "", None, ""
@@ -1473,6 +1493,29 @@ class AnalysisTab(QWidget):
             and self._pendiente
             and not corriendo
         )
+
+    def _esperadas_de_la_sesion(self, path: str) -> tuple[int, ...]:
+        """How many contractions the session asked for: the pair's protocol,
+        or in kinematics one per lift the guided wizard marked.
+
+        The wizard's load markers are the record of what was asked, so the
+        count comes from the recording, not from a setting that may have
+        changed since it was made.
+        """
+        if self._mode == MODE_KINEMATICS:
+            try:
+                cargas = parse_fv_load_markers(read_edf_markers(path))
+            except Exception:
+                cargas = []
+            if cargas:
+                return (len(cargas),)
+        return mode_expected_contractions(self._mode)
+
+    def _deteccion_por_defecto(self) -> dict[str, float]:
+        """The detection settings when the fragment editor was never opened:
+        the practical's own sensitivity, so the contraction table and the
+        report use the k the editor would have opened on."""
+        return default_detection(mode_detection_k(self._mode))
 
     def _hay_segundo_canal(self) -> bool:
         """Whether this analysis has an antagonist, and so a co-activation
@@ -1686,7 +1729,8 @@ class AnalysisTab(QWidget):
             roi_start_s=roi_start,
             roi_end_s=roi_end,
             roi_segments=roi_segments,
-            detection_kwargs=self._detection_kwargs,
+            detection_kwargs=(self._detection_kwargs
+                              or self._deteccion_por_defecto()),
         )
         self._worker.result_ready.connect(self._on_result)
         self._worker.progress.connect(self._on_progress)
@@ -2011,6 +2055,9 @@ class AnalysisTab(QWidget):
         self._actualizar_resumen(result)
         self._dibujar_paneles(result)
         self._bcast_results(result)
+        # After this handler returns, so the panels are painted first and the
+        # report does not hold the screen while it is being built.
+        QTimer.singleShot(0, lambda r=result: self._ofrecer_descargas(r))
 
     @Slot(float, float)
     def _on_range_changed(self, inicio: float, duracion: float) -> None:
@@ -2076,6 +2123,46 @@ class AnalysisTab(QWidget):
         self._broadcast.broadcast(
             {"t": "download", "kind": kind, "url": path, "name": filename}
         )
+
+    def _ofrecer_descargas(self, r: dict) -> None:
+        """Put the report and the results on the phones as soon as there are any.
+
+        The phones used to offer only the live session as CSV, unless the
+        teacher happened to generate a report while broadcasting. A CSV gives a
+        pharmacy student little: she will not open it, and if she does she will
+        not know what to look at. The report is what is worth taking home —
+        the panels, the tables and the verdict in words. So each analysis, with
+        the broadcast on, makes both and offers them, the report first; the
+        file the teacher saves by hand is untouched.
+        """
+        if not self._broadcast_on() or r is not self._last_result:
+            return
+        import tempfile
+
+        base = Path(str(r.get("edf_path", "")) or "sesion.edf").stem or "sesion"
+        paneles = [i for i, c in enumerate(self._chk_paneles) if c.isChecked()]
+        meta = {
+            "student_code": self._student_code.strip(),
+            "protocol": getattr(self, "_edf_protocol", ""),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf = Path(tmp) / f"{base}_informe.pdf"
+            try:
+                build_session_report(pdf, r, meta, panels=paneles or None)
+                self._bcast_download("report", "/dl/informe.pdf", pdf.read_bytes(),
+                                     "application/pdf", pdf.name)
+            except Exception as exc:  # a report must never sink the analysis
+                self._logger.append_error(
+                    tr("The report for the phones could not be made: {error}")
+                    .format(error=exc)
+                )
+            csv = Path(tmp) / f"{base}_analisis_emg.csv"
+            try:
+                write_analysis_csv(r, csv)
+                self._bcast_download("csv", "/dl/resultados.csv", csv.read_bytes(),
+                                     "text/csv", csv.name)
+            except Exception:  # pragma: no cover — the PDF is the one that matters
+                pass
 
     # ------------------------------------------------------------------
     # Numeric summary
@@ -3236,6 +3323,8 @@ class AnalysisTab(QWidget):
         cutoff frequency (Hz):") that are not kept as attributes and would
         otherwise be left behind.
         """
+        if mode != self._mode:
+            self._esperadas = None
         self._mode = mode
         self._advanced = advanced
 

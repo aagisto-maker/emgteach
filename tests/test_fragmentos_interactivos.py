@@ -121,14 +121,17 @@ class TestTheSlidersMoveTheProposal:
         assert dlg._sld_k.value() == 30
         dlg.deleteLater()
 
-    def test_a_click_on_a_stretch_drops_it_and_another_brings_it_back(
+    def test_a_click_selects_a_stretch_and_the_buttons_decide(
         self, qapp
     ) -> None:
         dlg = FragmentSelectionDialog(_bursts(), FS, FK)
         assert len(dlg.selected_segments()) == 2
-        dlg._toggle_at(2.5)
+        dlg._clic_en(2.5)
+        assert len(dlg.selected_segments()) == 2
+        dlg._eliminar()
         assert len(dlg.selected_segments()) == 1
-        dlg._toggle_at(2.5)
+        dlg._clic_en(2.5)
+        dlg._mantener()
         assert len(dlg.selected_segments()) == 2
         dlg.deleteLater()
 

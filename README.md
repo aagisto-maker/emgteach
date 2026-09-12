@@ -57,7 +57,7 @@ signal-quality check**; v1.0.0 reimplemented the BITalino backend over
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **976 tests** passing on Linux and Windows across Python
+test suite of **1060 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
@@ -197,9 +197,12 @@ bilingual: English-canonical source plus a Spanish translation map).
 
 ## How this software was developed
 
-emgteach was developed with the assistance of an AI coding tool (Claude Code, Anthropic).
-The author defined the physiological and teaching requirements, wrote the functional
-specifications, selected the signal-processing methods and their parameters from the
+emgteach began in 2025 as a set of Python programs written by the author on top of
+open-source libraries and the boards' own interfaces, which already acquired, filtered
+and analysed the signal separately. Bringing them together into a single application,
+and the development since, were carried out with the assistance of an AI coding tool
+(Claude Code, Anthropic). The author defined the physiological and teaching
+requirements, wrote the functional specifications, selected the signal-processing methods and their parameters from the
 published literature, reviewed every change and validated the application on hardware.
 The specifications that guided development are in `docs/` (files named `ESPEC-*.md`),
 and the automated test suite is part of the repository.
