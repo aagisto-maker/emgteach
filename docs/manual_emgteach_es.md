@@ -1050,7 +1050,7 @@ que detener la grabación y pulsar de nuevo **«Guía»**.
 **«Máximo de la tarea: … no fue un máximo», en rojo.** El registro pasa del 150 %
 de la referencia: la calibración no fue una contracción máxima y todos los
 porcentajes están altos en la misma proporción. Repetirla contra la mesa, con el
-puño cerrado, manteniendo los cuatro segundos; y revisar en «Repeticiones de la
+puño cerrado, a tope hasta que la cuenta llegue a 0; y revisar en «Repeticiones de la
 calibración…» si alguna repetición floja está bajando la referencia (§5.1).
 
 **La tabla de coactivación dice «no se informa».** Uno de los dos músculos no

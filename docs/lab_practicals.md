@@ -65,7 +65,7 @@ By the end, students should be able to:
 - **Disposable** electrodes, one set per person; clean the skin with alcohol and
   let it dry. Do not reuse electrodes between subjects.
 - Subjects with skin lesions in the area should abstain.
-- Maximal efforts are brief (four seconds) and are made against the table, never
+- Maximal efforts are brief (1.5 s) and are made against the table, never
   against another person. Anyone who feels joint pain stops.
 
 ---
@@ -156,8 +156,8 @@ recording.
 >   ended at 109 %.
 > - **Extensor (ECR): back of the hand** against the table top, forearm pronated,
 >   wrist about 20° in flexion, fingers relaxed.
-> - **Hold the four seconds.** If the envelope spikes and drops, the repetition is
->   no good; the application lets you discard it afterwards.
+> - **Flat out until the count reaches 0** (1.5 s). A repetition that comes out
+>   weak is no good; the application lets you discard it afterwards.
 > - **Immediate check:** when the task is over, the analysis summary states the
 >   **task maximum** in % MVC. Above 150 % it is flagged in red, «not a maximum»,
 >   and the calibration has to be repeated. Between 90 and 125 % is what

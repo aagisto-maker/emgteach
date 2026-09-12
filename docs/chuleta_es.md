@@ -86,7 +86,7 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
 - **Sin señal / línea plana** → contacto de electrodos, referencia, canal correcto.
 - **Ruido a 50 Hz** → mejorar contacto; alejar cargadores y cables.
 - **«no fue un máximo»** (en rojo, Máximo de la tarea) → recalibrar contra la
-  mesa, puño cerrado, mantener los 4 s.
+  mesa, puño cerrado, a tope hasta que la cuenta llegue a 0.
 - **La tabla de coactivación dice «no se informa»** → en una flexión o extensión
   limpia es lo correcto; hace falta una **presa** para que dé número.
 - **La presa no coactiva** → la muñeca está apoyada en la mesa. Tiene que quedar

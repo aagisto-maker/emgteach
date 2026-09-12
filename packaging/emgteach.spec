@@ -52,6 +52,12 @@ datas += [
     (os.path.join(SRC, "emgteach", "web", "dashboard.html"), "emgteach/web"),
 ]
 
+# --- the guided tour's pictures (data files, not modules) ------------------
+datas += [
+    (os.path.join(SRC, "emgteach", "gui", "assets", "recorrido"),
+     "emgteach/gui/assets/recorrido"),
+]
+
 # --- explicit hidden imports ------------------------------------------------
 hiddenimports += [
     "matplotlib.backends.backend_qtagg",  # Analysis / MVC live canvases

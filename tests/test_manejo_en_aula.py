@@ -1074,3 +1074,72 @@ class TestKinematicsCountsTheLifts:
         ana._esperadas = (9,)
         ana._olvidar_lo_elegido()
         assert ana._esperadas is None
+
+
+class TestTheTourShowsWhatToDo:
+    """Tres de las cinco alumnas pidieron imágenes de qué hacer en cada
+    momento: dónde van los electrodos y qué hacer cuando aparece FCR o ECR."""
+
+    def test_both_pictures_exist_in_both_languages(self) -> None:
+        from PySide6.QtGui import QImage
+
+        import emgteach.gui.tour as tour
+
+        for nombre in ("electrodos", "calibracion"):
+            for idioma in ("es", "en"):
+                ruta = tour._IMAGENES / f"{nombre}_{idioma}.png"
+                assert ruta.is_file(), ruta
+                assert QImage(str(ruta)).width() >= 800, ruta
+
+    def test_the_picture_follows_the_language(self) -> None:
+        from emgteach.gui.tour import imagen
+        from emgteach.i18n import get_language, set_language
+
+        anterior = get_language()
+        try:
+            set_language("es")
+            assert imagen("electrodos").endswith("electrodos_es.png")
+            set_language("en")
+            assert imagen("electrodos").endswith("electrodos_en.png")
+        finally:
+            set_language(anterior)
+        assert imagen("no_existe") is None
+
+    def test_the_pair_tour_carries_them_and_the_others_do_not(
+        self, main_window, monkeypatch
+    ) -> None:
+        from emgteach.gui.tour import build_tour
+        from emgteach.modes import MODE_KINEMATICS, MODE_PAIR, MODE_SINGLE
+
+        monkeypatch.setattr(main_window, "_mode", lambda: MODE_PAIR)
+        rutas = [s.image_path() for s in build_tour(main_window)]
+        assert [r is not None for r in rutas].count(True) == 2
+        assert any("electrodos" in r for r in rutas if r)
+        assert any("calibracion" in r for r in rutas if r)
+        for modo in (MODE_SINGLE, MODE_KINEMATICS):
+            monkeypatch.setattr(main_window, "_mode", lambda m=modo: m)
+            assert all(s.image_path() is None for s in build_tour(main_window))
+
+    def test_the_panel_shows_the_picture_and_widens_for_it(self, main_window) -> None:
+        from emgteach.gui.tour import imagen
+        from emgteach.gui.widgets.coach import CoachMark, CoachStep
+
+        marca = CoachMark(main_window)
+        marca.start([CoachStep("t", "b", image=lambda: imagen("electrodos"))])
+        assert not marca._lbl_img.isHidden()
+        assert marca._panel.width() > 430
+        assert marca._panel.height() > marca._lbl_img.height()
+        assert marca._lbl_img.height() <= main_window.height() * 0.5 + 1
+        marca.stop()
+        marca.start([CoachStep("t", "b")])
+        assert marca._lbl_img.isHidden()
+        assert marca._panel.width() == 430
+        marca.stop()
+        marca.deleteLater()
+
+    def test_the_build_carries_them(self) -> None:
+        raiz = Path(__file__).resolve().parents[1]
+        spec = (raiz / "packaging" / "emgteach.spec").read_text(encoding="utf-8")
+        assert '"gui", "assets", "recorrido"' in spec
+        prueba = (raiz / "packaging" / "run_emgteach.py").read_text(encoding="utf-8")
+        assert "tour picture missing" in prueba

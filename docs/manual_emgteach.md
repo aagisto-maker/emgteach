@@ -775,8 +775,8 @@ box says the same.
 
 **«Task maximum: … not a maximum», in red.** The recording exceeds 150 % of the
 reference: the calibration was not a maximal contraction and every percentage is
-high in the same proportion. Repeat it against the table, fist closed, holding
-the four seconds; and check in «Calibration repetitions…» whether a weak
+high in the same proportion. Repeat it against the table, fist closed, flat out
+until the count reaches 0; and check in «Calibration repetitions…» whether a weak
 repetition is lowering the reference (§5.1).
 
 **The co-activation table says «not reported».** One of the two muscles did not

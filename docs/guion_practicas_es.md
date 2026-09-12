@@ -62,7 +62,7 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 - Electrodos **desechables**, uno por persona; limpiar la piel con alcohol y dejar
   secar. No reutilizar electrodos entre sujetos.
 - Personas con lesiones cutáneas en la zona deben abstenerse.
-- Los esfuerzos máximos son breves (cuatro segundos) y se hacen contra la mesa,
+- Los esfuerzos máximos son breves (1,5 s) y se hacen contra la mesa,
   no contra otra persona. Quien note dolor articular, para.
 
 ---
@@ -153,8 +153,8 @@ pasaba: 135 % de «máximo» en un registro.
 >   el puño cerrado, la tarea quedó al 109 %.
 > - **Extensor (ECR): dorso de la mano** contra el tablero, antebrazo pronado,
 >   muñeca unos 20° en flexión, dedos relajados.
-> - **Mantener los cuatro segundos.** Si la envolvente hace una púa y cae, la
->   repetición no vale; la aplicación permite descartarla después.
+> - **A tope hasta que la cuenta llegue a 0** (1,5 s). Una repetición que salga
+>   floja no vale; la aplicación permite descartarla después.
 > - **Comprobación inmediata:** al terminar la tarea, el resumen del análisis dice
 >   el **máximo de la tarea** en % CVM. Si pasa del 150 % lo marca en rojo, «no fue
 >   un máximo», y hay que repetir la calibración. Entre el 90 y el 125 % es lo que

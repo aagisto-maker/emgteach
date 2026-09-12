@@ -18,14 +18,22 @@ Explaining a control the user cannot see is worse than not explaining it.
 
 The wording is the teaching content of the application, so it is the author's
 to write.
+
+Two steps carry a picture in the agonist/antagonist practical — where the
+electrodes go, and what the calibration asks for — because what students asked
+for after using it was to see what to do, not to read it. The pictures are
+drawn by ``tools/imagenes_recorrido.py`` from one base with the author's
+anatomy, one file per language; the other practicals record a muscle that is
+not known in advance, and show none.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from emgteach.gui.widgets.coach import CoachStep
-from emgteach.i18n import tr
+from emgteach.i18n import get_language, tr
 from emgteach.modes import (
     MODE_PAIR,
     MODE_SINGLE,
@@ -37,6 +45,18 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from emgteach.gui.app import MainWindow
 
 TAB_ACQ, TAB_ANA, TAB_MVC = 0, 1, 2
+
+_IMAGENES = Path(__file__).resolve().parent / "assets" / "recorrido"
+
+
+def imagen(nombre: str) -> str | None:
+    """The tour picture ``nombre`` in the interface's language, else in
+    English, else None."""
+    for idioma in (get_language(), "en"):
+        ruta = _IMAGENES / f"{nombre}_{idioma}.png"
+        if ruta.is_file():
+            return str(ruta)
+    return None
 
 
 def build_tour(win: MainWindow) -> list[CoachStep]:
@@ -99,6 +119,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         ) + " " + nombres,
         lambda: adq._btn_conectar,
         tab=TAB_ACQ,
+        image=(lambda: imagen("electrodos")) if mode == MODE_PAIR else None,
     ))
 
     # 3 ── Record, with the maximum inside the recording.
@@ -115,6 +136,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         ),
         lambda: adq._btn_grabar,
         tab=TAB_ACQ,
+        image=(lambda: imagen("calibracion")) if mode == MODE_PAIR else None,
     ))
 
     # The kinematics practical has two things nobody would guess: where the

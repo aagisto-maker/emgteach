@@ -90,7 +90,7 @@ limits.
 - **No signal / flat line** → electrode contact, reference, correct channel.
 - **50 Hz noise** → improve contact; move away from chargers and mains cables.
 - **«not a maximum»** (in red, Task maximum) → recalibrate against the table, fist
-  closed, hold the 4 s.
+  closed, flat out until the count reaches 0.
 - **The co-activation table says «not reported»** → in a clean flexion or
   extension that is correct; a **grip** is needed for a number.
 - **The grip does not co-activate** → the wrist is resting on the table. It has to

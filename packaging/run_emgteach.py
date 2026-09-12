@@ -65,6 +65,14 @@ def _selftest_body() -> None:
     for _name in _RUNTIME_MODULES:
         importlib.import_module(_name)
 
+    # The tour's pictures are data files, not modules: a build that left them
+    # out would start, and show the tour without them.
+    from emgteach.gui.tour import imagen
+
+    for _nombre in ("electrodos", "calibracion"):
+        if imagen(_nombre) is None:
+            raise FileNotFoundError(f"tour picture missing from the build: {_nombre}")
+
     from PySide6.QtCore import QSettings
     from PySide6.QtWidgets import QApplication
 
