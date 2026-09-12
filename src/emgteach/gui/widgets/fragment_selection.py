@@ -24,10 +24,11 @@ that kind ever gets set.
 **Three steps, and the screen holds still.** The sensitivity comes first,
 above the plot, with a counter beside it: how many contractions of each kind
 are marked against how many the protocol asks for, so a missing flexion is
-seen without anyone having to look for it. Then the marks are corrected by
-clicking — a shaded stretch is dropped, or brought back. Then ◀ ▶ go through
-the rows one by one, and one button per muscle confirms or corrects who led
-each. Going through them moves a highlight; the axes do not move.
+seen without anyone having to look for it. Then each contraction is taken in
+turn — with ◀ ▶, or by clicking it on the plot — and three buttons keep it,
+drop it, or split it in two where a row turns out to hold two contractions;
+one button per muscle confirms or corrects who led it. Going through them
+moves a highlight; the axes do not move.
 
 **Correcting never places a mark by hand.** Dropping a wrong mark that sits
 beside a contraction the detector missed left that contraction unrepresented,
@@ -35,7 +36,10 @@ and dragging the mark onto it measures whatever window the hand let go of.
 Instead, the stretches that clear the line half the sensitivity would draw,
 and that no row covers, are drawn dotted, and a click makes one a row. A mark
 therefore always sits on activity the threshold located — much what lowering
-k would do, applied to one contraction instead of the whole recording.
+k would do, applied to one contraction instead of the whole recording. A
+split, likewise, goes to the valley the envelopes show between the two peaks
+(see :func:`emgteach.selection.split_fragment`), not to where a hand would
+put it, and the cut is drawn before it is made.
 
 The dialog is constructible directly from signal arrays (so it can be unit
 tested headless) or from an EDF file via :meth:`FragmentSelectionDialog.from_edf`.
@@ -48,6 +52,7 @@ from typing import Any
 
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
@@ -81,6 +86,7 @@ from emgteach.selection import (
     _find_runs,
     activity_threshold,
     normalise_segments,
+    split_fragment,
     suggest_significant_segments,
     total_duration_s,
 )
@@ -238,6 +244,11 @@ class FragmentSelectionDialog(QDialog):
         self._t = np.arange(len(self._env)) / self._fs
         self._env_2 = self._envolvente(self._raw_2)
         self._techo = self._techo_de_la_senal()
+        # What a split needs: each envelope and its resting baseline, which
+        # does not move with the sensitivity.
+        i0, i1 = round(self._span[0] * self._fs), round(self._span[1] * self._fs)
+        self._envs = [e for e in (self._env, self._env_2) if e is not None]
+        self._bases = [activity_threshold(e[i0:i1], 1.0)[0] for e in self._envs]
 
         # Rebuilding the proposal is a filter pass over the whole span; a
         # slider being dragged asks for it at every pixel. One timer, armed
@@ -377,12 +388,12 @@ class FragmentSelectionDialog(QDialog):
         # screen is used: the sensitivity, the clicks, the walk through.
         texto = tr(
             "Each row is one contraction found in the recording. Set the "
-            "sensitivity until the count beside it matches what was done; "
-            "correct the marks by clicking the plot — a shaded stretch to "
-            "drop it, a dotted one to add it; then go through them with ◀ ▶. "
-            "Only the kept rows are analysed, joined up as if recorded in one "
-            "go. Press «Use these fragments» even if you change nothing: that "
-            "is what applies them."
+            "sensitivity until the count beside it matches what was done. "
+            "Then go through the contractions with ◀ ▶, or click one on the "
+            "plot, and keep it, drop it or split it in two; a click on a "
+            "dotted stretch adds it. Only the kept rows are analysed, joined "
+            "up as if recorded in one go. Press «Use these fragments» even if "
+            "you change nothing: that is what applies them."
         )
         if self._naming:
             texto += " " + tr(
@@ -557,10 +568,7 @@ class FragmentSelectionDialog(QDialog):
         ))
         self._btn_reset.clicked.connect(self._reset_detection)
         lay.addWidget(self._btn_reset, 3, 2)
-        pista = QLabel(tr(
-            "Click a shaded stretch to drop it or bring it back; a dotted "
-            "one, to add it."
-        ))
+        pista = QLabel(tr("Click a stretch to select it; a dotted one, to add it."))
         pista.setStyleSheet("color:#6B7580; font-size:10px;")
         lay.addWidget(pista, 3, 3)
 
@@ -625,6 +633,28 @@ class FragmentSelectionDialog(QDialog):
         self._btn_next.setToolTip(tr("Next contraction"))
         self._btn_next.clicked.connect(self._siguiente)
         nav.addWidget(self._btn_next)
+        # What is done with the contraction under review, one click each.
+        # Keep and drop move on to the next, like the names; a split stays on
+        # the first half, whose name is the next thing to check.
+        nav.addSpacing(16)
+        self._btn_mantener = QPushButton(tr("Keep it"))
+        self._btn_mantener.setCheckable(True)
+        self._btn_mantener.setToolTip(
+            tr("Keep this contraction in the analysis and go on to the next.")
+        )
+        self._btn_mantener.clicked.connect(self._mantener)
+        nav.addWidget(self._btn_mantener)
+        self._btn_eliminar = QPushButton(tr("Drop it"))
+        self._btn_eliminar.setCheckable(True)
+        self._btn_eliminar.setToolTip(tr(
+            "Leave this contraction out of the analysis and go on to the next. "
+            "It stays on the plot, hatched, and «Keep it» brings it back."
+        ))
+        self._btn_eliminar.clicked.connect(self._eliminar)
+        nav.addWidget(self._btn_eliminar)
+        self._btn_dividir = QPushButton(tr("Split it"))
+        self._btn_dividir.clicked.connect(self._dividir)
+        nav.addWidget(self._btn_dividir)
         # Confirming is choosing, not typing: the three things the column can
         # say, one click each, and the click moves on to the next row.
         self._btns_nombre: dict[str, QPushButton] = {}
@@ -636,7 +666,11 @@ class FragmentSelectionDialog(QDialog):
                                   (self._both_label, _SHADE_BOTH)):
                 b = QPushButton(nombre)
                 b.setCheckable(True)
-                b.setStyleSheet(f"QPushButton:checked {{ border: 2px solid {color}; }}")
+                # Colour and weight only: a border in a style sheet takes the
+                # button's native look away and shrinks it to its text.
+                b.setStyleSheet(
+                    f"QPushButton:checked {{ color: {color}; font-weight: bold; }}"
+                )
                 b.setToolTip(tr("Name this contraction and go on to the next."))
                 b.clicked.connect(lambda _c=False, n=nombre: self._etiquetar(n))
                 nav.addWidget(b)
@@ -969,18 +1003,20 @@ class FragmentSelectionDialog(QDialog):
     def _on_click(self, event) -> None:
         if event.inaxes is not self._ax or event.xdata is None:
             return
-        self._toggle_at(float(event.xdata))
+        self._clic_en(float(event.xdata))
 
-    def _toggle_at(self, x: float) -> None:
-        """A click at ``x`` seconds: a row's stretch is dropped or brought
-        back, a dotted candidate becomes a row, anywhere else does nothing.
-        A mark never lands where the detector found nothing."""
+    def _clic_en(self, x: float) -> None:
+        """A click at ``x`` seconds: a row's stretch is selected, for the
+        buttons under the plot to keep, drop or split; a dotted candidate
+        becomes a row; anywhere else does nothing.
+
+        The click used to drop the row outright, which made the plot a switch
+        rather than a way to pick a contraction and look at it. And a mark
+        still never lands where the detector found nothing."""
         for i, w in enumerate(self._row_widgets):
             a = w["start"].value()  # type: ignore[attr-defined]
             b = w["end"].value()  # type: ignore[attr-defined]
             if a <= x <= b:
-                chk = w["keep"]
-                chk.setChecked(not chk.isChecked())  # type: ignore[attr-defined]
                 self._ir_a(i)
                 return
         for c in self._candidatos_libres():
@@ -1025,6 +1061,64 @@ class FragmentSelectionDialog(QDialog):
             return
         self._row_widgets[i]["label"].setCurrentText(nombre)  # type: ignore[attr-defined]
         self._siguiente()
+
+    def _mantener(self) -> None:
+        self._decidir(True)
+
+    def _eliminar(self) -> None:
+        self._decidir(False)
+
+    def _decidir(self, conservar: bool) -> None:
+        """Keep or drop the row under review and go on: one click per row.
+
+        Dropped, not deleted: it stays on the plot, hatched, and «Keep it»
+        brings it back.
+        """
+        i = self._fila_actual
+        if not 0 <= i < len(self._row_widgets):
+            return
+        self._row_widgets[i]["keep"].setChecked(conservar)  # type: ignore[attr-defined]
+        self._siguiente()
+
+    def _corte(
+        self, fila: int
+    ) -> tuple[tuple[float, float], tuple[float, float]] | None:
+        """Where row ``fila`` would be split, or None when it holds one
+        contraction."""
+        if not 0 <= fila < len(self._row_widgets) or not self._envs:
+            return None
+        w = self._row_widgets[fila]
+        return split_fragment(
+            self._envs, self._bases, self._fs,
+            w["start"].value(), w["end"].value(),  # type: ignore[attr-defined]
+        )
+
+    def _dividir(self) -> None:
+        """Split the row under review at the valley between its two
+        contractions. Both halves keep the row's state and are named anew;
+        the first stays under review."""
+        i = self._fila_actual
+        corte = self._corte(i)
+        if corte is None:
+            return
+        (a0, a1), (b0, b1) = corte
+        # The table holds hundredths of a second, and pieces a sample apart
+        # would round onto each other there and be joined again downstream.
+        a1 = float(np.floor(a1 * 100.0)) / 100.0
+        b0 = max(float(np.ceil(b0 * 100.0)) / 100.0, a1 + 0.01)
+        filas = self._filas_con_estado()
+        fila, conservar = filas[i]
+        mitades = [Segment(a0, a1, reason="split", label=fila.label),
+                   Segment(b0, b1, reason="split", label=fila.label)]
+        if self._naming and self._env_2 is not None:
+            mitades = [
+                Segment(m.start_s, m.end_s, m.score, m.reason, nombre)
+                for m, nombre in zip(mitades, self._nombres_propuestos(mitades),
+                                     strict=True)
+            ]
+        filas[i:i + 1] = [(m, conservar) for m in mitades]
+        self._reconstruir(filas)
+        self._ir_a(i)
 
     # -- derived state (duration cells, total label, preview) ----------------
 
@@ -1100,6 +1194,19 @@ class FragmentSelectionDialog(QDialog):
         for nombre, b in self._btns_nombre.items():
             b.setEnabled(0 <= i < n)
             b.setChecked(nombre == actual)
+        hay = 0 <= i < n
+        conservada = hay and self._row_widgets[i]["keep"].isChecked()  # type: ignore[attr-defined]
+        self._btn_mantener.setEnabled(hay)
+        self._btn_mantener.setChecked(conservada)
+        self._btn_eliminar.setEnabled(hay)
+        self._btn_eliminar.setChecked(hay and not conservada)
+        divisible = hay and self._corte(i) is not None
+        self._btn_dividir.setEnabled(divisible)
+        self._btn_dividir.setToolTip(
+            tr("This row has a single peak: there is nothing to split.")
+            if hay and not divisible
+            else tr("Cut this row in two at the deepest valley between its peaks.")
+        )
 
     def _shade_colour(self, label: str) -> str:
         if not self._naming or self._env_2 is None:
@@ -1146,8 +1253,12 @@ class FragmentSelectionDialog(QDialog):
                 continue
             if w["keep"].isChecked():  # type: ignore[attr-defined]
                 nombre = w["label"].currentText().strip()  # type: ignore[attr-defined]
-                self._ax.axvspan(ini, fin, color=self._shade_colour(nombre),
-                                 alpha=0.25, lw=0)
+                # A white edge, so two rows that touch — the halves of a
+                # split — still read as two.
+                self._ax.axvspan(
+                    ini, fin, facecolor=to_rgba(self._shade_colour(nombre), 0.25),
+                    edgecolor="white", lw=1.2,
+                )
             else:
                 self._ax.axvspan(ini, fin, color=_SHADE_DROPPED, alpha=0.15,
                                  hatch="//", lw=0)
@@ -1166,6 +1277,11 @@ class FragmentSelectionDialog(QDialog):
             if fin > ini:
                 self._ax.axvspan(ini, fin, fill=False, edgecolor=_EDGE_CURRENT,
                                  lw=2.0)
+            corte = self._corte(i)
+            if corte is not None:
+                # Where «Split it» would cut, before it does.
+                self._ax.axvline((corte[0][1] + corte[1][0]) / 2.0,
+                                 color=_EDGE_CURRENT, lw=1.0, ls="-.")
         self._ax.legend(loc="upper right", fontsize=8, frameon=False)
         # Fixed axes: the span across, the signal's own top upwards — raised
         # only when the threshold line would otherwise leave the plot.

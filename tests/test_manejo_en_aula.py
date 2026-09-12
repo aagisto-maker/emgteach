@@ -477,7 +477,8 @@ class TestTheCounter:
         dlg = _dialogo(expected=(2,))
         etiqueta = dlg._contadores[0][1]
         assert etiqueta.text() == f"{tr('Contractions')}: 2 /"
-        dlg._toggle_at(2.5)
+        dlg._clic_en(2.5)
+        dlg._eliminar()
         assert etiqueta.text() == f"{tr('Contractions')}: 1 /"
         assert etiqueta.toolTip()
         dlg.deleteLater()
@@ -584,7 +585,7 @@ class TestADottedCandidateIsOneClickAway:
     def test_a_click_on_it_makes_it_a_row_in_its_place(self, qapp) -> None:
         dlg = self._debil(expected=(3,))
         assert dlg._contadores[0][1].toolTip(), "dos de tres: avisa"
-        dlg._toggle_at(4.7)
+        dlg._clic_en(4.7)
         filas = dlg.selected_segments()
         assert len(filas) == 3
         assert 4.2 < filas[1][0] < 5.1
@@ -594,25 +595,28 @@ class TestADottedCandidateIsOneClickAway:
         assert dlg._contadores[0][1].toolTip() == "", "tres de tres"
         dlg.deleteLater()
 
-    def test_a_click_on_a_marked_one_drops_it_and_another_brings_it_back(
-        self, qapp
-    ) -> None:
+    def test_a_promoted_one_is_edited_like_the_rest(self, qapp) -> None:
         dlg = self._debil()
-        dlg._toggle_at(4.7)
-        dlg._toggle_at(4.7)
+        dlg._clic_en(4.7)
+        dlg._clic_en(4.7)
+        assert len(dlg.selected_segments()) == 3, "el segundo clic selecciona"
+        assert dlg._fila_actual == 1
+        dlg._eliminar()
         assert len(dlg.selected_segments()) == 2
-        assert len(dlg._row_widgets) == 3, "descartada, no borrada: a un clic"
-        dlg._toggle_at(4.7)
+        assert len(dlg._row_widgets) == 3, "descartada, no borrada"
+        dlg._clic_en(4.7)
+        dlg._mantener()
         assert len(dlg.selected_segments()) == 3
         dlg.deleteLater()
 
-    def test_moving_a_wrong_mark_is_two_clicks(self, qapp) -> None:
+    def test_moving_a_wrong_mark_never_places_one_by_hand(self, qapp) -> None:
         """La marca mal puesta, sobre reposo junto a la contracción débil, se
         retira; la débil se promueve. Nunca hay un marcador en un punto libre."""
         dlg = self._debil(segments=[(2.0, 3.5), (3.6, 4.2), (6.0, 7.5)])
         assert len(dlg._candidatos_libres()) == 1
-        dlg._toggle_at(3.9)
-        dlg._toggle_at(4.7)
+        dlg._clic_en(3.9)
+        dlg._eliminar()
+        dlg._clic_en(4.7)
         filas = dlg.selected_segments()
         assert len(filas) == 3
         assert not any(3.6 <= a < 4.2 for a, _b in filas)
@@ -621,7 +625,7 @@ class TestADottedCandidateIsOneClickAway:
 
     def test_a_click_where_there_is_nothing_does_nothing(self, qapp) -> None:
         dlg = self._debil()
-        dlg._toggle_at(9.0)
+        dlg._clic_en(9.0)
         assert len(dlg._row_widgets) == 2
         dlg.deleteLater()
 
@@ -637,8 +641,160 @@ class TestADottedCandidateIsOneClickAway:
 
         dlg = _dialogo(_serie(0.008), raw_2=_serie(seed=1) * 0.3,
                        name_1="FCR", name_2="ECR", detection={"k": 4.4})
-        dlg._toggle_at(4.7)
+        dlg._clic_en(4.7)
         assert len(dlg._row_widgets) == 3
         nombre = dlg._row_widgets[1]["label"].currentText()
         assert nombre in {"FCR", "ECR", tr("Co-activation")}
+        dlg.deleteLater()
+
+
+def _dos_seguidas():
+    """Dos contracciones con medio segundo de reposo entre ellas: la primera
+    en el primer canal y la segunda en el segundo."""
+    import numpy as np
+
+    rng = np.random.default_rng(3)
+    c1 = rng.normal(0.0, 0.01, size=8 * FS)
+    c2 = rng.normal(0.0, 0.01, size=8 * FS)
+    for canal, (a, b) in ((c1, (2.0, 3.0)), (c2, (3.5, 4.5))):
+        i0, i1 = int(a * FS), int(b * FS)
+        t = np.arange(i1 - i0) / FS
+        canal[i0:i1] += 0.5 * np.sin(2 * np.pi * 90.0 * t)
+    return c1, c2
+
+
+class TestSplitFragment:
+    """Una fila que guarda dos contracciones se corta por el valle que se ve
+    entre ellas, no por donde caiga la mano."""
+
+    @staticmethod
+    def _env(*picos, fs=100, dur=4.0):
+        import numpy as np
+
+        t = np.arange(int(dur * fs)) / fs
+        env = np.zeros_like(t)
+        for centro, alto in picos:
+            env += alto * np.exp(-0.5 * ((t - centro) / 0.15) ** 2)
+        return env
+
+    def test_two_contractions_are_cut_at_the_valley(self) -> None:
+        from emgteach.selection import split_fragment
+
+        env = self._env((1.5, 1.0), (2.5, 0.8))
+        (a0, a1), (b0, b1) = split_fragment([env], [0.0], 100, 0.5, 3.5)
+        assert (a0, b1) == (0.5, 3.5), "los extremos no se mueven"
+        assert 1.5 < a1 < b0 < 2.5, "cada mitad, recortada a su esfuerzo"
+
+    def test_a_single_contraction_is_not_cut(self) -> None:
+        from emgteach.selection import split_fragment
+
+        assert split_fragment([self._env((2.0, 1.0))], [0.0], 100, 0.5, 3.5) is None
+
+    def test_a_tail_is_not_a_second_contraction(self) -> None:
+        from emgteach.selection import split_fragment
+
+        cola = self._env((1.5, 1.0), (2.4, 0.3))
+        assert split_fragment([cola], [0.0], 100, 0.5, 3.5) is None
+
+    def test_a_shallow_valley_is_one_contraction(self) -> None:
+        from emgteach.selection import split_fragment
+
+        meseta = self._env((1.6, 1.0), (2.05, 0.9))
+        assert split_fragment([meseta], [0.0], 100, 0.5, 3.5) is None
+
+    def test_either_muscle_can_lead_either_half(self) -> None:
+        from emgteach.selection import split_fragment
+
+        uno, otro = self._env((1.5, 1.0)), self._env((2.5, 3.0))
+        assert split_fragment([uno, otro], [0.0, 0.0], 100, 0.5, 3.5) is not None
+
+
+class TestEditingOneContraction:
+    """Un clic sobre una contracción la selecciona, como ◀ ▶, y tres botones
+    deciden: mantenerla, eliminarla o dividirla."""
+
+    def test_a_click_selects_and_drops_nothing(self, qapp) -> None:
+        dlg = _dialogo()
+        dlg._clic_en(2.5)
+        assert dlg._fila_actual == 0
+        assert len(dlg.selected_segments()) == 2
+        assert dlg._btn_mantener.isChecked()
+        assert not dlg._btn_eliminar.isChecked()
+        dlg.deleteLater()
+
+    def test_keep_and_drop_decide_and_move_on(self, qapp) -> None:
+        dlg = _dialogo()
+        dlg._clic_en(2.5)
+        dlg._eliminar()
+        assert not dlg._row_widgets[0]["keep"].isChecked()
+        assert dlg._fila_actual == 1
+        dlg._anterior()
+        assert dlg._btn_eliminar.isChecked()
+        dlg._mantener()
+        assert dlg._row_widgets[0]["keep"].isChecked()
+        assert dlg._fila_actual == 1
+        dlg.deleteLater()
+
+    def test_with_nothing_under_review_there_is_nothing_to_decide(
+        self, qapp
+    ) -> None:
+        dlg = _dialogo()
+        assert not dlg._btn_mantener.isEnabled()
+        assert not dlg._btn_eliminar.isEnabled()
+        assert not dlg._btn_dividir.isEnabled()
+        dlg._eliminar()
+        assert len(dlg.selected_segments()) == 2
+        dlg.deleteLater()
+
+    def test_a_row_holding_two_contractions_splits_in_two(self, qapp) -> None:
+        c1, c2 = _dos_seguidas()
+        dlg = _dialogo(c1, raw_2=c2, name_1="FCR", name_2="ECR",
+                       segments=[(1.8, 4.7)], labels=["FCR"])
+        dlg._clic_en(3.0)
+        assert dlg._btn_dividir.isEnabled()
+        dlg._dividir()
+        filas = dlg.selected_segments()
+        assert len(filas) == 2, "dos filas, que no se vuelven a unir"
+        (a0, a1), (b0, b1) = filas
+        assert a0 == pytest.approx(1.8)
+        assert b1 == pytest.approx(4.7)
+        assert 2.9 < a1 < b0 < 3.6
+        assert [w["label"].currentText() for w in dlg._row_widgets] == ["FCR", "ECR"]
+        assert dlg._fila_actual == 0
+        dlg.deleteLater()
+
+    def test_a_single_contraction_offers_no_split(self, qapp) -> None:
+        dlg = _dialogo()
+        dlg._clic_en(2.5)
+        assert not dlg._btn_dividir.isEnabled()
+        dlg._dividir()
+        assert len(dlg._row_widgets) == 2
+        dlg.deleteLater()
+
+    def test_the_cut_is_drawn_before_it_is_made(self, qapp) -> None:
+        c1, c2 = _dos_seguidas()
+        dlg = _dialogo(c1, raw_2=c2, name_1="FCR", name_2="ECR",
+                       segments=[(1.8, 4.7)])
+        punteada = [ln for ln in dlg._ax.get_lines() if ln.get_linestyle() == "-."]
+        assert punteada == []
+        dlg._clic_en(3.0)
+        cortes = [ln for ln in dlg._ax.get_lines() if ln.get_linestyle() == "-."]
+        assert len(cortes) == 1
+        assert 3.0 < cortes[0].get_xdata()[0] < 3.5
+        dlg.deleteLater()
+
+
+class TestTheSplitSurvivesTheTable:
+    def test_pieces_a_sample_apart_are_not_joined_again(
+        self, qapp, monkeypatch
+    ) -> None:
+        """La tabla guarda centésimas: dos mitades a una muestra de distancia
+        se redondeaban a la misma y el análisis las volvía a unir."""
+        dlg = _dialogo(segments=[(1.8, 4.3)])
+        dlg._ir_a(0)
+        monkeypatch.setattr(dlg, "_corte", lambda _i: ((1.8, 3.1234), (3.1244, 4.3)))
+        dlg._dividir()
+        filas = dlg.selected_segments()
+        assert len(filas) == 2
+        assert filas[0][1] < filas[1][0]
         dlg.deleteLater()
