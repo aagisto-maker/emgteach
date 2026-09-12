@@ -503,12 +503,12 @@ _ES = {
     "MVC normalisation": "Normalización CVM",
     "Interface language": "Idioma de la interfaz",
     "About EMG Bioinstrumentation": "Acerca de EMG Bioinstrumentación",
+    "Department of Physiology. Faculty of Pharmacy. UCM":
+        "Departamento de Fisiología. Facultad de Farmacia. UCM",
     "Language": "Idioma",
     "The language change will take effect when you restart the application.":
         "El cambio de idioma se aplicará al reiniciar la aplicación.",
     "Version": "Versión",
-    "Physiology Department, Complutense University of Madrid":
-        "Departamento de Fisiología, Universidad Complutense de Madrid",
 
     # --- acquisition worker / GUI ---
     "Loading EMG signal: {path}": "Cargando señal EMG: {path}",

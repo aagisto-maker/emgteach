@@ -110,6 +110,32 @@ _EDGE_NOWHERE = "#C0392B"
 #: The counter, when the count matches the protocol and when it does not.
 _COUNT_OK = "#2E7D32"
 _COUNT_OFF = "#B9770E"
+#: How the navigation buttons look pressed, drawn by the application as
+#: (background, text, border). Windows paints a checked button in its own
+#: accent blue, and the muscle's colour laid over it as text — red on blue —
+#: could not be read. «Keep it» pressed is green, like a row that stays;
+#: «Drop it» grey, like the hatching of a dropped row; a muscle's button takes
+#: the muscle's colour, with white text.
+_PULSADO_MANTENER = ("#E3F1E6", "#1B5E20", "#2E7D32")
+_PULSADO_ELIMINAR = ("#ECEFF1", "#37474F", "#607D8B")
+
+
+def _estilo_boton(pulsado: tuple[str, str, str] | None = None) -> str:
+    """The style sheet of a navigation button, its pressed state included."""
+    base = (
+        "QPushButton { padding: 4px 12px; border: 1px solid #9AA5B1;"
+        " border-radius: 4px; background: #F7F9FB; color: #1f2933; }"
+        "QPushButton:hover { background: #EDF1F5; }"
+        "QPushButton:disabled { color: #A0A8B0; background: #F2F4F6;"
+        " border-color: #D0D6DC; }"
+    )
+    if pulsado is None:
+        return base
+    fondo, texto, borde = pulsado
+    return base + (
+        f"QPushButton:checked {{ background: {fondo}; color: {texto};"
+        f" border: 1px solid {borde}; font-weight: bold; }}"
+    )
 
 #: Candidates are looked for at this share of the sensitivity, and never
 #: below the floor, under which the resting noise itself clears the line.
@@ -673,6 +699,7 @@ class FragmentSelectionDialog(QDialog):
         nav = QHBoxLayout()
         self._btn_prev = QPushButton("◀")
         self._btn_prev.setFixedWidth(40)
+        self._btn_prev.setStyleSheet(_estilo_boton())
         self._btn_prev.setToolTip(tr("Previous contraction"))
         self._btn_prev.clicked.connect(self._anterior)
         nav.addWidget(self._btn_prev)
@@ -682,6 +709,7 @@ class FragmentSelectionDialog(QDialog):
         nav.addWidget(self._lbl_nav)
         self._btn_next = QPushButton("▶")
         self._btn_next.setFixedWidth(40)
+        self._btn_next.setStyleSheet(_estilo_boton())
         self._btn_next.setToolTip(tr("Next contraction"))
         self._btn_next.clicked.connect(self._siguiente)
         nav.addWidget(self._btn_next)
@@ -691,6 +719,7 @@ class FragmentSelectionDialog(QDialog):
         nav.addSpacing(16)
         self._btn_mantener = QPushButton(tr("Keep it"))
         self._btn_mantener.setCheckable(True)
+        self._btn_mantener.setStyleSheet(_estilo_boton(_PULSADO_MANTENER))
         self._btn_mantener.setToolTip(
             tr("Keep this contraction in the analysis and go on to the next.")
         )
@@ -698,6 +727,7 @@ class FragmentSelectionDialog(QDialog):
         nav.addWidget(self._btn_mantener)
         self._btn_eliminar = QPushButton(tr("Drop it"))
         self._btn_eliminar.setCheckable(True)
+        self._btn_eliminar.setStyleSheet(_estilo_boton(_PULSADO_ELIMINAR))
         self._btn_eliminar.setToolTip(tr(
             "Leave this contraction out of the analysis and go on to the next. "
             "It stays on the plot, hatched, and «Keep it» brings it back."
@@ -705,6 +735,7 @@ class FragmentSelectionDialog(QDialog):
         self._btn_eliminar.clicked.connect(self._eliminar)
         nav.addWidget(self._btn_eliminar)
         self._btn_dividir = QPushButton(tr("Split it"))
+        self._btn_dividir.setStyleSheet(_estilo_boton())
         self._btn_dividir.clicked.connect(self._dividir)
         nav.addWidget(self._btn_dividir)
         # Confirming is choosing, not typing: the three things the column can
@@ -718,11 +749,10 @@ class FragmentSelectionDialog(QDialog):
                                   (self._both_label, _SHADE_BOTH)):
                 b = QPushButton(nombre)
                 b.setCheckable(True)
-                # Colour and weight only: a border in a style sheet takes the
-                # button's native look away and shrinks it to its text.
-                b.setStyleSheet(
-                    f"QPushButton:checked {{ color: {color}; font-weight: bold; }}"
-                )
+                # Pressed, the muscle's colour as the background with white
+                # text: the colour as text alone, over the platform's own
+                # highlight, came out red on blue.
+                b.setStyleSheet(_estilo_boton((color, "#FFFFFF", color)))
                 b.setToolTip(tr("Name this contraction and go on to the next."))
                 b.clicked.connect(lambda _c=False, n=nombre: self._etiquetar(n))
                 nav.addWidget(b)
