@@ -143,6 +143,18 @@ class TestSavingToAFolderThatIsGone:
 
         assert Path(carpeta_por_defecto()).is_dir()
 
+    def test_without_a_documents_folder_it_falls_back_to_home(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        """Un Linux sin carpetas XDG no tiene Documentos, y el diálogo se
+        abría sobre una ruta que no existe."""
+        import emgteach.gui.tabs.acquisition as mod
+
+        monkeypatch.setattr(mod, "_documentos", lambda: str(tmp_path / "no_hay"))
+        assert mod.carpeta_por_defecto() == str(Path.home())
+        monkeypatch.setattr(mod, "_documentos", lambda: str(tmp_path))
+        assert mod.carpeta_por_defecto() == str(tmp_path)
+
 
 # ---------------------------------------------------------------------------
 # El móvil ofrece el informe PDF, y primero

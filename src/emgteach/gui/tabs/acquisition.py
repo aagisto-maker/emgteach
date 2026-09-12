@@ -240,17 +240,27 @@ def nombre_por_defecto(codigo: str, sello: str) -> str:
     return f"{limpio}_{sello}.edf" if limpio else f"emg_{sello}.edf"
 
 
+def _documentos() -> str:
+    """The user's Documents folder as Qt names it; it need not exist."""
+    return QStandardPaths.writableLocation(
+        QStandardPaths.StandardLocation.DocumentsLocation
+    )
+
+
 def carpeta_por_defecto() -> str:
-    """Where recordings go until someone picks a folder: the user's Documents.
+    """Where recordings go until someone picks a folder: the user's Documents,
+    or the home folder where there is no Documents folder.
 
     Not the working directory. An executable started from a shortcut can have
     a system folder there, where a student cannot write, and the failure then
-    arrives at the first recording rather than at start-up.
+    arrives at the first recording rather than at start-up. And not a
+    Documents path that is only a name: a Linux without XDG folders reports
+    one that does not exist, and a save dialogue opened on it opens nowhere.
     """
-    docs = QStandardPaths.writableLocation(
-        QStandardPaths.StandardLocation.DocumentsLocation
-    )
-    return docs or "."
+    for candidata in (_documentos(), str(Path.home())):
+        if candidata and Path(candidata).is_dir():
+            return candidata
+    return "."
 
 
 def preparar_carpeta(ruta: str) -> str | None:

@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **The detection sensitivity is set per practical, and it is part of the result.** The agonist/antagonist practical opens the fragment editor on k = 4.4, the value that gives one row per manoeuvre of its series, and «Reset» returns there; the other practicals keep 3.0. The analysis uses the same value when the editor is never opened, and the k used is written into the report's «Configuration used» table and into the CSV header, since the rows — and the co-activation windows read off them — move with it.
 - **The sensitivity sits above the plot in the fragment editor**, where it is set first, with the count beside it.
-- **Recordings go to Documents until another folder is chosen**, rather than to the working directory, which for a shortcut can be a folder the user cannot write to.
+- **Recordings go to Documents until another folder is chosen** — or to the home folder where there is no Documents folder — rather than to the working directory, which for a shortcut can be a folder the user cannot write to.
 
 ### Fixed
 - **Saving into a folder that no longer exists.** The folder is created; when it cannot be, the message names the file and the folder and says what to do, instead of the library's bare «no such file or directory».
