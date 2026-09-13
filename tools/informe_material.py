@@ -127,11 +127,16 @@ def medidas(result: dict, nombre: str) -> None:
     print(f"repeticiones de calibración en el fichero: {len(fases.cal_reps)}")
 
 
-def abrir_ventana(modo: str, ancho: int, alto: int) -> MainWindow:
+def abrir_ventana(modo: str, ancho: int, alto: int,
+                  carpeta: Path = NEUTRA) -> MainWindow:
     s = QSettings("emgteach-informe", "material")
     s.clear()
     s.setValue("app/mode", modo)
     s.setValue("app/tour_offer", False)
+    # La carpeta de salida se lee en la pestaña de Adquisición de cada captura.
+    # Sin fijarla, la aplicación propone la carpeta Documentos del usuario, y
+    # con ella su nombre de usuario en el material publicado.
+    s.setValue("adquisicion/save_dir", str(carpeta))
     win = MainWindow(s)
     win.resize(ancho, alto)
     win.show()
@@ -223,7 +228,8 @@ def paso_del_recorrido(win: MainWindow, titulo: str) -> bool:
     return False
 
 
-def figura_3(destino: Path, ancho: int, alto: int) -> None:
+def figura_3(destino: Path, ancho: int, alto: int,
+             carpeta: Path = NEUTRA) -> None:
     """Figura 3: la aplicación se configura eligiendo la práctica.
 
     Las dos capturas tienen que medir lo mismo para poder ponerse una al lado
@@ -238,7 +244,7 @@ def figura_3(destino: Path, ancho: int, alto: int) -> None:
     `tools/figura6.py`.
     """
     print("\n--- figura 3: elegir la práctica ---")
-    win = abrir_ventana(MODE_SINGLE, ancho, alto)
+    win = abrir_ventana(MODE_SINGLE, ancho, alto, carpeta)
     win._tabs.setCurrentIndex(0)
     _asienta()
     guardar(win, destino, "fig3a_practica_single.png")
@@ -331,10 +337,10 @@ def main() -> None:
     print(f"conducido desde: {trabajo}   (sujeto {args.sujeto})")
 
     if args.articulo:
-        figura_3(salida, ancho, alto)
+        figura_3(salida, ancho, alto, args.neutra)
 
     print("\n--- capturas de las tres pestañas ---")
-    win = abrir_ventana(MODE_PAIR, ancho, alto)
+    win = abrir_ventana(MODE_PAIR, ancho, alto, args.neutra)
 
     # --- Adquisición: el registro, en revisión -----------------------------
     adq = win._tab_adq
