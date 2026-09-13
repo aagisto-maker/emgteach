@@ -1,7 +1,8 @@
 # emgteach — informe de estado para el artículo del Sourcebook
 
 Escrito el 5 de septiembre de 2026 sobre `main`, después de publicar la versión
-3.0.0, y actualizado a la **3.1.0** tras publicarla, el 13 de septiembre.
+3.0.0, y actualizado a la **3.1.0** y a la **3.1.1** tras publicarlas, el 13 de
+septiembre.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
 Los textos de pantalla están **copiados literalmente** de
@@ -20,30 +21,70 @@ Donde algo no está hecho o no lo sé, lo dice.
 | | |
 |---|---|
 | Rama | `main` |
-| **Versión que describe el artículo** | `v3.1.0`, publicada el 13 de septiembre de 2026 |
-| DOI de esa versión | 10.5281/zenodo.22733151 |
+| **Versión que describe el artículo** | `v3.1.1`, publicada el 13 de septiembre de 2026 |
+| DOI de esa versión | 10.5281/zenodo.22734612 |
 | DOI de concepto | 10.5281/zenodo.21002297 |
-| Commit de la etiqueta | `927eeff` |
-| Pruebas en la etiqueta | **1064 recogidas, 1063 pasan y 1 se salta** |
-| Versión anterior | `v3.0.0` (10.5281/zenodo.22365602), etiqueta en `155fb07`, 940 pruebas |
+| Commit de la etiqueta | `aeb580d` |
+| Pruebas en la etiqueta | **1074 recogidas, 1073 pasan y 1 se salta** |
+| Versiones anteriores | `v3.1.0` (10.5281/zenodo.22733151, etiqueta en `927eeff`, 1064 pruebas) · `v3.0.0` (10.5281/zenodo.22365602, `155fb07`, 940 pruebas) |
 | Análisis estático | `ruff check .` limpio |
 
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leen del **código de `main` en el momento de generarlos**. En esta
-actualización `main` coincide con la etiqueta `v3.1.0` salvo en el DOI de
-versión de `CITATION.cff`, así que lo que dicen es lo que hace la versión
-publicada. Lo que cambió de la 3.0.0 a la 3.1.0 está en el apartado 1.1.
+actualización `main` coincide con la etiqueta `v3.1.1` salvo en documentación
+(este informe y el DOI de versión de `CITATION.cff`), así que lo que dicen es
+lo que hace la versión publicada. Lo que cambió de la 3.1.0 a la 3.1.1 está en
+el apartado 1.1, y de la 3.0.0 a la 3.1.0 en el 1.2.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:161`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
 propio panel, así que no puede provocar el crecimiento que esa prueba vigila.
 
-La versión etiquetada para el depósito es **3.1.0**, y es la que describe el
+La versión etiquetada para el depósito es **3.1.1**, y es la que describe el
 artículo. El ejecutable de Windows va adjunto a la publicación como
-`emgteach-v3.1.0-windows-x64.exe`, construido por la integración continua a
+`emgteach-v3.1.1-windows-x64.exe`, construido por la integración continua a
 partir de la misma etiqueta.
 
-### 1.1 De la 3.0.0 a la 3.1.0
+### 1.1 De la 3.1.0 a la 3.1.1
+
+Un parche de una sola medida (PR #21). **La coactivación de una ventana con
+nombre se lee sobre la fase de registro sin recortar.** Hasta la 3.1.0, elegir
+fragmentos en la pestaña de Análisis los concatenaba, y la tabla de
+coactivación se leía sobre esa señal concatenada. El índice resta a cada
+músculo su nivel de reposo, el percentil 10 de la señal analizada, y una señal
+hecha solo de contracciones no tiene reposo: su percentil 10 era lo más callado
+que estuvo cada músculo *mientras trabajaba*. Para el antagonista, su propia
+parte en la maniobra del otro; restarla castigaba a la señal pequeña, que es la
+que la práctica enseña. En el registro de ejemplo, la fila que el editor
+propone para la presa daba 58 % con el extensor en 6,3 % CVM; ahora da 75 % y
+10,9 %.
+
+Ahora las envolventes de los dos músculos se calculan una vez sobre la fase de
+registro sin recortar, cada fragmento con nombre es una máscara sobre ellas, y
+el reposo es el percentil 10 de la fase entera (`coactivation_by_fragments`,
+`src/emgteach/coactivation.py`). **Es la definición que la tabla ya usaba sin
+fragmentos** (apartado 5.6): con ella, las dos vías restan el mismo cero.
+`tools/figura6.py` lee sus `--ventana` con la misma función, así que la figura
+y la pestaña no pueden discrepar.
+
+**Qué cambia en las cifras.** La herramienta tomaba antes el reposo de cada
+ventana de la propia ventana; con la definición común sus medias se mueven hasta
+0,3 % CVM y sus índices hasta 0,7 puntos (apartado 8.2). Con otras definiciones
+razonables del reposo el índice se movería hasta dos puntos; está en el
+apartado 9, punto 3.
+
+**Qué comprueba la prueba** (`tests/test_coactivation_sin_recortar.py`): que las
+tres maniobras del registro de ejemplo, elegidas en la pestaña como una fila
+cada una, dan lo mismo que `figura6.py` a 10⁻⁶, con los valores fijados; y que
+la fila que el editor propone para la presa conserva al extensor.
+
+**Qué no cambia, a propósito.** El espectro, el RMS y la MDF por segmento, el
+ajuste de fatiga y la tabla de contracciones siguen corriendo sobre los
+fragmentos concatenados (apartado 9, punto 11). El EDF afinado es una
+concatenación en disco y se lee como tal. Ninguna figura ni ningún control de
+la interfaz cambia.
+
+### 1.2 De la 3.0.0 a la 3.1.0
 
 Son **39 commits** (29 sin contar las fusiones). La 3.1.0 no cambia el formato
 del archivo ni los cálculos: los módulos que calculan (`coactivation.py`,
@@ -102,7 +143,7 @@ puede mover resultados es la propuesta de filas del editor de fragmentos**:
   constantes del asistente, y las guías ya no hablan de esfuerzos mantenidos
   de cuatro segundos.
 
-### 1.2 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
+### 1.3 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
 
 Son **97 commits**. Lo que cambió de cara al artículo:
 
@@ -133,7 +174,7 @@ Son **97 commits**. Lo que cambió de cara al artículo:
   la excursión completa es ±1,635 mV, no ±1,65 mV. Nada expresado como
   cociente cambia.
 
-### 1.3 Dependencias
+### 1.4 Dependencias
 
 Declaradas en `pyproject.toml` y comprobadas en el entorno con el que se
 generó este informe:
@@ -152,14 +193,14 @@ generó este informe:
 | reportlab | `>=4.0` | 4.5.1 |
 | segno | `>=1.6` | 1.6.6 |
 
-### 1.4 Plataformas probadas
+### 1.5 Plataformas probadas
 
 La integración continua ejecuta la suite en **Ubuntu y Windows**, con
 **Python 3.10, 3.11 y 3.12**: seis combinaciones, todas en verde para
-`v3.1.0`. macOS no se prueba de forma automática. El hardware se ha probado
+`v3.1.1`. macOS no se prueba de forma automática. El hardware se ha probado
 solo en Windows 11.
 
-### 1.5 Instalación y arranque
+### 1.6 Instalación y arranque
 
 Desde el código fuente:
 
@@ -171,7 +212,7 @@ emgteach
 ```
 
 En Windows, sin instalar Python: descargar
-`emgteach-v3.1.0-windows-x64.exe` de la publicación y ejecutarlo. Acepta
+`emgteach-v3.1.1-windows-x64.exe` de la publicación y ejecutarlo. Acepta
 `--selftest`, que construye la interfaz sin pantalla y escribe el resultado en
 `emgteach_selftest.log` junto al ejecutable.
 
@@ -556,8 +597,12 @@ va la tabla por segmento con tres columnas: `t_s`, `rms_mv`, `mdf_hz`.
 Implementado en `coactivation_index()`,
 `src/emgteach/coactivation.py:237`. Sobre las **dos envolventes expresadas en
 % CVM de la referencia de su propio músculo**, con el **nivel de reposo de cada
-músculo ya restado** (`resting_level`, medido sobre todo el tramo analizado y
-pasado como argumento, no sobre la ventana).
+músculo ya restado** (`resting_level`: el percentil 10 de la envolvente sobre
+todo el tramo analizado, pasado como argumento y no medido sobre la ventana).
+Con fragmentos elegidos, desde la 3.1.1 el tramo es la fase de registro sin
+recortar y cada fragmento con nombre es una máscara sobre ella
+(`coactivation_by_fragments`): la misma definición del reposo en las dos
+vías.
 
 ```
 índice = 100 · 2 · ∫ mín(a₁, a₂) dt / ∫ (a₁ + a₂) dt
@@ -602,13 +647,13 @@ Son **88** mensajes distintos. Se listan tal como están en el código, sin reor
 - **`src/emgteach/charts.py:587`**
   - EN: not reported
   - ES: no se informa
-- **`src/emgteach/coactivation.py:264`**
+- **`src/emgteach/coactivation.py:265`**
   - EN: not reported — window too short
   - ES: no se informa — ventana demasiado corta
-- **`src/emgteach/coactivation.py:279`**
+- **`src/emgteach/coactivation.py:280`**
   - EN: not reported — {name} below {floor:.0f} % MVC
   - ES: no se informa — {name} por debajo del {floor:.0f} % de CVM
-- **`src/emgteach/coactivation.py:291`**
+- **`src/emgteach/coactivation.py:292`**
   - EN: not reported — no activation above rest
   - ES: no se informa — sin activación por encima del reposo
 - **`src/emgteach/crash.py:120`**
@@ -867,25 +912,25 @@ En la pestaña de Análisis la tabla de contracciones trae entonces una fila por
 - **`src/emgteach/workers/acquisition.py:473`**
   - EN: Warning — EDF close error: {error}
   - ES: Aviso — error al cerrar el EDF: {error}
-- **`src/emgteach/workers/analysis.py:404`**
+- **`src/emgteach/workers/analysis.py:407`**
   - EN: The selected fragments total {t:.2f} s, below the 1 s minimum required for analysis.
   - ES: Los fragmentos seleccionados suman {t:.2f} s, por debajo del mínimo de 1 s requerido para el análisis.
-- **`src/emgteach/workers/analysis.py:629`**
+- **`src/emgteach/workers/analysis.py:657`**
   - EN: MDF trend fitted over {n} of {total} segments (the rest were below the contraction threshold).
   - ES: Tendencia de MDF ajustada sobre {n} de {total} segmentos (el resto quedaba por debajo del umbral de contracción).
-- **`src/emgteach/workers/analysis.py:953`**
+- **`src/emgteach/workers/analysis.py:1006`**
   - EN: not reported — no MVC reference for one of the channels
   - ES: no se informa — falta la referencia de CVM en uno de los canales
-- **`src/emgteach/workers/analysis.py:967`**
+- **`src/emgteach/workers/analysis.py:1020`**
   - EN: ⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.
   - ES: ⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.
-- **`src/emgteach/workers/analysis.py:975`**
+- **`src/emgteach/workers/analysis.py:1028`**
   - EN: No contraction detected in «{name}»: it never left its baseline.
   - ES: No se detecta contracción en «{name}»: no sale de su línea base.
-- **`src/emgteach/workers/analysis.py:1026`**
+- **`src/emgteach/workers/analysis.py:1079`**
   - EN: ⚠ «{name}» reaches {peak:.0f} % MVC, and spends {share:.0f} % of the recording above {limit:.0f} %. The calibration did not capture a maximum — the task beat it — so every percentage here is too high.
   - ES: ⚠ «{name}» llega al {peak:.0f} % de la CVM, y pasa el {share:.0f} % del registro por encima del {limit:.0f} %. La calibración no capturó un máximo —la tarea lo superó—, así que todos los porcentajes de aquí salen inflados.
-- **`src/emgteach/workers/analysis.py:1142`**
+- **`src/emgteach/workers/analysis.py:1195`**
   - EN: The contraction table could not be built: {err}
   - ES: No se pudo construir la tabla de contracciones: {err}
 - **`src/emgteach/workers/mvc.py:282`**
@@ -926,10 +971,10 @@ Medidos con la aplicación sobre registros reales, no estimados. El material
 adjunto está en `docs/informe-sourcebook/` y lo produce
 `tools/informe_material.py`.
 
-Las cifras se midieron con la 3.0.0 y **valen para la 3.1.0**: entre las dos
-etiquetas los módulos que las calculan solo cambiaron en comentarios
-(apartado 1.1). Las del apartado 8.1 se han vuelto a obtener con la 3.1.0 al
-rehacer el material adjunto, y salen iguales.
+Las del apartado 8.1 se volvieron a obtener con la 3.1.0 al rehacer el
+material adjunto, y salen iguales; la 3.1.1 no las toca, porque se calculan
+sin fragmentos. **Las del 8.2 se han vuelto a medir con la 3.1.1** (apartado
+1.1). Las del 8.3 no pasan por la coactivación.
 
 ### 8.1 Registro de ejemplo: el par flexor / extensor
 
@@ -970,8 +1015,8 @@ presa sostenida de unos ocho segundos con la muñeca neutra**.
 |---|---|---|
 | Referencia de CVM | 0,1468 mV | 0,3558 mV |
 | Procedencia | recalculada de los tramos `CAL` | recalculada de los tramos `CAL` |
-| Nivel de reposo | 1,6 % CVM | 2,1 % CVM |
-| Máximo de la tarea | 81 % CVM | 47 % CVM |
+| Nivel de reposo (el que resta el índice) | 1,75 % CVM | 2,19 % CVM |
+| Máximo de la tarea (sostenido 0,2 s) | 73 % CVM | 41 % CVM |
 
 Los dos máximos de tarea quedan **por debajo del 100 %**, que es la
 comprobación de que la calibración capturó de verdad un máximo y de que los
@@ -979,45 +1024,85 @@ porcentajes de abajo significan lo que dicen.
 
 | Maniobra | Tramo | Índice de coactivación | Medias (FCR / ECR) |
 |---|---|---|---|
-| Flexión | 57,5–70,0 s | **28 %** | 14,2 / 5,5 % CVM |
-| Extensión | 72,0–85,0 s | **no reportada** | 3,9 / 5,9 % CVM |
-| Presa | 88,0–97,0 s | **76 %** | 14,3 / 9,1 % CVM |
+| Flexión | 57,5–70,0 s | **28 %** (28,3) | 14,1 / 5,8 % CVM |
+| Extensión | 72,0–85,0 s | **no reportada** | 4,2 / 6,2 % CVM |
+| Presa | 88,0–97,0 s | **76 %** (75,7) | 14,5 / 9,1 % CVM |
 
-**Durante la presa el extensor llega al 32 % CVM** y el flexor al 69 %.
+Medido con la 3.1.1: cada maniobra es una máscara sobre la fase de registro sin
+recortar, y el reposo que se resta es el de la fase entera (apartados 1.1 y
+5.6). Hasta la 3.1.0 la herramienta que las calculaba tomaba el reposo de cada
+ventana de la propia ventana, y las medias salían 14,2 / 5,5 · 3,9 / 5,9 ·
+14,3 / 9,1, con índices de 27,6 y 76,0 %.
+
+**Durante la presa el extensor llega al 29 % CVM** y el flexor al 64 %: son
+máximos sostenidos de 0,2 s, los que enseña la tabla de contracciones, igual
+que los máximos de tarea de arriba, que son los de la ficha «Task maximum».
+Los 32 y 69 % de la presa y los 81 y 47 % de la tarea que figuraban aquí no
+se reproducen con ningún cálculo del programa, y se sustituyen por los que
+enseña la pantalla.
 
 Los dos números que el §8.4 declaraba imposibles son ese 28 % frente a 76 % y
-ese 32 %. La figura que los dibuja está en
+el extensor trabajando en la presa. La figura que los dibuja está en
 `docs/articulo-advances/figura6.png`, y se rehace con
 
 ```
-python tools/figura6.py --edf docs/informe-sourcebook/ejemplo_tres_maniobras.edf \
-    --ventana Flexion=57.5:70 --ventana Extension=72:85 --ventana Grip=88:97 \
-    --salida docs/articulo-advances
+python tools/figura6.py --edf docs/informe-sourcebook/ejemplo_tres_maniobras.edf --ventana Flexion=57.5:70 --ventana Extension=72:85 --ventana Grip=88:97 --salida docs/articulo-advances
 ```
+
+Y lo mismo, al decimal, sale en la pestaña de Análisis eligiendo cada
+maniobra entera como un fragmento con nombre.
 
 El registro va adjunto —`ejemplo_tres_maniobras.edf`— junto con su versión
 afinada, `ejemplo_tres_maniobras_tuned.edf`, que es donde están los trece
 fragmentos con nombre: seis `FCR`, seis `ECR` y un `Grip`.
 
 **La extensión no da número, y el motivo importa.** El programa dice «FCR
-below 5 % MVC»: el flexor se quedó en 3,6 % de media, por debajo del suelo de
-`coact_floor_pct`. No es una maniobra fallida sino la salvaguarda funcionando
+below 5 % MVC»: el flexor se quedó en 4,2 % de media sobre su reposo, por
+debajo del suelo de `coact_floor_pct`. No es una maniobra fallida sino la salvaguarda funcionando
 — con el antagonista prácticamente en reposo el índice sería ruido dividido
 por ruido. Dicho de otro modo, la extensión fue el más limpiamente recíproco
 de los tres movimientos, y el precio de serlo es no tener índice.
+
+**Maniobra entera frente a contracciones.** Elegir en el editor las trece filas
+que propone, bien nombradas (seis de flexión, seis de extensión y la presa), mide
+otra cosa: la actividad durante las contracciones, sin los reposos entre ellas.
+
+| Selección | Flexión | Extensión | Presa |
+|---|---|---|---|
+| La maniobra entera, una fila cada una | 28,3 % · 14,1 / 5,8 | — · 4,2 / 6,2 | 75,7 % · 14,5 / 9,1 |
+| Las trece filas del editor | 29,0 % · 26,9 / 8,0 | 69,4 % · 8,5 / 14,9 | 75,3 % · 17,0 / 10,9 |
+
+Índice y medias FCR / ECR en % CVM, con la 3.1.1. Sin los reposos las medias
+suben, y la extensión gana un índice: el flexor pasa de 4,2 a 8,5 % CVM y supera
+el suelo del 5 %. Ese 69 % es la relación entre dos señales débiles —el extensor
+en 14,9 y el flexor en 8,5 % de su máximo—, que es el caso que el suelo existe
+para no medir. Para esta práctica, la ventana es la maniobra entera.
 
 **Tres avisos sobre estas cifras**, los tres descubiertos al calcularlas:
 
 1. **El EDF afinado y el original no dan el mismo número.** Sobre el afinado
    de este mismo registro salen «sin número» para la flexión, 63 % para la
-   extensión y 67 % para la presa. El afinado concatena los fragmentos y tira
+   extensión y 67 % para la presa (vuelto a medir con la 3.1.1: 63,3 y
+   67,3 %, igual que con la 3.0.0, porque el afinado es una concatenación en
+   disco y se lee como tal). El afinado concatena los fragmentos y tira
    lo que hay entre ellos, así que la media del músculo activo sube y la del
    otro baja. El índice de Falconer-Winter se lee sobre la fase de movimiento
    con su curso temporal, reposos incluidos; concatenar las contracciones mide
    otra cosa. **Las cifras publicables son las del registro sin recortar.**
-2. **El índice depende del borde de la ventana.** Estrechando la presa 0,8 s
-   por delante pasa de 76 % a 70 %. Las ventanas de la tabla son las de la
-   maniobra completa, de la primera activación a la última relajación.
+   Desde la 3.1.1, elegir los fragmentos en la pestaña sobre el original ya
+   no concatena para la coactivación (apartado 1.1); el aviso vale para el
+   archivo afinado.
+2. **El borde de la ventana: el reposo que entra ya no mueve el índice.** Con
+   la 3.0.0, estrechar la presa 0,8 s por delante la llevaba de 76 % a 70 %,
+   porque el reposo se medía dentro de la ventana y quitarle segundos de
+   reposo lo subía. Con la 3.1.1, restando el reposo de la fase entera, el
+   mismo recorte deja el índice en 75,7 %: los segundos de reposo aportan
+   cero a los dos lados del cociente. Lo que sí lo mueve es la actividad que
+   queda fuera: el extensor sigue activo hasta los 97,95 s, y alargar la presa
+   hasta ahí la baja a 74,4 %. Las medias sí dependen del borde, porque son
+   medias sobre la duración de la ventana (el flexor pasa de 14,5 a 15,9 % CVM
+   con el recorte). Las ventanas de la tabla son las de la maniobra completa,
+   de la primera activación a la última relajación.
 3. **Un segundo registro del mismo protocolo se descartó**: sus extensiones
    salieron mejor —índice de 43 %— pero la calibración del flexor no capturó
    un máximo (referencia 0,089 mV y máximo de tarea 185 % CVM), y con el
@@ -1086,13 +1171,20 @@ la tarea, 117 % CVM.
    más favorable del punto de vista fisiológico es el que no da número.
 3. **El índice se mide sobre el registro sin recortar, no sobre el afinado.**
    Concatenar los fragmentos cambia las medias y con ellas el índice, hasta el
-   punto de invertir qué ventana tiene número (§8.2, aviso 1). La aplicación
-   calcula lo que se le da; la elección de qué darle no está guiada en la
-   interfaz, y es una decisión con consecuencias.
-4. **El índice es sensible al borde de la ventana**: 0,8 s de reposo de más
-   por delante de la presa lo mueven de 76 % a 70 %. No hay una regla escrita
-   de dónde empieza y acaba una maniobra más allá de «de la primera activación
-   a la última relajación».
+   punto de invertir qué ventana tiene número (§8.2, aviso 1). Desde la 3.1.1
+   la pestaña lee así los fragmentos con nombre; el EDF afinado sigue siendo
+   una concatenación y da otras cifras. Queda una elección que la interfaz no
+   guía: una fila por contracción no es una fila por maniobra (§8.2).
+   **Y el índice depende de cómo se defina el reposo.** La aplicación usa una
+   sola definición, el percentil 10 de la fase de registro (apartado 5.6);
+   con otras razonables —el archivo entero, el percentil 10 de la pausa de
+   preparación, la media de su último segundo— la flexión va de 27,3 a 29,4 %
+   y la presa de 74,6 a 76,7 %.
+4. **El índice depende del borde solo por la actividad que deja fuera.** Desde
+   la 3.1.1 el reposo que entra en la ventana no lo mueve (§8.2, aviso 2); la
+   actividad que se queda fuera sí, y las medias dependen de la duración de la
+   ventana. No hay una regla escrita de dónde empieza y acaba una maniobra más
+   allá de «de la primera activación a la última relajación».
 5. **La discrepancia entre la referencia anotada y la recalculada** es
    esperada y está documentada, pero no está cuantificada sobre una serie de
    registros: se sabe que es de unidades de por ciento.
@@ -1104,13 +1196,22 @@ la tarea, 117 % CVM.
 9. Del §13 de la especificación sigue vigente el aviso de que **este era el
    último cambio de arquitectura antes de la publicación**. La 3.1.0 lo
    respeta: cambia el manejo en el puesto y no el formato del archivo ni los
-   cálculos (apartado 1.1). El artículo describe la 3.1.0, y lo que venga
-   después irá a versiones posteriores sin cambiar lo que describe.
+   cálculos (apartado 1.2). La 3.1.1 cambia una sola medida, la coactivación
+   con fragmentos elegidos (apartado 1.1). El artículo describe la 3.1.1, y lo
+   que venga después irá a versiones posteriores sin cambiar lo que describe.
 10. **La k = 4,4 del par es empírica**: es el valor que dio una fila por
     maniobra en los registros en que se probó. Con otra piel, otro montaje u
     otra forma de hacer las maniobras puede proponer de más o de menos; por
     eso el editor cuenta las marcadas frente a las esperadas y deja mover la
     sensibilidad, y por eso la k usada va al informe y al CSV.
+11. **La fatiga sigue calculándose sobre los fragmentos concatenados**, y el
+    filtrado corre después de concatenar: en los segmentos de 1 s que cruzan
+    una unión la MDF sale unos 1,4 Hz más alta que en sus vecinos (143,3 frente
+    a 141,9 Hz en el registro de las tres maniobras, con las filas del editor).
+    Ningún veredicto de los registros de ejemplo cambia por ello, y la práctica
+    de fatiga es una contracción mantenida, sin uniones. El arreglo —filtrar el
+    registro entero y concatenar después la señal ya filtrada— queda para una
+    versión posterior.
 
 ---
 
@@ -1129,7 +1230,7 @@ la tarea, 117 % CVM.
   `ESPEC-niveles-y-avisos-emgteach.md` y `ESPEC-panel9-en-CVM.md`. Antes vivían
   solo en la carpeta del artículo.
 - **El README no menciona ninguna ruta sintética.** Dice la versión correcta
-  (3.1.0) y el número correcto de pruebas (1064, las mismas que en la
+  (3.1.1) y el número correcto de pruebas (1074, las mismas que en la
   etiqueta). No es
   cuestión de disciplina: `tests/test_readme.py::test_the_test_count_is_current`
   cuenta las pruebas recogidas y falla si el README dice otra cosa.
@@ -1139,10 +1240,12 @@ la tarea, 117 % CVM.
   de la interfaz cae por debajo de 3 puntos al ancho de página de la revista— y
   conducido desde una ruta neutra, de modo que ninguna captura ni la cabecera
   del CSV enseñan una ruta de usuario. El detalle, en el README de esa carpeta.
-  **Ese material se generó con la 3.0.0 y no se ha rehecho con la 3.1.0**, y
-  la interfaz cambió en detalles visibles (el botón de captura, el tamaño de
-  «Calibrar CVM», el editor de fragmentos): conviene rehacerlo con
-  `--articulo` antes de usarlo como figura de la 3.1.0.
+  **Ese material se generó con la 3.0.0.** Regenerado con la 3.1.0 y comparado
+  píxel a píxel, los recortes que usa el artículo y la figura 6 salen
+  idénticos; la 3.1.1 no toca la interfaz, y la figura 6 rehecha con ella
+  también sale idéntica. Solo difieren las capturas de ventana entera (el
+  botón de captura, el tamaño de «Calibrar CVM», el editor de fragmentos),
+  que el artículo no usa.
 - Los dos documentos docentes en Word (Guía del docente v2.3 y Cuaderno de
   prácticas v2.3) están al día con sus PDF, con las capturas rehechas contra
   la 3.0.0. No están en el repositorio; las capturas que enseñen el editor

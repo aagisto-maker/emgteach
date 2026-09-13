@@ -395,8 +395,9 @@ def coactivation_by_fragments(
     analysed span, uncut**. A fragment is a mask over them, not a piece cut
     out and glued to the next: a window's index is computed on the samples of
     its fragments and on nothing between them, but the resting level each
-    muscle has subtracted is :func:`resting_level` of the whole span, which is
-    the only place it can be measured.
+    muscle has subtracted is :func:`resting_level` of the whole span — the
+    same definition :func:`coactivation_by_window` uses, so a table read with
+    fragments and one read without them subtract the same zero.
 
     Concatenating the chosen fragments and reading the table off the result
     measured rest on a signal with none left in it. Its 10th percentile was
