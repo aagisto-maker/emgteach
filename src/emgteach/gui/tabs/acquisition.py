@@ -3050,7 +3050,7 @@ class AcquisitionTab(QWidget):
             self._mvc_overlay.show_contract(titulo, secs_left, progress, effort)
             self._mvc_info(
                 tr(
-                    "{label}: one explosive jerk, flat out!  ({s:.0f} s)  "
+                    "{label}: one explosive jerk at maximal power!  ({s:.0f} s)  "
                     "peak {pk:.2f} mV"
                 ).format(label=label, s=secs_left, pk=self._mvc_peak)
             )

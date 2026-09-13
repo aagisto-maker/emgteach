@@ -59,7 +59,7 @@ def _mensajes() -> list[tuple[str, str]]:
         ("done", tr("{summary}\nYou can start recording.").format(
             summary="FCR: 0.08 mV · ECR: 0.34 mV")),
         ("done", tr("No signal — check the electrodes.")),
-        ("contract", tr("One explosive jerk, flat out — brief, not held")),
+        ("contract", tr("One explosive jerk at maximal power — brief, not held")),
     ]
 
 

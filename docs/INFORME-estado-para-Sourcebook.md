@@ -646,7 +646,7 @@ tendencia no ajusta, con su R².
 
 <<<AVISOS>>>
 
-Son **85** mensajes distintos. Se listan tal como están en el código, sin reordenar ni resumir.
+Son **89** mensajes distintos. Se listan tal como están en el código, sin reordenar ni resumir.
 
 - **`src/emgteach/charts.py:587`**
   - EN: not reported
@@ -715,6 +715,9 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/help_texts.py:282`**
   - EN: One line per window, its seconds on the right. A purple bar is the index, with the number in it. A gold block means the index is not reported, and the small square beside it is the colour of the muscle that worked alone — in a clean flexion or extension that is the correct answer, not a fault. No square at all is a rest. The two mean activations are in the table.
   - ES: Una línea por ventana, con sus segundos a la derecha. Una barra morada es el índice, con el número dentro. Un bloque dorado quiere decir que el índice no se informa, y el cuadradito de al lado lleva el color del músculo que trabajó solo: en una flexión o una extensión limpias esa es la respuesta correcta, no un fallo. Sin cuadradito, es un reposo. Las dos activaciones medias están en la tabla.
+- **`src/emgteach/gui/help_texts.py:304`**
+  - EN: the strongest {w:.1f} s of the contraction, as a share of the maximum. A task effort is usually 20–80 %; above 100 % (in red) the calibration was not a maximum.
+  - ES: el tramo de {w:.1f} s más fuerte de la contracción, como porcentaje del máximo. Un esfuerzo de tarea suele estar entre el 20 y el 80 %; por encima del 100 % (en rojo) la calibración no fue un máximo.
 - **`src/emgteach/gui/help_texts.py:308`**
   - EN: median frequency of the spectrum. Typically 60–150 Hz for surface EMG of limb muscles; it falls along a sustained effort as the muscle fatigues. Not shown for contractions shorter than a quarter of a second.
   - ES: frecuencia mediana del espectro. Típicamente 60–150 Hz en EMG de superficie de músculos de las extremidades; baja a lo largo de un esfuerzo sostenido a medida que el músculo se fatiga. No se muestra en contracciones de menos de un cuarto de segundo.
@@ -739,12 +742,12 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/tabs/acquisition.py:2474`**
   - EN: No network: the phones cannot reach this computer.
   - ES: Sin red: los móviles no pueden llegar a este equipo.
-- **`src/emgteach/gui/tabs/acquisition.py:3052`**
-  - EN: {label}: one explosive jerk, flat out!  ({s:.0f} s)  peak {pk:.2f} mV
-  - ES: {label}: ¡una sacudida explosiva, a tope!  ({s:.0f} s)  pico {pk:.2f} mV
 - **`src/emgteach/gui/tabs/acquisition.py:3102`**
   - EN: ⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.
   - ES: ⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.
+- **`src/emgteach/gui/tabs/acquisition.py:3371`**
+  - EN: {muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
+  - ES: {muscles}: esto no es un máximo. Calibre de nuevo con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
 - **`src/emgteach/gui/tabs/acquisition.py:3391`**
   - EN: Channels not separated
   - ES: Canales sin separar
@@ -760,6 +763,9 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/tabs/analysis.py:913`**
   - EN: usual 60–150 Hz
   - ES: habitual 60–150 Hz
+- **`src/emgteach/gui/tabs/analysis.py:929`**
+  - EN: Highest sustained level ({w:.1f} s) of the task, as % of the maximal contraction. Well above 100 % means the calibration was not a maximum.
+  - ES: Nivel más alto sostenido ({w:.1f} s) durante la tarea, en % de la contracción máxima. Muy por encima del 100 % significa que la calibración no fue un máximo.
 - **`src/emgteach/gui/tabs/analysis.py:1381`**
   - EN: Could not open the fragment editor: {error}
   - ES: No se pudo abrir el editor de fragmentos: {error}
@@ -781,6 +787,12 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/tabs/analysis.py:2202`**
   - EN: Not conclusive (trend does not fit, R²={r2:.2f})
   - ES: No concluyente (la tendencia no ajusta, R²={r2:.2f})
+- **`src/emgteach/gui/tabs/analysis.py:2231`**
+  - EN: not a maximum
+  - ES: no fue un máximo
+- **`src/emgteach/gui/tabs/analysis.py:2235`**
+  - EN: The task went well past the reference: the calibration did not capture a maximum, so every % MVC here is too high in the same proportion. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
+  - ES: La tarea superó con mucho la referencia: la calibración no recogió un máximo, así que todos los % CVM de aquí están inflados en la misma proporción. Vuelva a calibrar con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
 - **`src/emgteach/gui/tabs/analysis.py:2302`**
   - EN: Could not open the force-velocity study: {error}
   - ES: No se pudo abrir el estudio fuerza-velocidad: {error}
@@ -861,9 +873,6 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/widgets/logger.py:46`**
   - EN: Error:
   - ES: Error:
-- **`src/emgteach/gui/widgets/mvc_overlay.py:262`**
-  - EN: One explosive jerk, flat out — brief, not held
-  - ES: Una sacudida explosiva, a tope: breve, no sostenida
 - **`src/emgteach/phases.py:481`**
   - EN: no calibration
   - ES: sin calibración
@@ -873,6 +882,9 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/reports.py:227`**
   - EN: Filtered (20-450 Hz)
   - ES: Filtrado (20-450 Hz)
+- **`src/emgteach/reports.py:558`**
+  - EN: The task exceeds the reference by a wide margin: the calibration did not capture a maximum, so every percentage in this report is too high in the same proportion. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
+  - ES: La tarea supera la referencia con mucho margen: la calibración no recogió un máximo, así que todos los porcentajes de este informe están inflados en la misma proporción. Vuelva a calibrar con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
 - **`src/emgteach/reports.py:794`**
   - EN: Notch (mains)
   - ES: Notch (red)

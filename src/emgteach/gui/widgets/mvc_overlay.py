@@ -259,7 +259,7 @@ class MvcOverlay(QFrame):
         return tr("Effort {pct:.0f} %").format(pct=self._effort * 100)
 
     def _hint_contract(self) -> str:
-        return tr("One explosive jerk, flat out — brief, not held")
+        return tr("One explosive jerk at maximal power — brief, not held")
 
     def _relax_word(self) -> str:
         return tr("Relax")

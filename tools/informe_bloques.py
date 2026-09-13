@@ -181,6 +181,7 @@ SEÑALES = (
     "not a maximal", "could not", "failed", "error", "Error", "below",
     "cannot", "does not", "no reference", "without calibration",
     "not separated", "implausible", "never left", "no rest",
+    "not a maximum", "past the reference", "exceeds the reference",
 )
 
 

@@ -932,14 +932,15 @@ _ES = {
     "{summary}\nYou can start recording.": "{summary}\nYa se puede empezar a grabar.",
     "Calibration failed": "Calibración fallida",
     "No signal — check the electrodes.": "Sin señal — conviene revisar los electrodos.",
-    "{label}: one explosive jerk, flat out!  ({s:.0f} s)  "
+    "{label}: one explosive jerk at maximal power!  ({s:.0f} s)  "
     "peak {pk:.2f} mV":
-        "{label}: ¡una sacudida explosiva, a tope!  ({s:.0f} s)  pico {pk:.2f} mV",
+        "{label}: ¡una sacudida explosiva a la máxima potencia!  ({s:.0f} s)  "
+        "pico {pk:.2f} mV",
     "Relax…": "Relaje…",
     "Relax": "Relaje",
     "Effort {pct:.0f} %": "Esfuerzo {pct:.0f} %",
-    "One explosive jerk, flat out — brief, not held":
-        "Una sacudida explosiva, a tope: breve, no sostenida",
+    "One explosive jerk at maximal power — brief, not held":
+        "Una sacudida explosiva a la máxima potencia: breve, no sostenida",
     "MVC ready — {summary}. You can start recording.":
         "CVM listo — {summary}. Ya se puede empezar a grabar.",
     "MVC calibrated: {summary}": "CVM calibrado: {summary}",
