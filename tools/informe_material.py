@@ -50,8 +50,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 RAIZ = Path(__file__).resolve().parent.parent
 
-#: El registro del par del 3 de septiembre, con el protocolo ya validado
-#: (puño cerrado contra el canto de la mesa).
+#: El registro del par del 3 de septiembre.
 ORIGEN = Path(r"C:\Records\emg_2026-09-03_12-57.edf")
 
 #: Dónde se pone el registro para conducir la aplicación. Tiene que ser una
