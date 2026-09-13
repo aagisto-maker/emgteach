@@ -148,7 +148,7 @@ def ventanas_a_mano(result: dict, pedidas, presa: re.Pattern):
     la diferencia no es un detalle. El afinado concatena los fragmentos y tira
     lo que hay entre ellos, así que la media del músculo activo sube y la del
     otro baja: sobre el original del 6 de septiembre la flexión da 28 % y la
-    presa 78 %, y sobre el afinado la flexión se queda sin número —el ECR cae
+    presa 76 %, y sobre el afinado la flexión se queda sin número —el ECR cae
     por debajo del suelo del 5 %— y la extensión y la presa quedan en 63 % y
     67 %, que ya no distinguen nada.
 
