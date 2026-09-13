@@ -3,6 +3,7 @@
 # Canal: FCR
 # Frecuencia de muestreo (Hz): 1000
 # Ventana analizada: 116.70-140.00 s de 140.0 s
+# Sensibilidad de detección (k): 4.4
 # Duración (s): 23.298
 # RMS global (mV): 0.087607
 # MNF (Hz): 142.337
