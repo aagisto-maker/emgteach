@@ -1,7 +1,7 @@
 # emgteach — informe de estado para el artículo del Sourcebook
 
 Escrito el 5 de septiembre de 2026 sobre `main`, después de publicar la versión
-3.0.0, y actualizado a la **3.1.0** y a la **3.1.1** tras publicarlas, el 13 de
+3.0.0, y actualizado a la **3.1.0**, a la **3.1.1** y a la **3.1.2** tras publicarlas, el 13 de
 septiembre.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
@@ -21,32 +21,58 @@ Donde algo no está hecho o no lo sé, lo dice.
 | | |
 |---|---|
 | Rama | `main` |
-| **Versión que describe el artículo** | `v3.1.1`, publicada el 13 de septiembre de 2026 |
-| DOI de esa versión | 10.5281/zenodo.22734612 |
+| **Versión que describe el artículo** | `v3.1.2`, publicada el 13 de septiembre de 2026 |
+| DOI de esa versión | 10.5281/zenodo.22736393 |
 | DOI de concepto | 10.5281/zenodo.21002297 |
-| Commit de la etiqueta | `aeb580d` |
-| Pruebas en la etiqueta | **1074 recogidas, 1073 pasan y 1 se salta** |
-| Versiones anteriores | `v3.1.0` (10.5281/zenodo.22733151, etiqueta en `927eeff`, 1064 pruebas) · `v3.0.0` (10.5281/zenodo.22365602, `155fb07`, 940 pruebas) |
+| Commit de la etiqueta | `8367f1f` |
+| Pruebas en la etiqueta | **1078 recogidas, 1077 pasan y 1 se salta** |
+| Versiones anteriores | `v3.1.1` (10.5281/zenodo.22734612, etiqueta en `aeb580d`, 1074 pruebas) · `v3.1.0` (10.5281/zenodo.22733151, `927eeff`, 1064 pruebas) · `v3.0.0` (10.5281/zenodo.22365602, `155fb07`, 940 pruebas) |
 | Análisis estático | `ruff check .` limpio |
 
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leen del **código de `main` en el momento de generarlos**. En esta
-actualización `main` coincide con la etiqueta `v3.1.1` salvo en documentación
-(este informe, `CITATION.cff`, el README y el CHANGELOG) y en el flujo que
-compila el ejecutable de Windows, que no forma parte de la aplicación; así que
-lo que dicen es lo que hace la versión publicada. Lo que cambió de la 3.1.0 a la 3.1.1 está en
-el apartado 1.1, y de la 3.0.0 a la 3.1.0 en el 1.2.
+actualización `main` coincide con la etiqueta `v3.1.2` salvo en documentación
+(este informe y el DOI de versión de `CITATION.cff`), así que lo que dicen es
+lo que hace la versión publicada. Lo que cambió de la 3.1.1 a la 3.1.2 está en
+el apartado 1.0, de la 3.1.0 a la 3.1.1 en el 1.1, y de la 3.0.0 a la 3.1.0 en
+el 1.2.
 
-La prueba que se salta es `tests/test_gui_mvc_overlay.py:161`: con la
+La prueba que se salta es `tests/test_gui_mvc_overlay.py:163`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
 propio panel, así que no puede provocar el crecimiento que esa prueba vigila.
 
-La versión etiquetada para el depósito es **3.1.1**, y es la que describe el
+La versión etiquetada para el depósito es **3.1.2**, y es la que describe el
 artículo. Las publicaciones de GitHub no llevan ejecutable de Windows ya
 compilado: un ejecutable de PyInstaller sin firmar hace saltar el antivirus al
 descargarlo (un falso positivo conocido), así que la versión se distribuye como
 código fuente (apartado 1.6). El ejecutable se sigue pudiendo compilar desde la
 etiqueta con la receta de `packaging/`.
+
+### 1.0 De la 3.1.1 a la 3.1.2
+
+Un parche de lo que la calibración pide y de cómo se describe (PR #24 a #26).
+No cambia ningún cálculo, umbral ni valor por defecto.
+
+- **La calibración pide una sacudida breve y explosiva a la máxima potencia**,
+  no un empuje sostenido contra algo fijo. En la práctica del par, el asistente
+  dice el gesto de cada canal durante la cuenta atrás: flexión de muñeca
+  cerrando el puño con toda la fuerza para el flexor, extensión de muñeca con
+  la mano abierta y los dedos extendidos a tope para el extensor. Las otras dos
+  prácticas, cuyo músculo puede ser el bíceps, dan la regla general. Lo mismo
+  dicen los avisos de «no es un máximo», el panel de entrada de la pestaña
+  CVM, las ayudas, la imagen del recorrido, la hoja de puesto y la
+  documentación; los textos literales de los apartados 3 y 6 están regenerados.
+- **La documentación describe la referencia como la calcula el código**: el
+  máximo de la media móvil de 0,2 s de la envolvente, tal cual, sin restar
+  reposo, y la mejor de las repeticiones. El manual decía que se restaba el
+  reposo de la ventana.
+- **Las publicaciones llevan solo el código fuente** (apartado 1.6).
+
+Ninguna figura del artículo enseña los textos de la calibración, y las cifras
+del apartado 8 no dependen de estos cambios. Comprobado sobre la etiqueta: la
+prueba de aceptación que fija las cifras del registro de las tres maniobras
+(`tests/test_coactivation_sin_recortar.py`) pasa, y el comando de la figura 6
+da la misma figura, píxel a píxel.
 
 ### 1.1 De la 3.1.0 a la 3.1.1
 
@@ -200,7 +226,7 @@ generó este informe:
 
 La integración continua ejecuta la suite en **Ubuntu y Windows**, con
 **Python 3.10, 3.11 y 3.12**: seis combinaciones, todas en verde para
-`v3.1.1`. macOS no se prueba de forma automática. El hardware se ha probado
+`v3.1.2`. macOS no se prueba de forma automática. El hardware se ha probado
 solo en Windows 11.
 
 ### 1.6 Instalación y arranque
@@ -997,8 +1023,10 @@ medias de 14,4 % y 11,1 % CVM. Correlación de las dos envolventes:
 ### 8.2 Las tres maniobras: coactivación por maniobra
 
 `ejemplo_tres_maniobras.edf`, dos canales, 100,0 s, del **6 de septiembre de
-2026**, con el protocolo y la calibración actuales: tres esfuerzos breves por
-músculo, `REC start` en el segundo 57,3 y 42,7 s de tarea. El protocolo fue
+2026**, con la calibración de tres esfuerzos breves por músculo y la maniobra
+que pedía entonces la aplicación, un esfuerzo contra algo que no se pudiera
+mover (desde la 3.1.2 se pide una sacudida breve y explosiva); `REC start` en
+el segundo 57,3 y 42,7 s de tarea. El protocolo fue
 **seis flexiones de muñeca contra resistencia, dos segundos de
 quietud, seis extensiones contra resistencia, dos segundos de quietud y una
 presa sostenida de unos ocho segundos con la muñeca neutra**.
@@ -1189,7 +1217,9 @@ la tarea, 117 % CVM.
    último cambio de arquitectura antes de la publicación**. La 3.1.0 lo
    respeta: cambia el manejo en el puesto y no el formato del archivo ni los
    cálculos (apartado 1.2). La 3.1.1 cambia una sola medida, la coactivación
-   con fragmentos elegidos (apartado 1.1). El artículo describe la 3.1.1, y lo
+   con fragmentos elegidos (apartado 1.1), y la 3.1.2 solo lo que la
+   calibración pide y cómo se describe (apartado 1.0). El artículo describe la
+   3.1.2, y lo
    que venga después irá a versiones posteriores sin cambiar lo que describe.
 10. **La k = 4,4 del par es empírica**: es el valor que dio una fila por
     maniobra en los registros en que se probó. Con otra piel, otro montaje u
@@ -1222,7 +1252,7 @@ la tarea, 117 % CVM.
   `ESPEC-niveles-y-avisos-emgteach.md` y `ESPEC-panel9-en-CVM.md`. Antes vivían
   solo en la carpeta del artículo.
 - **El README no menciona ninguna ruta sintética.** Dice la versión correcta
-  (3.1.1) y el número correcto de pruebas (1074, las mismas que en la
+  (3.1.2) y el número correcto de pruebas (1078, las mismas que en la
   etiqueta). No es
   cuestión de disciplina: `tests/test_readme.py::test_the_test_count_is_current`
   cuenta las pruebas recogidas y falla si el README dice otra cosa.
@@ -1235,7 +1265,9 @@ la tarea, 117 % CVM.
   **Ese material se generó con la 3.0.0.** Regenerado con la 3.1.0 y comparado
   píxel a píxel, los recortes que usa el artículo y la figura 6 salen
   idénticos; la 3.1.1 no toca la interfaz, y la figura 6 rehecha con ella
-  también sale idéntica. Solo difieren las capturas de ventana entera (el
+  también sale idéntica. La 3.1.2 cambia textos de la calibración, que no
+  aparecen en ninguna figura del artículo, y la figura 6 rehecha con ella sale
+  idéntica. Solo difieren las capturas de ventana entera (el
   botón de captura, el tamaño de «Calibrar CVM», el editor de fragmentos),
   que el artículo no usa.
 - Los dos documentos docentes en Word (Guía del docente v2.3 y Cuaderno de
