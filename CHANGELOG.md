@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **The agonist/antagonist task's flexions and extensions are made freely, with no resistance.** The practical guides, in both languages, asked for the six wrist flexions against the table; only the grip is made against something. The Sourcebook report's description of the example recording no longer says the flexions and extensions were resisted.
+
 ## [3.1.2] — 2026-09-13
 
 **The calibration is a brief, explosive maximal jerk.** The wizard, its
