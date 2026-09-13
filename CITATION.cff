@@ -38,9 +38,11 @@ abstract: >-
   with a start-up splash, and shows the electrode placement and the
   calibration in the guided tour. Version 3.1.1 reads the co-activation of a
   named window on the uncut recording, with each muscle's resting level taken
-  from the whole recording phase.
+  from the whole recording phase. Version 3.1.2 asks the calibration for a
+  brief, explosive maximal jerk of each muscle's own movement instead of a
+  sustained push against something fixed.
 type: software
-version: 3.1.1
+version: 3.1.2
 date-released: "2026-09-13"
 authors:
   - family-names: "Agis-Torres"
