@@ -633,7 +633,8 @@ electrodos, anatomía); el **% CVM** permite **comparar** entre músculos, sujet
 sesiones.
 
 > **Cómo se mide la referencia.** Es el **mejor 0,2 s sostenido** de las tres
-> repeticiones de calibración, con el reposo de la ventana ya descontado. No es el máximo instantáneo, que una
+> repeticiones de calibración: la media más alta de la envolvente en 0,2 s,
+> tomada tal cual, sin restarle el reposo. No es el máximo instantáneo, que una
 > sola muestra de ruido podría fijar, ni el medio segundo mantenido, que se
 > quedaba en la meseta: una contracción mantenida muestra un pico al empezar y
 > luego una meseta, y los esfuerzos breves de la tarea alcanzan ese pico. Medida

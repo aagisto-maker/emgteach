@@ -1,11 +1,16 @@
 """Maximum Voluntary Contraction (MVC) normalisation helpers.
 
-The MVC reference is computed from the EMG envelope of a calibration
-trial in which the subject performs the strongest possible contraction
-of the target muscle. The 95th percentile of the envelope is used
-rather than the raw maximum, as it is robust against motion artefacts
-and brief electrode glitches that would otherwise saturate the
-reference.
+The MVC reference is computed from the EMG envelope of the calibration
+repetitions, in which the subject makes the strongest possible contraction
+of the target muscle. Each repetition is worth the highest mean of its
+envelope over a short window — the profile's ``mvc_peak_window_s``, 0.2 s —
+and the reference is the best of the repetitions (:func:`mvc_from_reps`,
+:func:`mvc_peak_hold`). The envelope is taken as it is: no resting level is
+subtracted. The window is long enough that a single noise sample cannot set
+the reference, and short enough to hold the peak a maximal effort reaches at
+its start. Within the reference, a percentile of the envelope
+(:func:`compute_mvc`) is only the fallback for a repetition shorter than one
+window.
 
 Subsequent recordings are then expressed as a percentage of MVC, which
 is the unit in which clinical and research surface-EMG measurements
@@ -109,7 +114,8 @@ def mvc_peak_hold(
     emg_envelope : array-like
         Envelope of the maximal-contraction calibration trial.
     window_samples : int
-        Length of the sustained window, in samples (e.g. ``0.5 s * fs``).
+        Length of the sustained window, in samples: the profile's
+        ``mvc_peak_window_s`` (0.2 s) times ``fs``.
     percentile : float, optional
         Percentile used by the :func:`compute_mvc` fallback (default 95).
 

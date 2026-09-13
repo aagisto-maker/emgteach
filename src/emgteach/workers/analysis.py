@@ -1042,8 +1042,9 @@ class AnalysisWorker(QThread):
                     )
 
             # A reference that was never a maximum: the task beats it. The
-            # reference *is* the strongest half second of a maximal effort, so
-            # this is a definition rather than a heuristic, and it holds for
+            # reference *is* the strongest mvc_peak_window_s (0.2 s) of a
+            # maximal effort, so this is a definition rather than a heuristic,
+            # and it holds for
             # one channel as well as for two — which is why it lives out here
             # and not inside the pair. It lived inside it until a single-muscle
             # practical went through with a calibration a third of what the
@@ -1056,8 +1057,9 @@ class AnalysisWorker(QThread):
             ):
                 if not ref or env is None:
                     continue
-                # Like with like: the reference is the strongest 0.5 s the
-                # subject held, so what is compared against it is the same
+                # Like with like: the reference is the strongest
+                # mvc_peak_window_s (0.2 s) the subject held, so what is
+                # compared against it is the same
                 # running mean and not the instantaneous envelope. On one
                 # recording that difference alone accounted for a peak of 384 % where the
                 # honest figure was 234 %.

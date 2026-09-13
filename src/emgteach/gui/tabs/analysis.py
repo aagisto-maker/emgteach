@@ -921,8 +921,9 @@ class AnalysisTab(QWidget):
             tr("Fatigue indicator from the MDF trend over time."),
         )
         # What the task reached against the reference, sustained over the
-        # same half second the reference is measured on. Computed for every
-        # analysis and, until now, only used to decide whether to warn.
+        # same window the reference is measured on (the profile's
+        # mvc_peak_window_s, 0.2 s). Computed for every analysis and, until
+        # now, only used to decide whether to warn.
         self._lbl_pico = _ficha(
             1, 1, tr("Task maximum"),
             tr("Highest sustained level ({w:.1f} s) of the task, as % of the "

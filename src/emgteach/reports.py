@@ -523,7 +523,8 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
 
     One row per muscle: the value, where it came from and how many
     repetitions counted; what the task reached against it, sustained over the
-    same half second the reference is measured on; and, when that crosses the
+    same window the reference is measured on (``mvc_peak_window_s``, 0.2 s);
+    and, when that crosses the
     limit, the sentence that says the maximum was not one. Then the
     repetitions themselves, with what the other muscle did during each — the
     cross-talk that used to be shown for four seconds in the calibration

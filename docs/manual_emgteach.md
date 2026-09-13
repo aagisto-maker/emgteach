@@ -456,8 +456,8 @@ which is what makes muscles, subjects and sessions comparable: absolute
 millivolts depend on skin impedance, electrode position and anatomy.
 
 > **How the reference is measured.** It is the **best sustained 0.2 s** across the
-> three calibration repetitions, with
-> the window's resting level subtracted. Not the instantaneous peak, which one
+> three calibration repetitions: the highest mean of the envelope over 0.2 s,
+> taken as it is, with no resting level subtracted. Not the instantaneous peak, which one
 > noise sample could set, nor the held half second, which sat on the plateau: a
 > held contraction shows a peak at its start and then a plateau, and the task's
 > brief efforts reach that peak. Measured on the plateau, the task beat the

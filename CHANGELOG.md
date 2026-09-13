@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Releases carry the source only; no pre-built Windows executable is attached to them.** An unsigned one-file PyInstaller build is often flagged by antivirus software when it is downloaded — a known false positive that only code-signing removes. The *Build Windows exe* workflow no longer runs when a release is published and no longer uploads to it, and its token is now read-only. It still builds and self-tests the executable on demand, on `exe-*` tags and on pull requests that touch `packaging/`, keeping it as a workflow artifact, and `packaging/emgteach.spec` still builds it locally. The executables attached to the earlier releases (1.4.0 to 3.1.1) have been removed from them. `packaging/README.md` says how to attach the executable to releases again.
 
+### Fixed
+- **The documentation describes the MVC reference as the code computes it.** The user manual, in both languages, said the reference had the window's resting level subtracted; it has not. Each calibration repetition is worth the highest 0.2 s running mean of its envelope, taken as it is, and the reference is the best of them. Docstrings and comments that still gave the reference as the 95th percentile of the envelope (`emgteach.mvc`, the MVC tab, `SignalProfile.mvc_percentile`) or as a half-second window (the analysis worker and tab, the report's calibration section, `Contraction.peak_pct`) now say the same, and the MVC tab's docstring no longer describes the separate reference file and the auto-normalisation that were removed. Nothing that is computed changes.
+
 ## [3.1.1] — 2026-09-13
 
 **The co-activation of a named window is read on the uncut recording.**

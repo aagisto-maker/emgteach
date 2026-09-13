@@ -57,7 +57,10 @@ class SignalProfile:
     overlap : float
         Fractional overlap between consecutive analysis segments.
     mvc_percentile : float
-        Percentile of the envelope used as the MVC reference amplitude.
+        Percentile that summarises a calibration repetition only when it is
+        shorter than one ``mvc_peak_window_s`` window, the fallback of
+        :func:`emgteach.mvc.mvc_peak_hold`. The reference itself is the
+        strongest sustained window; see ``mvc_peak_window_s``.
     apda_static_limit, apda_median_limit, apda_peak_limit : float
         Recommended maximum loads (% MVC) for the static / median / peak
         levels of Jonsson's APDF muscle-load analysis (see
