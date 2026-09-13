@@ -9,10 +9,12 @@ parte en la maniobra del otro, y restarla castiga en proporción a la señal
 pequeña, que es justo la que la práctica quiere enseñar.
 
 Ahora la envolvente y el reposo se calculan una vez, sobre la fase de registro
-sin recortar, y cada fragmento con nombre es una máscara sobre ella. La prueba
-de aceptación es la del artículo: las tres maniobras del registro de ejemplo,
-elegidas en la pestaña como una fila cada una, tienen que dar lo mismo que la
-figura 6 leyéndolas a mano sobre el original.
+sin recortar, y cada fragmento con nombre es una máscara sobre ella, con el
+reposo que la tabla ya restaba sin fragmentos: una sola definición para las
+dos vías. La prueba de aceptación usa el registro de ejemplo del informe: sus
+tres maniobras, elegidas en la pestaña como una fila cada una, tienen que dar
+lo mismo que `tools/figura6.py` leyéndolas a mano sobre el original, y los
+valores quedan fijados para que un cambio que los mueva se vea.
 """
 
 from __future__ import annotations
@@ -29,10 +31,11 @@ from emgteach.coactivation import coactivation_by_fragments, resting_level
 RAIZ = Path(__file__).resolve().parent.parent
 EJEMPLO = RAIZ / "docs" / "informe-sourcebook" / "ejemplo_tres_maniobras.edf"
 
-#: The article's three manoeuvres, in seconds of the example file.
+#: The example recording's three manoeuvres, whole, in seconds of the file.
 MANIOBRAS = [(57.5, 70.0, "Flexion"), (72.0, 85.0, "Extension"), (88.0, 97.0, "Grip")]
-#: What the figure gives for them: index and the two means, % MVC.
-PUBLICADO = {
+#: What the tab and the figure give for them — index and the two means,
+#: % MVC — pinned so that a change which moves them is seen.
+REFERENCIA = {
     "Flexion": (28.3, 14.13, 5.83),
     "Extension": (None, 4.20, 6.17),
     "Grip": (75.7, 14.48, 9.08),
@@ -160,7 +163,7 @@ def _por_nombre(ventanas):
 
 
 @pytest.mark.gui
-class TestTheExampleRecordingGivesTheArticleItsNumbers:
+class TestTheExampleRecordingThroughTheTab:
     """The acceptance test: through the tab, as a teacher would do it."""
 
     @pytest.fixture(scope="class")
@@ -195,8 +198,8 @@ class TestTheExampleRecordingGivesTheArticleItsNumbers:
             assert tab.mean_1 == pytest.approx(fig.mean_1, abs=1e-6)
             assert tab.mean_2 == pytest.approx(fig.mean_2, abs=1e-6)
 
-    def test_and_they_are_the_published_ones(self, por_la_pestana) -> None:
-        for nombre, (indice, m1, m2) in PUBLICADO.items():
+    def test_and_they_do_not_drift(self, por_la_pestana) -> None:
+        for nombre, (indice, m1, m2) in REFERENCIA.items():
             w = por_la_pestana[nombre]
             if indice is None:
                 assert w.index is None, w.reason

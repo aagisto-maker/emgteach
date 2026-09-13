@@ -15,16 +15,20 @@ signal the agonist/antagonist practical is about.
   of the whole recording phase.** The envelopes of both muscles are computed
   once over the recording phase uncut; each named fragment is a mask over
   them; the resting level is the 10th percentile of that whole phase, the
-  only place it can be measured. Consecutive fragments of one name are still
+  definition the table already used when no fragments are chosen, so both
+  routes now subtract the same zero. Consecutive fragments of one name are
+  still
   one window, an unnamed fragment still opens none, and a window's seconds
   are now those of the recording phase — as in an analysis without fragments
   — rather than of the concatenated signal.
 - On the report's example recording, the row the fragment editor proposes
   for the grip read 58 % with the extensor at 6.3 % MVC; it reads 75 % and
-  10.9 %. The three manoeuvres selected as one row each give the figures of
-  the report's §8.2 to the decimal, and `tools/figura6.py` reads its
-  `--ventana` windows through the same function, so the figure and the
-  application cannot disagree.
+  10.9 %.
+- `tools/figura6.py` reads its `--ventana` windows through the same
+  function, so the figure and the application cannot disagree. The tool
+  used to take each window's resting level from the window itself; through
+  the shared function its means move by up to 0.3 % MVC and its indices by
+  up to 0.7 points.
 
 ## Unchanged, on purpose
 
