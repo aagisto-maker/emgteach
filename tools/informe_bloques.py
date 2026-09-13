@@ -21,7 +21,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "src"))
 
-from emgteach import i18n  # noqa: E402
+from emgteach import i18n, modes  # noqa: E402
 from emgteach.gui.tabs import analysis as ana_mod  # noqa: E402
 from emgteach.profiles import EMG_PROFILE  # noqa: E402
 
@@ -52,6 +52,10 @@ PERFIL = FUENTE / "profiles.py"
 ADQ = FUENTE / "gui" / "tabs" / "acquisition.py"
 BIT = FUENTE / "devices" / "bitalino.py"
 ARD = FUENTE / "devices" / "arduino.py"
+MODOS = FUENTE / "modes.py"
+
+#: El orden de las prácticas en las filas que cambian con ella.
+PRACTICAS = (modes.MODE_SINGLE, modes.MODE_PAIR, modes.MODE_KINEMATICS)
 
 #: (rótulo EN, valor, unidad, dónde se cambia, fichero, patrón para la línea)
 PARAMETROS = [
@@ -94,6 +98,17 @@ PARAMETROS = [
      "no editable", PERFIL, r"onset_baseline_s: float"),
     ("Onset refractory", EMG_PROFILE.onset_refractory_s, "s",
      "no editable", PERFIL, r"onset_refractory_s: float"),
+    ("Sensitivity",
+     " · ".join(str(modes.mode_detection_k(m)) for m in PRACTICAS),
+     "desv. típicas (un músculo · par · cinemática)",
+     "Análisis · «Seleccionar fragmentos…» · Sensibilidad "
+     "(«Restablecer» vuelve aquí)", MODOS, r"^_DETECTION_K"),
+    ("Marked / expected",
+     " · ".join(str(n) for n in
+              modes.mode_expected_contractions(modes.MODE_PAIR)),
+     "contracciones (flexión · extensión · presa; solo en el par)",
+     "Análisis · «Seleccionar fragmentos…» · esperadas", MODOS,
+     r"^_EXPECTED"),
     ("Jonsson static limit (P10)", EMG_PROFILE.apda_static_limit, "% CVM",
      "no editable", PERFIL, r"apda_static_limit: float"),
     ("Jonsson median limit (P50)", EMG_PROFILE.apda_median_limit, "% CVM",
