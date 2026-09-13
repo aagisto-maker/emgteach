@@ -995,9 +995,7 @@ sin fragmentos. **Las del 8.2 se han vuelto a medir con la 3.1.1** (apartado
 
 ### 8.1 Registro de ejemplo: el par flexor / extensor
 
-`ejemplo_par_FCR_ECR.edf`, dos canales, 140,0 s, del 3 de septiembre de 2026,
-con el máximo hecho entonces contra el canto de la mesa (flexor con el puño
-cerrado); hoy la aplicación pide otra maniobra, una sacudida breve y explosiva.
+`ejemplo_par_FCR_ECR.edf`, dos canales, 140,0 s, del 3 de septiembre de 2026.
 El tramo analizado son los 23,3 s de la fase de registro.
 
 **Aviso sobre este archivo:** se grabó con el protocolo de calibración de
@@ -1023,10 +1021,9 @@ medias de 14,4 % y 11,1 % CVM. Correlación de las dos envolventes:
 ### 8.2 Las tres maniobras: coactivación por maniobra
 
 `ejemplo_tres_maniobras.edf`, dos canales, 100,0 s, del **6 de septiembre de
-2026**, con la calibración de tres esfuerzos breves por músculo y la maniobra
-que pedía entonces la aplicación, un esfuerzo contra algo que no se pudiera
-mover (desde la 3.1.2 se pide una sacudida breve y explosiva); `REC start` en
-el segundo 57,3 y 42,7 s de tarea. El protocolo fue
+2026**, con la calibración de tres esfuerzos breves por músculo, hechos como
+sacudidas —la maniobra que pide la 3.1.2—; `REC start` en el segundo 57,3 y
+42,7 s de tarea. El protocolo fue
 **seis flexiones de muñeca contra resistencia, dos segundos de
 quietud, seis extensiones contra resistencia, dos segundos de quietud y una
 presa sostenida de unos ocho segundos con la muñeca neutra**.
