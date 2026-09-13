@@ -39,6 +39,23 @@ Get-Content dist\emgteach_selftest.log
 off-screen. Because the app is windowed (no console), the outcome is written
 to `emgteach_selftest.log` next to the executable.
 
+### Build in CI
+
+The *Build Windows exe* workflow (`.github/workflows/build-windows-exe.yml`)
+builds the same executable and runs the self-test on Windows: on demand
+(*Actions → Build Windows exe → Run workflow*), on a pushed `exe-*` tag and
+on pull requests that touch `packaging/`. The executable is kept as a
+workflow artifact named `emgteach-windows-exe`.
+
+It is not attached to releases, which carry the source only: an unsigned
+build meets the antivirus false positive described below as soon as it is
+downloaded. To attach it again, give the workflow back its
+`release: types: [published]` trigger, `permissions: contents: write` and a
+last step that runs
+`gh release upload "$TAG" "emgteach-$TAG-windows-x64.exe" --clobber`.
+Reverting the commit that removed them
+(`git log -- .github/workflows/build-windows-exe.yml`) restores all three.
+
 ## Run (tester machine)
 
 Double-click `emgteach.exe`. The first launch is a few seconds slower (the

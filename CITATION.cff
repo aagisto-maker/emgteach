@@ -13,7 +13,8 @@ abstract: >-
   two-channel live view and a bilingual (English/Spanish) interface; version
   1.0.0 reimplements the BITalino backend over pyserial (Bluetooth virtual COM
   port, no PyBluez or external dependencies) with MAC-to-COM resolution and
-  autodetection, and ships a standalone Windows executable. Version 1.1.0 adds
+  autodetection, and adds a recipe for a standalone Windows executable.
+  Version 1.1.0 adds
   assisted fragment selection with an editable fragment editor, region-of-interest
   analysis, CSV export, a live signal-quality check and an ECG signal profile.
   Version 2.0.0 adds a kinematic dimension via the BITalino accelerometer: a

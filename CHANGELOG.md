@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Releases carry the source only; no pre-built Windows executable is attached to them.** An unsigned one-file PyInstaller build is often flagged by antivirus software when it is downloaded — a known false positive that only code-signing removes. The *Build Windows exe* workflow no longer runs when a release is published and no longer uploads to it, and its token is now read-only. It still builds and self-tests the executable on demand, on `exe-*` tags and on pull requests that touch `packaging/`, keeping it as a workflow artifact, and `packaging/emgteach.spec` still builds it locally. The executables attached to the earlier releases (1.4.0 to 3.1.1) have been removed from them. `packaging/README.md` says how to attach the executable to releases again.
+
 ## [3.1.1] — 2026-09-13
 
 **The co-activation of a named window is read on the uncut recording.**
