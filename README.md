@@ -70,7 +70,8 @@ broadcast**: students follow the live session in their own phone
 browsers, with a per-session access code and a scan-to-join QR. v1.1.0
 added an **assisted fragment editor**, **CSV export** and a **live
 signal-quality check**; v1.0.0 reimplemented the BITalino backend over
-`pyserial` (no PyBluez) and shipped a standalone Windows executable.
+`pyserial` (no PyBluez) and added a recipe for a standalone Windows
+executable.
 
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
@@ -121,6 +122,11 @@ git clone https://github.com/aagisto-maker/emgteach.git
 cd emgteach
 pip install -e ".[dev]"
 ```
+
+No pre-built executable is attached to the releases: an unsigned one-file
+PyInstaller build is often flagged by antivirus software when downloaded.
+A standalone Windows executable can be built from the source with the
+recipe in [`packaging/`](packaging/README.md).
 
 On **Windows 11** the easiest way to install Python 3.12 is via
 **Microsoft Store** (search "Python 3.12"). It installs without

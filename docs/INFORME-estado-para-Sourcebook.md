@@ -32,8 +32,9 @@ Donde algo no está hecho o no lo sé, lo dice.
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leen del **código de `main` en el momento de generarlos**. En esta
 actualización `main` coincide con la etiqueta `v3.1.1` salvo en documentación
-(este informe y el DOI de versión de `CITATION.cff`), así que lo que dicen es
-lo que hace la versión publicada. Lo que cambió de la 3.1.0 a la 3.1.1 está en
+(este informe, `CITATION.cff`, el README y el CHANGELOG) y en el flujo que
+compila el ejecutable de Windows, que no forma parte de la aplicación; así que
+lo que dicen es lo que hace la versión publicada. Lo que cambió de la 3.1.0 a la 3.1.1 está en
 el apartado 1.1, y de la 3.0.0 a la 3.1.0 en el 1.2.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:161`: con la
@@ -41,9 +42,11 @@ tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
 propio panel, así que no puede provocar el crecimiento que esa prueba vigila.
 
 La versión etiquetada para el depósito es **3.1.1**, y es la que describe el
-artículo. El ejecutable de Windows va adjunto a la publicación como
-`emgteach-v3.1.1-windows-x64.exe`, construido por la integración continua a
-partir de la misma etiqueta.
+artículo. Las publicaciones de GitHub no llevan ejecutable de Windows ya
+compilado: un ejecutable de PyInstaller sin firmar hace saltar el antivirus al
+descargarlo (un falso positivo conocido), así que la versión se distribuye como
+código fuente (apartado 1.6). El ejecutable se sigue pudiendo compilar desde la
+etiqueta con la receta de `packaging/`.
 
 ### 1.1 De la 3.1.0 a la 3.1.1
 
@@ -211,10 +214,11 @@ pip install -e ".[dev]"
 emgteach
 ```
 
-En Windows, sin instalar Python: descargar
-`emgteach-v3.1.1-windows-x64.exe` de la publicación y ejecutarlo. Acepta
-`--selftest`, que construye la interfaz sin pantalla y escribe el resultado en
-`emgteach_selftest.log` junto al ejecutable.
+No hay ejecutable de Windows adjunto a la publicación (apartado 1). Quien lo
+necesite lo compila desde la etiqueta con `packaging/emgteach.spec`
+(instrucciones en `packaging/README.md`). El ejecutable acepta `--selftest`,
+que construye la interfaz sin pantalla y escribe el resultado en
+`emgteach_selftest.log`, a su lado.
 
 ---
 
