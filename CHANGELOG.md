@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] — 2026-09-13
+
+**The practical as a class runs it.** Nothing about what is measured changes;
+what changes is how the application is handled at a laboratory bench by
+someone using it for the first time. The fragment editor becomes a procedure
+of three steps — set the sensitivity, review each contraction, apply — with a
+counter against what the protocol asks for, the stretches under the threshold
+offered as candidates, and each row kept, dropped, split or dragged where it
+stands. A second launch brings the running window forward instead of
+competing for the Bluetooth port, and the packaged application shows a splash
+image from the first second. The guided tour shows where the electrodes go and
+what the calibration asks for, and a sheet for each station puts the
+agonist/antagonist practical on one page.
+
+One change moves results: the agonist/antagonist practical now detects
+contractions at k = 4.4 rather than 3.0, so the rows proposed for a recording
+— and the co-activation windows read off them — can differ from those 3.0.0
+proposed for the same file. The k used is written into the report and the
+CSV.
+
+See [`docs/RELEASE_NOTES_v3.1.0.md`](docs/RELEASE_NOTES_v3.1.0.md) for the
+release summary.
+
 ### Added
 - **A sheet for each laboratory station.** `docs/hoja-puesto/hoja_puesto_es.pdf` and `hoja_puesto_en.pdf` put the agonist/antagonist practical on one landscape A4, to print and laminate: six panels in the order things happen — the electrodes, Connect, Start recording and the warm-up, the calibration and what to do for each muscle, the task, the analysis — each a picture with one line of text. The pictures are the guided tour's and captures of the application itself, so the buttons on the sheet are the ones on the screen; `tools/hoja_puesto.py` rebuilds it.
 - **The guided tour shows where the electrodes go and what the calibration asks for.** In the agonist/antagonist practical the connection step carries a picture of the two electrode pairs and the reference, and the recording step one of the calibration: the warm-up, the efforts of each muscle, each one's timing, and what to do when the screen names FCR or ECR. Both are drawn from a single base image with the electrode positions of the construction behind the article's Figure 1, coloured with the application's key — first muscle blue, second red — in English and Spanish. `tools/imagenes_recorrido.py` rebuilds them and reads the calibration's numbers from the code, and the frozen build's self-test fails if they were left out of it.
@@ -466,7 +489,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/aagisto-maker/emgteach/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/aagisto-maker/emgteach/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/aagisto-maker/emgteach/compare/v1.4.1...v2.0.0
 [1.4.1]: https://github.com/aagisto-maker/emgteach/compare/v1.4.0...v1.4.1

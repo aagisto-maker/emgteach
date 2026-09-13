@@ -24,21 +24,33 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.0.0 is **configured by choosing the practical rather than by
-setting controls one at a time**: three practicals — one muscle,
+`emgteach` v3.1.0 is about **handling at the laboratory bench**. The
+fragment editor becomes a procedure of three steps that says which one it is
+on, counts the marked contractions against what the protocol asks for,
+offers the stretches under the threshold as candidates, and lets each row be
+kept, dropped, split or dragged where it stands; the detection sensitivity is
+set per practical and written into the report. A second launch brings the
+running window forward instead of opening a second copy, saving never fails
+on a missing folder, the guided tour shows where the electrodes go and what
+the calibration asks for, and a sheet for each station puts the
+agonist/antagonist practical on one page. See
+[`docs/RELEASE_NOTES_v3.1.0.md`](docs/RELEASE_NOTES_v3.1.0.md).
+
+Since v3.0.0 `emgteach` is **configured by choosing the practical rather
+than by setting controls one at a time**: three practicals — one muscle,
 agonist/antagonist and muscle kinematics — fix the channel count and the
 accelerometer, and each tab offers only the measurements that suit the
 practical. The **session is one file with its phases marked inside it**
 (warm-up, calibration, preparation, recording), so the maximum every
 percentage is measured against travels with the signal, and the two tabs
-can no longer disagree about the same recording. It adds a **guided tour**
-over the interface, a **«?» on every box**, **one analysis row per
-contraction** with its electromechanical delay, an **agonist/antagonist
-co-activation index** (Falconer-Winter, per marked phase and in % MVC), a
-**rehearsal** of the force-velocity procedure that runs with no hardware,
-and a derived **tuned recording** that carries the decisions taken on
-screen. It also corrects the BITalino front-end gain in the conversion to
-millivolts. See
+can no longer disagree about the same recording. v3.0.0 also added a
+**guided tour** over the interface, a **«?» on every box**, **one analysis
+row per contraction** with its electromechanical delay, an
+**agonist/antagonist co-activation index** (Falconer-Winter, per marked
+phase and in % MVC), a **rehearsal** of the force-velocity procedure that
+runs with no hardware and a derived **tuned recording** that carries the
+decisions taken on screen, and corrected the BITalino front-end gain in the
+conversion to millivolts. See
 [`docs/RELEASE_NOTES_v3.0.0.md`](docs/RELEASE_NOTES_v3.0.0.md).
 
 v2.0.0 added a **kinematic dimension** through the BITalino

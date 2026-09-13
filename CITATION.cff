@@ -30,10 +30,15 @@ abstract: >-
   box, one analysis row per contraction with its electromechanical delay, an
   agonist/antagonist co-activation index (Falconer-Winter) computed per marked
   phase in %MVC, and a derived "tuned" recording that carries the decisions
-  taken on screen.
+  taken on screen. Version 3.1.0 turns the fragment editor into a three-step
+  procedure that counts the marked contractions against the protocol and lets
+  each one be kept, dropped, split or dragged, sets the detection sensitivity
+  per practical and records it in the report, keeps a single running instance
+  with a start-up splash, and shows the electrode placement and the
+  calibration in the guided tour.
 type: software
-version: 3.0.0
-date-released: "2026-09-05"
+version: 3.1.0
+date-released: "2026-09-13"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
