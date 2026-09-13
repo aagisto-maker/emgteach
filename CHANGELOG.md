@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.2] — 2026-09-13
+
+**The calibration is a brief, explosive maximal jerk.** The wizard, its
+warnings, the help and the documentation ask for a brief, explosive maximal
+jerk of each muscle's own movement instead of a sustained push against
+something fixed; releases carry the source only; and the documentation
+describes the MVC reference as the code computes it. Nothing that is
+computed changes. See
+[`docs/RELEASE_NOTES_v3.1.2.md`](docs/RELEASE_NOTES_v3.1.2.md).
+
 ### Changed
 - **Releases carry the source only; no pre-built Windows executable is attached to them.** An unsigned one-file PyInstaller build is often flagged by antivirus software when it is downloaded — a known false positive that only code-signing removes. The *Build Windows exe* workflow no longer runs when a release is published and no longer uploads to it, and its token is now read-only. It still builds and self-tests the executable on demand, on `exe-*` tags and on pull requests that touch `packaging/`, keeping it as a workflow artifact, and `packaging/emgteach.spec` still builds it locally. The executables attached to the earlier releases (1.4.0 to 3.1.1) have been removed from them. `packaging/README.md` says how to attach the executable to releases again.
 - **The calibration asks for a brief, explosive maximal jerk, not a sustained push against something fixed.** A surface electrode on the forearm sees the compartment beneath it, finger flexors or extensors included, and a reference is only a yardstick if it recruits the same muscle mass as the task. The agonist/antagonist task includes a grip: clenching the fist brings in the finger flexors, whereas a push of the wrist leaves them out and, because the forearm has to be braced, switches on the antagonist as well. In the agonist/antagonist practical the wizard now names each channel's gesture during the countdown — wrist flexion with the fist clenched with all one's strength for the flexor, wrist extension with the hand open and the fingers stretched out as far as they go for the extensor — and the other practicals give the general rule. The same wording replaces «against something that cannot move» in the not-a-maximum warnings of the wizard, the analysis summary and the PDF report, in the MVC tab's introduction, in the calibration and force-velocity help, in the guided tour's calibration picture and the station sheet, and in the manual, the practical guides, the cheat sheets, the rubric and the electrode-placement guide. New `tests/test_maniobra_calibracion.py`. Nothing that is computed changes.
@@ -513,7 +523,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.1.1...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.1.2...HEAD
+[3.1.2]: https://github.com/aagisto-maker/emgteach/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/aagisto-maker/emgteach/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/aagisto-maker/emgteach/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/aagisto-maker/emgteach/compare/v2.0.0...v3.0.0

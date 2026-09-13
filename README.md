@@ -24,7 +24,14 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.1.1 is a patch on one measurement: the **co-activation of a
+`emgteach` v3.1.2 changes what the calibration asks for: a **brief, explosive
+maximal jerk** of each muscle's own movement — in the agonist/antagonist
+practical, wrist flexion with the fist clenched for the flexor and wrist
+extension with the hand open for the extensor — instead of a sustained push
+against something fixed. Nothing that is computed changes. See
+[`docs/RELEASE_NOTES_v3.1.2.md`](docs/RELEASE_NOTES_v3.1.2.md).
+
+v3.1.1 is a patch on one measurement: the **co-activation of a
 named window is read on the uncut recording**, with each muscle's resting
 level taken from the whole recording phase, so choosing fragments no longer
 subtracts from the antagonist a «rest» measured on a signal with no rest in
