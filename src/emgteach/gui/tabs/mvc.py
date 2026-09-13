@@ -1,19 +1,22 @@
 """
 MvcTab — tab 3: MVC normalisation (Maximum Voluntary Contraction).
 
-Loads a test EDF and, optionally, an MVC reference EDF. Normalises the EMG
-envelope as a % of the reference MVC (95th percentile). If no MVC file is
-provided, it uses auto-normalisation over the test signal itself.
+Loads one EDF — the session — and normalises the EMG envelope as a % of the
+MVC reference its own calibration gives (:func:`emgteach.phases.mvc_reference`:
+the strongest 0.2 s window, best of the repetitions). Without a calibration
+there is no % MVC and no muscle load; the signal and its envelope are still
+drawn. There is no separate reference file and no auto-normalisation.
 
 Controls:
   - Test EDF file selector (path persisted in QSettings)
-  - MVC reference EDF file selector (optional, persisted)
   - EMG channel name
+  - Fragment selection ("Select fragments…"): the span the muscle load is
+    measured over
   - Envelope cutoff frequency (editable, default 5.0 Hz)
-  - Compute / Save figure button
+  - "Compute MVC" and "Save figure (PNG)" buttons
   - Progress indicator (indeterminate while the worker runs)
 
-Scale controls (same logic as tab_analisis.py):
+Scale controls (same logic as the analysis tab):
   - Vertical scale: ▲▼ sidebar per panel (×1.5, 0.01×–100× limits)
   - Time scale: ◀▶ buttons + factor dropdown
 

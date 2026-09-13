@@ -55,8 +55,9 @@ class Contraction:
     channels, the one that led the contraction (or ``both_label`` for a
     co-contraction, in which case the numbers are the stronger muscle's);
     with one channel, that channel's name. ``peak_pct`` is the highest
-    *sustained* level (the reference's own half-second window) against the
-    reference, and is ``None`` without one. ``emd_ms`` is the
+    *sustained* level against the reference — the mean over the reference's
+    own window, which the analysis passes as the profile's
+    ``mvc_peak_window_s`` (0.2 s) — and is ``None`` without one. ``emd_ms`` is the
     electromechanical delay — from the electrical onset to the start of the
     movement — where an accelerometer on the moving segment allows it.
     """
