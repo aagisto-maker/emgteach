@@ -12,7 +12,10 @@ import numpy as np
 from PySide6.QtCore import QThread, Signal
 from scipy.integrate import trapezoid
 
-from emgteach.coactivation import coactivation_by_window
+from emgteach.coactivation import (
+    coactivation_by_fragments,
+    coactivation_by_window,
+)
 from emgteach.contractions import contraction_table, mean_emd_ms
 from emgteach.dsp import (
     compute_psd_mnf_mdf,
@@ -485,6 +488,31 @@ class AnalysisWorker(QThread):
                 and bounds[0][0] == 0
                 and bounds[0][1] == len(emg_raw)
             )
+            # The co-activation table is read on the recording phase *uncut*,
+            # before the fragments below are concatenated for everything
+            # else: a named window is a mask over that envelope, and the
+            # resting level the index subtracts comes from a signal that still
+            # has rest in it. Read off the concatenation, the "rest" was the
+            # quietest the muscle got while working (coactivation_by_fragments).
+            tramo_completo: tuple[int, int] | None = None
+            env_completo_1 = None
+            fragmentos_completo: list[tuple[float, float, str]] = []
+            if self._roi_segments and not is_whole:
+                a, b = phases.rec_span(full_duration, fv_loads) or (
+                    0.0, full_duration)
+                a, b = min(a, bounds[0][2]), max(b, bounds[-1][3])
+                tramo_completo = (
+                    max(0, round(a * fs)), min(len(emg_raw), round(b * fs)))
+                env_completo_1 = process_offline(
+                    emg_raw[tramo_completo[0]:tramo_completo[1]], fs,
+                    f_low=self._f_low, f_high=self._f_high,
+                    f_notch=self._f_notch, f_env=self._f_env,
+                    rms_window_ms=self._rms_window_ms,
+                )["emg_envelope"]
+                fragmentos_completo = [
+                    (seg_a - a, seg_b - a, nombre or "")
+                    for (_i0, _i1, seg_a, seg_b, nombre) in bounds
+                ]
             if not is_whole:
                 emg_raw = np.concatenate(
                     [emg_raw[i0:i1] for (i0, i1, _, _, _) in bounds])
@@ -824,6 +852,16 @@ class AnalysisWorker(QThread):
                         )["emg_envelope"]
                         if phases.cal_reps else None
                     )
+                    # The uncut recording phase of this muscle too, for the
+                    # co-activation table; see the first channel.
+                    env_completo_2 = None
+                    if tramo_completo is not None:
+                        env_completo_2 = process_offline(
+                            emg_raw_2[tramo_completo[0]:tramo_completo[1]], fs,
+                            f_low=self._f_low, f_high=self._f_high,
+                            f_notch=self._f_notch, f_env=self._f_env,
+                            rms_window_ms=self._rms_window_ms,
+                        )["emg_envelope"]
                     if not is_whole:
                         emg_raw_2 = np.concatenate(
                             [emg_raw_2[i0:i1] for (i0, i1, _, _, _) in bounds]
@@ -929,15 +967,30 @@ class AnalysisWorker(QThread):
                         fases = [
                             m for m in markers if "(auto)" not in str(m[1])
                         ]
-                        table, from_marks = coactivation_by_window(
-                            proc["emg_envelope"] / float(ref1) * 100.0,
-                            proc2["emg_envelope"] / float(ref2) * 100.0,
-                            fs, fases,
-                            floor_pct=self._profile.coact_floor_pct,
-                            t0=float(times[0]) if len(times) else 0.0,
-                            name_1=self._channel_name or "",
-                            name_2=self._channel_name_2 or "",
-                        )
+                        if env_completo_1 is not None and env_completo_2 is not None:
+                            # Chosen fragments: each named one is a window
+                            # read where it lies on the uncut recording
+                            # phase, in that phase's own seconds — the clock
+                            # of an analysis without fragments, not of the
+                            # concatenated signal the panels draw.
+                            table, from_marks = coactivation_by_fragments(
+                                env_completo_1 / float(ref1) * 100.0,
+                                env_completo_2 / float(ref2) * 100.0,
+                                fs, fragmentos_completo,
+                                floor_pct=self._profile.coact_floor_pct,
+                                name_1=self._channel_name or "",
+                                name_2=self._channel_name_2 or "",
+                            )
+                        else:
+                            table, from_marks = coactivation_by_window(
+                                proc["emg_envelope"] / float(ref1) * 100.0,
+                                proc2["emg_envelope"] / float(ref2) * 100.0,
+                                fs, fases,
+                                floor_pct=self._profile.coact_floor_pct,
+                                t0=float(times[0]) if len(times) else 0.0,
+                                name_1=self._channel_name or "",
+                                name_2=self._channel_name_2 or "",
+                            )
                         result["coactivation"] = table
                         result["coactivation_from_markers"] = from_marks
 

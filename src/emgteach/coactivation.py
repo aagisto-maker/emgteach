@@ -64,6 +64,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CoactivationResult",
+    "coactivation_by_fragments",
     "coactivation_by_window",
     "coactivation_index",
     "resting_level",
@@ -371,6 +372,84 @@ def coactivation_by_window(
             e1[i0:i1], e2[i0:i1], fs, floor_pct=floor_pct,
             rest_1=rest_1, rest_2=rest_2,
             window_s=(t0 + start, t0 + end), label=lbl,
+            name_1=name_1, name_2=name_2,
+        ))
+    return out, True
+
+
+def coactivation_by_fragments(
+    env_1_pct_mvc,
+    env_2_pct_mvc,
+    fs: float,
+    fragments: Sequence[tuple[float, float, str]],
+    *,
+    floor_pct: float = 5.0,
+    t0: float = 0.0,
+    name_1: str = "",
+    name_2: str = "",
+) -> tuple[list[CoactivationResult], bool]:
+    """One index per named manoeuvre, read on the uncut recording.
+
+    ``fragments`` are ``(start_s, end_s, label)`` in the envelopes' own clock
+    — seconds from their first sample — and the envelopes are the **whole
+    analysed span, uncut**. A fragment is a mask over them, not a piece cut
+    out and glued to the next: a window's index is computed on the samples of
+    its fragments and on nothing between them, but the resting level each
+    muscle has subtracted is :func:`resting_level` of the whole span, which is
+    the only place it can be measured.
+
+    Concatenating the chosen fragments and reading the table off the result
+    measured rest on a signal with none left in it. Its 10th percentile was
+    then the quietest the muscle got *while working* — for the antagonist, its
+    own share of the other muscle's manoeuvre — and subtracting that punished
+    the small signal most, which is the one the practical is about: on the
+    report's example recording the grip read 58 % with the extensor at 6.3 %
+    MVC, where the same window on the uncut recording reads 75 % and 10.9 %.
+
+    As in :func:`coactivation_by_window`, consecutive fragments with the same
+    name are one window — six flexions are six samples of one manoeuvre — and
+    an unnamed fragment opens none and belongs to none: it is signal worth
+    keeping, not a manoeuvre, and it does not break a run of one name either
+    side of it. A window's bounds run from its first fragment's start to its
+    last one's end, in the span's clock plus ``t0``. With no named fragment at
+    all the whole span is reported as one window and the second value is
+    ``False``, exactly as with no markers.
+    """
+    e1 = np.asarray(env_1_pct_mvc, dtype=np.float64)
+    e2 = np.asarray(env_2_pct_mvc, dtype=np.float64)
+    n = min(e1.size, e2.size)
+    e1, e2 = e1[:n], e2[:n]
+    nombrados = sorted(
+        ((float(a), float(b), str(lbl)) for a, b, lbl in fragments if str(lbl)),
+        key=lambda f: f[0],
+    )
+    if not nombrados:
+        return coactivation_by_window(
+            e1, e2, fs, None, floor_pct=floor_pct, t0=t0,
+            name_1=name_1, name_2=name_2,
+        )
+    # Rest is measured once, over the whole span; see resting_level().
+    rest_1, rest_2 = resting_level(e1), resting_level(e2)
+
+    ventanas: list[list[tuple[float, float, str]]] = []
+    for f in nombrados:
+        if ventanas and ventanas[-1][-1][2] == f[2]:
+            ventanas[-1].append(f)
+        else:
+            ventanas.append([f])
+
+    out: list[CoactivationResult] = []
+    for run in ventanas:
+        idx = np.concatenate([
+            np.arange(
+                max(0, min(n, round(a * fs))), max(0, min(n, round(b * fs)))
+            )
+            for a, b, _lbl in run
+        ])
+        out.append(coactivation_index(
+            e1[idx], e2[idx], fs, floor_pct=floor_pct,
+            rest_1=rest_1, rest_2=rest_2,
+            window_s=(t0 + run[0][0], t0 + run[-1][1]), label=run[0][2],
             name_1=name_1, name_2=name_2,
         ))
     return out, True

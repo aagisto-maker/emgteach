@@ -24,7 +24,13 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.1.0 is about **handling at the laboratory bench**. The
+`emgteach` v3.1.1 is a patch on one measurement: the **co-activation of a
+named window is read on the uncut recording**, with each muscle's resting
+level taken from the whole recording phase, so choosing fragments no longer
+subtracts from the antagonist a «rest» measured on a signal with no rest in
+it. See [`docs/RELEASE_NOTES_v3.1.1.md`](docs/RELEASE_NOTES_v3.1.1.md).
+
+v3.1.0 is about **handling at the laboratory bench**. The
 fragment editor becomes a procedure of three steps that says which one it is
 on, counts the marked contractions against what the protocol asks for,
 offers the stretches under the threshold as candidates, and lets each row be
@@ -69,7 +75,7 @@ signal-quality check**; v1.0.0 reimplemented the BITalino backend over
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **1064 tests** passing on Linux and Windows across Python
+test suite of **1074 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 

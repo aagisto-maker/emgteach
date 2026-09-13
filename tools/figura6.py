@@ -148,37 +148,40 @@ def ventanas_a_mano(result: dict, pedidas, presa: re.Pattern):
     la diferencia no es un detalle. El afinado concatena los fragmentos y tira
     lo que hay entre ellos, así que la media del músculo activo sube y la del
     otro baja: sobre el original del 6 de septiembre la flexión da 28 % y la
-    presa 78 %, y sobre el afinado la flexión se queda sin número —el ECR cae
+    presa 76 %, y sobre el afinado la flexión se queda sin número —el ECR cae
     por debajo del suelo del 5 %— y la extensión y la presa quedan en 63 % y
     67 %, que ya no distinguen nada.
 
     El índice de Falconer-Winter se lee sobre la fase de movimiento con su
     curso temporal, reposos incluidos; concatenar las contracciones mide otra
     cosa. Así que para la figura del artículo se dan aquí los tramos, en
-    segundos del registro original.
+    segundos del registro original, y se leen **con la misma función que usa
+    la pestaña de Análisis** cuando se le nombran fragmentos: cada tramo es
+    una máscara sobre la envolvente sin recortar y el reposo que se resta es
+    el de la fase de registro entera. Así la figura y la aplicación no pueden
+    discrepar.
     """
-    from emgteach.coactivation import coactivation_index
+    from emgteach.coactivation import coactivation_by_fragments
+    from emgteach.profiles import EMG_PROFILE
 
     e1 = np.asarray(result.get("emg_envelope", []), dtype=float)
     bruto2 = result.get("emg_envelope_2")
     e2 = np.asarray(bruto2 if bruto2 is not None else [], dtype=float)
     r1 = float(result.get("mvc_ref") or 0)
     r2 = float(result.get("mvc_ref_2") or 0)
-    times = np.asarray(result.get("times", []), dtype=float)
     fs = float(result.get("fs", 1000.0))
     if not (e1.size and e2.size and r1 and r2):
         raise SystemExit("el registro no trae las dos referencias de CVM")
-    p1, p2 = 100.0 * e1 / r1, 100.0 * e2 / r2
 
-    arriba, abajo = [], []
-    for nombre, a, b in pedidas:
-        dentro = (times >= a) & (times < b)
-        res = coactivation_index(
-            p1[dentro], p2[dentro], fs, window_s=(a, b), label=nombre,
-            name_1=result.get("channel_name", ""),
-            name_2=result.get("channel_name_2", ""),
-        )
-        (abajo if presa.search(nombre) else arriba).append(res)
+    ventanas, _desde_marcas = coactivation_by_fragments(
+        100.0 * e1 / r1, 100.0 * e2 / r2, fs,
+        [(a, b, nombre) for nombre, a, b in pedidas],
+        floor_pct=EMG_PROFILE.coact_floor_pct,
+        name_1=result.get("channel_name", ""),
+        name_2=result.get("channel_name_2", ""),
+    )
+    arriba = [w for w in ventanas if not presa.search(w.label)]
+    abajo = [w for w in ventanas if presa.search(w.label)]
     return arriba, abajo
 
 

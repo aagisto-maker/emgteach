@@ -190,11 +190,11 @@ class TestANamedFragmentIsAWindowOfTheTable:
                       roi_segments=segs,
                       roi_labels=["Flexion", "Flexion", "Flexion"])
         assert [f.label for f in r["coactivation"]] == ["Flexion"]
-        # And the one window spans all three, not just the first.
+        # And the one window runs from the first fragment's start to the
+        # last one's end, where they lie in the recording phase.
         ventana = r["coactivation"][0].window_s
-        assert ventana[1] - ventana[0] == pytest.approx(
-            sum(b - a for a, b in segs), abs=0.6
-        )
+        assert ventana[0] == pytest.approx(segs[0][0] - REC_S, abs=0.01)
+        assert ventana[1] == pytest.approx(segs[-1][1] - REC_S, abs=0.01)
 
     def test_a_name_that_comes_back_later_opens_a_second_window(
         self, qapp, tmp_path: Path
@@ -213,15 +213,16 @@ class TestANamedFragmentIsAWindowOfTheTable:
     def test_the_windows_land_where_the_fragments_do(
         self, qapp, tmp_path: Path
     ) -> None:
-        """In concatenated time: the gaps between fragments are closed up
-        before the table sees them, so the second window starts where the
-        first ends and not where the recording says."""
+        """In the recording phase's own seconds, where the operator drew
+        them: the table is read on the uncut recording, not on the
+        concatenation the panels draw, so the gap between two fragments is
+        still there between their windows."""
         segs, nombres = _fragmentos()
         r = _analizar(qapp, _sesion(tmp_path / "sesion.edf"),
                       roi_segments=segs, roi_labels=nombres)
         flexion, extension, _presa = r["coactivation"]
-        assert flexion.window_s[0] == pytest.approx(0.0, abs=0.1)
-        assert extension.window_s[0] == pytest.approx(5.0, abs=0.2)
+        assert flexion.window_s[0] == pytest.approx(segs[0][0] - REC_S, abs=0.01)
+        assert extension.window_s[0] == pytest.approx(segs[1][0] - REC_S, abs=0.01)
 
 
 @pytest.mark.gui
