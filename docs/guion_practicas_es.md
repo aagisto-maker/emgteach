@@ -62,8 +62,8 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 - Electrodos **desechables**, uno por persona; limpiar la piel con alcohol y dejar
   secar. No reutilizar electrodos entre sujetos.
 - Personas con lesiones cutáneas en la zona deben abstenerse.
-- Los esfuerzos máximos son breves (1,5 s) y se hacen contra la mesa,
-  no contra otra persona. Quien note dolor articular, para.
+- Los esfuerzos máximos son sacudidas breves y explosivas (1,5 s) que hace el
+  sujeto solo, nunca contra otra persona. Quien note dolor articular, para.
 
 ---
 
@@ -140,21 +140,21 @@ una meseta, y los esfuerzos breves de una tarea alcanzan ese pico. Si la
 referencia se midiera sobre la meseta, la tarea la superaría, y eso es lo que
 pasaba: 135 % de «máximo» en un registro.
 
-> **La maniobra del máximo es lo que decide la práctica.** Comprobado con cuatro
-> registros seguidos:
+> **La maniobra del máximo es lo que decide la práctica.**
 >
-> - **Contra algo que no ceda.** El canto inferior de la mesa, no una mano.
->   Antebrazo apoyado del todo. Sin resistencia el músculo se acorta a su
->   velocidad máxima y, por la relación fuerza-velocidad, da su fuerza mínima:
->   una «máxima» en el aire es submáxima por construcción.
-> - **Flexor (FCR): puño cerrado**, palma hacia arriba bajo el borde de la mesa,
->   muñeca unos 20° en extensión, y empujar hacia arriba. Con la mano abierta la
->   referencia salió a la mitad de lo que la tarea produjo después (178 %); con
->   el puño cerrado, la tarea quedó al 109 %.
-> - **Extensor (ECR): dorso de la mano** contra el tablero, antebrazo pronado,
->   muñeca unos 20° en flexión, dedos relajados.
-> - **A tope hasta que la cuenta llegue a 0** (1,5 s). Una repetición que salga
->   floja no vale; la aplicación permite descartarla después.
+> - **Flexor (FCR, canal 1): sacudida de flexión de muñeca a la máxima potencia,
+>   cerrando el puño con toda la fuerza.**
+> - **Extensor (ECR, canal 2): sacudida de extensión de muñeca a la máxima
+>   potencia, con la mano abierta y los dedos extendidos a tope.**
+> - **Breve y explosiva**, dentro de los 1,5 s de la cuenta: no un empuje
+>   sostenido contra algo fijo. Una repetición que salga floja no vale; la
+>   aplicación permite descartarla después.
+> - **Por qué esta maniobra.** Un electrodo de superficie en el antebrazo no ve un
+>   músculo: ve el compartimento, con los flexores o los extensores de los dedos
+>   debajo, y la referencia solo sirve de vara de medir si recluta la misma masa
+>   muscular que la tarea. La tarea incluye una presa: cerrar el puño enciende los
+>   flexores de los dedos, mientras que el empuje de muñeca los deja fuera y, como
+>   obliga a fijar el antebrazo, enciende además al antagonista.
 > - **Comprobación inmediata:** al terminar la tarea, el resumen del análisis dice
 >   el **máximo de la tarea** en % CVM. Si pasa del 150 % lo marca en rojo, «no fue
 >   un máximo», y hay que repetir la calibración. Entre el 90 y el 125 % es lo que
@@ -425,8 +425,8 @@ el mecanismo de la epicondilitis lateral, que es una lesión por presa repetida 
 por extender la muñeca.
 
 **Procedimiento.**
-1. **Iniciar grabación**. Calibrar los dos músculos como dice el apartado 4 (puño
-   cerrado para el FCR, dorso de la mano para el ECR).
+1. **Iniciar grabación**. Calibrar los dos músculos como dice el apartado 4 (una
+   sacudida con el puño cerrado para el FCR, con la mano abierta para el ECR).
 2. En el registro, y siempre en este orden, con 2 s de quietud entre maniobras:
    **seis flexiones** de muñeca (1 s cada una, contra la mesa), **seis
    extensiones**, y por último la **presa**.
@@ -547,10 +547,10 @@ y el EMG la activación.
    recorre el procedimiento entero sin hardware, que es opcional y merece una
    pasada antes de que nadie sostenga un peso. Y **«Iniciar grabación»** lleva
    la sesión sola: pide el nombre del archivo, **calibra primero el máximo**
-   (calentamiento y tres esfuerzos máximos breves, contra la mesa), anuncia
+   (calentamiento y tres sacudidas máximas, breves y explosivas), anuncia
    el estudio y, para cada carga, pide las
    repeticiones de **una elevación rápida**, cada una con su cuenta atrás y
-   marcada en el fichero con su carga. No hay máximo isométrico en vacío entre
+   marcada en el fichero con su carga. No hay otro máximo en vacío entre
    medias: la calibración ya lo fue. Basta seguir la pantalla; «Cancelar guía
    (Esc)» la detiene sin parar la grabación.
 3. **Detener**. En Análisis, la tabla de contracciones trae una fila por

@@ -226,8 +226,9 @@ class TestTheReportSaysWhatTheCalibrationWas:
         aviso = tr("The task exceeds the reference by a wide margin: the "
                    "calibration did not capture a maximum, so every "
                    "percentage in this report is too high in the same "
-                   "proportion. Calibrate again with a genuinely maximal "
-                   "contraction, against something that cannot move.")
+                   "proportion. Calibrate again with a brief, explosive "
+                   "maximal jerk, not a sustained push against something "
+                   "fixed.")
         assert aviso not in _parrafos(_historia(self._resultado()))
         assert aviso in _parrafos(_historia(self._resultado(mvc_implausible=True)))
 

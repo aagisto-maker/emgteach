@@ -19,8 +19,8 @@ fixes what is recorded and what the analysis offers:
   Python 3.10–3.12, `pip install`, pairing the BITalino and identifying it by its
   MAC address.
 - **Placing the electrodes** — [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md)
-  (Spanish): the forearm pair, measured from the bony landmarks, and how the
-  maximum has to be made against the table.
+  (Spanish): the forearm pair, measured from the bony landmarks, and the
+  manoeuvre of the maximum, a brief and explosive jerk.
 - **Citing emgteach** — [`CITATION.cff`](https://github.com/aagisto-maker/emgteach/blob/main/CITATION.cff).
 
 ## User manual

@@ -32,9 +32,10 @@ recomputed.* BITalino full scale ±1.635 mV.
   Saves the window into the recordings folder, asking nothing.
 - **Calibration**: 10 s warm-up; per muscle, **3 brief maximal efforts**
   (1.5 s). Reference = the best 0.2 s of the three.
-- **The maximum is made against the table, never against a hand.** FCR: **fist
-  closed**, palm up under the table edge. ECR: back of the hand against the top.
-  Wrist about 20° towards the side opposite to the muscle's action.
+- **The maximum is a brief, explosive maximal jerk, not a push against something
+  fixed.** FCR: a jerk of wrist flexion, **clenching the fist** with all your
+  strength. ECR: a jerk of wrist extension, **hand open and fingers stretched
+  out** as far as they go.
 - **Auto-onset** marks each contraction by itself (threshold = rest + k × noise,
   k = 3).
 - **Load bars** after calibrating: 🟢 up to 40 % · 🟠 up to 70 % · 🔴 above.
@@ -89,8 +90,8 @@ limits.
 ### Quick troubleshooting
 - **No signal / flat line** → electrode contact, reference, correct channel.
 - **50 Hz noise** → improve contact; move away from chargers and mains cables.
-- **«not a maximum»** (in red, Task maximum) → recalibrate against the table, fist
-  closed, flat out until the count reaches 0.
+- **«not a maximum»** (in red, Task maximum) → recalibrate: one brief, explosive
+  jerk per effort, fist clenched for the flexor, hand open for the extensor.
 - **The co-activation table says «not reported»** → in a clean flexion or
   extension that is correct; a **grip** is needed for a number.
 - **The grip does not co-activate** → the wrist is resting on the table. It has to

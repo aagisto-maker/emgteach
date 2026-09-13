@@ -513,7 +513,8 @@ Expresa la señal como **porcentaje de la CVM** y evalúa la **carga muscular**.
 
 **Panel de entrada.** La primera vez que se abre la pestaña en cada ejecución de la
 aplicación, recibe con una explicación de qué es una contracción voluntaria
-máxima, por qué se hace contra algo que no cede y por qué la referencia está
+máxima, por qué es una sacudida breve y explosiva y no un empuje contra algo
+fijo, y por qué la referencia está
 dentro del propio registro. Se cierra con **«Entendido, continuar»** y no vuelve
 hasta que se reinicie la aplicación: «Nueva sesión» no lo resucita.
 
@@ -642,13 +643,17 @@ sesiones.
 > en el banco). El máximo de la tarea y el pico de cada contracción se miden con
 > la misma ventana de 0,2 s, así que la comparación es con una sola vara.
 >
-> **Cómo se hace un máximo que lo sea.** Contra algo que no ceda (el canto inferior
-> de la mesa), con el antebrazo apoyado y la muñeca unos 20° hacia el lado
-> contrario a la acción del músculo; para el flexor, **con el puño cerrado**. Sin
-> resistencia el músculo se acorta a su velocidad máxima y, por la relación
-> fuerza-velocidad, desarrolla su fuerza mínima: una máxima en el aire es
-> submáxima por construcción. Con la mano abierta contra la mesa la tarea llegó al
-> 178 % de la referencia del flexor; con el puño cerrado, al 109 %.
+> **Cómo se hace un máximo que lo sea.** Una sacudida breve y explosiva, a la
+> máxima potencia, del movimiento propio del músculo, no un empuje sostenido
+> contra algo fijo. Para el flexor, sacudida de flexión de muñeca **cerrando el
+> puño con toda la fuerza**; para el extensor, sacudida de extensión de muñeca
+> **con la mano abierta y los dedos extendidos a tope**. Un electrodo de
+> superficie en el antebrazo no ve un músculo: ve el compartimento, con los
+> flexores o los extensores de los dedos debajo, y la referencia solo sirve de
+> vara de medir si recluta la misma masa muscular que la tarea. La tarea incluye
+> una presa: cerrar el puño enciende los flexores de los dedos, mientras que el
+> empuje de muñeca los deja fuera y, como obliga a fijar el antebrazo, enciende
+> además al antagonista.
 >
 > **Cómo se comprueba.** La ficha «Máximo de la tarea» del análisis. Entre el 90 y
 > el 125 % es lo que dan las calibraciones correctas; a partir del 150 % la
@@ -907,7 +912,8 @@ el acelerómetro y las medidas que se ofrecen después.
 2. **Adquisición.** Conectar, escribir el identificador de prueba, *Iniciar
    grabación*. Si el ejercicio necesita % CVM (escalones de esfuerzo, fatiga,
    carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
-   calentamiento y los tres esfuerzos máximos contra la mesa, con el puño cerrado.
+   calentamiento y las tres sacudidas máximas, breves y explosivas (para el
+   flexor del antebrazo, con el puño cerrado).
    Después, la tarea; los inicios se marcan solos. *Detener grabación*.
 3. **Análisis.** Se analiza solo. Seguir los dos cuadros guiados: revisar las
    **repeticiones de la calibración** y, en los **fragmentos**, dejar solo la tarea
@@ -928,8 +934,9 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
    registro pasa a dos canales y la caja del dispositivo dice «BITalino».
 2. **Adquisición.** Se etiquetan los dos músculos en el orden de los canales (FCR
    en A1, ECR en A2). Al pulsar *Iniciar grabación*, el asistente calibra los dos
-   músculos (puño cerrado contra la mesa para el flexor, dorso de la mano para el
-   extensor), mide la separación entre canales, y tras 5 s de preparación abre el
+   músculos (una sacudida breve y explosiva cada uno: puño cerrado para el flexor,
+   mano abierta y dedos extendidos para el extensor), mide la separación entre
+   canales, y tras 5 s de preparación abre el
    registro. La señal en bruto se dibuja apilada, un carril por músculo, y las
    envolventes superpuestas. Maniobras: flexiones, extensiones y una presa.
 3. **Análisis.** Se analiza solo. Revisar las repeticiones de los dos músculos y
@@ -956,7 +963,7 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
    **«Iniciar grabación»** lleva la sesión sola: nombre del archivo, calibración
    del máximo primero (el botón «Calibrar CVM» no aparece en esta práctica: la
    hace el flujo), anuncio del estudio y cada repetición de cada carga, marcada
-   en el EDF con su carga; sin máximo isométrico en vacío entre medias, porque la
+   en el EDF con su carga; sin otro máximo en vacío entre medias, porque la
    calibración ya lo fue. Para el retraso electromecánico bastan flexiones
    rápidas sueltas; para el temblor, una postura mantenida.
 4. **Análisis.** Paneles **10. EMG frente a MMG**, **11. Temblor** y **12.
@@ -970,8 +977,8 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 ### 7.4 Monitorización de carga en vivo (ergonomía)
 
 1. Conectar e **Iniciar grabación**.
-2. Pulsar **Calibrar CVM** y seguir al asistente: calentamiento, tres máximas
-   esfuerzos máximos breves, contra la mesa.
+2. Pulsar **Calibrar CVM** y seguir al asistente: calentamiento y tres
+   sacudidas máximas, breves y explosivas.
 3. Realizar la tarea observando las **barras de carga**: si entran en naranja
    (cansancio, más del 40 %) o rojo (fatiga, más del 70 %), conviene intervenir
    (pausa, cambio de postura). Si una contracción cualquiera pasa del 100 %, la
@@ -1050,8 +1057,9 @@ que detener la grabación y pulsar de nuevo **«Guía»**.
 
 **«Máximo de la tarea: … no fue un máximo», en rojo.** El registro pasa del 150 %
 de la referencia: la calibración no fue una contracción máxima y todos los
-porcentajes están altos en la misma proporción. Repetirla contra la mesa, con el
-puño cerrado, a tope hasta que la cuenta llegue a 0; y revisar en «Repeticiones de la
+porcentajes están altos en la misma proporción. Repetirla con una sacudida breve
+y explosiva por esfuerzo, puño cerrado para el flexor y mano abierta para el
+extensor; y revisar en «Repeticiones de la
 calibración…» si alguna repetición floja está bajando la referencia (§5.1).
 
 **La tabla de coactivación dice «no se informa».** Uno de los dos músculos no

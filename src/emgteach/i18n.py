@@ -131,12 +131,19 @@ _ES = {
         "aparece.",
     # --- calibration wizard: brief maximal efforts ---
     " (brief {i}/{n})": " (breve {i}/{n})",
-    "One short, maximal effort when the count reaches 0 — against something "
-    "that cannot move, such as the underside of the table, not against a "
-    "hand.":
-        "Un solo esfuerzo máximo y breve cuando la cuenta llegue a 0, contra "
-        "algo que no se pueda mover —el canto inferior de la mesa, por "
-        "ejemplo—, no contra una mano.",
+    'When the count reaches 0: one brief, explosive maximal jerk of wrist flexion, clenching the fist with all your strength. A jerk, not a sustained push against something fixed.':
+        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva de "
+        "flexión de muñeca a la máxima potencia, cerrando el puño con toda "
+        "la fuerza. Una sacudida, no un empuje sostenido contra algo fijo.",
+    'When the count reaches 0: one brief, explosive maximal jerk of wrist extension, with the hand open and the fingers stretched out as far as they go. A jerk, not a sustained push against something fixed.':
+        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva de "
+        "extensión de muñeca a la máxima potencia, con la mano abierta y los "
+        "dedos extendidos a tope. Una sacudida, no un empuje sostenido "
+        "contra algo fijo.",
+    "When the count reaches 0: one brief, explosive maximal jerk of the muscle's own movement — a jerk, not a sustained push against something fixed.":
+        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva, a la "
+        "máxima potencia, del movimiento propio del músculo; una sacudida, "
+        "no un empuje sostenido contra algo fijo.",
     "Maximum, short and hard — {label}{rep}":
         "¡Máximo, breve y fuerte! — {label}{rep}",
     "Make a single, brief muscle contraction (a twitch) with the greatest "
@@ -282,13 +289,17 @@ _ES = {
         "carga y el análisis.",
     "After {warm} s of warm-up, {n} brief maximal efforts of {dur} s are "
     "recorded for each muscle, each announced {cue} s ahead and followed by "
-    "{rest} s of rest. The reference is the strongest {win} s across the "
+    "{rest} s of rest. Each effort is one brief, explosive maximal jerk, "
+    "not a sustained push against something fixed. The reference is the "
+    "strongest {win} s across the "
     "repetitions kept, so it is a maximum the task cannot exceed; a "
     "repetition that came out weak can be discarded afterwards in the "
     "analysis.":
         "Tras {warm} s de calentamiento se graban {n} esfuerzos máximos "
         "breves de {dur} s por músculo, cada uno anunciado con {cue} s de "
-        "antelación y seguido de {rest} s de descanso. La referencia es el "
+        "antelación y seguido de {rest} s de descanso. Cada esfuerzo es una "
+        "sacudida breve y explosiva a la máxima potencia, no un empuje "
+        "sostenido contra algo fijo. La referencia es el "
         "tramo de {win} s más fuerte de las repeticiones que se conservan, de "
         "modo que es un máximo que la tarea no puede superar; una repetición "
         "que salió floja puede descartarse después en el análisis.",
@@ -436,10 +447,13 @@ _ES = {
         "No concluyente (la tendencia no ajusta, R²={r2:.2f})",
     "The task went well past the reference: the calibration did not capture "
     "a maximum, so every % MVC here is too high in the same proportion. "
-    "Calibrate again, against something that cannot move.":
+    "Calibrate again with a brief, explosive maximal jerk, not a sustained "
+    "push against something fixed.":
         "La tarea superó con mucho la referencia: la calibración no recogió "
         "un máximo, así que todos los % CVM de aquí están inflados en la "
-        "misma proporción. Vuelva a calibrar contra algo que no pueda moverse.",
+        "misma proporción. Vuelva a calibrar con una sacudida breve y "
+        "explosiva a la máxima potencia, no con un empuje sostenido contra "
+        "algo fijo.",
     "As a muscle fatigues, its action potentials slow down and the EMG "
     "spectrum shifts towards lower frequencies. The median frequency (MDF) "
     "is the frequency that splits the spectrum in two halves of equal "
@@ -485,12 +499,13 @@ _ES = {
     "{pct:.0f} % MVC (sustained {w:.1f} s)": "{pct:.0f} % CVM (sostenido {w:.1f} s)",
     "The task exceeds the reference by a wide margin: the calibration did "
     "not capture a maximum, so every percentage in this report is too high "
-    "in the same proportion. Calibrate again with a genuinely maximal "
-    "contraction, against something that cannot move.":
+    "in the same proportion. Calibrate again with a brief, explosive "
+    "maximal jerk, not a sustained push against something fixed.":
         "La tarea supera la referencia con mucho margen: la calibración no "
         "recogió un máximo, así que todos los porcentajes de este informe "
         "están inflados en la misma proporción. Vuelva a calibrar con una "
-        "contracción realmente máxima, contra algo que no pueda moverse.",
+        "sacudida breve y explosiva a la máxima potencia, no con un empuje "
+        "sostenido contra algo fijo.",
     "Repetition": "Repetición",
     "Other muscle during it": "El otro músculo mientras tanto",
     "Channel {n}": "Canal {n}",
@@ -917,14 +932,15 @@ _ES = {
     "{summary}\nYou can start recording.": "{summary}\nYa se puede empezar a grabar.",
     "Calibration failed": "Calibración fallida",
     "No signal — check the electrodes.": "Sin señal — conviene revisar los electrodos.",
-    "Contract {label} as hard as you can!  ({s:.0f} s)  "
+    "{label}: one explosive jerk at maximal power!  ({s:.0f} s)  "
     "peak {pk:.2f} mV":
-        "¡Contraiga {label} todo lo que pueda!  ({s:.0f} s)  pico {pk:.2f} mV",
+        "{label}: ¡una sacudida explosiva a la máxima potencia!  ({s:.0f} s)  "
+        "pico {pk:.2f} mV",
     "Relax…": "Relaje…",
     "Relax": "Relaje",
     "Effort {pct:.0f} %": "Esfuerzo {pct:.0f} %",
-    "Contract as hard as you can until the count reaches 0":
-        "Contraiga al máximo hasta que la cuenta llegue a 0",
+    "One explosive jerk at maximal power — brief, not held":
+        "Una sacudida explosiva a la máxima potencia: breve, no sostenida",
     "MVC ready — {summary}. You can start recording.":
         "CVM listo — {summary}. Ya se puede empezar a grabar.",
     "MVC calibrated: {summary}": "CVM calibrado: {summary}",
@@ -1601,13 +1617,12 @@ _ES = {
         'Grabando: la calibración ya queda atrás.',
     'Recording phase started. Everything before this point — the calibration and this pause — stays out of the analysis.':
         'Empieza la fase de registro. Todo lo anterior —la calibración y esta pausa— queda fuera del análisis.',
-    'Push as hard as you can when the count reaches 0 — against something that cannot move, such as the underside of the table, not against a hand':
-        'Empuje todo lo que pueda cuando la cuenta llegue a 0, contra algo que no se pueda mover —el canto inferior de la mesa, por ejemplo—, no contra una mano',
-    "The reference has to be made against something that cannot move — the underside of a table, a fixed bar — with the joint held still. Not a hand, and least of all the subject's own other hand: a hand yields, and holding oneself splits the effort between two limbs, which produces less force than either would alone. This is the force-velocity relationship at work: whatever the muscle is allowed to shorten against, it shortens faster and therefore develops less force, so it recruits fewer motor units. A maximum performed in mid-air is submaximal by construction, and every percentage that follows comes out too high in the same proportion.":
-        'La referencia hay que hacerla contra algo que no se pueda mover —el canto inferior de una mesa, una barra fija— y con la articulación quieta. No contra una mano, y menos aún contra la otra mano del propio sujeto: una mano cede, y sujetarse uno mismo reparte el esfuerzo entre dos miembros, que juntos dan menos fuerza que cualquiera de los dos por separado. Es la relación fuerza-velocidad en acción: contra lo que el músculo pueda acortarse, se acorta más deprisa y por tanto desarrolla menos fuerza, así que recluta menos unidades motoras. Una máxima hecha en el aire es submáxima por construcción, y todos los porcentajes posteriores salen altos en la misma proporción.',
+    "The reference is a brief, explosive maximal jerk of the movement the muscle makes, not a sustained push against something fixed. On the forearm, the flexor's is a jerk of wrist flexion with the fist clenched with all one's strength, and the extensor's a jerk of wrist extension with the hand open and the fingers stretched out as far as they go. A surface electrode on the forearm does not see one muscle but the compartment beneath it, finger flexors or extensors included, and a reference is only a yardstick if it recruits the same muscle mass as the task. The agonist/antagonist task includes a grip: clenching the fist brings in the finger flexors, whereas a push of the wrist leaves them out and, because the forearm has to be braced, switches on the antagonist as well.":
+        'La referencia es una sacudida breve y explosiva, a la máxima potencia, del movimiento del músculo, no un empuje sostenido contra algo fijo. En el antebrazo, la del flexor es una sacudida de flexión de muñeca cerrando el puño con toda la fuerza, y la del extensor una sacudida de extensión de muñeca con la mano abierta y los dedos extendidos a tope. Un electrodo de superficie en el antebrazo no ve un músculo, sino el compartimento que tiene debajo, con los flexores o los extensores de los dedos, y una referencia solo sirve de vara de medir si recluta la misma masa muscular que la tarea. La tarea de la práctica agonista/antagonista incluye una presa: cerrar el puño enciende los flexores de los dedos, mientras que el empuje de muñeca los deja fuera y, como obliga a fijar el antebrazo, enciende además al antagonista.',
     'Calibration too weak': 'Calibración demasiado floja',
-    '{muscles}: this is not a maximum. Calibrate again against a resistance the joint cannot move.': "{muscles}: esto no es un máximo. Calibre de nuevo contra una "
-        "resistencia que la articulación no pueda mover.",
+    '{muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.': "{muscles}: esto no es un máximo. Calibre de nuevo con una "
+        "sacudida breve y explosiva a la máxima potencia, no con un empuje "
+        "sostenido contra algo fijo.",
     '⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.': '⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.',
     '⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.': '⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.',
     'These values are not real % MVC: the calibration did not capture a maximum. Calibrate again with a genuinely maximal contraction.': "Estos valores no son % de CVM reales: la calibración no recogió un "
@@ -1976,10 +1991,10 @@ _ES = {
     'prepare each one and the seconds of the lift. Nothing starts there — the plan is kept '
     'for the recording.\n\n'
     'Third, «Start recording», in the box to the left. It runs the whole session on its own: '
-    'it asks for the file name, calibrates the maximum first (a warm-up and three brief '
-    'maximal efforts against something that cannot move), announces the study, and then cues '
+    'it asks for the file name, calibrates the maximum first (a warm-up and three brief, '
+    'explosive maximal jerks), announces the study, and then cues '
     'one quick lift for each repetition of each load, marking every one in the file with its '
-    'load. There is no isometric maximum without load in between: the calibration was that. '
+    'load. There is no separate maximum without load in between: the calibration was the maximum. '
     '«Cancel guide (Esc)» stops the guidance at any moment and the recording goes on.\n\n'
     'In the Analysis tab the contraction table then holds one row per lift, and the '
     'force-velocity study reads those rows to draw the load-velocity, force-velocity, power '
@@ -1996,9 +2011,9 @@ _ES = {
         'nada: el plan se guarda para la grabación.\n\n'
         'Tercero, «Iniciar grabación», en la caja de la izquierda. Lleva la sesión entera '
         'sola: pide el nombre del archivo, calibra primero el máximo (un calentamiento y tres '
-        'esfuerzos máximos breves contra algo que no se pueda mover), anuncia el estudio y '
+        'sacudidas máximas, breves y explosivas), anuncia el estudio y '
         'después va pidiendo un levantamiento rápido por cada repetición de cada carga, '
-        'marcando cada uno en el archivo con su carga. No hay máximo isométrico en vacío entre '
+        'marcando cada uno en el archivo con su carga. No hay otro máximo en vacío entre '
         'medias: la calibración ya lo fue. «Cancelar guía (Esc)» detiene la guía en cualquier '
         'momento y la grabación sigue.\n\n'
         'En la pestaña de Análisis la tabla de contracciones trae entonces una fila por '
