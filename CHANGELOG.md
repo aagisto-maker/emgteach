@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.1] — 2026-09-13
+
+**The co-activation of a named window is read on the uncut recording.**
+Choosing fragments in the analysis tab concatenated them into one signal, and
+the co-activation table was read off that signal. The index subtracts from
+each muscle its resting level — the 10th percentile of the analysed signal —
+and a signal made only of contractions has no rest left in it: its 10th
+percentile is the quietest the muscle got *while working*. For the antagonist
+that is its own share of the other muscle's manoeuvre, and subtracting it
+punishes the small signal most, which is the signal the agonist/antagonist
+practical is about. Nothing else in the analysis changes and nothing in the
+interface moves. See
+[`docs/RELEASE_NOTES_v3.1.1.md`](docs/RELEASE_NOTES_v3.1.1.md).
+
+### Fixed
+- **A named fragment is a window read where it lies, with the resting level of the whole recording phase.** The envelopes of both muscles are computed once over the recording phase uncut, each named fragment is a mask over them, and the resting level is the 10th percentile of that whole phase — the only place it can be measured. Consecutive fragments of one name are still one window, an unnamed fragment still opens none, and a window's seconds are now those of the recording phase, as in an analysis without fragments, rather than of the concatenated signal. On the report's example recording, the row the fragment editor proposes for the grip read 58 % with the extensor at 6.3 % MVC; it reads 75 % and 10.9 %, and the three manoeuvres selected as one row each give the figures of the report's §8.2 to the decimal. `tools/figura6.py` reads its `--ventana` windows through the same function, so the figure and the application cannot disagree. New `coactivation_by_fragments` in `emgteach.coactivation`; `tests/test_coactivation_sin_recortar.py`, with the acceptance test on the example recording. What still runs on the concatenated fragments, on purpose: the spectrum, the per-segment RMS and MDF, the fatigue fit and the contraction table — the fatigue fit needs one-second segments over the contractions in order, and a series of brief efforts has no segment that fits inside a single fragment; on both example recordings the verdict is the same either way. A derived («tuned») recording is a concatenation on disk and is read as such.
+
 ## [3.1.0] — 2026-09-13
 
 **The practical as a class runs it.** Nothing about what is measured changes;
@@ -489,7 +506,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.1.1...HEAD
+[3.1.1]: https://github.com/aagisto-maker/emgteach/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/aagisto-maker/emgteach/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/aagisto-maker/emgteach/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/aagisto-maker/emgteach/compare/v1.4.1...v2.0.0
