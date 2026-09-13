@@ -65,8 +65,8 @@ By the end, students should be able to:
 - **Disposable** electrodes, one set per person; clean the skin with alcohol and
   let it dry. Do not reuse electrodes between subjects.
 - Subjects with skin lesions in the area should abstain.
-- Maximal efforts are brief (1.5 s) and are made against the table, never
-  against another person. Anyone who feels joint pain stops.
+- Maximal efforts are brief, explosive jerks (1.5 s), made by the subject alone
+  and never against another person. Anyone who feels joint pain stops.
 
 ---
 
@@ -143,21 +143,21 @@ plateau, and a task's brief efforts reach that peak. Measured on the plateau, th
 reference fell short and the task beat it: 135 % of "maximum" on one
 recording.
 
-> **The manoeuvre of the maximum decides the practical.** Checked with four
-> consecutive recordings:
+> **The manoeuvre of the maximum decides the practical.**
 >
-> - **Against something that does not give.** The underside of the table edge,
->   not a hand. Forearm fully rested. Without resistance the muscle shortens at
->   its fastest and, by the force-velocity relationship, gives its least force: a
->   "maximum" in mid-air is submaximal by construction.
-> - **Flexor (FCR): fist closed**, palm up under the table edge, wrist about 20° in
->   extension, pushing upwards. With the hand open the reference came out at half
->   of what the task produced afterwards (178 %); with the fist closed the task
->   ended at 109 %.
-> - **Extensor (ECR): back of the hand** against the table top, forearm pronated,
->   wrist about 20° in flexion, fingers relaxed.
-> - **Flat out until the count reaches 0** (1.5 s). A repetition that comes out
->   weak is no good; the application lets you discard it afterwards.
+> - **Flexor (FCR, channel 1): a jerk of wrist flexion at maximal power,
+>   clenching the fist with all your strength.**
+> - **Extensor (ECR, channel 2): a jerk of wrist extension at maximal power,
+>   with the hand open and the fingers stretched out as far as they go.**
+> - **Brief and explosive**, within the 1.5 s of the count: not a sustained push
+>   against something fixed. A repetition that comes out weak is no good; the
+>   application lets you discard it afterwards.
+> - **Why this manoeuvre.** A surface electrode on the forearm does not see one
+>   muscle but the compartment beneath it, with the finger flexors or extensors
+>   in it, and the reference is only a yardstick if it recruits the same muscle
+>   mass as the task. The task includes a grip: clenching the fist brings in the
+>   finger flexors, whereas a push of the wrist leaves them out and, because the
+>   forearm has to be braced, switches on the antagonist as well.
 > - **Immediate check:** when the task is over, the analysis summary states the
 >   **task maximum** in % MVC. Above 150 % it is flagged in red, «not a maximum»,
 >   and the calibration has to be repeated. Between 90 and 125 % is what
@@ -426,8 +426,8 @@ they are not antagonists but stabilisers. It is also the mechanism of lateral
 epicondylitis, an injury of repeated gripping and not of extending the wrist.
 
 **Procedure.**
-1. **Start recording**. Calibrate both muscles as in section 4 (fist closed for
-   the FCR, back of the hand for the ECR).
+1. **Start recording**. Calibrate both muscles as in section 4 (a jerk with the
+   fist clenched for the FCR, with the hand open for the ECR).
 2. In the recording, always in this order, with 2 s of stillness between
    manoeuvres: **six wrist flexions** (1 s each, against the table), **six
    extensions**, and finally the **grip**.
@@ -546,10 +546,10 @@ and the EMG the activation.
    with no hardware, which is optional and worth one run before anyone holds
    a weight. Then **«Start recording»** runs the session by itself:
    it names the file, **calibrates the maximum first** (warm-up and three
-   brief maximal efforts, against the table), announces the study and,
+   brief, explosive maximal jerks), announces the study and,
    for each load, cues the repetitions of **one quick lift**, each with its
-   countdown and marked in the file with its load. No isometric maximum without
-   load in between: the calibration was that. Just follow the screen; «Cancel
+   countdown and marked in the file with its load. No separate maximum without
+   load in between: the calibration was the maximum. Just follow the screen; «Cancel
    guide (Esc)» stops it without stopping the recording.
 3. **Stop**. In Analysis, the contraction table holds one row per lift with
    its load, and **«Force-velocity study…»** reads those rows and returns four

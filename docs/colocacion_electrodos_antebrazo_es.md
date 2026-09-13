@@ -114,76 +114,20 @@ El orden importa, porque la aplicación depende de él.
 2. **Calibre la CVM de los dos músculos, con la grabación en marcha.** Sin las
    dos referencias el panel 9 se queda en milivoltios y no hay índice.
 
-   > ⚠️ **Contra el canto inferior de la mesa, no contra una mano.** Es el error
-   > que más estropea la práctica, y no se nota hasta el análisis.
+   > ⚠️ **Una sacudida breve y explosiva, no un empuje contra algo fijo.** Es el
+   > error que más estropea la práctica, y no se nota hasta el análisis.
    >
-   > Las dos maniobras son la misma postura con el antebrazo girado, y las dos
-   > empujan **hacia arriba contra la cara inferior del tablero**:
+   > - **Canal 1 (flexores):** sacudida de flexión de muñeca a la máxima
+   >   potencia, **cerrando el puño con toda la fuerza**.
+   > - **Canal 2 (extensores):** sacudida de extensión de muñeca a la máxima
+   >   potencia, **con la mano abierta y los dedos extendidos a tope**.
    >
-   > - **Canal 1 (flexores):** siéntese cerca, antebrazo **supinado** apoyado,
-   >   la mano metida bajo el borde de la mesa con la **palma hacia arriba** y
-   >   **el puño cerrado**. Empuje hacia arriba contra el tablero.
-   > - **Canal 2 (extensores):** lo mismo con el antebrazo **pronado**, el
-   >   **dorso** de la mano contra el tablero, dedos relajados.
-   >
-   > **El puño cerrado no es un detalle** (comprobado el 3 de septiembre en tres
-   > registros seguidos): con la mano abierta la referencia del flexor salió a la
-   > mitad de lo que la tarea produjo después (la tarea al 178 % de la
-   > «máxima», marcada en rojo); con el puño cerrado, 217 µV y la tarea al 109 %,
-   > dentro de lo que dan las calibraciones correctas. Cerrar la mano pone a
-   > trabajar a los flexores largos de los dedos junto al FCR y fija la muñeca
-   > en la longitud en que el flexor da más fuerza.
-   >
-   > **Los 20° valen para los dos, y son críticos** (comprobado en el banco el
-   > 31 de agosto: «la posición del brazo es crítica, tanto para FCR como ECR el
-   > brazo tiene que estar como a unos 20°»). Es relación longitud-tensión: cada
-   > músculo debe partir **ligeramente estirado**, es decir, unos 20° hacia el
-   > lado contrario al de su propia acción —el flexor arranca con la muñeca en
-   > ~20° de **extensión**, el extensor con ~20° de **flexión**—. Desde neutro,
-   > y peor aún desde el lado de su acción, el músculo está acortado y da su
-   > fuerza mínima. En esa sesión el flexor pasó de 0,074 a 0,120 mV y sus tres
-   > repeticiones dejaron de subir.
-   >
-   > En los dos casos el contacto va sobre los **metacarpianos 2.º y 3.º**, no
-   > sobre los dedos —si va sobre los dedos se está midiendo el extensor de los
-   > dedos—, con los **dedos relajados y algo flexionados**, y **rampa de ~2 s**
-   > hasta el máximo, manteniendo hasta el final de la cuenta.
-   >
-   > **Por qué la mesa y no una mano** (comprobado en el banco el 31 de agosto:
-   > «noto una mejor y mayor contracción en isométrica contra la mesa»):
-   >
-   > 1. **Una mano cede.** El tablero no. Lo que ceda deja que la articulación
-   >    se mueva, y ahí entra la relación fuerza-velocidad.
-   > 2. **Una mano no puede con un flexor de muñeca.** Son fuertes; el
-   >    «límite» acaba siendo la fuerza del operador, no la del sujeto.
-   > 3. **Sujetarse uno mismo reparte el esfuerzo.** Es una tarea bilateral, y
-   >    la fuerza máxima de dos miembros a la vez es menor que la suma de las
-   >    dos por separado (déficit bilateral, del orden del 5-25 %). Además el
-   >    otro brazo tiene que estabilizarse, y eso resta impulso al que se mide.
-   >
-   > Es también lo que resuelve el «**la extensión isométrica no va**» de esa
-   > misma sesión: con la mano apoyada plana sobre la mesa no hay nada contra lo
-   > que empujar hacia arriba, y el sujeto acaba haciendo un gesto en vez de un
-   > esfuerzo mantenido. Las tres repeticiones del extensor pasaron solo el
-   > 6-15 % de su ventana por encima de la mitad de su pico, frente al 75-76 %
-   > de las del flexor.
-   >
-   > *(La aplicación llegó a avisar de esto y el aviso se retiró: en la sesión
-   > siguiente, ya contra la mesa, saltaba sobre la mejor calibración de la
-   > serie. Una contracción máxima mantenida cuatro segundos decae —fatiga
-   > dentro del propio esfuerzo— y esa medida la castigaba igual que a un
-   > gesto. La diferencia de forma es real y vale para leer una traza a ojo,
-   > pero no sirve de umbral automático. Una referencia demasiado baja se sigue
-   > detectando después, en el análisis, cuando el registro pasa mucho tiempo
-   > por encima del 150 % de CVM.)*
-   >
-   > **Por qué importa tanto**, y es la propia fisiología de la asignatura: sin
-   > nada contra lo que empujar, el músculo se acorta a su velocidad máxima y
-   > por la relación fuerza-velocidad desarrolla su fuerza mínima, así que
-   > recluta pocas unidades motoras. Una «máxima» hecha en el aire es
-   > **submáxima por construcción**. En la primera sesión de banco la
-   > calibración salió diez veces menor que las contracciones posteriores del
-   > mismo registro, y el análisis daba picos del 1509 % de CVM.
+   > **Por qué esta maniobra.** Un electrodo de superficie en el antebrazo no ve
+   > un músculo: ve el compartimento, con los flexores o los extensores de los
+   > dedos debajo. La referencia solo sirve de vara de medir si recluta la misma
+   > masa muscular que la tarea, y la tarea incluye una presa. Cerrar el puño
+   > enciende los flexores de los dedos; el empuje de muñeca los deja fuera y,
+   > además, obliga a fijar el antebrazo, lo que enciende al antagonista.
    >
    > **Tres esfuerzos breves por músculo, y se queda con el mejor.** Ya no hay
    > casilla que marcar: el asistente pide siempre **tres esfuerzos máximos

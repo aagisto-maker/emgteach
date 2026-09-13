@@ -408,8 +408,8 @@ table and a reproducible footer (version and date).
 
 **Entry panel.** The first time the tab is opened in each run of the application,
 it greets with an explanation of what a maximum voluntary contraction is, why it
-is made against something that does not give and why the reference is inside the
-recording. Closed with **«Understood, continue»**; «New session» does not bring it
+is a brief, explosive jerk rather than a push against something fixed, and why
+the reference is inside the recording. Closed with **«Understood, continue»**; «New session» does not bring it
 back.
 
 **Computes on its own.** When a recording ends, or a file is opened, the tab
@@ -465,13 +465,16 @@ millivolts depend on skin impedance, electrode position and anatomy.
 > maximum and every contraction's peak are measured with the same 0.2 s window,
 > so the comparison uses one yardstick.
 >
-> **How a maximum is made that is one.** Against something that does not give
-> (the underside of the table edge), forearm rested, wrist about 20° towards the
-> side opposite to the muscle's action; for the flexor, **with the fist closed**.
-> Without resistance the muscle shortens at its fastest and, by the
-> force-velocity relationship, develops its least force: a maximum in mid-air is
-> submaximal by construction. With the hand open against the table the task
-> reached 178 % of the flexor's reference; with the fist closed, 109 %.
+> **How a maximum is made that is one.** A brief, explosive maximal jerk of the
+> muscle's own movement, not a sustained push against something fixed. For the
+> flexor, a jerk of wrist flexion **clenching the fist with all one's strength**;
+> for the extensor, a jerk of wrist extension **with the hand open and the fingers
+> stretched out as far as they go**. A surface electrode on the forearm does not
+> see one muscle but the compartment beneath it, with the finger flexors or
+> extensors in it, and the reference is only a yardstick if it recruits the same
+> muscle mass as the task. The task includes a grip: clenching the fist brings in
+> the finger flexors, whereas a push of the wrist leaves them out and, because
+> the forearm has to be braced, switches on the antagonist as well.
 >
 > **How it is checked.** The «Task maximum» card in the analysis. Between 90 and
 > 125 % is what correct calibrations give; from 150 % the application writes it
@@ -672,7 +675,8 @@ Each begins by **choosing the practical** in the top-right selector.
 
 1. Connect, type the test identifier, *Start recording*. If the exercise needs %
    MVC (graded effort, fatigue, load), press **«Calibrate MVC»** at once: warm-up
-   and three maximal efforts against the table, fist closed. Then the task; onsets
+   and three brief, explosive maximal jerks (for the forearm flexor, fist
+   clenched). Then the task; onsets
    are marked by themselves. *Stop recording*.
 2. Analysis runs on its own. Follow the two guided boxes: review the
    **calibration repetitions** and, in the **fragments**, keep only the task
@@ -688,7 +692,8 @@ Each begins by **choosing the practical** in the top-right selector.
 
 1. Two channels; the device box says «BITalino». Label the two muscles in channel
    order (FCR on A1, ECR on A2). On *Start recording* the wizard calibrates both
-   muscles (fist closed for the flexor, back of the hand for the extensor),
+   muscles (a brief, explosive jerk each: fist clenched for the flexor, hand open
+   and fingers stretched out for the extensor),
    measures the channel separation and, after 5 s of preparation, opens the
    recording. Manoeuvres: flexions, extensions and a grip.
 2. Analysis runs on its own. Review both muscles' repetitions and accept the
@@ -712,8 +717,8 @@ Each begins by **choosing the practical** in the top-right selector.
    runs the session by itself: file name, calibration of the maximum first (the
    «Calibrate MVC» button does not appear in this practical: the flow does it),
    the announcement of the study and each repetition of each load, marked in
-   the EDF with its load; no isometric maximum without load in between, since
-   the calibration was that. For the electromechanical delay, quick single
+   the EDF with its load; no separate maximum without load in between, since
+   the calibration was the maximum. For the electromechanical delay, quick single
    flexions suffice; for tremor, a held posture.
 3. Analysis: panels **10**, **11** and **12**, the contraction table with one
    row per lift (its load, RMS, velocity and **EMD**), and **«Force-velocity
@@ -775,8 +780,9 @@ box says the same.
 
 **«Task maximum: … not a maximum», in red.** The recording exceeds 150 % of the
 reference: the calibration was not a maximal contraction and every percentage is
-high in the same proportion. Repeat it against the table, fist closed, flat out
-until the count reaches 0; and check in «Calibration repetitions…» whether a weak
+high in the same proportion. Repeat it with one brief, explosive jerk per effort,
+fist clenched for the flexor and hand open for the extensor; and check in
+«Calibration repetitions…» whether a weak
 repetition is lowering the reference (§5.1).
 
 **The co-activation table says «not reported».** One of the two muscles did not

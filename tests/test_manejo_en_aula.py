@@ -917,9 +917,12 @@ class TestTheCalibrationHelpDescribesTheProtocolTheCodeRuns:
                 cifra = cifra.replace(".", ",")
             assert f"{cifra} s" in cuerpo, cifra
         assert f" {p.mvc_bursts} " in cuerpo
-        for viejo in ("six", "sustained", "squeez", "held",
-                      "seis", "mantenid", "sacudid"):
+        # The words of the protocols it replaced: six efforts, some of them
+        # held. The manoeuvre is now a jerk, and the help says it is not a
+        # sustained push, so it has to name the jerk instead.
+        for viejo in ("six", "squeez", "held", "seis", "mantenid"):
             assert viejo not in cuerpo.lower(), viejo
+        assert ("jerk" if idioma == "en" else "sacudida") in cuerpo.lower()
 
     def test_no_help_text_counts_six_maximal_efforts(self) -> None:
         from emgteach.gui.help_texts import keys, text

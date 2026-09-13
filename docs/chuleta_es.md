@@ -32,9 +32,10 @@ se recalcula.* Fondo de escala BITalino ±1,635 mV.
   o **F12**. Guarda la ventana en la carpeta de los registros, sin preguntar.
 - **Calibración**: 10 s de calentamiento; por músculo, **3 esfuerzos máximos
   breves** (1,5 s). Referencia = el mejor 0,2 s de los tres.
-- **El máximo se hace contra la mesa, nunca contra una mano.** FCR: **puño
-  cerrado**, palma arriba bajo el canto de la mesa. ECR: dorso de la mano contra
-  el tablero. Muñeca unos 20° hacia el lado contrario a la acción del músculo.
+- **El máximo es una sacudida breve y explosiva a la máxima potencia, no un
+  empuje contra algo fijo.** FCR: sacudida de flexión de muñeca **cerrando el
+  puño** con toda la fuerza. ECR: sacudida de extensión de muñeca con **la mano
+  abierta y los dedos extendidos** a tope.
 - **Auto-inicio** marca solo cada contracción (umbral = reposo + k × ruido, k = 3).
 - **Barras de carga** tras calibrar: 🟢 hasta 40 % · 🟠 hasta 70 % · 🔴 más.
 
@@ -85,8 +86,9 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
 ### Problemas rápidos
 - **Sin señal / línea plana** → contacto de electrodos, referencia, canal correcto.
 - **Ruido a 50 Hz** → mejorar contacto; alejar cargadores y cables.
-- **«no fue un máximo»** (en rojo, Máximo de la tarea) → recalibrar contra la
-  mesa, puño cerrado, a tope hasta que la cuenta llegue a 0.
+- **«no fue un máximo»** (en rojo, Máximo de la tarea) → recalibrar: una sacudida
+  breve y explosiva por esfuerzo, puño cerrado para el flexor, mano abierta para
+  el extensor.
 - **La tabla de coactivación dice «no se informa»** → en una flexión o extensión
   limpia es lo correcto; hace falta una **presa** para que dé número.
 - **La presa no coactiva** → la muñeca está apoyada en la mesa. Tiene que quedar

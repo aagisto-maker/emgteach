@@ -191,9 +191,9 @@ TEXTOS = {
         "calent": "Calentamiento\n{warm} s\n2 o 3 contracciones\nsuaves de cada músculo",
         "fcr": "FCR\n{n} esfuerzos máximos\nde {dur} s",
         "ecr": "ECR\n{n} esfuerzos máximos\nde {dur} s",
-        "cada": "Cada esfuerzo: aviso de {cue} s  →  a tope {dur} s, hasta que la cuenta llegue a 0  →  descanso de {rest} s",
-        "gesto_fcr": "Cuando pone FCR\npuño cerrado, palma arriba\nbajo el borde de la mesa;\nempujar hacia arriba",
-        "gesto_ecr": "Cuando pone ECR\ndorso de la mano contra\nel tablero, antebrazo\npronado, dedos relajados",
+        "cada": "Cada esfuerzo: aviso de {cue} s  →  una sacudida breve y explosiva en los {dur} s de la cuenta  →  descanso de {rest} s",
+        "gesto_fcr": "Cuando pone FCR\nsacudida de flexión de\nmuñeca a máxima potencia,\npuño cerrado con toda la fuerza",
+        "gesto_ecr": "Cuando pone ECR\nsacudida de extensión de\nmuñeca a máxima potencia,\nmano abierta, dedos a tope",
     },
     "en": {
         "electrodos": "Where the electrodes go",
@@ -208,9 +208,9 @@ TEXTOS = {
         "calent": "Warm-up\n{warm} s · two or three\neasy contractions\nof each muscle",
         "fcr": "FCR\n{n} maximal efforts\nof {dur} s",
         "ecr": "ECR\n{n} maximal efforts\nof {dur} s",
-        "cada": "Each effort: {cue} s warning  →  flat out for {dur} s, until the count reaches 0  →  {rest} s rest",
-        "gesto_fcr": "When it says FCR\nfist closed, palm up\nunder the table edge;\npush upwards",
-        "gesto_ecr": "When it says ECR\nback of the hand against\nthe table top, forearm\npronated, fingers relaxed",
+        "cada": "Each effort: {cue} s warning  →  one brief, explosive jerk within the {dur} s count  →  {rest} s rest",
+        "gesto_fcr": "When it says FCR\na maximal jerk of wrist\nflexion, the fist clenched\nwith all your strength",
+        "gesto_ecr": "When it says ECR\na maximal jerk of wrist\nextension, hand open,\nfingers stretched out",
     },
 }
 

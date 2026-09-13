@@ -84,6 +84,7 @@ from emgteach.io import (
 from emgteach.modes import (
     DEFAULT_MODE,
     MODE_KINEMATICS,
+    MODE_PAIR,
     MODE_SINGLE,
     mode_channels,
     mode_fixed_labels,
@@ -3009,11 +3010,7 @@ class AcquisitionTab(QWidget):
             if self._mvc_elapsed <= MVC_TICK_MS / 1000.0:
                 self._mvc_rest_buf = []      # one baseline per repetition
             count = max(1, int(np.ceil(MVC_READY_S - self._mvc_elapsed)))
-            detalle = tr(
-                "One short, maximal effort when the count reaches 0 — against "
-                "something that cannot move, such as the underside of the "
-                "table, not against a hand."
-            )
+            detalle = self._mvc_gesto(self._mvc_muscle)
             self._mvc_overlay.show_ready(
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 count,
@@ -3053,7 +3050,7 @@ class AcquisitionTab(QWidget):
             self._mvc_overlay.show_contract(titulo, secs_left, progress, effort)
             self._mvc_info(
                 tr(
-                    "Contract {label} as hard as you can!  ({s:.0f} s)  "
+                    "{label}: one explosive jerk, flat out!  ({s:.0f} s)  "
                     "peak {pk:.2f} mV"
                 ).format(label=label, s=secs_left, pk=self._mvc_peak)
             )
@@ -3151,6 +3148,37 @@ class AcquisitionTab(QWidget):
             self._mvc_elapsed = 0.0
         else:
             self._mvc_finish_all()
+
+    def _mvc_gesto(self, c: int) -> str:
+        """What the effort is, said while the count runs.
+
+        A brief, explosive maximal jerk, not a sustained push against
+        something fixed. A surface electrode on the forearm sees the
+        compartment beneath it, and a reference is only a yardstick if it
+        recruits the muscle mass the task recruits: the agonist/antagonist
+        task includes a grip, and clenching the fist brings in the finger
+        flexors that a push of the wrist leaves out. In that practical the
+        two channels are the forearm flexor and extensor, so each gets its
+        own gesture; the other practicals get the general rule.
+        """
+        if self._mode == MODE_PAIR and c == 0:
+            return tr(
+                "When the count reaches 0: one brief, explosive maximal jerk of "
+                "wrist flexion, clenching the fist with all your strength. A "
+                "jerk, not a sustained push against something fixed."
+            )
+        if self._mode == MODE_PAIR and c == 1:
+            return tr(
+                "When the count reaches 0: one brief, explosive maximal jerk of "
+                "wrist extension, with the hand open and the fingers stretched "
+                "out as far as they go. A jerk, not a sustained push against "
+                "something fixed."
+            )
+        return tr(
+            "When the count reaches 0: one brief, explosive maximal jerk of the "
+            "muscle's own movement — a jerk, not a sustained push against "
+            "something fixed."
+        )
 
     def _mvc_compute_muscle(self, c: int) -> None:
         window = max(1, round(self._profile.mvc_peak_window_s * FS))
@@ -3341,8 +3369,9 @@ class AcquisitionTab(QWidget):
                 # factor, and the event log moves on within seconds — so it
                 # ends on the panel the operator is already looking at.
                 warning = tr(
-                    "{muscles}: this is not a maximum. Calibrate again against "
-                    "a resistance the joint cannot move."
+                    "{muscles}: this is not a maximum. Calibrate again with a "
+                    "brief, explosive maximal jerk, not a sustained push "
+                    "against something fixed."
                 ).format(muscles=" · ".join(weak))
                 self._prep_aviso = warning
                 self._mvc_overlay.show_done(tr("Calibration too weak"), warning)

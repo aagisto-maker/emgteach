@@ -31,9 +31,10 @@ def _mensajes() -> list[tuple[str, str]]:
     musculos = "FCR · ECR"
     return [
         ("ready", tr(
-            "Push as hard as you can when the count reaches 0 — against "
-            "something that cannot move, such as the underside of the table, "
-            "not against a hand"
+            "When the count reaches 0: one brief, explosive maximal jerk of "
+            "wrist extension, with the hand open and the fingers stretched "
+            "out as far as they go. A jerk, not a sustained push against "
+            "something fixed."
         )),
         ("ready", tr(
             "Two or three easy contractions of each muscle. The first "
@@ -46,8 +47,9 @@ def _mensajes() -> list[tuple[str, str]]:
         ("relax", tr("Get ready for the next repetition")),
         ("relax", tr("Next muscle: {label}").format(label="ECR")),
         ("done", tr(
-            "{muscles}: this is not a maximum. Calibrate again against "
-            "a resistance the joint cannot move."
+            "{muscles}: this is not a maximum. Calibrate again with a "
+            "brief, explosive maximal jerk, not a sustained push "
+            "against something fixed."
         ).format(muscles=musculos)),
         ("done", tr(
             "{pairs}. Move the electrode pairs further apart, over the "
@@ -57,7 +59,7 @@ def _mensajes() -> list[tuple[str, str]]:
         ("done", tr("{summary}\nYou can start recording.").format(
             summary="FCR: 0.08 mV · ECR: 0.34 mV")),
         ("done", tr("No signal — check the electrodes.")),
-        ("contract", tr("Contract as hard as you can until the count reaches 0")),
+        ("contract", tr("One explosive jerk, flat out — brief, not held")),
     ]
 
 
