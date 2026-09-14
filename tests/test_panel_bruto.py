@@ -107,9 +107,9 @@ def test_the_muscle_colours_are_never_typed() -> None:
 
 def test_the_panels_are_numbered_one_to_twelve() -> None:
     """No letters, no gaps: the second raw trace no longer takes a number."""
-    from emgteach.gui.tabs.analysis import _PANEL_LAYOUT
+    from emgteach.panels import PANELS
 
-    assert [num for _pid, num in _PANEL_LAYOUT] == [str(n) for n in range(1, 13)]
+    assert [p.number for p in PANELS] == list(range(1, 13))
 
 
 # ── on screen ───────────────────────────────────────────────────────────

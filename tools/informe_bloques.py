@@ -21,8 +21,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "src"))
 
-from emgteach import i18n, modes  # noqa: E402
-from emgteach.gui.tabs import analysis as ana_mod  # noqa: E402
+from emgteach import i18n, modes, panels  # noqa: E402
 from emgteach.profiles import EMG_PROFILE  # noqa: E402
 
 INFORME = RAIZ / "docs" / "INFORME-estado-para-Sourcebook.md"
@@ -247,12 +246,16 @@ def bloque_tour() -> str:
 # -------------------------------------------------------------- 5. paneles ---
 
 def bloque_paneles() -> str:
+    """Una fila por panel, leída de la tabla única de `emgteach.panels`."""
     filas = ["| Nº | Nombre largo (EN) | Nombre largo (ES) | "
-             "Etiqueta corta (ES) |", "|---|---|---|---|"]
-    for i, (largo, corto) in enumerate(
-            zip(ana_mod._PANEL_NOMBRES, ana_mod._PANEL_SHORT_LABELS,
-                strict=True), start=1):
-        filas.append(f"| {i} | {largo} | {es(largo)} | {es(corto)} |")
+             "Etiqueta corta (ES) | Lectura en el título (ES) |",
+             "|---|---|---|---|---|"]
+    for p in panels.PANELS:
+        lectura = es(p.reading)
+        if p.reading_two:
+            lectura += f"; con dos músculos: {es(p.reading_two)}"
+        filas.append(f"| {p.number} | {p.long_name} | {es(p.long_name)} | "
+                     f"{es(p.label)} | {lectura} |")
     return "\n".join(filas)
 
 

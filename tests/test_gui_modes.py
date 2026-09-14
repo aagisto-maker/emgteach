@@ -386,6 +386,43 @@ def test_the_more_panels_button_says_what_it_will_do(
     assert btn.text() == tr("More panels…")
 
 
+def test_every_name_of_a_panel_comes_from_its_row(
+    main_window, qapp, monkeypatch
+) -> None:
+    """The checkbox, its tooltip, the report dialog and the «P#» beside the
+    amplitude buttons are all built from the panel's row in emgteach.panels,
+    so none can carry a number the others do not."""
+    from PySide6.QtWidgets import QCheckBox, QDialog, QLabel
+
+    from emgteach.panels import BY_PID, panel_label, panel_long_name, panel_tooltip
+
+    ana = main_window._tab_ana
+    for pid, chk in zip(ana._panel_pids, ana._chk_paneles, strict=True):
+        assert chk.text() == panel_label(pid)
+        assert chk.toolTip() == panel_tooltip(pid)
+
+    seen: list[str] = []
+
+    def fake_exec(dlg) -> QDialog.DialogCode:
+        seen.extend(cb.text() for cb in dlg.findChildren(QCheckBox))
+        return QDialog.DialogCode.Rejected
+
+    monkeypatch.setattr(QDialog, "exec", fake_exec)
+    set_mode(main_window, qapp, MODE_SINGLE)
+    ana._pedir_paneles_informe()
+    assert seen == [panel_long_name(pid) for pid in ana._panel_pids]
+
+    shown = [0, 3, 4]
+    ana._axes_list = [object()] * len(shown)
+    ana._rebuild_y_sidebar(shown)
+    labels = [
+        w.text()
+        for i in range(ana._y_scale_sidebar_layout.count())
+        for w in ana._y_scale_sidebar_layout.itemAt(i).widget().findChildren(QLabel)
+    ]
+    assert labels == [f"P{BY_PID[pid].number}" for pid in shown]
+
+
 def test_panels_the_mode_hides_are_unticked_and_restored(
     main_window, qapp
 ) -> None:

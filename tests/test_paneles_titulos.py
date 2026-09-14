@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 
 from emgteach import i18n
-from emgteach.panels import BY_PID, OVERLAY_READING_MV, PANELS, panel_title
+from emgteach.panels import BY_PID, OVERLAY_READING_MV, PANELS, panel_title, texts
 
 
 def _one() -> dict:
@@ -36,12 +36,20 @@ def test_the_numbers_run_from_one_to_twelve() -> None:
     assert len(BY_PID) == len(PANELS)
 
 
-def test_the_numbers_are_the_tabs() -> None:
-    from emgteach.gui.tabs.analysis import _PANEL_LAYOUT
+def test_no_title_types_a_number() -> None:
+    """A number typed in a title is a second place for it to live, and the
+    two drift apart: every analysis title is built from the table."""
+    import inspect
+    import re
 
-    assert {pid: str(BY_PID[pid].number) for pid, _ in _PANEL_LAYOUT} == dict(
-        _PANEL_LAYOUT
-    )
+    from emgteach import mvc, reports
+    from emgteach.gui.tabs import analysis
+
+    typed = re.compile(r"""set_title\(\s*(?:tr\()?\s*["']\d""")
+    for source in (inspect.getsource(analysis),
+                   inspect.getsource(reports._draw_analysis_panel)):
+        assert not typed.search(source)
+    assert not re.search(r"""["']\d+\. """, inspect.getsource(mvc.overlay_curves))
 
 
 def test_every_title_carries_its_number_and_a_reading() -> None:
@@ -75,9 +83,8 @@ def test_no_other_title_says_agonist() -> None:
 
 def test_every_word_of_the_table_is_translated() -> None:
     """The table reaches tr() as data, which the scan of literals cannot see."""
-    texts = [s for p in PANELS for s in (p.name, p.reading, p.reading_two) if s]
-    texts.append(OVERLAY_READING_MV)
-    missing = [s for s in texts if s not in i18n._ES]
+    keys = [s for p in PANELS for s in texts(p)] + [OVERLAY_READING_MV]
+    missing = [s for s in keys if s not in i18n._ES]
     assert not missing, missing
 
 
