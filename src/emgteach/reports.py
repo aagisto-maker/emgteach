@@ -40,10 +40,15 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
+from emgteach.charts import (
+    COLOUR_1,
+    COLOUR_2,
+    draw_coactivation_chart,
+    draw_contraction_chart,
+)
 from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
-from emgteach.figures import draw_emd_note, draw_psd_panel
+from emgteach.figures import draw_emd_note, draw_psd_panel, draw_raw_panel
 from emgteach.i18n import tr
 from emgteach.mvc import (
     AUTO_COLOR,
@@ -140,7 +145,7 @@ def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:
     times = result["times"]
     markers = list(result.get("markers", []))
 
-    ax1.plot(times, result["emg_filtered"], color="#4169E1", linewidth=0.6)
+    ax1.plot(times, result["emg_filtered"], color=COLOUR_1, linewidth=0.6)
     ax1.set_ylabel(tr("Filtered (mV)"))
     ax1.set_title(
         tr("EMG signal — channel «{name}»").format(name=result.get("channel_name", ""))
@@ -170,11 +175,10 @@ def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:
     return buf
 
 
-# Report panel titles keyed by canonical panel index (0-7). The display
-# numbers match the teaching renumbering used in the Analysis tab: the three
-# teaching panels are 1A/2/3 and the rest 4-8.
+# Report panel titles keyed by canonical panel index. The display numbers are
+# the Analysis tab's, 1 to 12.
 _PANEL_REPORT_TITLES = {
-    0: "1A. Raw EMG signal",
+    0: "1. Raw EMG signal",
     1: "4. Filtered + rectified EMG signal",
     2: "5. EMG signal envelope",
     3: "2. Envelope normalised to maximum",
@@ -216,15 +220,17 @@ def _draw_analysis_panel(
     grid = dict(ls="--", color="#DDDDDD", alpha=0.8)
 
     if idx == 0:
-        ax.plot(times, r["emg_raw"], color="#333333", lw=0.8, alpha=0.7)
-        ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
+        # Both muscles, each against its own axis, when there are two: the
+        # same drawing as the screen's (emgteach.figures.draw_raw_panel).
+        draw_raw_panel(ax, r, lw=0.8, fontsize=8)
         ax.set_xlim(x0, x1)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 1:
         ax.plot(times, r["emg_filtered"], color="#1f77b4", lw=1.0,
                 label=tr("Filtered (20-450 Hz)"))
-        ax.plot(times, r["emg_rectified"], color="#d62728", lw=1.0, alpha=0.9,
+        # The red of the rectified trace in panel 5, not the second
+        # muscle's: in the pair, that red means the other muscle.
+        ax.plot(times, r["emg_rectified"], color="#E74C3C", lw=1.0, alpha=0.9,
                 label=tr("Rectified"))
         ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
@@ -267,21 +273,21 @@ def _draw_analysis_panel(
         dos = r.get("mdf_seg_2") is not None
         n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
         ax.scatter(r["t_seg"], r["mdf_seg"], s=18, alpha=0.7,
-                   color="#4169E1" if dos else "#666666",
+                   color=COLOUR_1 if dos else "#666666",
                    label=(tr("{muscle}: MDF per window").format(muscle=n1)
                           if dos else tr("MDF per window")))
         if len(r["t_seg"]) >= 2:
             ax.plot(r["t_seg"], r["fat_fitted"],
-                    color="#4169E1" if dos else "#E74C3C", lw=2.2,
+                    color=COLOUR_1 if dos else "#E74C3C", lw=2.2,
                     label=(tr("{muscle}: trend").format(muscle=n1)
                            if dos else tr("Trend (degree 2)")))
         if dos:
             n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
             ax.scatter(r["t_seg_2"], r["mdf_seg_2"], s=18, alpha=0.7,
-                       color="#D62728",
+                       color=COLOUR_2,
                        label=tr("{muscle}: MDF per window").format(muscle=n2))
             if len(r["t_seg_2"]) >= 2:
-                ax.plot(r["t_seg_2"], r["fat_fitted_2"], color="#D62728", lw=2.2,
+                ax.plot(r["t_seg_2"], r["fat_fitted_2"], color=COLOUR_2, lw=2.2,
                         label=tr("{muscle}: trend").format(muscle=n2))
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_ylabel("MDF (Hz)", fontsize=8)
@@ -306,10 +312,10 @@ def _draw_analysis_panel(
         # the student hands in, so it must not be able to disagree with the
         # panel it was read from.
         curve1, curve2 = overlay_curves(r)
-        ax.plot(times, curve1.data, color="#4169E1", lw=1.6,
+        ax.plot(times, curve1.data, color=COLOUR_1, lw=1.6,
                 label=str(r.get("channel_name") or tr("Muscle {n}").format(n=1)))
         if curve2 is not None:
-            ax.plot(times, curve2.data, color="#D62728", lw=1.6,
+            ax.plot(times, curve2.data, color=COLOUR_2, lw=1.6,
                     label=str(r.get("channel_name_2")
                               or tr("Muscle {n}").format(n=2)))
         ax.set_ylabel(curve1.ylabel, fontsize=8)
@@ -325,7 +331,7 @@ def _draw_analysis_panel(
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 9:
         emg_lbl = r.get("channel_name") or "EMG"
-        ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.5,
+        ax.plot(times, r["emg_envelope"], color=COLOUR_1, lw=1.5,
                 label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
         mmg = r.get("acc_mmg_envelope")
         if mmg is not None:
@@ -335,7 +341,7 @@ def _draw_analysis_panel(
             ax2.set_ylabel(tr("MMG (g)"), fontsize=8, color="#2ca02c")
             ax2.tick_params(axis="y", labelsize=7, colors="#2ca02c")
             ax2.set_xlim(x0, x1)
-        ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+        ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color=COLOUR_1)
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
         ax.legend(loc="upper left", fontsize=7)
@@ -355,7 +361,7 @@ def _draw_analysis_panel(
         ax.set_ylabel("PSD (g²/Hz)", fontsize=8)
     elif idx == 11:
         emg_lbl = r.get("channel_name") or "EMG"
-        ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.5,
+        ax.plot(times, r["emg_envelope"], color=COLOUR_1, lw=1.5,
                 label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
         move = r.get("acc_movement_envelope")
         if move is not None:
@@ -366,7 +372,7 @@ def _draw_analysis_panel(
             ax2.tick_params(axis="y", labelsize=7, colors="#D35400")
             ax2.set_xlim(x0, x1)
             draw_emd_note(ax, r)
-        ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
+        ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color=COLOUR_1)
         ax.set_xlabel(tr("Time (s)"), fontsize=8)
         ax.set_xlim(x0, x1)
         ax.legend(loc="upper left", fontsize=7)
@@ -831,9 +837,11 @@ def _render_mvc_figure(
     dim = result.get("dimension", "")
 
     ax = axes[0]
-    ax.plot(t, result["emg_filtered"][:n], color="#4169E1", lw=0.6,
+    # The MVC tab's colours for the same panel; its red is not the second
+    # muscle's.
+    ax.plot(t, result["emg_filtered"][:n], color=COLOUR_1, lw=0.6,
             label=tr("Filtered EMG (20-450 Hz)"))
-    ax.plot(t, result["emg_rectified"][:n], color="#d62728", lw=0.6, alpha=0.8,
+    ax.plot(t, result["emg_rectified"][:n], color="tomato", lw=0.6, alpha=0.8,
             label=tr("Rectified EMG"))
     ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
     ax.set_ylabel(tr("Amplitude ({units})").format(units=dim), fontsize=8)

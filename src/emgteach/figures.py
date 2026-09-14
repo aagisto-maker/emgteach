@@ -13,11 +13,10 @@ from typing import Any
 import numpy as np
 from scipy.integrate import trapezoid
 
+# The two muscles' colours are those of charts.py and nowhere else: a colour
+# convention copied by hand drifts, and this one carries the whole tab.
+from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.i18n import cifra, tr
-
-#: The two muscles' colours, the same as everywhere in the application.
-_COLOUR_1 = "#4169E1"
-_COLOUR_2 = "#D62728"
 
 #: Below this share of the other muscle's total power a spectrum is drawn
 #: faint and its legend says so. A muscle at rest while the other works is
@@ -112,8 +111,8 @@ def draw_psd_panel(ax: Any, result: Mapping[str, Any], *, lw: float = 1.8,
         faint_1 = a2 > 0.0 and a1 < PSD_FAINT_RATIO * a2
         faint_2 = a1 > 0.0 and a2 < PSD_FAINT_RATIO * a1
         for f, r, a, name, mdf, colour, faint, other, a_other in (
-            (f1, r1, a1, n1, result["mdf"], _COLOUR_1, faint_1, n2, a2),
-            (f2, r2, a2, n2, result["mdf_2"], _COLOUR_2, faint_2, n1, a1),
+            (f1, r1, a1, n1, result["mdf"], COLOUR_1, faint_1, n2, a2),
+            (f2, r2, a2, n2, result["mdf_2"], COLOUR_2, faint_2, n1, a1),
         ):
             label = f"{name} — MDF {float(mdf):.0f} Hz · {_potencia(a)}"
             if faint:
@@ -138,6 +137,50 @@ def draw_psd_panel(ax: Any, result: Mapping[str, Any], *, lw: float = 1.8,
     f_high = result.get("f_high") or (result.get("config") or {}).get("f_high") or 450.0
     ax.set_xlim(0, float(f_high) + 50)
     ax.legend(fontsize=max(6, fontsize - 1))
+
+
+def draw_raw_panel(ax: Any, result: Mapping[str, Any], *, lw: float = 0.8,
+                   fontsize: int = 8) -> Any | None:
+    """Panel 1, on screen and in the report: the raw trace of each muscle.
+
+    One muscle is drawn in grey against its amplitude axis. Two get a
+    vertical axis each, painted in the muscle's colour and carrying its
+    name, as the EMG and the accelerometer do in panels 10 and 12: two
+    muscles in millivolts on one axis invite a comparison of heights that
+    surface EMG cannot support — the amplitude depends on the skin and fat
+    between muscle and electrode — and with an axis each, no two heights
+    are ever claimed to share a yardstick. What the panel shows is when
+    each muscle fires. Each axis takes its colour from the same variable
+    as its trace, so the two cannot drift apart, and both are symmetric
+    about zero so that the two zero lines are one.
+
+    Returns the second muscle's axis, or ``None`` with one muscle, so that
+    whoever rescales the panel can rescale both.
+    """
+    times = result["times"]
+    raw_2 = result.get("emg_raw_2")
+    if raw_2 is None:
+        ax.plot(times, result["emg_raw"], color="#333333", lw=lw, alpha=0.7)
+        ax.set_ylabel(tr("Amplitude (mV)"), fontsize=fontsize)
+        ax.set_xlabel(tr("Time (s)"), fontsize=fontsize)
+        return None
+    ax_2 = ax.twinx()
+    for axis, trace, name, n, colour in (
+        (ax, result["emg_raw"], result.get("channel_name"), 1, COLOUR_1),
+        (ax_2, raw_2, result.get("channel_name_2"), 2, COLOUR_2),
+    ):
+        name = name or tr("Muscle {n}").format(n=n)
+        data = np.asarray(trace, dtype=np.float64)
+        axis.plot(times, data, color=colour, lw=lw, alpha=0.7)
+        axis.set_ylabel(tr("{muscle} (mV)").format(muscle=name),
+                        fontsize=fontsize, color=colour)
+        axis.tick_params(axis="y", labelsize=fontsize - 1, colors=colour)
+        finite = data[np.isfinite(data)]
+        top = float(np.max(np.abs(finite))) if finite.size else 0.0
+        if top > 0.0:
+            axis.set_ylim(-1.05 * top, 1.05 * top)
+    ax.set_xlabel(tr("Time (s)"), fontsize=fontsize)
+    return ax_2
 
 
 def draw_emd_note(ax: Any, result: Mapping[str, Any]) -> None:

@@ -61,8 +61,8 @@ cinemática **Por carga**; y **Tabla** con los números), **resumen** en fichas,
 en el par el **gráfico de coactivación** (una barra por ventana con el índice, con
 su «Gráfico · Tabla»). **«Generar informe PDF»** = entregable.
 
-Paneles por práctica: un músculo **1A · 2 · 3**; par **1A · 1B · 3 · 7 · 9**;
-cinemática **1A · 2 · 3 · 10 · 11 · 12**. **«Más paneles…»** revela el resto.
+Paneles por práctica: un músculo **1 · 2 · 3**; par **1 · 3 · 7 · 9**;
+cinemática **1 · 2 · 3 · 10 · 11 · 12**. **«Más paneles…»** revela el resto.
 
 ### Normalizar y carga (Normalización CVM)
 Se calcula solo al recibir el registro. **«Seleccionar fragmentos…»** para dejar

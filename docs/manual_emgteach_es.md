@@ -444,7 +444,7 @@ qué pide, y el «?» del cuadro los repite.
    nada. Cuando todo está revisado y el recuento coincide, el botón se pone en
    negrita.
 
-**Los trece paneles de análisis** y su significado. Cada práctica abre con los
+**Los doce paneles de análisis** y su significado. Cada práctica abre con los
 suyos y **«Más paneles…»** revela el resto, salvo los que el registro no puede
 alimentar. Los paneles se apilan en una página que se desplaza con la rueda del
 ratón; a la izquierda de cada uno, ▲▼ cambian la escala de amplitud y ▶◀ la de
@@ -452,8 +452,7 @@ tiempo.
 
 | Panel | Qué muestra | Significado | Abre con |
 |---|---|---|---|
-| **1A. Señal en bruto** | EMG sin procesar, con los inicios marcados por líneas finas | Punto de partida; permite ver artefactos | las tres prácticas |
-| **1B. Señal en bruto (2.º)** | El segundo músculo | Cada músculo en su carril | agonista / antagonista |
+| **1. Señal en bruto** | EMG sin procesar, con los inicios marcados por líneas finas; en el par, los dos músculos, cada uno contra su propio eje y en su color | Punto de partida; permite ver artefactos; cuándo dispara cada músculo | las tres prácticas |
 | **2. Envolvente normalizada** | Envolvente escalada a su máximo (0–1) | Forma de la activación, comparable | un músculo, cinemática |
 | **3. PSD con MNF/MDF** | Densidad espectral relativa, cada curva con área 1; en gris, el espectro **antes** del filtro; en el par, los dos músculos con su MDF y su potencia total en mV² | Qué quitó el filtro; reparto de energía; base de la fatiga | las tres prácticas |
 | **4. Filtrada + rectificada** | Señal limpia y su valor absoluto | Aísla la actividad muscular real | «Más paneles…» |
@@ -466,7 +465,7 @@ tiempo.
 | **11. Temblor** | Espectro del acelerómetro | Pico del temblor fisiológico (8–12 Hz) | cinemática muscular |
 | **12. Movimiento frente a EMG** | Trazado cinemático y envolvente EMG, con el retraso electromecánico medio anotado | El movimiento sigue a la contracción | cinemática muscular |
 
-En la fila de casillas los nombres aparecen abreviados (*1A. En bruto*, *2. Env.
+En la fila de casillas los nombres aparecen abreviados (*1. En bruto*, *2. Env.
 norm.*, *3. PSD*…); los de la tabla son los de los títulos de los paneles y del
 informe. Sobre cualquier panel en % CVM, una banda rosa marca lo que pasa del
 100 %, y si el registro pasa mucho tiempo ahí el panel lo dice en rojo.
@@ -929,7 +928,7 @@ el acelerómetro y las medidas que se ofrecen después.
    **repeticiones de la calibración** y, en los **fragmentos**, dejar solo la tarea
    (la calibración ya queda fuera sola). Leer la tabla de
    contracciones (una fila por esfuerzo, con RMS, pico en % CVM y MDF), las fichas
-   del resumen contra sus rangos, y los paneles 1A, 2 y 3; para la fatiga, el
+   del resumen contra sus rangos, y los paneles 1, 2 y 3; para la fatiga, el
    panel 7 desde «Más paneles…». Comprobar la ficha «Máximo de la tarea». Generar
    el **informe PDF**.
 4. **Normalización CVM.** Recibe el registro y calcula sola. Con «Seleccionar

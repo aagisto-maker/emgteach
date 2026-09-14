@@ -156,7 +156,7 @@ class _SelectorEsquina(QWidget):
         self.raise_()
 
 # Teaching panel layout. The three panels relevant to physiology students
-# (raw, normalised envelope, PSD) come first, renumbered 1A, 2, 3 and checked
+# (raw, normalised envelope, PSD) come first, renumbered 1, 2, 3 and checked
 # by default; the remaining panels follow, renumbered 4-8, unchecked but still
 # selectable. Each entry is (original panel index, display number): the
 # original index (0-7) is the identity used by the plotting code and the PDF
@@ -169,16 +169,11 @@ _OVERLAY_PID = 8
 _MMG_PID = 9
 _TREMOR_PID = 10
 _MOVEMENT_PID = 11
-#: Raw trace of the second muscle. Only the agonist/antagonist practical
-#: records two, and there the point is to see each muscle before comparing
-#: them, so one raw panel is not enough.
-_RAW2_PID = 12
 # Panels that require an accelerometer channel to be usable.
 _ACC_PIDS = (_MMG_PID, _TREMOR_PID, _MOVEMENT_PID)
 
 _PANEL_LAYOUT: list[tuple[int, str]] = [
-    (0, "1A"),  # raw signal
-    (_RAW2_PID, "1B"),  # raw signal of the second muscle (agonist/antagonist)
+    (0, "1"),   # raw signal (in the pair, both muscles, one axis each)
     (3, "2"),   # normalised envelope
     (4, "3"),   # PSD with MNF/MDF
     (1, "4"),   # filtered + rectified
@@ -195,19 +190,17 @@ _PANEL_LAYOUT: list[tuple[int, str]] = [
 # The overlay panel (8) is checked dynamically when a 2nd channel is compared.
 _DEFAULT_PANELS: tuple[int, ...] = (0, 3, 4)
 
-# Panels always offered, in _PANEL_LAYOUT display order: 1A. Raw,
+# Panels always offered, in _PANEL_LAYOUT display order: 1. Raw,
 # 2. Env. norm. and 3. PSD — the same three that are checked by default and
 # the teaching core of the tab. What follows depends on mode and flag.
 #: The teaching core, by identifier rather than by position: raw signal,
-#: normalised envelope and PSD. Positions moved when the second muscle's raw
-#: trace was inserted after the first, and an index-based rule would have
-#: silently changed which panels counted as basic.
+#: normalised envelope and PSD. Positions have moved before, and an
+#: index-based rule would silently change which panels count as basic.
 _CORE_PIDS: tuple[int, ...] = (0, 3, 4)
 
 # Full panel names (report dialog), in display order and renumbered.
 _PANEL_NOMBRES = [
-    "1A. Raw signal",
-    "1B. Raw signal — 2nd muscle",
+    "1. Raw signal",
     "2. Normalised envelope",
     "3. PSD with MNF/MDF",
     "4. Filtered + rectified",
@@ -223,8 +216,7 @@ _PANEL_NOMBRES = [
 
 # Short labels (on-screen checkbox row), in display order and renumbered.
 _PANEL_SHORT_LABELS = [
-    "1A. Raw",
-    "1B. Raw (2nd)",
+    "1. Raw",
     "2. Env. norm.",
     "3. PSD",
     "4. Filt.+rect.",
@@ -243,7 +235,8 @@ _PANEL_SHORT_NAMES = {pid: num for pid, num in _PANEL_LAYOUT}
 
 # Short, didactic tooltip per original panel index — what the panel shows.
 _PANEL_TOOLTIPS = {
-    0: "Raw EMG signal, unfiltered.",
+    0: "Raw EMG signal, unfiltered; with two muscles, each against its own "
+       "axis, in its colour.",
     3: "Envelope normalised to its maximum (0-1): the activation time course.",
     4: "Power spectrum; MNF and MDF summarise its frequency content.",
     _OVERLAY_PID: "Both channels' envelopes overlaid — agonist/antagonist "
@@ -260,16 +253,19 @@ _PANEL_TOOLTIPS = {
     5: "RMS amplitude per window: how the intensity evolves.",
     6: "Median frequency over time; a fall indicates fatigue.",
     7: "Amplitude-frequency relation (force vs fatigue).",
-    _RAW2_PID: "Raw EMG signal of the second muscle, unfiltered (needs a 2nd "
-               "channel).",
 }
 
 from emgteach.broadcast import BroadcastServer
-from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
+from emgteach.charts import (
+    COLOUR_1,
+    COLOUR_2,
+    draw_coactivation_chart,
+    draw_contraction_chart,
+)
 from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
-from emgteach.figures import draw_emd_note, draw_psd_panel
+from emgteach.figures import draw_emd_note, draw_psd_panel, draw_raw_panel
 from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.gui.help_texts import text as help_text
 from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
@@ -341,6 +337,9 @@ class AnalysisTab(QWidget):
         self._axes_list: list = []
         self._y_accum: dict[int, float] = {}
         self._y_initial_lims: dict[int, tuple[float, float]] = {}
+        #: A panel's second vertical axis, when it has one that must scale
+        #: with the first (the raw panel's second muscle).
+        self._y_twins: dict = {}
 
         self._redraw_timer = QTimer(self)
         self._redraw_timer.setSingleShot(True)
@@ -2431,6 +2430,7 @@ class AnalysisTab(QWidget):
 
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
+        self._y_twins = {}
         self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)
 
         # Map checked boxes (in teaching display order) back to their canonical
@@ -2455,32 +2455,14 @@ class AnalysisTab(QWidget):
 
         _grid = dict(ls="--", color="#DDDDDD", alpha=0.8)
 
-        # --- 1A: Raw signal ---
+        # --- 1: Raw signal; with two muscles, one axis each ---
         if 0 in ax_map:
             ax = ax_map[0]
-            ax.plot(times, r["emg_raw"],
-                    color="#333333", lw=0.8, alpha=0.7)
-            ax.set_title(tr("1A. Raw EMG signal"), fontsize=9)
-            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
-            ax.set_xlabel(tr("Time (s)"), fontsize=8)
-            ax.set_xlim(inicio_s, fin_s)
-            ax.tick_params(labelsize=7)
-            ax.grid(True, **_grid)
-            self._dibujar_marcadores(ax, inicio_s, fin_s)
-
-        # --- 1B: Raw signal of the second muscle ---
-        if _RAW2_PID in ax_map:
-            ax = ax_map[_RAW2_PID]
-            crudo2 = r.get("emg_raw_2")
-            if crudo2 is not None:
-                ax.plot(times, crudo2, color="#333333", lw=0.8, alpha=0.7)
-            nombre2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-            ax.set_title(
-                tr("1B. Raw EMG signal — {muscle}").format(muscle=nombre2),
-                fontsize=9,
-            )
-            ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
-            ax.set_xlabel(tr("Time (s)"), fontsize=8)
+            # The same drawing as the report's (emgteach.figures.draw_raw_panel).
+            twin = draw_raw_panel(ax, r, lw=0.8, fontsize=8)
+            if twin is not None:
+                self._y_twins[0] = twin
+            ax.set_title(tr("1. Raw EMG signal"), fontsize=9)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.grid(True, **_grid)
@@ -2491,8 +2473,10 @@ class AnalysisTab(QWidget):
             ax = ax_map[1]
             ax.plot(times, r["emg_filtered"],
                     color="#1f77b4", lw=1.2, label=tr("Filtered EMG (20-450 Hz)"))
+            # The red of the rectified trace in panel 5, not the second
+            # muscle's: in the pair, that red means the other muscle.
             ax.plot(times, r["emg_rectified"],
-                    color="#d62728", lw=1.2, alpha=0.9, label=tr("Rectified EMG"))
+                    color="#E74C3C", lw=1.2, alpha=0.9, label=tr("Rectified EMG"))
             ax.set_title(tr("4. Filtered + rectified EMG signal"), fontsize=9)
             ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
@@ -2548,10 +2532,10 @@ class AnalysisTab(QWidget):
             # calibration exists to make possible.
             env1, env2 = overlay_curves(r)
             lbl1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
-            ax.plot(times, env1.data, color="#4169E1", lw=1.8, label=lbl1)
+            ax.plot(times, env1.data, color=COLOUR_1, lw=1.8, label=lbl1)
             if env2 is not None:
                 lbl2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-                ax.plot(times, env2.data, color="#D62728", lw=1.8, label=lbl2)
+                ax.plot(times, env2.data, color=COLOUR_2, lw=1.8, label=lbl2)
             else:
                 ax.text(
                     0.5, 0.5,
@@ -2582,7 +2566,7 @@ class AnalysisTab(QWidget):
             ax = ax_map[_MMG_PID]
             mmg = r.get("acc_mmg_envelope")
             emg_lbl = r.get("channel_name") or "EMG"
-            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8,
+            ax.plot(times, r["emg_envelope"], color=COLOUR_1, lw=1.8,
                     label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
             if mmg is not None:
                 ax2 = ax.twinx()
@@ -2604,8 +2588,8 @@ class AnalysisTab(QWidget):
                         transform=ax.transAxes, ha="center", va="center",
                         fontsize=8, color="#888888")
             ax.set_title(tr("10. EMG vs MMG (electrical vs mechanical)"), fontsize=9)
-            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
-            ax.tick_params(axis="y", labelsize=7, colors="#4169E1")
+            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color=COLOUR_1)
+            ax.tick_params(axis="y", labelsize=7, colors=COLOUR_1)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(axis="x", labelsize=7)
@@ -2642,7 +2626,7 @@ class AnalysisTab(QWidget):
             ax = ax_map[_MOVEMENT_PID]
             move = r.get("acc_movement_envelope")
             emg_lbl = r.get("channel_name") or "EMG"
-            ax.plot(times, r["emg_envelope"], color="#4169E1", lw=1.8,
+            ax.plot(times, r["emg_envelope"], color=COLOUR_1, lw=1.8,
                     label=tr("EMG — {ch} (electrical)").format(ch=emg_lbl))
             if move is not None:
                 ax2 = ax.twinx()
@@ -2667,8 +2651,8 @@ class AnalysisTab(QWidget):
                         transform=ax.transAxes, ha="center", va="center",
                         fontsize=8, color="#888888")
             ax.set_title(tr("12. Movement vs EMG (limb kinematics)"), fontsize=9)
-            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color="#4169E1")
-            ax.tick_params(axis="y", labelsize=7, colors="#4169E1")
+            ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color=COLOUR_1)
+            ax.tick_params(axis="y", labelsize=7, colors=COLOUR_1)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(axis="x", labelsize=7)
@@ -2708,12 +2692,12 @@ class AnalysisTab(QWidget):
             dos = r.get("mdf_seg_2") is not None
             n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
             ax.scatter(r["t_seg"], r["mdf_seg"],
-                       s=20, alpha=0.7, color="#4169E1" if dos else "#666666",
+                       s=20, alpha=0.7, color=COLOUR_1 if dos else "#666666",
                        label=(tr("{muscle}: MDF per window").format(muscle=n1)
                               if dos else tr("Median frequency per window")))
             if len(r["t_seg"]) >= 2:
                 ax.plot(r["t_seg"], r["fat_fitted"],
-                        color="#4169E1" if dos else "#E74C3C", lw=2.5,
+                        color=COLOUR_1 if dos else "#E74C3C", lw=2.5,
                         label=(tr("{muscle}: trend").format(muscle=n1)
                                if dos else tr("Trend (degree-2 polynomial)")))
             if dos:
@@ -2722,10 +2706,10 @@ class AnalysisTab(QWidget):
                 # other does not.
                 n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
                 ax.scatter(r["t_seg_2"], r["mdf_seg_2"], s=20, alpha=0.7,
-                           color="#D62728",
+                           color=COLOUR_2,
                            label=tr("{muscle}: MDF per window").format(muscle=n2))
                 if len(r["t_seg_2"]) >= 2:
-                    ax.plot(r["t_seg_2"], r["fat_fitted_2"], color="#D62728",
+                    ax.plot(r["t_seg_2"], r["fat_fitted_2"], color=COLOUR_2,
                             lw=2.5, label=tr("{muscle}: trend").format(muscle=n2))
             ax.set_title(
                 tr(
@@ -3113,18 +3097,19 @@ class AnalysisTab(QWidget):
     def _y_zoom(self, panel_idx: int, ax, zoom_in: bool) -> None:
         factor = 1.5
         accum = self._y_accum.get(panel_idx, 1.0)
-        if zoom_in:
-            new_accum = accum / factor
-            if new_accum < 0.01:
-                return
-            ymin, ymax = ax.get_ylim()
-            ax.set_ylim(ymin / factor, ymax / factor)
-        else:
-            new_accum = accum * factor
-            if new_accum > 100.0:
-                return
-            ymin, ymax = ax.get_ylim()
-            ax.set_ylim(ymin * factor, ymax * factor)
+        new_accum = accum / factor if zoom_in else accum * factor
+        if not 0.01 <= new_accum <= 100.0:
+            return
+        # A second axis that belongs to the panel scales with it: the raw
+        # panel's two muscles are one picture, zero on zero.
+        for axis in (ax, self._y_twins.get(panel_idx)):
+            if axis is None:
+                continue
+            ymin, ymax = axis.get_ylim()
+            if zoom_in:
+                axis.set_ylim(ymin / factor, ymax / factor)
+            else:
+                axis.set_ylim(ymin * factor, ymax * factor)
         self._y_accum[panel_idx] = new_accum
         self._canvas.draw_idle()
 
@@ -3422,18 +3407,18 @@ class AnalysisTab(QWidget):
         if mode == MODE_KINEMATICS:
             propios = pid in _CORE_PIDS or pid in _ACC_PIDS
         elif mode == MODE_PAIR:
-            # Raw trace of each muscle, the two envelopes overlaid, and the
-            # spectrum and the fatigue trend of both: whether one tires and
-            # the other does not is a question only a pair can answer.
-            propios = pid in (0, _RAW2_PID, _OVERLAY_PID, 4, 6)
+            # Both raw traces, the two envelopes overlaid, and the spectrum
+            # and the fatigue trend of both: whether one tires and the other
+            # does not is a question only a pair can answer.
+            propios = pid in (0, _OVERLAY_PID, 4, 6)
         else:
             propios = pid in _CORE_PIDS
         if propios:
             return True
         if not self._mas_paneles:
             return False
-        if pid in (_RAW2_PID, _OVERLAY_PID):
-            return mode != MODE_SINGLE       # both need a second muscle
+        if pid == _OVERLAY_PID:
+            return mode != MODE_SINGLE       # needs a second muscle
         if pid in _ACC_PIDS:
             return mode_uses_acc(mode)
         return True

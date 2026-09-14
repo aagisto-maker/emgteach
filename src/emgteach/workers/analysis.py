@@ -917,8 +917,9 @@ class AnalysisWorker(QThread):
                         rms_window_ms=self._rms_window_ms,
                     )
                     # The raw trace of the second muscle, not just its
-                    # envelope: the agonist/antagonist practical shows one raw
-                    # panel per muscle before overlaying the two envelopes.
+                    # envelope: the agonist/antagonist practical shows both
+                    # raw traces in panel 1, each against its own axis,
+                    # before overlaying the two envelopes.
                     result["emg_raw_2"] = emg_raw_2
                     result["emg_filtered_2"] = proc2["emg_filtered"]
                     result["emg_envelope_2"] = proc2["emg_envelope"]

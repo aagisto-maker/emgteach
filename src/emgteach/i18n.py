@@ -1042,7 +1042,7 @@ _ES = {
     "Could not analyse the 2nd channel «{name}»: {err}":
         "No se pudo analizar el 2º canal «{name}»: {err}",
     "Envelope cutoff frequency (Hz):": "Frec. corte envolvente (Hz):",
-    "1A. Raw": "1A. En bruto",
+    "1. Raw": "1. En bruto",
     "2. Env. norm.": "2. Env. norm.",
     "3. PSD": "3. PSD",
     "4. Filt.+rect.": "4. Filtr.+rect.",
@@ -1061,7 +1061,9 @@ _ES = {
     "Integral of the rectified EMG — total muscle activation.":
         "Integral de la EMG rectificada — activación muscular total.",
     # --- didactic tooltips (panels, summary metrics, APDF) ---
-    "Raw EMG signal, unfiltered.": "Señal EMG cruda, sin filtrar.",
+    "Raw EMG signal, unfiltered; with two muscles, each against its own "
+    "axis, in its colour.": "Señal EMG cruda, sin filtrar; con dos músculos, cada uno contra su "
+        "propio eje, en su color.",
     "Envelope normalised to its maximum (0-1): the activation time course.":
         "Envolvente normalizada a su máximo (0-1): el curso temporal de la activación.",
     "Power spectrum; MNF and MDF summarise its frequency content.":
@@ -1098,14 +1100,14 @@ _ES = {
         "el % del tiempo que el músculo permanece por debajo de cada nivel "
         "de carga (% CVM). Los niveles estático (P10), mediano (P50) y pico "
         "(P90) valoran el riesgo de sobrecarga.</p>",
-    "1A. Raw signal": "1A. Señal en bruto",
+    "1. Raw signal": "1. Señal en bruto",
     "2. Normalised envelope": "2. Envolvente normalizada",
     "3. PSD with MNF/MDF": "3. PSD con MNF/MDF",
     "4. Filtered + rectified": "4. Filtrada + rectificada",
     "5. Envelope vs RMS": "5. Envolvente vs RMS",
     "6. RMS per window": "6. RMS por ventana",
     "7. MDF vs time (fatigue)": "7. MDF vs tiempo (fatiga)",
-    "1A. Raw EMG signal": "1A. Señal EMG en bruto",
+    "1. Raw EMG signal": "1. Señal EMG en bruto",
     "Filtered EMG (20-450 Hz)": "EMG filtrado (20-450 Hz)",
     "4. Filtered + rectified EMG signal": "4. Señal EMG filtrada + rectificada",
     "Rectified EMG": "EMG rectificado",
@@ -1159,6 +1161,7 @@ _ES = {
     "PDF report generated: {path}": "Informe PDF generado: {path}",
     "Error generating the PDF report: {error}": "Error al generar el informe PDF: {error}",
     "Amplitude (mV)": "Amplitud (mV)",
+    "{muscle} (mV)": "{muscle} (mV)",
     "Time (s)": "Tiempo (s)",
     # Progress bar + fatigue summary (analysis tab).
     "Ready": "Listo",
@@ -1766,14 +1769,6 @@ _ES = {
         "la amplitud de referencia, la distribución de carga y el informe se "
         "referirán al canal que se elija aquí.",
     "Normalising {muscle}.": "Se normaliza {muscle}.",
-
-    # Cuarto modo y franja de complejidad.
-    # Panel del bruto del segundo músculo, y el paso del tour sobre la franja.
-    "1B. Raw signal — 2nd muscle": "1B. Señal en bruto — 2º músculo",
-    "1B. Raw (2nd)": "1B. Bruto (2º)",
-    "1B. Raw EMG signal — {muscle}": "1B. Señal EMG en bruto — {muscle}",
-    "Raw EMG signal of the second muscle, unfiltered (needs a 2nd channel).":
-        "Señal EMG en bruto del segundo músculo, sin filtrar (necesita un 2º canal).",
 
     # El registro viaja entre pestañas.
     "Recording loaded for analysis: {path}":

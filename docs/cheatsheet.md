@@ -64,8 +64,8 @@ co-activation wedge in the pair; in the pair **Category** and **Who leads**;
 window with the index, with its own «Chart · Table»).
 **«Generate PDF report»** = the deliverable.
 
-Panels per practical: single **1A · 2 · 3**; pair **1A · 1B · 3 · 7 · 9**;
-kinematics **1A · 2 · 3 · 10 · 11 · 12**. **«More panels…»** reveals the rest.
+Panels per practical: single **1 · 2 · 3**; pair **1 · 3 · 7 · 9**;
+kinematics **1 · 2 · 3 · 10 · 11 · 12**. **«More panels…»** reveals the rest.
 
 ### Normalise and load (MVC normalisation)
 Computed on its own when the recording arrives. **«Select fragments…»** to keep

@@ -239,7 +239,7 @@ de una práctica anterior caducan.
 **Montaje.** Un canal sobre el FCR (o sobre el bíceps si se prefiere un músculo
 grande), referencia en el olécranon. Selector en **Contracción de un músculo**.
 
-**Lo que enseña la aplicación en esta práctica.** Tres paneles por defecto: **1A.
+**Lo que enseña la aplicación en esta práctica.** Tres paneles por defecto: **1.
 En bruto**, **2. Env. norm.** (la envolvente escalada a su máximo) y **3. PSD** (el
 espectro, con el espectro *antes* del filtro en gris detrás). Abajo, la **tabla de
 contracciones** con una fila por esfuerzo (inicio, duración, RMS, pico en % CVM,
@@ -395,7 +395,7 @@ referencia común en el olécranon o una en cada estiloides. Selector en
 
 **Lo que enseña la aplicación en esta práctica.** Al pulsar **Iniciar grabación**
 el asistente calibra **los dos músculos** (apartado 4) y después abre el registro.
-El análisis ofrece **1A. En bruto**, **1B. Bruto (2º)**, **3. PSD** con las dos
+El análisis ofrece **1. En bruto** con los dos músculos, cada uno contra su propio eje, **3. PSD** con las dos
 curvas, **7. MDF/tiempo** de los dos y **9. Env. superp.**, las dos envolventes en
 % CVM sobre el mismo eje. La tabla de contracciones dice **qué músculo llevó cada
 una** (FCR, ECR o «Coactivación», cuando el menor supera la mitad del mayor,
