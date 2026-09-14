@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] — 2026-09-14
+
+**The analysis panels say how to read them.** Every title carries, on a
+second line, what it means that the curve rises or falls, and names the
+muscle when the panel shows one; the panels are numbered 1 to 12 from one
+table, the same in every practical. A minor version because what the tab
+shows and how it numbers it change; nothing computed does. See
+[`docs/RELEASE_NOTES_v3.4.0.md`](docs/RELEASE_NOTES_v3.4.0.md).
+
 ### Changed
 - **The two raw panels are one.** In the agonist/antagonist practical, panel 1 draws the raw trace of each muscle against its own vertical axis, painted in the muscle's colour and carrying its name — the pattern of panels 10 and 12. Two muscles in millivolts on one axis invite a comparison of heights that surface EMG cannot support, since the amplitude depends on the skin and fat between muscle and electrode; with an axis each, what the panel shows is when each muscle fires. Both axes are symmetric about zero, so the two zero lines are one, and ▲▼ scale both. Panel 1B is gone, the panels are numbered 1 to 12 with no letter, and the report draws panel 1 as the screen does. With one muscle the panel is unchanged.
 - **The muscles' colours are imported, never typed.** The analysis and acquisition tabs, the report and the shared figures take the blue and the red of the two muscles from `emgteach.charts`, so an axis and its trace cannot disagree. The rectified trace of panel 4 takes the red of panel 5's, and the MVC report's that of the MVC tab: in the pair, the second muscle's red means the other muscle.
@@ -565,7 +574,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/aagisto-maker/emgteach/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/aagisto-maker/emgteach/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/aagisto-maker/emgteach/compare/v3.1.2...v3.2.0
 [3.1.2]: https://github.com/aagisto-maker/emgteach/compare/v3.1.1...v3.1.2
