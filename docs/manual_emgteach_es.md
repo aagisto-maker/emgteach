@@ -455,7 +455,7 @@ tiempo.
 | **1A. Señal en bruto** | EMG sin procesar, con los inicios marcados por líneas finas | Punto de partida; permite ver artefactos | las tres prácticas |
 | **1B. Señal en bruto (2.º)** | El segundo músculo | Cada músculo en su carril | agonista / antagonista |
 | **2. Envolvente normalizada** | Envolvente escalada a su máximo (0–1) | Forma de la activación, comparable | un músculo, cinemática |
-| **3. PSD con MNF/MDF** | Densidad espectral; en gris, el espectro **antes** del filtro; en el par, los dos músculos con su MDF | Qué quitó el filtro; reparto de energía; base de la fatiga | las tres prácticas |
+| **3. PSD con MNF/MDF** | Densidad espectral relativa, cada curva con área 1; en gris, el espectro **antes** del filtro; en el par, los dos músculos con su MDF y su potencia total en mV² | Qué quitó el filtro; reparto de energía; base de la fatiga | las tres prácticas |
 | **4. Filtrada + rectificada** | Señal limpia y su valor absoluto | Aísla la actividad muscular real | «Más paneles…» |
 | **5. Envolvente frente a RMS** | Dos medidas de amplitud superpuestas | Nivel de activación en el tiempo | «Más paneles…» |
 | **6. RMS por ventana** | Amplitud RMS a lo largo del tiempo | Evolución del esfuerzo | «Más paneles…» |
@@ -679,7 +679,13 @@ sesiones.
 ### 5.3 Contenido espectral: PSD, MNF y MDF
 
 - **PSD (densidad espectral de potencia)**: muestra **cómo se reparte la energía
-  de la señal entre las distintas frecuencias**.
+  de la señal entre las distintas frecuencias**. El panel 3 la dibuja
+  **relativa**, con cada curva escalada a área 1: la potencia va con el cuadrado
+  de la amplitud, así que la altura compararía la piel y la colocación de los
+  electrodos y no la activación; con área 1 los dos músculos se leen por su
+  forma, y la línea de la MDF parte cada área sombreada en dos mitades iguales.
+  La potencia total, en mV², va en la leyenda, y un músculo cuya potencia sea
+  una fracción pequeña de la del otro se dibuja atenuado y se dice.
 - **MNF (frecuencia media)** y **MDF (frecuencia mediana)**: dos resúmenes del
   espectro. La MDF es la frecuencia que **divide el espectro en dos mitades de
   igual potencia**; la MNF es el "centro de gravedad" del espectro. Ambas

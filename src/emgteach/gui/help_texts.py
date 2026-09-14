@@ -203,6 +203,16 @@ _TEXTS = {
             "efforts. Power spectrum: how the muscle activity is "
             "distributed across the different frequencies recorded."
         ) + " " + tr(
+            "Each spectrum is drawn scaled to unit area. The power of a "
+            "spectrum goes with the square of the amplitude, so its height "
+            "would compare skin and electrode placement rather than "
+            "activation — what normalising by the MVC exists not to compare. "
+            "With unit area the two muscles are read by shape, and the MDF "
+            "line splits each shaded area in two equal halves: the spectral "
+            "counterpart of the % MVC. The total power, in mV², is in the "
+            "legend, and a muscle whose power is a small fraction of the "
+            "other's is drawn faint and said to be so."
+        ) + " " + tr(
             "As a sustained contraction fatigues the muscle, the "
             "conduction velocity of the fibres falls and the spectrum "
             "shifts towards low frequencies: the median frequency (MDF) "

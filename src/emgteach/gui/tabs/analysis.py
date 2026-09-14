@@ -269,7 +269,7 @@ from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
 from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
-from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
+from emgteach.figures import draw_emd_note, draw_psd_panel
 from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.gui.help_texts import text as help_text
 from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
@@ -2679,33 +2679,12 @@ class AnalysisTab(QWidget):
         # --- 4: PSD ---
         if 4 in ax_map:
             ax = ax_map[4]
-            dos = r.get("psd_2") is not None
-            if dos:
-                # Both muscles, in the colours of the overlay panel, each
-                # with its own median frequency; the raw spectrum and the
-                # single-muscle markers would only clutter the comparison.
-                n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
-                n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-                ax.plot(r["frequencies"], r["psd"], color="#4169E1", lw=1.8,
-                        label=f"{n1}  (MDF {r['mdf']:.0f} Hz)")
-                ax.plot(r["frequencies_2"], r["psd_2"], color="#D62728", lw=1.8,
-                        label=f"{n2}  (MDF {r['mdf_2']:.0f} Hz)")
-                ax.axvline(r["mdf"], color="#4169E1", ls="--", lw=1.4, alpha=0.8)
-                ax.axvline(r["mdf_2"], color="#D62728", ls="--", lw=1.4, alpha=0.8)
-            else:
-                draw_spectrum_before_filter(ax, r)
-                ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.8,
-                        label=tr("After the filter"))
-                ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=2.0,
-                           label=f"MNF: {r['mnf']:.1f} Hz")
-                ax.axvline(r["mdf"], color="#C71585", ls="--", lw=2.0,
-                           label=f"MDF: {r['mdf']:.1f} Hz")
+            # Each spectrum scaled to unit area, the same drawing as the
+            # report's (emgteach.figures.draw_psd_panel).
+            draw_psd_panel(ax, r, lw=1.8, fontsize=8)
             ax.set_title(tr("3. Power spectral density (PSD)"), fontsize=9)
-            ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
-            ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
             ax.set_xlim(0, f_high + 50)
             ax.tick_params(labelsize=7)
-            ax.legend(fontsize=7)
             ax.grid(True, **_grid)
 
         # --- 5: RMS per window ---

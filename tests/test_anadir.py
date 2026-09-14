@@ -149,7 +149,12 @@ class TestTheSpectrumBeforeTheFilter:
         bruto = psd + 40.0 * np.exp(-((f - 50) ** 2) / 2)   # a mains line
         draw_spectrum_before_filter(ax, {"frequencies_raw": f, "psd_raw": bruto, "psd": psd})
         assert len(ax.lines) == 1
-        assert ax.get_ylim()[1] == pytest.approx(1.35, abs=0.01)
+        # Both spectra are drawn scaled to unit area; the axis follows the
+        # filtered one.
+        from scipy.integrate import trapezoid
+
+        assert ax.get_ylim()[1] == pytest.approx(
+            1.35 * float(np.max(psd / trapezoid(psd, f))), rel=1e-6)
 
     def test_nothing_without_the_raw_spectrum(self) -> None:
         ax = Figure().add_subplot(111)
