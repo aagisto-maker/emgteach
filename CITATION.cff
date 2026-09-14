@@ -40,10 +40,14 @@ abstract: >-
   named window on the uncut recording, with each muscle's resting level taken
   from the whole recording phase. Version 3.1.2 asks the calibration for a
   brief, explosive maximal jerk of each muscle's own movement instead of a
-  sustained push against something fixed.
+  sustained push against something fixed. Version 3.2.0 takes the MVC
+  reference as the highest point of the envelope across the calibration
+  repetitions kept, sets the co-activation floor at 4.5 % of it and computes
+  each fatigue segment's MDF over the analysis band; a recording reanalysed
+  with 3.2.0 gives % MVC figures different from those of 3.1.2.
 type: software
-version: 3.1.2
-date-released: "2026-09-13"
+version: 3.2.0
+date-released: "2026-09-14"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
