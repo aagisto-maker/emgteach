@@ -443,11 +443,22 @@ _ES = {
     "MVC": "CVM",
     "Close": "Cerrar",
     "not a maximum": "no fue un máximo",
-    "Highest point of the task's envelope, as % of the maximal contraction. "
-    "Well above 100 % means the calibration was not a maximum.":
+    "Highest point of the task's envelope, as % of the maximal contraction, "
+    "read on the whole recording phase — from the start of the recording to "
+    "the end of the file — whatever fragments are chosen: a maximum of the "
+    "phase, not of the selection. Well above 100 % means the calibration was "
+    "not a maximum.":
         "Punto más alto de la envolvente durante la tarea, en % de la "
-        "contracción máxima. Muy por encima del 100 % significa que la "
-        "calibración no fue un máximo.",
+        "contracción máxima, leído sobre la fase de registro entera —del "
+        "inicio del registro al final del archivo—, se elijan los fragmentos "
+        "que se elijan: es un máximo de la fase, no de la selección. Muy por "
+        "encima del 100 % significa que la calibración no fue un máximo.",
+    "It is read on the whole recording phase, from the start of the recording "
+    "to the end of the file, whatever fragments are chosen: a maximum of the "
+    "phase, not of the selection.":
+        "Se lee sobre la fase de registro entera, del inicio del registro al "
+        "final del archivo, se elijan los fragmentos que se elijan: es un "
+        "máximo de la fase, no de la selección.",
     "Detected (MDF −{decline:.1f} %)": "Detectada (MDF −{decline:.1f} %)",
     "Not detected (MDF stable or rising)": "No detectada (MDF estable o en aumento)",
     "Not conclusive (trend does not fit, R²={r2:.2f})":

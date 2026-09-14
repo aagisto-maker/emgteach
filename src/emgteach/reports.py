@@ -522,7 +522,8 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
 
     One row per muscle: the value, where it came from and how many
     repetitions counted; what the task reached against it, measured the way
-    the reference is, as the envelope's peak; and, when that crosses the
+    the reference is, as the envelope's peak, on the whole recording phase;
+    and, when that crosses the
     limit, the sentence that says the maximum was not one. Then the
     repetitions themselves, with what the other muscle did during each — the
     cross-talk that used to be shown for four seconds in the calibration

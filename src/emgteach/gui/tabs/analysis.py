@@ -921,12 +921,16 @@ class AnalysisTab(QWidget):
             tr("Fatigue indicator from the MDF trend over time."),
         )
         # What the task reached against the reference, measured the way the
-        # reference is: the envelope's peak. Computed for every analysis and,
-        # until now, only used to decide whether to warn.
+        # reference is: the envelope's peak, on the whole recording phase.
+        # Computed for every analysis and, until now, only used to decide
+        # whether to warn.
         self._lbl_pico = _ficha(
             1, 1, tr("Task maximum"),
             tr("Highest point of the task's envelope, as % of the maximal "
-               "contraction. Well above 100 % means the calibration was not "
+               "contraction, read on the whole recording phase — from the "
+               "start of the recording to the end of the file — whatever "
+               "fragments are chosen: a maximum of the phase, not of the "
+               "selection. Well above 100 % means the calibration was not "
                "a maximum."),
             rango=tr("a task effort is usually 20–80 %"),
         )

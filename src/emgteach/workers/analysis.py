@@ -515,6 +515,34 @@ class AnalysisWorker(QThread):
                     (seg_a - a, seg_b - a, nombre or "")
                     for (_i0, _i1, seg_a, seg_b, nombre) in bounds
                 ]
+            # The task maximum is read on the recording phase uncut — from
+            # REC start to the end of the file, or the whole file when there
+            # are no phases — whatever fragments or window were chosen: a
+            # maximum of the phase, not of the selection. Read on the
+            # concatenation, two fragments cut inside their contractions and
+            # glued together lifted the envelope above either real peak (five
+            # points on one recording), and a burst outside the fragments —
+            # a movement on letting go — was not seen at all.
+            fase = phases.rec_span(full_duration, fv_loads) or (0.0, full_duration)
+            tramo_fase = (max(0, round(fase[0] * fs)),
+                          min(len(emg_raw), round(fase[1] * fs)))
+            es_la_fase = (
+                len(bounds) == 1
+                and bounds[0][0] == tramo_fase[0]
+                and bounds[0][1] == tramo_fase[1]
+            )
+            env_fase_1 = None
+            env_fase_2 = None
+            if not es_la_fase:
+                env_fase_1 = (
+                    env_completo_1 if tramo_completo == tramo_fase
+                    else process_offline(
+                        emg_raw[tramo_fase[0]:tramo_fase[1]], fs,
+                        f_low=self._f_low, f_high=self._f_high,
+                        f_notch=self._f_notch, f_env=self._f_env,
+                        rms_window_ms=self._rms_window_ms,
+                    )["emg_envelope"]
+                )
             if not is_whole:
                 emg_raw = np.concatenate(
                     [emg_raw[i0:i1] for (i0, i1, _, _, _) in bounds])
@@ -866,6 +894,18 @@ class AnalysisWorker(QThread):
                             f_notch=self._f_notch, f_env=self._f_env,
                             rms_window_ms=self._rms_window_ms,
                         )["emg_envelope"]
+                    # And its recording phase uncut, for the task maximum;
+                    # see the first channel.
+                    if env_fase_1 is not None:
+                        env_fase_2 = (
+                            env_completo_2 if tramo_completo == tramo_fase
+                            else process_offline(
+                                emg_raw_2[tramo_fase[0]:tramo_fase[1]], fs,
+                                f_low=self._f_low, f_high=self._f_high,
+                                f_notch=self._f_notch, f_env=self._f_env,
+                                rms_window_ms=self._rms_window_ms,
+                            )["emg_envelope"]
+                        )
                     if not is_whole:
                         emg_raw_2 = np.concatenate(
                             [emg_raw_2[i0:i1] for (i0, i1, _, _, _) in bounds]
@@ -1053,10 +1093,16 @@ class AnalysisWorker(QThread):
             # and not inside the pair. It lived inside it until a single-muscle
             # practical went through with a calibration a third of what the
             # muscle produced and nothing was said.
+            #
+            # Read on the recording phase uncut (env_fase_1/2, above) when the
+            # analysed span is not that phase: a maximum of the phase, not of
+            # the fragments or the window chosen.
             for ref, env, name in (
-                (result.get("mvc_ref"), result.get("emg_envelope"),
+                (result.get("mvc_ref"),
+                 env_fase_1 if env_fase_1 is not None else result.get("emg_envelope"),
                  self._channel_name),
-                (result.get("mvc_ref_2"), result.get("emg_envelope_2"),
+                (result.get("mvc_ref_2"),
+                 env_fase_2 if env_fase_2 is not None else result.get("emg_envelope_2"),
                  self._channel_name_2),
             ):
                 if not ref or env is None:
@@ -1089,6 +1135,9 @@ class AnalysisWorker(QThread):
                              limit=self._profile.mvc_implausible_pct,
                              share=100.0 * float(np.mean(
                                  pct > self._profile.mvc_implausible_pct))))
+            #: Where the task maximum was read, in seconds of the file: the
+            #: recording phase uncut, whatever was analysed.
+            result["task_peak_span_s"] = (float(fase[0]), float(fase[1]))
 
             # Optional accelerometer channel: the MMG (mechanical) envelope and
             # the tremor spectrum. A failure only drops the ACC panels.
