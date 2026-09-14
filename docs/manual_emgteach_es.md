@@ -782,7 +782,7 @@ cada músculo, con su reposo descontado, **por ventana**: una ventana es un grup
 de contracciones seguidas que la aplicación atribuyó al mismo músculo (o a los
 dos) en el editor de fragmentos. Sobre un registro entero que mezcla reposo,
 flexión y presa el índice produce un número que no mide nada; por eso se calcula
-por maniobra. Cuando uno de los dos músculos no llega al 5 % CVM de media en la
+por maniobra. Cuando uno de los dos músculos no llega al 4,5 % CVM de media en la
 ventana, la fila dice **«no se informa»** con su razón: en una flexión limpia el
 extensor calla, y decir «coactivación baja» sería inventar una medida. Con una
 presa firme, en cambio, los dos trabajan y el índice sale alto.
@@ -795,12 +795,12 @@ trabajan a la vez. Se prefirió a las dos alternativas evidentes. La cocontracci
 voluntaria («rigidice la muñeca sin moverla») también da número, pero es una
 instrucción artificial, sin función, que cada sujeto interpreta a su manera;
 sostener un peso con la muñeca neutra activa los dos músculos demasiado poco, con
-medias que rozan el suelo del 5 %. La presa es una tarea real que nadie tiene que
+medias que rozan el suelo del 4,5 %. La presa es una tarea real que nadie tiene que
 aprender, activa mucho los dos músculos y tiene lectura clínica inmediata.
 
 | Maniobra | Qué hacen los dos músculos | Qué da el índice |
 |---|---|---|
-| Flexiones | trabaja el flexor; el extensor no llega al suelo del 5 % | no se informa |
+| Flexiones | trabaja el flexor; el extensor no llega al suelo del 4,5 % | no se informa |
 | Extensiones | los papeles se intercambian | no se informa |
 | Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
 | Alternancia rápida | los dos trabajan, pero por turnos | número bajo |
@@ -1067,7 +1067,7 @@ extensor; y revisar en «Repeticiones de la
 calibración…» si alguna repetición floja está bajando la referencia (§5.1).
 
 **La tabla de coactivación dice «no se informa».** Uno de los dos músculos no
-llegó al 5 % CVM de media en esa ventana: en una flexión o una extensión limpias
+llegó al 4,5 % CVM de media en esa ventana: en una flexión o una extensión limpias
 es la respuesta correcta. Para que el índice dé número hace falta una maniobra
 en que los dos trabajen, como una presa firme (§5.7).
 

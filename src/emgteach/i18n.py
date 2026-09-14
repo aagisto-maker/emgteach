@@ -47,6 +47,12 @@ def get_language() -> str:
     return _LANG
 
 
+def cifra(x: float) -> str:
+    """A number as the interface writes it: 1.5 in English, 1,5 in Spanish."""
+    texto = f"{x:g}"
+    return texto.replace(".", ",") if _LANG == "es" else texto
+
+
 def tr(text: str) -> str:
     """Translate an English canonical key into the active language."""
     if _LANG == "es":
@@ -1636,7 +1642,7 @@ _ES = {
     'Co-activation (Falconer-Winter)': 'Coactivación (Falconer-Winter)',
     'Co-activation index': 'Índice de coactivación',
     'Mean activation (% MVC)': 'Activación media (% CVM)',
-    'not reported — {name} below {floor:.0f} % MVC': 'no se informa — {name} por debajo del {floor:.0f} % de CVM',
+    'not reported — {name} below {floor} % MVC': 'no se informa — {name} por debajo del {floor} % de CVM',
     "not reported — no MVC reference for one of the channels": "no se informa — falta la referencia de CVM en uno de los canales",
     'not reported — window too short': 'no se informa — ventana demasiado corta',
     'not reported — no activation above rest': 'no se informa — sin activación por encima del reposo',
@@ -1899,6 +1905,18 @@ _ES = {
     'No contractions': 'Sin contracciones',
     'Co-activation index (%)': 'Índice de coactivación (%)',
     '(1 repetition)': '(1 repetición)',
+    'When it is not reported': 'Cuándo no se informa',
+    'When either muscle\'s mean activation above rest in the window is under '
+    '{floor} % MVC. Below that the index would compare two baselines, not '
+    'shared effort. The floor is {floor} % of a reference that is the '
+    'envelope\'s peak: the same level above rest as 5 % of the 0.2 s running '
+    'mean the reference used to be.':
+        'Cuando la activación media sobre el reposo de uno de los dos músculos no '
+        'llega al {floor} % CVM en la ventana. Por debajo, el índice compararía '
+        'dos líneas de base, no un esfuerzo compartido. El suelo es el {floor} % '
+        'de una referencia que es el pico de la envolvente: el mismo nivel sobre '
+        'el reposo que el 5 % de la media móvil de 0,2 s que era antes la '
+        'referencia.',
     'How to read the chart': 'Cómo leer el gráfico',
     'One line per window, its seconds on the right. A purple bar is the index, '
     'with the number in it. A gold block means the index is not reported, and '
@@ -1925,7 +1943,7 @@ _ES = {
     'Who leads, and by how much': 'Quién lidera, y por cuánto',
     'only {name}': 'solo {name}',
     'equal': 'iguales',
-    'floor 5 %': 'suelo 5 %',
+    'floor {floor} %': 'suelo {floor} %',
     'Amplitude by load': 'Amplitud por carga',
     'EMD by load': 'EMD por carga',
     'Velocity by load': 'Velocidad por carga',

@@ -282,8 +282,11 @@ no sobre la masa común proximal, y apoye el antebrazo entero.
 
 ### Suelo del índice de coactivación — ya medido
 
-`coact_floor_pct` vale **5 % de CVM** y ha dejado de ser una estimación. En ese
-mismo registro, y con el reposo de cada músculo ya restado:
+`coact_floor_pct` vale **4,5 % de CVM** y ha dejado de ser una estimación. Es el
+mismo nivel sobre el reposo que el 5 % que valía cuando la referencia era la
+media móvil de 0,2 s, expresado sobre la referencia de pico, que es un 16 %
+más alta. En ese mismo registro, medido entonces con aquella referencia y con
+el reposo de cada músculo ya restado:
 
 - ventana quieta: media de **0,2 % (FCR)** y **0,8 % (ECR)** sobre reposo;
 - ventana activa: media de **19–30 %** en los dos.

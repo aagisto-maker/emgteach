@@ -193,7 +193,18 @@ class SignalProfile:
     # sits in a gap of about thirtyfold, which is why a round number is enough.
     # (The muscles' own resting levels were 2 % MVC for the flexor and 4 % for
     # the extensor, which is what the subtraction removes before this test.)
-    coact_floor_pct: float = 5.0       # % MVC
+    #
+    # The floor is a level of activation above rest, expressed as a share of
+    # the reference. It was 5 % while the reference was the highest 0.2 s
+    # running mean of the envelope; with the reference at the envelope's
+    # peak (mvc_peak_window_s) the same level above rest is a smaller share.
+    # Over 80 channels of the bench recordings the peak is 1.16 times the
+    # running mean, so 5 % of the old reference is 4.3 % of the new one, and
+    # 4.5 % is the nearest half point. Checked: with it, 33 of 34
+    # whole-recording windows and the three manoeuvres of the example
+    # recording keep the reported / not-reported state they had with 5 % of
+    # the old reference; with 5 % of the new one, 31 of 34 and two of three.
+    coact_floor_pct: float = 4.5       # % MVC
     apda_warning_limit: float = 40.0   # % MVC — tiredness (warning) zone
     apda_danger_limit: float = 70.0    # % MVC — fatigue (danger) zone
     # -- the pause between the two phases of a session --

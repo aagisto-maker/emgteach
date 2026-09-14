@@ -36,7 +36,7 @@ MANIOBRAS = [(57.5, 70.0, "Flexion"), (72.0, 85.0, "Extension"), (88.0, 97.0, "G
 #: What the tab and the figure give for them — index and the two means,
 #: % MVC — pinned so that a change which moves them is seen.
 REFERENCIA = {
-    "Flexion": (None, 11.09, 4.91),
+    "Flexion": (29.41, 11.09, 4.91),
     "Extension": (None, 3.29, 5.19),
     "Grip": (78.55, 11.37, 7.65),
 }
