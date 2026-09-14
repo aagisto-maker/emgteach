@@ -48,7 +48,12 @@ from emgteach.charts import (
 )
 from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
-from emgteach.figures import draw_emd_note, draw_psd_panel, draw_raw_panel
+from emgteach.figures import (
+    draw_emd_note,
+    draw_psd_panel,
+    draw_raw_panel,
+    draw_rms_panel,
+)
 from emgteach.i18n import tr
 from emgteach.mvc import (
     AUTO_COLOR,
@@ -262,12 +267,10 @@ def _draw_analysis_panel(
     elif idx == 4:
         draw_psd_panel(ax, r, lw=1.6, fontsize=8)
     elif idx == 5:
-        ax.plot(r["t_seg"], r["rms_seg"], color="#2ca02c", lw=1.3, marker="o", ms=3,
-                label=tr("RMS per 1 s window"))
-        ax.set_xlabel(tr("Time (s)"), fontsize=8)
-        ax.set_ylabel("RMS (mV)", fontsize=8)
+        # With two muscles, one axis each: the screen's drawing
+        # (emgteach.figures.draw_rms_panel).
+        draw_rms_panel(ax, r, lw=1.3, ms=3, fontsize=8)
         ax.set_xlim(x0, x1)
-        ax.legend(fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 6:
         dos = r.get("mdf_seg_2") is not None

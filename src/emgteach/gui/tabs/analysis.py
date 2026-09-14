@@ -265,7 +265,12 @@ from emgteach.charts import (
 from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
-from emgteach.figures import draw_emd_note, draw_psd_panel, draw_raw_panel
+from emgteach.figures import (
+    draw_emd_note,
+    draw_psd_panel,
+    draw_raw_panel,
+    draw_rms_panel,
+)
 from emgteach.force_velocity import parse_fv_load_markers
 from emgteach.gui.help_texts import text as help_text
 from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
@@ -2671,18 +2676,16 @@ class AnalysisTab(QWidget):
             ax.tick_params(labelsize=7)
             ax.grid(True, **_grid)
 
-        # --- 5: RMS per window ---
+        # --- 6: RMS per window; with two muscles, one axis each ---
         if 5 in ax_map:
             ax = ax_map[5]
-            ax.plot(r["t_seg"], r["rms_seg"],
-                    color="#2ca02c", lw=1.5, marker="o", ms=4,
-                    label=tr("RMS per 1 s window"))
+            # The same drawing as the report's (emgteach.figures.draw_rms_panel).
+            twin = draw_rms_panel(ax, r, lw=1.5, ms=4, fontsize=8)
+            if twin is not None:
+                self._y_twins[5] = twin
             ax.set_title(tr("6. RMS amplitude over time"), fontsize=9)
-            ax.set_xlabel(tr("Time (s)"), fontsize=8)
-            ax.set_ylabel("RMS (mV)", fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
-            ax.legend(fontsize=7)
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
@@ -2904,11 +2907,14 @@ class AnalysisTab(QWidget):
 
         comparing = self._chk_compare2.isChecked()
         has_acc = self._acc_channel_name is not None
-        checks: list[QCheckBox] = []
+        checks: list[tuple[int, QCheckBox]] = []
         for i, nombre in enumerate(_PANEL_NOMBRES):
+            pid = self._panel_pids[i]
+            # What the practical never offers is not offered here either.
+            if self._never_offered(pid, self._mode):
+                continue
             cb = QCheckBox(tr(nombre))
             cb.setChecked(i < len(self._chk_paneles) and self._chk_paneles[i].isChecked())
-            pid = self._panel_pids[i]
             # The overlay panel needs two compared channels; the accelerometer
             # panels need an ACC channel — otherwise they cannot be reported.
             locked = (pid == _OVERLAY_PID and not comparing) or (
@@ -2918,7 +2924,7 @@ class AnalysisTab(QWidget):
                 cb.setChecked(False)
                 cb.setEnabled(False)
             lay.addWidget(cb)
-            checks.append(cb)
+            checks.append((pid, cb))
 
         lay.addSpacing(6)
         rango_lbl = QLabel(tr("Time range to plot (s):"))
@@ -2955,9 +2961,7 @@ class AnalysisTab(QWidget):
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return None
         # Map checked boxes (display order) to canonical panel indices.
-        paneles = [
-            self._panel_pids[i] for i, cb in enumerate(checks) if cb.isChecked()
-        ]
+        paneles = [pid for pid, cb in checks if cb.isChecked()]
         x0 = float(spin_ini.value())
         x1 = min(x0 + float(spin_dur.value()), float(total))
         return paneles, (x0, x1)
@@ -3386,20 +3390,32 @@ class AnalysisTab(QWidget):
             tr("Analysing {muscle}.").format(muscle=elegido)
         )
 
+    @staticmethod
+    def _never_offered(pid: int, mode: str) -> bool:
+        """Panels a practical does not offer, not even under «More panels…».
+
+        In the pair, the normalised envelope: it scales each muscle to its own
+        maximum within the window, a yardstick that changes with the window,
+        and panel 9 shows the same time course in % MVC — the yardstick the
+        practical is about. Two yardsticks for one thing teach worse than one.
+        Elsewhere it stays: with one muscle there is no panel 9, and it is the
+        only view of the activation's time course on a bounded scale.
+        """
+        return mode == MODE_PAIR and pid == 3
+
     def _panel_is_offered(self, index: int, mode: str, advanced: bool) -> bool:
         """Whether the panel at this display position suits mode and flag.
 
-        The agonist/antagonist practical is a closed set: the raw trace of
-        each muscle and the two envelopes overlaid, and nothing else. Adding a
-        spectrum or a fatigue slope there would be about one of the two
-        muscles, which is not what the practical is asking.
-
-        Elsewhere the first three (raw, normalised envelope, PSD) are the
-        teaching core and are always offered; the next five are further EMG
-        analyses that apply to any practical, so they follow the fine-control
-        level; the rest belong to one practical each.
+        Each practical opens on its own set: one muscle on the teaching core
+        (raw, normalised envelope, PSD); the pair on both raw traces, the two
+        envelopes overlaid, and the spectrum and the fatigue trend of both;
+        kinematics on the core and the accelerometer panels. «More panels…»
+        reveals the rest, minus what the recording cannot feed and minus what
+        the practical never offers (:meth:`_never_offered`).
         """
         pid = self._panel_pids[index]
+        if self._never_offered(pid, mode):
+            return False
         # Each practical opens on its own set; «More panels…» reveals the
         # rest in every practical, since a curious student is not confined
         # to the advanced one. Panels that need what the recording does not

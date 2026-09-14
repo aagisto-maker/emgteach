@@ -453,11 +453,11 @@ tiempo.
 | Panel | Qué muestra | Significado | Abre con |
 |---|---|---|---|
 | **1. Señal en bruto** | EMG sin procesar, con los inicios marcados por líneas finas; en el par, los dos músculos, cada uno contra su propio eje y en su color | Punto de partida; permite ver artefactos; cuándo dispara cada músculo | las tres prácticas |
-| **2. Envolvente normalizada** | Envolvente escalada a su máximo (0–1) | Forma de la activación, comparable | un músculo, cinemática |
+| **2. Envolvente normalizada** | Envolvente escalada a su máximo (0–1) | Forma de la activación, comparable | un músculo, cinemática; nunca en el par, donde la sustituye el 9 |
 | **3. PSD con MNF/MDF** | Densidad espectral relativa, cada curva con área 1; en gris, el espectro **antes** del filtro; en el par, los dos músculos con su MDF y su potencia total en mV² | Qué quitó el filtro; reparto de energía; base de la fatiga | las tres prácticas |
 | **4. Filtrada + rectificada** | Señal limpia y su valor absoluto | Aísla la actividad muscular real | «Más paneles…» |
 | **5. Envolvente frente a RMS** | Dos medidas de amplitud superpuestas | Nivel de activación en el tiempo | «Más paneles…» |
-| **6. RMS por ventana** | Amplitud RMS a lo largo del tiempo | Evolución del esfuerzo | «Más paneles…» |
+| **6. RMS por ventana** | Amplitud RMS a lo largo del tiempo; en el par, los dos músculos, cada uno contra su propio eje | Evolución del esfuerzo | «Más paneles…» |
 | **7. MDF frente al tiempo** | MDF por ventana y su recta; en el par, los dos músculos | **Indicador de fatiga** (§5.4) | agonista / antagonista |
 | **8. RMS frente a MDF** | Relación amplitud–frecuencia | Relación fuerza/fatiga durante la tarea | «Más paneles…» |
 | **9. Envolventes superpuestas** | Las dos envolventes en % CVM sobre el mismo eje, con la banda del 100 % | Coactivación y coordinación | agonista / antagonista |

@@ -1162,6 +1162,7 @@ _ES = {
     "Error generating the PDF report: {error}": "Error al generar el informe PDF: {error}",
     "Amplitude (mV)": "Amplitud (mV)",
     "{muscle} (mV)": "{muscle} (mV)",
+    "{muscle}: RMS (mV)": "{muscle}: RMS (mV)",
     "Time (s)": "Tiempo (s)",
     # Progress bar + fatigue summary (analysis tab).
     "Ready": "Listo",

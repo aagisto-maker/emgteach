@@ -183,6 +183,46 @@ def draw_raw_panel(ax: Any, result: Mapping[str, Any], *, lw: float = 0.8,
     return ax_2
 
 
+def draw_rms_panel(ax: Any, result: Mapping[str, Any], *, lw: float = 1.5,
+                   ms: float = 4, fontsize: int = 8) -> Any | None:
+    """Panel 6, on screen and in the report: the RMS of each window.
+
+    One muscle is one green line against its axis. Two get an axis each, in
+    the muscle's colour and carrying its name, as in panel 1: RMS is in
+    millivolts, and two muscles' millivolts do not share a yardstick. Both
+    axes start at zero, so the two floors are one.
+
+    Returns the second muscle's axis, or ``None`` with one muscle, so that
+    whoever rescales the panel can rescale both.
+    """
+    rms_2 = result.get("rms_seg_2")
+    if rms_2 is None:
+        ax.plot(result["t_seg"], result["rms_seg"], color="#2ca02c", lw=lw,
+                marker="o", ms=ms, label=tr("RMS per 1 s window"))
+        ax.set_ylabel("RMS (mV)", fontsize=fontsize)
+        ax.set_xlabel(tr("Time (s)"), fontsize=fontsize)
+        ax.legend(fontsize=fontsize - 1)
+        return None
+    ax_2 = ax.twinx()
+    for axis, t, rms, name, n, colour in (
+        (ax, result["t_seg"], result["rms_seg"], result.get("channel_name"), 1,
+         COLOUR_1),
+        (ax_2, result["t_seg_2"], rms_2, result.get("channel_name_2"), 2,
+         COLOUR_2),
+    ):
+        name = name or tr("Muscle {n}").format(n=n)
+        data = np.asarray(rms, dtype=np.float64)
+        axis.plot(t, data, color=colour, lw=lw, marker="o", ms=ms)
+        axis.set_ylabel(tr("{muscle}: RMS (mV)").format(muscle=name),
+                        fontsize=fontsize, color=colour)
+        axis.tick_params(axis="y", labelsize=fontsize - 1, colors=colour)
+        finite = data[np.isfinite(data)]
+        top = float(np.max(finite)) if finite.size else 0.0
+        axis.set_ylim(0.0, 1.1 * top if top > 0.0 else 1.0)
+    ax.set_xlabel(tr("Time (s)"), fontsize=fontsize)
+    return ax_2
+
+
 def draw_emd_note(ax: Any, result: Mapping[str, Any]) -> None:
     """The mean electromechanical delay, in the corner of the movement panel.
 
