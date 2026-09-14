@@ -364,7 +364,7 @@ scale and ▶◀ the time scale.
 | **1A. Raw signal** | Unprocessed EMG, onsets as thin lines | Starting point; artefacts show | all three |
 | **1B. Raw signal (2nd)** | The second muscle | Each muscle in its lane | pair |
 | **2. Normalised envelope** | Envelope scaled to its maximum (0–1) | Shape of the activation | single, kinematics |
-| **3. PSD with MNF/MDF** | Spectrum; in grey, the spectrum **before** the filter; in the pair, both muscles with their MDF | What the filter removed; energy by frequency; basis of fatigue | all three |
+| **3. PSD with MNF/MDF** | Spectrum, each curve scaled to unit area; in grey, the spectrum **before** the filter; in the pair, both muscles with their MDF and their total power in mV² | What the filter removed; energy by frequency; basis of fatigue | all three |
 | **4. Filtered + rectified** | Clean signal and its absolute value | Isolates the muscle activity | «More panels…» |
 | **5. Envelope vs RMS** | Two amplitude measures overlaid | Activation over time | «More panels…» |
 | **6. RMS per window** | RMS over time | Evolution of the effort | «More panels…» |
@@ -495,7 +495,13 @@ millivolts depend on skin impedance, electrode position and anatomy.
 
 ### 5.3 Spectral content: PSD, MNF and MDF
 
-- **PSD**: how the energy is spread across frequencies.
+- **PSD**: how the energy is spread across frequencies. Panel 3 draws it
+  **relative**, each curve scaled to unit area: the power goes with the square
+  of the amplitude, so the height would compare skin and electrode placement
+  rather than activation; with unit area the two muscles are read by shape,
+  and the MDF line splits each shaded area in two equal halves. The total
+  power, in mV², is in the legend, and a muscle whose power is a small
+  fraction of the other's is drawn faint and said to be so.
 - **MNF** and **MDF**: two summaries of the spectrum. The MDF splits the power in
   two equal halves; the MNF is the centre of gravity, always a little above the
   MDF because of the spectrum's tail. Both **fall with fatigue**.

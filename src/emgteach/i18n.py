@@ -1116,6 +1116,24 @@ _ES = {
     "2. Envelope normalised to maximum": "2. Envolvente normalizada al máximo",
     "Normalised amplitude (0-1)": "Amplitud normalizada (0-1)",
     "3. Power spectral density (PSD)": "3. Densidad espectral de potencia (PSD)",
+    "Relative spectral density (area 1)": "Densidad espectral relativa (área 1)",
+    "{pct:.0f} % of {other}'s power: noise?": "{pct:.0f} % de la potencia de {other}: ¿ruido?",
+    "Each spectrum is drawn scaled to unit area. The power of a spectrum goes "
+    "with the square of the amplitude, so its height would compare skin and "
+    "electrode placement rather than activation — what normalising by the MVC "
+    "exists not to compare. With unit area the two muscles are read by shape, "
+    "and the MDF line splits each shaded area in two equal halves: the spectral "
+    "counterpart of the % MVC. The total power, in mV², is in the legend, and "
+    "a muscle whose power is a small fraction of the other's is drawn faint and "
+    "said to be so.":
+        "Cada espectro se dibuja escalado a área 1. La potencia de un espectro va "
+        "con el cuadrado de la amplitud, así que su altura compararía la piel y la "
+        "colocación de los electrodos, no la activación: justo lo que normalizar "
+        "por la CVM existe para no comparar. Con área 1 los dos músculos se leen "
+        "por su forma, y la línea de la MDF parte cada área sombreada en dos "
+        "mitades iguales: es el equivalente espectral del % CVM. La potencia "
+        "total, en mV², va en la leyenda, y un músculo cuya potencia sea una "
+        "fracción pequeña de la del otro se dibuja atenuado y se dice.",
     "Frequency (Hz)": "Frecuencia (Hz)",
     "RMS per 1 s window": "RMS por ventana de 1 s",
     "6. RMS amplitude over time": "6. Amplitud RMS en el tiempo",

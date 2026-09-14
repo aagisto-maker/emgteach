@@ -43,7 +43,7 @@ from reportlab.platypus import (
 from emgteach.charts import draw_coactivation_chart, draw_contraction_chart
 from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
-from emgteach.figures import draw_emd_note, draw_spectrum_before_filter
+from emgteach.figures import draw_emd_note, draw_psd_panel
 from emgteach.i18n import tr
 from emgteach.mvc import (
     AUTO_COLOR,
@@ -254,27 +254,7 @@ def _draw_analysis_panel(
         ax.legend(loc="upper right", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 4:
-        if r.get("psd_2") is not None:
-            n1 = r.get("channel_name") or tr("Muscle {n}").format(n=1)
-            n2 = r.get("channel_name_2") or tr("Muscle {n}").format(n=2)
-            ax.plot(r["frequencies"], r["psd"], color="#4169E1", lw=1.6,
-                    label=f"{n1}  (MDF {float(r['mdf']):.0f} Hz)")
-            ax.plot(r["frequencies_2"], r["psd_2"], color="#D62728", lw=1.6,
-                    label=f"{n2}  (MDF {float(r['mdf_2']):.0f} Hz)")
-            ax.axvline(r["mdf"], color="#4169E1", ls="--", lw=1.2, alpha=0.8)
-            ax.axvline(r["mdf_2"], color="#D62728", ls="--", lw=1.2, alpha=0.8)
-        else:
-            draw_spectrum_before_filter(ax, r)
-            ax.plot(r["frequencies"], r["psd"], color="#0047AB", lw=1.6,
-                    label=tr("After the filter"))
-            ax.axvline(r["mnf"], color="#FF8C00", ls="--", lw=1.8,
-                       label=f"MNF: {float(r['mnf']):.1f} Hz")
-            ax.axvline(r["mdf"], color="#C71585", ls="--", lw=1.8,
-                       label=f"MDF: {float(r['mdf']):.1f} Hz")
-        ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
-        ax.set_ylabel("PSD (mV²/Hz)", fontsize=8)
-        ax.set_xlim(0, float(r.get("f_high", 450)) + 50)
-        ax.legend(fontsize=7)
+        draw_psd_panel(ax, r, lw=1.6, fontsize=8)
     elif idx == 5:
         ax.plot(r["t_seg"], r["rms_seg"], color="#2ca02c", lw=1.3, marker="o", ms=3,
                 label=tr("RMS per 1 s window"))
