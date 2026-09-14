@@ -220,6 +220,10 @@ _TEXTS = {
             "the calibrated maximum; well above 100 % means the calibration "
             "was not maximal. The table beside gives the same figures "
             "contraction by contraction."
+        ) + " " + tr(
+            "It is read on the whole recording phase, from the start of the "
+            "recording to the end of the file, whatever fragments are "
+            "chosen: a maximum of the phase, not of the selection."
         ) + "</p><p><b>" + tr("Fatigue") + "</b><br>" + tr(
             "As a muscle fatigues, its action potentials slow down and "
             "the EMG spectrum shifts towards lower frequencies. The "

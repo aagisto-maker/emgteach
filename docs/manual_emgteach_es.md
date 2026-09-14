@@ -1204,7 +1204,9 @@ porque la pila científica no tiene *wheels*.
 - **Práctica**: la elección que configura la aplicación (un músculo, agonista /
   antagonista o cinemática muscular), con su nivel (básico, intermedio, avanzado).
 - **Máximo de la tarea**: el punto más alto de la envolvente de la tarea como
-  porcentaje de la referencia; por encima del 150 %, la calibración no fue máxima.
+  porcentaje de la referencia, leído sobre la fase de registro entera se
+  elijan los fragmentos que se elijan; por encima del 150 %, la calibración no
+  fue máxima.
 - **Índice de coactivación (Falconer-Winter)**: fracción de la actividad de los dos
   músculos que fue compartida, por ventana; «no se informa» cuando uno no trabajó.
 - **Separación entre canales**: lo que un canal lee del otro músculo durante su

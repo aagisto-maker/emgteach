@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **The task maximum is read on the whole recording phase.** From the start of the recording to the end of the file, or the whole file when the recording has no phases, whatever fragments or window are chosen: a maximum of the phase, not of the selection. It was read on the analysed span, which with chosen fragments is their concatenation; there, two fragments cut inside their contractions and glued together lifted the envelope above either real peak (five points on the example recording), and a burst outside the fragments was not seen at all. With the fragments the editor proposes, which start and end at rest, the figure does not change: on the bench recordings the two readings agree on every channel. The card's help and the summary's say where it is read; `task_peak_span_s` in the result says which seconds of the file.
+
 ## [3.2.0] — 2026-09-14
 
 **The MVC reference is the envelope's peak.** Each calibration repetition

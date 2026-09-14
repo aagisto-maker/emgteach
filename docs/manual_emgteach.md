@@ -839,7 +839,8 @@ Python 3.10–3.12; 3.13 is not supported yet.
 - **Envelope**, **RMS**, **iEMG**, **PSD**, **MNF / MDF**: as in §5.
 - **MVC / % MVC**: maximum voluntary contraction and amplitude as its percentage.
 - **Task maximum**: the highest point of the task's envelope as a percentage
-  of the reference; above 150 %, the calibration was not maximal.
+  of the reference, read on the whole recording phase whatever fragments are
+  chosen; above 150 %, the calibration was not maximal.
 - **Calibration repetition**: each of the three brief maximal efforts per
   muscle, marked in the file.
 - **Co-activation index (Falconer-Winter)**: fraction of the two muscles'
