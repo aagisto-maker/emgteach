@@ -2,7 +2,7 @@
 
 Escrito el 5 de septiembre de 2026 sobre `main`, después de publicar la versión
 3.0.0, y actualizado a la **3.1.0**, a la **3.1.1** y a la **3.1.2** tras publicarlas, el 13 de
-septiembre, y a la **3.2.0** y a la **3.3.0** el 14 de septiembre.
+septiembre, y a la **3.2.0**, a la **3.3.0** y a la **3.4.0** el 14 de septiembre.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
 Los textos de pantalla están **copiados literalmente** de
@@ -21,34 +21,114 @@ Donde algo no está hecho o no lo sé, lo dice.
 | | |
 |---|---|
 | Rama | `main` |
-| **Versión que describe el artículo** | `v3.3.0`, publicada el 14 de septiembre de 2026 |
-| DOI de esa versión | 10.5281/zenodo.22750425 |
+| **Versión que describe el artículo** | `v3.4.0`, publicada el 14 de septiembre de 2026 |
+| DOI de esa versión | 10.5281/zenodo.22756263 |
 | DOI de concepto | 10.5281/zenodo.21002297 |
-| Commit de la etiqueta | `85d6875` |
-| Pruebas en la etiqueta | **1093 recogidas, 1092 pasan y 1 se salta** |
-| Versiones anteriores | `v3.2.0` (10.5281/zenodo.22744748, etiqueta en `b5ad8b7`, 1081 pruebas) · `v3.1.2` (10.5281/zenodo.22736393, `8367f1f`, 1078 pruebas) · `v3.1.1` (10.5281/zenodo.22734612, `aeb580d`, 1074 pruebas) · `v3.1.0` (10.5281/zenodo.22733151, `927eeff`, 1064 pruebas) · `v3.0.0` (10.5281/zenodo.22365602, `155fb07`, 940 pruebas) |
+| Commit de la etiqueta | `b7a9183` |
+| Pruebas en la etiqueta | **1121 recogidas, 1120 pasan y 1 se salta** |
+| Versiones anteriores | `v3.3.0` (10.5281/zenodo.22750425, etiqueta en `85d6875`, 1093 pruebas) · `v3.2.0` (10.5281/zenodo.22744748, `b5ad8b7`, 1081 pruebas) · `v3.1.2` (10.5281/zenodo.22736393, `8367f1f`, 1078 pruebas) · `v3.1.1` (10.5281/zenodo.22734612, `aeb580d`, 1074 pruebas) · `v3.1.0` (10.5281/zenodo.22733151, `927eeff`, 1064 pruebas) · `v3.0.0` (10.5281/zenodo.22365602, `155fb07`, 940 pruebas) |
 | Análisis estático | `ruff check .` limpio |
 
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leen del **código de `main` en el momento de generarlos**. En esta
-actualización `main` coincide con la etiqueta `v3.3.0` salvo en documentación
+actualización `main` coincide con la etiqueta `v3.4.0` salvo en documentación
 (este informe y el DOI de versión de `CITATION.cff`), así que lo que dicen es
-lo que hace la versión publicada. Lo que cambió de la 3.2.0 a la 3.3.0 está en
-el apartado 1.0, de la 3.1.2 a la 3.2.0 en el 1.1, de la 3.1.1 a la 3.1.2 en
-el 1.2, de la 3.1.0 a la 3.1.1 en el 1.3, y de la 3.0.0 a la 3.1.0 en el 1.4.
+lo que hace la versión publicada. Lo que cambió de la 3.3.0 a la 3.4.0 está en
+el apartado 1.0, de la 3.2.0 a la 3.3.0 en el 1.1, de la 3.1.2 a la 3.2.0 en
+el 1.2, de la 3.1.1 a la 3.1.2 en el 1.3, de la 3.1.0 a la 3.1.1 en el 1.4, y
+de la 3.0.0 a la 3.1.0 en el 1.5.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:163`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
 propio panel, así que no puede provocar el crecimiento que esa prueba vigila.
 
-La versión etiquetada para el depósito es **3.3.0**, y es la que describe el
+La versión etiquetada para el depósito es **3.4.0**, y es la que describe el
 artículo. Las publicaciones de GitHub no llevan ejecutable de Windows ya
 compilado: un ejecutable de PyInstaller sin firmar hace saltar el antivirus al
 descargarlo (un falso positivo conocido), así que la versión se distribuye como
-código fuente (apartado 1.8). El ejecutable se sigue pudiendo compilar desde la
+código fuente (apartado 1.9). El ejecutable se sigue pudiendo compilar desde la
 etiqueta con la receta de `packaging/`.
 
-### 1.0 De la 3.2.0 a la 3.3.0
+### 1.0 De la 3.3.0 a la 3.4.0
+
+Una versión menor (PR #39 a #43): cambia lo que enseña la pestaña de análisis
+y cómo numera sus paneles. Ningún cálculo cambia.
+
+- **Los dos trazos en bruto del par van en un solo panel, el 1**, cada músculo
+  contra su propio eje vertical, pintado del color de su traza y con su nombre,
+  como la EMG y el acelerómetro en los paneles 10 y 12. Dos músculos en
+  milivoltios sobre un mismo eje invitan a comparar alturas que la EMG de
+  superficie no permite comparar; con un eje cada uno, el panel enseña cuándo
+  dispara cada músculo. Los dos ejes son simétricos respecto al cero, así que
+  los dos ceros quedan a la misma altura, y ▲▼ escala los dos. Desaparece el
+  1B. Con un solo músculo, el panel es el de antes.
+- **El panel 2 no se ofrece en la práctica del par**, ni bajo «Más paneles…» ni
+  en el cuadro de gráficas del informe: normaliza cada envolvente por su máximo
+  dentro de la ventana, y el 9 enseña el mismo curso temporal en % CVM, que es
+  la vara de la práctica. En las demás prácticas sigue igual.
+- **El panel 6 dibuja los dos músculos en el par**, cada uno contra su eje,
+  como el 1: el RMS va en milivoltios.
+- **El panel 8 es un recorrido en el tiempo**: une en orden temporal, con una
+  punta de flecha al final, las ventanas en que el músculo elegido se
+  contraía —las mismas sobre las que se ajusta la tendencia de fatiga, porque
+  la frecuencia mediana de una ventana en reposo es la del amplificador—, con
+  los puntos oscureciéndose según avanza el tiempo. La fatiga mueve el
+  recorrido arriba y a la izquierda: más amplitud, menos frecuencia. Ya no se
+  dibuja el ajuste de grado 2, que se leía como la tendencia temporal del 7 y
+  no lo es; se sigue calculando. Enseña solo el músculo elegido: dos
+  recorridos sobre un mismo eje en milivoltios serían una maraña. En una tarea
+  de contracciones breves y separadas el recorrido zigzaguea, porque las
+  ventanas alternan entre esfuerzos; en una contracción sostenida se lee
+  limpio. Sigue fuera del conjunto propio de todas las prácticas.
+- **Cada título dice su lectura**, en una segunda línea —el del 7, «un
+  descenso indica fatiga muscular», era el modelo—, y el de un panel de un
+  solo músculo lo nombra. Las lecturas, literales, están en la tabla del
+  apartado 5.1.
+- **Cambiar de músculo en «Canal EMG» vuelve a analizar al momento.** Antes el
+  análisis quedaba pendiente y los paneles seguían enseñando el músculo
+  anterior hasta pulsar Analizar, sin que ninguno dijera de quién era.
+- **«Más paneles…» tiene el estilo de los botones de modo** (texto y borde
+  azules sobre blanco, blanco sobre azul al marcarse), en vez del texto pálido
+  de un botón sin color propio; abierto, dice «Menos paneles».
+- **Una sola tabla, `emgteach.panels`,** da el número, los nombres, las
+  lecturas y el tooltip de cada panel, y de ella salen los títulos (en
+  pantalla y en el informe PDF), las casillas, el cuadro de gráficas del
+  informe y el «P#» de la barra derecha. Ningún número va escrito a mano en
+  otro sitio. La etiqueta y el tooltip del panel 12 no tenían entrada en el
+  catálogo y salían en inglés en la interfaz en español; ya la tienen, y una
+  prueba vigila que la tenga todo lo de la tabla.
+- Los colores de los dos músculos se importan de `charts.py` en todo lo que
+  dibuja, de modo que un eje y su traza no pueden discrepar.
+
+La numeración final, la misma en todas las prácticas; la que no ofrece un
+panel deja su número sin usar en vez de renumerar el resto. **Los paneles 5 y
+9 conservan su número.**
+
+| Nº | Panel | Abre con |
+|---|---|---|
+| 1 | Señal en bruto (en el par, los dos músculos, un eje cada uno) | las tres prácticas |
+| 2 | Envolvente normalizada | un músculo y cinemática; nunca en el par |
+| 3 | PSD con MNF/MDF | las tres prácticas |
+| 4 | Filtrada + rectificada | «Más paneles…» |
+| 5 | Envolvente vs RMS (la curva «RMS envelope») | «Más paneles…» |
+| 6 | RMS por ventana | «Más paneles…» |
+| 7 | MDF vs tiempo (fatiga) | par; en las demás, «Más paneles…» |
+| 8 | RMS vs MDF (recorrido en el tiempo) | «Más paneles…» |
+| 9 | Envolventes superpuestas (agonista/antagonista) | par |
+| 10 | EMG vs MMG | cinemática |
+| 11 | Temblor | cinemática |
+| 12 | Movimiento vs EMG | cinemática |
+
+**Lo que el §5 del artículo cita no cambia con la 3.4.0, y está medido, no
+deducido**: las referencias y los máximos de tarea de las tres maniobras y del
+par, la tabla A, las trece filas, el registro afinado y el de cinemática se han
+vuelto a calcular sobre la etiqueta `v3.4.0` con el mismo script que sobre la
+`v3.2.0` y la `v3.3.0`, y la salida es idéntica línea a línea a la de la 3.3.0.
+Los paneles dibujan lo que calcula el análisis; ninguno calcula nada. Donde sí
+cambian las figuras del artículo es en las capturas de la pestaña de análisis
+(apartado 10).
+
+### 1.1 De la 3.2.0 a la 3.3.0
 
 Una versión menor (PR #35 a #37): una cifra que enseña el programa puede
 cambiar, y un panel se dibuja de otra manera. Ningún otro cálculo cambia.
@@ -88,7 +168,7 @@ sensibilidad y el borde son los de la tabla del apartado 1.1, medidos sobre la
 etiqueta `v3.2.0` y comprobados sobre la `v3.3.0`. Ninguna figura del artículo
 enseña el panel 3.
 
-### 1.1 De la 3.1.2 a la 3.2.0
+### 1.2 De la 3.1.2 a la 3.2.0
 
 Una versión menor, no un parche, porque cambia los números que el programa
 produce para la misma señal (PR #29 a #32). **Un registro reanalizado con la
@@ -159,7 +239,7 @@ registro de las tres maniobras (`tests/test_coactivation_sin_recortar.py`)
 pasa con los valores nuevos, y el comando de la figura 6 da la figura
 regenerada que hay en `docs/articulo-advances/` (apartado 10).
 
-### 1.2 De la 3.1.1 a la 3.1.2
+### 1.3 De la 3.1.1 a la 3.1.2
 
 Un parche de lo que la calibración pide y de cómo se describe (PR #24 a #26).
 No cambia ningún cálculo, umbral ni valor por defecto.
@@ -177,7 +257,7 @@ No cambia ningún cálculo, umbral ni valor por defecto.
   máximo de la media móvil de 0,2 s de la envolvente, tal cual, sin restar
   reposo, y la mejor de las repeticiones. El manual decía que se restaba el
   reposo de la ventana.
-- **Las publicaciones llevan solo el código fuente** (apartado 1.8).
+- **Las publicaciones llevan solo el código fuente** (apartado 1.9).
 
 Ninguna figura del artículo enseña los textos de la calibración, y las cifras
 del apartado 8 no dependen de estos cambios. Comprobado sobre la etiqueta: la
@@ -185,7 +265,7 @@ prueba de aceptación que fija las cifras del registro de las tres maniobras
 (`tests/test_coactivation_sin_recortar.py`) pasa, y el comando de la figura 6
 da la misma figura, píxel a píxel.
 
-### 1.3 De la 3.1.0 a la 3.1.1
+### 1.4 De la 3.1.0 a la 3.1.1
 
 Un parche de una sola medida (PR #21). **La coactivación de una ventana con
 nombre se lee sobre la fase de registro sin recortar.** Hasta la 3.1.0, elegir
@@ -224,7 +304,7 @@ fragmentos concatenados (apartado 9, punto 11). El EDF afinado es una
 concatenación en disco y se lee como tal. Ninguna figura ni ningún control de
 la interfaz cambia.
 
-### 1.4 De la 3.0.0 a la 3.1.0
+### 1.5 De la 3.0.0 a la 3.1.0
 
 Son **39 commits** (29 sin contar las fusiones). La 3.1.0 no cambia el formato
 del archivo ni los cálculos: los módulos que calculan (`coactivation.py`,
@@ -283,7 +363,7 @@ puede mover resultados es la propuesta de filas del editor de fragmentos**:
   constantes del asistente, y las guías ya no hablan de esfuerzos mantenidos
   de cuatro segundos.
 
-### 1.5 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
+### 1.6 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
 
 Son **97 commits**. Lo que cambió de cara al artículo:
 
@@ -314,7 +394,7 @@ Son **97 commits**. Lo que cambió de cara al artículo:
   la excursión completa es ±1,635 mV, no ±1,65 mV. Nada expresado como
   cociente cambia.
 
-### 1.6 Dependencias
+### 1.7 Dependencias
 
 Declaradas en `pyproject.toml` y comprobadas en el entorno con el que se
 generó este informe:
@@ -333,14 +413,14 @@ generó este informe:
 | reportlab | `>=4.0` | 4.5.1 |
 | segno | `>=1.6` | 1.6.6 |
 
-### 1.7 Plataformas probadas
+### 1.8 Plataformas probadas
 
 La integración continua ejecuta la suite en **Ubuntu y Windows**, con
 **Python 3.10, 3.11 y 3.12**: seis combinaciones, todas en verde para
 `v3.1.2`. macOS no se prueba de forma automática. El hardware se ha probado
 solo en Windows 11.
 
-### 1.8 Instalación y arranque
+### 1.9 Instalación y arranque
 
 Desde el código fuente:
 
@@ -625,8 +705,8 @@ constante repartida.
 | Duration of one effort | — | 1,5 | s | no editable | `src/emgteach/profiles.py:153` |
 | Warm-up | — | 10,0 | s | no editable | `src/emgteach/profiles.py:222` |
 | Preparation countdown | — | 5,0 | s | no editable | `src/emgteach/profiles.py:215` |
-| Ready countdown | — | 3,0 | s | no editable (MVC_READY_S = 3,0) | `src/emgteach/gui/tabs/acquisition.py:129` |
-| Rest between repetitions | — | 2,0 | s | no editable (MVC_REST_S = 2,0) | `src/emgteach/gui/tabs/acquisition.py:130` |
+| Ready countdown | — | 3,0 | s | no editable (MVC_READY_S = 3,0) | `src/emgteach/gui/tabs/acquisition.py:130` |
+| Rest between repetitions | — | 2,0 | s | no editable (MVC_REST_S = 2,0) | `src/emgteach/gui/tabs/acquisition.py:131` |
 | Auto-onset k | — | 3,0 | desv. típicas | Adquisición · «Marcadores de eventos» · k | `src/emgteach/profiles.py:237` |
 | Onset baseline | — | 1,0 | s | no editable | `src/emgteach/profiles.py:238` |
 | Onset refractory | — | 0,5 | s | no editable | `src/emgteach/profiles.py:239` |
@@ -651,9 +731,9 @@ constante repartida.
 | Arduino ADC | — | 1023,0 | cuentas (10 bits) | no editable | `src/emgteach/devices/arduino.py:80` |
 | Arduino V_ref | — | 5,0 | V | no editable | `src/emgteach/devices/arduino.py:81` |
 | MyoWare gain | — | 200,0 | — | no editable | `src/emgteach/devices/arduino.py:82` |
-| F-V lifts per load | — | 3 | levantamientos | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:156` |
-| F-V preparation | — | 6,0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:157` |
-| F-V lift time | — | 1,0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:158` |
+| F-V lifts per load | — | 3 | levantamientos | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:157` |
+| F-V preparation | — | 6,0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:158` |
+| F-V lift time | — | 1,0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:159` |
 
 <<<PARAMETROS>>>
 
@@ -671,28 +751,32 @@ La conversión a milivoltios del BITalino es
 
 <<<PANELES>>>
 
-| Nº | Nombre largo (EN) | Nombre largo (ES) | Etiqueta corta (ES) |
-|---|---|---|---|
-| 1 | 1A. Raw signal | 1A. Señal en bruto | 1A. En bruto |
-| 2 | 1B. Raw signal — 2nd muscle | 1B. Señal en bruto — 2º músculo | 1B. Bruto (2º) |
-| 3 | 2. Normalised envelope | 2. Envolvente normalizada | 2. Env. norm. |
-| 4 | 3. PSD with MNF/MDF | 3. PSD con MNF/MDF | 3. PSD |
-| 5 | 4. Filtered + rectified | 4. Filtrada + rectificada | 4. Filtr.+rect. |
-| 6 | 5. Envelope vs RMS | 5. Envolvente vs RMS | 5. Env. vs RMS |
-| 7 | 6. RMS per window | 6. RMS por ventana | 6. RMS/ventana |
-| 8 | 7. MDF vs time (fatigue) | 7. MDF vs tiempo (fatiga) | 7. MDF/tiempo |
-| 9 | 8. RMS vs MDF | 8. RMS vs MDF | 8. RMS vs MDF |
-| 10 | 9. Overlaid envelopes (agonist/antagonist) | 9. Envolventes superpuestas (agonista/antagonista) | 9. Env. superp. |
-| 11 | 10. EMG vs MMG (electrical vs mechanical) | 10. EMG vs MMG (eléctrico vs mecánico) | 10. EMG vs MMG |
-| 12 | 11. Tremor (accelerometer FFT) | 11. Temblor (FFT del acelerómetro) | 11. Temblor |
-| 13 | 12. Movement vs EMG (limb kinematics) | 12. Movimiento vs EMG (cinemática del segmento) | (sin entrada en el catálogo) |
+| Nº | Nombre largo (EN) | Nombre largo (ES) | Etiqueta corta (ES) | Lectura en el título (ES) |
+|---|---|---|---|---|
+| 1 | Raw signal | Señal en bruto | En bruto | la traza se ensancha mientras el músculo se contrae y se estrecha en reposo; con dos músculos: cada músculo contra su propio eje: se lee cuándo dispara cada uno, no cuál es más alto |
+| 2 | Normalised envelope | Envolvente normalizada | Env. norm. | 1 es el punto más alto de esta ventana, no la CVM: se lee la forma, no la altura |
+| 3 | PSD with MNF/MDF | PSD con MNF/MDF | PSD | dónde está la potencia de la señal; en gris, lo que quitó el filtro; con dos músculos: cada curva tiene área 1, así que se comparan las formas; la línea discontinua es la MDF de cada músculo |
+| 4 | Filtered + rectified | Filtrada + rectificada | Filtr.+rect. | rectificada, cada oscilación cuenta hacia arriba: cuanto más alta la traza, más fuerte la activación |
+| 5 | Envelope vs RMS | Envolvente vs RMS | Env. vs RMS | cuanto más alta la curva, más fuerte la activación; las dos líneas son dos formas de medirla |
+| 6 | RMS per window | RMS por ventana | RMS/ventana | un punto por ventana: si sube con el mismo esfuerzo, entran más unidades motoras, a menudo por fatiga; con dos músculos: cada músculo contra su propio eje: se lee cómo evoluciona cada uno, no cuál está más alto |
+| 7 | MDF vs time (fatigue) | MDF vs tiempo (fatiga) | MDF/tiempo | un descenso indica fatiga muscular |
+| 8 | RMS vs MDF | RMS vs MDF | RMS vs MDF | los puntos avanzan en el tiempo siguiendo la flecha; la fatiga mueve el recorrido arriba y a la izquierda: más amplitud, menos frecuencia |
+| 9 | Overlaid envelopes (agonist/antagonist) | Envolventes superpuestas (agonista/antagonista) | Env. superp. | cada músculo contra su propio máximo: si uno sube mientras el otro baja, se alternan; si suben a la vez, coactivación |
+| 10 | EMG vs MMG (electrical vs mechanical) | EMG vs MMG (eléctrico vs mecánico) | EMG vs MMG | la vibración del músculo (MMG) sigue a su actividad eléctrica (EMG) |
+| 11 | Tremor (accelerometer FFT) | Temblor (FFT del acelerómetro) | Temblor | el pico es la frecuencia del temblor; el fisiológico está entre 8 y 12 Hz |
+| 12 | Movement vs EMG (limb kinematics) | Movimiento vs EMG (cinemática del segmento) | Mov. vs EMG | primero sube la EMG y después llega el movimiento: el desfase es el retraso electromecánico |
 
 <<<PANELES>>>
 
-Cuáles se abren depende de la práctica. Siempre disponibles: 1A y 3. La de un
-músculo abre además el 2; la del par, el 1B, el 7 y el 9; la de cinemática, el
-2 y los tres del acelerómetro (10, 11 y 12). Los paneles 4 a 8 están en
-`More panels…` / «Más paneles…» en cualquier práctica.
+Cuáles se abren depende de la práctica. Siempre disponibles: 1 y 3. La de un
+músculo abre además el 2; la del par, el 7 y el 9, con los dos músculos en el
+1 (un eje cada uno); la de cinemática, el 2 y los tres del acelerómetro (10, 11
+y 12). Los paneles 4 a 8 están en `More panels…` / «Más paneles…» en
+cualquier práctica, y el botón pasa a decir `Fewer panels` / «Menos paneles»
+al abrirlo. El 2 no se ofrece nunca en el par, donde lo sustituye el 9. La
+numeración es la misma en todas las prácticas: la que no ofrece un panel deja
+su número sin usar. Cada título lleva en una segunda línea su lectura (la
+columna de la derecha) y, si el panel enseña un solo músculo, su nombre.
 
 ### 5.2 Tabla de contracciones
 
@@ -865,100 +949,100 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/help_texts.py:351`**
   - EN: A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working. The maximum is inside the recording: the session calibrates without stopping, so nothing else has to be chosen here.
   - ES: Una amplitud bruta no se puede comparar entre dos personas, ni entre dos sesiones de la misma persona: depende de los electrodos, de la piel y de la grasa que hay debajo. Expresar cada valor como porcentaje de la contracción máxima cancela todo eso, porque las dos amplitudes comparten los mismos electrodos y la misma piel: lo que queda es cuánto está trabajando el músculo. El máximo está dentro del registro: la sesión calibra sin parar, así que aquí no hay nada más que elegir.
-- **`src/emgteach/gui/tabs/acquisition.py:288`**
+- **`src/emgteach/gui/tabs/acquisition.py:289`**
   - EN: This computer is not connected to any network, so the phones cannot reach it. Connect it to the network the phones use, or share this computer's own connection (Windows: Settings › Network & internet › Mobile hotspot) and connect the phones to that.
   - ES: Este equipo no está conectado a ninguna red, así que los móviles no pueden llegar a él. Conéctelo a la red que usan los móviles, o comparta la conexión del propio equipo (Windows: Configuración › Red e Internet › Zona con cobertura inalámbrica móvil) y conecte los móviles a ella.
-- **`src/emgteach/gui/tabs/acquisition.py:983`**
+- **`src/emgteach/gui/tabs/acquisition.py:984`**
   - EN: Live signal quality: saturation or a flat (disconnected) signal.
   - ES: Calidad de señal en vivo: saturación o señal plana (desconectada).
-- **`src/emgteach/gui/tabs/acquisition.py:1845`**
+- **`src/emgteach/gui/tabs/acquisition.py:1846`**
   - EN: The recording cannot be saved
   - ES: No se puede guardar el registro
-- **`src/emgteach/gui/tabs/acquisition.py:2070`**
+- **`src/emgteach/gui/tabs/acquisition.py:2071`**
   - EN: The session could not start the calibration on its own. Press «Calibrate MVC» when you are ready — the phases will be written just the same.
   - ES: La sesión no ha podido arrancar la calibración por su cuenta. Pulse «Calibrar CVM» cuando esté listo: las fases se escriben igual.
-- **`src/emgteach/gui/tabs/acquisition.py:2249`**
+- **`src/emgteach/gui/tabs/acquisition.py:2250`**
   - EN: The recording could not be shown for review: {err}
   - ES: No se pudo mostrar el registro para revisarlo: {err}
-- **`src/emgteach/gui/tabs/acquisition.py:2475`**
+- **`src/emgteach/gui/tabs/acquisition.py:2476`**
   - EN: No network: the phones cannot reach this computer.
   - ES: Sin red: los móviles no pueden llegar a este equipo.
-- **`src/emgteach/gui/tabs/acquisition.py:3104`**
+- **`src/emgteach/gui/tabs/acquisition.py:3105`**
   - EN: ⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.
   - ES: ⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.
-- **`src/emgteach/gui/tabs/acquisition.py:3373`**
+- **`src/emgteach/gui/tabs/acquisition.py:3374`**
   - EN: {muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: {muscles}: esto no es un máximo. Calibre de nuevo con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/gui/tabs/acquisition.py:3393`**
+- **`src/emgteach/gui/tabs/acquisition.py:3394`**
   - EN: Channels not separated
   - ES: Canales sin separar
-- **`src/emgteach/gui/tabs/acquisition.py:3405`**
+- **`src/emgteach/gui/tabs/acquisition.py:3406`**
   - EN: Calibration failed (no signal).
   - ES: Calibración fallida (sin señal).
-- **`src/emgteach/gui/tabs/acquisition.py:3407`**
+- **`src/emgteach/gui/tabs/acquisition.py:3408`**
   - EN: Calibration failed
   - ES: Calibración fallida
-- **`src/emgteach/gui/tabs/analysis.py:521`**
+- **`src/emgteach/gui/tabs/analysis.py:470`**
   - EN: Restrict every metric (spectrum, RMS, fatigue) to the time window below instead of the whole recording.
   - ES: Restringe todas las métricas (espectro, RMS, fatiga) a la ventana temporal de abajo en lugar del registro completo.
-- **`src/emgteach/gui/tabs/analysis.py:913`**
+- **`src/emgteach/gui/tabs/analysis.py:864`**
   - EN: usual 60–150 Hz
   - ES: habitual 60–150 Hz
-- **`src/emgteach/gui/tabs/analysis.py:929`**
+- **`src/emgteach/gui/tabs/analysis.py:880`**
   - EN: Highest point of the task's envelope, as % of the maximal contraction, read on the whole recording phase — from the start of the recording to the end of the file — whatever fragments are chosen: a maximum of the phase, not of the selection. Well above 100 % means the calibration was not a maximum.
   - ES: Punto más alto de la envolvente durante la tarea, en % de la contracción máxima, leído sobre la fase de registro entera —del inicio del registro al final del archivo—, se elijan los fragmentos que se elijan: es un máximo de la fase, no de la selección. Muy por encima del 100 % significa que la calibración no fue un máximo.
-- **`src/emgteach/gui/tabs/analysis.py:1384`**
+- **`src/emgteach/gui/tabs/analysis.py:1335`**
   - EN: Could not open the fragment editor: {error}
   - ES: No se pudo abrir el editor de fragmentos: {error}
-- **`src/emgteach/gui/tabs/analysis.py:1455`**
+- **`src/emgteach/gui/tabs/analysis.py:1406`**
   - EN: Next: «{button}». It decides which maximal efforts set the reference, and every % MVC below is measured against it — so it goes before choosing the fragments.
   - ES: Siguiente: «{button}». Decide qué esfuerzos máximos fijan la referencia, y todos los % CVM de abajo se miden contra ella, así que va antes de elegir los fragmentos.
-- **`src/emgteach/gui/tabs/analysis.py:1576`**
+- **`src/emgteach/gui/tabs/analysis.py:1527`**
   - EN: This recording carries no calibration. Only sessions recorded with the guided flow mark their maximal efforts.
   - ES: Este registro no trae calibración. Solo las sesiones grabadas con el flujo guiado marcan sus esfuerzos máximos.
-- **`src/emgteach/gui/tabs/analysis.py:1594`**
+- **`src/emgteach/gui/tabs/analysis.py:1545`**
   - EN: This recording carries no calibration spans, so the repetition list stays off. Only sessions recorded with the guided flow have them.
   - ES: Este registro no trae tramos de calibración, así que la lista de repeticiones queda apagada. Solo las sesiones grabadas con el flujo guiado los llevan.
-- **`src/emgteach/gui/tabs/analysis.py:1862`**
+- **`src/emgteach/gui/tabs/analysis.py:1813`**
   - EN: Whole recording: with no named windows this number does not measure anything. Open «{button}» and accept what it proposes.
   - ES: Registro completo: sin ventanas con nombre este número no mide nada. Abra «{button}» y acepte lo que propone.
-- **`src/emgteach/gui/tabs/analysis.py:2160`**
+- **`src/emgteach/gui/tabs/analysis.py:2111`**
   - EN: The report for the phones could not be made: {error}
   - ES: No se ha podido preparar el informe para los móviles: {error}
-- **`src/emgteach/gui/tabs/analysis.py:2205`**
+- **`src/emgteach/gui/tabs/analysis.py:2156`**
   - EN: Not conclusive (trend does not fit, R²={r2:.2f})
   - ES: No concluyente (la tendencia no ajusta, R²={r2:.2f})
-- **`src/emgteach/gui/tabs/analysis.py:2234`**
+- **`src/emgteach/gui/tabs/analysis.py:2185`**
   - EN: not a maximum
   - ES: no fue un máximo
-- **`src/emgteach/gui/tabs/analysis.py:2238`**
+- **`src/emgteach/gui/tabs/analysis.py:2189`**
   - EN: The task went well past the reference: the calibration did not capture a maximum, so every % MVC here is too high in the same proportion. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: La tarea superó con mucho la referencia: la calibración no recogió un máximo, así que todos los % CVM de aquí están inflados en la misma proporción. Vuelva a calibrar con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/gui/tabs/analysis.py:2305`**
+- **`src/emgteach/gui/tabs/analysis.py:2256`**
   - EN: Could not open the force-velocity study: {error}
   - ES: No se pudo abrir el estudio fuerza-velocidad: {error}
-- **`src/emgteach/gui/tabs/analysis.py:2342`**
+- **`src/emgteach/gui/tabs/analysis.py:2293`**
   - EN: Channel «{ch}»: flat — no signal (electrode not connected?).
   - ES: Canal «{ch}»: plano — sin señal (¿electrodo sin conectar?).
-- **`src/emgteach/gui/tabs/analysis.py:2347`**
+- **`src/emgteach/gui/tabs/analysis.py:2298`**
   - EN: Channel «{ch}»: saturated — the trace is pinned at the rails (check the electrode contact or the gain).
   - ES: Canal «{ch}»: saturado — la traza está pegada al tope (conviene revisar el contacto del electrodo o la ganancia).
-- **`src/emgteach/gui/tabs/analysis.py:2354`**
+- **`src/emgteach/gui/tabs/analysis.py:2305`**
   - EN: Channel «{ch}»: weak signal (low amplitude).
   - ES: Canal «{ch}»: señal débil (amplitud baja).
-- **`src/emgteach/gui/tabs/analysis.py:2493`**
+- **`src/emgteach/gui/tabs/analysis.py:2433`**
   - EN: Filtered EMG (20-450 Hz)
   - ES: EMG filtrado (20-450 Hz)
-- **`src/emgteach/gui/tabs/analysis.py:2813`**
+- **`src/emgteach/gui/tabs/analysis.py:2739`**
   - EN: The tuned recording cannot replace the one it comes from: tuning discards signal, so its source has to stay.
   - ES: El registro afinado no puede sustituir a aquel del que sale: afinar descarta señal, así que su origen tiene que quedarse.
-- **`src/emgteach/gui/tabs/analysis.py:2865`**
+- **`src/emgteach/gui/tabs/analysis.py:2791`**
   - EN: CSV export error: {error}
   - ES: Error al exportar CSV: {error}
-- **`src/emgteach/gui/tabs/analysis.py:3018`**
+- **`src/emgteach/gui/tabs/analysis.py:2944`**
   - EN: Error generating the PDF report: {error}
   - ES: Error al generar el informe PDF: {error}
-- **`src/emgteach/gui/tabs/analysis.py:3361`**
+- **`src/emgteach/gui/tabs/analysis.py:3288`**
   - EN: The recording does not match the mode
   - ES: El registro no concuerda con el modo
 - **`src/emgteach/gui/tabs/mvc.py:420`**
@@ -1017,16 +1101,16 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/phases.py:482`**
   - EN: no calibration
   - ES: sin calibración
-- **`src/emgteach/reports.py:125`**
+- **`src/emgteach/reports.py:138`**
   - EN: Not conclusive — the trend does not fit ({slope:+.2f} Hz/s, R²={r2:.2f}). Fatigue needs a contraction held long enough for the trend to show.
   - ES: No concluyente: la tendencia no ajusta ({slope:+.2f} Hz/s, R²={r2:.2f}). La fatiga necesita una contracción mantenida el tiempo suficiente para que la tendencia se vea.
-- **`src/emgteach/reports.py:226`**
+- **`src/emgteach/reports.py:219`**
   - EN: Filtered (20-450 Hz)
   - ES: Filtrado (20-450 Hz)
-- **`src/emgteach/reports.py:537`**
+- **`src/emgteach/reports.py:527`**
   - EN: The task exceeds the reference by a wide margin: the calibration did not capture a maximum, so every percentage in this report is too high in the same proportion. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: La tarea supera la referencia con mucho margen: la calibración no recogió un máximo, así que todos los porcentajes de este informe están inflados en la misma proporción. Vuelva a calibrar con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/reports.py:773`**
+- **`src/emgteach/reports.py:763`**
   - EN: Notch (mains)
   - ES: Notch (red)
 - **`src/emgteach/workers/acquisition.py:51`**
@@ -1050,19 +1134,19 @@ Envíe ese fichero, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/workers/analysis.py:689`**
   - EN: MDF trend fitted over {n} of {total} segments (the rest were below the contraction threshold).
   - ES: Tendencia de MDF ajustada sobre {n} de {total} segmentos (el resto quedaba por debajo del umbral de contracción).
-- **`src/emgteach/workers/analysis.py:1051`**
+- **`src/emgteach/workers/analysis.py:1055`**
   - EN: not reported — no MVC reference for one of the channels
   - ES: no se informa — falta la referencia de CVM en uno de los canales
-- **`src/emgteach/workers/analysis.py:1065`**
+- **`src/emgteach/workers/analysis.py:1069`**
   - EN: ⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.
   - ES: ⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.
-- **`src/emgteach/workers/analysis.py:1073`**
+- **`src/emgteach/workers/analysis.py:1077`**
   - EN: No contraction detected in «{name}»: it never left its baseline.
   - ES: No se detecta contracción en «{name}»: no sale de su línea base.
-- **`src/emgteach/workers/analysis.py:1129`**
+- **`src/emgteach/workers/analysis.py:1133`**
   - EN: ⚠ «{name}» reaches {peak:.0f} % MVC, and spends {share:.0f} % of the recording above {limit:.0f} %. The calibration did not capture a maximum — the task beat it — so every percentage here is too high.
   - ES: ⚠ «{name}» llega al {peak:.0f} % de la CVM, y pasa el {share:.0f} % del registro por encima del {limit:.0f} %. La calibración no capturó un máximo —la tarea lo superó—, así que todos los porcentajes de aquí salen inflados.
-- **`src/emgteach/workers/analysis.py:1248`**
+- **`src/emgteach/workers/analysis.py:1252`**
   - EN: The contraction table could not be built: {err}
   - ES: No se pudo construir la tabla de contracciones: {err}
 - **`src/emgteach/workers/mvc.py:282`**
@@ -1104,9 +1188,9 @@ adjunto está en `docs/informe-sourcebook/` y lo produce
 `tools/informe_material.py`.
 
 **Todas las cifras de este apartado están medidas con la 3.2.0** sobre su
-etiqueta y **no cambian con la 3.3.0** (apartado 1.0); las que cambiaron
-respecto de la 3.1.2, y cuánto, están en la tabla del apartado 1.1. Las del
-8.3 no pasan por la coactivación.
+etiqueta y **no cambian con la 3.3.0 ni con la 3.4.0** (apartados 1.1 y 1.0);
+las que cambiaron respecto de la 3.1.2, y cuánto, están en la tabla del
+apartado 1.2. Las del 8.3 no pasan por la coactivación.
 
 ### 8.1 Registro de ejemplo: el par flexor / extensor
 
@@ -1162,8 +1246,8 @@ porcentajes de abajo significan lo que dicen.
 | Presa | 88,0–97,0 s | **79 %** (78,6) | 11,4 / 7,7 % CVM |
 
 Medido con la 3.2.0: cada maniobra es una máscara sobre la fase de registro sin
-recortar, el reposo que se resta es el de la fase entera (apartados 1.3 y
-5.6) y la referencia es el pico de la envolvente (apartado 1.1). Con la 3.1.2
+recortar, el reposo que se resta es el de la fase entera (apartados 1.4 y
+5.6) y la referencia es el pico de la envolvente (apartado 1.2). Con la 3.1.2
 —referencia de 0,2 s y suelo del 5 %— la tabla era 28,3 / no reportada / 75,7 %
 con medias 14,1 / 5,8 · 4,2 / 6,2 · 14,5 / 9,1; con el pico y el suelo del 5 %
 la flexión se quedaba sin número (el extensor, en 4,9 %), y es la razón del
@@ -1224,7 +1308,7 @@ para no medir. Para esta práctica, la ventana es la maniobra entera.
    con su curso temporal, reposos incluidos; concatenar las contracciones mide
    otra cosa. **Las cifras publicables son las del registro sin recortar.**
    Desde la 3.1.1, elegir los fragmentos en la pestaña sobre el original ya
-   no concatena para la coactivación (apartado 1.3); el aviso vale para el
+   no concatena para la coactivación (apartado 1.4); el aviso vale para el
    archivo afinado.
 2. **El borde de la ventana: el reposo que entra ya no mueve el índice.** Con
    la 3.0.0, estrechar la presa 0,8 s por delante la llevaba de 76 % a 70 %,
@@ -1342,14 +1426,15 @@ la tarea, 123 % CVM.
 9. Del §13 de la especificación sigue vigente el aviso de que **este era el
    último cambio de arquitectura antes de la publicación**. La 3.1.0 lo
    respeta: cambia el manejo en el puesto y no el formato del archivo ni los
-   cálculos (apartado 1.4). La 3.1.1 cambia una sola medida, la coactivación
-   con fragmentos elegidos (apartado 1.3), y la 3.1.2 solo lo que la
-   calibración pide y cómo se describe (apartado 1.2). La 3.2.0 cambia el
+   cálculos (apartado 1.5). La 3.1.1 cambia una sola medida, la coactivación
+   con fragmentos elegidos (apartado 1.4), y la 3.1.2 solo lo que la
+   calibración pide y cómo se describe (apartado 1.3). La 3.2.0 cambia el
    estadístico de la referencia, el suelo del índice y la MDF de los
-   segmentos (apartado 1.1); la 3.3.0 lee el máximo de la tarea sobre la fase
-   entera y dibuja el panel 3 en relativo (apartado 1.0), y es la que describe
-   el artículo; lo que venga después irá a versiones posteriores sin cambiar
-   lo que describe.
+   segmentos (apartado 1.2); la 3.3.0 lee el máximo de la tarea sobre la fase
+   entera y dibuja el panel 3 en relativo (apartado 1.1); la 3.4.0 cambia lo
+   que enseña la pestaña de análisis y cómo numera sus paneles, sin tocar
+   ningún cálculo (apartado 1.0), y es la que describe el artículo; lo que
+   venga después irá a versiones posteriores sin cambiar lo que describe.
 10. **La k = 4,4 del par es empírica**: es el valor que dio una fila por
     maniobra en los registros en que se probó. Con otra piel, otro montaje u
     otra forma de hacer las maniobras puede proponer de más o de menos; por
@@ -1381,7 +1466,7 @@ la tarea, 123 % CVM.
   `ESPEC-niveles-y-avisos-emgteach.md` y `ESPEC-panel9-en-CVM.md`. Antes vivían
   solo en la carpeta del artículo.
 - **El README no menciona ninguna ruta sintética.** Dice la versión correcta
-  (3.3.0) y el número correcto de pruebas (1093, las mismas que en la
+  (3.4.0) y el número correcto de pruebas (1121, las mismas que en la
   etiqueta). No es
   cuestión de disciplina: `tests/test_readme.py::test_the_test_count_is_current`
   cuenta las pruebas recogidas y falla si el README dice otra cosa.
@@ -1412,8 +1497,21 @@ la tarea, 123 % CVM.
   3 oscurecido detrás del cuadro de la guía (el texto del cuadro es el mismo);
   la figura 6 sale idéntica píxel a píxel (su PDF cambia en los metadatos), y
   los recortes de la figura 7, las capturas de adquisición y de normalización
-  y los recortes de la figura 3 salen idénticos. El PDF de ejemplo lleva el
-  panel 3 nuevo; el CSV solo cambia en los finales de línea.
+  y los recortes de la figura 3 salen idénticos. El PDF de ejemplo no dibuja
+  paneles de análisis —`informe_material.py` lo genera sin elegirlos, con la
+  figura de señal de siempre—, así que no llevaba el panel 3, como se dijo aquí
+  con la 3.3.0; el CSV solo cambia en los finales de línea. **Con la 3.4.0,
+  regenerado otra vez**: cambian las capturas de la pestaña de análisis —la fila de
+  casillas pasa a «1. Raw · 3. PSD · 7. MDF/time · 9. Env. overlay» (en
+  español en el material del informe), el botón «More panels…» lleva el
+  estilo de los de modo y el panel 1 enseña los dos músculos en dos ejes, con
+  los títulos en dos líneas—, y con ellas la captura entera de la figura 4a y
+  su recorte, en la fila de casillas y en lo que se ve de los paneles
+  oscurecidos detrás del cuadro de la guía (el texto del cuadro es el mismo).
+  La figura 6 sale idéntica píxel a píxel (su PDF cambia en los metadatos), y
+  los recortes de las figuras 3 y 7, la figura 4b, las capturas de adquisición
+  y de normalización y el CSV salen idénticos; los PDF de ejemplo, por lo
+  dicho, solo cambian en el pie (versión, commit y fecha).
 - Los dos documentos docentes en Word (Guía del docente v2.4 y Cuaderno de
   prácticas v2.4) describen la 3.1.2 —la maniobra de sacudida y las flexiones
   libres— con las capturas de la 3.0.0. No están en el repositorio. Para la
