@@ -161,12 +161,9 @@ _PILL_STYLE = (
     "QToolButton:checked { background: #2E86DE; color: white; }"
 )
 
-# Teaching panel layout. The three panels relevant to physiology students
-# (raw, normalised envelope, PSD) come first, renumbered 1, 2, 3 and checked
-# by default; the remaining panels follow, renumbered 4-8, unchecked but still
-# selectable. Each entry is (original panel index, display number): the
-# original index (0-7) is the identity used by the plotting code and the PDF
-# report; the display number is what the student sees.
+# The panels themselves — number, names, readings, tooltip — are one table,
+# emgteach.panels, and everything that names a panel is built from its row.
+# What stays here is which of them the tab treats specially, by identifier.
 # Canonical panel index 8 is the two-channel overlay (agonist/antagonist);
 # it is only meaningful when a second channel is analysed. Indices 9-11 are the
 # accelerometer panels (EMG vs MMG, tremor FFT, movement vs EMG), only
@@ -178,88 +175,15 @@ _MOVEMENT_PID = 11
 # Panels that require an accelerometer channel to be usable.
 _ACC_PIDS = (_MMG_PID, _TREMOR_PID, _MOVEMENT_PID)
 
-_PANEL_LAYOUT: list[tuple[int, str]] = [
-    (0, "1"),   # raw signal (in the pair, both muscles, one axis each)
-    (3, "2"),   # normalised envelope
-    (4, "3"),   # PSD with MNF/MDF
-    (1, "4"),   # filtered + rectified
-    (2, "5"),   # envelope vs RMS
-    (5, "6"),   # RMS per window
-    (6, "7"),   # MDF vs time (fatigue)
-    (7, "8"),   # RMS vs MDF
-    (_OVERLAY_PID, "9"),  # overlaid envelopes (agonist/antagonist)
-    (_MMG_PID, "10"),     # EMG vs MMG (accelerometer on the muscle)
-    (_TREMOR_PID, "11"),  # tremor FFT (accelerometer)
-    (_MOVEMENT_PID, "12"),  # movement vs EMG (accelerometer on the limb)
-]
 # Panels checked by default (original indices): raw, normalised envelope, PSD.
 # The overlay panel (8) is checked dynamically when a 2nd channel is compared.
 _DEFAULT_PANELS: tuple[int, ...] = (0, 3, 4)
 
-# Panels always offered, in _PANEL_LAYOUT display order: 1. Raw,
-# 2. Env. norm. and 3. PSD — the same three that are checked by default and
-# the teaching core of the tab. What follows depends on mode and flag.
 #: The teaching core, by identifier rather than by position: raw signal,
-#: normalised envelope and PSD. Positions have moved before, and an
-#: index-based rule would silently change which panels count as basic.
+#: normalised envelope and PSD, panels 1, 2 and 3. Positions have moved
+#: before, and an index-based rule would silently change which panels count
+#: as basic.
 _CORE_PIDS: tuple[int, ...] = (0, 3, 4)
-
-# Full panel names (report dialog), in display order and renumbered.
-_PANEL_NOMBRES = [
-    "1. Raw signal",
-    "2. Normalised envelope",
-    "3. PSD with MNF/MDF",
-    "4. Filtered + rectified",
-    "5. Envelope vs RMS",
-    "6. RMS per window",
-    "7. MDF vs time (fatigue)",
-    "8. RMS vs MDF",
-    "9. Overlaid envelopes (agonist/antagonist)",
-    "10. EMG vs MMG (electrical vs mechanical)",
-    "11. Tremor (accelerometer FFT)",
-    "12. Movement vs EMG (limb kinematics)",
-]
-
-# Short labels (on-screen checkbox row), in display order and renumbered.
-_PANEL_SHORT_LABELS = [
-    "1. Raw",
-    "2. Env. norm.",
-    "3. PSD",
-    "4. Filt.+rect.",
-    "5. Env. vs RMS",
-    "6. RMS/window",
-    "7. MDF/time",
-    "8. RMS vs MDF",
-    "9. Env. overlay",
-    "10. EMG vs MMG",
-    "11. Tremor",
-    "12. Move vs EMG",
-]
-
-# Display number per original panel index (sidebar labels, etc.).
-_PANEL_SHORT_NAMES = {pid: num for pid, num in _PANEL_LAYOUT}
-
-# Short, didactic tooltip per original panel index — what the panel shows.
-_PANEL_TOOLTIPS = {
-    0: "Raw EMG signal, unfiltered; with two muscles, each against its own "
-       "axis, in its colour.",
-    3: "Envelope normalised to its maximum (0-1): the activation time course.",
-    4: "Power spectrum; MNF and MDF summarise its frequency content.",
-    _OVERLAY_PID: "Both channels' envelopes overlaid — agonist/antagonist "
-                  "coordination (needs a 2nd channel).",
-    _MMG_PID: "Electrical (EMG) vs mechanical (MMG, from the accelerometer on "
-              "the muscle) envelope — needs an accelerometer channel.",
-    _TREMOR_PID: "Frequency spectrum of the accelerometer with the tremor peak "
-                 "(physiological ~8-12 Hz) — needs an accelerometer channel.",
-    _MOVEMENT_PID: "Movement (from the accelerometer on the moving segment) vs "
-                   "the EMG envelope — movement follows contraction; needs an "
-                   "accelerometer channel.",
-    1: "Band-pass filtered (20-450 Hz) and rectified signal.",
-    2: "Linear envelope vs the RMS envelope of the signal.",
-    5: "RMS amplitude per window: how the intensity evolves.",
-    6: "Median frequency over time; a fall indicates fatigue.",
-    7: "Amplitude-frequency relation (force vs fatigue).",
-}
 
 from emgteach.broadcast import BroadcastServer
 from emgteach.charts import (
@@ -309,7 +233,14 @@ from emgteach.modes import (
     mode_uses_acc,
 )
 from emgteach.mvc import mark_excess_over_100, overlay_curves
-from emgteach.panels import panel_title
+from emgteach.panels import BY_PID as PANEL_BY_PID
+from emgteach.panels import (
+    PANELS,
+    panel_label,
+    panel_long_name,
+    panel_title,
+    panel_tooltip,
+)
 from emgteach.phases import (
     NO_CALIBRATION,
     parse_phase_markers,
@@ -724,7 +655,7 @@ class AnalysisTab(QWidget):
         # checkbox is kept in _panel_pids so the plotting/report code can map
         # back to the canonical panel identity. Only the teaching panels are
         # checked by default.
-        self._panel_pids: list[int] = [pid for pid, _ in _PANEL_LAYOUT]
+        self._panel_pids: list[int] = [p.pid for p in PANELS]
         self._chk_paneles: list[QCheckBox] = []
         # Tick state of panels the current mode hides, keyed by display index,
         # so switching back to a mode that offers them restores the selection.
@@ -733,10 +664,10 @@ class AnalysisTab(QWidget):
         # the mode and may happen before the first apply_mode call.
         self._mode: str = DEFAULT_MODE
         self._advanced: bool = False
-        for (pid, _num), label in zip(_PANEL_LAYOUT, _PANEL_SHORT_LABELS):
-            chk = QCheckBox(tr(label))
+        for pid in self._panel_pids:
+            chk = QCheckBox(panel_label(pid))
             chk.setChecked(pid in _DEFAULT_PANELS)
-            chk.setToolTip(tr(_PANEL_TOOLTIPS[pid]))
+            chk.setToolTip(panel_tooltip(pid))
             # The overlay panel is only usable while comparing two channels;
             # the accelerometer panels only when the file has an ACC channel.
             if pid in (_OVERLAY_PID, *_ACC_PIDS):
@@ -2916,12 +2847,11 @@ class AnalysisTab(QWidget):
         comparing = self._chk_compare2.isChecked()
         has_acc = self._acc_channel_name is not None
         checks: list[tuple[int, QCheckBox]] = []
-        for i, nombre in enumerate(_PANEL_NOMBRES):
-            pid = self._panel_pids[i]
+        for i, pid in enumerate(self._panel_pids):
             # What the practical never offers is not offered here either.
             if self._never_offered(pid, self._mode):
                 continue
-            cb = QCheckBox(tr(nombre))
+            cb = QCheckBox(panel_long_name(pid))
             cb.setChecked(i < len(self._chk_paneles) and self._chk_paneles[i].isChecked())
             # The overlay panel needs two compared channels; the accelerometer
             # panels need an ACC channel — otherwise they cannot be reported.
@@ -3067,7 +2997,7 @@ class AnalysisTab(QWidget):
                 lambda checked=False, a=ax, pi=panel_idx: self._y_zoom(pi, a, True)
             )
 
-            lbl = QLabel(f"P{_PANEL_SHORT_NAMES[panel_idx]}")
+            lbl = QLabel(f"P{PANEL_BY_PID[panel_idx].number}")
             lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             lbl.setStyleSheet("font-size: 7px; color: #666666;")
 

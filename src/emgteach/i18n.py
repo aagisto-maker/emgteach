@@ -593,11 +593,6 @@ _ES = {
     "on the moving segment (tremor)": "en el segmento móvil (temblor)",
     "Where the accelerometer is stuck — sets which ACC analyses apply.":
         "Dónde se pega el acelerómetro — determina qué análisis de ACC aplican.",
-    "10. EMG vs MMG (electrical vs mechanical)":
-        "10. EMG vs MMG (eléctrico vs mecánico)",
-    "11. Tremor (accelerometer FFT)": "11. Temblor (FFT del acelerómetro)",
-    "10. EMG vs MMG": "10. EMG vs MMG",
-    "11. Tremor": "11. Temblor",
     "Electrical (EMG) vs mechanical (MMG, from the accelerometer on "
     "the muscle) envelope — needs an accelerometer channel.":
         "Envolvente eléctrica (EMG) vs mecánica (MMG, del acelerómetro sobre "
@@ -803,8 +798,6 @@ _ES = {
     # Movement-vs-EMG analysis panel (accelerometer on the moving segment).
     "Movement (limb kinematics)": "Movimiento (cinemática del segmento)",
     "Movement (a.u.)": "Movimiento (u.a.)",
-    "12. Movement vs EMG (limb kinematics)":
-        "12. Movimiento vs EMG (cinemática del segmento)",
     "Movement from the accelerometer on the moving segment — follows "
     "«{ch}» (arbitrary units).":
         "Movimiento del acelerómetro en el segmento móvil — sigue a «{ch}» "
@@ -1027,9 +1020,6 @@ _ES = {
         "Canal EMG a normalizar (EMG1/EMG2 en archivos de dos canales; "
         "desactivado si solo hay uno). Toda la normalización usa este canal; "
         "pulsar «Calcular CVM» tras cambiarlo.",
-    "9. Overlaid envelopes (agonist/antagonist)":
-        "9. Envolventes superpuestas (agonista/antagonista)",
-    "9. Env. overlay": "9. Env. superp.",
     "Both channels' envelopes overlaid — agonist/antagonist "
     "coordination (needs a 2nd channel).":
         "Envolventes de ambos canales superpuestas — coordinación "
@@ -1040,14 +1030,6 @@ _ES = {
     "Could not analyse the 2nd channel «{name}»: {err}":
         "No se pudo analizar el 2º canal «{name}»: {err}",
     "Envelope cutoff frequency (Hz):": "Frec. corte envolvente (Hz):",
-    "1. Raw": "1. En bruto",
-    "2. Env. norm.": "2. Env. norm.",
-    "3. PSD": "3. PSD",
-    "4. Filt.+rect.": "4. Filtr.+rect.",
-    "5. Env. vs RMS": "5. Env. vs RMS",
-    "6. RMS/window": "6. RMS/ventana",
-    "7. MDF/time": "7. MDF/tiempo",
-    "8. RMS vs MDF": "8. RMS vs MDF",
     "Redraw": "Redibujar",
     "Markers": "Marcadores",
     "Widen the time window (×2)": "Ampliar ventana temporal (×2)",
@@ -1074,8 +1056,6 @@ _ES = {
         "Amplitud RMS por ventana: cómo evoluciona la intensidad.",
     "Median frequency over time; a fall indicates fatigue.":
         "Frecuencia mediana en el tiempo; su descenso indica fatiga.",
-    "Amplitude-frequency relation (force vs fatigue).":
-        "Relación amplitud-frecuencia (fuerza frente a fatiga).",
     "Mean spectral frequency; tends to fall with fatigue.":
         "Frecuencia media del espectro; tiende a bajar con la fatiga.",
     "Frequency that splits the spectrum into two equal-power halves; "
@@ -1098,13 +1078,6 @@ _ES = {
         "el % del tiempo que el músculo permanece por debajo de cada nivel "
         "de carga (% CVM). Los niveles estático (P10), mediano (P50) y pico "
         "(P90) valoran el riesgo de sobrecarga.</p>",
-    "1. Raw signal": "1. Señal en bruto",
-    "2. Normalised envelope": "2. Envolvente normalizada",
-    "3. PSD with MNF/MDF": "3. PSD con MNF/MDF",
-    "4. Filtered + rectified": "4. Filtrada + rectificada",
-    "5. Envelope vs RMS": "5. Envolvente vs RMS",
-    "6. RMS per window": "6. RMS por ventana",
-    "7. MDF vs time (fatigue)": "7. MDF vs tiempo (fatiga)",
     "Filtered EMG (20-450 Hz)": "EMG filtrado (20-450 Hz)",
     "Rectified EMG": "EMG rectificado",
     "LP envelope (zero-phase)": "Envolvente LP (fase cero)",
@@ -1148,6 +1121,56 @@ _ES = {
     "Amplitude (mV)": "Amplitud (mV)",
     "{muscle} (mV)": "{muscle} (mV)",
     "{muscle}: RMS (mV)": "{muscle}: RMS (mV)",
+    # Panel labels, long names and tooltips (emgteach.panels).
+    "Movement (from the accelerometer on the moving segment) vs the EMG "
+    "envelope — movement follows contraction; needs an accelerometer channel.":
+        "Movimiento (del acelerómetro sobre el segmento que se mueve) vs la "
+        "envolvente EMG — el movimiento sigue a la contracción; requiere un "
+        "canal de acelerómetro.",
+    "Raw":
+        "En bruto",
+    "Env. norm.":
+        "Env. norm.",
+    "PSD":
+        "PSD",
+    "Filt.+rect.":
+        "Filtr.+rect.",
+    "Env. vs RMS":
+        "Env. vs RMS",
+    "RMS/window":
+        "RMS/ventana",
+    "MDF/time":
+        "MDF/tiempo",
+    "RMS vs MDF":
+        "RMS vs MDF",
+    "Env. overlay":
+        "Env. superp.",
+    "EMG vs MMG":
+        "EMG vs MMG",
+    "Tremor":
+        "Temblor",
+    "Move vs EMG":
+        "Mov. vs EMG",
+    "Raw signal":
+        "Señal en bruto",
+    "Normalised envelope":
+        "Envolvente normalizada",
+    "PSD with MNF/MDF":
+        "PSD con MNF/MDF",
+    "Filtered + rectified":
+        "Filtrada + rectificada",
+    "Envelope vs RMS":
+        "Envolvente vs RMS",
+    "RMS per window":
+        "RMS por ventana",
+    "MDF vs time (fatigue)":
+        "MDF vs tiempo (fatiga)",
+    "Tremor (accelerometer FFT)":
+        "Temblor (FFT del acelerómetro)",
+    "Amplitude against median frequency, window by window in time order: "
+    "fatigue moves the path up and to the left.":
+        "Amplitud frente a frecuencia mediana, ventana a ventana en orden "
+        "temporal: la fatiga mueve el recorrido arriba y a la izquierda.",
     # Panel titles and their readings (emgteach.panels).
     "Raw EMG signal":
         "Señal EMG en bruto",

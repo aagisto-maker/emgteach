@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Every title says how to read its panel,** on a second line, and a panel that shows one muscle names it. The titles are built from one table, `emgteach.panels`, on screen and in the report; the report's panel 9 now carries its unit as the screen's does.
 - **Choosing another muscle re-runs the analysis at once.** The panels went on showing the previous muscle until Analyse was pressed, and none of them said whose they were.
 - **«More panels…» is drawn like the mode buttons and says what it will do.** Blue text and border on white, white on blue when open, from the same style as the mode buttons, instead of the faded text of an auto-raise button with no colour of its own; once open it reads «Fewer panels».
+- **Everything that names a panel comes from one table.** `emgteach.panels` holds, per panel, its identifier, number, checkbox label, long name, title, readings and tooltip; the plot titles on screen and in the report, the checkboxes, the report dialog and the «P#» beside each panel's amplitude buttons are all built from it, and no number is typed anywhere else. The numbering is 1 to 12 and the same in every practical; a practical that does not offer a panel leaves its number unused rather than renumbering the rest.
 
 ## [3.3.0] — 2026-09-14
 
