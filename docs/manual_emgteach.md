@@ -354,15 +354,14 @@ which one you are on and what it asks for, and the box's «?» repeats them.
 3. **«Use these fragments»** applies the selection; nothing changes until then.
    Once everything is reviewed and the count matches, the button turns bold.
 
-**The thirteen analysis panels.** Each practical opens on its own and **«More
+**The twelve analysis panels.** Each practical opens on its own and **«More
 panels…»** reveals the rest, minus those the recording cannot feed. The panels
 stack on a page the mouse wheel scrolls; beside each, ▲▼ change the amplitude
 scale and ▶◀ the time scale.
 
 | Panel | What it shows | Meaning | Opens with |
 |---|---|---|---|
-| **1A. Raw signal** | Unprocessed EMG, onsets as thin lines | Starting point; artefacts show | all three |
-| **1B. Raw signal (2nd)** | The second muscle | Each muscle in its lane | pair |
+| **1. Raw signal** | Unprocessed EMG, onsets as thin lines; in the pair, both muscles, each against its own axis in its colour | Starting point; artefacts show; when each muscle fires | all three |
 | **2. Normalised envelope** | Envelope scaled to its maximum (0–1) | Shape of the activation | single, kinematics |
 | **3. PSD with MNF/MDF** | Spectrum, each curve scaled to unit area; in grey, the spectrum **before** the filter; in the pair, both muscles with their MDF and their total power in mV² | What the filter removed; energy by frequency; basis of fatigue | all three |
 | **4. Filtered + rectified** | Clean signal and its absolute value | Isolates the muscle activity | «More panels…» |
@@ -691,7 +690,7 @@ Each begins by **choosing the practical** in the top-right selector.
 2. Analysis runs on its own. Follow the two guided boxes: review the
    **calibration repetitions** and, in the **fragments**, keep only the task
    (the calibration is left out on its own). Read the
-   contraction table, the cards against their ranges, panels 1A, 2 and 3; for
+   contraction table, the cards against their ranges, panels 1, 2 and 3; for
    fatigue, panel 7 from «More panels…». Check the «Task maximum» card. Generate
    the **PDF report**.
 3. MVC normalisation receives the recording and computes on its own. With

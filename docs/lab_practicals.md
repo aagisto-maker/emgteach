@@ -240,7 +240,7 @@ links from a previous practical expire.
 **Set-up.** One channel over the FCR (or over the biceps if a large muscle is
 preferred), reference on the olecranon. Selector on **Single-muscle contraction**.
 
-**What the application shows in this practical.** Three panels by default: **1A.
+**What the application shows in this practical.** Three panels by default: **1.
 Raw**, **2. Env. norm.** (the envelope scaled to its maximum) and **3. PSD** (the
 spectrum, with the spectrum *before* the filter in grey behind). Below, the
 **contraction table** with one row per effort (start, duration, RMS, peak in %
@@ -397,7 +397,7 @@ antagonist contraction**. Labels: FCR and ECR.
 
 **What the application shows in this practical.** On **Start recording** the
 wizard calibrates **both muscles** (section 4) and then opens the recording. The
-analysis offers **1A. Raw**, **1B. Raw (2nd)**, **3. PSD** with both curves, **7.
+analysis offers **1. Raw** with both muscles, each against its own axis, **3. PSD** with both curves, **7.
 MDF/time** of both and **9. Env. overlay**, the two envelopes in % MVC on the same
 axis. The contraction table says **which muscle led each one** (FCR, ECR or
 «Co-activation» when the smaller exceeds half of the larger, each measured

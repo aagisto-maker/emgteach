@@ -295,26 +295,23 @@ def panels_offered(ana) -> set[int]:
 
 
 def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
-    from emgteach.gui.tabs.analysis import (
-        _CORE_PIDS,
-        _OVERLAY_PID,
-        _RAW2_PID,
-    )
+    from emgteach.gui.tabs.analysis import _CORE_PIDS, _OVERLAY_PID
 
     ana = main_window._tab_ana
 
     set_mode(main_window, qapp, MODE_SINGLE)
     assert panels_offered(ana) == set(_CORE_PIDS)
 
-    # The pair practical opens on each muscle raw, the two envelopes
-    # overlaid, and the spectrum and fatigue trend of both muscles.
+    # The pair practical opens on both muscles raw (one panel, an axis
+    # each), the two envelopes overlaid, and the spectrum and fatigue trend
+    # of both muscles.
     set_mode(main_window, qapp, MODE_PAIR)
-    assert panels_offered(ana) == {0, _RAW2_PID, _OVERLAY_PID, 4, 6}
+    assert panels_offered(ana) == {0, _OVERLAY_PID, 4, 6}
 
     # The kinematics practical is the one place nothing is withheld — but
     # not all at once: it opens on its own six (the core and the
     # accelerometer panels) and «More panels…» reveals every other one.
-    # Thirteen boxes on one row overflowed into a scroll bar.
+    # All the boxes on one row overflowed into a scroll bar.
     set_mode(main_window, qapp, MODE_KINEMATICS)
     propios = panels_offered(ana)
     assert len(propios) == 6 and propios < set(ana._panel_pids)
@@ -322,14 +319,6 @@ def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
     qapp.processEvents()
     assert panels_offered(ana) == set(ana._panel_pids)
     ana._btn_mas_paneles.setChecked(False)
-
-
-def test_the_second_raw_panel_sits_next_to_the_first(main_window) -> None:
-    """Reading muscle against muscle needs them adjacent, not one at each end."""
-    from emgteach.gui.tabs.analysis import _RAW2_PID
-
-    pids = main_window._tab_ana._panel_pids
-    assert pids.index(_RAW2_PID) == pids.index(0) + 1
 
 
 def test_panels_the_mode_hides_are_unticked_and_restored(

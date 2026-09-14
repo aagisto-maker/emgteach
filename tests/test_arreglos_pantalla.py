@@ -347,9 +347,8 @@ class TestTheAdvancedPracticalFoldsItsExtraPanels:
             ana = win._tab_ana
             ana._btn_mas_paneles.setChecked(True)
             qapp.processEvents()
-            # Every box there is: thirteen, since the raw trace comes twice
-            # (one per muscle) on top of the twelve numbered panels.
-            assert len(self._visibles(ana)) == len(ana._chk_paneles)
+            # Every box there is: the twelve numbered panels.
+            assert len(self._visibles(ana)) == len(ana._chk_paneles) == 12
             ana._btn_mas_paneles.setChecked(False)
             qapp.processEvents()
             assert len(self._visibles(ana)) == 6
@@ -366,12 +365,12 @@ class TestTheAdvancedPracticalFoldsItsExtraPanels:
         try:
             ana = win._tab_ana
             assert ana._btn_mas_paneles.isVisibleTo(ana)
-            assert len(self._visibles(ana)) == {"single": 3, "pair": 5}[modo]
+            assert len(self._visibles(ana)) == {"single": 3, "pair": 4}[modo]
             ana._btn_mas_paneles.setChecked(True)
             qapp.processEvents()
-            # Single: no second-muscle panels, no accelerometer ones (13 - 5).
-            # Pair: everything but the accelerometer three (13 - 3).
-            assert len(self._visibles(ana)) == {"single": 8, "pair": 10}[modo]
+            # Single: no overlay, no accelerometer panels (12 - 4).
+            # Pair: everything but the accelerometer three (12 - 3).
+            assert len(self._visibles(ana)) == {"single": 8, "pair": 9}[modo]
         finally:
             _cierra(qapp, win)
 

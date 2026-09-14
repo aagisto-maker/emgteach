@@ -63,6 +63,7 @@ from PySide6.QtWidgets import (
 
 from emgteach.apda import OnlineLoad
 from emgteach.broadcast import BroadcastServer, hay_red_utilizable
+from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.devices import (
     BACKEND_ARDUINO,
     BACKEND_BITALINO,
@@ -186,7 +187,7 @@ _QUALITY_STYLES = {
 # Per-channel colour, consistent across the three plots: a colour always
 # identifies the same sensor (blue = channel 1, red = channel 2).
 _CHANNEL_COLORS = [(65, 105, 225), (214, 39, 40)]
-_CHANNEL_COLOR_HEX = ["#4169E1", "#D62728"]
+_CHANNEL_COLOR_HEX = [COLOUR_1, COLOUR_2]
 _CHANNEL_DEFAULT_LABELS = ["EMG1", "EMG2"]
 #: What the empty boxes suggest, and what a recording gets when they are
 #: left empty. A name a student can read back — «agonist», «antagonist» —
