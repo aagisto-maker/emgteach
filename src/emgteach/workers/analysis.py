@@ -127,14 +127,16 @@ def _contracted(envelope, fs: float, profile, baseline=None) -> bool:
 def _sustained(envelope, fs: float, window_s: float):
     """The envelope as a running mean over ``window_s`` seconds.
 
-    The MVC reference is the strongest window of that length the subject
-    actually held (:func:`emgteach.mvc.mvc_peak_hold`). Comparing an
-    instantaneous envelope against it inflates the ratio for free, so anything
-    that judges a recording against the reference smooths the same way first.
+    The MVC reference is measured the same way
+    (:func:`emgteach.mvc.mvc_peak_hold`), so anything that judges a recording
+    against it goes through here first: measured two different ways, the
+    ratio would move by itself. With the profile's ``mvc_peak_window_s`` of 0
+    the window is one sample and this is the envelope as it is, whose
+    highest point is compared with the reference's.
     """
     env = np.asarray(envelope, dtype=np.float64)
     w = max(1, round(window_s * fs))
-    if env.size < w:
+    if w == 1 or env.size < w:
         return env
     csum = np.cumsum(np.insert(env, 0, 0.0))
     return (csum[w:] - csum[:-w]) / w
@@ -1045,9 +1047,8 @@ class AnalysisWorker(QThread):
                     )
 
             # A reference that was never a maximum: the task beats it. The
-            # reference *is* the strongest mvc_peak_window_s (0.2 s) of a
-            # maximal effort, so this is a definition rather than a heuristic,
-            # and it holds for
+            # reference *is* the peak of a maximal effort, so this is a
+            # definition rather than a heuristic, and it holds for
             # one channel as well as for two — which is why it lives out here
             # and not inside the pair. It lived inside it until a single-muscle
             # practical went through with a calibration a third of what the
@@ -1060,22 +1061,20 @@ class AnalysisWorker(QThread):
             ):
                 if not ref or env is None:
                     continue
-                # Like with like: the reference is the strongest
-                # mvc_peak_window_s (0.2 s) the subject held, so what is
-                # compared against it is the same
-                # running mean and not the instantaneous envelope. On one
-                # recording that difference alone accounted for a peak of 384 % where the
-                # honest figure was 234 %.
+                # Like with like: the task is measured the way the reference
+                # is — through the profile's mvc_peak_window_s, which makes
+                # both the envelope's peak — because two different statistics
+                # move the ratio by themselves. On one recording, when the
+                # reference was a running mean and the task was not, that
+                # difference alone made a 234 % into a 384 %.
                 pct = _sustained(
                     env, fs, self._profile.mvc_peak_window_s
                 ) / float(ref) * 100.0
                 pico = float(pct.max())
-                # Always reported, not only when it crosses the line. On one
-                # recording a task peaked at 212 % of its reference on the
-                # instantaneous envelope and 135 % sustained: under the limit,
-                # so nothing was said — and the student saw an axis running
-                # past 200 % with no number to hang it on. The sustained
-                # figure is the honest one and it goes in the summary; the
+                # Always reported, not only when it crosses the line. A task
+                # well past 100 % but under the limit used to get no word,
+                # and the student saw an axis running past 100 % with no
+                # number to hang it on. The figure goes in the summary; the
                 # limit decides only whether it becomes a warning.
                 result.setdefault("task_peak_pct", {})[name] = pico
                 if pico > self._profile.mvc_implausible_pct:

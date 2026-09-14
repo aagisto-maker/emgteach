@@ -57,10 +57,10 @@ class SignalProfile:
     overlap : float
         Fractional overlap between consecutive analysis segments.
     mvc_percentile : float
-        Percentile that summarises a calibration repetition only when it is
-        shorter than one ``mvc_peak_window_s`` window, the fallback of
-        :func:`emgteach.mvc.mvc_peak_hold`. The reference itself is the
-        strongest sustained window; see ``mvc_peak_window_s``.
+        Percentile that summarises a calibration repetition only where no
+        window is given at all (:func:`emgteach.mvc.mvc_from_reps`), or the
+        repetition is shorter than a window longer than one sample. The
+        reference itself is the envelope's peak; see ``mvc_peak_window_s``.
     apda_static_limit, apda_median_limit, apda_peak_limit : float
         Recommended maximum loads (% MVC) for the static / median / peak
         levels of Jonsson's APDF muscle-load analysis (see
@@ -125,17 +125,23 @@ class SignalProfile:
     # not capture a maximal contraction, and every later % MVC is then wrong by
     # the same factor. Warn below this ratio of reference to resting level.
     mvc_min_rest_ratio: float = 5.0
-    # The reference is the strongest window the subject actually held, not
-    # a single sample. Anything compared against it has to be measured the
-    # same way or the comparison inflates by itself.
+    # The reference is the highest point the envelope reaches across the
+    # repetitions kept: its peak, with no running mean on top. The MVC is
+    # the largest contraction the muscle can be expected to make, the top of
+    # the scale rather than an estimate, so what stands for it has to be a
+    # maximum; a mean over a window takes in the rise and the fall of the
+    # peak and puts the top of the scale below the highest value observed.
+    # What keeps a noise sample from setting it is the envelope itself: its
+    # 5 Hz low-pass leaves a one-sample spike at 1000 Hz at 1/90 of its
+    # height, spread over 91 ms. Anything compared against the reference is
+    # measured the same way — the task maximum and each contraction's peak
+    # are the envelope's peak too — or the comparison moves by itself.
     #
-    # 0.2 s, not 0.5. A held maximal contraction shows a peak at its start
-    # and then a plateau, and a half-second mean sits on the plateau; the
-    # task's brief efforts reach the peak, so they came out at 135 % of a
-    # "maximum" on one recording with nothing wrong in the calibration.
-    # The reference has to be measured where the peak is. Long enough to
-    # exclude a single spike, short enough to hold the initial burst.
-    mvc_peak_window_s: float = 0.2
+    # 0 means no window: a window of one sample, or none, is the envelope
+    # itself. It was 0.5 s, which sat on the plateau of a held contraction
+    # and let the task's brief efforts beat the reference (135 % on one
+    # recording), and then 0.2 s.
+    mvc_peak_window_s: float = 0.0
     # And, for the same reason, every effort the calibration asks for is a
     # brief one: a squeeze reaches the peak without the plateau, so it is
     # measured where the reference is measured. Three of them, because the
@@ -145,15 +151,15 @@ class SignalProfile:
     # and twice the calibration and gave no higher a peak.
     mvc_bursts: int = 3
     mvc_burst_s: float = 1.5               # s — duration of one maximal effort
-    # And after the fact, by definition: the reference IS the strongest
-    # 0.2 s of a maximal effort, so if the task beats it the effort was not
-    # maximal. What is compared is the task's own strongest 0.2 s, measured
-    # the same way.
+    # And after the fact, by definition: the reference IS the peak of a
+    # maximal effort, so if the task beats it the effort was not maximal.
+    # What is compared is the task's own peak, measured the same way.
     #
     # The margin is not fitted, it sits in a gap. Across 21 recordings,
-    # every session whose calibration was sound peaked at 91-124 % of its own
-    # reference, and every session with a bad one peaked at 179-1308 %.
-    # Nothing landed in between.
+    # measured with the 0.2 s window the reference then used, every session
+    # whose calibration was sound peaked at 91-124 % of its own reference,
+    # and every session with a bad one peaked at 179-1308 %. Nothing landed
+    # in between.
     mvc_implausible_pct: float = 150.0     # % MVC, on the peak
     # (A second condition — "and for more than 10 % of the analysed time" —
     # was removed. It is strictly stronger than the peak test at the same

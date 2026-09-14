@@ -2,15 +2,15 @@
 
 The MVC reference is computed from the EMG envelope of the calibration
 repetitions, in which the subject makes the strongest possible contraction
-of the target muscle. Each repetition is worth the highest mean of its
-envelope over a short window — the profile's ``mvc_peak_window_s``, 0.2 s —
+of the target muscle. Each repetition is worth the highest point its
+envelope reaches — the profile's ``mvc_peak_window_s`` is 0, no window —
 and the reference is the best of the repetitions (:func:`mvc_from_reps`,
 :func:`mvc_peak_hold`). The envelope is taken as it is: no resting level is
-subtracted. The window is long enough that a single noise sample cannot set
-the reference, and short enough to hold the peak a maximal effort reaches at
-its start. Within the reference, a percentile of the envelope
-(:func:`compute_mvc`) is only the fallback for a repetition shorter than one
-window.
+subtracted. What keeps a single noise sample from setting the reference is
+the envelope's own 5 Hz low-pass, not a mean on top of it. A window longer
+than one sample still gives the highest running mean over it, and a
+percentile of the envelope (:func:`compute_mvc`) is only the fallback when
+no window is given or a repetition is shorter than the window.
 
 Subsequent recordings are then expressed as a percentage of MVC, which
 is the unit in which clinical and research surface-EMG measurements
@@ -97,25 +97,25 @@ def mvc_peak_hold(
     window_samples: int,
     percentile: float = 95.0,
 ) -> float:
-    """MVC reference from the strongest *sustained* window of the envelope.
+    """MVC reference: the envelope's peak, or its highest window mean.
 
-    Slides a window of ``window_samples`` over the calibration envelope and
-    returns the **highest window mean** — i.e. the largest amplitude the
-    subject actually held for that long. This is more representative of the
-    true maximum than the percentile of the whole trace, which is diluted by
-    the ramp-up and the fatigue decay of a held contraction (so brief phasic
-    contractions afterwards overshoot 100 %MVC less often).
+    With a window of one sample or none — the profile's default,
+    ``mvc_peak_window_s`` = 0 — it returns the **highest point of the
+    envelope**. With a longer window it slides it over the envelope and
+    returns the **highest window mean**, the largest amplitude held for that
+    long. Either is closer to the true maximum than the percentile of the
+    whole trace, which the ramp-up and the decay of a contraction dilute.
 
-    Falls back to :func:`compute_mvc` when the trace is shorter than one
-    window (or the window is not positive).
+    Falls back to :func:`compute_mvc` when the trace is shorter than a
+    window longer than one sample.
 
     Parameters
     ----------
     emg_envelope : array-like
         Envelope of the maximal-contraction calibration trial.
     window_samples : int
-        Length of the sustained window, in samples: the profile's
-        ``mvc_peak_window_s`` (0.2 s) times ``fs``.
+        Length of the window, in samples: the profile's ``mvc_peak_window_s``
+        times ``fs``. One or fewer means no window, the envelope's peak.
     percentile : float, optional
         Percentile used by the :func:`compute_mvc` fallback (default 95).
 
@@ -126,7 +126,9 @@ def mvc_peak_hold(
     """
     env = np.asarray(emg_envelope, dtype=np.float64)
     w = int(window_samples)
-    if w < 1 or env.size < w:
+    if w <= 1:
+        return float(np.max(env)) if env.size else 0.0
+    if env.size < w:
         return compute_mvc(env, percentile)
     # Moving average over `w` samples via a cumulative sum (O(n)).
     csum = np.cumsum(np.insert(env, 0, 0.0))
@@ -156,9 +158,10 @@ def mvc_from_reps(
     percentile : float, optional
         Percentile used to summarise each repetition (default 95).
     window_samples : int, optional
-        When given, each repetition is summarised with
-        :func:`mvc_peak_hold` (strongest sustained window) instead of the
-        plain percentile of the whole repetition.
+        When given — zero and one included, which mean no window — each
+        repetition is summarised with :func:`mvc_peak_hold` (its peak, or its
+        highest window mean) instead of the plain percentile of the whole
+        repetition.
 
     Returns
     -------
@@ -169,7 +172,7 @@ def mvc_from_reps(
     for rep in reps:
         arr = np.asarray(rep, dtype=np.float64)
         if arr.size:
-            if window_samples:
+            if window_samples is not None:
                 val = mvc_peak_hold(arr, window_samples, percentile)
             else:
                 val = compute_mvc(arr, percentile)

@@ -132,7 +132,8 @@ El orden importa, porque la aplicación depende de él.
    > **Tres esfuerzos breves por músculo, y se queda con el mejor.** Ya no hay
    > casilla que marcar: el asistente pide siempre **tres esfuerzos máximos
    > breves** de 1,5 s, cada uno con 3 s de aviso y 2 s de descanso, y la
-   > referencia es el mejor 0,2 s de las repeticiones que se conservan. La
+   > referencia es el punto más alto que alcanza la envolvente en las
+   > repeticiones que se conservan. La
    > primera contracción máxima de una sesión es genuinamente submáxima, y con
    > un solo intento no hay nada a lo que recurrir cuando sale mal. Son breves
    > porque una contracción mantenida hace un pico al empezar y luego una
@@ -141,7 +142,8 @@ El orden importa, porque la aplicación depende de él.
    > septiembre). En un registro real un esfuerzo breve fijó la referencia del
    > flexor un 22 % por encima de la mejor contracción mantenida, y hasta la
    > 3.0.0 se pedían también tres mantenidas de 4 s: medida sobre el pico de
-   > 0,2 s, la breve da la misma referencia en la cuarta parte del tiempo.
+   > 0,2 s que se usaba entonces, la breve da la misma referencia en la cuarta
+   > parte del tiempo.
    >
    > **Y no se salte el calentamiento.** La calibración abre con 10 s pidiendo
    > dos o tres contracciones suaves de cada músculo; hágalas. Repetir no basta

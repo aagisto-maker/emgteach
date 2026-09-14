@@ -36,9 +36,9 @@ MANIOBRAS = [(57.5, 70.0, "Flexion"), (72.0, 85.0, "Extension"), (88.0, 97.0, "G
 #: What the tab and the figure give for them — index and the two means,
 #: % MVC — pinned so that a change which moves them is seen.
 REFERENCIA = {
-    "Flexion": (28.3, 14.13, 5.83),
-    "Extension": (None, 4.20, 6.17),
-    "Grip": (75.7, 14.48, 9.08),
+    "Flexion": (None, 11.09, 4.91),
+    "Extension": (None, 3.29, 5.19),
+    "Grip": (78.55, 11.37, 7.65),
 }
 
 FS = 100.0
@@ -211,11 +211,12 @@ class TestTheExampleRecordingThroughTheTab:
     def test_the_editors_own_grip_row_keeps_the_extensor(self, qapp) -> None:
         """The row the fragment editor proposes for the grip has no rest
         inside it. Read off its concatenation the extensor fell to 6.3 % MVC
-        and the index to 58 %; read where it lies, it is what it was."""
+        and the index to 58 %, against the 0.2 s reference of the time; read
+        where it lies, it is what it was."""
         r = _analizar(qapp, EJEMPLO, roi_segments=[(89.71, 97.43)],
                       roi_labels=["Grip"])
         (grip,) = r["coactivation"]
         assert grip.index is not None and grip.index > 74.0
-        assert grip.mean_2 > 10.0
+        assert grip.mean_2 > 8.0
         # And in the recording phase's own seconds, not the concatenation's.
         assert grip.window_s[0] == pytest.approx(89.71 - r["rec_start_s"], abs=0.01)

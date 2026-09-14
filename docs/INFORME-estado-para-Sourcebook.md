@@ -37,6 +37,14 @@ lo que hace la versión publicada. Lo que cambió de la 3.1.1 a la 3.1.2 está e
 el apartado 1.0, de la 3.1.0 a la 3.1.1 en el 1.1, y de la 3.0.0 a la 3.1.0 en
 el 1.2.
 
+**`main` lleva ya cambios de cálculo que no están publicados.** Después de la
+3.1.2 han entrado en `main` dos cambios que irán a una versión posterior: la
+referencia de la CVM es el punto más alto de la envolvente, en vez del máximo
+de su media móvil de 0,2 s, y la MDF de cada segmento del análisis de fatiga se
+calcula en la banda de análisis, como la del resumen. Las cifras y los bloques
+generados de este informe son los de la etiqueta `v3.1.2`, la versión que cita
+el artículo; no se han regenerado con `main`.
+
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:163`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
 propio panel, así que no puede provocar el crecimiento que esa prueba vigila.

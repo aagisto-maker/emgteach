@@ -202,7 +202,7 @@ es más pequeño y siempre reproducible.
 | Corte de envolvente | 5 Hz | Suavizado del nivel de activación |
 | Ventana RMS | 50 ms | Cálculo de amplitud RMS |
 | Segmento de análisis de fatiga | 1 s (solape 50 %) | Ventanas para RMS/MDF en el tiempo |
-| Ventana de la referencia CVM | 0,2 s | El mejor 0,2 s de las tres repeticiones de calibración (ver §5.1) |
+| Ventana de la referencia CVM | ninguna | La referencia es el punto más alto de la envolvente en las tres repeticiones de calibración (ver §5.1) |
 | Calibración | 3 × 1,5 s de esfuerzo máximo breve, tras 10 s de calentamiento | Lo que pide el asistente por músculo |
 
 [Figura sugerida: cuatro trazados apilados del mismo tramo —en bruto, filtrado,
@@ -361,8 +361,8 @@ con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
   breves** de 1,5 s («¡Máximo, breve y fuerte!»), cada uno con su cuenta atrás
   y sus 2 s de descanso. Las tres contracciones mantenidas de 4 s que había
   antes se quitaron el 5 de septiembre de 2026: medida la referencia sobre el
-  pico de 0,2 s, una sacudida da el mismo número y cuesta la cuarta parte de
-  fatiga.
+  pico de 0,2 s que se usaba entonces, una sacudida da el mismo número y cuesta
+  la cuarta parte de fatiga.
   En la práctica del par lo lanza el propio botón de grabar, antes de la tarea,
   y después escribe 5 s de preparación y el inicio del registro; en las otras dos
   se lanza con **«Calibrar CVM»** con la grabación en marcha. Todo queda dentro del
@@ -633,15 +633,19 @@ depende de factores no fisiológicos (impedancia de la piel, posición exacta de
 electrodos, anatomía); el **% CVM** permite **comparar** entre músculos, sujetos y
 sesiones.
 
-> **Cómo se mide la referencia.** Es el **mejor 0,2 s sostenido** de las tres
-> repeticiones de calibración: la media más alta de la envolvente en 0,2 s,
-> tomada tal cual, sin restarle el reposo. No es el máximo instantáneo, que una
-> sola muestra de ruido podría fijar, ni el medio segundo mantenido, que se
-> quedaba en la meseta: una contracción mantenida muestra un pico al empezar y
-> luego una meseta, y los esfuerzos breves de la tarea alcanzan ese pico. Medida
-> sobre la meseta, la tarea superaba el 100 % con la calibración bien hecha (135 %
-> en el banco). El máximo de la tarea y el pico de cada contracción se miden con
-> la misma ventana de 0,2 s, así que la comparación es con una sola vara.
+> **Cómo se mide la referencia.** Es el **punto más alto que alcanza la
+> envolvente** en las repeticiones de calibración que se conservan, tomada tal
+> cual, sin restarle el reposo. La CVM es la mayor contracción que cabe esperar
+> de ese músculo, el extremo de la escala, así que lo que la representa es un
+> máximo y no un promedio. Una sola muestra de ruido no puede fijarla, porque la
+> envolvente ya está suavizada: su paso bajo de 5 Hz deja una espiga de una
+> muestra, a 1000 Hz, en 1/90 de su altura. El máximo de la tarea y el pico de
+> cada contracción se miden igual, así que la comparación es con una sola vara.
+> Hasta la versión 3.1.2, incluida, la referencia era la media más alta de la
+> envolvente en 0,2 s, y antes en medio segundo, que se quedaba en la meseta de
+> una contracción mantenida: los esfuerzos breves de la tarea alcanzan el pico
+> del principio, y superaban la referencia con la calibración bien hecha (135 %
+> en el banco).
 >
 > **Cómo se hace un máximo que lo sea.** Una sacudida breve y explosiva, a la
 > máxima potencia, del movimiento propio del músculo, no un empuje sostenido
@@ -1199,8 +1203,8 @@ porque la pila científica no tiene *wheels*.
   para que los alumnos la sigan (solo lectura) desde el navegador del móvil.
 - **Práctica**: la elección que configura la aplicación (un músculo, agonista /
   antagonista o cinemática muscular), con su nivel (básico, intermedio, avanzado).
-- **Máximo de la tarea**: el 0,2 s más fuerte de la tarea como porcentaje de la
-  referencia; por encima del 150 %, la calibración no fue máxima.
+- **Máximo de la tarea**: el punto más alto de la envolvente de la tarea como
+  porcentaje de la referencia; por encima del 150 %, la calibración no fue máxima.
 - **Índice de coactivación (Falconer-Winter)**: fracción de la actividad de los dos
   músculos que fue compartida, por ventana; «no se informa» cuando uno no trabajó.
 - **Separación entre canales**: lo que un canal lee del otro músculo durante su

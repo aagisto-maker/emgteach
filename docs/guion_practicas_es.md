@@ -134,7 +134,8 @@ fichero, sin parar la grabación:
    **registro** de la tarea. En las otras dos prácticas la calibración se lanza
    con el botón **«Calibrar CVM»** mientras se graba, y el registro sigue.
 
-La referencia es **el mejor 0,2 s de las tres repeticiones**. ¿Por qué breves?
+La referencia es **el punto más alto que alcanza la envolvente en las tres
+repeticiones**. ¿Por qué breves?
 Porque una contracción mantenida muestra un pico al empezar y luego
 una meseta, y los esfuerzos breves de una tarea alcanzan ese pico. Si la
 referencia se midiera sobre la meseta, la tarea la superaría, y eso es lo que

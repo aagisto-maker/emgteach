@@ -131,8 +131,9 @@ MVC_REST_S = 2.0    # relax pause between reps / muscles
 #: Blocks of data (~10 per second) the armed session flow keeps trying for
 #: before handing the calibration back to the operator.
 MVC_FLOW_MAX_TRIES = 30
-# The strongest-sustained window now lives in SignalProfile, so the
-# acquisition and the analysis judge a reference by the same measure.
+# How a repetition is summarised — its peak, the profile's
+# mvc_peak_window_s — lives in SignalProfile, so the acquisition and the
+# analysis judge a reference by the same measure.
 
 # Guided force-velocity: the opening MVC maximum is a *sustained* effort (a few
 # seconds to reach the true maximum), whereas each loaded rep is a *quick lift*
@@ -2853,8 +2854,9 @@ class AcquisitionTab(QWidget):
         # settles onto a plateau, a mean taken over the plateau is below the
         # peak, and the task's brief efforts reach the peak — which is how a
         # task came out at 135 % of its own "maximum". The answer to that was
-        # to measure the reference over the strongest 0.2 s, and once it is
-        # measured there the held effort adds nothing the squeeze does not
+        # to measure the reference at the peak — over the strongest 0.2 s
+        # then, the envelope's highest point now — and once it is measured
+        # there the held effort adds nothing the squeeze does not
         # already give: the same peak, four times the fatigue, and twice the
         # calibration to sit through. Three attempts, because the first
         # maximal effort of a session is genuinely submaximal and with one
@@ -3296,9 +3298,9 @@ class AcquisitionTab(QWidget):
 
         One entry per ordered pair, ``(muscle calibrated, other channel,
         % of that other channel's own reference)``, measured exactly the way
-        the reference itself was: strongest sustained window, best of the
-        repetitions. Comparing an instantaneous peak against a sustained
-        reference would inflate the number by itself.
+        the reference itself was: each repetition's peak, best of the
+        repetitions. Measured two different ways, the number would move by
+        itself.
 
         The figure answers the question the two live bars cannot: whether the
         second channel is following its own muscle or the first one's. It is

@@ -54,10 +54,11 @@ class Contraction:
     ``muscle`` is the name of the muscle the numbers belong to: with two
     channels, the one that led the contraction (or ``both_label`` for a
     co-contraction, in which case the numbers are the stronger muscle's);
-    with one channel, that channel's name. ``peak_pct`` is the highest
-    *sustained* level against the reference — the mean over the reference's
-    own window, which the analysis passes as the profile's
-    ``mvc_peak_window_s`` (0.2 s) — and is ``None`` without one. ``emd_ms`` is the
+    with one channel, that channel's name. ``peak_pct`` is the highest level
+    against the reference, measured the way the reference is — over the
+    reference's own window, which the analysis passes as the profile's
+    ``mvc_peak_window_s``, 0, so the envelope's peak — and is ``None``
+    without one. ``emd_ms`` is the
     electromechanical delay — from the electrical onset to the start of the
     movement — where an accelerometer on the moving segment allows it.
     """
@@ -156,7 +157,7 @@ def _fast_envelope(x: np.ndarray, fs: float, win_s: float = 0.05) -> np.ndarray:
 
 
 def _running_mean_max(env: np.ndarray, w: int) -> float:
-    """The highest mean over a window of ``w`` samples (the sustained peak)."""
+    """The highest mean over a window of ``w`` samples; with one, the peak."""
     if env.size == 0:
         return 0.0
     if w <= 1 or env.size < w:
