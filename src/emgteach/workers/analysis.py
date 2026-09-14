@@ -636,6 +636,8 @@ class AnalysisWorker(QThread):
                 fs,
                 seg_len_s=self._seg_len_s,
                 overlap=self._overlap,
+                f_low=self._f_low,
+                f_high=self._f_high,
             )
             self.progress.emit(75)
             if self._cancelled:
@@ -888,6 +890,7 @@ class AnalysisWorker(QThread):
                     segs2 = compute_segments(
                         proc2["emg_filtered"], fs,
                         seg_len_s=self._seg_len_s, overlap=self._overlap,
+                        f_low=self._f_low, f_high=self._f_high,
                     )
                     activos2 = active_segments(
                         segs2["rms_seg"], self._profile.fatigue_active_ratio

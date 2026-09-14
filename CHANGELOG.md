@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Each segment's MDF is the band-limited median the summary uses.** The segments of the fatigue analysis took the median of the whole spectrum, 0 Hz to half the sampling rate, as the first bin at which a running sum reached half the power; they now use `compute_psd_mnf_mdf` over the same 20–450 Hz band as the summary's MDF and each contraction's, so the three MDFs the application reports are one measure. On the three example recordings an active segment's MDF moves by 0.4 Hz on average, in no consistent direction. Of 52 stretches analysed, each recording whole and every stretch between two of its markers, one fatigue verdict changes, from inconclusive to no fatigue, on a fit whose R² goes from 0.295 to 0.301 across the 0.30 threshold.
 - **The agonist/antagonist task's flexions and extensions are made freely, with no resistance.** The practical guides, in both languages, asked for the six wrist flexions against the table; only the grip is made against something. The Sourcebook report's description of the example recording no longer says the flexions and extensions were resisted.
 
 ## [3.1.2] — 2026-09-13

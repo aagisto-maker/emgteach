@@ -394,8 +394,17 @@ def compute_segments(
     fs: float,
     seg_len_s: float = 1.0,
     overlap: float = 0.5,
+    f_low: float = 20.0,
+    f_high: float = 450.0,
 ) -> dict[str, FloatArray]:
     """Sliding-window RMS and MDF, suitable for fatigue trend analysis.
+
+    Each segment's MDF is :func:`compute_psd_mnf_mdf`'s, over the same
+    ``f_low``-``f_high`` band as the summary's and each contraction's, from
+    one Welch window the length of the segment. It used to be the median of
+    the whole spectrum, 0 Hz to half the sampling rate, taken as the first
+    bin at which a running sum of the bins reached half the power, so the
+    three MDFs the application reports were three different measures.
 
     Parameters
     ----------
@@ -407,6 +416,8 @@ def compute_segments(
         Segment length in seconds (default 1.0).
     overlap : float, optional
         Fraction of overlap between consecutive segments (default 0.5).
+    f_low, f_high : float, optional
+        Band over which each segment's MDF is computed (default 20-450 Hz).
 
     Returns
     -------
@@ -425,16 +436,9 @@ def compute_segments(
         segment = emg[start : start + points]
         rms_seg.append(float(np.sqrt(np.mean(segment**2))))
 
-        f, pxx = welch(segment, fs=fs, nperseg=points)
-        total = float(np.sum(pxx))
-        cumulative = 0.0
-        median_freq = 0.0
-        for freq, power in zip(f, pxx, strict=False):
-            cumulative += power
-            if cumulative >= total / 2.0:
-                median_freq = float(freq)
-                break
-        mdf_seg.append(median_freq)
+        mdf_seg.append(float(compute_psd_mnf_mdf(
+            segment, fs, f_low=f_low, f_high=f_high, nperseg=points,
+        )["mdf"]))
 
     t_seg = np.arange(len(rms_seg)) * (step / fs)
 
