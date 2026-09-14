@@ -429,8 +429,8 @@ epicondylitis, an injury of repeated gripping and not of extending the wrist.
 1. **Start recording**. Calibrate both muscles as in section 4 (a jerk with the
    fist clenched for the FCR, with the hand open for the ECR).
 2. In the recording, always in this order, with 2 s of stillness between
-   manoeuvres: **six wrist flexions** (1 s each, against the table), **six
-   extensions**, and finally the **grip**.
+   manoeuvres: **six wrist flexions** (1 s each, free, with no resistance),
+   **six extensions**, also free, and finally the **grip**.
 3. **The grip in detail**, because it is the manoeuvre that yields a number and
    the easiest one to get wrong:
    - Forearm on the table as far as the wrist, elbow at 90°, thumb up, and **the

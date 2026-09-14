@@ -1024,8 +1024,8 @@ medias de 14,4 % y 11,1 % CVM. Correlación de las dos envolventes:
 2026**, con la calibración de tres esfuerzos breves por músculo, hechos como
 sacudidas —la maniobra que pide la 3.1.2—; `REC start` en el segundo 57,3 y
 42,7 s de tarea. El protocolo fue
-**seis flexiones de muñeca contra resistencia, dos segundos de
-quietud, seis extensiones contra resistencia, dos segundos de quietud y una
+**seis flexiones de muñeca, dos segundos de quietud, seis extensiones, dos
+segundos de quietud y una
 presa sostenida de unos ocho segundos con la muñeca neutra**.
 
 | Medida | Canal 1 (FCR) | Canal 2 (ECR) |

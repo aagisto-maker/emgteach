@@ -428,8 +428,8 @@ por extender la muñeca.
 1. **Iniciar grabación**. Calibrar los dos músculos como dice el apartado 4 (una
    sacudida con el puño cerrado para el FCR, con la mano abierta para el ECR).
 2. En el registro, y siempre en este orden, con 2 s de quietud entre maniobras:
-   **seis flexiones** de muñeca (1 s cada una, contra la mesa), **seis
-   extensiones**, y por último la **presa**.
+   **seis flexiones** de muñeca (1 s cada una, libres, sin resistencia),
+   **seis extensiones**, también libres, y por último la **presa**.
 3. **La presa, con detalle**, porque es la maniobra que da número y la que más
    fácil sale mal:
    - Antebrazo apoyado en la mesa hasta la muñeca, codo a 90°, pulgar hacia
