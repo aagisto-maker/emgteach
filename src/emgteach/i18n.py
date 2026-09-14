@@ -598,8 +598,6 @@ _ES = {
     "11. Tremor (accelerometer FFT)": "11. Temblor (FFT del acelerómetro)",
     "10. EMG vs MMG": "10. EMG vs MMG",
     "11. Tremor": "11. Temblor",
-    "11. Tremor — accelerometer spectrum":
-        "11. Temblor — espectro del acelerómetro",
     "Electrical (EMG) vs mechanical (MMG, from the accelerometer on "
     "the muscle) envelope — needs an accelerometer channel.":
         "Envolvente eléctrica (EMG) vs mecánica (MMG, del acelerómetro sobre "
@@ -1107,17 +1105,12 @@ _ES = {
     "5. Envelope vs RMS": "5. Envolvente vs RMS",
     "6. RMS per window": "6. RMS por ventana",
     "7. MDF vs time (fatigue)": "7. MDF vs tiempo (fatiga)",
-    "1. Raw EMG signal": "1. Señal EMG en bruto",
     "Filtered EMG (20-450 Hz)": "EMG filtrado (20-450 Hz)",
-    "4. Filtered + rectified EMG signal": "4. Señal EMG filtrada + rectificada",
     "Rectified EMG": "EMG rectificado",
     "LP envelope (zero-phase)": "Envolvente LP (fase cero)",
     "RMS envelope": "Envolvente RMS",
-    "5. EMG signal envelope": "5. Envolvente de la señal EMG",
     "Normalised envelope (max=1)": "Envolvente normalizada (max=1)",
-    "2. Envelope normalised to maximum": "2. Envolvente normalizada al máximo",
     "Normalised amplitude (0-1)": "Amplitud normalizada (0-1)",
-    "3. Power spectral density (PSD)": "3. Densidad espectral de potencia (PSD)",
     "Relative spectral density (area 1)": "Densidad espectral relativa (área 1)",
     "{pct:.0f} % of {other}'s power: noise?": "{pct:.0f} % de la potencia de {other}: ¿ruido?",
     "Each spectrum is drawn scaled to unit area. The power of a spectrum goes "
@@ -1138,16 +1131,8 @@ _ES = {
         "fracción pequeña de la del otro se dibuja atenuado y se dice.",
     "Frequency (Hz)": "Frecuencia (Hz)",
     "RMS per 1 s window": "RMS por ventana de 1 s",
-    "6. RMS amplitude over time": "6. Amplitud RMS en el tiempo",
     "Median frequency per window": "Frecuencia mediana por ventana",
     "Trend (degree-2 polynomial)": "Tendencia (polinomio grado 2)",
-    "7. Fatigue trend: median frequency vs. time\n"
-    "   (a decrease indicates muscle fatigue)":
-        "7. Tendencia de fatiga: frecuencia mediana vs. tiempo\n"
-        "   (un descenso indica fatiga muscular)",
-    "Degree-2 polynomial fit": "Ajuste polinómico grado 2",
-    "8. Amplitude (force) vs median frequency (fatigue)":
-        "8. Relación amplitud (fuerza) vs frecuencia mediana (fatiga)",
     "Select EDF file": "Seleccionar archivo EDF",
     "EDF files (*.edf *.EDF)": "Archivos EDF (*.edf *.EDF)",
     "Save figure": "Guardar figura",
@@ -1163,6 +1148,92 @@ _ES = {
     "Amplitude (mV)": "Amplitud (mV)",
     "{muscle} (mV)": "{muscle} (mV)",
     "{muscle}: RMS (mV)": "{muscle}: RMS (mV)",
+    # Panel titles and their readings (emgteach.panels).
+    "Raw EMG signal":
+        "Señal EMG en bruto",
+    "the trace thickens while the muscle contracts and thins while it rests":
+        "la traza se ensancha mientras el músculo se contrae y se estrecha "
+        "en reposo",
+    "each muscle against its own axis: read when each one fires, not which "
+    "is taller":
+        "cada músculo contra su propio eje: se lee cuándo dispara cada uno, "
+        "no cuál es más alto",
+    "Envelope normalised to maximum":
+        "Envolvente normalizada al máximo",
+    "1 is the highest point of this window, not the MVC: read the shape, not "
+    "the height":
+        "1 es el punto más alto de esta ventana, no la CVM: se lee la forma, "
+        "no la altura",
+    "Power spectral density (PSD)":
+        "Densidad espectral de potencia (PSD)",
+    "where the signal's power lies; in grey, what the filter took away":
+        "dónde está la potencia de la señal; en gris, lo que quitó el filtro",
+    "each curve has area 1, so the shapes compare; the dashed line is each "
+    "muscle's MDF":
+        "cada curva tiene área 1, así que se comparan las formas; la línea "
+        "discontinua es la MDF de cada músculo",
+    "Filtered + rectified EMG signal":
+        "Señal EMG filtrada + rectificada",
+    "rectified, every oscillation counts upwards: the taller the trace, the "
+    "stronger the activation":
+        "rectificada, cada oscilación cuenta hacia arriba: cuanto más alta "
+        "la traza, más fuerte la activación",
+    "EMG signal envelope":
+        "Envolvente de la señal EMG",
+    "the higher the curve, the stronger the activation; the two lines are "
+    "two ways of measuring it":
+        "cuanto más alta la curva, más fuerte la activación; las dos líneas "
+        "son dos formas de medirla",
+    "RMS amplitude over time":
+        "Amplitud RMS en el tiempo",
+    "one point per window: rising at a steady effort means more motor units, "
+    "often fatigue":
+        "un punto por ventana: si sube con el mismo esfuerzo, entran más "
+        "unidades motoras, a menudo por fatiga",
+    "each muscle against its own axis: read how each one evolves, not which "
+    "is higher":
+        "cada músculo contra su propio eje: se lee cómo evoluciona cada uno, "
+        "no cuál está más alto",
+    "Fatigue trend: median frequency vs. time":
+        "Tendencia de fatiga: frecuencia mediana vs. tiempo",
+    "a decrease indicates muscle fatigue":
+        "un descenso indica fatiga muscular",
+    "Amplitude vs median frequency":
+        "Amplitud frente a frecuencia mediana",
+    "the points follow time along the arrow; fatigue moves the path up and "
+    "to the left: more amplitude, less frequency":
+        "los puntos avanzan en el tiempo siguiendo la flecha; la fatiga "
+        "mueve el recorrido arriba y a la izquierda: más amplitud, menos "
+        "frecuencia",
+    "Overlaid envelopes (agonist/antagonist)":
+        "Envolventes superpuestas (agonista/antagonista)",
+    "each muscle against its own maximum: one rising as the other falls is "
+    "alternation; both up at once, co-activation":
+        "cada músculo contra su propio máximo: si uno sube mientras el otro "
+        "baja, se alternan; si suben a la vez, coactivación",
+    "in millivolts: read when each one fires, not which is higher":
+        "en milivoltios: se lee cuándo dispara cada uno, no cuál está más "
+        "alto",
+    "EMG vs MMG (electrical vs mechanical)":
+        "EMG vs MMG (eléctrico vs mecánico)",
+    "the muscle's vibration (MMG) follows its electrical activity (EMG)":
+        "la vibración del músculo (MMG) sigue a su actividad eléctrica (EMG)",
+    "Tremor — accelerometer spectrum":
+        "Temblor — espectro del acelerómetro",
+    "the peak is the tremor's frequency; physiological tremor sits at 8-12 Hz":
+        "el pico es la frecuencia del temblor; el fisiológico está entre 8 y "
+        "12 Hz",
+    "Movement vs EMG (limb kinematics)":
+        "Movimiento vs EMG (cinemática del segmento)",
+    "the EMG rises first and the movement follows: the gap is the "
+    "electromechanical delay":
+        "primero sube la EMG y después llega el movimiento: el desfase es el "
+        "retraso electromecánico",
+    "{muscle}: windows with contraction, in time order; paler, earlier":
+        "{muscle}: ventanas con contracción, en orden temporal; más claras, "
+        "las primeras",
+    "start":
+        "inicio",
     "Time (s)": "Tiempo (s)",
     # Progress bar + fatigue summary (analysis tab).
     "Ready": "Listo",
@@ -1356,11 +1427,6 @@ _ES = {
     "Amplitude (0-1)": "Amplitud (0-1)",
     "MDF per window": "MDF por ventana",
     "Trend (degree 2)": "Tendencia (grado 2)",
-    "Degree-2 fit": "Ajuste grado 2",
-    "7. Fatigue: median frequency (MDF) vs time":
-        "7. Fatiga: frecuencia mediana (MDF) vs tiempo",
-    "8. Amplitude (RMS) vs median frequency (MDF)":
-        "8. Amplitud (RMS) vs frecuencia mediana (MDF)",
     "EMG recording and analysis report": "Informe de registro y análisis de EMG",
     "Generated on: {dt:%Y-%m-%d %H:%M}": "Fecha de generación: {dt:%Y-%m-%d %H:%M}",
     "File: {name}": "Archivo: {name}",
@@ -1682,7 +1748,6 @@ _ES = {
     "Whole recording — accept the fragments for one value per window": "Registro completo — acepte los fragmentos para tener un valor por "
         "ventana",
     'Window': 'Ventana',
-    '9. Overlaid envelopes (agonist/antagonist), % MVC': '9. Envolventes superpuestas (agonista/antagonista), % CVM',
     'Millivolts are not comparable between two muscles. Calibrate MVC while recording to compare them.': 'Los milivoltios no son comparables entre dos músculos. Calibre la CVM mientras graba para poder compararlos.',
     'Connecting the sensor': 'Conexión del sensor',
     'How to place the accelerometer': 'Cómo situar el acelerómetro',

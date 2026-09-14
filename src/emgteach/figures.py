@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 from scipy.integrate import trapezoid
 
 # The two muscles' colours are those of charts.py and nowhere else: a colour
@@ -221,6 +222,53 @@ def draw_rms_panel(ax: Any, result: Mapping[str, Any], *, lw: float = 1.5,
         axis.set_ylim(0.0, 1.1 * top if top > 0.0 else 1.0)
     ax.set_xlabel(tr("Time (s)"), fontsize=fontsize)
     return ax_2
+
+
+def draw_amplitude_frequency_panel(ax: Any, result: Mapping[str, Any], *,
+                                   lw: float = 1.6, ms: float = 5,
+                                   fontsize: int = 8) -> None:
+    """Panel 8, on screen and in the report: amplitude against median
+    frequency, as a path through time.
+
+    Each point is a window in which the muscle was contracting — the windows
+    the fatigue trend is fitted on, since a resting window's median frequency
+    is the amplifier's — joined in time order, with an arrowhead on the last
+    step: what the panel shows is a path, not a function. Fatigue moves the
+    path up and to the left, more amplitude and less frequency. The curve
+    fitted over these points is still computed but not drawn: it read as the
+    time trend of panel 7, and time is on no axis of this plane, only along
+    the path. Always the chosen muscle: two paths on one millivolt axis would
+    be a tangle, and one muscle's millivolts are not the other's.
+    """
+    mdf = np.asarray(result["mdf_seg"], dtype=np.float64)
+    rms = np.asarray(result["rms_seg"], dtype=np.float64)
+    active = result.get("fat_active")
+    if active is not None and len(active) == mdf.size:
+        mask = np.asarray(active, dtype=bool)
+    else:
+        mask = np.ones(mdf.size, dtype=bool)
+    x, y = mdf[mask], rms[mask]
+    name = result.get("channel_name") or tr("Muscle {n}").format(n=1)
+    ax.plot(x, y, color=COLOUR_1, lw=lw * 0.6, alpha=0.55, zorder=2,
+            label=tr("{muscle}: windows with contraction, in time order; "
+                     "paler, earlier").format(muscle=name))
+    # The points darken as time goes on, so the order reads along the whole
+    # path and not only at the arrow; a shade of the muscle's own colour.
+    shades = LinearSegmentedColormap.from_list("path", ["#D5DEF8", COLOUR_1])
+    ax.scatter(x, y, c=np.linspace(0.0, 1.0, x.size), cmap=shades, vmin=0.0,
+               vmax=1.0, s=ms ** 2, zorder=3)
+    if x.size >= 2:
+        ax.annotate("", xy=(x[-1], y[-1]), xytext=(x[-2], y[-2]),
+                    arrowprops={"arrowstyle": "-|>", "color": COLOUR_1,
+                                "lw": lw, "mutation_scale": 16},
+                    zorder=4)
+    if x.size:
+        ax.annotate(tr("start"), xy=(x[0], y[0]), xytext=(5, 5),
+                    textcoords="offset points", fontsize=fontsize - 1,
+                    color=COLOUR_1)
+    ax.set_xlabel("MDF (Hz)", fontsize=fontsize)
+    ax.set_ylabel("RMS (mV)", fontsize=fontsize)
+    ax.legend(fontsize=fontsize - 1)
 
 
 def draw_emd_note(ax: Any, result: Mapping[str, Any]) -> None:

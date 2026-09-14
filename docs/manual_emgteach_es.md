@@ -459,7 +459,7 @@ tiempo.
 | **5. Envolvente frente a RMS** | Dos medidas de amplitud superpuestas | Nivel de activación en el tiempo | «Más paneles…» |
 | **6. RMS por ventana** | Amplitud RMS a lo largo del tiempo; en el par, los dos músculos, cada uno contra su propio eje | Evolución del esfuerzo | «Más paneles…» |
 | **7. MDF frente al tiempo** | MDF por ventana y su recta; en el par, los dos músculos | **Indicador de fatiga** (§5.4) | agonista / antagonista |
-| **8. RMS frente a MDF** | Relación amplitud–frecuencia | Relación fuerza/fatiga durante la tarea | «Más paneles…» |
+| **8. RMS frente a MDF** | El recorrido de amplitud y frecuencia mediana por las ventanas con contracción, en orden temporal y con una flecha al final | La fatiga lo mueve arriba y a la izquierda | «Más paneles…» |
 | **9. Envolventes superpuestas** | Las dos envolventes en % CVM sobre el mismo eje, con la banda del 100 % | Coactivación y coordinación | agonista / antagonista |
 | **10. EMG frente a MMG** | Envolvente eléctrica y mecánica | Acoplamiento electromecánico | cinemática muscular |
 | **11. Temblor** | Espectro del acelerómetro | Pico del temblor fisiológico (8–12 Hz) | cinemática muscular |
@@ -467,7 +467,9 @@ tiempo.
 
 En la fila de casillas los nombres aparecen abreviados (*1. En bruto*, *2. Env.
 norm.*, *3. PSD*…); los de la tabla son los de los títulos de los paneles y del
-informe. Sobre cualquier panel en % CVM, una banda rosa marca lo que pasa del
+informe. Cada título dice además cómo se lee el panel y, si enseña un solo
+músculo, cuál; elegir otro músculo en «Canal EMG» vuelve a analizar al momento.
+Sobre cualquier panel en % CVM, una banda rosa marca lo que pasa del
 100 %, y si el registro pasa mucho tiempo ahí el panel lo dice en rojo.
 
 **La banda inferior**, en tres cuadros que comparten el ancho:

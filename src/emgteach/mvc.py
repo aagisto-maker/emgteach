@@ -346,6 +346,7 @@ def overlay_curves(result) -> tuple[OverlayCurve, OverlayCurve | None]:
     invites exactly the comparison the panel exists to make possible.
     """
     from emgteach.i18n import tr
+    from emgteach.panels import OVERLAY_READING_MV, panel_title
 
     env1 = np.asarray(result["emg_envelope"], dtype=np.float64)
     raw2 = result.get("emg_envelope_2")
@@ -357,7 +358,7 @@ def overlay_curves(result) -> tuple[OverlayCurve, OverlayCurve | None]:
     in_pct = bool(ref1) and (bool(ref2) or not comparing)
 
     if in_pct:
-        title = tr("9. Overlaid envelopes (agonist/antagonist), % MVC")
+        title = panel_title(8, result, unit=tr("% MVC"))
         ylabel = tr("Activation (% MVC)")
         # A reference that was never a maximum still divides cleanly; what it
         # produces is an axis running to several hundred per cent. Say it on
@@ -373,7 +374,7 @@ def overlay_curves(result) -> tuple[OverlayCurve, OverlayCurve | None]:
         )
         return first, second
 
-    title = tr("9. Overlaid envelopes (agonist/antagonist)")
+    title = panel_title(8, result, reading=OVERLAY_READING_MV)
     ylabel = tr("Amplitude ({units})").format(units=result.get("dimension", "mV"))
     warning = tr(
         "Millivolts are not comparable between two muscles. Calibrate MVC "

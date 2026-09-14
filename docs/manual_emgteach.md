@@ -368,13 +368,15 @@ scale and ▶◀ the time scale.
 | **5. Envelope vs RMS** | Two amplitude measures overlaid | Activation over time | «More panels…» |
 | **6. RMS per window** | RMS over time; in the pair, both muscles, each against its own axis | Evolution of the effort | «More panels…» |
 | **7. MDF vs time** | MDF per window and its fitted line; in the pair, both muscles | **Fatigue indicator** (§5.4) | pair |
-| **8. RMS vs MDF** | Amplitude–frequency relationship | Force/fatigue during the task | «More panels…» |
+| **8. RMS vs MDF** | The path of amplitude and median frequency through the windows with contraction, in time order, with an arrow at the end | Fatigue moves it up and to the left | «More panels…» |
 | **9. Overlaid envelopes** | Both envelopes in % MVC on one axis, with the 100 % band | Co-activation and coordination | pair |
 | **10. EMG vs MMG** | Electrical and mechanical envelopes | Electromechanical coupling | kinematics |
 | **11. Tremor** | Accelerometer spectrum | Physiological tremor peak (8–12 Hz) | kinematics |
 | **12. Movement vs EMG** | Kinematic trace and EMG envelope, with the mean electromechanical delay noted | Movement follows contraction | kinematics |
 
-On any % MVC panel a pink band marks what exceeds 100 %, and if the recording
+Each title says how to read its panel and, when the panel shows one muscle,
+which one; choosing another muscle in «EMG channel» re-runs the analysis at
+once. On any % MVC panel a pink band marks what exceeds 100 %, and if the recording
 spends much time there the panel says so in red.
 
 **The bottom band**, three boxes sharing the width:

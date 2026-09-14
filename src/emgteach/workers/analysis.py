@@ -832,6 +832,9 @@ class AnalysisWorker(QThread):
                 "fat_slope_per_min": fat_time["slope_per_min"],
                 "rms_mdf_range": fat_rms["mdf_range"],
                 "rms_mdf_fitted": fat_rms["fitted"],
+                # The windows the trend is fitted on: panel 8 draws its
+                # path over them.
+                "fat_active": activos,
                 # summary metrics
                 "rms_global": rms_global,
                 "duration": duration,

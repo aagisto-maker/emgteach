@@ -266,6 +266,7 @@ from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.figures import (
+    draw_amplitude_frequency_panel,
     draw_emd_note,
     draw_psd_panel,
     draw_raw_panel,
@@ -302,6 +303,7 @@ from emgteach.modes import (
     mode_uses_acc,
 )
 from emgteach.mvc import mark_excess_over_100, overlay_curves
+from emgteach.panels import panel_title
 from emgteach.phases import (
     NO_CALIBRATION,
     parse_phase_markers,
@@ -448,11 +450,17 @@ class AnalysisTab(QWidget):
         self._combo_canal.currentIndexChanged.connect(
             self._on_primary_channel_changed
         )
-        # These five feed the worker and none of them re-runs it, which is
-        # why the Analyse button survives. It lights up here and nowhere
-        # else, so in a session that only opens the two editors it stays
-        # dark from beginning to end.
+        # These five feed the worker and, but for the channel, none of them
+        # re-runs it, which is why the Analyse button survives. It lights up
+        # here and nowhere else, so in a session that only opens the two
+        # editors it stays dark from beginning to end.
         self._combo_canal.currentIndexChanged.connect(self._marcar_pendiente)
+        # Choosing another muscle re-runs the analysis at once. Left pending,
+        # the panels went on showing the other muscle until Analyse was
+        # pressed, and nothing on them said whose they were. `activated` is
+        # the student's choice only: the changes made while a file loads do
+        # not come through it.
+        self._combo_canal.activated.connect(self._on_channel_chosen)
         row_params.addWidget(self._combo_canal)
         # Optional second channel: overlay the agonist/antagonist envelopes. The
         # partner channel is chosen automatically (the other one), so the picker
@@ -2365,6 +2373,12 @@ class AnalysisTab(QWidget):
         """When the analysed channel changes, keep the partner in sync."""
         self._sync_second_channel()
 
+    @Slot(int)
+    def _on_channel_chosen(self, _index: int) -> None:
+        """The student chose another muscle: analyse it now."""
+        if self._last_result is not None and self._edit_path.text().strip():
+            self._iniciar_analisis()
+
     @Slot(bool)
     def _on_compare2_toggled(self, checked: bool) -> None:
         """Turn the overlay on/off: sync the partner channel and gate panel 9."""
@@ -2467,7 +2481,7 @@ class AnalysisTab(QWidget):
             twin = draw_raw_panel(ax, r, lw=0.8, fontsize=8)
             if twin is not None:
                 self._y_twins[0] = twin
-            ax.set_title(tr("1. Raw EMG signal"), fontsize=9)
+            ax.set_title(panel_title(0, r), fontsize=9)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.grid(True, **_grid)
@@ -2482,7 +2496,7 @@ class AnalysisTab(QWidget):
             # muscle's: in the pair, that red means the other muscle.
             ax.plot(times, r["emg_rectified"],
                     color="#E74C3C", lw=1.2, alpha=0.9, label=tr("Rectified EMG"))
-            ax.set_title(tr("4. Filtered + rectified EMG signal"), fontsize=9)
+            ax.set_title(panel_title(1, r), fontsize=9)
             ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -2500,7 +2514,7 @@ class AnalysisTab(QWidget):
                     color="#9467bd", lw=2.0, label=tr("LP envelope (zero-phase)"))
             ax.plot(times, r["rms_sliding"],
                     color="#2ca02c", lw=1.5, ls="--", label=tr("RMS envelope"))
-            ax.set_title(tr("5. EMG signal envelope"), fontsize=9)
+            ax.set_title(panel_title(2, r), fontsize=9)
             ax.set_ylabel(tr("Amplitude (mV)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -2515,7 +2529,7 @@ class AnalysisTab(QWidget):
             ax.plot(times, r["emg_envelope_normalised"],
                     color="#9467bd", lw=1.8, label=tr("Normalised envelope (max=1)"))
             ax.axhline(1.0, color="#E74C3C", ls=":", lw=1.5, alpha=0.8)
-            ax.set_title(tr("2. Envelope normalised to maximum"), fontsize=9)
+            ax.set_title(panel_title(3, r), fontsize=9)
             ax.set_ylabel(tr("Normalised amplitude (0-1)"), fontsize=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -2592,7 +2606,7 @@ class AnalysisTab(QWidget):
                         tr("No accelerometer channel in this recording."),
                         transform=ax.transAxes, ha="center", va="center",
                         fontsize=8, color="#888888")
-            ax.set_title(tr("10. EMG vs MMG (electrical vs mechanical)"), fontsize=9)
+            ax.set_title(panel_title(_MMG_PID, r), fontsize=9)
             ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color=COLOUR_1)
             ax.tick_params(axis="y", labelsize=7, colors=COLOUR_1)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
@@ -2620,7 +2634,7 @@ class AnalysisTab(QWidget):
                         tr("No accelerometer channel in this recording."),
                         transform=ax.transAxes, ha="center", va="center",
                         fontsize=8, color="#888888")
-            ax.set_title(tr("11. Tremor — accelerometer spectrum"), fontsize=9)
+            ax.set_title(panel_title(_TREMOR_PID, r), fontsize=9)
             ax.set_xlabel(tr("Frequency (Hz)"), fontsize=8)
             ax.set_ylabel("PSD (g²/Hz)", fontsize=8)
             ax.tick_params(labelsize=7)
@@ -2655,7 +2669,7 @@ class AnalysisTab(QWidget):
                         tr("No accelerometer channel in this recording."),
                         transform=ax.transAxes, ha="center", va="center",
                         fontsize=8, color="#888888")
-            ax.set_title(tr("12. Movement vs EMG (limb kinematics)"), fontsize=9)
+            ax.set_title(panel_title(_MOVEMENT_PID, r), fontsize=9)
             ax.set_ylabel(tr("EMG (mV)"), fontsize=8, color=COLOUR_1)
             ax.tick_params(axis="y", labelsize=7, colors=COLOUR_1)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
@@ -2671,7 +2685,7 @@ class AnalysisTab(QWidget):
             # Each spectrum scaled to unit area, the same drawing as the
             # report's (emgteach.figures.draw_psd_panel).
             draw_psd_panel(ax, r, lw=1.8, fontsize=8)
-            ax.set_title(tr("3. Power spectral density (PSD)"), fontsize=9)
+            ax.set_title(panel_title(4, r), fontsize=9)
             ax.set_xlim(0, f_high + 50)
             ax.tick_params(labelsize=7)
             ax.grid(True, **_grid)
@@ -2683,7 +2697,7 @@ class AnalysisTab(QWidget):
             twin = draw_rms_panel(ax, r, lw=1.5, ms=4, fontsize=8)
             if twin is not None:
                 self._y_twins[5] = twin
-            ax.set_title(tr("6. RMS amplitude over time"), fontsize=9)
+            ax.set_title(panel_title(5, r), fontsize=9)
             ax.set_xlim(inicio_s, fin_s)
             ax.tick_params(labelsize=7)
             ax.grid(True, **_grid)
@@ -2714,13 +2728,7 @@ class AnalysisTab(QWidget):
                 if len(r["t_seg_2"]) >= 2:
                     ax.plot(r["t_seg_2"], r["fat_fitted_2"], color=COLOUR_2,
                             lw=2.5, label=tr("{muscle}: trend").format(muscle=n2))
-            ax.set_title(
-                tr(
-                    "7. Fatigue trend: median frequency vs. time\n"
-                    "   (a decrease indicates muscle fatigue)"
-                ),
-                fontsize=9, pad=8,
-            )
+            ax.set_title(panel_title(6, r), fontsize=9, pad=8)
             ax.set_xlabel(tr("Time (s)"), fontsize=8)
             ax.set_ylabel("MDF (Hz)", fontsize=8)
             ax.set_xlim(inicio_s, fin_s)
@@ -2729,22 +2737,14 @@ class AnalysisTab(QWidget):
             ax.grid(True, **_grid)
             self._dibujar_marcadores(ax, inicio_s, fin_s)
 
-        # --- 7: RMS vs MDF (scatter) ---
+        # --- 8: amplitude against median frequency, a path through time ---
         if 7 in ax_map:
             ax = ax_map[7]
-            t_seg = r["t_seg"]
-            sc = ax.scatter(r["mdf_seg"], r["rms_seg"],
-                            c=t_seg, cmap="viridis", s=60, alpha=0.8, zorder=3)
-            ax.plot(r["rms_mdf_range"], r["rms_mdf_fitted"],
-                    color="#E74C3C", lw=2.5, label=tr("Degree-2 polynomial fit"))
-            cbar = self._fig.colorbar(sc, ax=ax, orientation="vertical", pad=0.02)
-            cbar.set_label(tr("Time (s)"), fontsize=8)
-            cbar.ax.tick_params(labelsize=7)
-            ax.set_title(tr("8. Amplitude (force) vs median frequency (fatigue)"), fontsize=9)
-            ax.set_xlabel("MDF (Hz)", fontsize=8)
-            ax.set_ylabel("RMS (mV)", fontsize=8)
+            # The same drawing as the report's
+            # (emgteach.figures.draw_amplitude_frequency_panel).
+            draw_amplitude_frequency_panel(ax, r, lw=1.6, ms=5, fontsize=8)
+            ax.set_title(panel_title(7, r), fontsize=9)
             ax.tick_params(labelsize=7)
-            ax.legend(fontsize=7)
             ax.grid(True, **_grid)
 
         self._axes_list = axes_list
