@@ -326,8 +326,8 @@ def slice_reps(
 class RepValue:
     """One calibration repetition, as the analysis tab offers it for keeping.
 
-    ``value_mv`` is measured exactly as the reference is — strongest sustained
-    window — so the largest of them *is* the reference when every repetition is
+    ``value_mv`` is measured exactly as the reference is — the repetition's
+    peak — so the largest of them *is* the reference when every repetition is
     kept, and the arithmetic the student sees adds up.
 
     ``crosstalk_pct`` is what the *other* channel reached during this effort, as
@@ -419,8 +419,9 @@ def mvc_reference(
     keep : collection of int, optional
         1-based repetition numbers to keep. ``None`` keeps them all.
     percentile, window_s
-        Measured the same way the wizard measured it: the strongest window of
-        ``window_s`` seconds, best of the repetitions.
+        Measured the same way the wizard measured it: each repetition's
+        highest mean over ``window_s`` seconds — its peak, with the profile's
+        window of 0 — best of the repetitions.
 
     Raises
     ------

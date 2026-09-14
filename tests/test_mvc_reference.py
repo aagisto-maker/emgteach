@@ -130,12 +130,12 @@ class TestTheCalibrationIsComparedWithRest:
         """Tunable against real forearm data, like the co-activation floor."""
         assert EMG_PROFILE.mvc_min_rest_ratio == pytest.approx(5.0)
         assert EMG_PROFILE.mvc_implausible_pct == pytest.approx(150.0)
-        # 0.2 s, not 0.5: a held maximum peaks at its start and then settles
-        # on a plateau, and the task's brief efforts reach that peak. The
-        # reference has to be measured where the peak is, or the task beats
-        # it by construction. Three brief squeezes join the calibration for
-        # the same reason.
-        assert EMG_PROFILE.mvc_peak_window_s == pytest.approx(0.2)
+        # No window: the reference is the envelope's peak. The MVC is the top
+        # of the scale, so what stands for it is a maximum; a running mean,
+        # 0.5 s and then 0.2 s, took in the rise and the fall of the peak.
+        # Three brief efforts, because a held maximum peaks at its start and
+        # the task's brief efforts reach that peak.
+        assert EMG_PROFILE.mvc_peak_window_s == 0.0
         assert EMG_PROFILE.mvc_bursts == 3
         assert EMG_PROFILE.mvc_burst_s == pytest.approx(1.5)
 
@@ -263,10 +263,9 @@ class TestJudgingAReferenceFairly:
     """What is compared against the reference is measured the same way."""
 
     def test_the_running_mean_matches_the_reference_statistic(self) -> None:
-        """The reference is the strongest 0.5 s the subject held, so a
-        recording is judged by its own strongest 0.5 s and not by an
-        instantaneous peak. On one recording that difference
-        alone turned an honest 234 % into an alarming 384 %.
+        """With a window, a recording is judged by its own strongest window
+        and not by an instantaneous peak, the way the reference is. On one
+        recording, mixing the two turned 234 % into 384 %.
         """
         from emgteach.mvc import mvc_peak_hold
         from emgteach.workers.analysis import _sustained
@@ -286,6 +285,21 @@ class TestJudgingAReferenceFairly:
 
         short = _envelope(0.02, 100)
         assert np.array_equal(_sustained(short, FS, 0.5), short)
+
+    def test_with_the_profile_both_are_the_envelope_peak(self) -> None:
+        """No window: the reference is the highest point the envelope
+        reaches, and the task is judged by its own highest point."""
+        from emgteach.mvc import mvc_from_reps, mvc_peak_hold
+        from emgteach.workers.analysis import _sustained
+
+        rng = np.random.default_rng(3)
+        env = np.abs(rng.normal(0.1, 0.03, int(FS * 3)))
+        w = max(1, round(EMG_PROFILE.mvc_peak_window_s * FS))
+        assert mvc_from_reps([env], window_samples=w) == env.max()
+        assert np.array_equal(
+            _sustained(env, FS, EMG_PROFILE.mvc_peak_window_s), env)
+        # No window at all is the peak too, not the percentile fallback.
+        assert mvc_peak_hold(env, 0) == env.max()
 
 
 @pytest.mark.gui

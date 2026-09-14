@@ -31,7 +31,7 @@ se recalcula.* Fondo de escala BITalino ±1,635 mV.
 - **Captura de pantalla**: botón «Captura» en la esquina superior derecha
   o **F12**. Guarda la ventana en la carpeta de los registros, sin preguntar.
 - **Calibración**: 10 s de calentamiento; por músculo, **3 esfuerzos máximos
-  breves** (1,5 s). Referencia = el mejor 0,2 s de los tres.
+  breves** (1,5 s). Referencia = el punto más alto de la envolvente en los tres.
 - **El máximo es una sacudida breve y explosiva a la máxima potencia, no un
   empuje contra algo fijo.** FCR: sacudida de flexión de muñeca **cerrando el
   puño** con toda la fuerza. ECR: sacudida de extensión de muñeca con **la mano

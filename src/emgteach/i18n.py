@@ -205,12 +205,13 @@ _ES = {
         "reposo son unas centésimas de milivoltio; un esfuerzo firme con "
         "electrodos de superficie suele estar entre 0,1 y 1 mV, y depende de "
         "los electrodos y de la piel: por eso existe el % CVM.",
-    "the strongest {w:.1f} s of the contraction, as a share of the maximum. "
-    "A task effort is usually 20–80 %; above 100 % (in red) the calibration "
-    "was not a maximum.":
-        "el tramo de {w:.1f} s más fuerte de la contracción, como porcentaje "
-        "del máximo. Un esfuerzo de tarea suele estar entre el 20 y el 80 %; "
-        "por encima del 100 % (en rojo) la calibración no fue un máximo.",
+    "the highest point of the contraction's envelope, as a share of the "
+    "maximum. A task effort is usually 20–80 %; above 100 % (in red) the "
+    "calibration was not a maximum.":
+        "el punto más alto de la envolvente de la contracción, como "
+        "porcentaje del máximo. Un esfuerzo de tarea suele estar entre el 20 "
+        "y el 80 %; por encima del 100 % (en rojo) la calibración no fue un "
+        "máximo.",
     "MDF": "MDF",
     "median frequency of the spectrum. Typically 60–150 Hz for surface EMG "
     "of limb muscles; it falls along a sustained effort as the muscle "
@@ -291,18 +292,18 @@ _ES = {
     "recorded for each muscle, each announced {cue} s ahead and followed by "
     "{rest} s of rest. Each effort is one brief, explosive maximal jerk, "
     "not a sustained push against something fixed. The reference is the "
-    "strongest {win} s across the "
-    "repetitions kept, so it is a maximum the task cannot exceed; a "
-    "repetition that came out weak can be discarded afterwards in the "
-    "analysis.":
+    "highest point the envelope reaches across the repetitions kept, so it "
+    "is a maximum the task cannot exceed; a repetition that came out weak "
+    "can be discarded afterwards in the analysis.":
         "Tras {warm} s de calentamiento se graban {n} esfuerzos máximos "
         "breves de {dur} s por músculo, cada uno anunciado con {cue} s de "
         "antelación y seguido de {rest} s de descanso. Cada esfuerzo es una "
         "sacudida breve y explosiva a la máxima potencia, no un empuje "
         "sostenido contra algo fijo. La referencia es el "
-        "tramo de {win} s más fuerte de las repeticiones que se conservan, de "
-        "modo que es un máximo que la tarea no puede superar; una repetición "
-        "que salió floja puede descartarse después en el análisis.",
+        "punto más alto que alcanza la envolvente en las repeticiones que se "
+        "conservan, de modo que es un máximo que la tarea no puede superar; "
+        "una repetición que salió floja puede descartarse después en el "
+        "análisis.",
     "Opening a recording": "Abrir un registro",
     "Open a recording and it is analysed on its own; the channel to study is "
     "the muscle's name from the file. The two buttons underneath are for "
@@ -436,9 +437,9 @@ _ES = {
     "MVC": "CVM",
     "Close": "Cerrar",
     "not a maximum": "no fue un máximo",
-    "Highest sustained level ({w:.1f} s) of the task, as % of the maximal "
-    "contraction. Well above 100 % means the calibration was not a maximum.":
-        "Nivel más alto sostenido ({w:.1f} s) durante la tarea, en % de la "
+    "Highest point of the task's envelope, as % of the maximal contraction. "
+    "Well above 100 % means the calibration was not a maximum.":
+        "Punto más alto de la envolvente durante la tarea, en % de la "
         "contracción máxima. Muy por encima del 100 % significa que la "
         "calibración no fue un máximo.",
     "Detected (MDF −{decline:.1f} %)": "Detectada (MDF −{decline:.1f} %)",
@@ -496,7 +497,7 @@ _ES = {
         "Calibración (contracción voluntaria máxima)",
     "Reference": "Referencia",
     "Source": "Procedencia",
-    "{pct:.0f} % MVC (sustained {w:.1f} s)": "{pct:.0f} % CVM (sostenido {w:.1f} s)",
+    "{pct:.0f} % MVC (envelope peak)": "{pct:.0f} % CVM (pico de la envolvente)",
     "The task exceeds the reference by a wide margin: the calibration did "
     "not capture a maximum, so every percentage in this report is too high "
     "in the same proportion. Calibrate again with a brief, explosive "

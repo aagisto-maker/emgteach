@@ -31,7 +31,7 @@ recomputed.* BITalino full scale ±1.635 mV.
 - **Screenshot**: «Screenshot» button in the top-right corner, or **F12**.
   Saves the window into the recordings folder, asking nothing.
 - **Calibration**: 10 s warm-up; per muscle, **3 brief maximal efforts**
-  (1.5 s). Reference = the best 0.2 s of the three.
+  (1.5 s). Reference = the envelope's highest point in the three.
 - **The maximum is a brief, explosive maximal jerk, not a push against something
   fixed.** FCR: a jerk of wrist flexion, **clenching the fist** with all your
   strength. ECR: a jerk of wrist extension, **hand open and fingers stretched

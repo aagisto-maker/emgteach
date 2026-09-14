@@ -46,14 +46,12 @@ def _protocolo_de_calibracion() -> str:
         "recorded for each muscle, each announced {cue} s ahead and followed "
         "by {rest} s of rest. Each effort is one brief, explosive maximal "
         "jerk, not a sustained push against something fixed. The reference "
-        "is the strongest {win} s across "
-        "the repetitions kept, so it is a maximum the task cannot exceed; a "
-        "repetition that came out weak can be discarded afterwards in the "
-        "analysis."
+        "is the highest point the envelope reaches across the repetitions "
+        "kept, so it is a maximum the task cannot exceed; a repetition that "
+        "came out weak can be discarded afterwards in the analysis."
     ).format(
         warm=_cifra(p.warmup_s), n=p.mvc_bursts, dur=_cifra(p.mvc_burst_s),
         cue=_cifra(MVC_READY_S), rest=_cifra(MVC_REST_S),
-        win=_cifra(p.mvc_peak_window_s),
     )
 
 
@@ -302,10 +300,10 @@ _TEXTS = {
             "surface electrodes is usually 0.1–1 mV, and depends on the "
             "electrodes and the skin, which is why % MVC exists."
         ) + "</li><li><b>" + tr("Peak (% MVC)") + "</b>: " + tr(
-            "the strongest {w:.1f} s of the contraction, as a share of the "
-            "maximum. A task effort is usually 20–80 %; above 100 % (in "
+            "the highest point of the contraction's envelope, as a share of "
+            "the maximum. A task effort is usually 20–80 %; above 100 % (in "
             "red) the calibration was not a maximum."
-        ).format(w=EMG_PROFILE.mvc_peak_window_s) + "</li><li><b>" + tr("MDF") + "</b>: " + tr(
+        ) + "</li><li><b>" + tr("MDF") + "</b>: " + tr(
             "median frequency of the spectrum. Typically 60–150 Hz for "
             "surface EMG of limb muscles; it falls along a sustained "
             "effort as the muscle fatigues. Not shown for contractions "

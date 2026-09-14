@@ -920,15 +920,14 @@ class AnalysisTab(QWidget):
             1, 0, tr("Fatigue"),
             tr("Fatigue indicator from the MDF trend over time."),
         )
-        # What the task reached against the reference, sustained over the
-        # same window the reference is measured on (the profile's
-        # mvc_peak_window_s, 0.2 s). Computed for every analysis and, until
-        # now, only used to decide whether to warn.
+        # What the task reached against the reference, measured the way the
+        # reference is: the envelope's peak. Computed for every analysis and,
+        # until now, only used to decide whether to warn.
         self._lbl_pico = _ficha(
             1, 1, tr("Task maximum"),
-            tr("Highest sustained level ({w:.1f} s) of the task, as % of the "
-               "maximal contraction. Well above 100 % means the calibration "
-               "was not a maximum.").format(w=EMG_PROFILE.mvc_peak_window_s),
+            tr("Highest point of the task's envelope, as % of the maximal "
+               "contraction. Well above 100 % means the calibration was not "
+               "a maximum."),
             rango=tr("a task effort is usually 20–80 %"),
         )
         self._lbl_rms_global = _ficha(

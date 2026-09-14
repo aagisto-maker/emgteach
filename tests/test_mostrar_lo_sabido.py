@@ -24,7 +24,6 @@ from emgteach.gui.tabs.mvc import MvcTab
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.mvc import mark_excess_over_100
 from emgteach.phases import FROM_REPS, RepValue
-from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import _seccion_calibracion
 
 tr = i18n.tr
@@ -113,7 +112,7 @@ class TestTheTaskMaximumCard:
     """Computed on every analysis to decide whether to warn; the warning only
     fired past 150 %, so a task at 135 % of "maximum" got no word at all."""
 
-    def test_shows_the_sustained_peak_of_each_muscle(self, tab) -> None:
+    def test_shows_the_peak_of_each_muscle(self, tab) -> None:
         tab._actualizar_pico_tarea({
             "channel_name": "FCR", "channel_name_2": "ECR",
             "task_peak_pct": {"FCR": 135.2, "ECR": 70.4},
@@ -215,8 +214,7 @@ class TestTheReportSaysWhatTheCalibrationWas:
         celdas = _celdas(story)
         assert "FCR" in celdas and "0.094 mV" in celdas
         assert any("3" in c and "repeti" in c for c in celdas), "the source names the reps"
-        assert tr("{pct:.0f} % MVC (sustained {w:.1f} s)").format(
-            pct=135.2, w=EMG_PROFILE.mvc_peak_window_s) in celdas
+        assert tr("{pct:.0f} % MVC (envelope peak)").format(pct=135.2) in celdas
         # The repetitions, with the other muscle's share and the discard.
         assert "0.081 mV" in celdas and "35 %" in celdas
         assert f"3 ({tr('discarded')})" in celdas

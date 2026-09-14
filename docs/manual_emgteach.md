@@ -158,7 +158,7 @@ analysis, so the file stays small and always reproducible.
 | Envelope cut-off | 5 Hz | Smoothing of the activation level |
 | RMS window | 50 ms | RMS amplitude computation |
 | Fatigue segment | 1 s (50 % overlap) | Windows for RMS/MDF over time |
-| MVC reference window | 0.2 s | The best 0.2 s across the three calibration repetitions (§5.1) |
+| MVC reference window | none | The reference is the envelope's highest point across the three calibration repetitions (§5.1) |
 | Calibration | 3 × 1.5 s brief maximal efforts, after 10 s of warm-up | What the wizard asks per muscle |
 
 [Suggested figure: four stacked traces of the same segment — raw, filtered,
@@ -455,15 +455,19 @@ muscle. It is the **reference** for expressing any other activation as **% MVC**
 which is what makes muscles, subjects and sessions comparable: absolute
 millivolts depend on skin impedance, electrode position and anatomy.
 
-> **How the reference is measured.** It is the **best sustained 0.2 s** across the
-> three calibration repetitions: the highest mean of the envelope over 0.2 s,
-> taken as it is, with no resting level subtracted. Not the instantaneous peak, which one
-> noise sample could set, nor the held half second, which sat on the plateau: a
-> held contraction shows a peak at its start and then a plateau, and the task's
-> brief efforts reach that peak. Measured on the plateau, the task beat the
-> reference with the calibration correctly made (135 % on one recording). The task
-> maximum and every contraction's peak are measured with the same 0.2 s window,
-> so the comparison uses one yardstick.
+> **How the reference is measured.** It is the **highest point the envelope
+> reaches** across the calibration repetitions kept, taken as it is, with no
+> resting level subtracted. The MVC is the largest contraction the muscle can be
+> expected to make, the top of the scale, so what stands for it is a maximum and
+> not an average. One noise sample cannot set it, because the envelope is
+> already smoothed: its 5 Hz low-pass leaves a one-sample spike at 1000 Hz at
+> 1/90 of its height. The task maximum and every contraction's peak are measured
+> the same way, so the comparison uses one yardstick. Up to and including
+> version 3.1.2 the reference was the highest mean of the envelope over 0.2 s,
+> and earlier over half a second, which sat on the plateau of a held
+> contraction: the task's brief efforts reach the peak at its start, and they
+> beat the reference with the calibration correctly made (135 % on one
+> recording).
 >
 > **How a maximum is made that is one.** A brief, explosive maximal jerk of the
 > muscle's own movement, not a sustained push against something fixed. For the
@@ -834,8 +838,8 @@ Python 3.10–3.12; 3.13 is not supported yet.
 - **sEMG**: surface electromyography. **MUAP**: motor-unit action potential.
 - **Envelope**, **RMS**, **iEMG**, **PSD**, **MNF / MDF**: as in §5.
 - **MVC / % MVC**: maximum voluntary contraction and amplitude as its percentage.
-- **Task maximum**: the strongest 0.2 s of the task as a percentage of the
-  reference; above 150 %, the calibration was not maximal.
+- **Task maximum**: the highest point of the task's envelope as a percentage
+  of the reference; above 150 %, the calibration was not maximal.
 - **Calibration repetition**: each of the three brief maximal efforts per
   muscle, marked in the file.
 - **Co-activation index (Falconer-Winter)**: fraction of the two muscles'

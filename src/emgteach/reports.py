@@ -52,7 +52,6 @@ from emgteach.mvc import (
     overlay_curves,
 )
 from emgteach.phases import NO_CALIBRATION, reference_source_text
-from emgteach.profiles import EMG_PROFILE
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -522,9 +521,8 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
     """The reference, and everything the application knows about it.
 
     One row per muscle: the value, where it came from and how many
-    repetitions counted; what the task reached against it, sustained over the
-    same window the reference is measured on (``mvc_peak_window_s``, 0.2 s);
-    and, when that crosses the
+    repetitions counted; what the task reached against it, measured the way
+    the reference is, as the envelope's peak; and, when that crosses the
     limit, the sentence that says the maximum was not one. Then the
     repetitions themselves, with what the other muscle did during each — the
     cross-talk that used to be shown for four seconds in the calibration
@@ -549,8 +547,8 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
         rows.append([
             str(name), f"{float(ref):.3f} mV",
             reference_source_text(str(fuente), int(n_reps)),
-            "" if pico is None else tr("{pct:.0f} % MVC (sustained {w:.1f} s)").format(
-                pct=pico, w=EMG_PROFILE.mvc_peak_window_s),
+            "" if pico is None else tr("{pct:.0f} % MVC (envelope peak)").format(
+                pct=pico),
         ])
     story.append(_styled_table(rows))
     if result.get("mvc_implausible"):

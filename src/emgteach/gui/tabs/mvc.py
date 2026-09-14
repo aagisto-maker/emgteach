@@ -3,7 +3,7 @@ MvcTab — tab 3: MVC normalisation (Maximum Voluntary Contraction).
 
 Loads one EDF — the session — and normalises the EMG envelope as a % of the
 MVC reference its own calibration gives (:func:`emgteach.phases.mvc_reference`:
-the strongest 0.2 s window, best of the repetitions). Without a calibration
+the envelope's peak, best of the repetitions). Without a calibration
 there is no % MVC and no muscle load; the signal and its envelope are still
 drawn. There is no separate reference file and no auto-normalisation.
 

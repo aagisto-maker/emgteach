@@ -910,13 +910,14 @@ class TestTheCalibrationHelpDescribesTheProtocolTheCodeRuns:
         finally:
             set_language(anterior)
         p = EMG_PROFILE
-        for x in (p.warmup_s, p.mvc_burst_s, MVC_READY_S, MVC_REST_S,
-                  p.mvc_peak_window_s):
+        for x in (p.warmup_s, p.mvc_burst_s, MVC_READY_S, MVC_REST_S):
             cifra = f"{x:g}"
             if idioma == "es":
                 cifra = cifra.replace(".", ",")
             assert f"{cifra} s" in cuerpo, cifra
         assert f" {p.mvc_bursts} " in cuerpo
+        # The reference has no window: it is the envelope's highest point.
+        assert ("highest point" if idioma == "en" else "punto más alto") in cuerpo
         # The words of the protocols it replaced: six efforts, some of them
         # held. The manoeuvre is now a jerk, and the help says it is not a
         # sustained push, so it has to name the jerk instead.

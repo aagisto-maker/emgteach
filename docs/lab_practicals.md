@@ -137,7 +137,8 @@ without stopping the recording:
    the task begins. In the other two practicals the calibration is launched with
    the **«Calibrate MVC»** button while recording, and the recording goes on.
 
-The reference is **the best 0.2 s across the three repetitions**. Why brief?
+The reference is **the highest point the envelope reaches across the three
+repetitions**. Why brief?
 Because a sustained contraction shows a peak at its start and then a
 plateau, and a task's brief efforts reach that peak. Measured on the plateau, the
 reference fell short and the task beat it: 135 % of "maximum" on one
