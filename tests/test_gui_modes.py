@@ -364,6 +364,28 @@ def test_the_report_dialog_offers_what_the_practical_offers(
     assert any(t.startswith("2.") for t in seen)
 
 
+def test_the_more_panels_button_says_what_it_will_do(
+    main_window, qapp
+) -> None:
+    """Open, the button folds the panels, so it says «Fewer panels»; and it
+    is drawn like the mode buttons, not as the faded text of an auto-raise
+    button with no colour of its own."""
+    from emgteach.i18n import tr
+
+    btn = main_window._tab_ana._btn_mas_paneles
+    assert "#2E86DE" in btn.styleSheet()
+    assert "QToolButton:checked" in btn.styleSheet()
+    assert not btn.autoRaise()
+    try:
+        btn.setChecked(True)
+        qapp.processEvents()
+        assert btn.text() == tr("Fewer panels")
+    finally:
+        btn.setChecked(False)
+        qapp.processEvents()
+    assert btn.text() == tr("More panels…")
+
+
 def test_panels_the_mode_hides_are_unticked_and_restored(
     main_window, qapp
 ) -> None:
