@@ -46,9 +46,12 @@ abstract: >-
   each fatigue segment's MDF over the analysis band; a recording reanalysed
   with 3.2.0 gives % MVC figures different from those of 3.1.2. Version 3.3.0
   reads the task maximum on the whole recording phase, whatever fragments are
-  chosen, and draws each spectrum of panel 3 scaled to unit area.
+  chosen, and draws each spectrum of panel 3 scaled to unit area. Version 3.4.0
+  numbers the analysis panels 1 to 12 from one table, makes every title say
+  how to read its panel, and draws the two muscles' raw traces on one panel
+  with an axis each; nothing computed changes.
 type: software
-version: 3.3.0
+version: 3.4.0
 date-released: "2026-09-14"
 authors:
   - family-names: "Agis-Torres"

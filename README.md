@@ -24,9 +24,17 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.3.0 reads the **task maximum on the whole recording phase** —
+`emgteach` v3.4.0 makes the **analysis panels say how to read them**: each
+title carries, on a second line, what it means that the curve rises or
+falls, and names the muscle when the panel shows one. The panels are
+numbered 1 to 12 from one table, the same in every practical; the two
+muscles' raw traces share panel 1 with an axis each, in the muscle's
+colour; panel 8 is a path through time. Nothing computed changes. See
+[`docs/RELEASE_NOTES_v3.4.0.md`](docs/RELEASE_NOTES_v3.4.0.md).
+
+v3.3.0 read the **task maximum on the whole recording phase** —
 from the start of the recording to the end of the file, whatever fragments
-are chosen: a maximum of the phase, not of the selection — and draws
+are chosen: a maximum of the phase, not of the selection — and drew
 **panel 3 with each spectrum scaled to unit area**, so the two muscles are
 compared by shape and not by a height that only compares skin and electrode
 placement. See
