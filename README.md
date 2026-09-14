@@ -24,7 +24,16 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.1.2 changes what the calibration asks for: a **brief, explosive
+`emgteach` v3.2.0 takes the **MVC reference as the envelope's peak**: each
+calibration repetition is worth the highest point its envelope reaches, not
+the highest 0.2 s running mean, and the task maximum, each contraction's peak
+and the live bars are measured the same way. The co-activation floor is 4.5 %
+of that reference, and each fatigue segment's MDF is computed over the
+analysis band. **A recording reanalysed with 3.2.0 gives % MVC figures
+different from those of 3.1.2.** See
+[`docs/RELEASE_NOTES_v3.2.0.md`](docs/RELEASE_NOTES_v3.2.0.md).
+
+v3.1.2 changed what the calibration asks for: a **brief, explosive
 maximal jerk** of each muscle's own movement — in the agonist/antagonist
 practical, wrist flexion with the fist clenched for the flexor and wrist
 extension with the hand open for the extensor — instead of a sustained push

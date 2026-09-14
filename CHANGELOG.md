@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] — 2026-09-14
+
+**The MVC reference is the envelope's peak.** Each calibration repetition
+is worth the highest point its envelope reaches, not the highest 0.2 s
+running mean, and everything judged against the reference is measured the
+same way; the co-activation floor is 4.5 % of that reference; each fatigue
+segment's MDF is computed over the analysis band. **A recording reanalysed
+with 3.2.0 gives % MVC figures different from those of 3.1.2**, which is why
+this is a minor version and not a patch. See
+[`docs/RELEASE_NOTES_v3.2.0.md`](docs/RELEASE_NOTES_v3.2.0.md).
+
 ### Changed
 - **The co-activation floor is 4.5 % MVC.** The index is not reported when either muscle's mean activation above rest in the window is under the floor. The floor is a level of activation above rest expressed as a share of the reference, and it was 5 % of the highest 0.2 s running mean; the reference is now the envelope's peak, 1.16 times that mean over 80 channels of the bench recordings, so the same level above rest is 4.3 % of the new reference, and the floor is set at 4.5 %, the nearest half point. Checked over the bench recordings: with 4.5 % of the new reference, 33 of 34 whole-recording windows and the three manoeuvres of the example recording keep the reported / not-reported state they had with 5 % of the old one; with 5 % of the new one, 31 of 34 and two of the three. The reason in the table writes the floor with its decimal, the chart draws the floor from the profile, and the help of the co-activation box says when the index is not reported and why the floor is what it is.
 - **The MVC reference is the envelope's peak.** Each calibration repetition was worth the highest 0.2 s running mean of its envelope; it is now worth the highest point the envelope reaches, and the reference is still the best of the repetitions kept. The MVC is the top of the scale, the largest contraction the muscle can be expected to make, so what stands for it is a maximum and not the mean of a stretch that takes in the rise and the fall of the peak. What keeps a noise sample from setting it is the envelope's own 5 Hz low-pass, which leaves a one-sample spike at 1000 Hz at 1/90 of its height. Everything judged against the reference is measured the same way: the task maximum, each contraction's peak, the per-repetition values and cross-talk, and the live bars' reference. `mvc_peak_window_s` is 0, and `mvc_peak_hold` returns the envelope's maximum for a window of one sample or none. The help texts, the task-maximum card, the report's calibration table and the documentation describe the peak. On the example recordings the references rise by 13 to 27 % and the task maxima move by −9 to +7 points: on the three-manoeuvre recording, flexor 0.1468 → 0.1870 mV and 73.3 → 68.4 %, extensor 0.3558 → 0.4226 mV and 40.7 → 41.2 %; on the pair recording, flexor 0.2175 → 0.2705 mV and 109.3 → 100.5 %, extensor 0.1734 → 0.1967 mV and 74.9 → 81.5 %. On the three-manoeuvre recording the flexion's co-activation index is no longer reported, because the extensor's mean during it falls from 5.8 to 4.9 % MVC, under the 5 % floor; the acceptance test's pinned figures are updated. No threshold changes.
@@ -529,7 +540,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.1.2...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/aagisto-maker/emgteach/compare/v3.1.2...v3.2.0
 [3.1.2]: https://github.com/aagisto-maker/emgteach/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/aagisto-maker/emgteach/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/aagisto-maker/emgteach/compare/v3.0.0...v3.1.0
