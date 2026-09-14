@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] — 2026-09-14
+
+**The task maximum is a maximum of the recording phase.** It is read from
+the start of the recording to the end of the file, whatever fragments or
+window are chosen, so the figure no longer depends on how the fragments are
+cut; and panel 3 draws each spectrum scaled to unit area, so the two muscles
+are compared by shape. A minor version because one figure the program shows
+can change; nothing else that is computed does. See
+[`docs/RELEASE_NOTES_v3.3.0.md`](docs/RELEASE_NOTES_v3.3.0.md).
+
 ### Changed
 - **Panel 3 draws each spectrum scaled to unit area.** The PSD goes with the square of the amplitude, so in mV²/Hz the height of one muscle against the other compared skin and electrode placement — what the % MVC panels exist not to compare — and the muscle that contracts less was pinned to the axis and could not be read. Each curve is now a density, with its area shaded and its MDF line splitting the shade in two equal halves, in both muscles alike; the axis says «relative spectral density (area 1)»; the legend carries each muscle's MDF and its total power in mV², so the power is not lost; and a muscle whose power is under 2 % of the other's is drawn faint and its legend asks whether it is noise. The raw spectrum behind the filtered one, with one muscle, is scaled the same way. MDF and MNF are invariant to the scaling: nothing computed changes. The screen and the report draw the panel from one function, `emgteach.figures.draw_psd_panel`.
 - **The task maximum is read on the whole recording phase.** From the start of the recording to the end of the file, or the whole file when the recording has no phases, whatever fragments or window are chosen: a maximum of the phase, not of the selection. It was read on the analysed span, which with chosen fragments is their concatenation; there, two fragments cut inside their contractions and glued together lifted the envelope above either real peak (five points on the example recording), and a burst outside the fragments was not seen at all. With the fragments the editor proposes, which start and end at rest, the figure does not change: on the bench recordings the two readings agree on every channel. The card's help and the summary's say where it is read; `task_peak_span_s` in the result says which seconds of the file.
@@ -544,7 +554,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/aagisto-maker/emgteach/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/aagisto-maker/emgteach/compare/v3.1.2...v3.2.0
 [3.1.2]: https://github.com/aagisto-maker/emgteach/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/aagisto-maker/emgteach/compare/v3.1.0...v3.1.1

@@ -44,9 +44,11 @@ abstract: >-
   reference as the highest point of the envelope across the calibration
   repetitions kept, sets the co-activation floor at 4.5 % of it and computes
   each fatigue segment's MDF over the analysis band; a recording reanalysed
-  with 3.2.0 gives % MVC figures different from those of 3.1.2.
+  with 3.2.0 gives % MVC figures different from those of 3.1.2. Version 3.3.0
+  reads the task maximum on the whole recording phase, whatever fragments are
+  chosen, and draws each spectrum of panel 3 scaled to unit area.
 type: software
-version: 3.2.0
+version: 3.3.0
 date-released: "2026-09-14"
 authors:
   - family-names: "Agis-Torres"

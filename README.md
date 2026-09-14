@@ -24,7 +24,15 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.2.0 takes the **MVC reference as the envelope's peak**: each
+`emgteach` v3.3.0 reads the **task maximum on the whole recording phase** —
+from the start of the recording to the end of the file, whatever fragments
+are chosen: a maximum of the phase, not of the selection — and draws
+**panel 3 with each spectrum scaled to unit area**, so the two muscles are
+compared by shape and not by a height that only compares skin and electrode
+placement. See
+[`docs/RELEASE_NOTES_v3.3.0.md`](docs/RELEASE_NOTES_v3.3.0.md).
+
+v3.2.0 took the **MVC reference as the envelope's peak**: each
 calibration repetition is worth the highest point its envelope reaches, not
 the highest 0.2 s running mean, and the task maximum, each contraction's peak
 and the live bars are measured the same way. The co-activation floor is 4.5 %
