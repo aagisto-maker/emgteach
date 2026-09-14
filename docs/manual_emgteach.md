@@ -560,7 +560,7 @@ in the two muscles, the fraction that was **shared**: 0 % if one worked and the
 other did not, 100 % if both did the same throughout. Computed on the envelopes in
 % MVC of each muscle, rest subtracted, **per window** — a window being a run of
 consecutive contractions the application attributed to the same muscle (or to
-both) in the fragment editor. When one muscle does not reach 5 % MVC on average in
+both) in the fragment editor. When one muscle does not reach 4.5 % MVC on average in
 the window, the row says **«not reported»** with its reason: in a clean flexion
 the extensor is silent, and reporting "low co-activation" would be inventing a
 measurement. In a firm grip both work and the index is high.
@@ -573,13 +573,13 @@ to the two obvious alternatives. Voluntary co-contraction («stiffen the wrist
 without moving it») also yields a number, but it is an artificial instruction, with
 no function, that each subject interprets differently; holding a weight with the
 wrist
-neutral activates both muscles too weakly, with means grazing the 5 % floor. The
+neutral activates both muscles too weakly, with means grazing the 4.5 % floor. The
 grip is a real task nobody has to be taught, it activates both muscles strongly,
 and it has an immediate clinical reading.
 
 | Manoeuvre | What the two muscles do | What the index gives |
 |---|---|---|
-| Flexions | the flexor works; the extensor stays under the 5 % floor | not reported |
+| Flexions | the flexor works; the extensor stays under the 4.5 % floor | not reported |
 | Extensions | the roles swap | not reported |
 | Grip | both work at once | a high number, of the order of 60–95 % |
 | Fast alternation | both work, but by turns | a low number |
@@ -790,7 +790,7 @@ fist clenched for the flexor and hand open for the extensor; and check in
 repetition is lowering the reference (§5.1).
 
 **The co-activation table says «not reported».** One of the two muscles did not
-reach 5 % MVC on average in that window: in a clean flexion or extension that is
+reach 4.5 % MVC on average in that window: in a clean flexion or extension that is
 the right answer. For a number, a manoeuvre in which both work is needed, such
 as a firm grip (§5.7).
 

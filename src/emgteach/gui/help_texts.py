@@ -10,7 +10,8 @@ entries that came from the tour carry it unchanged.
 
 from __future__ import annotations
 
-from emgteach.i18n import get_language, tr
+from emgteach.i18n import cifra as _cifra
+from emgteach.i18n import tr
 from emgteach.profiles import EMG_PROFILE
 
 
@@ -21,12 +22,6 @@ def text(key: str) -> tuple[str, str]:
 
 def keys() -> list[str]:
     return list(_TEXTS)
-
-
-def _cifra(x: float) -> str:
-    """A number as the interface writes it: 1.5 in English, 1,5 in Spanish."""
-    texto = f"{x:g}"
-    return texto.replace(".", ",") if get_language() == "es" else texto
 
 
 def _protocolo_de_calibracion() -> str:
@@ -258,7 +253,14 @@ _TEXTS = {
             "shared — how much they worked at the same time. 0 % means one "
             "worked and the other did not; 100 % means both did the same "
             "thing throughout."
-        ) + "</p><p><b>" + tr("Why one row per window") + "</b><br>" + tr(
+        ) + "</p><p><b>" + tr("When it is not reported") + "</b><br>" + tr(
+            "When either muscle's mean activation above rest in the window "
+            "is under {floor} % MVC. Below that the index would compare two "
+            "baselines, not shared effort. The floor is {floor} % of a "
+            "reference that is the envelope's peak: the same level above "
+            "rest as 5 % of the 0.2 s running mean the reference used to be."
+        ).format(floor=_cifra(EMG_PROFILE.coact_floor_pct))
+        + "</p><p><b>" + tr("Why one row per window") + "</b><br>" + tr(
             "The index compares the shape of the two envelopes, so it only "
             "means something over a stretch in which one thing was being "
             "done. Over a whole recording that mixes rest, flexion and "

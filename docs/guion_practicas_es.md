@@ -430,7 +430,9 @@ por extender la muñeca.
    sacudida con el puño cerrado para el FCR, con la mano abierta para el ECR).
 2. En el registro, y siempre en este orden, con 2 s de quietud entre maniobras:
    **seis flexiones** de muñeca (1 s cada una, libres, sin resistencia),
-   **seis extensiones**, también libres, y por último la **presa**.
+   **seis extensiones**, también libres, y por último la **presa**. Libres
+   porque, si la muñeca empuja contra algo, el antagonista entra a
+   estabilizarla y el patrón recíproco se emborrona.
 3. **La presa, con detalle**, porque es la maniobra que da número y la que más
    fácil sale mal:
    - Antebrazo apoyado en la mesa hasta la muñeca, codo a 90°, pulgar hacia
@@ -469,7 +471,7 @@ una progresión; conviene leerla entera antes de responder:
 
 | Maniobra | Qué hacen los dos músculos | Qué da el índice |
 |---|---|---|
-| Flexiones | trabaja el FCR; el ECR no llega al suelo del 5 % | no se informa |
+| Flexiones | trabaja el FCR; el ECR no llega al suelo del 4,5 % | no se informa |
 | Extensiones | los papeles se intercambian | no se informa |
 | Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
 | Alternancia rápida (2b) | los dos trabajan, pero por turnos | número bajo |
@@ -634,7 +636,7 @@ aparecen en gris bajo las fichas del resumen y en los «?» de las tablas.
 | Esfuerzo de tarea | 20–80 % CVM | un esfuerzo submáximo típico; > 100 % sostenido dice que la calibración no fue máxima |
 | Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones de banco con calibración correcta; la aplicación avisa en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 %; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
-| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa»; presa firme: 60–95 % | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 5 % |
+| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa»; presa firme: 60–95 % | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4,5 % |
 | Separación entre canales (diafonía) | ≤ 20–25 % de la propia referencia | banco con electrodos bien situados; > 50 %, «canales sin separar» |
 | Carga estática (P10) | ≤ 2–5 % CVM (la aplicación usa 5) | Jonsson 1978, 1982 |
 | Carga mediana (P50) | ≤ 10–14 % CVM (la aplicación usa 14) | Jonsson 1978, 1982 |

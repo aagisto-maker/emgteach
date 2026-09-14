@@ -316,10 +316,33 @@ class TestAMarkedWindowAlwaysGetsARow:
 class TestItIsWiredIn:
     def test_the_floor_lives_in_the_signal_profile(self) -> None:
         """Beside the Jonsson limits, not hard-coded in the maths — it has to
-        be adjustable against a real forearm baseline."""
+        be adjustable against a real forearm baseline.
+
+        4.5, not 5: the floor is a level above rest as a share of the
+        reference, and the reference became the envelope's peak, 1.16 times
+        the 0.2 s running mean it used to be. 5 % of the old reference is
+        4.3 % of the new one."""
         from emgteach.profiles import EMG_PROFILE
 
-        assert EMG_PROFILE.coact_floor_pct == pytest.approx(5.0)
+        assert EMG_PROFILE.coact_floor_pct == pytest.approx(4.5)
+
+    @pytest.mark.parametrize("idioma, cifra", [("en", "4.5"), ("es", "4,5")])
+    def test_the_reason_writes_the_floor_with_its_decimal(self, idioma, cifra) -> None:
+        """«below 4 % MVC» would be a different floor from the one applied."""
+        from emgteach.i18n import get_language, set_language
+
+        n = int(FS * 2)
+        anterior = get_language()
+        try:
+            set_language(idioma)
+            res = coactivation_index(
+                np.full(n, 20.0), np.full(n, 1.0), FS, floor_pct=4.5,
+                rest_1=0.0, rest_2=0.0, name_1="FCR", name_2="ECR",
+            )
+        finally:
+            set_language(anterior)
+        assert res.index is None
+        assert "ECR" in res.reason and f"{cifra} %" in res.reason, res.reason
 
     def test_the_module_is_qt_free(self) -> None:
         """Like apda.py: usable by the worker and by an offline script alike."""

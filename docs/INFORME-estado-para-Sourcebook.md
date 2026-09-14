@@ -655,10 +655,11 @@ número:
 | Condición | EN | ES |
 |---|---|---|
 | Menos de dos muestras | `not reported — window too short` | `no se informa — ventana demasiado corta` |
-| Un músculo por debajo del suelo | `not reported — {name} below {floor:.0f} % MVC` | `no se informa — {name} por debajo del {floor:.0f} % CVM` |
+| Un músculo por debajo del suelo | `not reported — {name} below {floor} % MVC` | `no se informa — {name} por debajo del {floor} % de CVM` |
 | Sin activación sobre el reposo | `not reported — no activation above rest` | `no se informa — no hay activación sobre el reposo` |
 
-El suelo es `coact_floor_pct = 5,0 % CVM`.
+El suelo es `coact_floor_pct = 4,5 % CVM`; `{floor}` se escribe con su decimal
+(«4.5» en inglés, «4,5» en español).
 
 ### 5.7 Veredicto de fatiga
 
@@ -1186,10 +1187,18 @@ la tarea, 117 % CVM.
    cinemática disponibles (§8.3), que es lo contrario de lo esperable por
    reclutamiento. La velocidad y la potencia sí salen como deben. Es cuestión
    de la maniobra o del montaje, no del cálculo, y está sin resolver.
-2. **`coact_floor_pct = 5 % CVM` está medido sobre un solo registro**:
-   ventana quieta con medias de 0,2 % y 0,8 % sobre reposo frente a 19–30 %
-   en ventana activa. El umbral cae en un hueco de un factor treinta, pero con
-   un solo registro detrás. **Y el registro de las tres maniobras enseña su
+2. **`coact_floor_pct = 4,5 % CVM`.** El 5 % original se midió sobre un solo
+   registro —ventana quieta con medias de 0,2 % y 0,8 % sobre reposo frente a
+   19–30 % en ventana activa: un hueco de un factor treinta— y sobre la
+   referencia de 0,2 s. El suelo es un nivel de activación sobre el reposo
+   expresado como fracción de la referencia; con la referencia de pico, un
+   16 % más alta de media en 80 canales del banco, el mismo nivel es el 4,3 %
+   de la nueva, y el suelo pasa a 4,5 %. Comprobado sobre el banco: con ese
+   valor, 33 de 34 ventanas de registro entero y las tres maniobras del
+   registro de ejemplo conservan el estado (se informa / no se informa) que
+   tenían con el 5 % de la referencia antigua; con el 5 % de la nueva lo
+   conservan 31 de 34 y dos de las tres. Sigue habiendo un solo registro
+   detrás del nivel en sí. **Y el registro de las tres maniobras enseña su
    otra cara**: en un movimiento recíproco limpio el antagonista queda por
    debajo del suelo y la ventana se queda sin índice (§8.2). Es coherente
    —sin antagonista no hay coactivación que medir— pero significa que el caso

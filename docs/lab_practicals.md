@@ -431,7 +431,9 @@ epicondylitis, an injury of repeated gripping and not of extending the wrist.
    fist clenched for the FCR, with the hand open for the ECR).
 2. In the recording, always in this order, with 2 s of stillness between
    manoeuvres: **six wrist flexions** (1 s each, free, with no resistance),
-   **six extensions**, also free, and finally the **grip**.
+   **six extensions**, also free, and finally the **grip**. Free because,
+   if the wrist pushes against something, the antagonist comes in to
+   stabilise it and the reciprocal pattern is blurred.
 3. **The grip in detail**, because it is the manoeuvre that yields a number and
    the easiest one to get wrong:
    - Forearm on the table as far as the wrist, elbow at 90°, thumb up, and **the
@@ -469,7 +471,7 @@ form a progression worth reading whole before answering:
 
 | Manoeuvre | What the two muscles do | What the index gives |
 |---|---|---|
-| Flexions | the FCR works; the ECR stays under the 5 % floor | not reported |
+| Flexions | the FCR works; the ECR stays under the 4.5 % floor | not reported |
 | Extensions | the roles swap | not reported |
 | Grip | both work at once | a high number, of the order of 60–95 % |
 | Fast alternation (2b) | both work, but by turns | a low number |

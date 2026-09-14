@@ -53,7 +53,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.integrate import trapezoid
 
-from emgteach.i18n import tr
+from emgteach.i18n import cifra, tr
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -240,7 +240,7 @@ def coactivation_index(
     env_2_pct_mvc,
     fs: float,
     *,
-    floor_pct: float = 5.0,
+    floor_pct: float = 4.5,
     rest_1: float | None = None,
     rest_2: float | None = None,
     window_s: tuple[float, float] = (0.0, 0.0),
@@ -277,9 +277,9 @@ def coactivation_index(
         if mean < floor_pct:
             return CoactivationResult(
                 None, mean_1, mean_2, window_s,
-                tr("not reported — {name} below {floor:.0f} % MVC").format(
+                tr("not reported — {name} below {floor} % MVC").format(
                     name=name or tr("Muscle {n}").format(n=fallback),
-                    floor=floor_pct,
+                    floor=cifra(floor_pct),
                 ),
                 label,
             )
@@ -304,7 +304,7 @@ def coactivation_by_window(
     fs: float,
     markers: Sequence[tuple[float, str]] | None = None,
     *,
-    floor_pct: float = 5.0,
+    floor_pct: float = 4.5,
     t0: float = 0.0,
     name_1: str = "",
     name_2: str = "",
@@ -383,7 +383,7 @@ def coactivation_by_fragments(
     fs: float,
     fragments: Sequence[tuple[float, float, str]],
     *,
-    floor_pct: float = 5.0,
+    floor_pct: float = 4.5,
     t0: float = 0.0,
     name_1: str = "",
     name_2: str = "",

@@ -147,10 +147,10 @@ def ventanas_a_mano(result: dict, pedidas, presa: re.Pattern):
     Hace falta porque el EDF afinado y el original no dan el mismo número, y
     la diferencia no es un detalle. El afinado concatena los fragmentos y tira
     lo que hay entre ellos, así que la media del músculo activo sube y la del
-    otro baja: sobre el original del 6 de septiembre la flexión da 28 % y la
-    presa 76 %, y sobre el afinado la flexión se queda sin número —el ECR cae
-    por debajo del suelo del 5 %— y la extensión y la presa quedan en 63 % y
-    67 %, que ya no distinguen nada.
+    otro baja: sobre el original del 6 de septiembre la flexión da 29 % y la
+    presa 79 %, y sobre el afinado la flexión se queda sin número —el ECR cae
+    por debajo del suelo del 4,5 %— y la extensión y la presa quedan en 61 % y
+    70 %, que ya no distinguen nada.
 
     El índice de Falconer-Winter se lee sobre la fase de movimiento con su
     curso temporal, reposos incluidos; concatenar las contracciones mide otra

@@ -34,7 +34,8 @@ from typing import Any
 import numpy as np
 from matplotlib.patches import Patch
 
-from emgteach.i18n import tr
+from emgteach.i18n import cifra, tr
+from emgteach.profiles import EMG_PROFILE
 
 __all__ = ["COLOUR_1", "COLOUR_2", "draw_coactivation_chart", "draw_contraction_chart"]
 
@@ -50,8 +51,9 @@ _COLOUR_GOLD = "#D9A520"
 #: Its length on the index scale, and where the who-worked chip sits.
 _BLOQUE_DORADO = 14.0
 _X_CHIP = 108.0
-#: Below this share of the maximum a muscle did not work in the window.
-_SUELO_PCT = 5.0
+#: Below this share of the maximum a muscle did not work in the window:
+#: the profile's floor, so the chart and the table agree.
+_SUELO_PCT = EMG_PROFILE.coact_floor_pct
 _COLOUR_INDEX = "#5B7DB1"
 _COLOUR_TREND = "#7F8C8D"
 
@@ -206,9 +208,10 @@ def _por_categoria(ax, rows, v1, v2, name_1, name_2, unidad, use_pct, fs) -> Non
         ax.bar(x + (j - 0.5) * w, medias, width=w, color=col, alpha=0.3,
                label=nombre, zorder=2)
     if use_pct:
-        ax.axhline(5.0, color="#999999", lw=0.6, ls=":", zorder=1)
-        ax.text(x[-1] + 0.5, 5.5, tr("floor 5 %"), fontsize=fs - 1, color="#999999",
-                ha="right", va="bottom")
+        ax.axhline(_SUELO_PCT, color="#999999", lw=0.6, ls=":", zorder=1)
+        ax.text(x[-1] + 0.5, _SUELO_PCT + 0.5,
+                tr("floor {floor} %").format(floor=cifra(_SUELO_PCT)),
+                fontsize=fs - 1, color="#999999", ha="right", va="bottom")
     ax.set_xticks(x)
     ax.set_xticklabels([f"{c} ({cuenta[c]})" for c in cats], fontsize=fs)
     ax.set_ylabel(unidad, fontsize=fs)
