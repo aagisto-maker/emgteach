@@ -105,11 +105,7 @@ class _SelectorEsquina(QWidget):
             b.setAutoRaise(True)
             b.setFixedHeight(18)
             b.setText(texto)
-            b.setStyleSheet(
-                "QToolButton { font-size: 10px; color: #2E86DE; border: 1px solid "
-                "#2E86DE; border-radius: 9px; background: white; padding: 0 7px; }"
-                "QToolButton:checked { background: #2E86DE; color: white; }"
-            )
+            b.setStyleSheet(_PILL_STYLE)
             b.toggled.connect(lambda on, k=clave: on and self.cambiado.emit(k))
             self._grupo.addButton(b)
             self._botones[clave] = b
@@ -154,6 +150,16 @@ class _SelectorEsquina(QWidget):
         # Right of the box, leaving room for the «?» (18 px) and its margin.
         self.move(self._box.width() - 18 - 6 - 8 - self.width(), 0)
         self.raise_()
+
+#: The pill of the mode buttons and of «More panels…»: blue text and border
+#: on white, white on blue when checked. An auto-raise button with no colour
+#: of its own is drawn on Windows with faded text, and «More panels…» looked
+#: disabled while it worked.
+_PILL_STYLE = (
+    "QToolButton { font-size: 10px; color: #2E86DE; border: 1px solid "
+    "#2E86DE; border-radius: 9px; background: white; padding: 0 7px; }"
+    "QToolButton:checked { background: #2E86DE; color: white; }"
+)
 
 # Teaching panel layout. The three panels relevant to physiology students
 # (raw, normalised envelope, PSD) come first, renumbered 1, 2, 3 and checked
@@ -755,8 +761,10 @@ class AnalysisTab(QWidget):
         self._btn_mas_paneles = QToolButton()
         self._btn_mas_paneles.setText(tr("More panels…"))
         self._btn_mas_paneles.setCheckable(True)
-        self._btn_mas_paneles.setAutoRaise(True)
-        self._btn_mas_paneles.setStyleSheet("font-size: 11px;")
+        # The mode buttons' pill, so it reads as a control and not as faded
+        # text; its caption says what pressing it will do (_on_mas_paneles).
+        self._btn_mas_paneles.setFixedHeight(18)
+        self._btn_mas_paneles.setStyleSheet(_PILL_STYLE)
         self._btn_mas_paneles.toggled.connect(self._on_mas_paneles)
         self._btn_mas_paneles.setVisible(False)
         paneles_layout.addWidget(self._btn_mas_paneles)
@@ -3441,8 +3449,15 @@ class AnalysisTab(QWidget):
 
     @Slot(bool)
     def _on_mas_paneles(self, checked: bool) -> None:
-        """Reveal or fold the panels outside the practical's own six."""
+        """Reveal or fold the panels outside the practical's own set.
+
+        The caption says what pressing it will do: open, it folds them, so it
+        reads «Fewer panels» — no one has to remember which state it is in.
+        """
         self._mas_paneles = bool(checked)
+        self._btn_mas_paneles.setText(
+            tr("Fewer panels") if checked else tr("More panels…")
+        )
         self._apply_panel_visibility(self._mode, self._advanced)
 
     def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:

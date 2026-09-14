@@ -1909,6 +1909,7 @@ _ES = {
     'Folder:': 'Carpeta:',
     'Co-activation': 'Coactivación',
     'More panels…': 'Más paneles…',
+    "Fewer panels": "Menos paneles",
     'The rectified signal smoothed with a 5 Hz low-pass filter, computed as the samples arrive: it follows the level of activation.': 'La señal rectificada y suavizada con un filtro paso-bajo de 5 Hz, calculada según llegan las muestras: sigue el nivel de activación.',
     'Next: «{button}». It decides which maximal efforts set the reference, and every % MVC below is measured against it — so it goes before choosing the fragments.': 'Siguiente: «{button}». Decide qué esfuerzos máximos fijan la referencia, y todos los % CVM de abajo se miden contra ella, así que va antes de elegir los fragmentos.',
     'The «Muscle» column says which of the two led each contraction; the app fills it in by comparing them. Change it if you disagree. Consecutive rows with the same name become a single window of the co-activation table, so a run of flexions is measured as one.': 'La columna «Músculo» dice cuál de los dos llevó cada contracción; la aplicación la rellena comparándolos. Cámbiela si no está de acuerdo. Las filas seguidas con el mismo nombre pasan a ser una sola ventana de la tabla de coactivación, de modo que una serie de flexiones se mide como una.',

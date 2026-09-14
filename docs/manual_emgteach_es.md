@@ -446,7 +446,8 @@ qué pide, y el «?» del cuadro los repite.
 
 **Los doce paneles de análisis** y su significado. Cada práctica abre con los
 suyos y **«Más paneles…»** revela el resto, salvo los que el registro no puede
-alimentar. Los paneles se apilan en una página que se desplaza con la rueda del
+alimentar; abierto, el mismo botón dice **«Menos paneles»** y los pliega.
+Los paneles se apilan en una página que se desplaza con la rueda del
 ratón; a la izquierda de cada uno, ▲▼ cambian la escala de amplitud y ▶◀ la de
 tiempo.
 

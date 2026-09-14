@@ -355,7 +355,8 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    Once everything is reviewed and the count matches, the button turns bold.
 
 **The twelve analysis panels.** Each practical opens on its own and **«More
-panels…»** reveals the rest, minus those the recording cannot feed. The panels
+panels…»** reveals the rest, minus those the recording cannot feed; open, the same button reads
+**«Fewer panels»** and folds them. The panels
 stack on a page the mouse wheel scrolls; beside each, ▲▼ change the amplitude
 scale and ▶◀ the time scale.
 

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Panel 8 is a path through time.** It joins, in time order and with an arrowhead at the end, the windows in which the chosen muscle was contracting — those the fatigue trend is fitted on, since a resting window's median frequency is the amplifier's. Fatigue moves the path up and to the left: more amplitude, less frequency. The fitted curve is no longer drawn: it read as the time trend of panel 7, and time is on no axis of this plane. It is still computed; nothing computed changes.
 - **Every title says how to read its panel,** on a second line, and a panel that shows one muscle names it. The titles are built from one table, `emgteach.panels`, on screen and in the report; the report's panel 9 now carries its unit as the screen's does.
 - **Choosing another muscle re-runs the analysis at once.** The panels went on showing the previous muscle until Analyse was pressed, and none of them said whose they were.
+- **«More panels…» is drawn like the mode buttons and says what it will do.** Blue text and border on white, white on blue when open, from the same style as the mode buttons, instead of the faded text of an auto-raise button with no colour of its own; once open it reads «Fewer panels».
 
 ## [3.3.0] — 2026-09-14
 
