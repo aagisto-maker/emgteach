@@ -49,6 +49,7 @@ from emgteach.charts import (
 from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 from emgteach.figures import (
+    draw_amplitude_frequency_panel,
     draw_emd_note,
     draw_psd_panel,
     draw_raw_panel,
@@ -61,6 +62,8 @@ from emgteach.mvc import (
     mark_excess_over_100,
     overlay_curves,
 )
+from emgteach.panels import BY_PID as PANEL_BY_PID
+from emgteach.panels import panel_title
 from emgteach.phases import NO_CALIBRATION, reference_source_text
 
 if TYPE_CHECKING:
@@ -180,25 +183,6 @@ def _render_signal_figure(result: Mapping[str, Any]) -> BytesIO:
     return buf
 
 
-# Report panel titles keyed by canonical panel index. The display numbers are
-# the Analysis tab's, 1 to 12.
-_PANEL_REPORT_TITLES = {
-    0: "1. Raw EMG signal",
-    1: "4. Filtered + rectified EMG signal",
-    2: "5. EMG signal envelope",
-    3: "2. Envelope normalised to maximum",
-    4: "3. Power spectral density (PSD)",
-    5: "6. RMS amplitude over time",
-    6: "7. Fatigue: median frequency (MDF) vs time",
-    7: "8. Amplitude (RMS) vs median frequency (MDF)",
-    # 8 is titled by overlay_curves(), which also picks its unit.
-    8: "9. Overlaid envelopes (agonist/antagonist)",
-    9: "10. EMG vs MMG (electrical vs mechanical)",
-    10: "11. Tremor — accelerometer spectrum",
-    11: "12. Movement vs EMG (limb kinematics)",
-}
-
-
 def _draw_report_markers(ax: Any, markers: list, x0: float, x1: float) -> None:
     for t_mark, _lbl in markers:
         if x0 <= float(t_mark) <= x1:
@@ -298,16 +282,9 @@ def _draw_analysis_panel(
         ax.legend(fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
     elif idx == 7:
-        sc = ax.scatter(r["mdf_seg"], r["rms_seg"], c=r["t_seg"], cmap="viridis",
-                        s=45, alpha=0.8, zorder=3)
-        ax.plot(r["rms_mdf_range"], r["rms_mdf_fitted"], color="#E74C3C", lw=2.2,
-                label=tr("Degree-2 fit"))
-        cbar = fig.colorbar(sc, ax=ax, orientation="vertical", pad=0.02)
-        cbar.set_label(tr("Time (s)"), fontsize=8)
-        cbar.ax.tick_params(labelsize=7)
-        ax.set_xlabel("MDF (Hz)", fontsize=8)
-        ax.set_ylabel("RMS (mV)", fontsize=8)
-        ax.legend(fontsize=7)
+        # The path through time, as on screen
+        # (emgteach.figures.draw_amplitude_frequency_panel).
+        draw_amplitude_frequency_panel(ax, r, lw=1.4, ms=4, fontsize=8)
     elif idx == 8:
         # Each muscle against its own maximum — see the same panel in the
         # analysis tab for why two muscles must never share a millivolt axis.
@@ -324,7 +301,6 @@ def _draw_analysis_panel(
         ax.set_ylabel(curve1.ylabel, fontsize=8)
         mark_excess_over_100(ax, curve1.ylabel)
         if curve1.warning:
-            ax.set_title(ax.get_title(), pad=16)
             ax.text(0.5, 1.005, curve1.warning, transform=ax.transAxes,
                     ha="center", va="bottom", fontsize=6.5,
                     color="#B0243A")
@@ -381,7 +357,12 @@ def _draw_analysis_panel(
         ax.legend(loc="upper left", fontsize=7)
         _draw_report_markers(ax, markers, x0, x1)
 
-    ax.set_title(tr(_PANEL_REPORT_TITLES.get(idx, "")), fontsize=9)
+    # Every title from the panel table, as on screen; panel 9's from
+    # overlay_curves(), which also picks its unit and its reading.
+    if idx == 8:
+        ax.set_title(curve1.title, fontsize=9, pad=16 if curve1.warning else 6)
+    elif idx in PANEL_BY_PID:
+        ax.set_title(panel_title(idx, r), fontsize=9)
     ax.tick_params(labelsize=7)
     ax.grid(True, **grid)
 
@@ -651,7 +632,7 @@ def build_session_report(
     elif panels:
         story.append(Paragraph(tr("Graphs"), h2))
         for idx in panels:
-            if idx not in _PANEL_REPORT_TITLES:
+            if idx not in PANEL_BY_PID:
                 continue
             story.append(
                 Image(_render_one_panel_figure(result, idx, time_range),
