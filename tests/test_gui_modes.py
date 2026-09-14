@@ -321,6 +321,49 @@ def test_each_practical_offers_its_own_panels(main_window, qapp) -> None:
     ana._btn_mas_paneles.setChecked(False)
 
 
+def test_the_pair_never_offers_the_normalised_envelope(
+    main_window, qapp
+) -> None:
+    """Panel 9 shows the same time course in % MVC; two yardsticks for one
+    thing teach worse than one. Not even «More panels…» brings panel 2 back
+    in the pair, and the other practicals keep it."""
+    ana = main_window._tab_ana
+    set_mode(main_window, qapp, MODE_PAIR)
+    ana._btn_mas_paneles.setChecked(True)
+    qapp.processEvents()
+    try:
+        assert 3 not in panels_offered(ana)
+    finally:
+        ana._btn_mas_paneles.setChecked(False)
+    for mode in (MODE_SINGLE, MODE_KINEMATICS):
+        set_mode(main_window, qapp, mode)
+        assert 3 in panels_offered(ana)
+
+
+def test_the_report_dialog_offers_what_the_practical_offers(
+    main_window, qapp, monkeypatch
+) -> None:
+    """A panel the pair never shows is not a graph to add to its report."""
+    from PySide6.QtWidgets import QCheckBox, QDialog
+
+    seen: list[str] = []
+
+    def fake_exec(dlg) -> QDialog.DialogCode:
+        seen.extend(cb.text() for cb in dlg.findChildren(QCheckBox))
+        return QDialog.DialogCode.Rejected
+
+    monkeypatch.setattr(QDialog, "exec", fake_exec)
+    ana = main_window._tab_ana
+    set_mode(main_window, qapp, MODE_PAIR)
+    assert ana._pedir_paneles_informe() is None
+    assert seen
+    assert not any(t.startswith("2.") for t in seen)
+    seen.clear()
+    set_mode(main_window, qapp, MODE_SINGLE)
+    ana._pedir_paneles_informe()
+    assert any(t.startswith("2.") for t in seen)
+
+
 def test_panels_the_mode_hides_are_unticked_and_restored(
     main_window, qapp
 ) -> None:

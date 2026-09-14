@@ -369,8 +369,9 @@ class TestTheAdvancedPracticalFoldsItsExtraPanels:
             ana._btn_mas_paneles.setChecked(True)
             qapp.processEvents()
             # Single: no overlay, no accelerometer panels (12 - 4).
-            # Pair: everything but the accelerometer three (12 - 3).
-            assert len(self._visibles(ana)) == {"single": 8, "pair": 9}[modo]
+            # Pair: all but the accelerometer three and the normalised
+            # envelope, which panel 9 replaces (12 - 4).
+            assert len(self._visibles(ana)) == {"single": 8, "pair": 8}[modo]
         finally:
             _cierra(qapp, win)
 

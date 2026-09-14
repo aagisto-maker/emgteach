@@ -362,11 +362,11 @@ scale and ▶◀ the time scale.
 | Panel | What it shows | Meaning | Opens with |
 |---|---|---|---|
 | **1. Raw signal** | Unprocessed EMG, onsets as thin lines; in the pair, both muscles, each against its own axis in its colour | Starting point; artefacts show; when each muscle fires | all three |
-| **2. Normalised envelope** | Envelope scaled to its maximum (0–1) | Shape of the activation | single, kinematics |
+| **2. Normalised envelope** | Envelope scaled to its maximum (0–1) | Shape of the activation | single, kinematics; never in the pair, where panel 9 replaces it |
 | **3. PSD with MNF/MDF** | Spectrum, each curve scaled to unit area; in grey, the spectrum **before** the filter; in the pair, both muscles with their MDF and their total power in mV² | What the filter removed; energy by frequency; basis of fatigue | all three |
 | **4. Filtered + rectified** | Clean signal and its absolute value | Isolates the muscle activity | «More panels…» |
 | **5. Envelope vs RMS** | Two amplitude measures overlaid | Activation over time | «More panels…» |
-| **6. RMS per window** | RMS over time | Evolution of the effort | «More panels…» |
+| **6. RMS per window** | RMS over time; in the pair, both muscles, each against its own axis | Evolution of the effort | «More panels…» |
 | **7. MDF vs time** | MDF per window and its fitted line; in the pair, both muscles | **Fatigue indicator** (§5.4) | pair |
 | **8. RMS vs MDF** | Amplitude–frequency relationship | Force/fatigue during the task | «More panels…» |
 | **9. Overlaid envelopes** | Both envelopes in % MVC on one axis, with the 100 % band | Co-activation and coordination | pair |
