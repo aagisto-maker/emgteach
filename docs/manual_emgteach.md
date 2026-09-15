@@ -827,7 +827,9 @@ pair one or two centimetres towards the belly.
 ### Connection and signal
 
 **The device won't connect.** BITalino: check the MAC and the Bluetooth pairing;
-prefer the MAC to a COM number. Arduino: check the COM port and the cable. The
+prefer the MAC to a COM number; `diagnostico_bitalino.exe`, next to the
+application, checks the adapter, the pairing, the COM port and ten seconds of
+acquisition, and saves a report to send to whoever helps. Arduino: check the COM port and the cable. The
 watchdog disconnects after ~3 s without data; reconnect.
 
 **Flat line / "flat baseline" warning.** Electrode contact, reference, correct

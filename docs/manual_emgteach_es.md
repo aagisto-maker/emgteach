@@ -1109,6 +1109,9 @@ mover el par uno o dos centímetros hacia el vientre.
 - *BITalino*: conviene comprobar la dirección MAC y que el dispositivo esté
   emparejado por Bluetooth. Es preferible la **dirección MAC** al número de COM:
   la MAC es la misma en cualquier ordenador, el número de COM no.
+  `diagnostico_bitalino.exe`, junto a la aplicación, comprueba el adaptador, el
+  emparejamiento, el puerto COM y diez segundos de adquisición, y guarda un
+  informe para enviárselo a quien ayude.
 - *Arduino + MyoWare*: hay que comprobar el **puerto COM** (el botón *Refrescar*
   lista los puertos disponibles) y el cable USB.
 - El **watchdog** fuerza la desconexión si no llegan datos en unos 3 s. Después
