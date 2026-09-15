@@ -26,8 +26,9 @@ a = Analysis(  # noqa: F821  (injected by PyInstaller)
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    # The diagnostic imports the package, which is Qt-free until a GUI module
-    # is imported; none is, so the Qt and plotting stacks stay out.
+    # ``import emgteach`` leaves Qt out (its workers are imported when first
+    # asked for) and the diagnostic imports no GUI module, so the Qt and
+    # plotting stacks stay out; tests/test_diagnostico.py checks it.
     excludes=[
         "PySide6", "shiboken6", "PyQt5", "PyQt6", "PySide2", "pyqtgraph",
         "matplotlib", "tkinter", "pytest", "_pytest", "IPython",

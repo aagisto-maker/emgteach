@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The station's BITalino address in a text file.** A `bitalino.txt` next to the application, with the address on its first line that is neither blank nor a `#` comment, sets it for the station: the acquisition tab starts with it, says so in the log, and «Default» returns to it. Typed into the field, the address had to be typed again wherever the settings did not survive — another account, a reimaged PC, the application copied on a stick; the file travels with the application. It takes the forms the field takes: a MAC address, a COM port, `simulada`, or nothing to autodetect (`emgteach.station`).
 - **A connection diagnostic for the BITalino.** `diagnostico_bitalino.exe` (built from `packaging/diagnostico_bitalino.spec`, entry `packaging/run_diagnostico.py`, logic in `emgteach.diagnostics`), run next to the application, answers in order: which address it tries and where it came from; whether Windows sees a working Bluetooth adapter; whether a BITalino is paired and on which COM port; whether the board answers the handshake and how fast; and ten seconds of acquisition — frames, rate, CRC failures and whether each channel carries a signal. It connects as the acquisition tab does, so a station that passes connects in the application; with `simulada` it checks itself without the board. The answers are saved to a text file beside it.
 
+### Changed
+
+- **`import emgteach` no longer loads Qt.** `AcquisitionWorker`, `AnalysisWorker` and `MvcWorker`, the only exports that need it, are imported from `emgteach.workers` the first time they are asked for; everything else the package exports is unchanged. The connection diagnostic's executable is built without Qt and depends on it.
+
 ## [3.4.0] — 2026-09-14
 
 **The analysis panels say how to read them.** Every title carries, on a

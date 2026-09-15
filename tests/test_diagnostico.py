@@ -8,6 +8,9 @@ test must not depend on the machine's Bluetooth.
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -89,4 +92,23 @@ def test_main_returns_zero_when_ready(tmp_path: Path, monkeypatch: pytest.Monkey
     # leaving Spanish behind would change what every later test reads.
     monkeypatch.setattr(diagnostics, "system_language", lambda: "en")
     assert diagnostics.main(["simulada", "--seconds", "0.5"]) == 0
+    assert list(tmp_path.glob("diagnostico_bitalino_*.txt"))
+
+
+def test_the_diagnostic_runs_without_qt(tmp_path: Path) -> None:
+    # diagnostico_bitalino.exe is built without Qt: a whole diagnosis, in a
+    # fresh interpreter, must run without PySide6 ever being imported.
+    src = Path(diagnostics.__file__).resolve().parents[1]
+    code = (
+        "import sys\n"
+        "from emgteach import diagnostics\n"
+        "code = diagnostics.main(['simulada', '--seconds', '0.3'])\n"
+        "sys.exit(10 if 'PySide6' in sys.modules else code)\n"
+    )
+    paths = [str(src), os.environ.get("PYTHONPATH", "")]
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8",
+           "PYTHONPATH": os.pathsep.join(p for p in paths if p)}
+    run = subprocess.run([sys.executable, "-c", code], cwd=tmp_path, env=env,
+                         capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert run.returncode == 0, run.stdout + run.stderr
     assert list(tmp_path.glob("diagnostico_bitalino_*.txt"))

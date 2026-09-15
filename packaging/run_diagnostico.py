@@ -17,6 +17,12 @@ def main() -> int:
     from emgteach.diagnostics import main as diagnose
     from emgteach.i18n import tr
 
+    # A console that cannot show a character («, →) must not stop the diagnosis.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
     code = diagnose(sys.argv[1:])
     if getattr(sys, "frozen", False):
         try:
