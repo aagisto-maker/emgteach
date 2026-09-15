@@ -39,7 +39,7 @@ def test_the_simulated_board_passes_and_the_report_is_written(tmp_path: Path) ->
 
 def test_the_address_comes_from_bitalino_txt(tmp_path: Path) -> None:
     (tmp_path / station.ADDRESS_FILE).write_text("# puesto 3\nsimulada\n", encoding="utf-8")
-    result = diagnostics.run_diagnosis(seconds=0.5, folder=tmp_path, say=lambda _s: None)
+    result = diagnostics.run_diagnosis(seconds=1.0, folder=tmp_path, say=lambda _s: None)
     assert result.address == "simulada"
     assert station.ADDRESS_FILE in result.source
     assert result.ok
@@ -91,19 +91,21 @@ def test_main_returns_zero_when_ready(tmp_path: Path, monkeypatch: pytest.Monkey
     # main() sets the language from the system's; the language is global, and
     # leaving Spanish behind would change what every later test reads.
     monkeypatch.setattr(diagnostics, "system_language", lambda: "en")
-    assert diagnostics.main(["simulada", "--seconds", "0.5"]) == 0
+    assert diagnostics.main(["simulada", "--seconds", "1.0"]) == 0
     assert list(tmp_path.glob("diagnostico_bitalino_*.txt"))
 
 
 def test_the_diagnostic_runs_without_qt(tmp_path: Path) -> None:
     # diagnostico_bitalino.exe is built without Qt: a whole diagnosis, in a
-    # fresh interpreter, must run without PySide6 ever being imported.
+    # fresh interpreter, must run without PySide6 ever being imported. Whether
+    # the station is ready is the other tests' business: 0.3 s is too short to
+    # judge the rate against Windows' 15.6 ms timer.
     src = Path(diagnostics.__file__).resolve().parents[1]
     code = (
         "import sys\n"
         "from emgteach import diagnostics\n"
-        "code = diagnostics.main(['simulada', '--seconds', '0.3'])\n"
-        "sys.exit(10 if 'PySide6' in sys.modules else code)\n"
+        "diagnostics.main(['simulada', '--seconds', '0.3'])\n"
+        "sys.exit(10 if 'PySide6' in sys.modules else 0)\n"
     )
     paths = [str(src), os.environ.get("PYTHONPATH", "")]
     env = {**os.environ, "PYTHONIOENCODING": "utf-8",
