@@ -51,6 +51,7 @@ def test_a_port_that_is_not_there_fails_at_the_connection(
     assert not result.ok
     connection = next(c for c in result.checks if c.title == "Connection")
     assert connection.ok is False
+    assert len(connection.lines) == 2, connection.lines  # the error, and what to check
     assert result.report_path is not None
     assert "COM987" in result.report_path.read_text(encoding="utf-8")
 

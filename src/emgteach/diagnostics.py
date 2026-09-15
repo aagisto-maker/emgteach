@@ -200,11 +200,18 @@ def _check_port(address: str, checks: list[Check], say: Callable[[str], None]) -
 def _check_acquisition(address: str, seconds: float, channels: tuple[int, ...],
                        checks: list[Check], say: Callable[[str], None]) -> None:
     device = BitalinoDevice(address, fs=_FS, channels=list(channels))
+    if not device.is_simulated:
+        say(tr("Connecting… a board that is switched off or out of reach takes up to "
+               "a minute to fail."))
     start = time.perf_counter()
     try:
         device.open()
     except Exception as exc:
-        _add(checks, Check(tr("Connection"), False, [str(exc)]), say)
+        lines = [str(exc)]
+        if not device.is_simulated:
+            lines.append(tr("Check that the BITalino is switched on and near this PC; "
+                            "if it is, switch it off and on and run the diagnostic again."))
+        _add(checks, Check(tr("Connection"), False, lines), say)
         return
     opened = time.perf_counter() - start
     _add(checks, Check(tr("Connection"), True, [

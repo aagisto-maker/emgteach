@@ -873,6 +873,14 @@ _ES = {
         "emparejada con este ordenador.",
     "Connection":
         "Conexión",
+    "Connecting… a board that is switched off or out of reach takes up to "
+    "a minute to fail.":
+        "Conectando… si la placa está apagada o lejos, tarda hasta un minuto "
+        "en fallar.",
+    "Check that the BITalino is switched on and near this PC; if it is, "
+    "switch it off and on and run the diagnostic again.":
+        "Compruebe que la BITalino está encendida y cerca de este ordenador; "
+        "si lo está, apáguela, enciéndala y vuelva a pasar el diagnóstico.",
     "{name} answered «{version}» in {s:.1f} s":
         "{name} contestó «{version}» en {s:.1f} s",
     "{n} frames in {s:.1f} s: {hz:.0f} Hz (the board sends {fs})":
@@ -1502,9 +1510,9 @@ _ES = {
     "Could not open the BITalino port {port}: {err}. If the port is "
     "busy or access is denied, switch the BITalino off and on to reset "
     "the Bluetooth link, then retry.":
-        "No se pudo abrir el puerto del BITalino {port}: {err}. Si el puerto está "
-        "ocupado o el acceso está denegado, apaga y enciende el BITalino para "
-        "reiniciar el enlace Bluetooth y reintenta.",
+        "No se pudo abrir el puerto de la BITalino {port}: {err}. Si el puerto "
+        "está ocupado o el acceso está denegado, apague y encienda la BITalino "
+        "para reiniciar el enlace Bluetooth y vuelva a intentarlo.",
     "BITalino {mac} was not found among the paired Bluetooth COM "
     "ports. Pair it in the operating system's Bluetooth settings "
     "and switch it on.":
