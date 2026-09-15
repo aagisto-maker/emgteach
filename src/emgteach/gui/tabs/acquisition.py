@@ -637,7 +637,8 @@ class AcquisitionTab(QWidget):
             tr(
                 "BITalino MAC address (recommended — stable on every PC), or an "
                 "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
-                "the BITalino in Windows Bluetooth settings first. No PyBluez is used."
+                "the BITalino in Windows Bluetooth settings first. No PyBluez is used. "
+                "Write «simulada» to try the application without the board."
             )
         )
         self._edit_mac.setText(

@@ -28,6 +28,9 @@ three forms of address and :meth:`open` resolves them to a concrete port:
 * a **COM port** (e.g. ``"COM5"``) — used verbatim, as an explicit override.
 * **empty / ``"auto"``** — autodetect: probe the Bluetooth serial ports and
   pick the first that answers the version handshake as a BITalino.
+* ``simulada`` / ``simulated`` — a BITalino in software
+  (:mod:`emgteach.devices.bitalino_sim`), to try the application without the
+  board: the same protocol, and no Bluetooth.
 
 No PyBluez is involved in any case: resolution only reads the COM-port list
 and the transport is always ``pyserial``.
@@ -82,6 +85,11 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import numpy as np
 
 from emgteach.devices.base import AcquisitionDevice
+from emgteach.devices.bitalino_sim import (
+    SIMULATED_PORT,
+    SimulatedBitalinoPort,
+    is_simulated_address,
+)
 from emgteach.i18n import tr
 
 if TYPE_CHECKING:
@@ -211,6 +219,7 @@ class BitalinoDevice(AcquisitionDevice):
         self._channels = list(expose)
         self._serial = None  # type: ignore[var-annotated]
         self._resolved_port: str | None = None
+        self._firmware = ""
         self._conn_lock = threading.Lock()
 
     @property
@@ -226,6 +235,8 @@ class BitalinoDevice(AcquisitionDevice):
 
     @property
     def name(self) -> str:
+        if self.is_simulated:
+            return "BITalino (simulated)"
         if self._resolved_port and self._resolved_port != self._port.strip():
             label = self._port.strip() or "auto"
             return f"BITalino ({label} -> {self._resolved_port})"
@@ -236,6 +247,16 @@ class BitalinoDevice(AcquisitionDevice):
     @property
     def n_channels(self) -> int:
         return len(self._channels)
+
+    @property
+    def is_simulated(self) -> bool:
+        """Whether the address selects the BITalino in software."""
+        return is_simulated_address(self._port)
+
+    @property
+    def firmware_version(self) -> str:
+        """The version string the board answered on the last open, or ``""``."""
+        return self._firmware
 
     @property
     def physical_min(self) -> float:
@@ -307,6 +328,7 @@ class BitalinoDevice(AcquisitionDevice):
                             "switched on."
                         ).format(port=resolved)
                     )
+                self._firmware = version
                 self._set_sampling_rate(ser)
                 self._start_streaming(ser)
             except Exception:
@@ -417,6 +439,8 @@ class BitalinoDevice(AcquisitionDevice):
         Never imports PyBluez — only reads the COM-port list.
         """
         addr = self._port.strip()
+        if is_simulated_address(addr):
+            return SIMULATED_PORT  # the BITalino in software: no COM port at all
         if addr and not self._MAC_RE.match(addr) and addr.lower() != "auto":
             return addr  # explicit serial port
 
@@ -494,6 +518,11 @@ class BitalinoDevice(AcquisitionDevice):
 
     def _open_serial(self, serial_mod: Any, port: str) -> Any:
         """Open *port*, retrying briefly to ride over Bluetooth SPP release lag."""
+        if port == SIMULATED_PORT:
+            return SimulatedBitalinoPort(
+                acc_channel=self._acc_channel if self._acc else None,
+                timeout=self._TIMEOUT_OPEN_S,
+            )
         last_exc: Exception | None = None
         for attempt in range(self._OPEN_RETRIES):
             try:

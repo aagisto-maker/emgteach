@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **A BITalino in software.** Writing `simulada` (or `simulated`) as the BITalino address connects a board simulated by the application itself, with no Bluetooth: it speaks the board's protocol byte for byte — the version reply, the rate and start commands, frames with their sequence number and CRC — so the frame decoder, the acquisition, the calibration, the recording and the classroom broadcast run as with the board and can be tried in a laboratory where the board is not at hand. The signal is synthetic (a 12-second cycle of rest, flexion, extension and grip; an accelerometer that follows the first muscle) and the device calls itself "BITalino (simulated)" (`emgteach.devices.bitalino_sim`).
+
 ## [3.4.0] — 2026-09-14
 
 **The analysis panels say how to read them.** Every title carries, on a

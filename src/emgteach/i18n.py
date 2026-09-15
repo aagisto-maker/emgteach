@@ -904,12 +904,15 @@ _ES = {
         "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
     "Save EDF recording as…": "Guardar grabación EDF como…",
-    "BITalino MAC address (recommended — stable on every PC), or an "
-    "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
-    "the BITalino in Windows Bluetooth settings first. No PyBluez is used.":
-        "Dirección MAC del BITalino (recomendado — estable en cualquier PC), o un "
-        "puerto COM concreto (p. ej. COM5), o dejarlo vacío para autodetectar. Hay que emparejar "
-        "antes el BITalino en la configuración Bluetooth de Windows. No se usa PyBluez.",
+    "BITalino MAC address (recommended — stable on every PC), or an explicit "
+    "COM port (e.g. COM5), or leave empty to autodetect. Pair the BITalino "
+    "in Windows Bluetooth settings first. No PyBluez is used. Write "
+    "«simulada» to try the application without the board.":
+        "Dirección MAC del BITalino (recomendado — estable en cualquier PC), "
+        "o un puerto COM concreto (p. ej. COM5), o dejarlo vacío para "
+        "autodetectar. Hay que emparejar antes el BITalino en la "
+        "configuración Bluetooth de Windows. No se usa PyBluez. Escriba "
+        "«simulada» para probar la aplicación sin la placa.",
     "Select a COM port for the Arduino before connecting.":
         "Seleccionar un puerto COM para el Arduino antes de conectar.",
     "Device configured: {desc}. Press 'Start recording'.":

@@ -248,7 +248,9 @@ and leaves when the tab changes.
 - Device type (BITalino or Arduino + MyoWare), in the single-muscle practical
   only; elsewhere the row reads «Device: BITalino».
 - **MAC** address (BITalino) or **COM port** (Arduino), always editable; «Default»
-  restores the saved one.
+  restores the saved one. Writing `simulada` connects a BITalino simulated in software,
+  to try the application, the recording and the classroom broadcast without the
+  board.
 - **Output path and file**: the folder the EDF is written to.
 - **Labels**: each muscle's name, in the order of the board's channels. In the
   pair the boxes start empty with a hint («Agonist, e.g. FCR»); left empty, the
