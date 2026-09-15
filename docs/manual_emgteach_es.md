@@ -308,7 +308,9 @@ Permite **registrar** una sesión y observarla en vivo.
 - Tipo de dispositivo (BITalino o Arduino + MyoWare), solo en la práctica de un
   músculo; en las otras dos la fila dice «Dispositivo: BITalino».
 - Dirección **MAC** (BITalino) o **puerto COM** (Arduino), siempre editable. El
-  botón «Por defecto» restaura la guardada.
+  botón «Por defecto» restaura la guardada. Escribiendo `simulada` se conecta una
+  BITalino simulada por programa, para probar la aplicación, la grabación y la
+  difusión a los móviles sin la placa.
 - **Ruta y archivo de salida**: la carpeta donde se escribirá el EDF.
 - **Etiquetas**: el nombre de cada músculo, en el orden de los canales de la
   placa (Músculo 1 es el registrado por A1). En el par, las casillas empiezan

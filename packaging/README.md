@@ -79,6 +79,11 @@ one-file bundle self-extracts to a temp folder). No install, no admin rights.
   the COM number is assigned per machine and can change. The app resolves the
   MAC to the current COM port by reading the port list. An explicit `COMx` is
   also accepted, and an empty field autodetects.
+- **Without the board** — write `simulada` in the address field: the
+  application connects a BITalino simulated in software
+  (`emgteach.devices.bitalino_sim`) that speaks the same protocol, so the
+  recording, the calibration and the classroom broadcast can be tried on
+  any PC. The Bluetooth link is what it leaves out.
 
 ## Notes / limitations
 
