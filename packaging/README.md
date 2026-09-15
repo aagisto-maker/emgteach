@@ -79,6 +79,10 @@ one-file bundle self-extracts to a temp folder). No install, no admin rights.
   the COM number is assigned per machine and can change. The app resolves the
   MAC to the current COM port by reading the port list. An explicit `COMx` is
   also accepted, and an empty field autodetects.
+- **Once per station** — put a text file `bitalino.txt` next to
+  `emgteach.exe` with the address on its first line (lines starting with `#`
+  are comments; `simulada` works too, and an empty file means autodetect).
+  The acquisition tab starts with it and «Default» returns to it.
 - **Without the board** — write `simulada` in the address field: the
   application connects a BITalino simulated in software
   (`emgteach.devices.bitalino_sim`) that speaks the same protocol, so the

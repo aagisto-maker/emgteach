@@ -310,7 +310,10 @@ Permite **registrar** una sesión y observarla en vivo.
 - Dirección **MAC** (BITalino) o **puerto COM** (Arduino), siempre editable. El
   botón «Por defecto» restaura la guardada. Escribiendo `simulada` se conecta una
   BITalino simulada por programa, para probar la aplicación, la grabación y la
-  difusión a los móviles sin la placa.
+  difusión a los móviles sin la placa. Un archivo de texto `bitalino.txt` junto a
+  la aplicación, con la dirección en su primera línea, la fija para el puesto:
+  la pestaña arranca con ella y «Por defecto» vuelve a ella, así que se escribe
+  una vez por puesto y no en cada sesión.
 - **Ruta y archivo de salida**: la carpeta donde se escribirá el EDF.
 - **Etiquetas**: el nombre de cada músculo, en el orden de los canales de la
   placa (Músculo 1 es el registrado por A1). En el par, las casillas empiezan

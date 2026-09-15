@@ -109,6 +109,7 @@ from emgteach.phases import (
     warmup_start_marker,
 )
 from emgteach.profiles import EMG_PROFILE
+from emgteach.station import ADDRESS_FILE, read_station_address
 from emgteach.workers import AcquisitionWorker
 from emgteach.workers.acquisition import mensaje_fallo_guardado
 
@@ -638,17 +639,30 @@ class AcquisitionTab(QWidget):
                 "BITalino MAC address (recommended — stable on every PC), or an "
                 "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
                 "the BITalino in Windows Bluetooth settings first. No PyBluez is used. "
-                "Write «simulada» to try the application without the board."
+                "Write «simulada» to try the application without the board. It starts "
+                "from the address written in bitalino.txt next to the application, "
+                "when there is one."
             )
         )
+        # The station's address, when it is written in bitalino.txt next to
+        # the application, is the one the tab starts with: typed once there,
+        # never again at that station, whatever account or copy of the
+        # application is used (see emgteach.station).
+        self._station_address = read_station_address()
         self._edit_mac.setText(
-            self._settings.value("adquisicion/port", DEFAULT_BITALINO_ADDR)
+            self._station_address if self._station_address is not None
+            else self._settings.value("adquisicion/port", DEFAULT_BITALINO_ADDR)
         )
+        if self._station_address is not None:
+            # Said once the tab is up, where the operator reads.
+            QTimer.singleShot(0, self._log_station_address)
         mac_inner.addWidget(self._edit_mac)
         btn_reset_mac = QPushButton(tr("Default"))
         btn_reset_mac.setFixedWidth(84)
         btn_reset_mac.setToolTip(
-            tr("Restore default address ({addr})").format(addr=DEFAULT_BITALINO_ADDR)
+            tr("Restore default address ({addr})").format(
+                addr=self._default_address() or tr("autodetect")
+            )
         )
         btn_reset_mac.clicked.connect(self._reset_mac)
         mac_inner.addWidget(btn_reset_mac)
@@ -1387,11 +1401,25 @@ class AcquisitionTab(QWidget):
             self._edit_dir.setText(directorio)
             self._settings.setValue("adquisicion/save_dir", directorio)
 
+    def _default_address(self) -> str:
+        """The station's address from bitalino.txt; the lab's MAC without it."""
+        if self._station_address is not None:
+            return self._station_address
+        return DEFAULT_BITALINO_ADDR
+
+    def _log_station_address(self) -> None:
+        self._log(
+            tr("BITalino address taken from {file}: {addr}").format(
+                file=ADDRESS_FILE, addr=self._station_address or tr("autodetect")
+            )
+        )
+
     @Slot()
     def _reset_mac(self) -> None:
-        """Restore the default BITalino address (the lab's MAC)."""
-        self._edit_mac.setText(DEFAULT_BITALINO_ADDR)
-        self._settings.setValue("adquisicion/port", DEFAULT_BITALINO_ADDR)
+        """Restore the default BITalino address: the station's, or the lab's MAC."""
+        addr = self._default_address()
+        self._edit_mac.setText(addr)
+        self._settings.setValue("adquisicion/port", addr)
 
     @Slot(int)
     def _on_device_type_changed(self, index: int) -> None:
@@ -4269,7 +4297,8 @@ class AcquisitionTab(QWidget):
         # actually used, and sending someone to a different mode to change a
         # COM port is sending them away from the exercise to fix the tool.
         port = str(self._settings.value("adquisicion/port", "") or "").strip()
-        first_setup = not port
+        # A station with bitalino.txt is set up, whatever the settings say.
+        first_setup = not port and self._station_address is None
         self._box_device.setVisible(True)
         self._lbl_first_setup.setVisible(first_setup)
         # Only the single-muscle practical can be done with the Arduino +

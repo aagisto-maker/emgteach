@@ -836,6 +836,8 @@ _ES = {
     "Point the phone camera at the code (same Wi-Fi network).":
         "Apunta la cámara del móvil al código (misma red Wi-Fi).",
     "Default": "Por defecto",
+    "autodetect": "autodetección",
+    "BITalino address taken from {file}: {addr}": "Dirección de la BITalino tomada de {file}: {addr}",
     "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
     "Refresh the list of available serial ports": "Refrescar lista de puertos serie disponibles",
@@ -907,12 +909,15 @@ _ES = {
     "BITalino MAC address (recommended — stable on every PC), or an explicit "
     "COM port (e.g. COM5), or leave empty to autodetect. Pair the BITalino "
     "in Windows Bluetooth settings first. No PyBluez is used. Write "
-    "«simulada» to try the application without the board.":
+    "«simulada» to try the application without the board. It starts from the "
+    "address written in bitalino.txt next to the application, when there is "
+    "one.":
         "Dirección MAC del BITalino (recomendado — estable en cualquier PC), "
         "o un puerto COM concreto (p. ej. COM5), o dejarlo vacío para "
         "autodetectar. Hay que emparejar antes el BITalino en la "
         "configuración Bluetooth de Windows. No se usa PyBluez. Escriba "
-        "«simulada» para probar la aplicación sin la placa.",
+        "«simulada» para probar la aplicación sin la placa. Parte de la "
+        "dirección escrita en bitalino.txt junto a la aplicación, si existe.",
     "Select a COM port for the Arduino before connecting.":
         "Seleccionar un puerto COM para el Arduino antes de conectar.",
     "Device configured: {desc}. Press 'Start recording'.":
