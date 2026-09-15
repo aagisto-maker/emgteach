@@ -250,7 +250,10 @@ and leaves when the tab changes.
 - **MAC** address (BITalino) or **COM port** (Arduino), always editable; «Default»
   restores the saved one. Writing `simulada` connects a BITalino simulated in software,
   to try the application, the recording and the classroom broadcast without the
-  board.
+  board. A text file `bitalino.txt` next to the application, with the address
+  on its first line, sets it for the station: the tab starts with it and
+  «Default» returns to it, so it is written once per station instead of typed
+  in every session.
 - **Output path and file**: the folder the EDF is written to.
 - **Labels**: each muscle's name, in the order of the board's channels. In the
   pair the boxes start empty with a hint («Agonist, e.g. FCR»); left empty, the
