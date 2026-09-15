@@ -39,6 +39,21 @@ Get-Content dist\emgteach_selftest.log
 off-screen. Because the app is windowed (no console), the outcome is written
 to `emgteach_selftest.log` next to the executable.
 
+### The connection diagnostic
+
+```powershell
+pyinstaller --noconfirm --clean packaging\diagnostico_bitalino.spec
+```
+
+writes `dist\diagnostico_bitalino.exe`, a console program that uses the
+application's own BITalino backend and no Qt. Put it next to `emgteach.exe`:
+double-clicked, it takes the address from `bitalino.txt` (or autodetects the
+board), checks the Bluetooth adapter, the pairing, the COM port, the
+handshake and ten seconds of acquisition, keeps its window open, and saves
+`diagnostico_bitalino_<date>.txt` beside it. From a console,
+`diagnostico_bitalino.exe simulada` checks the tool itself without the board,
+and `diagnostico_bitalino.exe COM5` tries a given port.
+
 ### Build in CI
 
 The *Build Windows exe* workflow (`.github/workflows/build-windows-exe.yml`)

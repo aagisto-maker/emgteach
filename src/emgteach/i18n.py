@@ -837,6 +837,101 @@ _ES = {
         "Apunta la cámara del móvil al código (misma red Wi-Fi).",
     "Default": "Por defecto",
     "autodetect": "autodetección",
+    # Connection diagnostic (emgteach.diagnostics).
+    "Bluetooth adapter":
+        "Adaptador Bluetooth",
+    "Windows could not be asked; the connection below says the rest.":
+        "No se pudo consultar a Windows; la conexión, más abajo, dice el "
+        "resto.",
+    "No working Bluetooth adapter: plug in the dongle, or switch Bluetooth "
+    "on in Windows settings.":
+        "No hay ningún adaptador Bluetooth en funcionamiento: conecte el "
+        "adaptador USB o active el Bluetooth en la configuración de Windows.",
+    "No BITalino is paired. Settings > Bluetooth & devices > Add device, "
+    "with the board switched on; its PIN is 1234. If it is not listed, set "
+    "Bluetooth devices discovery to Advanced (Settings > Bluetooth & devices "
+    "> Devices).":
+        "No hay ninguna BITalino emparejada. Configuración > Bluetooth y "
+        "dispositivos > Agregar dispositivo, con la placa encendida; su PIN "
+        "es 1234. Si no aparece en la lista, ponga la detección de "
+        "dispositivos Bluetooth en «Avanzada» (Configuración > Bluetooth y "
+        "dispositivos > Dispositivos).",
+    "BITalino paired":
+        "BITalino emparejada",
+    "{mac} is on {port}":
+        "{mac} está en {port}",
+    "No Bluetooth COM port leads to {mac}: pair that BITalino, or check the "
+    "address in {file}.":
+        "Ningún puerto COM Bluetooth lleva a {mac}: empareje esa BITalino o "
+        "compruebe la dirección de {file}.",
+    "COM port":
+        "Puerto COM",
+    "There is no {port} on this PC.":
+        "No hay ningún {port} en este ordenador.",
+    "No outgoing Bluetooth COM port: no BITalino is paired with this PC.":
+        "No hay ningún puerto COM Bluetooth saliente: ninguna BITalino está "
+        "emparejada con este ordenador.",
+    "Connection":
+        "Conexión",
+    "Connecting… a board that is switched off or out of reach takes up to "
+    "a minute to fail.":
+        "Conectando… si la placa está apagada o lejos, tarda hasta un minuto "
+        "en fallar.",
+    "Check that the BITalino is switched on and near this PC; if it is, "
+    "switch it off and on and run the diagnostic again.":
+        "Compruebe que la BITalino está encendida y cerca de este ordenador; "
+        "si lo está, apáguela, enciéndala y vuelva a pasar el diagnóstico.",
+    "{name} answered «{version}» in {s:.1f} s":
+        "{name} contestó «{version}» en {s:.1f} s",
+    "{n} frames in {s:.1f} s: {hz:.0f} Hz (the board sends {fs})":
+        "{n} tramas en {s:.1f} s: {hz:.0f} Hz (la placa envía {fs})",
+    "It stopped: {error}":
+        "Se detuvo: {error}",
+    "No frame failed its CRC.":
+        "Ninguna trama falló su CRC.",
+    "flat: nothing reaches this input":
+        "plana: a esta entrada no llega nada",
+    "saturated in {pct:.0f} % of the samples":
+        "saturada en el {pct:.0f} % de las muestras",
+    "A{n}: standard deviation {sd:.3f} mV":
+        "A{n}: desviación típica {sd:.3f} mV",
+    "FAIL":
+        "FALLO",
+    "no {file}: autodetected":
+        "sin {file}: se busca sola",
+    "from {file}":
+        "de {file}",
+    "given on the command line":
+        "dada al lanzarlo",
+    "Bluetooth":
+        "Bluetooth",
+    "Does not apply: the BITalino is simulated.":
+        "No se aplica: la BITalino es simulada.",
+    "Result: ready to record.":
+        "Resultado: listo para registrar.",
+    "Result: not ready. The first check that failed says why.":
+        "Resultado: no está listo. La primera comprobación que falla dice "
+        "por qué.",
+    "Report saved in {path}":
+        "Informe guardado en {path}",
+    "The report could not be saved: {error}":
+        "No se pudo guardar el informe: {error}",
+    "empty: autodetect":
+        "vacía: se busca sola",
+    "emgteach {version} — BITalino connection diagnostic — {when}":
+        "emgteach {version} — diagnóstico de conexión de la BITalino — {when}",
+    "Address: {address} ({source})":
+        "Dirección: {address} ({source})",
+    "BITalino connection diagnostic.":
+        "Diagnóstico de conexión de la BITalino.",
+    "MAC address, COM port or «simulada»; without it, the one in "
+    "bitalino.txt, or autodetection.":
+        "Dirección MAC, puerto COM o «simulada»; sin ella, la de "
+        "bitalino.txt o la búsqueda automática.",
+    "seconds of acquisition (10 by default)":
+        "segundos de adquisición (10 por omisión)",
+    "Press Enter to close.":
+        "Pulse Intro para cerrar.",
     "BITalino address taken from {file}: {addr}": "Dirección de la BITalino tomada de {file}: {addr}",
     "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
@@ -1415,9 +1510,9 @@ _ES = {
     "Could not open the BITalino port {port}: {err}. If the port is "
     "busy or access is denied, switch the BITalino off and on to reset "
     "the Bluetooth link, then retry.":
-        "No se pudo abrir el puerto del BITalino {port}: {err}. Si el puerto está "
-        "ocupado o el acceso está denegado, apaga y enciende el BITalino para "
-        "reiniciar el enlace Bluetooth y reintenta.",
+        "No se pudo abrir el puerto de la BITalino {port}: {err}. Si el puerto "
+        "está ocupado o el acceso está denegado, apague y encienda la BITalino "
+        "para reiniciar el enlace Bluetooth y vuelva a intentarlo.",
     "BITalino {mac} was not found among the paired Bluetooth COM "
     "ports. Pair it in the operating system's Bluetooth settings "
     "and switch it on.":

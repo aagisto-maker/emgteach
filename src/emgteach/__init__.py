@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
+from typing import TYPE_CHECKING
+
 from emgteach.apda import ApdfResult, LoadLevel, OnlineLoad, classify_load, compute_apdf
 from emgteach.devices import AcquisitionDevice, ArduinoDevice, BitalinoDevice
 from emgteach.dsp import (
@@ -46,9 +49,22 @@ from emgteach.selection import (
     suggest_significant_segments,
     total_duration_s,
 )
-from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
+
+if TYPE_CHECKING:
+    from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
 __version__ = "3.4.0"
+
+#: Exports whose module needs Qt. They are imported the first time they are
+#: asked for, so that ``import emgteach`` does not load Qt — the connection
+#: diagnostic's executable is built without it.
+_QT_EXPORTS = frozenset({"AcquisitionWorker", "AnalysisWorker", "MvcWorker"})
+
+
+def __getattr__(name: str) -> object:
+    if name in _QT_EXPORTS:
+        return getattr(importlib.import_module("emgteach.workers"), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     "ECG_PROFILE",
