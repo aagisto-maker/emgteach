@@ -2984,10 +2984,12 @@ class AcquisitionTab(QWidget):
                 # from a distracted one: both are just a number of millivolts.
                 self._mvc_rest_feed(env)
             return
-        if self._fv_active:
-            if self._fv_phase == "mvc_contract":
-                self._fv_mvc_feed(env)
+        if self._fv_active and self._fv_phase == "mvc_contract":
+            self._fv_mvc_feed(env)
             return
+        # The rest of the force-velocity study — the cued lifts — falls
+        # through: the bars used to freeze for exactly the part of the
+        # session the subject was lifting, on screen and on the phones.
         if all(r is None for r in self._mvc_ref[:n_ch]):
             return
         for c in range(n_ch):
@@ -3308,6 +3310,17 @@ class AcquisitionTab(QWidget):
 
         self._prep_timer.stop()
         self._worker.add_marker(rec_start_marker())
+        # The recording phase starts from rest — the countdown was rest by
+        # construction. The onset detector measures its threshold again
+        # here (the stream's first second was the warm-up), and the live
+        # P10/P50/P90 start counting here instead of carrying the
+        # countdown's five seconds of rest into the task's distribution.
+        rearm = getattr(self._worker, "rearm_onsets", None)
+        if rearm is not None:
+            rearm()
+        for c in range(MAX_CHANNELS):
+            self._online[c].reset()
+        self._update_load_readout()
         self._mvc_overlay.hide_overlay()
         self._bcast_calib(False)
         self._mvc_info(tr("Recording — the calibration is behind you."))

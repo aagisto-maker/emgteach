@@ -848,6 +848,22 @@ class OnsetDetector:
         """The calibrated threshold, or ``None`` while still in baseline."""
         return self._threshold
 
+    def rearm(self) -> None:
+        """Measure the resting level again, from the next samples on.
+
+        The threshold is set once, from the first ``baseline_s`` of the
+        stream, and in a guided session that second is the start of the
+        warm-up — contractions, not rest. Re-armed at the start of the
+        recording phase, after a countdown that is rest by construction,
+        the threshold describes the rest the task rises from. The sample
+        counter is kept, so onset times stay in the file's time base.
+        """
+        self._threshold = None
+        self._sum = 0.0
+        self._sumsq = 0.0
+        self._count = 0
+        self._above_run = 0
+
     def process(self, envelope_block: FloatArray | np.ndarray) -> list[float]:
         """Feed one envelope block; return onset times (s) found in it.
 

@@ -162,6 +162,7 @@ class AcquisitionWorker(QThread):
         self._markers_mutex = QMutex()
         self._last_sample_time: float | None = None
         self._write_failed = False
+        self._rearm_onsets = False
         # The marks' mirror on disk, open while a recording is (see
         # emgteach.recovery). Guarded by the markers' mutex.
         self._sidecar = None
@@ -171,6 +172,16 @@ class AcquisitionWorker(QThread):
     def stop(self) -> None:
         """Request a clean stop; the thread finishes the current block."""
         self._running = False
+
+    @Slot()
+    def rearm_onsets(self) -> None:
+        """Measure the onset detectors' resting level again, from the next block.
+
+        Called by the tab at the start of the recording phase, whose first
+        second — after the countdown — is rest; the stream's first second,
+        which set the threshold until now, is the start of the warm-up.
+        """
+        self._rearm_onsets = True
 
     def stop_forced(self) -> None:
         """Emergency stop: also closes the device socket from this thread.
@@ -456,6 +467,17 @@ class AcquisitionWorker(QThread):
                 # the raw signal is written to the EDF (one channel per
                 # sensor); the filtered signal and envelope are computed
                 # here for the live display and recomputed on analysis.
+                if self._rearm_onsets:
+                    self._rearm_onsets = False
+                    if onset_detectors is not None:
+                        for detector in onset_detectors:
+                            if detector is not None:
+                                detector.rearm()
+                        self.log.emit(tr(
+                            "Onset detection re-armed: the resting level is measured "
+                            "again from here."
+                        ))
+
                 raw_list = []
                 filt_list = []
                 env_list = []

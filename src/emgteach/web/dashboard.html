@@ -249,6 +249,9 @@ function setCalib(d) {
   } else if (d.phase === "rest") {
     cal.count.style.display = ""; cal.count.textContent = "🧘";
     cal.bars.style.display = "none";
+  } else if (d.phase === "warmup" || d.phase === "prep") {
+    cal.count.style.display = ""; cal.count.textContent = d.count != null ? d.count : "";
+    cal.bars.style.display = "none";
   } else { // done
     cal.count.style.display = "none"; cal.bars.style.display = "none";
   }
