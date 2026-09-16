@@ -563,6 +563,30 @@ _ES = {
     "Warning — annotation error: {error}": "Aviso — error de anotación: {error}",
     "EDF file saved: {path}": "Archivo EDF guardado: {path}",
     "Warning — EDF close error: {error}": "Aviso — error al cerrar el EDF: {error}",
+    "The marks are also in {path}; «python -m emgteach.recovery» rebuilds a readable "
+    "file.":
+        "Las marcas están también en {path}; «python -m emgteach.recovery» reconstruye "
+        "un archivo legible.",
+    # -- emgteach.recovery: a recording that was not closed --
+    "{path} is too short to be an EDF file.":
+        "{path} es demasiado corto para ser un archivo EDF.",
+    "{path} does not have a readable EDF header.":
+        "{path} no tiene una cabecera EDF legible.",
+    "{path}: {n} records in the header, {m} on disk.":
+        "{path}: {n} registros en la cabecera, {m} en el disco.",
+    "{path} holds no complete record; there is nothing to recover.":
+        "{path} no contiene ningún registro completo; no hay nada que recuperar.",
+    "{n} marks already in the file, {m} in the side-car {side}.":
+        "{n} marcas ya en el archivo, {m} en el archivo lateral {side}.",
+    "Recovered: {path} — {seconds:.0f} s, {n} marks.":
+        "Recuperado: {path} — {seconds:.0f} s, {n} marcas.",
+    "Recover an emgteach recording that was not closed.":
+        "Recupera una grabación de emgteach que no se cerró.",
+    "the .edf file the application did not get to close":
+        "el archivo .edf que la aplicación no llegó a cerrar",
+    "where to write the recovered file": "dónde escribir el archivo recuperado",
+    "the .marcas.txt side-car (by default, the one next to the .edf)":
+        "el archivo lateral .marcas.txt (por omisión, el que está junto al .edf)",
     # -- EDF+ identification header: what did not fit, said out loud --
     "Warning — the EDF+ header shares {budget} characters between equipment, "
     "supervisor and protocol. Equipment shortened from \"{was}\" to \"{now}\" "

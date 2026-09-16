@@ -1198,6 +1198,13 @@ genera o exporta en la pestaña Análisis, con la difusión activa.
 virtual del proyecto. Python 3.13 y posteriores no están soportados todavía,
 porque la pila científica no tiene *wheels*.
 
+**El ordenador se apagó, o la aplicación se cerró, a mitad de una grabación.**
+El archivo EDF tiene la señal pero no se abre, y las marcas de la sesión no
+llegaron a escribirse en él: están en un archivo de texto junto a él,
+`<nombre>.marcas.txt`, que la aplicación escribe marca a marca mientras
+graba. Desde una consola, `python -m emgteach.recovery <archivo>.edf` escribe
+`<archivo>_recuperado.edf` con la señal y las marcas; el original no se toca.
+
 ---
 
 ## 10. Glosario
