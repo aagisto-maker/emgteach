@@ -846,6 +846,13 @@ followers must connect after the broadcast is on and while recording.
 
 Python 3.10–3.12; 3.13 is not supported yet.
 
+**The PC shut down, or the application closed, in mid-recording.** The EDF
+holds the signal but does not open, and the session's marks were never
+written into it: they are in a text file beside it, `<name>.marcas.txt`,
+which the application writes mark by mark while recording. From a console,
+`python -m emgteach.recovery <file>.edf` writes `<file>_recuperado.edf` with
+the signal and the marks; the original is not touched.
+
 ---
 
 ## 10. Glossary

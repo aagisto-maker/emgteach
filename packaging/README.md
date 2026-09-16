@@ -54,6 +54,22 @@ handshake and ten seconds of acquisition, keeps its window open, and saves
 `diagnostico_bitalino.exe simulada` checks the tool itself without the board,
 and `diagnostico_bitalino.exe COM5` tries a given port.
 
+### Recovering a recording that did not close
+
+A recording the process did not get to close — a power cut, a forced
+close — leaves an EDF with all its signal on disk that no reader accepts
+(its header says `-1` records) and without the session's marks, which
+pyedflib writes only on close. The worker mirrors every mark to
+`<name>.marcas.txt` beside the EDF as it is made, and removes that file on
+a normal close. To rebuild a readable file:
+
+```powershell
+python -m emgteach.recovery C:\Records\P07_2026-09-10_16-32.edf
+```
+
+writes `P07_2026-09-10_16-32_recuperado.edf` with the signal and the marks;
+the original is never modified.
+
 ### Build in CI
 
 The *Build Windows exe* workflow (`.github/workflows/build-windows-exe.yml`)

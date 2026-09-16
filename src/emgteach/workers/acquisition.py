@@ -17,6 +17,7 @@ dropped Bluetooth link.
 
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -32,6 +33,7 @@ from emgteach.io import (
     build_timestamped_path,
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
+from emgteach.recovery import sidecar_path
 
 if TYPE_CHECKING:
     from emgteach.devices import AcquisitionDevice
@@ -160,6 +162,9 @@ class AcquisitionWorker(QThread):
         self._markers_mutex = QMutex()
         self._last_sample_time: float | None = None
         self._write_failed = False
+        # The marks' mirror on disk, open while a recording is (see
+        # emgteach.recovery). Guarded by the markers' mutex.
+        self._sidecar = None
 
     # -- public control ------------------------------------------------------
 
@@ -221,9 +226,51 @@ class AcquisitionWorker(QThread):
         self._markers_mutex.lock()
         try:
             self._markers.append((time_s, label))
+            self._mirror_marker(time_s, label)
         finally:
             self._markers_mutex.unlock()
         self.marker_added.emit(time_s, label)
+
+    def _mirror_marker(self, time_s: float, label: str) -> None:
+        """Append one mark to the side-car and push it to disk at once.
+
+        The EDF holds its annotations in memory until it closes, so a
+        process that dies in mid-recording loses every mark of the session
+        with the signal safely on disk. This line survives that: flushed
+        and synced mark by mark, at most a few times a second.
+        """
+        if self._sidecar is None:
+            return
+        try:
+            self._sidecar.write(f"{time_s:.4f}\t{label}\n")
+            self._sidecar.flush()
+            os.fsync(self._sidecar.fileno())
+        except OSError:
+            pass
+
+    def _close_sidecar(self, keep: bool) -> None:
+        """Close the marks' mirror; keep it only for a file that did not close well."""
+        self._markers_mutex.lock()
+        try:
+            f, self._sidecar = self._sidecar, None
+        finally:
+            self._markers_mutex.unlock()
+        if f is None:
+            return
+        try:
+            f.close()
+        except OSError:
+            pass
+        if keep:
+            self.log.emit(tr(
+                "The marks are also in {path}; «python -m emgteach.recovery» "
+                "rebuilds a readable file."
+            ).format(path=f.name))
+            return
+        try:
+            Path(f.name).unlink()
+        except OSError:
+            pass
 
     @Slot(float, str)
     def remove_marker(self, time_s: float, label: str) -> bool:
@@ -367,6 +414,19 @@ class AcquisitionWorker(QThread):
             # marking from a protocol that names half a practice.
             for notice in writer.header_notices:
                 self.log.emit(notice)
+            # The marks' mirror: each one goes to this text file as it is
+            # made, so a process that dies before the EDF closes leaves
+            # them behind for emgteach.recovery. Removed on a normal close.
+            self._markers_mutex.lock()
+            try:
+                self._sidecar = open(sidecar_path(edf_path), "w", encoding="utf-8")
+                self._sidecar.write(
+                    f"# emgteach marks for {Path(edf_path).name}: seconds\tlabel\n")
+                self._sidecar.flush()
+            except OSError:
+                self._sidecar = None
+            finally:
+                self._markers_mutex.unlock()
 
             sleep_ms = max(1, int(self._n_per_read / fs * 500))
             self._running = True
@@ -500,5 +560,6 @@ class AcquisitionWorker(QThread):
                 else:
                     self.log.emit(tr("EDF file saved: {path}").format(path=edf_path))
                     saved = edf_path
+                self._close_sidecar(keep=bool(self._n_samples_total) and not saved)
 
             self.finished_ok.emit(saved)
