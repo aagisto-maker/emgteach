@@ -176,8 +176,12 @@ def _historia(result: dict) -> list:
 
 
 def _celdas(story: list) -> list[str]:
+    # Each cell is a paragraph (so long values wrap); its text, unescaped,
+    # is what the table prints.
+    from xml.sax.saxutils import unescape
+
     return [
-        str(c)
+        unescape(c.text) if hasattr(c, "text") else str(c)
         for item in story if isinstance(item, Table)
         for fila in item._cellvalues
         for c in fila

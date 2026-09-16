@@ -739,8 +739,13 @@ class MvcTab(QWidget):
 
     @Slot()
     def _on_canal_cambiado(self) -> None:
-        """The calibration travels per channel, so the warning follows it."""
+        """The calibration travels per channel, so the warning follows it —
+        and so do the numbers: the ones on screen were computed for the
+        channel the combo just left, and stayed there under the new one's
+        name."""
         self._refresh_compute_enabled()
+        if self._last_result is not None:
+            self._olvidar_resultado()
 
     def _leer_refs_del_fichero(self, path: str) -> None:
         """Read what the recording says about its own calibration.
@@ -1027,6 +1032,9 @@ class MvcTab(QWidget):
 
     @Slot(dict)
     def _on_result(self, result: dict) -> None:
+        # The worker knows the channel as an index; the card and the report
+        # need its name.
+        result.setdefault("channel_name", self._combo_canal.currentText().strip())
         self._last_result = result
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
@@ -1075,7 +1083,11 @@ class MvcTab(QWidget):
     def _actualizar_resumen(self, r: dict) -> None:
         dim = r.get("dimension", "")
         ref = r.get("mvc_amplitude_ref")
-        self._d_file.setText(f"<b>{tr('File:')}</b> {Path(r['edf_path']).name}")
+        canal = str(r.get("channel_name") or "")
+        self._d_file.setText(
+            f"<b>{tr('File:')}</b> {Path(r['edf_path']).name}"
+            + (f" · <b>{tr('Channel:')}</b> {canal}" if canal else "")
+        )
         self._d_cvm_ref.setText(
             f"<b>{tr('MVC reference:')}</b> {ref:.4f} {dim}" if ref
             else f"<span style='color:{AUTO_COLOR}'><b>"
@@ -1577,23 +1589,9 @@ class MvcTab(QWidget):
         if not ruta.lower().endswith(".pdf"):
             ruta += ".pdf"
         out = Path(ruta)
-        # The identifier travels in the EDF header since recording time;
-        # a file from before that carries none, and the acquisition tab's
-        # current one is the best guess left.
-        from emgteach.io import read_edf_metadata
-
         try:
-            codigo = read_edf_metadata(self._edit_path.text().strip()).student_code
-        except Exception:
-            codigo = ""
-        meta = {
-            "student": "",
-            "student_code": codigo or str(
-                self._settings.value("adquisicion/student_code", "") or ""
-            ),
-        }
-        try:
-            build_mvc_report(out, self._last_result, meta, time_range=rango)
+            build_mvc_report(out, self._last_result, self._report_meta(),
+                             time_range=rango)
             self._log(tr("PDF report generated: {path}").format(path=out))
         except Exception as exc:
             self._err(
@@ -1603,6 +1601,26 @@ class MvcTab(QWidget):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    def _report_meta(self) -> dict:
+        """What the report says about the file beyond its numbers.
+
+        Everything the EDF header says, and nothing the acquisition tab
+        has: its current identifier is another student's as often as not,
+        and a file from before the header carried one used to be reported
+        under it.
+        """
+        from emgteach.io import read_edf_metadata
+
+        cabecera = read_edf_metadata(self._edit_path.text().strip())
+        return {
+            "student_code": cabecera.student_code,
+            "protocol": cabecera.protocol,
+            "device": cabecera.equipment,
+            "derived": cabecera.patient_additional,
+            "channel": self._combo_canal.currentText().strip(),
+            "fragments": list(self._selected_segments),
+        }
 
     def _set_controles_habilitados(self, habilitado: bool) -> None:
         self._btn_abrir.setEnabled(habilitado)

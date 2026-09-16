@@ -950,6 +950,22 @@ class AnalysisWorker(QThread):
                     result["rms_seg_2"] = segs2["rms_seg"]
                     result["fat_fitted_2"] = fat2["fitted"]
                     result["mdf_slope_2"] = float(fat2["slope"])
+                    # The rest of what the first muscle gets, so the report
+                    # and the CSV can print the two side by side.
+                    result["fat_r_squared_2"] = fat2["r_squared"]
+                    result["fat_pct_decline_2"] = fat2["pct_decline"]
+                    result["fat_slope_sign_2"] = fat2["slope_sign"]
+                    result["fat_slope_per_min_2"] = fat2["slope_per_min"]
+                    result["fat_verdict_2"] = fatigue_verdict(
+                        fat2["slope_sign"], fat2["r_squared"],
+                        int(np.count_nonzero(activos2)),
+                        min_r2=self._profile.fatigue_min_r2,
+                        min_segments=self._profile.fatigue_min_segments,
+                    )
+                    result["rms_global_2"] = float(
+                        np.sqrt(np.mean(proc2["emg_filtered"] ** 2)))
+                    result["iemg_2"] = float(
+                        trapezoid(proc2["emg_rectified"], dx=1.0 / fs))
                     # And its spectrum, so panel 3 can show the two muscles
                     # side by side in the same practical.
                     psd2 = compute_psd_mnf_mdf(

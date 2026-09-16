@@ -312,6 +312,9 @@ class MvcWorker(QThread):
                 "dimension": dimension,
                 "fs": fs,
                 "f_high": self._f_high,
+                "f_low": self._f_low,
+                "f_notch": self._f_notch,
+                "f_env": self._f_env,
                 "edf_path": self._edf_path,
             }
 

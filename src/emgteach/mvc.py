@@ -259,8 +259,12 @@ def adaptive_ylim(
 # (:func:`emgteach.force_velocity.fv_load_marker`), and it fits the design rule
 # that the EDF carries the raw signal plus the facts of the session, with
 # everything else recomputed.
+# With an exponent: the marker is written with ``:.6g``, which turns a
+# reference below 1e-4 mV (a flat channel calibrated) into ``5e-05``, and a
+# pattern without it read that back as 5 mV.
 _MVC_REF_RE = re.compile(
-    r"MVC\s+ref\s+ch=\s*(\d+)\s+value=\s*([0-9]*\.?[0-9]+)", re.IGNORECASE
+    r"MVC\s+ref\s+ch=\s*(\d+)\s+value=\s*([0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)",
+    re.IGNORECASE,
 )
 
 

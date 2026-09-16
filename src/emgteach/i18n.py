@@ -1604,6 +1604,22 @@ _ES = {
     "RMS window": "Ventana RMS",
     "Device": "Dispositivo",
     "not stored in the EDF": "no almacenado en el EDF",
+    "EMG report": "Informe EMG",
+    "MVC report": "Informe CVM",
+    "Provenance: {note}": "Procedencia: {note}",
+    "Graphs show": "Las gráficas muestran",
+    "Channel:": "Canal:",
+    # -- CSV export (exports.py): the second muscle, the reference, the dialect --
+    "Second channel": "Segundo canal",
+    "iEMG (mV*s)": "iEMG (mV*s)",
+    "MVC reference (mV)": "Referencia CVM (mV)",
+    "Task maximum (% MVC)": "Máximo de la tarea (% CVM)",
+    "Separator: {sep} — decimal: {dec}": "Separador: {sep} — decimal: {dec}",
+    # -- tuning.py --
+    "the recording has no recording phase (no «REC start», no calibration and no "
+    "load marks): there is nothing to tune":
+        "el registro no tiene fase de registro (ni «REC start», ni calibración, ni "
+        "marcas de carga): no hay nada que afinar",
     "generated {dt:%Y-%m-%d %H:%M}": "generado {dt:%Y-%m-%d %H:%M}",
 
     # --- fragment editor / CSV export / new UI (v1.1.x) ---
