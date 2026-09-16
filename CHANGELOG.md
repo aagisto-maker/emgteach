@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **`import emgteach` no longer loads Qt.** `AcquisitionWorker`, `AnalysisWorker` and `MvcWorker`, the only exports that need it, are imported from `emgteach.workers` the first time they are asked for; everything else the package exports is unchanged. The connection diagnostic's executable is built without Qt and depends on it.
+- **Every recording calibrates itself.** The references measured for a previous recording of the same session are no longer written into the next file's header: they were written and, in the same breath, cleared from the screen, so the file said «MVC ref» for a calibration it did not contain and the bars said nothing. A recording starts with no reference and, in the practicals that calibrate first, calibrates.
+
+### Fixed
+
+- **A recording that cannot be written stops and says so.** An error writing a block of the EDF (a full disk, a folder that went away) was noted in the log while the recording went on, the screen said «Signal OK», and the file was announced as saved and sent to the analysis. It now stops at the first failed block with the same message as a folder that cannot be written, keeps what was written and says it is incomplete, and does not open it for analysis. A file that no sample reached is removed instead of left unreadable.
+- **Stopping and starting again at once no longer freezes the screen on the previous file.** «Stop» only asks the thread to finish; started again inside that second, the old thread's ending put the new recording's controls back and left the plots showing the previous session while the new file went on being written. «Start» now waits for the previous thread, and a thread's ending only touches the controls if it is the current one.
+- **The status line tells the truth after a disconnection in mid-recording**: it derives from the Connect button instead of being written as «connected (ready to record)» by whoever stopped.
+- **The simulated board's name reaches the EDF header whole** («BITalino simulated», not «BITalino lated»): an identifier with no digit in it is a word, not an address, and is no longer cut to its tail.
+- **The envelope's title stays «Envelope (mV)»** after reviewing a session; it went back to the three-term title the 3.1.0 had retired.
 
 ## [3.4.0] — 2026-09-14
 

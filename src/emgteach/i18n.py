@@ -553,7 +553,12 @@ _ES = {
         "Detección automática de inicio activada (k={k:.1f}).",
     "Recording to: {path}": "Grabando en: {path}",
     "Connection to {name} lost: {error}": "Conexión con {name} perdida: {error}",
-    "Warning — EDF write error: {error}": "Aviso — error de escritura EDF: {error}",
+    "No samples arrived: the empty file {path} was removed.":
+        "No llegó ninguna muestra: el archivo vacío {path} se ha eliminado.",
+    "The file {path} holds the {seconds:.1f} s written before the failure and is "
+    "incomplete; it is not opened for analysis.":
+        "El archivo {path} conserva los {seconds:.1f} s escritos antes del fallo y está "
+        "incompleto; no se abre para el análisis.",
     "{name} disconnected.": "{name} desconectado.",
     "Warning — annotation error: {error}": "Aviso — error de anotación: {error}",
     "EDF file saved: {path}": "Archivo EDF guardado: {path}",
@@ -997,8 +1002,6 @@ _ES = {
     # "F" and "E" are identical in both languages and fall through to the key.
     "R": "B",
     "Raw EMG signal (mV)": "Señal EMG en bruto (mV)",
-    "Envelope (5 Hz low-pass filter, causal with continuous state)":
-        "Envolvente (filtro paso-bajo 5 Hz, causal con estado continuo)",
     "Select destination folder": "Seleccionar carpeta de destino",
     "Save EDF recording as…": "Guardar grabación EDF como…",
     "BITalino MAC address (recommended — stable on every PC), or an explicit "
@@ -2208,8 +2211,6 @@ _ES = {
     'Recording to {file}.': 'Grabando en {file}.',
     'First the calibration of the maximum; then the force-velocity study: {plan}.':
         'Primero la calibración del máximo; después el estudio fuerza-velocidad: {plan}.',
-    'The maximum is already calibrated; the force-velocity study starts now: {plan}.':
-        'El máximo ya está calibrado; el estudio fuerza-velocidad empieza ahora: {plan}.',
     'Force-velocity study: {n} loads, {r} lifts each, lightest first.':
         'Estudio fuerza-velocidad: {n} cargas, {r} levantamientos por carga, de menor a mayor.',
     'Now the force-velocity study': 'Ahora, el estudio fuerza-velocidad',

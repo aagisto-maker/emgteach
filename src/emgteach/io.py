@@ -162,12 +162,16 @@ def _compact_equipment(equipment: str) -> str:
     are built as ``"<name> (<identifier>)"`` by every backend
     (:mod:`emgteach.devices`), so the parenthesis is what gets squeezed.
     Returns the string unchanged when there is no parenthesised part to
-    squeeze — the caller then falls back to a plain cut.
+    squeeze — the caller then falls back to a plain cut. An identifier
+    with no digit in it is a word, not an address — ``"(simulated)"`` —
+    and is kept whole: its tail (``"lated"``) names nothing.
     """
     head, sep, rest = equipment.partition("(")
     if not sep:
         return equipment
     identifier = rest.rstrip().removesuffix(")").strip()
+    if not any(ch.isdigit() for ch in identifier):
+        return f"{head.strip()} {identifier}".strip()
     return f"{head.strip()} {identifier[-EQUIPMENT_ID_TAIL:]}".strip()
 
 

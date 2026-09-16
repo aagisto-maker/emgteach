@@ -159,6 +159,7 @@ class AcquisitionWorker(QThread):
         self._markers: list[tuple[float, str]] = []
         self._markers_mutex = QMutex()
         self._last_sample_time: float | None = None
+        self._write_failed = False
 
     # -- public control ------------------------------------------------------
 
@@ -202,9 +203,9 @@ class AcquisitionWorker(QThread):
 
         Thread-safe: callable from the Qt main thread while the worker
         is running. The marker is appended to an internal list and also
-        emitted via :attr:`marker_added` for the log/UI; it is written
-        to the EDF file in real time via
-        :meth:`BufferedEdfWriter.add_annotation`.
+        emitted via :attr:`marker_added` for the log/UI; the list is
+        written to the EDF file when the recording closes (see
+        :meth:`remove_marker`).
         """
         time_s = self._n_samples_total / self._device.fs
         self._record_marker(time_s, label)
@@ -428,7 +429,13 @@ class AcquisitionWorker(QThread):
                 try:
                     writer.add_samples(*raw_list)
                 except Exception as exc:
-                    self.log.emit(tr("Warning — EDF write error: {error}").format(error=exc))
+                    # Said once, as an error, and the recording stops: a
+                    # file that goes on losing blocks while the screen says
+                    # «Signal OK» is worse than one that ends here. What was
+                    # written stays on disk; the cleanup says how much.
+                    self._write_failed = True
+                    self.error.emit(mensaje_fallo_guardado(edf_path, exc))
+                    break
 
                 self.data_ready.emit(
                     {
@@ -451,6 +458,9 @@ class AcquisitionWorker(QThread):
                 pass
             self.log.emit(tr("{name} disconnected.").format(name=device.name))
 
+            # What the tab is told the recording left behind: the path of a
+            # file worth opening, or nothing.
+            saved = ""
             if writer is not None:
                 # Write annotations before close so the EDF file holds
                 # the markers; then close flushes the trailing remainder
@@ -468,8 +478,27 @@ class AcquisitionWorker(QThread):
 
                 try:
                     writer.close()
-                    self.log.emit(tr("EDF file saved: {path}").format(path=edf_path))
                 except Exception as exc:
                     self.log.emit(tr("Warning — EDF close error: {error}").format(error=exc))
+                    self._write_failed = True
 
-            self.finished_ok.emit(edf_path)
+                if self._n_samples_total == 0:
+                    # Opened, and not one sample arrived: the header says
+                    # zero records and no reader accepts it. Not a recording.
+                    try:
+                        Path(edf_path).unlink()
+                    except OSError:
+                        pass
+                    self.log.emit(tr(
+                        "No samples arrived: the empty file {path} was removed."
+                    ).format(path=edf_path))
+                elif self._write_failed:
+                    self.log.emit(tr(
+                        "The file {path} holds the {seconds:.1f} s written before "
+                        "the failure and is incomplete; it is not opened for analysis."
+                    ).format(path=edf_path, seconds=self._n_samples_total / fs))
+                else:
+                    self.log.emit(tr("EDF file saved: {path}").format(path=edf_path))
+                    saved = edf_path
+
+            self.finished_ok.emit(saved)

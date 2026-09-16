@@ -1883,6 +1883,17 @@ class AcquisitionTab(QWidget):
         self._edit_dir.setText(save_dir)
         self._settings.setValue("adquisicion/save_dir", save_dir)
 
+        # A stop is a request: the thread finishes its block, closes the
+        # device and the file, and only then is gone. Started again inside
+        # that gap, the new recording shared the screen with the old one's
+        # ending — its «finished» froze the plots on the previous file
+        # while the new one went on writing. Wait for it; a second at most.
+        if self._worker is not None and self._worker.isRunning():
+            self._worker.stop()
+            if not self._worker.wait(3000):
+                self._worker.stop_forced()
+                self._worker.wait(2000)
+
         self._reset_buffers()
         self._marker_events.clear()
         self._list_markers.clear()
@@ -1965,11 +1976,14 @@ class AcquisitionTab(QWidget):
         )
         self._worker.data_ready.connect(self._on_data_ready)
         self._worker.log.connect(self._log)
-        self._worker.error.connect(self._on_error)
-        self._worker.finished_ok.connect(self._on_finished)
+        # Each slot is told which worker spoke: a thread that ends after
+        # the next one started must not restore the controls of the one
+        # that is recording.
+        worker = self._worker
+        worker.error.connect(lambda msg, w=worker: self._on_error(msg, w))
+        worker.finished_ok.connect(lambda path, w=worker: self._on_finished(path, w))
         self._worker.marker_added.connect(self._on_marker_added)
         self._worker.start()
-        self._write_pending_mvc_ref_markers()
         self._salir_revision()
         self._render_timer.start()
         # The watchdog starts in _on_data_ready after the first sample is read;
@@ -2006,9 +2020,6 @@ class AcquisitionTab(QWidget):
                 self._log(
                     tr("First the calibration of the maximum; then the "
                        "force-velocity study: {plan}.").format(plan=resumen)
-                    if self._mvc_flow_pending
-                    else tr("The maximum is already calibrated; the force-velocity "
-                            "study starts now: {plan}.").format(plan=resumen)
                 )
         # Said out loud, with the three things the answer depends on. Three
         # sessions came back with no calibration and no way to tell,
@@ -2054,8 +2065,19 @@ class AcquisitionTab(QWidget):
         self._btn_grabar.setText(tr("Start recording"))
         self._btn_grabar.setChecked(False)
         self._btn_conectar.setEnabled(True)
-        self._lbl_estado.setText(tr("Status: connected (ready to record)"))
+        self._lbl_estado.setText(self._estado_en_reposo())
         self._set_auto_controls_enabled(True)
+
+    def _estado_en_reposo(self) -> str:
+        """What the status line says when nothing is being recorded.
+
+        Derived from the Connect button, not written by whoever stopped the
+        recording: a disconnection in the middle of one used to end, a second
+        later, with «connected (ready to record)» under an unticked button.
+        """
+        if self._btn_conectar.isChecked():
+            return tr("Status: connected (ready to record)")
+        return tr("Status: disconnected")
 
     # ------------------------------------------------------------------
     # Worker slots
@@ -2439,9 +2461,7 @@ class AcquisitionTab(QWidget):
             # canvas.
             pw.enableAutoRange(axis="x")
         self._plot_raw.setTitle(tr("Raw EMG signal (mV)"))
-        self._plot_env.setTitle(
-            tr("Envelope (5 Hz low-pass filter, causal with continuous state)")
-        )
+        self._plot_env.setTitle(tr("Envelope (mV)"))
         self._reset_all_scales()
         self._refresh_lane_label_texts()   # back to the label boxes' names
         self._new_data = True
@@ -3229,10 +3249,10 @@ class AcquisitionTab(QWidget):
 
         A practical that compares two muscles has nothing to compare without
         both references, so the record button runs the whole session rather
-        than leaving the calibration to be remembered. Already calibrated in
-        this session and it does not run again: the references are still good
-        and a second one would only cost the subject three more maximal
-        efforts, which is the fastest way to make the next contraction weaker.
+        than leaving the calibration to be remembered. Every recording is a
+        session of its own: the references are cleared when it starts, so
+        the file it writes carries its own calibration and nothing that was
+        measured with the electrodes as they were placed for another one.
         """
         return (
             mode_requires_calibration(self._mode)
@@ -3310,18 +3330,6 @@ class AcquisitionTab(QWidget):
         ref = self._mvc_ref[c]
         if ref and self._worker and self._worker.isRunning():
             self._worker.add_marker(mvc_ref_marker(c, float(ref)))
-
-    def _write_pending_mvc_ref_markers(self) -> None:
-        """Write every reference calibrated *before* the recording started.
-
-        Calibrating first and recording afterwards is a normal order of work —
-        the wizard even enables the record button when it finishes — and in
-        that order there was no open file to annotate. Dumping the known
-        references as the recording opens is what keeps that path from
-        producing a file the analysis cannot read in % MVC.
-        """
-        for c in range(self._n_channels):
-            self._write_mvc_ref_marker(c)
 
     def _mvc_crosstalk(self) -> list[tuple[str, str, float]]:
         """How much each channel read while a *different* muscle was calibrated.
@@ -3948,24 +3956,30 @@ class AcquisitionTab(QWidget):
 
 
 
-    @Slot(str)
-    def _on_error(self, msg: str) -> None:
+    def _on_error(self, msg: str, worker: AcquisitionWorker | None = None) -> None:
+        """An error from *worker*; ``None`` means the current one."""
         self._err(msg)
-        self._restaurar_controles()
+        if worker is None or worker is self._worker:
+            self._restaurar_controles()
 
-    @Slot(str)
-    def _on_finished(self, edf_path: str) -> None:
-        self._restaurar_controles()
+    def _on_finished(self, edf_path: str, worker: AcquisitionWorker | None = None) -> None:
+        """*worker* has ended. Its file, if it left one worth opening, goes to
+        the analysis whichever worker it was; the controls and the review of
+        the session are only for the worker that is current."""
+        current = worker is None or worker is self._worker
+        if current:
+            self._restaurar_controles()
         if edf_path:
             self._log(tr("Recording finished. File: {path}").format(path=edf_path))
             self.recording_saved.emit(edf_path)
-            self._mostrar_registro(edf_path)
+            if current:
+                self._mostrar_registro(edf_path)
 
     def _restaurar_controles(self) -> None:
         self._btn_grabar.setChecked(False)
         self._btn_grabar.setText(tr("Start recording"))
         self._btn_conectar.setEnabled(True)
-        self._lbl_estado.setText(tr("Status: connected (ready to record)"))
+        self._lbl_estado.setText(self._estado_en_reposo())
         self._set_auto_controls_enabled(True)
         self._stop_load_monitor()
         self._quality_monitor = None
