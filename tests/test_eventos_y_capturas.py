@@ -84,8 +84,8 @@ def _record(qapp, tab, path: Path, seconds: float = 0.6) -> None:
 
 
 def test_the_event_log_is_named_after_the_recording_and_holds_plain_text() -> None:
-    assert events_path(r"C:\Records\P07_2026-09-10_16-32.edf").name == (
-        "P07_2026-09-10_16-32" + EVENTS_SUFFIX)
+    beside = Path("Records") / "P07_2026-09-10_16-32.edf"
+    assert events_path(beside) == Path("Records") / ("P07_2026-09-10_16-32" + EVENTS_SUFFIX)
     assert EVENTS_SUFFIX == ".eventos.txt"
     fake = SimpleNamespace(_eventos=[])
     AcquisitionTab._anotar_evento(fake, "<b>Calibration</b> &amp; <i>check</i>")
