@@ -805,26 +805,26 @@ _ES = {
     "with the board switched on; its PIN is 1234. If it is not listed, set "
     "Bluetooth devices discovery to Advanced (Settings > Bluetooth & devices "
     "> Devices).":
-        "No hay ninguna BITalino emparejada. Configuración > Bluetooth y "
+        "No hay ningún BITalino emparejado. Configuración > Bluetooth y "
         "dispositivos > Agregar dispositivo, con la placa encendida; su PIN "
         "es 1234. Si no aparece en la lista, ponga la detección de "
         "dispositivos Bluetooth en «Avanzada» (Configuración > Bluetooth y "
         "dispositivos > Dispositivos).",
     "BITalino paired":
-        "BITalino emparejada",
+        "BITalino emparejado",
     "{mac} is on {port}":
         "{mac} está en {port}",
     "No Bluetooth COM port leads to {mac}: pair that BITalino, or check the "
     "address in {file}.":
-        "Ningún puerto COM Bluetooth lleva a {mac}: empareje esa BITalino o "
+        "Ningún puerto COM Bluetooth lleva a {mac}: empareje ese BITalino o "
         "compruebe la dirección de {file}.",
     "COM port":
         "Puerto COM",
     "There is no {port} on this PC.":
         "No hay ningún {port} en este ordenador.",
     "No outgoing Bluetooth COM port: no BITalino is paired with this PC.":
-        "No hay ningún puerto COM Bluetooth saliente: ninguna BITalino está "
-        "emparejada con este ordenador.",
+        "No hay ningún puerto COM Bluetooth saliente: ningún BITalino está "
+        "emparejado con este ordenador.",
     "Connection":
         "Conexión",
     "Connecting… a board that is switched off or out of reach takes up to "

@@ -140,6 +140,21 @@ def test_every_translatable_string_has_a_spanish_entry() -> None:
 
 
 # ── The other hole: text that never reached tr() at all ───────────────────
+def test_the_bitalino_is_masculine_in_spanish() -> None:
+    """«El BITalino», as the manuals and the acquisition tab say it.
+
+    The connection diagnostic said «la BITalino» — the board — while the tab
+    beside it said «el BITalino»; two genders for one device in one session.
+    """
+    femenino = re.compile(
+        r"\b(la|una|ninguna|esa|esta)\s+BITalino\b"
+        r"|BITalino\s+(emparejada|encendida|apagada|conectada|simulada)\b",
+        re.IGNORECASE,
+    )
+    culpables = [es for es in i18n._ES.values() if femenino.search(es)]
+    assert not culpables, "«la BITalino»: " + "; ".join(repr(v[:70]) for v in culpables)
+
+
 def test_every_catalogue_entry_is_still_used() -> None:
     """The other direction: a key nothing asks for is a translation of nothing.
 
