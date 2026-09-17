@@ -139,7 +139,7 @@ def write_analysis_csv(
                 str(result.get("mvc_ref_source" + suffix, NO_CALIBRATION)),
                 len(reps.get(canal, ()) or ()),
             )
-            summary.append((tr("MVC reference (mV)") + tag, f"{num(ref, '.4f')} ({fuente})"))
+            summary.append((tr("MVC reference (mV)") + tag, f"{num(ref, '.4f')} — {fuente}"))
             pico = picos.get(name)
             if pico is not None:
                 summary.append((tr("Task maximum (% MVC)") + tag, num(pico, ".0f")))

@@ -216,6 +216,7 @@ def test_a_table_wider_than_the_frame_is_refused() -> None:
         _styled_table([["a", "b", "c"]], [5.0, 5.0])
     table = _styled_table([["a", "b", "c", "d"]])
     assert sum(table._colWidths) == pytest.approx(TABLE_WIDTH_CM * cm)
+    assert table.repeatRows == 1, "a table split across pages keeps its header"
 
 
 # -- the MVC report ----------------------------------------------------------
@@ -266,7 +267,7 @@ def test_the_csv_carries_the_name_the_version_the_reference_and_the_tables(tmp_p
     assert lines[0] == f"# emgteach analysis export (emgteach v{__version__})"
     assert "P07.edf" in text and "C:/Users" not in text and "someone" not in text
     assert "# Second channel: Extensor radial" in lines
-    assert "# MVC reference (mV) [Flexor radial]: 0.9000 (" in text
+    assert "# MVC reference (mV) [Flexor radial]: 0.9000 — " in text
     assert "# Task maximum (% MVC) [Extensor radial]: 41" in lines
     assert "# MDF (Hz) [Extensor radial]: 90.500" in lines
     assert "t_s,rms_mv,mdf_hz,rms_mv_2,mdf_hz_2" in lines
