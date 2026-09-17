@@ -136,19 +136,29 @@ _ES = {
         "segundo canal de la placa o su acelerómetro, así que lo fijan y el "
         "selector no aparece.",
     # --- calibration wizard: brief maximal efforts ---
-    'When the count reaches 0: one brief, explosive maximal jerk of wrist flexion, clenching the fist with all your strength. A jerk, not a sustained push against something fixed.':
-        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva de "
-        "flexión de muñeca a la máxima potencia, cerrando el puño con toda "
-        "la fuerza. Una sacudida, no un empuje sostenido contra algo fijo.",
-    'When the count reaches 0: one brief, explosive maximal jerk of wrist extension, with the hand open and the fingers stretched out as far as they go. A jerk, not a sustained push against something fixed.':
-        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva de "
-        "extensión de muñeca a la máxima potencia, con la mano abierta y los "
-        "dedos extendidos a tope. Una sacudida, no un empuje sostenido "
-        "contra algo fijo.",
-    "When the count reaches 0: one brief, explosive maximal jerk of the muscle's own movement — a jerk, not a sustained push against something fixed.":
+    "When the count reaches 0: one brief, explosive maximal jerk of the "
+    "movement this muscle makes — on the forearm, wrist flexion, clenching "
+    "the fist with all your strength. A jerk, not a sustained push against "
+    "something fixed.":
         "Cuando la cuenta llegue a 0: una sacudida breve y explosiva, a la "
-        "máxima potencia, del movimiento propio del músculo; una sacudida, "
-        "no un empuje sostenido contra algo fijo.",
+        "máxima potencia, del movimiento que hace este músculo; en el "
+        "antebrazo, flexión de muñeca cerrando el puño con toda la fuerza. "
+        "Una sacudida, no un empuje sostenido contra algo fijo.",
+    "When the count reaches 0: one brief, explosive maximal jerk of the "
+    "movement this muscle makes — on the forearm, wrist extension, with the "
+    "hand open and the fingers stretched out as far as they go. A jerk, not "
+    "a sustained push against something fixed.":
+        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva, a la "
+        "máxima potencia, del movimiento que hace este músculo; en el "
+        "antebrazo, extensión de muñeca con la mano abierta y los dedos "
+        "extendidos a tope. Una sacudida, no un empuje sostenido contra algo "
+        "fijo.",
+    "When the count reaches 0: one brief, explosive maximal jerk of the "
+    "movement this muscle makes — a jerk, not a sustained push against "
+    "something fixed.":
+        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva, a la "
+        "máxima potencia, del movimiento que hace este músculo; una "
+        "sacudida, no un empuje sostenido contra algo fijo.",
     "Maximum, short and hard — {label}{rep}":
         "¡Máximo, breve y fuerte! — {label}{rep}",
     "e.g. bench 3, attempt 2": "p. ej. mesa 3, intento 2",
@@ -1834,8 +1844,33 @@ _ES = {
         'Grabando: la calibración ya queda atrás.',
     'Recording phase started. Everything before this point — the calibration and this pause — stays out of the analysis.':
         'Empieza la fase de registro. Todo lo anterior —la calibración y esta pausa— queda fuera del análisis.',
-    "The reference is a brief, explosive maximal jerk of the movement the muscle makes, not a sustained push against something fixed. On the forearm, the flexor's is a jerk of wrist flexion with the fist clenched with all one's strength, and the extensor's a jerk of wrist extension with the hand open and the fingers stretched out as far as they go. A surface electrode on the forearm does not see one muscle but the compartment beneath it, finger flexors or extensors included, and a reference is only a yardstick if it recruits the same muscle mass as the task. The agonist/antagonist task includes a grip: clenching the fist brings in the finger flexors, whereas a push of the wrist leaves them out and, because the forearm has to be braced, switches on the antagonist as well.":
-        'La referencia es una sacudida breve y explosiva, a la máxima potencia, del movimiento del músculo, no un empuje sostenido contra algo fijo. En el antebrazo, la del flexor es una sacudida de flexión de muñeca cerrando el puño con toda la fuerza, y la del extensor una sacudida de extensión de muñeca con la mano abierta y los dedos extendidos a tope. Un electrodo de superficie en el antebrazo no ve un músculo, sino el compartimento que tiene debajo, con los flexores o los extensores de los dedos, y una referencia solo sirve de vara de medir si recluta la misma masa muscular que la tarea. La tarea de la práctica agonista/antagonista incluye una presa: cerrar el puño enciende los flexores de los dedos, mientras que el empuje de muñeca los deja fuera y, como obliga a fijar el antebrazo, enciende además al antagonista.',
+    "A reference is only a yardstick if it recruits the same muscle mass as "
+    "the task, and a surface electrode does not see one muscle but the "
+    "compartment beneath it. So the reference is a brief, explosive maximal "
+    "jerk of the movement the muscle makes, not a sustained push against "
+    "something fixed: a push has to be braced, which switches on the "
+    "antagonist as well. On the forearm — the pair of the practical guide — "
+    "the flexor's is a jerk of wrist flexion with the fist clenched with all "
+    "one's strength, and the extensor's a jerk of wrist extension with the "
+    "hand open and the fingers stretched out as far as they go: the task "
+    "includes a grip, and clenching the fist brings in the finger flexors of "
+    "the same compartment, which a push of the wrist leaves out. With "
+    "another pair — biceps and triceps, say — the gesture is that pair's "
+    "own, chosen by the same rule.":
+        "Una referencia solo sirve de vara de medir si recluta la misma masa "
+        "muscular que la tarea, y un electrodo de superficie no ve un "
+        "músculo, sino el compartimento que tiene debajo. Por eso la "
+        "referencia es una sacudida breve y explosiva, a la máxima potencia, "
+        "del movimiento que hace el músculo, y no un empuje sostenido contra "
+        "algo fijo: el empuje obliga a fijar el miembro, lo que enciende "
+        "además al antagonista. En el antebrazo, que es el par del guion de "
+        "prácticas, la del flexor es una sacudida de flexión de muñeca "
+        "cerrando el puño con toda la fuerza, y la del extensor una sacudida "
+        "de extensión de muñeca con la mano abierta y los dedos extendidos a "
+        "tope: la tarea incluye una presa, y cerrar el puño enciende los "
+        "flexores de los dedos del mismo compartimento, que el empuje de "
+        "muñeca deja fuera. Con otro par —bíceps y tríceps, por ejemplo— el "
+        "gesto es el propio de ese par, elegido con la misma regla.",
     'Calibration too weak': 'Calibración demasiado floja',
     '{muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.': "{muscles}: esto no es un máximo. Calibre de nuevo con una "
         "sacudida breve y explosiva a la máxima potencia, no con un empuje "
@@ -1848,7 +1883,10 @@ _ES = {
     'Channel separation — while «{muscle}» was at maximum, «{other}» reached {pct:.0f} % of its own reference.': 'Separación entre canales: mientras «{muscle}» estaba al máximo, «{other}» llegó al {pct:.0f} % de su propia referencia.',
     '{other} at {pct:.0f} % during {muscle}': '{other} al {pct:.0f} % durante {muscle}',
     'Channels not separated': 'Canales sin separar',
-    '{pairs}. Move the electrode pairs further apart, over the belly of each muscle, and support the forearm.': '{pairs}. Separe más los dos pares de electrodos, cada uno sobre el vientre de su músculo, y apoye el antebrazo.',
+    "{pairs}. Move the electrode pairs further apart, over the belly of each "
+    "muscle, and support the limb so that neither muscle has to hold it up.": "{pairs}. Separe más los dos pares de electrodos, cada uno sobre el "
+        "vientre de su músculo, y apoye el miembro para que ninguno de los "
+        "dos tenga que sostenerlo.",
     'Co-activation (Falconer-Winter)': 'Coactivación (Falconer-Winter)',
     'Co-activation index': 'Índice de coactivación',
     'Mean activation (% MVC)': 'Activación media (% CVM)',
@@ -2115,17 +2153,21 @@ _ES = {
     'Co-activation index (%)': 'Índice de coactivación (%)',
     '(1 repetition)': '(1 repetición)',
     'When it is not reported': 'Cuándo no se informa',
-    'When either muscle\'s mean activation above rest in the window is under '
-    '{floor} % MVC. Below that the index would compare two baselines, not '
-    'shared effort. The floor is {floor} % of a reference that is the '
-    'envelope\'s peak: the same level above rest as 5 % of the 0.2 s running '
-    'mean the reference used to be.':
-        'Cuando la activación media sobre el reposo de uno de los dos músculos no '
-        'llega al {floor} % CVM en la ventana. Por debajo, el índice compararía '
-        'dos líneas de base, no un esfuerzo compartido. El suelo es el {floor} % '
-        'de una referencia que es el pico de la envolvente: el mismo nivel sobre '
-        'el reposo que el 5 % de la media móvil de 0,2 s que era antes la '
-        'referencia.',
+    "When either muscle's mean activation above rest in the window is under "
+    "{floor} % MVC. Below that the index would compare two baselines, not "
+    "shared effort. The floor is {floor} % of a reference that is the "
+    "envelope's peak: the same level above rest as 5 % of the 0.2 s running "
+    "mean the reference used to be. Like the other limits of the practical, "
+    "it was measured on a forearm pair (FCR and ECR): with another pair it "
+    "is worth checking.":
+        "Cuando la activación media sobre el reposo de uno de los dos "
+        "músculos no llega al {floor} % CVM en la ventana. Por debajo, el "
+        "índice compararía dos líneas de base, no un esfuerzo compartido. El "
+        "suelo es el {floor} % de una referencia que es el pico de la "
+        "envolvente: el mismo nivel sobre el reposo que el 5 % de la media "
+        "móvil de 0,2 s que era antes la referencia. Como los demás límites "
+        "de la práctica, está medido sobre un par del antebrazo (FCR y ECR): "
+        "con otro par conviene comprobarlo.",
     'How to read the chart': 'Cómo leer el gráfico',
     'One line per window, its seconds on the right. A purple bar is the index, '
     'with the number in it. A gold block means the index is not reported, and '

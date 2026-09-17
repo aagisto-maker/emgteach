@@ -827,6 +827,15 @@ aprender, activa mucho los dos músculos y tiene lectura clínica inmediata.
 | Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
 | Alternancia rápida | los dos trabajan, pero por turnos | número bajo |
 
+> **De dónde salen estos límites.** El suelo del 4,5 %, el criterio de separación
+> entre canales y los rangos de la calibración están **medidos sobre el par del
+> antebrazo** (FCR y ECR) de este guion. Los cálculos no saben de anatomía —
+> trabajan sobre «canal 1» y «canal 2», y el par lo elige el docente—, pero esos
+> números sí vienen de un par concreto: con otro par (bíceps y tríceps, por
+> ejemplo) conviene comprobarlos con un registro de prueba antes de dar por
+> buenos los avisos. El apartado del guion «Variante: un segundo par» dice qué
+> cambia.
+
 La lección de fondo es que la coactivación es una propiedad de la **tarea** y no
 del músculo. El contraste entre la presa y la alternancia rápida es el más útil de
 los cuatro: en las dos trabajan los dos músculos, pero solo en la presa trabajan a
