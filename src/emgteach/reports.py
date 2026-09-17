@@ -436,7 +436,9 @@ def _styled_table(
         [Paragraph(escape(str(c)), head if i == 0 else body) for c in row]
         for i, row in enumerate(data)
     ]
-    table = Table(cells, hAlign="LEFT", colWidths=[w * cm for w in widths])
+    # The header row repeats when a table breaks across pages: a header left
+    # alone at the foot of one page, its rows on the next, reads as two tables.
+    table = Table(cells, hAlign="LEFT", colWidths=[w * cm for w in widths], repeatRows=1)
     style = [
         ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
         ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),

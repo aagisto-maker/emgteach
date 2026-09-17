@@ -371,8 +371,10 @@ def main() -> None:
 
     write_analysis_csv(ana._last_result, str(salida / "ejemplo_analisis.csv"))
     print("  ejemplo_analisis.csv")
+    # What the tab itself passes (device, protocol, provenance from the
+    # header), with the subject's code in place of the file's.
     build_session_report(str(salida / "ejemplo_informe.pdf"), ana._last_result,
-                         meta={"student_code": args.sujeto})
+                         meta={**ana._report_meta(), "student_code": args.sujeto})
     print("  ejemplo_informe.pdf")
 
     medidas(ana._last_result, ejemplo.name)
