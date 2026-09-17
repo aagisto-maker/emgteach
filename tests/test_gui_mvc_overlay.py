@@ -194,22 +194,18 @@ def _altura_minima() -> int:
 
 
 #: Every title the wizard passes to the overlay, by mode, with the longest
-#: label and repetition tag actually used. The brief-squeeze instruction is
-#: taken word for word, and in Spanish it is twice the
-#: panel's width at the title's size.
+#: label and repetition tag actually used — the wizard's own strings, taken
+#: word for word from ``AcquisitionTab._mvc_tick``.
 def _titulos() -> list[tuple[str, str]]:
     from emgteach.i18n import tr
 
     label = "ECR"
-    breve = tr(" (brief {i}/{n})").format(i=1, n=3)
+    rep = tr(" (rep {i}/{n})").format(i=3, n=3)
     return [
-        ("ready", tr("Get ready — {label}{rep}").format(label=label, rep=breve)),
-        ("contract", tr(
-            "Make a single, brief contraction of {label} with the greatest "
-            "force you can{rep}"
-        ).format(label=label, rep=breve)),
-        ("contract", tr("Contract {label} at maximum!{rep}").format(
-            label=label, rep=breve)),
+        ("ready", tr("Warm up first")),
+        ("ready", tr("Get ready — {label}{rep}").format(label=label, rep=rep)),
+        ("contract", tr("Maximum, short and hard — {label}{rep}").format(
+            label=label, rep=rep)),
         ("contract", tr("Contract at maximum! (no load)")),
         ("done", tr("Channels not separated")),
         ("done", tr("Calibration too weak")),

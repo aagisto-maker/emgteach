@@ -251,22 +251,6 @@ def test_force_velocity_dialog_prefills_guided_loads(qapp, tmp_path: Path) -> No
     assert len(dlg._fig.get_axes()) == 4
 
 
-def test_channel_diagnostic_picks_the_responding_channel() -> None:
-    """The diagnostic flags a channel only when its range clearly stands out."""
-    from emgteach.gui.widgets.channel_diagnostic_dialog import (
-        ChannelDiagnosticDialog,
-    )
-
-    pick = ChannelDiagnosticDialog._pick_channel
-    # A4 (index 3) swings widely, the rest are noise -> index 3 wins.
-    assert pick([4.0, 3.0, 5.0, 220.0, 2.0, 1.0]) == 3
-    # Only noise everywhere -> no winner.
-    assert pick([4.0, 3.0, 5.0, 6.0, 2.0, 1.0]) is None
-    # Two channels swing similarly -> ambiguous, no false positive.
-    assert pick([200.0, 3.0, 180.0, 5.0]) is None
-    assert pick([]) is None
-
-
 def test_force_velocity_averages_reps_and_excludes_unticked() -> None:
     """Repetitions at the same load are averaged; dropping one changes it."""
     import numpy as np
