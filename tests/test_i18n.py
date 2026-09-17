@@ -140,19 +140,20 @@ def test_every_translatable_string_has_a_spanish_entry() -> None:
 
 
 # ── The other hole: text that never reached tr() at all ───────────────────
-def test_the_bitalino_is_masculine_in_spanish() -> None:
-    """«El BITalino», as the manuals and the acquisition tab say it.
+def test_the_bitalino_is_a_board_and_feminine_in_spanish() -> None:
+    """«La placa BITalino»: a card, and feminine all the way through.
 
-    The connection diagnostic said «la BITalino» — the board — while the tab
-    beside it said «el BITalino»; two genders for one device in one session.
+    The diagnostic said «la BITalino» and the tab beside it «el BITalino»:
+    two genders for one device in one session. The word the interface uses
+    is «placa», so the agreement follows it.
     """
-    femenino = re.compile(
-        r"\b(la|una|ninguna|esa|esta)\s+BITalino\b"
-        r"|BITalino\s+(emparejada|encendida|apagada|conectada|simulada)\b",
+    masculino = re.compile(
+        r"\b(el|del|al|un|ningún|este|ese)\s+BITalino\b"
+        r"|BITalino\s+(emparejado|encendido|apagado|conectado|simulado)\b",
         re.IGNORECASE,
     )
-    culpables = [es for es in i18n._ES.values() if femenino.search(es)]
-    assert not culpables, "«la BITalino»: " + "; ".join(repr(v[:70]) for v in culpables)
+    culpables = [es for es in i18n._ES.values() if masculino.search(es)]
+    assert not culpables, "«el BITalino»: " + "; ".join(repr(v[:70]) for v in culpables)
 
 
 def test_every_catalogue_entry_is_still_used() -> None:

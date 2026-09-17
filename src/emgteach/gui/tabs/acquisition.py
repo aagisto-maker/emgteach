@@ -839,7 +839,7 @@ class AcquisitionTab(QWidget):
         self._chk_acc.setVisible(False)
         self._chk_acc.setToolTip(
             tr(
-                "Also record the BITalino accelerometer (A4) in its own plot and "
+                "Also record the BITalino accelerometer (A2) in its own plot and "
                 "EDF channel. Useful to relate muscle activation to movement, "
                 "flag motion artefacts, or show tremor. BITalino only."
             )

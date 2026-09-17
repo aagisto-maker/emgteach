@@ -97,8 +97,8 @@ Pestaña **Adquisición**, caja **Configuración del dispositivo**:
 - En la práctica de un músculo se elige el dispositivo (BITalino por Bluetooth o
   Arduino + MyoWare por USB). En las otras dos la caja dice **«Dispositivo:
   BITalino»** sin desplegable, porque necesitan dos canales o el acelerómetro,
-  que solo tiene el BITalino. En todos los casos la dirección (MAC o puerto) se
-  puede cambiar; el BITalino se identifica mejor por su **MAC**, que es la misma
+  que solo tiene la placa BITalino. En todos los casos la dirección (MAC o puerto) se
+  puede cambiar; la placa se identifica mejor por su **MAC**, que es la misma
   en cualquier ordenador.
 - **Ruta y archivo de salida**: carpeta donde se guardará el EDF.
 - **Etiquetas**: el nombre de cada músculo, en el orden de los canales de la
@@ -516,7 +516,7 @@ presa; veredicto de fatiga de cada músculo en la presa (panel 7 dibuja los dos)
 ## Práctica 3 — Cinemática muscular (nivel avanzado)
 
 **Montaje.** Un canal sobre el **bíceps braquial**, referencia en el olécranon, y
-el **acelerómetro** del BITalino sujeto con cinta sobre el **dorso de la muñeca**
+el **acelerómetro** de la placa BITalino sujeto con cinta sobre el **dorso de la muñeca**
 (el segmento que se mueve). Selector en **Cinemática muscular**. El cableado es
 una convención que la caja del acelerómetro dice: **el músculo en A1 y el
 acelerómetro en A2**. En esa caja, colocación «sobre el segmento que se mueve», y
