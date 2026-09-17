@@ -179,6 +179,15 @@ rectified and envelope.]
 > the window, not the screen, so nothing behind it can get in, while
 > the wizard's cue panel and the next-step panel do, being children
 > of the window. The path goes to the event log.
+>
+> **«Auto»**, beside it, takes one by itself every 3 s, but only while
+> a recording runs, and at most 60 per recording (three minutes); the
+> log says how many were saved when the recording ends, and says so
+> once if the limit is reached.
+>
+> **The event log of each recording is saved beside it**, as
+> `<name>.eventos.txt`, when the recording ends — well or badly. It is
+> the file to send when something went wrong.
 
 In the top-right corner, on the same row as the language selector, a drop-down
 with three options. It is the first control touched in a session: it fixes what

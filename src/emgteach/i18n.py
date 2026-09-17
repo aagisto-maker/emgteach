@@ -1429,11 +1429,22 @@ _ES = {
     "Screenshot saved: {path}": "Captura guardada: {path}",
     "Auto": "Auto",
     "Take a picture by itself every {s:.0f} s, but only while a recording is "
-    "running. It needs no switching off: outside a recording it does nothing.":
-        "Hace una captura sola cada {s:.0f} s, pero solo mientras se graba. No "
-        "hay que desactivarlo: fuera de una grabación no hace nada.",
-    "Automatic screenshots armed: one every {s:.0f} s while recording.":
-        "Capturas automáticas activadas: una cada {s:.0f} s mientras se graba.",
+    "running, and at most {n} per recording. It needs no switching off: "
+    "outside a recording it does nothing.":
+        "Hace una captura sola cada {s:.0f} s, pero solo mientras se graba y como "
+        "mucho {n} por registro. No hay que desactivarlo: fuera de una grabación "
+        "no hace nada.",
+    "Automatic screenshots armed: one every {s:.0f} s while recording, at most "
+    "{n} per recording.":
+        "Capturas automáticas activadas: una cada {s:.0f} s mientras se graba, "
+        "como mucho {n} por registro.",
+    "{n} automatic screenshots: the limit for one recording. No more until the "
+    "next one; «Screenshot» or F12 still takes one by hand.":
+        "{n} capturas automáticas: el tope de un registro. No se hacen más hasta "
+        "el siguiente; «Captura» o F12 siguen haciéndolas a mano.",
+    "Event log saved: {path}": "Registro de eventos guardado: {path}",
+    "The event log could not be saved in {path}: {error}":
+        "No se ha podido guardar el registro de eventos en {path}: {error}",
     "Automatic screenshots off.": "Capturas automáticas desactivadas.",
     "{n} automatic screenshots saved with the recording.":
         "{n} capturas automáticas guardadas con el registro.",
