@@ -16,6 +16,7 @@ wheels/
 htmlcov/
 coverage.xml
 .pytest_cache/
+pytest-cache-files-*/
 .mypy_cache/
 .ruff_cache/
 .hypothesis/

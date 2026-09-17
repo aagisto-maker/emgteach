@@ -8,6 +8,8 @@ test must not depend on the machine's Bluetooth.
 
 from __future__ import annotations
 
+import ast
+import json
 import os
 import subprocess
 import sys
@@ -95,17 +97,29 @@ def test_main_returns_zero_when_ready(tmp_path: Path, monkeypatch: pytest.Monkey
     assert list(tmp_path.glob("diagnostico_bitalino_*.txt"))
 
 
-def test_the_diagnostic_runs_without_qt(tmp_path: Path) -> None:
-    # diagnostico_bitalino.exe is built without Qt: a whole diagnosis, in a
-    # fresh interpreter, must run without PySide6 ever being imported. Whether
+def _excluded_by_the_spec() -> set[str]:
+    """The ``excludes`` of packaging/diagnostico_bitalino.spec, read as Python."""
+    spec = Path(diagnostics.__file__).resolve().parents[2] / "packaging" / "diagnostico_bitalino.spec"
+    for node in ast.walk(ast.parse(spec.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.keyword) and node.arg == "excludes":
+            return {e.value for e in node.value.elts}
+    raise AssertionError("the spec has no excludes")
+
+
+def test_the_diagnostic_runs_without_what_its_executable_leaves_out(tmp_path: Path) -> None:
+    # diagnostico_bitalino.exe is built without Qt, the plotting stack, scipy,
+    # mne, pyedflib or reportlab: a whole diagnosis, in a fresh interpreter, must
+    # run without any module the spec excludes ever being imported. Whether
     # the station is ready is the other tests' business: 0.3 s is too short to
     # judge the rate against Windows' 15.6 ms timer.
+    excluded = _excluded_by_the_spec()
+    assert {"PySide6", "matplotlib", "scipy", "mne", "pyedflib", "reportlab"} <= excluded
     src = Path(diagnostics.__file__).resolve().parents[1]
     code = (
-        "import sys\n"
+        "import json, sys\n"
         "from emgteach import diagnostics\n"
         "diagnostics.main(['simulada', '--seconds', '0.3'])\n"
-        "sys.exit(10 if 'PySide6' in sys.modules else 0)\n"
+        "print('MODULES=' + json.dumps(sorted({m.split('.')[0] for m in sys.modules})))\n"
     )
     paths = [str(src), os.environ.get("PYTHONPATH", "")]
     env = {**os.environ, "PYTHONIOENCODING": "utf-8",
@@ -114,3 +128,6 @@ def test_the_diagnostic_runs_without_qt(tmp_path: Path) -> None:
                          capture_output=True, text=True, encoding="utf-8", timeout=120)
     assert run.returncode == 0, run.stdout + run.stderr
     assert list(tmp_path.glob("diagnostico_bitalino_*.txt"))
+    line = next(ln for ln in run.stdout.splitlines() if ln.startswith("MODULES="))
+    loaded = set(json.loads(line.removeprefix("MODULES=")))
+    assert not loaded & excluded, sorted(loaded & excluded)

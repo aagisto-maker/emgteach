@@ -143,11 +143,7 @@ Requires **Python 3.10, 3.11 or 3.12** on Windows, macOS or Linux.
 Python 3.13+ is not currently supported because the pinned scientific
 stack does not yet ship pre-built wheels for it.
 
-```bash
-pip install emgteach
-```
-
-Until the first PyPI release, install from source:
+The package is not on PyPI; install it from source:
 
 ```bash
 git clone https://github.com/aagisto-maker/emgteach.git
@@ -211,9 +207,10 @@ with BufferedEdfWriter("session.edf", channels=[ch]) as writer:
 
 ## Documentation
 
-The user guide and API reference will be built with MkDocs Material and
-hosted on https://aagisto-maker.github.io/emgteach. Until then, the
-docstrings of `src/emgteach/` are the authoritative reference.
+The manuals are in [`docs/`](docs/): the user manual in English
+(`manual_emgteach.md`) and Spanish (`manual_emgteach_es.md`), the practical
+guides and the evaluation rubric. The docstrings of `src/emgteach/` are the
+API reference.
 
 ## Citation
 
@@ -221,10 +218,11 @@ If you use this software, please cite the package (a `CITATION.cff` file
 is provided for automatic citation export) and, where relevant, the
 methodological article on the buffered-write pattern it implements:
 
-- Agis-Torres, Á., Fernandes, V. S., Navarro-Dorado, J., & Muñoz-Picos, M.
-  (2026). *emgteach: an open-source teaching platform for surface
-  electromyography* (software). Zenodo.
-  https://doi.org/10.5281/zenodo.20723265
+- Agis-Torres, Á., Fernandes, V. S., Navarro-Dorado, J., Muñoz-Picos, M.,
+  Climent, B., & Hernández, M. (2026). *emgteach: an open-source teaching
+  platform for surface electromyography* (software). Zenodo.
+  https://doi.org/10.5281/zenodo.21002297 (all versions; each release has
+  its own DOI on that page)
 - Agis-Torres, Á. (2026). *Silent corruption of EDF recordings during
   real-time biopotential streaming: a buffered-write solution.*
   Manuscript; reproducibility package:

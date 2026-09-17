@@ -1,8 +1,14 @@
 name: Build Windows exe
 
-# Builds the standalone Windows executable with the packaging/emgteach.spec
-# recipe (see packaging/README.md), verifies it with the frozen --selftest,
-# and uploads dist/emgteach.exe as a workflow artifact.
+# Builds the two standalone Windows executables with the recipes in
+# packaging/ (see packaging/README.md) — the application, emgteach.exe, and
+# the connection diagnostic, diagnostico_bitalino.exe — self-tests each one
+# frozen, and keeps both as workflow artifacts.
+#
+# The versions are the ones the laboratory kit is built with:
+# packaging/requirements-exe.txt pins the runtime dependencies and PyInstaller
+# to that build environment's versions, used here as constraints, so two
+# builds weeks apart bundle the same libraries.
 #
 # Releases carry no executable: publishing one does not trigger this
 # workflow and nothing is attached to it. An unsigned one-file PyInstaller
@@ -44,13 +50,12 @@ jobs:
       - name: Install package and build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[build]"
-          pip install bitalino --no-deps
+          pip install -e ".[build]" -c packaging/requirements-exe.txt
 
-      - name: Build with PyInstaller
+      - name: Build emgteach.exe
         run: pyinstaller --noconfirm --clean packaging/emgteach.spec
 
-      - name: Self-test the frozen executable (headless)
+      - name: Self-test emgteach.exe (headless)
         env:
           QT_QPA_PLATFORM: offscreen
         # The exe is windowed (no console), so PowerShell won't wait for it
@@ -61,10 +66,25 @@ jobs:
           Get-Content dist\emgteach_selftest.log
           exit $p.ExitCode
 
-      - name: Upload emgteach.exe
+      - name: Build diagnostico_bitalino.exe
+        run: pyinstaller --noconfirm --clean packaging/diagnostico_bitalino.spec
+
+      - name: Self-test diagnostico_bitalino.exe on the simulated board
+        # A console program: it runs the whole diagnosis against the board
+        # simulated in software and exits 0 when the station would be ready.
+        # The empty line answers its «Press Enter to close».
+        run: |
+          "" | dist\diagnostico_bitalino.exe simulada --seconds 2
+          $code = $LASTEXITCODE
+          Get-ChildItem dist\diagnostico_bitalino_*.txt | Get-Content
+          exit $code
+
+      - name: Upload the executables
         uses: actions/upload-artifact@v4
         with:
           name: emgteach-windows-exe
-          path: dist/emgteach.exe
+          path: |
+            dist/emgteach.exe
+            dist/diagnostico_bitalino.exe
           if-no-files-found: error
           compression-level: 6
