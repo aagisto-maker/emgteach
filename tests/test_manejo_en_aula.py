@@ -443,9 +443,9 @@ class TestKIsThePracticalsOwnAndPartOfTheResult:
         tablas: list[list[list[str]]] = []
         original = informes._styled_table
 
-        def espia(data):
+        def espia(data, *args, **kwargs):
             tablas.append(data)
-            return original(data)
+            return original(data, *args, **kwargs)
 
         monkeypatch.setattr(informes, "_styled_table", espia)
         informes.build_session_report(str(tmp_path / "P01.pdf"), resultado)

@@ -25,6 +25,7 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -120,11 +121,12 @@ def _app_version() -> str:
         return "?"
 
 
-def _fatigue_text(result: Mapping[str, Any]) -> str:
-    slope = float(result.get("mdf_slope", 0.0))
-    r2 = float(result.get("fat_r_squared", 0.0))
-    decline = float(result.get("fat_pct_decline", 0.0))
-    verdict = result.get("fat_verdict", INCONCLUSIVE)
+def _fatigue_text(result: Mapping[str, Any], suffix: str = "") -> str:
+    """The verdict in words; ``suffix`` ``"_2"`` reads the second muscle's."""
+    slope = float(result.get("mdf_slope" + suffix, 0.0))
+    r2 = float(result.get("fat_r_squared" + suffix, 0.0))
+    decline = float(result.get("fat_pct_decline" + suffix, 0.0))
+    verdict = result.get("fat_verdict" + suffix, INCONCLUSIVE)
     if verdict == FATIGUE:
         return tr(
             "Yes — MDF falls {slope:+.2f} Hz/s "
@@ -386,24 +388,67 @@ def _render_one_panel_figure(
     return buf
 
 
-def _styled_table(data: list[list[str]]) -> Table:
-    table = Table(data, hAlign="LEFT", colWidths=[7 * cm, 8 * cm])
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 9),
-                ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, _ROW_ALT]),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("TOPPADDING", (0, 0), (-1, -1), 3),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ]
-        )
-    )
+#: The width a table has to fit in: A4 minus the two 2 cm margins.
+TABLE_WIDTH_CM = 17.0
+
+
+def _cell_styles(size: float) -> tuple[ParagraphStyle, ParagraphStyle]:
+    """The header's and the body's paragraph styles, at *size* points."""
+    head = ParagraphStyle("th", fontName="Helvetica-Bold", fontSize=size,
+                          leading=size + 2, textColor=colors.white)
+    body = ParagraphStyle("td", fontName="Helvetica", fontSize=size,
+                          leading=size + 2)
+    return head, body
+
+
+def _styled_table(
+    data: list[list[str]], widths: list[float] | None = None,
+    size: float = 9, spans: list[int] | tuple[int, ...] = (),
+) -> Table:
+    """A table whose columns fit the page and whose cells wrap.
+
+    *widths* are in centimetres, one per column, adding up to
+    :data:`TABLE_WIDTH_CM` at most; without them the first column takes
+    five centimetres and the rest share what is left. Every cell is a
+    paragraph, so a long value — the list of analysed fragments, a fatigue
+    verdict that says why it is not conclusive — breaks into lines instead
+    of running off the page, and a header of three words wraps rather than
+    invading the next column. *spans* are the rows whose value spans every
+    column but the first.
+
+    (Every table used to get two columns of 7 and 8 cm; reportlab repeats
+    the last width for the columns that have none, so the seven-column
+    table of contractions was 55 cm wide and lost its last four columns
+    off the page.)
+    """
+    n_cols = max(len(row) for row in data) if data else 1
+    if widths is None:
+        first = 5.0 if n_cols > 1 else TABLE_WIDTH_CM
+        rest = (TABLE_WIDTH_CM - first) / max(1, n_cols - 1)
+        widths = [first] + [rest] * (n_cols - 1)
+    if len(widths) != n_cols:
+        raise ValueError(f"{n_cols} columns, {len(widths)} widths")
+    if sum(widths) > TABLE_WIDTH_CM + 1e-6:
+        raise ValueError(
+            f"the columns add up to {sum(widths):.1f} cm, over {TABLE_WIDTH_CM:.0f}")
+    head, body = _cell_styles(size)
+    cells = [
+        [Paragraph(escape(str(c)), head if i == 0 else body) for c in row]
+        for i, row in enumerate(data)
+    ]
+    table = Table(cells, hAlign="LEFT", colWidths=[w * cm for w in widths])
+    style = [
+        ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, _ROW_ALT]),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]
+    style += [("SPAN", (1, r), (-1, r)) for r in spans]
+    table.setStyle(TableStyle(style))
     return table
 
 
@@ -475,7 +520,9 @@ def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -
         if con_emd:
             fila.append("" if f.emd_ms is None else f"{f.emd_ms:.0f}")
         rows.append(fila)
-    story.append(_styled_table(rows))
+    anchos = ([0.9, 2.0, 2.3] + ([2.8] if dos else []) + [2.2, 2.5, 2.1]
+              + ([2.2] if con_emd else []))
+    story.append(_styled_table(rows, anchos))
     emd = result.get("emd_ms_mean")
     if emd is not None:
         story.append(Spacer(1, 0.15 * cm))
@@ -521,7 +568,7 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
             "" if pico is None else tr("{pct:.0f} % MVC (envelope peak)").format(
                 pct=pico),
         ])
-    story.append(_styled_table(rows))
+    story.append(_styled_table(rows, [3.0, 3.0, 6.0, 5.0]))
     if result.get("mvc_implausible"):
         story.append(Spacer(1, 0.15 * cm))
         story.append(Paragraph(tr(
@@ -548,7 +595,7 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
                 etiqueta = f"{v.rep}" + (f" ({tr('discarded')})" if descartada else "")
                 cross = "" if v.crosstalk_pct is None else f"{v.crosstalk_pct:.0f} %"
                 filas.append([nombre, etiqueta, f"{v.value_mv:.3f} mV", cross])
-        story.append(_styled_table(filas))
+        story.append(_styled_table(filas, [3.5, 3.5, 4.0, 6.0]))
     story.append(Spacer(1, 0.4 * cm))
 
 
@@ -570,10 +617,12 @@ def build_session_report(
         :class:`emgteach.workers.AnalysisWorker` (arrays, metrics,
         ``markers`` and ``config``).
     meta : mapping, optional
-        Extra fields: ``student`` (str), ``student_code`` (str),
-        ``device`` (str), ``generated_at`` (datetime), ``version`` (str)
-        and ``commit`` (str). Missing fields are filled in automatically
-        (version from the package, commit from git, timestamp from now).
+        Extra fields: ``student_code`` (str), ``protocol`` (str),
+        ``device`` (str, the header's equipment), ``derived`` (str, the
+        header's note of a file derived from another), ``generated_at``
+        (datetime), ``version`` (str) and ``commit`` (str). Missing fields
+        are filled in automatically (version from the package, commit from
+        git, timestamp from now).
     panels : list of int, optional
         Indices (0-7) of the analysis panels to include as graphs, in the
         order given. When ``None`` (default), the legacy single combined
@@ -596,6 +645,7 @@ def build_session_report(
     student_code = str(meta.get("student_code", "")).strip()
     protocol = str(meta.get("protocol", "")).strip()
     device = str(meta.get("device", "")).strip()
+    derived = str(meta.get("derived", "")).strip()
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
@@ -618,6 +668,10 @@ def build_session_report(
         header_lines.append(tr("File: {name}").format(name=edf_name))
     if protocol:
         header_lines.append(tr("Protocol: {p}").format(p=protocol))
+    if derived:
+        # «DERIVED from …»: a tuned copy says so in its header, and so
+        # must the report made from it.
+        header_lines.append(tr("Provenance: {note}").format(note=derived))
     for line in header_lines:
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))
@@ -640,10 +694,14 @@ def build_session_report(
             )
             story.append(Spacer(1, 0.3 * cm))
 
-    # Metrics.
+    # Metrics: one column per muscle when there are two, so the second
+    # muscle's numbers — which the worker computes — reach the paper.
     story.append(Paragraph(tr("Metrics"), h2))
-    metrics = [
-        [tr("Metric"), tr("Value")],
+    n1 = str(result.get("channel_name") or tr("Muscle {n}").format(n=1))
+    n2 = str(result.get("channel_name_2") or "")
+    dos = bool(n2) and result.get("mnf_2") is not None
+    metrics = [[tr("Metric"), n1, n2] if dos else [tr("Metric"), tr("Value")]]
+    generales = [
         [tr("Duration"), f"{float(result.get('duration', 0.0)):.1f} s"],
     ]
     # State the analysed window/fragments explicitly when not the whole file.
@@ -654,7 +712,7 @@ def build_session_report(
     if segments and len(segments) > 1:
         kept = sum(float(b) - float(a) for a, b in segments)
         frag_txt = "; ".join(f"{float(a):.2f}-{float(b):.2f}" for a, b in segments)
-        metrics.append(
+        generales.append(
             [
                 tr("Analysed fragments"),
                 tr("{n} fragments ({d:.2f} s of {full:.1f} s): {list} s").format(
@@ -665,7 +723,7 @@ def build_session_report(
     elif roi_a is not None and roi_b is not None and (
         float(roi_a) > 0.0 or float(roi_b) < full_dur - 1e-6
     ):
-        metrics.append(
+        generales.append(
             [
                 tr("Analysed window"),
                 tr("{a:.2f}-{b:.2f} s of {d:.1f} s").format(
@@ -673,14 +731,29 @@ def build_session_report(
                 ),
             ]
         )
+    spans: list[int] = []
+    for fila in generales:
+        if dos:
+            spans.append(len(metrics))       # one value across both columns
+            fila = [*fila, ""]
+        metrics.append(fila)
+
+    def _por_musculo(label: str, key: str, fmt: str) -> list[str]:
+        celdas = [label, fmt.format(float(result.get(key, 0.0) or 0.0))]
+        if dos:
+            celdas.append(fmt.format(float(result.get(key + "_2", 0.0) or 0.0)))
+        return celdas
+
     metrics += [
-        [tr("Global RMS"), f"{float(result.get('rms_global', 0.0)):.4f} mV"],
-        [tr("Mean frequency (MNF)"), f"{float(result.get('mnf', 0.0)):.1f} Hz"],
-        [tr("Median frequency (MDF)"), f"{float(result.get('mdf', 0.0)):.1f} Hz"],
-        ["iEMG", f"{float(result.get('iemg', 0.0)):.3f} mV·s"],
-        [tr("Fatigue evidence"), _fatigue_text(result)],
+        _por_musculo(tr("Global RMS"), "rms_global", "{:.4f} mV"),
+        _por_musculo(tr("Mean frequency (MNF)"), "mnf", "{:.1f} Hz"),
+        _por_musculo(tr("Median frequency (MDF)"), "mdf", "{:.1f} Hz"),
+        _por_musculo("iEMG", "iemg", "{:.3f} mV·s"),
+        [tr("Fatigue evidence"), _fatigue_text(result)]
+        + ([_fatigue_text(result, "_2")] if dos else []),
     ]
-    story.append(_styled_table(metrics))
+    story.append(_styled_table(metrics, [5.0, 6.0, 6.0] if dos else [5.0, 12.0],
+                               spans=spans))
     story.append(Spacer(1, 0.4 * cm))
 
     # The calibration, when the recording carries one. Everything the
@@ -730,18 +803,7 @@ def build_session_report(
                 f"{res.mean_2:.0f}",
                 res.reason or f"{res.index:.0f} %",
             ])
-        tabla = Table(rows, hAlign="LEFT",
-                      colWidths=[4 * cm, 3.5 * cm, 3.5 * cm, 5 * cm])
-        tabla.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), _HEADER_BG),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-            ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, _ROW_ALT]),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
-        story.append(tabla)
+        story.append(_styled_table(rows, [5.0, 3.5, 3.5, 5.0], size=8))
         story.append(Spacer(1, 0.4 * cm))
     elif result.get("coactivation_reason"):
         story.append(Spacer(1, 0.4 * cm))
@@ -755,7 +817,9 @@ def build_session_report(
     config_rows = [
         [tr("Parameter"), tr("Value")],
         [tr("Sampling rate"), f"{float(result.get('fs', 0.0)):.0f} Hz"],
-        [tr("Channel"), str(result.get("channel_name", ""))],
+        [tr("Channel"), ", ".join(
+            str(n) for n in (result.get("channel_name"),
+                             result.get("channel_name_2")) if n)],
     ]
     if cfg:
         config_rows += [
@@ -772,7 +836,7 @@ def build_session_report(
     config_rows.append(
         [tr("Device"), device or tr("not stored in the EDF")]
     )
-    story.append(_styled_table(config_rows))
+    story.append(_styled_table(config_rows, [5.0, 12.0]))
 
     def _footer(canvas: Any, doc: Any) -> None:
         canvas.saveState()
@@ -795,7 +859,7 @@ def build_session_report(
         rightMargin=2 * cm,
         topMargin=1.6 * cm,
         bottomMargin=1.6 * cm,
-        title="Informe EMG",
+        title=tr("EMG report"),
     )
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     return pdf_path
@@ -810,7 +874,9 @@ def _render_mvc_figure(
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib.figure import Figure
 
-    fig = Figure(figsize=(7.0, 10.5), dpi=150, constrained_layout=True)
+    # 14 by 21 cm, the size the report prints it at: drawn larger and shrunk
+    # into the page, its 6 pt legends came out at under 5 pt.
+    fig = Figure(figsize=(5.51, 8.27), dpi=150, constrained_layout=True)
     FigureCanvasAgg(fig)
     axes = fig.subplots(4, 1)
 
@@ -829,7 +895,7 @@ def _render_mvc_figure(
             label=tr("Rectified EMG"))
     ax.set_title(tr("1. Filtered and rectified EMG signal"), fontsize=9)
     ax.set_ylabel(tr("Amplitude ({units})").format(units=dim), fontsize=8)
-    ax.legend(loc="upper right", fontsize=6)
+    ax.legend(loc="upper right", fontsize=7)
     ax.grid(True, color="#DDDDDD", alpha=0.5)
     ax.tick_params(labelsize=7)
 
@@ -844,7 +910,7 @@ def _render_mvc_figure(
         fontsize=9,
     )
     ax.set_ylabel(tr("Amplitude ({units})").format(units=dim), fontsize=8)
-    ax.legend(loc="upper right", fontsize=6)
+    ax.legend(loc="upper right", fontsize=7)
     ax.grid(True, color="#DDDDDD", alpha=0.5)
     ax.tick_params(labelsize=7)
 
@@ -911,7 +977,7 @@ def _render_mvc_figure(
     ax.plot([], [], "o", linestyle="none", markersize=9,
             markerfacecolor="none", markeredgecolor=_OUT_COLOR,
             markeredgewidth=1.8, label=tr("Out of normal range"))
-    ax.legend(loc="lower right", fontsize=6)
+    ax.legend(loc="lower right", fontsize=7)
     ax.grid(True, color="#DDDDDD", alpha=0.5)
     ax.tick_params(labelsize=7)
 
@@ -933,6 +999,9 @@ def build_mvc_report(
     reproducible footer) but for the MVC-tab result: the three normalisation
     panels, the Jonsson muscle-load APDF, and a metrics table with the
     static / median / peak load levels against their recommended limits.
+    ``meta`` takes the same fields as :func:`build_session_report` plus
+    ``channel`` (the label of the channel normalised) and ``fragments``
+    (the analysed stretches, ``(start, end)`` seconds).
 
     Returns the path written.
     """
@@ -944,6 +1013,8 @@ def build_mvc_report(
     commit = meta.get("commit", git_commit_hash())
     student_code = str(meta.get("student_code", "")).strip()
     protocol = str(meta.get("protocol", "")).strip()
+    device = str(meta.get("device", "")).strip()
+    derived = str(meta.get("derived", "")).strip()
 
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
@@ -964,6 +1035,10 @@ def build_mvc_report(
         header_lines.append(tr("File: {name}").format(name=edf_name))
     if protocol:
         header_lines.append(tr("Protocol: {p}").format(p=protocol))
+    if derived:
+        # «DERIVED from …»: a tuned copy says so in its header, and so
+        # must the report made from it.
+        header_lines.append(tr("Provenance: {note}").format(note=derived))
     for line in header_lines:
         story.append(Paragraph(line, normal))
     story.append(Spacer(1, 0.4 * cm))
@@ -995,7 +1070,22 @@ def build_mvc_report(
          "—" if result.get("mean_norm") is None
          else f"{float(result['mean_norm']):.1f} % MVC"],
         [tr("Duration"), f"{duration:.1f} s"],
+        [tr("Channel"), str(meta.get("channel") or result.get("channel_name") or "")],
     ]
+    # Which stretches the numbers come from, and which the graphs show:
+    # neither used to be anywhere on the paper.
+    fragments = [(float(a), float(b)) for a, b in (meta.get("fragments") or [])]
+    if fragments:
+        kept = sum(b - a for a, b in fragments)
+        metrics.append([
+            tr("Analysed fragments"),
+            tr("{n} fragments ({d:.2f} s of {full:.1f} s): {list} s").format(
+                n=len(fragments), d=kept, full=duration,
+                list="; ".join(f"{a:.2f}-{b:.2f}" for a, b in fragments)),
+        ])
+    if time_range is not None:
+        metrics.append([tr("Graphs show"),
+                        f"{float(time_range[0]):.1f}-{float(time_range[1]):.1f} s"])
     # Without a reference the three load levels do not exist, so the report
     # says so instead of printing verdicts against limits computed from
     # nothing.
@@ -1005,12 +1095,30 @@ def build_mvc_report(
             [f"{tr('Median')} (P50)", _level_cell(apdf.median)],
             [f"{tr('Peak')} (P90)", _level_cell(apdf.peak)],
         ]
-    story.append(_styled_table(metrics))
+    story.append(_styled_table(metrics, [5.0, 12.0]))
     if apdf is None:
         story.append(Spacer(1, 0.3 * cm))
         story.append(Paragraph(
             f"<font color='{AUTO_COLOR}'>{tr(NO_LOAD_MSG)}</font>", normal
         ))
+
+    # What the numbers were computed with — the filters, the device — as in
+    # the session report: a paper that cannot say which settings it
+    # describes cannot be reproduced.
+    story.append(Spacer(1, 0.4 * cm))
+    story.append(Paragraph(tr("Configuration used"), h2))
+    config_rows = [
+        [tr("Parameter"), tr("Value")],
+        [tr("Sampling rate"), f"{float(result.get('fs', 0.0)):.0f} Hz"],
+    ]
+    if result.get("f_low") is not None:
+        config_rows += [
+            [tr("Band-pass"), f"{result.get('f_low')}-{result.get('f_high')} Hz"],
+            [tr("Notch (mains)"), f"{result.get('f_notch')} Hz"],
+            [tr("Envelope (low-pass)"), f"{result.get('f_env')} Hz"],
+        ]
+    config_rows.append([tr("Device"), device or tr("not stored in the EDF")])
+    story.append(_styled_table(config_rows, [5.0, 12.0]))
 
     def _footer(canvas: Any, doc: Any) -> None:
         canvas.saveState()
@@ -1033,7 +1141,7 @@ def build_mvc_report(
         rightMargin=2 * cm,
         topMargin=1.6 * cm,
         bottomMargin=1.6 * cm,
-        title="Informe CVM",
+        title=tr("MVC report"),
     )
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     return pdf_path

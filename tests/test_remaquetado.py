@@ -135,7 +135,8 @@ class TestTheIdentifierComesFromTheRecording:
         edf = _registro(tmp_path / "r.edf")
         monkeypatch.setattr(
             "emgteach.gui.tabs.analysis.read_edf_metadata",
-            lambda _p: SimpleNamespace(student_code="MESA-3", protocol=""),
+            lambda _p: SimpleNamespace(student_code="MESA-3", protocol="",
+                                       equipment="", patient_additional=""),
         )
         tab._populate_channels(edf)
         assert tab._student_code == "MESA-3"

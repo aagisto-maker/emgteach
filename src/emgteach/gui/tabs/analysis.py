@@ -455,6 +455,11 @@ class AnalysisTab(QWidget):
         # travels in the EDF header, where the report reads it. Asking for
         # it a second time let the two disagree.
         self._student_code: str = ""
+        # The rest of what the EDF header says about the file, read when
+        # it is chosen; the reports take all of it from here.
+        self._edf_protocol: str = ""
+        self._edf_device: str = ""
+        self._edf_origin: str = ""
         # row_params is not a row of its own any more: it goes into the
         # single line below, after the two editors.
 
@@ -1271,14 +1276,28 @@ class AnalysisTab(QWidget):
             self._spin_roi_start.setValue(0.0)
             self._spin_roi_end.setValue(dur)
 
-        # The identifier and the protocol come from the EDF+ header written
-        # at recording time; a file recorded before the header carried one
-        # falls back to whatever the acquisition tab has.
+        # The identifier, the protocol, the device and the provenance come
+        # from the EDF+ header written at recording time — and from nowhere
+        # else: a file recorded before the header carried an identifier used
+        # to be reported under the acquisition tab's current one, which is
+        # another student's as often as not.
         meta = read_edf_metadata(path)
         self._edf_protocol = meta.protocol
-        self._student_code = meta.student_code or str(
-            self._settings.value("adquisicion/student_code", "") or ""
-        )
+        self._student_code = meta.student_code
+        self._edf_device = meta.equipment
+        self._edf_origin = meta.patient_additional
+
+    def _report_meta(self) -> dict[str, str]:
+        """What the report says about the file beyond its numbers.
+
+        All of it from the EDF header read when the file was chosen.
+        """
+        return {
+            "student_code": self._student_code.strip(),
+            "protocol": self._edf_protocol,
+            "device": self._edf_device,
+            "derived": self._edf_origin,
+        }
 
     @Slot()
     def _editar_fragmentos(self) -> None:
@@ -2096,10 +2115,7 @@ class AnalysisTab(QWidget):
 
         base = Path(str(r.get("edf_path", "")) or "sesion.edf").stem or "sesion"
         paneles = [i for i, c in enumerate(self._chk_paneles) if c.isChecked()]
-        meta = {
-            "student_code": self._student_code.strip(),
-            "protocol": getattr(self, "_edf_protocol", ""),
-        }
+        meta = self._report_meta()
         with tempfile.TemporaryDirectory() as tmp:
             pdf = Path(tmp) / f"{base}_informe.pdf"
             try:
@@ -2929,10 +2945,7 @@ class AnalysisTab(QWidget):
         if not ruta.lower().endswith(".pdf"):
             ruta += ".pdf"
         out = Path(ruta)
-        meta = {
-            "student_code": self._student_code.strip(),
-            "protocol": getattr(self, "_edf_protocol", ""),
-        }
+        meta = self._report_meta()
         try:
             build_session_report(out, self._last_result, meta, panels=paneles,
                                  time_range=rango)
@@ -3189,6 +3202,9 @@ class AnalysisTab(QWidget):
 
         self._edit_path.clear()
         self._student_code = ""
+        self._edf_protocol = ""
+        self._edf_device = ""
+        self._edf_origin = ""
         self._spin_fenv.setValue(5.0)
         self._combo_canal.blockSignals(True)
         self._combo_canal.clear()

@@ -41,6 +41,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from emgteach.force_velocity import parse_fv_load_markers
+from emgteach.i18n import tr
 from emgteach.io import (
     MAX_ANNOTATION_BYTES,
     ChannelInfo,
@@ -340,8 +341,17 @@ def build_tuned_edf(
 
     marcas = read_edf_markers(src)
     fases = parse_phase_markers(marcas)
-    rec_start = fases.rec_start_s if fases.rec_start_s is not None else duracion
-    rec_start = max(0.0, min(float(rec_start), duracion))
+    # The task starts where the analysis says it does, with the same
+    # fall-backs (the last calibration repetition, the first load of the
+    # guided wizard). Without «REC start» the whole file used to count as
+    # pre-task and be copied intact, fragments ignored, in silence.
+    tramo = fases.rec_span(duracion, parse_fv_load_markers(marcas))
+    if tramo is None:
+        raise ValueError(tr(
+            "the recording has no recording phase (no «REC start», no "
+            "calibration and no load marks): there is nothing to tune"
+        ))
+    rec_start = max(0.0, min(float(tramo[0]), duracion))
 
     tramos = _tramos_conservados(fragments, rec_start, duracion)
     conservado_s = sum(b - a for a, b in tramos)

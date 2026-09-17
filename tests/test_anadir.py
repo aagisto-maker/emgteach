@@ -237,7 +237,9 @@ class TestTheTableInTheReport:
         assert isinstance(story[0], Paragraph) and story[0].text == tr("Contractions")
         tabla = next(x for x in story if isinstance(x, Table))
         assert len(tabla._cellvalues) == 3
-        assert "ECR" in [str(c) for c in tabla._cellvalues[2]]
+        # Every cell is a paragraph now, so a long value wraps instead of
+        # running off the page; its text is what the row says.
+        assert "ECR" in [getattr(c, "text", str(c)) for c in tabla._cellvalues[2]]
 
     def test_the_delay_is_stated_when_there_is_one(self) -> None:
         filas = [Contraction(1, 2.0, 3.0, "M", 0.2, None, None, 48.0)]
