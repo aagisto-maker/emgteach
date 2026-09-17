@@ -20,7 +20,7 @@
 normalización de señales de electromiografía de superficie (EMG)** en el
 laboratorio docente de fisiología. Permite:
 
-- **Registrar** la actividad eléctrica muscular en tiempo real con un BITalino
+- **Registrar** la actividad eléctrica muscular en tiempo real con una placa BITalino
   (o, en la práctica de un músculo, con un Arduino + MyoWare), en **uno o dos
   canales** y, si la práctica lo pide, con el **acelerómetro**.
 - **Calibrar la contracción voluntaria máxima dentro de la propia sesión**, con
@@ -155,7 +155,7 @@ transferencia tiene que dividir por su ganancia.
 | Arduino + MyoWare 2.0 (modo RAW) | la misma expresión, con V_ref = 5 V y G = 200 | ±12,5 mV |
 
 > **Nota para quien compare registros de distintos cursos.** Hasta la versión
-> anterior, la conversión del BITalino trataba el canal como si el conversor
+> anterior, la conversión de la placa BITalino trataba el canal como si el conversor
 > leyera el biopotencial directamente, y el fondo de escala resultante era
 > ±1,65 mV. El error pasó desapercibido porque la ganancia es casi 1000 y un
 > voltio son 1000 mV: los dos errores se cancelaban casi por completo. Las
@@ -250,7 +250,7 @@ Fija el número de canales y el uso del acelerómetro, y cada pestaña ofrece so
 las medidas que tienen sentido para ella. Por eso no hay en pantalla un selector
 de número de canales ni una casilla del acelerómetro, y el selector de
 dispositivo aparece solo en la práctica de un músculo: las otras dos necesitan un
-segundo canal o el acelerómetro, que solo tiene el BITalino, así que la caja dice
+segundo canal o el acelerómetro, que solo tiene la placa BITalino, así que la caja dice
 «Dispositivo: BITalino» y deja editable la dirección.
 
 **El nivel es la práctica.** No hay una casilla de «opciones avanzadas»: los
@@ -297,7 +297,7 @@ Se ofrece al arrancar, mediante un diálogo con una casilla **«Mostrar esta gu�
 próxima vez»** marcada por defecto. Un ordenador de laboratorio ve un alumno
 distinto cada sesión, así que la decisión de apagarla corresponde a quien tiene el
 equipo a su cargo y no a quien lo abrió primero. Ese diálogo nombra el sensor de
-la práctica elegida: los dos en la de un músculo, solo el BITalino en las otras.
+la práctica elegida: los dos en la de un músculo, solo la placa BITalino en las otras.
 El botón **«Guía»**, junto al **«?»**, la relanza en cualquier momento. Se niega a
 arrancar si hay un registro en marcha.
 
@@ -595,7 +595,7 @@ rango) y su explicación.]
 
 ### 4.6 Seguimiento en móviles
 
-Permite que **un solo equipo** (el ordenador que maneja el BITalino) **retransmita
+Permite que **un solo equipo** (el ordenador que maneja la placa BITalino) **retransmita
 la sesión en vivo** a los móviles o tabletas del resto del grupo, que solo la
 **siguen** desde el navegador, sin instalar nada. Pensado para prácticas en grupo:
 una persona opera y varias siguen.
@@ -628,7 +628,7 @@ sirve la práctica, no un ajuste fino.
   a los móviles, junto con **⬇️ Descargar informe (PDF)** y **⬇️ Descargar
   resultados (CSV)** en cuanto el operador/a los genera o exporta.
 
-> **Arquitectura.** El BITalino usa Bluetooth *punto a punto* (un dispositivo por
+> **Arquitectura.** La placa BITalino usa Bluetooth *punto a punto* (un dispositivo por
 > tarjeta): por eso **un** PC posee el enlace Bluetooth y **re‑difunde** por la red a
 > los seguidores. En los móviles no se instala nada y estos no pueden controlar el
 > equipo ni alterar la grabación (vista de solo lectura).
@@ -1014,7 +1014,7 @@ Los umbrales de esos avisos están en el perfil de señal, no en la interfaz.
 
 ### 7.5 Sesión de laboratorio con seguimiento en móviles
 
-1. En cada puesto, **una persona** conecta el BITalino e **Inicia grabación** en su
+1. En cada puesto, **una persona** conecta la placa BITalino e **Inicia grabación** en su
    PC.
 2. Activa **«Difundir a móviles (en laboratorio)»** y comparte la dirección con su
    grupo, con el botón de copiar el enlace o mostrando el **QR** (todos en la misma
@@ -1057,7 +1057,7 @@ móviles como capa común (1 operador → N seguidores).]
 ### La interfaz no ofrece lo que se busca
 
 **Falta el selector de dispositivo.** Solo aparece en la práctica de un músculo;
-las otras dos necesitan el BITalino y la caja lo dice. La dirección sigue siendo
+las otras dos necesitan la placa BITalino y la caja lo dice. La dirección sigue siendo
 editable.
 
 **Falta el selector de número de canales, o la casilla del acelerómetro.** No

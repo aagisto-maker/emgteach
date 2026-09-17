@@ -305,7 +305,7 @@ limpia hasta primera traza válida.
 
 Reviewer 1 preguntó literalmente si los electrodos «son simplemente cables que
 se conectan a una almohadilla sobre la piel». Ninguna figura actual lo enseña.
-**Aproveche esta sesión para hacer fotografías**: el BITalino con los sensores
+**Aproveche esta sesión para hacer fotografías**: la placa BITalino con los sensores
 conectados, y el antebrazo con los electrodos puestos y los cables saliendo. Es
 la figura que responde a esa pregunta, y solo se puede tomar con el montaje
 hecho.

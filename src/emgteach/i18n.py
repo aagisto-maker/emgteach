@@ -101,11 +101,11 @@ _ES = {
     "Co-activation\nindex": "Índice de\ncoactivación",
     "mean % MVC": "% CVM medio",
     # --- el dispositivo, según la práctica ---
-    "a BITalino over Bluetooth": "un BITalino por Bluetooth",
+    "a BITalino over Bluetooth": "una placa BITalino por Bluetooth",
     "either of two sensors: a BITalino over Bluetooth or an Arduino + "
     "MyoWare 2.0 over USB":
-        "cualquiera de dos sensores: un BITalino por Bluetooth o un Arduino + "
-        "MyoWare 2.0 por USB",
+        "cualquiera de dos sensores: una placa BITalino por Bluetooth o un "
+        "Arduino + MyoWare 2.0 por USB",
     "The electrical activity of a muscle is recorded and turned into "
     "measurements that can be interpreted. The application works with "
     "{sensors}.\n\nFor a short walkthrough of the application, press Yes.":
@@ -114,12 +114,12 @@ _ES = {
         "{sensors}.\n\nPara un recorrido breve por la aplicación, pulse Sí.",
     "This practical is recorded with the BITalino over Bluetooth, which is "
     "the device that gives two channels.":
-        "Esta práctica se registra con el BITalino por Bluetooth, que es el "
-        "dispositivo que da dos canales.",
+        "Esta práctica se registra con la placa BITalino por Bluetooth, que "
+        "es el dispositivo que da dos canales.",
     "This practical is recorded with the BITalino over Bluetooth, which is "
     "the device that carries the accelerometer.":
-        "Esta práctica se registra con el BITalino por Bluetooth, que es el "
-        "dispositivo que lleva el acelerómetro.",
+        "Esta práctica se registra con la placa BITalino por Bluetooth, que "
+        "es el dispositivo que lleva el acelerómetro.",
     "Switch the board on and connect the electrodes: the positive and the "
     "negative go on the midline of the muscle, the reference on a neutral "
     "point, over a bone if possible.":
@@ -130,11 +130,11 @@ _ES = {
     "the Arduino + MyoWare 2.0 over USB. Only the single-muscle practical "
     "can use the Arduino; the other two need the BITalino's second channel "
     "or its accelerometer, so they fix it and the selector does not appear.":
-        "La aplicación admite dos dispositivos: el BITalino por Bluetooth y "
-        "el Arduino + MyoWare 2.0 por USB. Solo la práctica de un músculo "
-        "puede usar el Arduino; las otras dos necesitan el segundo canal del "
-        "BITalino o su acelerómetro, así que lo fijan y el selector no "
-        "aparece.",
+        "La aplicación admite dos dispositivos: la placa BITalino por "
+        "Bluetooth y el Arduino + MyoWare 2.0 por USB. Solo la práctica de "
+        "un músculo puede usar el Arduino; las otras dos necesitan el "
+        "segundo canal de la placa o su acelerómetro, así que lo fijan y el "
+        "selector no aparece.",
     # --- calibration wizard: brief maximal efforts ---
     'When the count reaches 0: one brief, explosive maximal jerk of wrist flexion, clenching the fist with all your strength. A jerk, not a sustained push against something fixed.':
         "Cuando la cuenta llegue a 0: una sacudida breve y explosiva de "
@@ -579,13 +579,13 @@ _ES = {
     # -- accelerometer (ACC) --
     "ACC": "ACC",
     "Accelerometer (normalised g)": "Acelerómetro (g normalizado)",
-    "Also record the BITalino accelerometer (A4) in its own plot and "
+    "Also record the BITalino accelerometer (A2) in its own plot and "
     "EDF channel. Useful to relate muscle activation to movement, "
     "flag motion artefacts, or show tremor. BITalino only.":
-        "Registra también el acelerómetro del BITalino (A4) en su propia "
-        "gráfica y canal EDF. Útil para relacionar la activación muscular con "
-        "el movimiento, señalar artefactos de movimiento o mostrar el temblor. "
-        "Solo BITalino.",
+        "Registra también el acelerómetro de la placa BITalino (A2) en su "
+        "propia gráfica y canal EDF. Útil para relacionar la activación "
+        "muscular con el movimiento, señalar artefactos de movimiento o "
+        "mostrar el temblor. Solo BITalino.",
     "on the muscle (MMG)": "en el músculo (MMG)",
     "on the moving segment (tremor)": "en el segmento móvil (temblor)",
     "Where the accelerometer is stuck — sets which ACC analyses apply.":
@@ -758,9 +758,10 @@ _ES = {
     "Serve a read-only live view over the local network so students "
     "can follow on their phone/tablet browser (no install). One "
     "device drives the BITalino; the others just watch.":
-        "Sirve una vista en vivo de solo lectura por la red local para que los "
-        "alumnos sigan la sesión desde el navegador de su móvil/tablet (sin "
-        "instalar nada). Un dispositivo maneja el BITalino; los demás solo miran.",
+        "Sirve una vista en vivo de solo lectura por la red local para que "
+        "los alumnos sigan la sesión desde el navegador de su móvil/tablet "
+        "(sin instalar nada). Un dispositivo maneja la placa BITalino; los "
+        "demás solo miran.",
     "Students open:  {url}": "Los alumnos abren:  {url}",
     "Students open:  {url}   ·   {n} following":
         "Los alumnos abren:  {url}   ·   {n} siguiendo",
@@ -805,26 +806,26 @@ _ES = {
     "with the board switched on; its PIN is 1234. If it is not listed, set "
     "Bluetooth devices discovery to Advanced (Settings > Bluetooth & devices "
     "> Devices).":
-        "No hay ningún BITalino emparejado. Configuración > Bluetooth y "
-        "dispositivos > Agregar dispositivo, con la placa encendida; su PIN "
-        "es 1234. Si no aparece en la lista, ponga la detección de "
+        "No hay ninguna placa BITalino emparejada. Configuración > Bluetooth "
+        "y dispositivos > Agregar dispositivo, con la placa encendida; su "
+        "PIN es 1234. Si no aparece en la lista, ponga la detección de "
         "dispositivos Bluetooth en «Avanzada» (Configuración > Bluetooth y "
         "dispositivos > Dispositivos).",
     "BITalino paired":
-        "BITalino emparejado",
+        "Placa emparejada",
     "{mac} is on {port}":
         "{mac} está en {port}",
     "No Bluetooth COM port leads to {mac}: pair that BITalino, or check the "
     "address in {file}.":
-        "Ningún puerto COM Bluetooth lleva a {mac}: empareje ese BITalino o "
+        "Ningún puerto COM Bluetooth lleva a {mac}: empareje esa placa o "
         "compruebe la dirección de {file}.",
     "COM port":
         "Puerto COM",
     "There is no {port} on this PC.":
         "No hay ningún {port} en este ordenador.",
     "No outgoing Bluetooth COM port: no BITalino is paired with this PC.":
-        "No hay ningún puerto COM Bluetooth saliente: ningún BITalino está "
-        "emparejado con este ordenador.",
+        "No hay ningún puerto COM Bluetooth saliente: ninguna placa BITalino "
+        "está emparejada con este ordenador.",
     "Connection":
         "Conexión",
     "Connecting… a board that is switched off or out of reach takes up to "
@@ -833,8 +834,9 @@ _ES = {
         "en fallar.",
     "Check that the BITalino is switched on and near this PC; if it is, "
     "switch it off and on and run the diagnostic again.":
-        "Compruebe que el BITalino está encendido y cerca de este ordenador; "
-        "si lo está, apáguelo, enciéndalo y vuelva a pasar el diagnóstico.",
+        "Compruebe que la placa BITalino está encendida y cerca de este "
+        "ordenador; si lo está, apáguela, enciéndala y vuelva a pasar el "
+        "diagnóstico.",
     "{name} answered «{version}» in {s:.1f} s":
         "{name} contestó «{version}» en {s:.1f} s",
     "{n} frames in {s:.1f} s: {hz:.0f} Hz (the board sends {fs})":
@@ -860,7 +862,7 @@ _ES = {
     "Bluetooth":
         "Bluetooth",
     "Does not apply: the BITalino is simulated.":
-        "No se aplica: el BITalino es simulado.",
+        "No se aplica: la placa BITalino es simulada.",
     "Result: ready to record.":
         "Resultado: listo para registrar.",
     "Result: not ready. The first check that failed says why.":
@@ -873,11 +875,12 @@ _ES = {
     "empty: autodetect":
         "vacía: se busca sola",
     "emgteach {version} — BITalino connection diagnostic — {when}":
-        "emgteach {version} — diagnóstico de conexión del BITalino — {when}",
+        "emgteach {version} — diagnóstico de conexión de la placa BITalino — "
+        "{when}",
     "Address: {address} ({source})":
         "Dirección: {address} ({source})",
     "BITalino connection diagnostic.":
-        "Diagnóstico de conexión del BITalino.",
+        "Diagnóstico de conexión de la placa BITalino.",
     "MAC address, COM port or «simulada»; without it, the one in "
     "bitalino.txt, or autodetection.":
         "Dirección MAC, puerto COM o «simulada»; sin ella, la de "
@@ -886,7 +889,7 @@ _ES = {
         "segundos de adquisición (10 por omisión)",
     "Press Enter to close.":
         "Pulse Intro para cerrar.",
-    "BITalino address taken from {file}: {addr}": "Dirección del BITalino tomada de {file}: {addr}",
+    "BITalino address taken from {file}: {addr}": "Dirección de la placa BITalino tomada de {file}: {addr}",
     "Restore default address ({addr})": "Restaurar dirección por defecto ({addr})",
     "Refresh": "Refrescar",
     "Refresh the list of available serial ports": "Refrescar lista de puertos serie disponibles",
@@ -954,9 +957,9 @@ _ES = {
     "«simulada» to try the application without the board. It starts from the "
     "address written in bitalino.txt next to the application, when there is "
     "one.":
-        "Dirección MAC del BITalino (recomendado — estable en cualquier PC), "
-        "o un puerto COM concreto (p. ej. COM5), o dejarlo vacío para "
-        "autodetectar. Hay que emparejar antes el BITalino en la "
+        "Dirección MAC de la placa BITalino (recomendado — estable en "
+        "cualquier PC), o un puerto COM concreto (p. ej. COM5), o dejarlo "
+        "vacío para autodetectar. Hay que emparejar antes la placa en la "
         "configuración Bluetooth de Windows. No se usa PyBluez. Escriba "
         "«simulada» para probar la aplicación sin la placa. Parte de la "
         "dirección escrita en bitalino.txt junto a la aplicación, si existe.",
@@ -1468,36 +1471,40 @@ _ES = {
     "Could not open the BITalino port {port}: {err}. If the port is "
     "busy or access is denied, switch the BITalino off and on to reset "
     "the Bluetooth link, then retry.":
-        "No se pudo abrir el puerto del BITalino {port}: {err}. Si el puerto "
-        "está ocupado o el acceso está denegado, apague y encienda el "
-        "BITalino para reiniciar el enlace Bluetooth y vuelva a intentarlo.",
+        "No se pudo abrir el puerto de la placa BITalino {port}: {err}. Si "
+        "el puerto está ocupado o el acceso está denegado, apague y encienda "
+        "la placa para reiniciar el enlace Bluetooth y vuelva a intentarlo.",
     "BITalino {mac} was not found among the paired Bluetooth COM "
     "ports. Pair it in the operating system's Bluetooth settings "
     "and switch it on.":
-        "No se encontró el BITalino {mac} entre los puertos COM Bluetooth "
-        "emparejados. Hay que emparejar el dispositivo en la configuración Bluetooth "
-        "del sistema y encenderlo.",
+        "No se encontró la placa BITalino {mac} entre los puertos COM "
+        "Bluetooth emparejados. Hay que emparejar el dispositivo en la "
+        "configuración Bluetooth del sistema y encenderlo.",
     "No BITalino was found on the Bluetooth COM ports. Pair the "
     "BITalino in the operating system's Bluetooth settings and switch "
     "it on, or enter its MAC address or COM port explicitly.":
-        "No se encontró ningún BITalino en los puertos COM Bluetooth. Hay que emparejar "
-        "el BITalino en la configuración Bluetooth del sistema y encenderlo, o "
-        "introducir su dirección MAC o su puerto COM explícitamente.",
+        "No se encontró ninguna placa BITalino en los puertos COM Bluetooth. "
+        "Hay que emparejar la placa en la configuración Bluetooth del "
+        "sistema y encenderlo, o introducir su dirección MAC o su puerto COM "
+        "explícitamente.",
     "The device on {port} did not identify itself as a "
     "BITalino. Check that the BITalino is paired and "
     "switched on.":
-        "El dispositivo en {port} no se identificó como un BITalino. "
-        "Conviene comprobar que el BITalino está emparejado y encendido.",
+        "El dispositivo en {port} no se identificó como una placa BITalino. "
+        "Conviene comprobar que la placa está emparejada y encendida.",
     "Unsupported BITalino sampling rate {fs} Hz. "
     "Use one of 1, 10, 100 or 1000.":
-        "Frecuencia de muestreo {fs} Hz no soportada por el BITalino. "
+        "Frecuencia de muestreo {fs} Hz no soportada por la placa BITalino. "
         "Usar 1, 10, 100 o 1000.",
     "Invalid BITalino channel list; channels must be in 0..5.":
-        "Lista de canales del BITalino no válida; deben estar en 0..5.",
+        "Lista de canales de la placa BITalino no válida; deben estar en "
+        "0..5.",
     "Timeout while reading from the BITalino — connection lost.":
-        "Tiempo de espera agotado al leer del BITalino — conexión perdida.",
+        "Tiempo de espera agotado al leer de la placa BITalino — conexión "
+        "perdida.",
     "Corrupted BITalino frame (CRC mismatch) — connection lost.":
-        "Trama del BITalino corrupta (error de CRC) — conexión perdida.",
+        "Trama de la placa BITalino corrupta (error de CRC) — conexión "
+        "perdida.",
 
     # --- PDF report ---
     "Not conclusive — the trend does not fit ({slope:+.2f} Hz/s, R²={r2:.2f}). Fatigue needs a contraction held long enough for the trend to show.":
