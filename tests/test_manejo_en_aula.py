@@ -1027,7 +1027,7 @@ class TestTheEditorSaysWhichStepThisIs:
             set_language("es")
             dlg = _dialogo()
             assert dlg._lbl_guia.text().startswith("<b>Paso 1 de 3</b>")
-            assert dlg._btn_mantener.text() == "Mantener"
+            assert dlg._btn_mantener.text() == "Conservar"
             dlg.deleteLater()
         finally:
             set_language(anterior)

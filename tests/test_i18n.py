@@ -104,7 +104,14 @@ def test_the_spanish_interface_does_not_switch_to_tu() -> None:
     """
     tuteo = re.compile(
         r"\b(decides|puedes|tienes|debes|quieres|sabes|haces|ver[áa]s|podr[áa]s"
-        r"|por ti|contigo|tuyos?|tuyas?)\b",
+        r"|por ti|contigo|tuyos?|tuyas?"
+        # Imperatives with a pronoun attached, and the -te infinitives: the
+        # bare imperative of «tú» is the third person of the indicative
+        # («escribe», «marca»), so those two shapes are the ones with no
+        # other reading. «Escanea» and «apunta» are listed by name: they
+        # were the two the students saw, under the QR code.
+        r"|mantenlo|mantenla|hazlo|ponlo|d[ée]jalo|prep[áa]rate|prepararte"
+        r"|aseg[úu]rate|asegurarte|f[íi]jate|rel[áa]jate|escanea|apunta la)\b",
         re.IGNORECASE,
     )
     culpables = {
@@ -133,6 +140,35 @@ def test_every_translatable_string_has_a_spanish_entry() -> None:
 
 
 # ── The other hole: text that never reached tr() at all ───────────────────
+def test_every_catalogue_entry_is_still_used() -> None:
+    """The other direction: a key nothing asks for is a translation of nothing.
+
+    The completeness test goes from the code to the catalogue, so a string
+    removed from the code leaves its entry behind, still read and reviewed
+    and translated in every pass, for a sentence no one will ever see. A key
+    counts as used when it is a string literal anywhere in the package
+    (``tr()`` given a variable is given one of these), in ``tools`` or in
+    ``packaging``.
+    """
+    import ast
+    import pathlib
+
+    root = pathlib.Path(i18n.__file__).parent
+    repo = root.parent.parent
+    literals: set[str] = set()
+    for folder in (root, repo / "tools", repo / "packaging"):
+        for path in folder.rglob("*.py"):
+            if path.resolve() == pathlib.Path(i18n.__file__).resolve():
+                continue
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                    literals.add(node.value)
+    unused = sorted(k for k in i18n._ES if k not in literals)
+    assert not unused, "entradas que ya no usa nada: " + "; ".join(
+        repr(k[:60]) for k in unused
+    )
+
+
 #
 # The completeness test above checks that every key tr() is *given* has a
 # Spanish entry. It cannot see a label that was written straight into a

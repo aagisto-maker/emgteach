@@ -869,8 +869,9 @@ class AcquisitionTab(QWidget):
         self._lbl_acc_wiring.setStyleSheet("color: #6B7580; font-size: 11px;")
         acc_l.addWidget(self._lbl_acc_wiring)
         # Which analogue input the accelerometer is wired to. The BITalino packs
-        # enabled channels consecutively, so this must be the physical input;
-        # it defaults to A4 but is configurable (see the channel diagnostic).
+        # enabled channels consecutively, so this must be the physical input.
+        # The practical fixes it to A2 (muscle on A1) and the selector is never
+        # shown; the recording reads it from here.
         self._combo_acc_channel = QComboBox()
         for idx in range(6):
             self._combo_acc_channel.addItem(f"A{idx + 1}", idx)
@@ -880,31 +881,20 @@ class AcquisitionTab(QWidget):
         )
         self._combo_acc_channel.setEnabled(bool(self._acc_enabled))
         self._combo_acc_channel.setToolTip(
-            tr("Analogue input the accelerometer is connected to (default A4). "
-               "Use \"Find ACC channel…\" if unsure.")
+            tr("Analogue input the accelerometer is connected to; the "
+               "practical sets it to A2.")
         )
         self._combo_acc_channel.currentIndexChanged.connect(
             self._on_acc_channel_changed
         )
-        # Which analogue input the sensor is wired to, and the diagnostic that
-        # finds it: one-off wiring details, like the port. Own container so the
-        # advanced flag can hide them without touching the placement choice.
+        # Which analogue input the sensor is wired to: a one-off wiring detail,
+        # like the port. Own container, never shown (see apply_mode).
         self._box_acc_wiring = QWidget()
         wiring_l = QHBoxLayout(self._box_acc_wiring)
         wiring_l.setContentsMargins(0, 0, 0, 0)
         wiring_l.setSpacing(6)
         wiring_l.addWidget(QLabel(tr("ACC ch:")))
         wiring_l.addWidget(self._combo_acc_channel)
-        # Diagnostic: find which analogue input the accelerometer really is on.
-        self._btn_acc_diag = QPushButton(tr("Find ACC channel…"))
-        self._btn_acc_diag.setEnabled(False)
-        self._btn_acc_diag.setToolTip(
-            tr("Read all six analogue inputs live to see which one responds when "
-               "you tilt the accelerometer. Connect the BITalino first, and do "
-               "not run it while recording.")
-        )
-        self._btn_acc_diag.clicked.connect(self._on_acc_diagnose)
-        wiring_l.addWidget(self._btn_acc_diag)
         acc_l.addWidget(self._box_acc_wiring)
         acc_l.addStretch()
         cfg_outer.addLayout(ch_row)
@@ -1707,42 +1697,6 @@ class AcquisitionTab(QWidget):
             "adquisicion/acc_channel", self._combo_acc_channel.currentData()
         )
 
-    @Slot()
-    def _on_acc_diagnose(self) -> None:
-        """Open the analogue-channel diagnostic to locate the ACC's real input.
-
-        Opens its own BITalino connection to all six analogue inputs, so it can
-        only run while connected and not recording.
-        """
-        if self._worker and self._worker.isRunning():
-            return
-        if self._combo_device_type.currentIndex() != 0:
-            return
-        from emgteach.gui.widgets.channel_diagnostic_dialog import (
-            ChannelDiagnosticDialog,
-        )
-
-        port = self._edit_mac.text().strip()
-
-        def _make_device():
-            return create_device(
-                BACKEND_BITALINO, port=port, fs=FS,
-                channels=[0, 1, 2, 3, 4, 5],
-            )
-
-        dlg = ChannelDiagnosticDialog(_make_device, self)
-        accepted = dlg.exec() == QDialog.DialogCode.Accepted
-        if accepted and dlg.found_channel is not None:
-            # Point the ACC at the analogue input the diagnostic identified.
-            idx = self._combo_acc_channel.findData(dlg.found_channel)
-            if idx >= 0:
-                self._combo_acc_channel.setCurrentIndex(idx)
-                self._log(
-                    tr("Accelerometer set to A{n}.").format(
-                        n=dlg.found_channel + 1
-                    )
-                )
-
     def _refresh_fv_config_label(self) -> None:
         """Show the last-used guided-F-V reps and loads next to the button."""
         loads = self._settings.value("adquisicion/fv_loads", "", type=str)
@@ -1755,25 +1709,15 @@ class AcquisitionTab(QWidget):
             self._lbl_fv_config.setText(tr("(loads not set)"))
 
     def _update_fv_button(self) -> None:
-        """Enable the guided force-velocity button when it can be launched.
+        """Enable the guided force-velocity button while no wizard is running.
 
-        Available once a BITalino is connected with the accelerometer on (the
-        wizard starts the recording itself if needed), whether idle or already
-        recording, and while no other wizard is running. Placement is not
-        gated — the plan dialog warns if the ACC is not on the moving segment.
+        Placement is not gated — the plan dialog warns if the ACC is not on
+        the moving segment.
         """
-        connected = self._btn_conectar.isChecked()
-        bitalino = self._combo_device_type.currentIndex() == 0
         busy = self._mvc_active or self._fv_active
         # The plan needs no hardware: it is set before anything is
         # connected and kept for the recording.
         self._btn_fv_guided.setEnabled(not busy)
-        # The channel diagnostic opens its own connection, so only when idle
-        # (connected but not recording) and not during a wizard.
-        recording = bool(self._worker and self._worker.isRunning())
-        self._btn_acc_diag.setEnabled(
-            connected and bitalino and not recording and not busy
-        )
 
     def _apply_acc_placement_constraints(self) -> None:
         """Force a single EMG channel when the accelerometer is on a muscle.
@@ -4420,8 +4364,8 @@ class AcquisitionTab(QWidget):
         self._paso_mostrado = ""
         # Which analogue input the sensor is wired to is a convention the
         # block states — muscle on A1, accelerometer on A2 — not a selector:
-        # the selector and its «find it» diagnostic stay built (the recording
-        # code reads the combo) but never shown, and the practical sets it.
+        # the selector stays built (the recording code reads the combo) but
+        # is never shown, and the practical sets it.
         self._box_acc_wiring.setVisible(False)
         if uses_acc:
             fijo = self._combo_acc_channel.findData(_ACC_INPUT)
