@@ -179,20 +179,30 @@ class OnlineLoad:
     from a real-time data callback.
     """
 
+    #: Bins per percent of MVC in the running histogram the Jonsson levels
+    #: are read from: a tenth of a percent, for a readout that shows whole
+    #: percents. Every sample kept in a buffer and three percentiles taken
+    #: over it ten times a second cost the interface 64 ms per channel and
+    #: block after ten minutes; the histogram costs the same at any length.
+    BINS_PER_PCT = 10
+    #: The histogram's top, in % MVC. Anything above lands in the last bin.
+    TOP_PCT = 400.0
+
     def __init__(
         self,
         warning_limit: float = 30.0,
         danger_limit: float = 50.0,
         recent_n: int = 500,
-        maxlen: int = 600_000,
     ) -> None:
         self.warning_limit = float(warning_limit)
         self.danger_limit = float(danger_limit)
-        self._buf: deque[float] = deque(maxlen=int(maxlen))
+        self._hist = np.zeros(int(self.TOP_PCT * self.BINS_PER_PCT) + 1, dtype=np.int64)
+        self._n = 0
         self._recent: deque[float] = deque(maxlen=int(recent_n))
 
     def reset(self) -> None:
-        self._buf.clear()
+        self._hist[:] = 0
+        self._n = 0
         self._recent.clear()
 
     def add(self, pct_mvc: FloatArray | np.ndarray | list) -> None:
@@ -201,13 +211,14 @@ class OnlineLoad:
         arr = arr[np.isfinite(arr)]
         if arr.size == 0:
             return
-        vals = arr.tolist()
-        self._buf.extend(vals)
-        self._recent.extend(vals)
+        idx = np.clip(np.rint(arr * self.BINS_PER_PCT).astype(np.int64), 0, self._hist.size - 1)
+        self._hist += np.bincount(idx, minlength=self._hist.size)
+        self._n += int(arr.size)
+        self._recent.extend(arr.tolist())
 
     @property
     def n(self) -> int:
-        return len(self._buf)
+        return self._n
 
     @property
     def current(self) -> float:
@@ -215,7 +226,12 @@ class OnlineLoad:
         return float(np.mean(self._recent)) if self._recent else 0.0
 
     def _pct(self, p: float) -> float:
-        return float(np.percentile(self._buf, p)) if self._buf else 0.0
+        """The *p*-th percentile, to a tenth of a percent, of everything added."""
+        if self._n == 0:
+            return 0.0
+        wanted = max(1, int(np.ceil(p / 100.0 * self._n)))
+        bin_index = int(np.searchsorted(np.cumsum(self._hist), wanted))
+        return float(bin_index) / self.BINS_PER_PCT
 
     @property
     def static(self) -> float:

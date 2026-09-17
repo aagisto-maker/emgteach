@@ -563,6 +563,8 @@ _ES = {
     "Warning — annotation error: {error}": "Aviso — error de anotación: {error}",
     "EDF file saved: {path}": "Archivo EDF guardado: {path}",
     "Warning — EDF close error: {error}": "Aviso — error al cerrar el EDF: {error}",
+    "Onset detection re-armed: the resting level is measured again from here.":
+        "Detección de inicios rearmada: el nivel de reposo se mide de nuevo desde aquí.",
     "The marks are also in {path}; «python -m emgteach.recovery» rebuilds a readable "
     "file.":
         "Las marcas están también en {path}; «python -m emgteach.recovery» reconstruye "
