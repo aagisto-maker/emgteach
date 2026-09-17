@@ -29,6 +29,7 @@ The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread)
 
 from __future__ import annotations
 
+import html
 import re
 from collections import deque
 from datetime import datetime
@@ -61,6 +62,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emgteach import __version__
 from emgteach.apda import OnlineLoad
 from emgteach.broadcast import BroadcastServer, hay_red_utilizable
 from emgteach.charts import COLOUR_1, COLOUR_2
@@ -112,6 +114,18 @@ from emgteach.profiles import EMG_PROFILE
 from emgteach.station import ADDRESS_FILE, read_station_address
 from emgteach.workers import AcquisitionWorker
 from emgteach.workers.acquisition import mensaje_fallo_guardado
+
+#: What the event log of a recording is called beside it:
+#: ``P07_2026-09-10_16-32.eventos.txt`` next to the EDF, as the marks'
+#: mirror is ``.marcas.txt`` (see emgteach.recovery).
+EVENTS_SUFFIX = ".eventos.txt"
+
+
+def events_path(edf_path: str | Path) -> Path:
+    """The event log saved beside *edf_path* when its recording ends."""
+    p = Path(edf_path)
+    return p.with_name(p.stem + EVENTS_SUFFIX)
+
 
 # Number of samples in the ring buffer (= 30 s at 1000 Hz)
 # The visible window can be smaller thanks to the time-zoom control.
@@ -556,6 +570,11 @@ class AcquisitionTab(QWidget):
         # to the shared logger (self._logger) so the analysis tab also receives
         # them if it needs them.
         self._local_log = LoggerWidget()
+        # The lines this tab writes while a recording runs, as plain text
+        # with the time, and the file they belong to; saved beside it when
+        # the recording ends (_guardar_eventos). ``None`` between recordings.
+        self._eventos: list[str] | None = None
+        self._eventos_ruta = ""
 
         # Classroom broadcast: re-streams the live monitor to student browsers
         # over the local network (the operator PC owns the single BITalino link).
@@ -572,10 +591,40 @@ class AcquisitionTab(QWidget):
     def _log(self, msg: str) -> None:
         self._local_log.append_log(msg)
         self._logger.append_log(msg)
+        self._anotar_evento(msg)
 
     def _err(self, msg: str) -> None:
         self._local_log.append_error(msg)
         self._logger.append_error(msg)
+        self._anotar_evento(f"{tr('Error:')} {msg}")
+
+    def _anotar_evento(self, msg: str) -> None:
+        """Keep one line for the recording's event log, if one is running."""
+        if self._eventos is None:
+            return
+        texto = html.unescape(re.sub(r"<[^>]+>", "", str(msg))).strip()
+        self._eventos.append(f"{datetime.now():%H:%M:%S}  {texto}")
+
+    def _guardar_eventos(self) -> None:
+        """Write the recording's event log beside it, ``<name>.eventos.txt``.
+
+        The log on screen dies with the application, and it is what tells
+        what happened when something went wrong without an exception —
+        the lines a teacher would send. Written when the recording ends,
+        well or badly; a file that cannot be written is said in the log
+        and changes nothing else.
+        """
+        eventos, self._eventos = self._eventos, None
+        if not eventos or not self._eventos_ruta:
+            return
+        destino = events_path(self._eventos_ruta)
+        try:
+            destino.write_text("\n".join(eventos) + "\n", encoding="utf-8")
+        except OSError as exc:
+            self._err(tr("The event log could not be saved in {path}: {error}")
+                      .format(path=destino, error=exc))
+            return
+        self._log(tr("Event log saved: {path}").format(path=destino))
 
     # ------------------------------------------------------------------
     # Interface construction
@@ -1879,6 +1928,13 @@ class AcquisitionTab(QWidget):
         # Named now, before a single sample arrives: a screenshot taken during
         # the calibration has to carry the same base name as the recording.
         self._ruta_registro = ruta
+        # The event log of this recording starts here, and is saved beside
+        # it when the recording ends.
+        self._eventos_ruta = ruta
+        self._eventos = [
+            f"# emgteach {__version__} — {Path(ruta).name} — "
+            f"{datetime.now():%Y-%m-%d %H:%M:%S}"
+        ]
         save_dir = str(Path(ruta).parent)
         self._edit_dir.setText(save_dir)
         self._settings.setValue("adquisicion/save_dir", save_dir)
@@ -3987,6 +4043,8 @@ class AcquisitionTab(QWidget):
             self.recording_saved.emit(edf_path)
             if current:
                 self._mostrar_registro(edf_path)
+        if current:
+            self._guardar_eventos()
 
     def _restaurar_controles(self) -> None:
         self._btn_grabar.setChecked(False)

@@ -224,6 +224,15 @@ rectificado y envolvente— para ilustrar la cadena de procesado.]
 > no se cuela nada de detrás, y sí salen el cartel del asistente y el
 > del paso siguiente, que son hijos de la ventana. La ruta queda escrita
 > en el registro de eventos.
+>
+> **«Auto»**, a su lado, hace una sola cada 3 s, pero solo mientras se
+> graba y como mucho 60 por registro (tres minutos); al terminar la
+> grabación el registro de eventos dice cuántas se guardaron, y lo dice
+> una vez si se llega al tope.
+>
+> **El registro de eventos de cada grabación se guarda junto a ella**,
+> como `<nombre>.eventos.txt`, al terminar, bien o mal. Es el archivo
+> que conviene enviar cuando algo ha fallado.
 
 En la esquina superior derecha de la ventana, en la misma fila que el selector de
 idioma, hay un desplegable con tres opciones. Es el primer control que se toca en

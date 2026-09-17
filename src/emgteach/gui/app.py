@@ -104,6 +104,12 @@ def _make_splash() -> QSplashScreen:
 #: and the guided cue before it 3 s.
 AUTO_CAPTURA_MS = 3000
 
+#: At most this many automatic screenshots per recording: three minutes of
+#: them, a guided practical from the warm-up to the end of the task. With no
+#: limit a recording left running wrote a picture every three seconds for as
+#: long as it ran, into the recordings folder, session after session.
+AUTO_CAPTURA_MAX = 60
+
 # ---------------------------------------------------------------------------
 # Shared styling for all tabs
 # ---------------------------------------------------------------------------
@@ -255,8 +261,9 @@ class MainWindow(QMainWindow):
         self._btn_auto_captura.setAutoRaise(True)
         self._btn_auto_captura.setToolTip(tr(
             "Take a picture by itself every {s:.0f} s, but only while a "
-            "recording is running. It needs no switching off: outside a "
-            "recording it does nothing.").format(s=AUTO_CAPTURA_MS / 1000))
+            "recording is running, and at most {n} per recording. It needs no "
+            "switching off: outside a recording it does nothing."
+        ).format(s=AUTO_CAPTURA_MS / 1000, n=AUTO_CAPTURA_MAX))
         self._btn_auto_captura.toggled.connect(self._auto_captura_conmutada)
 
         #: Runs while the button is down, and only writes during a recording.
@@ -592,7 +599,8 @@ class MainWindow(QMainWindow):
             self._timer_captura.start()
             self._mensaje_en_las_tres(tr(
                 "Automatic screenshots armed: one every {s:.0f} s while "
-                "recording.").format(s=AUTO_CAPTURA_MS / 1000))
+                "recording, at most {n} per recording."
+            ).format(s=AUTO_CAPTURA_MS / 1000, n=AUTO_CAPTURA_MAX))
         else:
             self._timer_captura.stop()
             self._auto_grabando = False
@@ -615,8 +623,18 @@ class MainWindow(QMainWindow):
             if not self._auto_grabando:
                 self._auto_grabando = True
                 self._auto_hechas = 0
+            if self._auto_hechas >= AUTO_CAPTURA_MAX:
+                return
             if self._guardar_captura(silenciosa=True):
                 self._auto_hechas += 1
+                if self._auto_hechas == AUTO_CAPTURA_MAX:
+                    # Said once, when it happens: the button is still down
+                    # and nothing else would say why the pictures stopped.
+                    self._mensaje_en_las_tres(tr(
+                        "{n} automatic screenshots: the limit for one recording. "
+                        "No more until the next one; «Screenshot» or F12 still "
+                        "takes one by hand."
+                    ).format(n=AUTO_CAPTURA_MAX))
         elif self._auto_grabando:
             self._auto_grabando = False
             self._mensaje_en_las_tres(tr(
