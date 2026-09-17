@@ -15,6 +15,17 @@ for in the Hito 1 refactor (see ``DECISIONS.md``).
 ``EMG_PROFILE`` reproduces the exact values that were previously
 hardcoded across the workers and the acquisition tab, so wiring the
 package to it is behaviour-preserving by construction.
+
+**Where its default limits come from.** The calculations know nothing
+anatomical: they work on channel 1 and channel 2, and the pair of
+muscles is the teacher's choice. The *numbers* below are not equally
+neutral — the co-activation floor, the cross-talk share and the ranges
+of the calibration checks were measured on the pair of the practical
+guide, the forearm's FCR and ECR, on this bench. Another pair (biceps
+and triceps, say) has its own resting level, its own cross-talk and its
+own relation between the reference jerk and the task, so these are
+defaults to check rather than constants of the method. Each comment
+below says what was measured and on what.
 """
 
 from __future__ import annotations

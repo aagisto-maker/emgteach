@@ -3207,30 +3207,32 @@ class AcquisitionTab(QWidget):
         """What the effort is, said while the count runs.
 
         A brief, explosive maximal jerk, not a sustained push against
-        something fixed. A surface electrode on the forearm sees the
-        compartment beneath it, and a reference is only a yardstick if it
-        recruits the muscle mass the task recruits: the agonist/antagonist
-        task includes a grip, and clenching the fist brings in the finger
-        flexors that a push of the wrist leaves out. In that practical the
-        two channels are the forearm flexor and extensor, so each gets its
-        own gesture; the other practicals get the general rule.
+        something fixed: a reference is only a yardstick if it recruits the
+        muscle mass the task recruits, and a surface electrode sees the
+        compartment beneath it rather than one muscle. The rule is the same
+        for any pair; the gesture is not, so the instruction states the rule
+        first and names the forearm as the example — the pair of the
+        practical guide, whose task includes a grip, and clenching the fist
+        brings in the finger flexors that a push of the wrist leaves out.
         """
         if self._mode == MODE_PAIR and c == 0:
             return tr(
                 "When the count reaches 0: one brief, explosive maximal jerk of "
-                "wrist flexion, clenching the fist with all your strength. A "
-                "jerk, not a sustained push against something fixed."
+                "the movement this muscle makes — on the forearm, wrist flexion, "
+                "clenching the fist with all your strength. A jerk, not a "
+                "sustained push against something fixed."
             )
         if self._mode == MODE_PAIR and c == 1:
             return tr(
                 "When the count reaches 0: one brief, explosive maximal jerk of "
-                "wrist extension, with the hand open and the fingers stretched "
-                "out as far as they go. A jerk, not a sustained push against "
-                "something fixed."
+                "the movement this muscle makes — on the forearm, wrist "
+                "extension, with the hand open and the fingers stretched out as "
+                "far as they go. A jerk, not a sustained push against something "
+                "fixed."
             )
         return tr(
             "When the count reaches 0: one brief, explosive maximal jerk of the "
-            "muscle's own movement — a jerk, not a sustained push against "
+            "movement this muscle makes — a jerk, not a sustained push against "
             "something fixed."
         )
 
@@ -3438,7 +3440,8 @@ class AcquisitionTab(QWidget):
                 # co-activation index included, is built on that.
                 warning = tr(
                     "{pairs}. Move the electrode pairs further apart, over the "
-                    "belly of each muscle, and support the forearm."
+                    "belly of each muscle, and support the limb so that neither "
+                    "muscle has to hold it up."
                 ).format(pairs=" · ".join(juntos))
                 self._prep_aviso = warning
                 self._mvc_overlay.show_done(tr("Channels not separated"), warning)

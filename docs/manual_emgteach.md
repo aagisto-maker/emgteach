@@ -606,6 +606,14 @@ and it has an immediate clinical reading.
 | Grip | both work at once | a high number, of the order of 60–95 % |
 | Fast alternation | both work, but by turns | a low number |
 
+> **Where these limits come from.** The 4.5 % floor, the channel-separation
+> criterion and the ranges of the calibration checks were **measured on the
+> forearm pair** (FCR and ECR) of this guide. The calculations know nothing
+> anatomical — they work on «channel 1» and «channel 2», and the pair is the
+> teacher's choice — but those numbers do come from one pair: with another one
+> (biceps and triceps, say) it is worth checking them on a test recording
+> before trusting the warnings.
+
 The underlying lesson is that co-activation is a property of the **task**, not of
 the muscle. The contrast between the grip and the fast alternation is the most
 useful of the four: in both the two muscles work, but only in the grip do they work

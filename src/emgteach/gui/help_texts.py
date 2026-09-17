@@ -272,7 +272,10 @@ _TEXTS = {
             "is under {floor} % MVC. Below that the index would compare two "
             "baselines, not shared effort. The floor is {floor} % of a "
             "reference that is the envelope's peak: the same level above "
-            "rest as 5 % of the 0.2 s running mean the reference used to be."
+            "rest as 5 % of the 0.2 s running mean the reference used to be. "
+            "Like the other limits of the practical, it was measured on a "
+            "forearm pair (FCR and ECR): with another pair it is worth "
+            "checking."
         ).format(floor=_cifra(EMG_PROFILE.coact_floor_pct))
         + "</p><p><b>" + tr("Why one row per window") + "</b><br>" + tr(
             "The index compares the shape of the two envelopes, so it only "

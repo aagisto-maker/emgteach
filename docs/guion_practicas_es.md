@@ -513,6 +513,62 @@ presa; veredicto de fatiga de cada músculo en la presa (panel 7 dibuja los dos)
 
 ---
 
+### Variante · Un segundo par: bíceps y tríceps
+
+La práctica 2 es **agonista / antagonista**, no «flexores y extensores del
+antebrazo». La aplicación no sabe qué músculo hay debajo de cada electrodo: los
+canales se llaman «agonista» y «antagonista», el docente escribe los nombres en
+«Etiquetas» y todo lo que se mide —la referencia de CVM, el % CVM, la tabla de
+contracciones, el índice de coactivación, la MDF— se calcula igual con cualquier
+par. Esta variante está escrita para que se vea, y porque el par del codo resuelve
+un caso del pilotaje: **una alumna a la que la flexión y la extensión de muñeca le
+salían mezcladas**, con las dos envolventes subiendo juntas en todas las maniobras.
+En bíceps y tríceps el gesto es más grande, la diafonía menor y la disociación se
+ve de inmediato; si tampoco se separan allí, el problema está en la técnica y no en
+el sujeto.
+
+**Montaje.** Dos canales: **bíceps braquial** en el canal 1 (A1), sobre el vientre
+del músculo en la cara anterior del brazo, y **tríceps braquial** (cabeza lateral)
+en el canal 2 (A2), en la cara posterior, a media altura entre el acromion y el
+olécranon. Referencia común en el **olécranon** o en el acromion. Selector en
+**Contracción agonista / antagonista**; etiquetas «Bíceps» y «Tríceps», que van a
+la cabecera del EDF y a todos los informes. Brazo apoyado y codo a unos 90°, de
+modo que ninguno de los dos músculos tenga que sostener el miembro.
+
+**Las maniobras, por si se compara con el antebrazo.** Seis flexiones de codo
+contra resistencia suave, seis extensiones y, en lugar de la presa, una
+**cocontracción**: «apriete el codo como si quisiera doblarlo y estirarlo a la vez,
+sin moverlo», tres segundos. La presa no existe en este par, y esa es la diferencia
+importante: en el antebrazo la presa es una tarea real que enciende los dos
+músculos sola; aquí hay que pedir la cocontracción, que es una instrucción
+artificial y cada sujeto la interpreta a su manera, así que el número del índice se
+compara con el de esa misma persona, no con el del par del antebrazo.
+
+**La referencia se pide igual, con el gesto de este par.** El asistente pide una
+sacudida breve y explosiva del movimiento que hace cada músculo (apartado 4): una
+flexión de codo a la máxima potencia para el bíceps, una extensión para el tríceps.
+La regla es la de siempre —la referencia solo sirve de vara de medir si recluta la
+misma masa muscular que la tarea—, y con este par el gesto es el propio del codo.
+
+**Qué revisar la primera vez.** Los límites que la aplicación usa para avisar están
+**medidos sobre el par del antebrazo** (FCR y ECR), y este par no tiene por qué
+comportarse igual:
+
+| Aviso | Valor por omisión | Qué esperar en bíceps/tríceps |
+|---|---|---|
+| Canales no separados | el callado llega al 50 % de su propia referencia durante el máximo del otro | menos diafonía (están en caras opuestas y más separados): si salta, lo más probable es que un electrodo esté mal puesto |
+| Suelo del índice | 4,5 % CVM de media en la ventana | la cocontracción debería superarlo con holgura; una extensión limpia no |
+| Máximo poco creíble | la tarea pasa del 125 % de la referencia | si salta, la sacudida de referencia no fue máxima: repítala antes de dar por bueno el % CVM |
+
+Conviene hacer **un registro de prueba por par nuevo** antes de usarlo con el
+grupo, mirar esos tres avisos y anotar en el cuaderno del puesto los valores que
+salieron. La aplicación no los cambia sola.
+
+**Qué se conserva y qué no.** Se conserva todo el método: normalización, tabla de
+contracciones, índice por ventana, fatiga, informe. No se conservan los **rangos
+orientativos** del apartado final de este guion, que están medidos en antebrazo, ni
+la lectura clínica de la presa.
+
 ## Práctica 3 — Cinemática muscular (nivel avanzado)
 
 **Montaje.** Un canal sobre el **bíceps braquial**, referencia en el olécranon, y
