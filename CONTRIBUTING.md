@@ -34,8 +34,9 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-To work on the documentation or the optional backends, install the matching
-extras: `".[dev,docs]"`, `".[bitalino]"`, or `".[all]"`.
+To work on the documentation or the Windows executables, install the matching
+extras: `".[dev,docs]"`, `".[dev,build]"`, or `".[all]"`. Both hardware backends
+(Arduino and BITalino) need nothing beyond the core dependencies.
 
 ## Running the checks
 

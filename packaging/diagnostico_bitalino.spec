@@ -28,10 +28,16 @@ a = Analysis(  # noqa: F821  (injected by PyInstaller)
     runtime_hooks=[],
     # ``import emgteach`` leaves Qt out (its workers are imported when first
     # asked for) and the diagnostic imports no GUI module, so the Qt and
-    # plotting stacks stay out; tests/test_diagnostico.py checks it.
+    # plotting stacks stay out. Nor does it filter a signal, read or write an
+    # EDF or make a report, so scipy, mne, pyedflib and reportlab stay out too:
+    # PyInstaller follows every import statement it finds, including the ones
+    # the package only runs when asked, and scipy alone was most of a 61 MB
+    # program. tests/test_diagnostico.py runs a whole diagnosis and checks
+    # that nothing listed here is imported.
     excludes=[
         "PySide6", "shiboken6", "PyQt5", "PyQt6", "PySide2", "pyqtgraph",
         "matplotlib", "tkinter", "pytest", "_pytest", "IPython",
+        "scipy", "mne", "pyedflib", "reportlab", "segno", "pandas",
     ],
     noarchive=False,
 )

@@ -11,6 +11,9 @@ to testers, they double-click it, no setup.
 |------|---------|
 | `emgteach.spec` | PyInstaller recipe (one-file, windowed). |
 | `run_emgteach.py` | Frozen entry point. Normal launch starts the GUI; `--selftest` runs a headless integrity check. |
+| `diagnostico_bitalino.spec` | PyInstaller recipe of the connection diagnostic (one-file, console, no Qt). |
+| `run_diagnostico.py` | Its frozen entry point. |
+| `requirements-exe.txt` | The versions the laboratory kit is built with (the runtime dependencies and PyInstaller, pinned), used as constraints. |
 | `build.log` | Last build output (git-ignored). |
 
 ## Build (developer machine)
@@ -18,14 +21,19 @@ to testers, they double-click it, no setup.
 From the **project root**, inside the project venv (Python 3.10–3.12):
 
 ```powershell
-pip install -e ".[build]"        # installs PyInstaller
-pip install reportlab            # hard runtime dep, needed in the bundle
+pip install -e ".[build]" -c packaging\requirements-exe.txt
 pyinstaller --noconfirm --clean packaging\emgteach.spec
 ```
 
 The executable is written to `dist\emgteach.exe`. The build is large
 (~several hundred MB on disk before one-file compression) because it bundles
 PySide6, mne, scipy, matplotlib and numpy.
+
+`-c packaging\requirements-exe.txt` installs the versions the laboratory kit
+was built with, so two builds weeks apart bundle the same libraries: the
+dependencies of `pyproject.toml` and PyInstaller, with everything they pull
+in, pinned. After updating the build environment on purpose, write it again
+from that environment, keeping its header.
 
 ### Verify the frozen build (headless)
 
@@ -46,7 +54,9 @@ pyinstaller --noconfirm --clean packaging\diagnostico_bitalino.spec
 ```
 
 writes `dist\diagnostico_bitalino.exe`, a console program that uses the
-application's own BITalino backend and no Qt. Put it next to `emgteach.exe`:
+application's own BITalino backend and no Qt, scipy, mne, pyedflib or reportlab
+(the spec excludes them; `tests/test_diagnostico.py` checks a whole
+diagnosis runs without them). Put it next to `emgteach.exe`:
 double-clicked, it takes the address from `bitalino.txt` (or autodetects the
 board), checks the Bluetooth adapter, the pairing, the COM port, the
 handshake and ten seconds of acquisition, keeps its window open, and saves
@@ -73,10 +83,12 @@ the original is never modified.
 ### Build in CI
 
 The *Build Windows exe* workflow (`.github/workflows/build-windows-exe.yml`)
-builds the same executable and runs the self-test on Windows: on demand
-(*Actions → Build Windows exe → Run workflow*), on a pushed `exe-*` tag and
-on pull requests that touch `packaging/`. The executable is kept as a
-workflow artifact named `emgteach-windows-exe`.
+builds both executables with the versions of `requirements-exe.txt` and
+self-tests each one on Windows — `emgteach.exe --selftest`, and a whole
+diagnosis of the simulated board with `diagnostico_bitalino.exe simulada` —
+on demand (*Actions → Build Windows exe → Run workflow*), on a pushed `exe-*`
+tag and on pull requests that touch `packaging/`. The two executables are
+kept as a workflow artifact named `emgteach-windows-exe`.
 
 It is not attached to releases, which carry the source only: an unsigned
 build meets the antivirus false positive described below as soon as it is

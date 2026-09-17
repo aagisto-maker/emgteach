@@ -1,0 +1,46 @@
+# The versions emgteach.exe and diagnostico_bitalino.exe are built with: the
+# runtime dependencies of emgteach (pyproject.toml) and PyInstaller, pinned to
+# the build environment's versions (Python 3.12.10, Windows). Used as
+# constraints by the build (see packaging/README.md) and by the *Build Windows
+# exe* workflow; written again only when that environment is updated on purpose.
+altgraph==0.17.5
+certifi==2026.4.22
+charset-normalizer==3.4.7
+colorama==0.4.6
+contourpy==1.3.3
+cycler==0.12.1
+decorator==5.2.1
+fonttools==4.62.1
+idna==3.13
+Jinja2==3.1.6
+kiwisolver==1.5.0
+lazy-loader==0.5
+MarkupSafe==3.0.3
+matplotlib==3.9.2
+mne==1.12.1
+numpy==1.26.4
+packaging==26.2
+pefile==2024.8.26
+pillow==12.2.0
+platformdirs==4.9.6
+pooch==1.9.0
+pyEDFlib==0.1.42
+pyinstaller-hooks-contrib==2026.6
+pyinstaller==6.21.0
+pyparsing==3.3.2
+pyqtgraph==0.14.0
+pyserial==3.5
+PySide6==6.11.2
+PySide6_Addons==6.11.2
+PySide6_Essentials==6.11.2
+python-dateutil==2.9.0.post0
+pywin32-ctypes==0.2.3
+reportlab==4.5.1
+requests==2.33.1
+scipy==1.13.1
+segno==1.6.6
+setuptools==82.0.1
+shiboken6==6.11.2
+six==1.17.0
+tqdm==4.67.3
+urllib3==2.7.0
