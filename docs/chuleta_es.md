@@ -17,7 +17,7 @@ analiza solo al abrirlo) · **Normalización CVM**: la tarea en % CVM y su carga
 
 **Cadena de señal:** en bruto → *notch 50 Hz + paso-banda 20–450 Hz* → rectificada
 → **envolvente** (paso-bajo 5 Hz). *En el EDF solo va la señal en bruto; lo demás
-se recalcula.* Fondo de escala BITalino ±1,635 mV.
+se recalcula.* Fondo de escala BITalino ±1.635 mV.
 
 ---
 
@@ -31,7 +31,7 @@ se recalcula.* Fondo de escala BITalino ±1,635 mV.
 - **Captura de pantalla**: botón «Captura» en la esquina superior derecha
   o **F12**. Guarda la ventana en la carpeta de los registros, sin preguntar.
 - **Calibración**: 10 s de calentamiento; por músculo, **3 esfuerzos máximos
-  breves** (1,5 s). Referencia = el punto más alto de la envolvente en los tres.
+  breves** (1.5 s). Referencia = el punto más alto de la envolvente en los tres.
 - **El máximo es una sacudida breve y explosiva a la máxima potencia, no un
   empuje contra algo fijo.** FCR: sacudida de flexión de muñeca **cerrando el
   puño** con toda la fuerza. ECR: sacudida de extensión de muñeca con **la mano
@@ -73,10 +73,10 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
 ### Qué significan los números
 | Medida | Significado | Orientativo |
 |---|---|---|
-| **RMS** | cuánto se activa el músculo (no lineal con la fuerza) | reposo ≈ 0,01 mV · esfuerzo 0,1–1 mV |
+| **RMS** | cuánto se activa el músculo (no lineal con la fuerza) | reposo ≈ 0.01 mV · esfuerzo 0.1–1 mV |
 | **Pico (% CVM)** | el esfuerzo respecto al propio máximo | tarea 20–80 % · > 150 % = la calibración no fue máxima |
 | **MNF / MDF** | frecuencia media / mediana del espectro | 80–170 / 60–150 Hz |
-| **MDF ↓ con el tiempo** | **fatiga** (pendiente negativa que ajuste, R² ≥ 0,30) | «no concluyente» = el registro no responde |
+| **MDF ↓ con el tiempo** | **fatiga** (pendiente negativa que ajuste, R² ≥ 0.30) | «no concluyente» = el registro no responde |
 | **Índice de coactivación** | actividad compartida por los dos músculos | recíproco: «no se informa» · presa: alto |
 | **Separación entre canales** | lo que un canal lee del otro músculo en su máximo | ≤ 25 % bien · > 50 % «sin separar» |
 | **P10 · P50 · P90** | carga estática · mediana · pico (Jonsson) | ≤ 5 · 14 · 70 % CVM |

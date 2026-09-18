@@ -45,7 +45,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QDoubleSpinBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
@@ -62,6 +61,7 @@ from PySide6.QtWidgets import (
 )
 
 from emgteach.gui.widgets.canvas import ScrollingCanvas
+from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
@@ -292,7 +292,7 @@ class MvcTab(QWidget):
         fenv_l = QHBoxLayout(self._box_fenv)
         fenv_l.setContentsMargins(0, 0, 0, 0)
         fenv_l.addWidget(QLabel(tr("Envelope cutoff frequency (Hz):")))
-        self._spin_fenv = QDoubleSpinBox()
+        self._spin_fenv = DecimalSpinBox()
         self._spin_fenv.setRange(1.0, 20.0)
         self._spin_fenv.setSingleStep(0.5)
         self._spin_fenv.setValue(5.0)
@@ -1541,14 +1541,14 @@ class MvcTab(QWidget):
         total = max(self._duracion_total, self._inicio_s + self._duracion_s)
         row = QHBoxLayout()
         row.addWidget(QLabel(tr("Start:")))
-        spin_ini = QDoubleSpinBox()
+        spin_ini = DecimalSpinBox()
         spin_ini.setRange(0.0, max(0.0, total))
         spin_ini.setDecimals(1)
         spin_ini.setSingleStep(0.5)
         spin_ini.setValue(float(self._inicio_s))
         row.addWidget(spin_ini)
         row.addWidget(QLabel(tr("Duration:")))
-        spin_dur = QDoubleSpinBox()
+        spin_dur = DecimalSpinBox()
         spin_dur.setRange(0.5, max(0.5, total))
         spin_dur.setDecimals(1)
         spin_dur.setSingleStep(0.5)

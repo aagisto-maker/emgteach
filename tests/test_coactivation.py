@@ -326,9 +326,12 @@ class TestItIsWiredIn:
 
         assert EMG_PROFILE.coact_floor_pct == pytest.approx(4.5)
 
-    @pytest.mark.parametrize("idioma, cifra", [("en", "4.5"), ("es", "4,5")])
-    def test_the_reason_writes_the_floor_with_its_decimal(self, idioma, cifra) -> None:
-        """«below 4 % MVC» would be a different floor from the one applied."""
+    @pytest.mark.parametrize("idioma", ["en", "es"])
+    def test_the_reason_writes_the_floor_with_its_decimal(self, idioma) -> None:
+        """«below 4 % MVC» would be a different floor from the one applied.
+
+        The mark is the point in both languages: see
+        ``tests/test_el_punto_decimal.py``."""
         from emgteach.i18n import get_language, set_language
 
         n = int(FS * 2)
@@ -342,7 +345,7 @@ class TestItIsWiredIn:
         finally:
             set_language(anterior)
         assert res.index is None
-        assert "ECR" in res.reason and f"{cifra} %" in res.reason, res.reason
+        assert "ECR" in res.reason and "4.5 %" in res.reason, res.reason
 
     def test_the_module_is_qt_free(self) -> None:
         """Like apda.py: usable by the worker and by an offline script alike."""

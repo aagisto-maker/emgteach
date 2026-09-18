@@ -131,7 +131,7 @@ El orden importa, porque la aplicación depende de él.
    >
    > **Tres esfuerzos breves por músculo, y se queda con el mejor.** Ya no hay
    > casilla que marcar: el asistente pide siempre **tres esfuerzos máximos
-   > breves** de 1,5 s, cada uno con 3 s de aviso y 2 s de descanso, y la
+   > breves** de 1.5 s, cada uno con 3 s de aviso y 2 s de descanso, y la
    > referencia es el punto más alto que alcanza la envolvente en las
    > repeticiones que se conservan. La
    > primera contracción máxima de una sesión es genuinamente submáxima, y con
@@ -142,7 +142,7 @@ El orden importa, porque la aplicación depende de él.
    > septiembre). En un registro real un esfuerzo breve fijó la referencia del
    > flexor un 22 % por encima de la mejor contracción mantenida, y hasta la
    > 3.0.0 se pedían también tres mantenidas de 4 s: medida sobre el pico de
-   > 0,2 s que se usaba entonces, la breve da la misma referencia en la cuarta
+   > 0.2 s que se usaba entonces, la breve da la misma referencia en la cuarta
    > parte del tiempo.
    >
    > **Y no se salte el calentamiento.** La calibración abre con 10 s pidiendo
@@ -208,7 +208,7 @@ El orden importa, porque la aplicación depende de él.
 > máximo está literalmente dentro, y los límites de Jonsson dicen «sobrecarga»
 > cuando lo que hubo fue una calibración. Use **«Seleccionar fragmentos…»** en la
 > pestaña de normalización para quedarse solo con el trabajo. En el registro del
-> 30 de agosto el pico pasa de **64,5 % a 31,8 % de CVM** al dejar fuera la
+> 30 de agosto el pico pasa de **64.5 % a 31.8 % de CVM** al dejar fuera la
 > calibración —de rozar el límite de 70 a estar holgadamente dentro—, y la
 > referencia no cambia: sale de la anotación, esté donde esté en el fichero.
 
@@ -235,10 +235,10 @@ alto. Que las dos primeras filas no den número **es parte de la demostración**
 > contracción *mantenida*. En un protocolo intermitente como este, la mitad de
 > los segmentos son reposo —cuya frecuencia mediana es la del amplificador, muy
 > por encima de la de una contracción— y mezclarlos fabrica una pendiente de la
-> nada: el registro del 30 de agosto salía con «Fatiga: DETECTADA, MDF −26,4 %»
+> nada: el registro del 30 de agosto salía con «Fatiga: DETECTADA, MDF −26.4 %»
 > sin que nada se hubiera fatigado. Desde esta versión el ajuste se hace solo
 > sobre los segmentos en que el músculo trabaja y el veredicto exige que la
-> recta explique algo (R² ≥ 0,30); en un registro intermitente lo normal es leer
+> recta explique algo (R² ≥ 0.30); en un registro intermitente lo normal es leer
 > **«Fatiga: no concluyente»**, y eso es la respuesta correcta.
 
 ---
@@ -259,8 +259,8 @@ veces su nivel de reposo):
 |---|---|
 | ECR durante la calibración del FCR | **21 %** de la referencia del propio ECR |
 | FCR durante la calibración del ECR | **20 %** de la referencia del propio FCR |
-| correlación de las dos envolventes, durante la calibración | r = **+0,79** |
-| la misma correlación, en el registro de trabajo | r = **+0,07** |
+| correlación de las dos envolventes, durante la calibración | r = **+0.79** |
+| la misma correlación, en el registro de trabajo | r = **+0.07** |
 
 Esos ~20 % son el suelo del método, y no contaminan las referencias: cada músculo
 llega en su turno cinco veces más alto que lo que el otro le induce. La
@@ -282,13 +282,13 @@ no sobre la masa común proximal, y apoye el antebrazo entero.
 
 ### Suelo del índice de coactivación — ya medido
 
-`coact_floor_pct` vale **4,5 % de CVM** y ha dejado de ser una estimación. Es el
+`coact_floor_pct` vale **4.5 % de CVM** y ha dejado de ser una estimación. Es el
 mismo nivel sobre el reposo que el 5 % que valía cuando la referencia era la
-media móvil de 0,2 s, expresado sobre la referencia de pico, que es un 16 %
+media móvil de 0.2 s, expresado sobre la referencia de pico, que es un 16 %
 más alta. En ese mismo registro, medido entonces con aquella referencia y con
 el reposo de cada músculo ya restado:
 
-- ventana quieta: media de **0,2 % (FCR)** y **0,8 % (ECR)** sobre reposo;
+- ventana quieta: media de **0.2 % (FCR)** y **0.8 % (ECR)** sobre reposo;
 - ventana activa: media de **19–30 %** en los dos.
 
 El umbral cae en un hueco de un factor treinta, así que el número redondo sobra.

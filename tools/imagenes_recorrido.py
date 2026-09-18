@@ -46,6 +46,7 @@ from PIL import Image
 
 from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.gui.tabs.acquisition import MVC_READY_S, MVC_REST_S
+from emgteach.i18n import cifra
 from emgteach.profiles import EMG_PROFILE
 
 RAIZ = Path(__file__).resolve().parent
@@ -215,11 +216,6 @@ TEXTOS = {
 }
 
 
-def _cifra(x: float, idioma: str) -> str:
-    t = f"{x:g}"
-    return t.replace(".", ",") if idioma == "es" else t
-
-
 def _figura(ancho_pt, alto_pt):
     fig = plt.figure(figsize=(ancho_pt / 72, alto_pt / 72), dpi=DPI)
     ax = fig.add_axes([0, 0, 1, 1])
@@ -284,9 +280,9 @@ def electrodos(idioma: str) -> Path:
 def calibracion(idioma: str) -> Path:
     t = TEXTOS[idioma]
     p = EMG_PROFILE
-    c = {"warm": _cifra(p.warmup_s, idioma), "n": p.mvc_bursts,
-         "dur": _cifra(p.mvc_burst_s, idioma), "cue": _cifra(MVC_READY_S, idioma),
-         "rest": _cifra(MVC_REST_S, idioma)}
+    c = {"warm": cifra(p.warmup_s), "n": p.mvc_bursts,
+         "dur": cifra(p.mvc_burst_s), "cue": cifra(MVC_READY_S),
+         "rest": cifra(MVC_REST_S)}
     W, H = 380, 246
     fig, ax = _figura(W, H)
     ax.text(W / 2, H - 15, t["calibracion"], fontsize=13, fontweight="bold",

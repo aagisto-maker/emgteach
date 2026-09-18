@@ -62,7 +62,7 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 - Electrodos **desechables**, uno por persona; limpiar la piel con alcohol y dejar
   secar. No reutilizar electrodos entre sujetos.
 - Personas con lesiones cutáneas en la zona deben abstenerse.
-- Los esfuerzos máximos son sacudidas breves y explosivas (1,5 s) que hace el
+- Los esfuerzos máximos son sacudidas breves y explosivas (1.5 s) que hace el
   sujeto solo, nunca contra otra persona. Quien note dolor articular, para.
 
 ---
@@ -127,7 +127,7 @@ fichero, sin parar la grabación:
 1. **Calentamiento (10 s).** Dos o tres contracciones suaves de cada músculo. La
    primera contracción máxima de una sesión nunca es la más fuerte, y esto lo
    corrige en parte.
-2. **Tres esfuerzos máximos breves**, de 1,5 s cada uno, con cuenta atrás de
+2. **Tres esfuerzos máximos breves**, de 1.5 s cada uno, con cuenta atrás de
    3 s y 2 s de descanso entre ellos. La pantalla dice «¡Máximo, breve y fuerte!».
 3. Con dos músculos, lo mismo para el segundo.
 4. En la práctica del par, después viene una **preparación** de 5 s y empieza el
@@ -147,7 +147,7 @@ pasaba: 135 % de «máximo» en un registro.
 >   cerrando el puño con toda la fuerza.**
 > - **Extensor (ECR, canal 2): sacudida de extensión de muñeca a la máxima
 >   potencia, con la mano abierta y los dedos extendidos a tope.**
-> - **Breve y explosiva**, dentro de los 1,5 s de la cuenta: no un empuje
+> - **Breve y explosiva**, dentro de los 1.5 s de la cuenta: no un empuje
 >   sostenido contra algo fijo. Una repetición que salga floja no vale; la
 >   aplicación permite descartarla después.
 > - **Por qué esta maniobra.** Un electrodo de superficie en el antebrazo no ve un
@@ -326,7 +326,7 @@ fuerza. La prueba específica es la caída de la MDF, no la subida del RMS.
 
 **Cómo decide la aplicación.** Ajusta una recta a la MDF de las ventanas de un
 segundo en que el músculo trabajaba. Dice **«Fatiga detectada»** si la pendiente
-es negativa y la recta explica algo (R² ≥ 0,30, al menos cuatro ventanas);
+es negativa y la recta explica algo (R² ≥ 0.30, al menos cuatro ventanas);
 **«No detectada»** si la MDF se mantiene o sube con una recta que ajusta; y **«No
 concluyente»** si la recta no ajusta, que es lo normal en una serie de
 contracciones breves. No concluyente no es «no»: es que el registro no responde a
@@ -471,7 +471,7 @@ una progresión; conviene leerla entera antes de responder:
 
 | Maniobra | Qué hacen los dos músculos | Qué da el índice |
 |---|---|---|
-| Flexiones | trabaja el FCR; el ECR no llega al suelo del 4,5 % | no se informa |
+| Flexiones | trabaja el FCR; el ECR no llega al suelo del 4.5 % | no se informa |
 | Extensiones | los papeles se intercambian | no se informa |
 | Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
 | Alternancia rápida (2b) | los dos trabajan, pero por turnos | número bajo |
@@ -557,7 +557,7 @@ comportarse igual:
 | Aviso | Valor por omisión | Qué esperar en bíceps/tríceps |
 |---|---|---|
 | Canales no separados | el callado llega al 50 % de su propia referencia durante el máximo del otro | menos diafonía (están en caras opuestas y más separados): si salta, lo más probable es que un electrodo esté mal puesto |
-| Suelo del índice | 4,5 % CVM de media en la ventana | la cocontracción debería superarlo con holgura; una extensión limpia no |
+| Suelo del índice | 4.5 % CVM de media en la ventana | la cocontracción debería superarlo con holgura; una extensión limpia no |
 | Máximo poco creíble | la tarea pasa del 125 % de la referencia | si salta, la sacudida de referencia no fue máxima: repítala antes de dar por bueno el % CVM |
 
 Conviene hacer **un registro de prueba por par nuevo** antes de usarlo con el
@@ -686,13 +686,13 @@ aparecen en gris bajo las fichas del resumen y en los «?» de las tablas.
 |---|---|---|
 | Frecuencia media (MNF) | 80–170 Hz | el grueso de la energía del EMG de superficie está entre 50 y 150 Hz; la MNF queda siempre algo por encima de la MDF por la cola del espectro |
 | Frecuencia mediana (MDF) | 60–150 Hz; en el antebrazo, más bien 90–150 | la misma banda; en el banco (FCR y ECR) 86–127 Hz con buen montaje; 176 Hz con el electrodo mal situado |
-| Caída de la MDF con la fatiga | pendiente negativa clara; sin umbral universal de magnitud | la aplicación no exige una cuantía sino una tendencia que ajuste (R² ≥ 0,30, ≥ 4 ventanas de 1 s) |
-| RMS en reposo | ≈ 0,005–0,02 mV | ruido de fondo del amplificador y la piel (≥ 8 µV pico a pico en el mejor caso) |
-| RMS en esfuerzo firme | 0,1–1 mV; máximos hasta ~1,5 mV | electrodos de superficie sobre músculos de extremidad |
+| Caída de la MDF con la fatiga | pendiente negativa clara; sin umbral universal de magnitud | la aplicación no exige una cuantía sino una tendencia que ajuste (R² ≥ 0.30, ≥ 4 ventanas de 1 s) |
+| RMS en reposo | ≈ 0.005–0.02 mV | ruido de fondo del amplificador y la piel (≥ 8 µV pico a pico en el mejor caso) |
+| RMS en esfuerzo firme | 0.1–1 mV; máximos hasta ~1.5 mV | electrodos de superficie sobre músculos de extremidad |
 | Esfuerzo de tarea | 20–80 % CVM | un esfuerzo submáximo típico; > 100 % sostenido dice que la calibración no fue máxima |
 | Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones de banco con calibración correcta; la aplicación avisa en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 %; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
-| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa»; presa firme: 60–95 % | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4,5 % |
+| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa»; presa firme: 60–95 % | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4.5 % |
 | Separación entre canales (diafonía) | ≤ 20–25 % de la propia referencia | banco con electrodos bien situados; > 50 %, «canales sin separar» |
 | Carga estática (P10) | ≤ 2–5 % CVM (la aplicación usa 5) | Jonsson 1978, 1982 |
 | Carga mediana (P50) | ≤ 10–14 % CVM (la aplicación usa 14) | Jonsson 1978, 1982 |

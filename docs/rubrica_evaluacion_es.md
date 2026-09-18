@@ -93,12 +93,12 @@ Niveles: **Insuficiente (0–4)** · **Suficiente (5–6)** · **Notable (7–8)
 
 | Criterio | Puntuación (0–10) | Peso | Ponderada (puntuación × peso) |
 |---|---|---|---|
-| 1. Montaje y calidad del registro | | 0,20 | |
-| 2. Calibración y selección | | 0,15 | |
-| 3. Uso de la app y lectura | | 0,20 | |
-| 4. Interpretación fisiológica | | 0,30 | |
-| 5. Informe y presentación | | 0,15 | |
-| **Nota final** | | **1,00** | |
+| 1. Montaje y calidad del registro | | 0.20 | |
+| 2. Calibración y selección | | 0.15 | |
+| 3. Uso de la app y lectura | | 0.20 | |
+| 4. Interpretación fisiológica | | 0.30 | |
+| 5. Informe y presentación | | 0.15 | |
+| **Nota final** | | **1.00** | |
 
 > **Consejo.** Para una comprobación formativa rápida bastan dos cosas del PDF:
 > la ficha **«Máximo de la tarea»** (si está en rojo, nada de lo demás vale) y una

@@ -14,7 +14,6 @@ import re
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
-    QDoubleSpinBox,
     QFormLayout,
     QLabel,
     QLineEdit,
@@ -22,6 +21,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.i18n import tr
 
 # Loads are separated by any run of commas, whitespace, semicolons or newlines
@@ -111,14 +111,14 @@ class ForceVelocityPlanDialog(QDialog):
         ))
         form.addRow(tr("Contractions per load:"), self._spin_reps)
 
-        self._spin_prep = QDoubleSpinBox()
+        self._spin_prep = DecimalSpinBox()
         self._spin_prep.setRange(1.0, 20.0)
         self._spin_prep.setValue(6.0)
         self._spin_prep.setSuffix(" s")
         self._spin_prep.setToolTip(tr("Countdown to prepare before each contraction."))
         form.addRow(tr("Prepare time:"), self._spin_prep)
 
-        self._spin_window = QDoubleSpinBox()
+        self._spin_window = DecimalSpinBox()
         self._spin_window.setRange(0.5, 5.0)
         self._spin_window.setSingleStep(0.5)
         # One second. The lift is what is being measured and it is quick; a

@@ -86,11 +86,6 @@ TEXTOS = {
 }
 
 
-def _cifra(x: float, idioma: str) -> str:
-    t = f"{x:g}"
-    return t.replace(".", ",") if idioma == "es" else t
-
-
 def capturas(idioma: str, carpeta: Path) -> dict[str, Path]:
     """The application's own controls and panels, captured off-screen."""
     from PySide6.QtCore import QSettings
@@ -222,14 +217,15 @@ def _colocar(fig, imagenes, x, y, w, h, *, px_a_pt=0.9, flecha="↓"):
 
 
 def componer(idioma: str, cap: dict[str, Path]) -> tuple[Path, Path]:
+    from emgteach.i18n import cifra
     from emgteach.modes import MODE_PAIR, mode_expected_contractions
     from emgteach.profiles import EMG_PROFILE
 
     t = TEXTOS[idioma]
     tmp = cap["practica"].parent
     f, e, p = mode_expected_contractions(MODE_PAIR)
-    cifras = {"warm": _cifra(EMG_PROFILE.warmup_s, idioma), "n": EMG_PROFILE.mvc_bursts,
-              "dur": _cifra(EMG_PROFILE.mvc_burst_s, idioma), "f": f, "e": e, "p": p,
+    cifras = {"warm": cifra(EMG_PROFILE.warmup_s), "n": EMG_PROFILE.mvc_bursts,
+              "dur": cifra(EMG_PROFILE.mvc_burst_s), "f": f, "e": e, "p": p,
               "por": POR}
     imagenes = [
         [_recorte(ASSETS / f"electrodos_{idioma}.png", tmp, 0.065, 0.12)],
