@@ -17,7 +17,7 @@ analiza solo al abrirlo) · **Normalización CVM**: la tarea en % CVM y su carga
 
 **Cadena de señal:** en bruto → *notch 50 Hz + paso-banda 20–450 Hz* → rectificada
 → **envolvente** (paso-bajo 5 Hz). *En el EDF solo va la señal en bruto; lo demás
-se recalcula.* Fondo de escala BITalino ±1.635 mV.
+se recalcula.* Fondo de escala BITalino ±1635 µV.
 
 ---
 
