@@ -146,16 +146,40 @@ class _RestThenBurstDevice(AcquisitionDevice):
         pass
 
 
-def _wait_for_signal(qapp: QCoreApplication, signal, timeout_ms: int = 5000) -> None:
-    """Spin a Qt event loop until *signal* fires or the timeout expires."""
+def _wait_for_signal(qapp: QCoreApplication, signal, timeout_ms: int = 30000) -> None:
+    """Spin a Qt event loop until *signal* fires, and say so if it does not.
+
+    It used to return quietly when the time was up, and the test then failed
+    on whatever the missing signal had left empty — an index out of range, a
+    path nobody appended — which reads like a broken worker and is a loaded
+    machine. The ceiling is generous on purpose: the wait ends the moment the
+    signal arrives, so a large number costs nothing when things work and
+    keeps a slow continuous-integration runner from failing a test that has
+    nothing wrong with it.
+    """
     loop = QEventLoop()
+    visto = {"ok": False}
 
     def on_emit(*_args, **_kwargs) -> None:
+        visto["ok"] = True
         loop.quit()
 
     signal.connect(on_emit)
     QTimer.singleShot(timeout_ms, loop.quit)
     loop.exec()
+    assert visto["ok"], f"the signal did not arrive within {timeout_ms} ms"
+
+
+def test_the_wait_says_when_a_signal_never_comes(qapp: QCoreApplication) -> None:
+    """The contract of :func:`_wait_for_signal`, which used to be silent.
+
+    A timer nobody starts never fires. The wait must say so, instead of
+    leaving the test that called it to fail on an empty list.
+    """
+    nunca = QTimer()
+    with pytest.raises(AssertionError, match="did not arrive"):
+        _wait_for_signal(qapp, nunca.timeout, timeout_ms=50)
+
 
 
 # ---------------------------------------------------------------------------
@@ -183,12 +207,23 @@ class TestAcquisitionWorker:
         def on_finished(path: str) -> None:
             edf_path_holder.append(path)
 
+        bloques: list[dict] = []
+        worker.data_ready.connect(bloques.append)
         worker.finished_ok.connect(on_finished)
         worker.start()
 
-        # Let the worker read for ~1.5 s of fake data, then request stop
-        QTimer.singleShot(150, worker.stop)
-        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        # Record for about 150 ms and stop — but not before the worker has
+        # read a block. On a loaded runner the first one arrives later than
+        # any delay written here, and a file with no samples in it fails
+        # this test for a reason that is not the one it is testing.
+        def stop_once_it_has_read() -> None:
+            if bloques:
+                worker.stop()
+            else:
+                QTimer.singleShot(50, stop_once_it_has_read)
+
+        QTimer.singleShot(150, stop_once_it_has_read)
+        _wait_for_signal(qapp, worker.finished_ok)
         worker.wait(8000)
 
         assert edf_path_holder, "Worker did not emit finished_ok"
@@ -280,8 +315,16 @@ class TestAcquisitionWorker:
             assert worker.remove_marker(added_times[1], "undo_me")
             worker.stop()
 
-        QTimer.singleShot(800, delete_and_stop)
-        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        # Delete it once both marks are there, instead of after a delay that
+        # takes them for granted: the block that adds them is the worker's
+        # first, and on a loaded runner it arrives later than any number
+        # written here — the test then read an empty list.
+        def when_both_are_marked(*_args) -> None:
+            if len(added_times) == 2:
+                QTimer.singleShot(0, delete_and_stop)
+
+        worker.marker_added.connect(when_both_are_marked)
+        _wait_for_signal(qapp, worker.finished_ok)
         worker.wait(8000)
 
         result = read_edf_pyedflib(edf_path_holder[0])
