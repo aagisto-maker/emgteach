@@ -151,7 +151,7 @@ transferencia tiene que dividir por su ganancia.
 
 | Plataforma | Conversión | Fondo de escala |
 |---|---|---|
-| BITalino | `EMG(mV) = (ADC / 2¹⁰ − 0.5) · VCC · 1000 / G`, con VCC = 3.3 V y G = 1009 | **±1.635 mV** |
+| BITalino | `EMG(mV) = (ADC / 2¹⁰ − 0.5) · VCC · 1000 / G`, con VCC = 3.3 V y G = 1009 | **±1635 µV** |
 | Arduino + MyoWare 2.0 (modo RAW) | la misma expresión, con V_ref = 5 V y G = 200 | ±12.5 mV |
 
 > **Nota para quien compare registros de distintos cursos.** Hasta la versión
