@@ -24,12 +24,20 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.4.0 makes the **analysis panels say how to read them**: each
-title carries, on a second line, what it means that the curve rises or
-falls, and names the muscle when the panel shows one. The panels are
-numbered 1 to 12 from one table, the same in every practical; the two
-muscles' raw traces share panel 1 with an axis each, in the muscle's
-colour; panel 8 is a path through time. Nothing computed changes. See
+`emgteach` v3.5.0 is **the kit for the laboratory**: a BITalino the
+application simulates, so a practical can be prepared and taught where the
+board is not at hand; a connection diagnostic that answers why a station
+does not connect; the event log of every recording saved beside it, and a
+recovery for a recording whose process died before it could be closed. The
+session report and the CSV export are repaired — the table of contractions
+was losing four of its seven columns off the page — and the interface writes
+one decimal mark, the point, in both languages. See
+[`docs/RELEASE_NOTES_v3.5.0.md`](docs/RELEASE_NOTES_v3.5.0.md).
+
+v3.4.0 made the **analysis panels say how to read them**: each title
+carries, on a second line, what it means that the curve rises or falls, and
+names the muscle when the panel shows one. The panels are numbered 1 to 12
+from one table, the same in every practical. See
 [`docs/RELEASE_NOTES_v3.4.0.md`](docs/RELEASE_NOTES_v3.4.0.md).
 
 v3.3.0 read the **task maximum on the whole recording phase** —

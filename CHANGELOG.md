@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] — 2026-09-18
+
+**The kit for the laboratory: a board in software, a diagnostic for the
+station, and a recording that is not lost.** A simulated BITalino that speaks
+the board's protocol byte for byte, so a practical can be prepared and taught
+where the board is not at hand; a connection diagnostic that answers why a
+station does not connect; the event log of every recording saved beside it,
+and a recovery for a recording whose process died before it could be closed.
+The report and the CSV, which are what the student takes away, are repaired:
+the report's table of contractions was losing four of its seven columns off
+the page. A minor version — the definitions of 3.4.0 are unchanged, except
+where a fault is being repaired: the onset detector's resting level, the live
+Jonsson levels and a reference below 1e-4 mV. See
+[`docs/RELEASE_NOTES_v3.5.0.md`](docs/RELEASE_NOTES_v3.5.0.md).
+
 ### Added
 - **A BITalino in software.** Writing `simulada` (or `simulated`) as the BITalino address connects a board simulated by the application itself, with no Bluetooth: it speaks the board's protocol byte for byte — the version reply, the rate and start commands, frames with their sequence number and CRC — so the frame decoder, the acquisition, the calibration, the recording and the classroom broadcast run as with the board and can be tried in a laboratory where the board is not at hand. The signal is synthetic (a 12-second cycle of rest, flexion, extension and grip; an accelerometer that follows the first muscle) and the device calls itself "BITalino (simulated)" (`emgteach.devices.bitalino_sim`).
 - **The station's BITalino address in a text file.** A `bitalino.txt` next to the application, with the address on its first line that is neither blank nor a `#` comment, sets it for the station: the acquisition tab starts with it, says so in the log, and «Default» returns to it. Typed into the field, the address had to be typed again wherever the settings did not survive — another account, a reimaged PC, the application copied on a stick; the file travels with the application. It takes the forms the field takes: a MAC address, a COM port, `simulada`, or nothing to autodetect (`emgteach.station`).
@@ -627,7 +642,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.4.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/aagisto-maker/emgteach/compare/v3.4.0...v3.5.0
 [3.4.0]: https://github.com/aagisto-maker/emgteach/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/aagisto-maker/emgteach/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/aagisto-maker/emgteach/compare/v3.1.2...v3.2.0

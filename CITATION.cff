@@ -49,10 +49,15 @@ abstract: >-
   chosen, and draws each spectrum of panel 3 scaled to unit area. Version 3.4.0
   numbers the analysis panels 1 to 12 from one table, makes every title say
   how to read its panel, and draws the two muscles' raw traces on one panel
-  with an axis each; nothing computed changes.
+  with an axis each; nothing computed changes. Version 3.5.0 adds a
+  simulated BITalino that speaks the board's protocol, so a practical can be
+  prepared and taught without hardware, a connection diagnostic for the
+  station, an event log beside every recording and a recovery for a recording
+  whose process died; and it repairs the session report, whose table of
+  contractions lost four columns off the page, and the CSV export.
 type: software
-version: 3.4.0
-date-released: "2026-09-14"
+version: 3.5.0
+date-released: "2026-09-18"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
