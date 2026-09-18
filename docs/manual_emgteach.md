@@ -456,9 +456,11 @@ to the phones of the rest of the group, who **follow** in the browser with nothi
 to install. Tick **«Broadcast to phones (in the laboratory)»** in Acquisition: a
 local-network address `http://<PC-IP>:8070/?k=<code>`, a «Copy link» button and a
 **QR**. Each activation generates a new session code; old links expire. Followers
-see the envelope of each channel and the % MVC bar live, the calibration cues, and
-can download the session (CSV) and, after the operator's analysis, the report
-(PDF) and the results (CSV). Phones only watch; they cannot control the equipment.
+see the envelope of each channel and the % MVC bar live, the calibration cues, and,
+after the operator's analysis, can download the **report (PDF)** — the only download
+the page offers, because a CSV on a phone is a file a student does not open, and if
+they do they do not know what to look at. Phones only watch; they cannot control the
+equipment.
 
 ---
 
@@ -770,7 +772,7 @@ passes 100 %, the calibration was not maximal: repeat it.
 
 At each station one person connects and records; ticks **«Broadcast to phones (in
 the laboratory)»** and shares the link or the QR; the rest of the group follows and
-downloads the session, the report and the results on their phones.
+downloads the report on their phones.
 
 ---
 
