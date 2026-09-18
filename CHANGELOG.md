@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The deposit no longer offers an ECG profile that the interface does not.** The Zenodo description listed «an ECG signal profile alongside EMG, selectable through a profile registry» among the features: `get_profile` has no caller in the application, and no string of the interface names ECG. Since the practical fixes the configuration (3.0.0), the registry was left with no way in, and the sentence promised a reader something to look for and not find. The entry now says what there is — the limits of a signal live in one object, the application runs on the EMG one, and the ECG one is in the library. `CITATION.cff` describes it as what version 1.1.0 added, which it did, and is left alone.
+
 ## [3.5.0] — 2026-09-18
 
 **The kit for the laboratory: a board in software, a diagnostic for the
