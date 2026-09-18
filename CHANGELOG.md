@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **The two CSV downloads of the phone page.** The followers' page offered a «Raw session data (CSV)» button, which the browser itself wrote from what it had been drawing, and a «Download results (CSV)» link beside the report. A CSV on a phone is a file a student does not open, and if they do they do not know what to look at, so the report is now the only download the page offers — the page ignores any other kind it is sent, and the analysis tab no longer makes a CSV for the phones. What the teacher exports on the computer is untouched.
 - **A pytest cache directory committed by mistake** (`pytest-cache-files-*/`), now ignored.
 - **The accelerometer's channel diagnostic.** Its button lived in a container hidden in every practical since the accelerometer's input became part of the practical (muscle on A1, accelerometer on A2), so the dialog could not be opened; its texts still said the accelerometer went on A4. The selector the recording reads stays, hidden and set by the practical.
 - **The catalogue entries no code used any more**, and a test that fails when a key nothing asks for is left behind (`test_every_catalogue_entry_is_still_used`).
