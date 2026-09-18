@@ -911,10 +911,7 @@ class TestTheCalibrationHelpDescribesTheProtocolTheCodeRuns:
             set_language(anterior)
         p = EMG_PROFILE
         for x in (p.warmup_s, p.mvc_burst_s, MVC_READY_S, MVC_REST_S):
-            cifra = f"{x:g}"
-            if idioma == "es":
-                cifra = cifra.replace(".", ",")
-            assert f"{cifra} s" in cuerpo, cifra
+            assert f"{x:g} s" in cuerpo, x
         assert f" {p.mvc_bursts} " in cuerpo
         # The reference has no window: it is the envelope's highest point.
         assert ("highest point" if idioma == "en" else "punto más alto") in cuerpo

@@ -48,9 +48,22 @@ def get_language() -> str:
 
 
 def cifra(x: float) -> str:
-    """A number as the interface writes it: 1.5 in English, 1,5 in Spanish."""
-    texto = f"{x:g}"
-    return texto.replace(".", ",") if _LANG == "es" else texto
+    """A number as the interface writes it: the point, in both languages.
+
+    Spanish prose writes 1,5, and the handful of numbers that went
+    through here were written that way — while the hundred-odd formatted
+    inline (every percentage, every millivolt, every frequency) came out
+    as 1.5, and so did every field that takes a number typed in. One
+    screen with both marks reads worse than either of them alone: a
+    reader who has just seen 4,5 cannot tell whether 1,5 is one number
+    or two. The point is the one kept, because it is what the rest of
+    the interface already wrote and what those fields accept.
+
+    The CSV export is the deliberate exception (see
+    :func:`emgteach.exports.csv_dialect`): what reads it is a
+    spreadsheet, and one set to Spanish expects the comma.
+    """
+    return f"{x:g}"
 
 
 def tr(text: str) -> str:
@@ -210,7 +223,7 @@ _ES = {
     "why % MVC exists.":
         "amplitud media de la señal filtrada durante la contracción. El "
         "reposo son unas centésimas de milivoltio; un esfuerzo firme con "
-        "electrodos de superficie suele estar entre 0,1 y 1 mV, y depende de "
+        "electrodos de superficie suele estar entre 0.1 y 1 mV, y depende de "
         "los electrodos y de la piel: por eso existe el % CVM.",
     "the highest point of the contraction's envelope, as a share of the "
     "maximum. A task effort is usually 20–80 %; above 100 % (in red) the "
@@ -244,7 +257,7 @@ _ES = {
     "usual 80–170 Hz": "habitual 80–170 Hz",
     "usual 60–150 Hz": "habitual 60–150 Hz",
     "a task effort is usually 20–80 %": "un esfuerzo de tarea suele ser 20–80 %",
-    "rest ≈ 0.01 mV · effort 0.1–1 mV": "reposo ≈ 0,01 mV · esfuerzo 0,1–1 mV",
+    "rest ≈ 0.01 mV · effort 0.1–1 mV": "reposo ≈ 0.01 mV · esfuerzo 0.1–1 mV",
     # --- «?» texts per box (help_texts.py) ---
     "Choose the device and the port it appears on; on a laboratory computer "
     "this is set once and kept. The test identifier written here goes into "
@@ -2165,7 +2178,7 @@ _ES = {
         "índice compararía dos líneas de base, no un esfuerzo compartido. El "
         "suelo es el {floor} % de una referencia que es el pico de la "
         "envolvente: el mismo nivel sobre el reposo que el 5 % de la media "
-        "móvil de 0,2 s que era antes la referencia. Como los demás límites "
+        "móvil de 0.2 s que era antes la referencia. Como los demás límites "
         "de la práctica, está medido sobre un par del antebrazo (FCR y ECR): "
         "con otro par conviene comprobarlo.",
     'How to read the chart': 'Cómo leer el gráfico',

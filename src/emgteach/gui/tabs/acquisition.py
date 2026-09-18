@@ -45,7 +45,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
-    QDoubleSpinBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
@@ -73,6 +72,7 @@ from emgteach.devices import (
     create_device,
 )
 from emgteach.dsp import LiveQualityMonitor, process_offline
+from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
@@ -1099,7 +1099,7 @@ class AcquisitionTab(QWidget):
         k_l.setContentsMargins(0, 0, 0, 0)
         k_l.setSpacing(6)
         k_l.addWidget(QLabel("k:"))
-        self._spin_k = QDoubleSpinBox()
+        self._spin_k = DecimalSpinBox()
         self._spin_k.setRange(1.0, 10.0)
         self._spin_k.setSingleStep(0.5)
         self._spin_k.setValue(

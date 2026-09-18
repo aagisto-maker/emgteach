@@ -699,6 +699,21 @@ Self-contained and reproducible: the chosen graphs, the metrics, the calibration
 section, the contraction table and a footer with the program version and the
 date, saved next to the source EDF.
 
+### 6.4 Numbers: the decimal point, and the CSV
+
+The application writes numbers with a **decimal point** in both languages —
+`1.5 s`, `4.5 % MVC`, `k = 4.4` — and so do these documents. The language
+changes the words, not the notation: one screen carrying both marks reads worse
+than either of them alone. The fields where a number is typed show the point,
+and take the comma as well, because a Spanish keypad sends one.
+
+The **CSV export is the deliberate exception**: what reads it is a spreadsheet,
+not a person, so its dialect follows the interface's language. In English, a
+comma separator and a decimal point; in Spanish, a **semicolon separator and a
+decimal comma**, which is what Excel or LibreOffice set to Spanish expect — with
+the other combination they open the whole file in a single column. The file's
+first line says which of the two it carries.
+
 ---
 
 ## 7. Typical workflows

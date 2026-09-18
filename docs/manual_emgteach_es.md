@@ -151,15 +151,15 @@ transferencia tiene que dividir por su ganancia.
 
 | Plataforma | Conversión | Fondo de escala |
 |---|---|---|
-| BITalino | `EMG(mV) = (ADC / 2¹⁰ − 0,5) · VCC · 1000 / G`, con VCC = 3,3 V y G = 1009 | **±1,635 mV** |
-| Arduino + MyoWare 2.0 (modo RAW) | la misma expresión, con V_ref = 5 V y G = 200 | ±12,5 mV |
+| BITalino | `EMG(mV) = (ADC / 2¹⁰ − 0.5) · VCC · 1000 / G`, con VCC = 3.3 V y G = 1009 | **±1.635 mV** |
+| Arduino + MyoWare 2.0 (modo RAW) | la misma expresión, con V_ref = 5 V y G = 200 | ±12.5 mV |
 
 > **Nota para quien compare registros de distintos cursos.** Hasta la versión
 > anterior, la conversión de la placa BITalino trataba el canal como si el conversor
 > leyera el biopotencial directamente, y el fondo de escala resultante era
-> ±1,65 mV. El error pasó desapercibido porque la ganancia es casi 1000 y un
+> ±1.65 mV. El error pasó desapercibido porque la ganancia es casi 1000 y un
 > voltio son 1000 mV: los dos errores se cancelaban casi por completo. Las
-> amplitudes absolutas en milivoltios bajan un **0,90 %** respecto a las de antes.
+> amplitudes absolutas en milivoltios bajan un **0.90 %** respecto a las de antes.
 > **No cambia nada que sea un cociente**: el % CVM, los niveles APDF de Jonsson y
 > las pendientes de fatiga son idénticos. Sobre cómo distinguir unos registros de
 > otros, ver §6.1.
@@ -203,7 +203,7 @@ es más pequeño y siempre reproducible.
 | Ventana RMS | 50 ms | Cálculo de amplitud RMS |
 | Segmento de análisis de fatiga | 1 s (solape 50 %) | Ventanas para RMS/MDF en el tiempo |
 | Ventana de la referencia CVM | ninguna | La referencia es el punto más alto de la envolvente en las tres repeticiones de calibración (ver §5.1) |
-| Calibración | 3 × 1,5 s de esfuerzo máximo breve, tras 10 s de calentamiento | Lo que pide el asistente por músculo |
+| Calibración | 3 × 1.5 s de esfuerzo máximo breve, tras 10 s de calentamiento | Lo que pide el asistente por músculo |
 
 [Figura sugerida: cuatro trazados apilados del mismo tramo —en bruto, filtrado,
 rectificado y envolvente— para ilustrar la cadena de procesado.]
@@ -372,10 +372,10 @@ con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
 **Carga muscular (CVM en vivo)**
 - **La calibración es un asistente**, y siempre el mismo: 10 s de calentamiento
   con dos o tres contracciones suaves y, por músculo, **tres esfuerzos máximos
-  breves** de 1,5 s («¡Máximo, breve y fuerte!»), cada uno con su cuenta atrás
+  breves** de 1.5 s («¡Máximo, breve y fuerte!»), cada uno con su cuenta atrás
   y sus 2 s de descanso. Las tres contracciones mantenidas de 4 s que había
   antes se quitaron el 5 de septiembre de 2026: medida la referencia sobre el
-  pico de 0,2 s que se usaba entonces, una sacudida da el mismo número y cuesta
+  pico de 0.2 s que se usaba entonces, una sacudida da el mismo número y cuesta
   la cuarta parte de fatiga.
   En la práctica del par lo lanza el propio botón de grabar, antes de la tarea,
   y después escribe 5 s de preparación y el inicio del registro; en las otras dos
@@ -442,7 +442,7 @@ qué pide, y el «?» del cuadro los repite.
    marcadas / esperadas de cada tipo. Lo esperado sale de la práctica —6
    flexiones, 6 extensiones y 1 presa en el par; en cinemática, una por
    levantamiento marcado por el asistente; en la de un músculo, ninguno— y se
-   puede editar. El par abre en k = 4,4 y las demás en 3,0; la k usada queda en
+   puede editar. El par abre en k = 4.4 y las demás en 3.0; la k usada queda en
    el informe y en el CSV.
 2. **Cada contracción por turno**, con ◀ ▶ o pulsándola en el gráfico; se
    resalta sin que los ejes se muevan. **Mantener**, **Eliminar** (queda rayada
@@ -658,7 +658,7 @@ sesiones.
 > muestra, a 1000 Hz, en 1/90 de su altura. El máximo de la tarea y el pico de
 > cada contracción se miden igual, así que la comparación es con una sola vara.
 > Hasta la versión 3.1.2, incluida, la referencia era la media más alta de la
-> envolvente en 0,2 s, y antes en medio segundo, que se quedaba en la meseta de
+> envolvente en 0.2 s, y antes en medio segundo, que se quedaba en la meseta de
 > una contracción mantenida: los esfuerzos breves de la tarea alcanzan el pico
 > del principio, y superaban la referencia con la calibración bien hecha (135 %
 > en el banco).
@@ -719,9 +719,9 @@ disminuyen con el tiempo**.
   en las ventanas en que el músculo trabajaba**, y ajusta una recta a la MDF
   frente al tiempo (panel 7 del Análisis). El veredicto sigue a esa recta:
   - **Fatiga detectada**: pendiente negativa y una recta que explica algo
-    (R² ≥ 0,30) sobre al menos cuatro ventanas.
+    (R² ≥ 0.30) sobre al menos cuatro ventanas.
   - **No detectada**: la MDF se mantiene o sube, con una recta que ajusta.
-  - **No concluyente**: la recta no ajusta (R² < 0,30), o hay menos de cuatro
+  - **No concluyente**: la recta no ajusta (R² < 0.30), o hay menos de cuatro
     ventanas. Es lo normal en una serie de contracciones breves: el registro no
     responde a la pregunta, lo cual no es lo mismo que responder «no».
 - La fatiga solo tiene sentido sobre una contracción **mantenida** de algunas
@@ -804,7 +804,7 @@ cada músculo, con su reposo descontado, **por ventana**: una ventana es un grup
 de contracciones seguidas que la aplicación atribuyó al mismo músculo (o a los
 dos) en el editor de fragmentos. Sobre un registro entero que mezcla reposo,
 flexión y presa el índice produce un número que no mide nada; por eso se calcula
-por maniobra. Cuando uno de los dos músculos no llega al 4,5 % CVM de media en la
+por maniobra. Cuando uno de los dos músculos no llega al 4.5 % CVM de media en la
 ventana, la fila dice **«no se informa»** con su razón: en una flexión limpia el
 extensor calla, y decir «coactivación baja» sería inventar una medida. Con una
 presa firme, en cambio, los dos trabajan y el índice sale alto.
@@ -817,17 +817,17 @@ trabajan a la vez. Se prefirió a las dos alternativas evidentes. La cocontracci
 voluntaria («rigidice la muñeca sin moverla») también da número, pero es una
 instrucción artificial, sin función, que cada sujeto interpreta a su manera;
 sostener un peso con la muñeca neutra activa los dos músculos demasiado poco, con
-medias que rozan el suelo del 4,5 %. La presa es una tarea real que nadie tiene que
+medias que rozan el suelo del 4.5 %. La presa es una tarea real que nadie tiene que
 aprender, activa mucho los dos músculos y tiene lectura clínica inmediata.
 
 | Maniobra | Qué hacen los dos músculos | Qué da el índice |
 |---|---|---|
-| Flexiones | trabaja el flexor; el extensor no llega al suelo del 4,5 % | no se informa |
+| Flexiones | trabaja el flexor; el extensor no llega al suelo del 4.5 % | no se informa |
 | Extensiones | los papeles se intercambian | no se informa |
 | Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
 | Alternancia rápida | los dos trabajan, pero por turnos | número bajo |
 
-> **De dónde salen estos límites.** El suelo del 4,5 %, el criterio de separación
+> **De dónde salen estos límites.** El suelo del 4.5 %, el criterio de separación
 > entre canales y los rangos de la calibración están **medidos sobre el par del
 > antebrazo** (FCR y ECR) de este guion. Los cálculos no saben de anatomía —
 > trabajan sobre «canal 1» y «canal 2», y el par lo elige el docente—, pero esos
@@ -885,8 +885,8 @@ no un fallo.
 |---|---|---|
 | Frecuencia media (MNF) | 80–170 Hz | el grueso de la energía del EMG de superficie está entre 50 y 150 Hz; la MNF queda algo por encima de la MDF por la cola del espectro (Phinyomark, 2012) |
 | Frecuencia mediana (MDF) | 60–150 Hz; en el antebrazo, 90–150 | la misma banda; registros de emgteach: FCR y ECR entre 86 y 127 Hz con buen montaje, 176 Hz con el electrodo mal situado |
-| RMS en reposo | ≈ 0,005–0,02 mV | ruido de fondo del amplificador y la piel, ≥ 8 µV pico a pico en el mejor caso (McManus, 2020) |
-| RMS en esfuerzo | 0,1–1 mV; máximos hasta ~1,5 mV | electrodos de superficie sobre músculos de extremidad |
+| RMS en reposo | ≈ 0.005–0.02 mV | ruido de fondo del amplificador y la piel, ≥ 8 µV pico a pico en el mejor caso (McManus, 2020) |
+| RMS en esfuerzo | 0.1–1 mV; máximos hasta ~1.5 mV | electrodos de superficie sobre músculos de extremidad |
 | Esfuerzo de tarea | 20–80 % CVM | esfuerzos submáximos típicos |
 | Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones registradas con emgteach; aviso en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 % CVM; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
@@ -913,8 +913,8 @@ metodológica del autor).
 **El rango físico viaja en la cabecera.** Cada registro guarda su propio rango
 físico dentro del archivo EDF, y se relee con él. Ese valor es lo que distingue un
 registro de BITalino anterior a la corrección de ganancia de uno posterior:
-**1,65 mV** en los anteriores, **1,635 mV** en los corregidos (§2.4). Para llevar
-una amplitud antigua a la escala nueva, el factor es 1000/1009 = 0,99108.
+**1.65 mV** en los anteriores, **1.635 mV** en los corregidos (§2.4). Para llevar
+una amplitud antigua a la escala nueva, el factor es 1000/1009 = 0.99108.
 
 ### 6.2 Anotaciones (marcadores)
 
@@ -932,6 +932,21 @@ segundo y una sesión guiada escribe ráfagas de ellas.
 Los informes son **autocontenidos y reproducibles**: incluyen los gráficos
 elegidos, una tabla de métricas y un **pie con la versión del programa y la fecha**
 de generación, y se guardan automáticamente junto al EDF de origen.
+
+### 6.4 Los números: punto decimal, y el CSV
+
+La aplicación escribe los números con **punto decimal** en los dos idiomas
+—`1.5 s`, `4.5 % CVM`, `k = 4.4`—, y estos documentos hacen lo mismo. El idioma
+cambia las palabras, no la notación: una misma pantalla con las dos marcas se lee
+peor que cualquiera de ellas sola. Los campos donde se teclea un número muestran
+el punto, y aceptan la coma, porque el teclado numérico español la envía.
+
+La **exportación CSV es la excepción, a propósito**: la lee una hoja de cálculo,
+no una persona, así que sigue el idioma de la interfaz. En inglés, coma de
+separador y punto decimal; en español, **punto y coma de separador y coma
+decimal**, que es lo que esperan Excel o LibreOffice configurados en español
+—con la otra combinación abren el archivo entero en una sola columna—. La
+primera línea del archivo dice cuál de las dos lleva.
 
 ---
 
@@ -1098,7 +1113,7 @@ extensor; y revisar en «Repeticiones de la
 calibración…» si alguna repetición floja está bajando la referencia (§5.1).
 
 **La tabla de coactivación dice «no se informa».** Uno de los dos músculos no
-llegó al 4,5 % CVM de media en esa ventana: en una flexión o una extensión limpias
+llegó al 4.5 % CVM de media en esa ventana: en una flexión o una extensión limpias
 es la respuesta correcta. Para que el índice dé número hace falta una maniobra
 en que los dos trabajen, como una presa firme (§5.7).
 

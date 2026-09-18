@@ -62,7 +62,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
-    QDoubleSpinBox,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -81,6 +80,7 @@ from PySide6.QtWidgets import (
 from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.coactivation import _DOMINANCE, propose_labels
 from emgteach.dsp import process_offline
+from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.i18n import tr
 from emgteach.selection import (
@@ -656,7 +656,7 @@ class FragmentSelectionDialog(QDialog):
         fino.setHorizontalSpacing(8)
         fino.setVerticalSpacing(4)
         fino.addWidget(QLabel(tr("Minimum duration (s)")), 0, 0)
-        self._spin_min = QDoubleSpinBox()
+        self._spin_min = DecimalSpinBox()
         self._spin_min.setRange(0.1, 3.0)
         self._spin_min.setSingleStep(0.1)
         self._spin_min.setDecimals(1)
@@ -664,7 +664,7 @@ class FragmentSelectionDialog(QDialog):
         self._spin_min.valueChanged.connect(self._on_fine)
         fino.addWidget(self._spin_min, 0, 1)
         fino.addWidget(QLabel(tr("Join gaps shorter than (s)")), 0, 2)
-        self._spin_gap = QDoubleSpinBox()
+        self._spin_gap = DecimalSpinBox()
         self._spin_gap.setRange(0.0, 2.0)
         self._spin_gap.setSingleStep(0.1)
         self._spin_gap.setDecimals(1)
@@ -880,8 +880,8 @@ class FragmentSelectionDialog(QDialog):
             "dur": dur_item, "label": combo_nombre,
         })
 
-    def _make_spin(self, value: float) -> QDoubleSpinBox:
-        spin = QDoubleSpinBox()
+    def _make_spin(self, value: float) -> DecimalSpinBox:
+        spin = DecimalSpinBox()
         spin.setRange(self._span[0], max(self._span[1], value))
         spin.setDecimals(2)
         spin.setSingleStep(0.1)

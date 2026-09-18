@@ -166,7 +166,7 @@ def bloque_parametros() -> str:
             valor = m.group(1) if m else "?"
         traducido = i18n._ES.get(en)
         rotulo = traducido if traducido else "—"
-        v = str(valor).replace(".", ",")
+        v = str(valor)
         filas.append(f"| {en} | {rotulo} | {v} | {unidad} | {donde} | "
                      f"`{rel(ruta)}:{n}` |")
     return "\n".join(filas)

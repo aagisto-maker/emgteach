@@ -105,7 +105,7 @@ class TestTheCalibrationIsComparedWithRest:
         tab._mvc_check_is_a_maximum(0, 0.015)
         added = tab._logger.toPlainText()[len(before):]
         assert "⚠" in added
-        assert "0.015" in added or "0,015" in added
+        assert "0.015" in added
 
     @pytest.mark.gui
     def test_a_genuine_maximum_passes_in_silence(self, tab) -> None:
