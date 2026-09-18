@@ -2099,15 +2099,14 @@ class AnalysisTab(QWidget):
         )
 
     def _ofrecer_descargas(self, r: dict) -> None:
-        """Put the report and the results on the phones as soon as there are any.
+        """Put the report on the phones as soon as there is one.
 
-        The phones used to offer only the live session as CSV, unless the
-        teacher happened to generate a report while broadcasting. A CSV gives a
-        pharmacy student little: she will not open it, and if she does she will
-        not know what to look at. The report is what is worth taking home —
-        the panels, the tables and the verdict in words. So each analysis, with
-        the broadcast on, makes both and offers them, the report first; the
-        file the teacher saves by hand is untouched.
+        A CSV gives a student little: they will not open it, and if they do
+        they will not know what to look at. The report is what is worth
+        taking home — the panels, the tables and the verdict in words — so
+        it is the only thing the phones are offered, and the page ignores
+        anything else. The report made here is for the phones alone: what
+        the teacher saves or exports by hand is untouched.
         """
         if not self._broadcast_on() or r is not self._last_result:
             return
@@ -2127,13 +2126,6 @@ class AnalysisTab(QWidget):
                     tr("The report for the phones could not be made: {error}")
                     .format(error=exc)
                 )
-            csv = Path(tmp) / f"{base}_analisis_emg.csv"
-            try:
-                write_analysis_csv(r, csv)
-                self._bcast_download("csv", "/dl/resultados.csv", csv.read_bytes(),
-                                     "text/csv", csv.name)
-            except Exception:  # pragma: no cover — the PDF is the one that matters
-                pass
 
     # ------------------------------------------------------------------
     # Numeric summary

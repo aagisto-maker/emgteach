@@ -192,22 +192,21 @@ class TestThePhonesGetTheReport:
         def informe(out, r, meta, panels=None, time_range=None):
             Path(out).write_bytes(b"%PDF-1.4 prueba")
 
-        def csv(r, ruta):
-            Path(ruta).write_text("t_s,rms_mv\n", encoding="utf-8")
-
         monkeypatch.setattr(mod, "build_session_report", informe)
-        monkeypatch.setattr(mod, "write_analysis_csv", csv)
         ana._resultado_prueba = {"edf_path": str(tmp_path / "P03.edf")}
         ana._last_result = ana._resultado_prueba
         return ana
 
-    def test_each_analysis_offers_the_report_first(self, ana, monkeypatch) -> None:
+    def test_each_analysis_offers_the_report_and_nothing_else(
+        self, ana, monkeypatch
+    ) -> None:
+        """A CSV on a phone is a file a student does not open."""
         dif = _Difusion()
         monkeypatch.setattr(ana, "_broadcast", dif)
         ana._ofrecer_descargas(ana._resultado_prueba)
         tipos = [m["kind"] for m in dif.mensajes if m.get("t") == "download"]
-        assert tipos[0] == "report"
-        assert "csv" in tipos
+        assert tipos == ["report"]
+        assert len(dif.descargas) == 1
         _ruta, tipo, nombre = dif.descargas[0]
         assert tipo == "application/pdf"
         assert nombre.startswith("P03")
@@ -227,12 +226,16 @@ class TestThePhonesGetTheReport:
         ana._ofrecer_descargas({"edf_path": "otro.edf"})
         assert dif.descargas == []
 
-    def test_the_phone_page_puts_the_report_before_the_csv(self) -> None:
+    def test_the_phone_page_offers_the_report_and_no_csv(self) -> None:
+        """Neither the results one nor the session the browser recorded."""
         from emgteach.broadcast import _load_dashboard_html
 
         html = _load_dashboard_html().decode("utf-8")
-        assert html.index('id="results"') < html.index('id="tools"')
-        assert "box.prepend(a)" in html
+        assert "dlReport" in html
+        for rastro in ("btnCsv", "csvFile", "dlResults", "downloadSessionCsv",
+                       "sessionRows", "text/csv"):
+            assert rastro not in html, rastro
+        assert 'if (m.kind !== "report") return;' in html
         assert "El informe en PDF aparecerá aquí" in html
 
 

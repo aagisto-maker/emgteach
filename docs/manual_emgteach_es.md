@@ -621,12 +621,13 @@ sirve la práctica, no un ajuste fino.
 - La **envolvente** de cada canal en tiempo real y la **barra de % CVM** con sus
   zonas de color; el estado de **grabación** y el guiado de **calibración CVM**
   (preparar/mantener/relajar) reflejado en su móvil.
-- Botón **⬇️ Descargar sesión (CSV)** para guardar en su teléfono lo mostrado en
-  vivo (tiempo, envolvente, % CVM y marcadores).
 - Bloque **📊 Resultados del análisis**: cuando el operador/a ejecuta el análisis
   desconectado, sus **métricas** (MNF, MDF, pendiente, RMS, iEMG, fatiga) se envían
-  a los móviles, junto con **⬇️ Descargar informe (PDF)** y **⬇️ Descargar
-  resultados (CSV)** en cuanto el operador/a los genera o exporta.
+  a los móviles, y con ellas **⬇️ Descargar informe (PDF)**. Hasta entonces, un aviso
+  dice que el informe aparecerá ahí en cuanto se analice el registro.
+- El informe es **la única descarga** del móvil: un CSV en un teléfono es un archivo
+  que el alumnado no abre, y si lo abre no sabe qué mirar. Los CSV se exportan desde
+  el PC, en la pestaña Análisis.
 
 > **Arquitectura.** La placa BITalino usa Bluetooth *punto a punto* (un dispositivo por
 > tarjeta): por eso **un** PC posee el enlace Bluetooth y **re‑difunde** por la red a
@@ -634,7 +635,7 @@ sirve la práctica, no un ajuste fino.
 > equipo ni alterar la grabación (vista de solo lectura).
 
 [Figura sugerida: móvil de un alumno mostrando la página de seguimiento con la
-envolvente, la barra de % CVM y el botón de descarga de sesión.]
+envolvente, la barra de % CVM y el botón de descarga del informe.]
 
 ---
 
@@ -1044,9 +1045,8 @@ Los umbrales de esos avisos están en el perfil de señal, no en la interfaz.
    grupo, con el botón de copiar el enlace o mostrando el **QR** (todos en la misma
    Wi‑Fi).
 3. El resto del grupo abre esa dirección en el móvil y **sigue** la señal, la
-   calibración y las marcas. Al terminar, cada alumno/a puede **descargar la sesión
-   (CSV)** y, tras el análisis del operador/a, el **informe y los resultados** en su
-   teléfono.
+   calibración y las marcas. Tras el análisis del operador/a, cada alumno/a se
+   descarga el **informe en PDF** en su teléfono.
 
 La casilla está a la vista en los tres modos, así que este flujo se superpone a
 cualquiera de los tres anteriores.
@@ -1221,9 +1221,10 @@ antiguos caducan en cuanto esa difusión se detiene.
 **Los seguidores no ven la señal.** Deben conectarse **después** de activar la
 difusión y con una **grabación en curso**: la vista se actualiza al llegar datos.
 
-**No aparecen los resultados ni las descargas en el móvil.** Los resultados se
-envían cuando el operador/a **ejecuta el análisis**, y el PDF o el CSV cuando los
-genera o exporta en la pestaña Análisis, con la difusión activa.
+**No aparecen los resultados ni el informe en el móvil.** Los dos se envían cuando
+el operador/a **ejecuta el análisis** con la difusión activa: las métricas primero y
+el PDF en cuanto está hecho. El informe del móvil lo prepara la propia aplicación,
+de modo que no hace falta generarlo a mano.
 
 ### Software e instalación
 
