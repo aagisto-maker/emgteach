@@ -77,9 +77,11 @@ class MvcOverlay(QFrame):
     _STEP_GAP = 5
     _STEP_TOP_GAP = 12
 
-    #: The bar that runs a hold, in the phase box.
+    #: The bar that runs a hold, in the phase box, and the load bars under it.
     _RUN_H = 14
     _RUN_GAP = 12
+    _LOAD_H = 12
+    _LOAD_GAP = 6
 
     #: Type size of the message band, and the room around it.
     _SUB_PT = 12
@@ -123,6 +125,9 @@ class MvcOverlay(QFrame):
         self._steps: list[list] = []
         self._running: float | None = None   # a hold in progress, 0..1
         self._waiting: float | None = None   # a countdown in progress, 0..1
+        #: ``(fraction, colour)`` per muscle, and the band being aimed for.
+        self._loads: list[tuple[float, tuple[int, int, int]]] = []
+        self._zone: tuple[float, float] | None = None
         self.resize(self._W, self._H)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.hide()
@@ -181,6 +186,7 @@ class MvcOverlay(QFrame):
         """
         self._mode = "ready"
         self._running = None
+        self._loads = []
         self._waiting = (None if waiting is None
                          else max(0.0, min(1.0, float(waiting))))
         self._title = title
@@ -196,6 +202,7 @@ class MvcOverlay(QFrame):
         self._mode = "contract"
         self._waiting = None
         self._running = None
+        self._loads = []
         self._title = title
         self._count = f"{secs_left:.0f}"
         self._progress = max(0.0, min(1.0, progress))
@@ -208,6 +215,7 @@ class MvcOverlay(QFrame):
         self._mode = "relax"
         self._waiting = None
         self._running = None
+        self._loads = []
         self._title = ""
         self._subtitle = subtitle
         self._present()
@@ -221,12 +229,15 @@ class MvcOverlay(QFrame):
         self._mode = "action"
         self._waiting = None
         self._running = None
+        self._loads = []
         self._title = word
         self._subtitle = subtitle
         self._present()
 
     def show_phase(self, title: str, subtitle: str = "", *,
-                   running: float | None = None) -> None:
+                   running: float | None = None,
+                   loads: list[tuple[float, tuple[int, int, int]]] | None = None,
+                   zone: tuple[float, float] | None = None) -> None:
         """A phase of the session: what to do, the map, and a hold if there is one.
 
         The box the free manoeuvres and the grip are guided by. It is short
@@ -235,6 +246,13 @@ class MvcOverlay(QFrame):
 
         *running* is a hold in progress, 0..1, drawn as a bar that fills with
         the clock; ``None`` for a phase nobody is timing.
+
+        *loads* is what each muscle is reading right now, as a share of its
+        own reference and in its own colour, and *zone* the band being aimed
+        for. **They are here because the box would otherwise be over them**:
+        the practical guide tells the student to hold the grip «guiándose
+        por la barra de carga hacia el 50–60 %», and the panel floats where
+        those bars are. The same information, where the eyes already are.
         """
         self._set_image(None)
         self._mode = "phase"
@@ -243,6 +261,8 @@ class MvcOverlay(QFrame):
         self._subtitle = subtitle
         self._running = (None if running is None
                          else max(0.0, min(1.0, float(running))))
+        self._loads = list(loads or [])
+        self._zone = zone
         self._present()
 
     def show_done(self, title: str, subtitle: str) -> None:
@@ -250,6 +270,7 @@ class MvcOverlay(QFrame):
         self._mode = "done"
         self._waiting = None
         self._running = None
+        self._loads = []
         self._title = title
         self._subtitle = subtitle
         self._present()
@@ -342,6 +363,12 @@ class MvcOverlay(QFrame):
         """How far the message moves down for the hold bar, if there is one."""
         return 0 if self._running is None else self._RUN_H + self._RUN_GAP
 
+    def _loads_extra(self) -> int:
+        """And for the load bars, one per muscle."""
+        if not self._loads:
+            return 0
+        return len(self._loads) * (self._LOAD_H + self._LOAD_GAP) + self._LOAD_GAP
+
     def _image_extra(self) -> int:
         """How far the message moves down for the picture, if there is one."""
         return 0 if self._pixmap.isNull() else self._pixmap.height() + self._IMG_GAP
@@ -367,7 +394,7 @@ class MvcOverlay(QFrame):
     def _mensaje_top(self) -> int:
         return (self._TOP.get(self._mode, 152) + self._title_extra()
                 + self._waiting_extra() + self._image_extra()
-                + self._running_extra())
+                + self._running_extra() + self._loads_extra())
 
     def text_height(self, text: str | None = None) -> int:
         """Height the message needs, wrapped, at the panel's own width."""
@@ -427,10 +454,17 @@ class MvcOverlay(QFrame):
             self._title_band(p, colour=_OK)
         elif self._mode == "phase":
             self._title_band(p, colour=_FG)
+            y = self._TOP["phase"] + d + self._RUN_GAP // 2
             if self._running is not None:
-                y = self._TOP["phase"] + d + self._RUN_GAP // 2
                 self._bar(p, 24, y, w - 48, self._RUN_H, self._running,
                           _EFFORT, peak=None)
+                y += self._RUN_H + self._RUN_GAP
+            for frac, colour in self._loads:
+                self._bar(p, 24, y, w - 92, self._LOAD_H, frac,
+                          QColor(*colour), zone=self._zone)
+                self._text(p, f"{frac * 100:.0f} %", w - 64, y - 3, 44,
+                           self._LOAD_H + 6, 9, colour=QColor(*colour))
+                y += self._LOAD_H + self._LOAD_GAP
 
         # The footer row, last of the layout and first of what is looked at
         # while the work is being done.
@@ -490,11 +524,19 @@ class MvcOverlay(QFrame):
             flags |= int(Qt.AlignmentFlag.AlignVCenter)
         p.drawText(x, y, w, h, flags, text)
 
-    def _bar(self, p, x, y, w, h, frac, colour, peak=None) -> None:
+    def _bar(self, p, x, y, w, h, frac, colour, peak=None, zone=None) -> None:
         frac = max(0.0, min(1.0, frac))
         p.setPen(QPen(QColor(110, 110, 120), 1))
         p.setBrush(QColor(45, 45, 55))
         p.drawRoundedRect(x, y, w, h, 4, 4)
+        if zone is not None:
+            # The band being aimed for, behind the fill: a target that is a
+            # range is drawn as a range.
+            lo, hi = (max(0.0, min(1.0, z)) for z in zone)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(255, 255, 255, 38))
+            p.drawRect(x + 1 + int((w - 2) * lo), y + 1,
+                       max(1, int((w - 2) * (hi - lo))), h - 2)
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(colour)
         fill_w = int((w - 2) * frac)

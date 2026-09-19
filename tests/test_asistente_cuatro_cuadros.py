@@ -335,3 +335,45 @@ class TestWhatTheRehearsalFound:
         adq._coact_tick()
         assert adq._coact_fase == "hold"
         assert sorted(pedidos) == [(0, 0.4), (1, 0.4)], pedidos
+
+
+class TestTheGripBoxDoesNotHideWhatItTellsYouToWatch:
+    """El cuadro flota justo encima de las barras de carga, y el guion manda
+    mirarlas: «manténgalo firme pero submáximo, **guiándose por la barra de
+    carga hacia el 50-60 %**». Un panel que esconde aquello a lo que apunta la
+    instrucción es peor que ningún panel, así que las lleva dentro.
+    """
+
+    def test_the_hold_shows_each_muscle_in_its_own_colour(self, adq) -> None:
+        from emgteach.gui.tabs.acquisition import COACT_ZONA
+
+        adq._n_channels = 2
+        adq._guia_coactivacion()
+        adq._coact_fase = "hold"
+        adq._carga_inst = [55.0, 48.0] + [0.0] * (len(adq._carga_inst) - 2)
+        adq._coact_elapsed = 1.0
+        adq._coact_tick()
+        ov = adq._mvc_overlay
+        assert len(ov._loads) == 2
+        assert ov._loads[0] == (pytest.approx(0.55), _CHANNEL_COLORS[0])
+        assert ov._loads[1] == (pytest.approx(0.48), _CHANNEL_COLORS[1])
+        assert ov._zone == COACT_ZONA, "la banda a la que se apunta"
+
+    def test_and_nothing_else_carries_them(self, adq) -> None:
+        """Solo la presa: en las demás fases el cuadro no tapa esas barras."""
+        adq._n_channels = 2
+        adq._guia_maniobras(0)
+        assert adq._mvc_overlay._loads == []
+        adq._mvc_overlay.show_relax("x")
+        assert adq._mvc_overlay._loads == []
+
+    def test_the_box_stays_off_the_plots(self, adq) -> None:
+        """Lo que no puede tapar sigue sin taparlo: las dos gráficas son lo que
+        la figura 5 del artículo captura, y el alumno trabaja sobre ellas."""
+        adq._n_channels = 2
+        adq._guia_coactivacion()
+        adq._coact_fase = "hold"
+        adq._coact_elapsed = 1.0
+        adq._coact_tick()
+        ov = adq._mvc_overlay
+        assert ov.y() + ov.height() <= adq._grp_plots.geometry().top()

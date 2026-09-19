@@ -179,12 +179,27 @@ MANIOBRAS_POR_MUSCULO = 6
 MANIOBRA_CADA_S = 3.0
 
 #: And the manoeuvre that works both at once, last so its fatigue does not
-#: reach the others. Three holds with a pause between, which the analysis
-#: reads as a single window because consecutive fragments with the same
-#: name are grouped. The numbers are the practical guide's.
-COACT_REPS = 3
-COACT_HOLD_S = 5.0
+#: reach the others: **one hold of about eight seconds**.
+#:
+#: Measured, not chosen. The wizard guided three holds of five seconds for
+#: a day, because the practical guide offers that as a way of getting more
+#: signal; but the bench recording the article's co-activation figures come
+#: from has **one** grip window — 92.9 to 100.2 s of
+#: ``P01_2026-09-06_09-53 2``, both muscles together the whole way — and
+#: the manuscript and the ethics committee's forms both describe one hold
+#: of about eight seconds. Guiding three would have been guiding a
+#: different protocol from the one that produced the numbers.
+#:
+#: Repeating it is still what the guide says it is: consecutive fragments
+#: with the same name are grouped into one window by the analysis, so a
+#: second hold costs nothing. It is one number here the day that changes.
+COACT_REPS = 1
+COACT_HOLD_S = 8.0
 COACT_REST_S = 2.0
+
+#: The band the grip is aimed at, as a share of each muscle's own maximum:
+#: «firme pero submáximo, guiándose por la barra de carga hacia el 50–60 %».
+COACT_ZONA = (0.50, 0.60)
 
 #: The co-activation manoeuvre's colour in the map of the phase. The two
 #: muscles have theirs (``_CHANNEL_COLORS``) and this belongs to neither;
@@ -557,6 +572,10 @@ class AcquisitionTab(QWidget):
         self._man_grupo = 0
         self._man_hechas = [0, 0]
         self._coact_rep = 0
+        #: What each muscle is reading right now, as a % of its own
+        #: reference. The load bars show it, and so does the guide's box
+        #: while it is floating over them.
+        self._carga_inst = [0.0] * MAX_CHANNELS
         self._coact_fase = ""
         self._coact_elapsed = 0.0
         self._coact_timer = QTimer(self)
@@ -3155,6 +3174,7 @@ class AcquisitionTab(QWidget):
             # follows the contraction force; the P10/P50/P90 readout below uses
             # the running OnlineLoad statistics.
             inst = float(np.mean(pct)) if pct.size else 0.0
+            self._carga_inst[c] = inst
             self._load_bars[c].set_value(inst, active=True)
 
     # -- Guided MVC-calibration wizard ---------------------------------------
@@ -3730,7 +3750,16 @@ class AcquisitionTab(QWidget):
                 self._pedir_al_sujeto({0: 0.4, 1: 0.4})
         elif self._coact_fase == "hold":
             frac = min(1.0, self._coact_elapsed / COACT_HOLD_S)
-            self._mvc_overlay.show_phase(titulo, pista, running=frac)
+            # With the load bars inside it, because it is floating over
+            # them: the guide tells the student to hold this one «guiándose
+            # por la barra de carga hacia el 50–60 %», and a panel that
+            # hides the thing the instruction points at is worse than no
+            # panel. Same numbers, same colours, where the eyes already are.
+            self._mvc_overlay.show_phase(
+                titulo, pista, running=frac,
+                loads=[(self._carga_inst[c] / 100.0, _CHANNEL_COLORS[c])
+                       for c in range(min(2, self._n_channels))],
+                zone=COACT_ZONA)
             self._bcast_calib(True, "contract", titulo, pista, progress=frac)
             if self._coact_elapsed >= COACT_HOLD_S:
                 self._pedir_al_sujeto({})

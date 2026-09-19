@@ -449,11 +449,13 @@ por extender la muñeca.
    - Apretar algo que no se deforme y dé una postura repetible: un manguito de
      tensión enrollado, una pelota de tenis o una toalla apretada. Con
      dinamómetro de mano, mejor, porque además cuantifica el esfuerzo.
-   - «Cierre el puño con fuerza y manténgalo» **5 s**, firme pero submáximo,
+   - «Cierre el puño con fuerza y manténgalo» **8 s**, firme pero submáximo,
      guiándose por la barra de carga hacia el 50–60 %. **Nunca «extienda la
-     muñeca»**: los extensores tienen que entrar solos.
-   - Tres presas de 5 s separadas por 2 s dan más señal y siguen contando como una
-     sola ventana, porque las filas seguidas con el mismo nombre se agrupan.
+     muñeca»**: los extensores tienen que entrar solos. La aplicación guía esos
+     ocho segundos con su reloj y enseña las dos barras de carga dentro del
+     propio cuadro, que es donde hay que mirar mientras se aprieta.
+   - Repetirla da más señal y sigue contando como una sola ventana, porque las
+     filas seguidas con el mismo nombre se agrupan; el asistente guía una.
    - Va la última, para que su fatiga no contamine las flexiones ni las
      extensiones.
 4. **Detener**. En Análisis, revisar las repeticiones y aceptar los fragmentos:
