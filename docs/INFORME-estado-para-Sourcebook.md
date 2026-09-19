@@ -3,7 +3,7 @@
 Escrito el 5 de septiembre de 2026 sobre `main`, después de publicar la versión
 3.0.0, y actualizado a la **3.1.0**, a la **3.1.1** y a la **3.1.2** tras publicarlas, el 13 de
 septiembre, y a la **3.2.0**, a la **3.3.0** y a la **3.4.0** el 14 de septiembre, y a la
-**3.5.0** el 18 de septiembre.
+**3.5.0** el 18 de septiembre y a la **3.6.0** el 19.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
 Los textos de pantalla están **copiados literalmente** de
@@ -22,37 +22,83 @@ Donde algo no está hecho o no lo sé, lo dice.
 | | |
 |---|---|
 | Rama | `main` |
-| **Versión que describe el artículo** | `v3.5.0`, publicada el 18 de septiembre de 2026 |
-| DOI de esa versión | 10.5281/zenodo.22832544 |
+| **Versión que describe el artículo** | `v3.6.0`, publicada el 19 de septiembre de 2026 |
+| DOI de esa versión | 10.5281/zenodo.22842108 |
 | DOI de concepto | 10.5281/zenodo.21002297 |
-| Commit de la etiqueta | `826c920` |
-| Pruebas en la etiqueta | **1205 recogidas, 1204 pasan y 1 se salta** |
-| Versiones anteriores | `v3.4.0` (10.5281/zenodo.22756263, etiqueta en `b7a9183`, 1121 pruebas) · `v3.3.0` (10.5281/zenodo.22750425, `85d6875`, 1093 pruebas) · `v3.2.0` (10.5281/zenodo.22744748, `b5ad8b7`, 1081 pruebas) · `v3.1.2` (10.5281/zenodo.22736393, `8367f1f`, 1078 pruebas) · `v3.1.1` (10.5281/zenodo.22734612, `aeb580d`, 1074 pruebas) · `v3.1.0` (10.5281/zenodo.22733151, `927eeff`, 1064 pruebas) · `v3.0.0` (10.5281/zenodo.22365602, `155fb07`, 940 pruebas) |
+| Commit de la etiqueta | `6ab25d8` |
+| Pruebas en la etiqueta | **1217 recogidas, 1216 pasan y 1 se salta** |
+| Versiones anteriores | `v3.5.0` (10.5281/zenodo.22832544, etiqueta en `826c920`, 1205 pruebas) · `v3.4.0` (10.5281/zenodo.22756263, `b7a9183`, 1121 pruebas) · `v3.3.0` (10.5281/zenodo.22750425, `85d6875`, 1093 pruebas) · `v3.2.0` (10.5281/zenodo.22744748, `b5ad8b7`, 1081 pruebas) · `v3.1.2` (10.5281/zenodo.22736393, `8367f1f`, 1078 pruebas) · `v3.1.1` (10.5281/zenodo.22734612, `aeb580d`, 1074 pruebas) · `v3.1.0` (10.5281/zenodo.22733151, `927eeff`, 1064 pruebas) · `v3.0.0` (10.5281/zenodo.22365602, `155fb07`, 940 pruebas) |
 | Análisis estático | `ruff check .` limpio |
 
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leen del **código de `main` en el momento de generarlos**. En esta
-actualización `main` coincide con la etiqueta `v3.5.0` en todo `src/`: lo que
-va detrás de la etiqueta es el DOI de versión de `CITATION.cff`, la descripción
-del depósito, dos pruebas que esperaban por reloj y este informe. Así que lo que
-dicen los bloques es lo que hace la versión publicada. Lo que cambió de la 3.4.0
-a la 3.5.0 está en el apartado 1.0, de la 3.3.0 a la 3.4.0 en el 1.1, de la
-3.2.0 a la 3.3.0 en el 1.2, de la 3.1.2 a la 3.2.0 en el 1.3, de la 3.1.1 a la
-3.1.2 en el 1.4, de la 3.1.0 a la 3.1.1 en el 1.5, y de la 3.0.0 a la 3.1.0 en
-el 1.6.
+actualización `main` coincide con la etiqueta `v3.6.0` en todo `src/`: lo único
+que va detrás de la etiqueta es el DOI de versión de `CITATION.cff` y este
+informe. Así que lo que dicen los bloques es lo que hace la versión publicada.
+Lo que cambió de la 3.5.0 a la 3.6.0 está en el apartado 1.0, de la 3.4.0 a la
+3.5.0 en el 1.1, de la 3.3.0 a la 3.4.0 en el 1.2, de la 3.2.0 a la 3.3.0 en el
+1.3, de la 3.1.2 a la 3.2.0 en el 1.4, de la 3.1.1 a la 3.1.2 en el 1.5, de la
+3.1.0 a la 3.1.1 en el 1.6, y de la 3.0.0 a la 3.1.0 en el 1.7.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:163`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
 propio panel, así que no puede provocar el crecimiento que esa prueba vigila.
 
-La versión etiquetada para el depósito es **3.5.0**, y es la que describe el
+La versión etiquetada para el depósito es **3.6.0**, y es la que describe el
 artículo. Las publicaciones de GitHub no llevan ejecutable de Windows ya
 compilado: un ejecutable de PyInstaller sin firmar hace saltar el antivirus al
 descargarlo (un falso positivo conocido), así que la versión se distribuye como
-código fuente (apartado 1.10). El ejecutable se sigue pudiendo compilar desde la
+código fuente (apartado 1.11). El ejecutable se sigue pudiendo compilar desde la
 etiqueta con la receta de `packaging/`.
 
-### 1.0 De la 3.4.0 a la 3.5.0
+### 1.0 De la 3.5.0 a la 3.6.0
+
+Una versión menor con una sola cosa dentro (PR #67): **la placa simulada obedece a la
+calibración**. Ningún cálculo cambia y ningún registro hecho con la placa se lee distinto; lo
+que cambia es lo que enseña un ensayo sin hardware.
+
+**Qué pasaba.** El sujeto sintético repite un ciclo fijo de 12 s que arranca al conectar
+—flexión del primer músculo, extensión del segundo, presa con los dos— y **nunca llega a la
+activación plena**: 0.50, 0.50 y 0.40 del máximo de cada músculo. No leía nada de la
+aplicación, así que la ventana de calibración caía donde estuviera el ciclo: en reposo la
+mitad del tiempo, o en un flanco, que pasa sin el aviso de «calibración débil» y deja una
+referencia a medio camino. La tarea leía entonces **por encima del 100 % de la CVM**, y una
+práctica ensayada sin placa enseñaba lo contrario de lo que la práctica quiere enseñar.
+
+**Qué se hizo.** El asistente ya sabe cuándo pide un máximo, porque abre un tramo `CAL` y lo
+cierra; ahora se lo dice también al dispositivo. `AcquisitionDevice.instruct(channel_index,
+level)` no hace nada por omisión —una placa no manda sobre lo que hace la persona conectada a
+ella— y no es abstracto, para que ningún otro backend tenga que escribir un método vacío.
+`BitalinoDevice` lo reenvía al puerto solo cuando la dirección es la simulada. Mientras se
+pide un esfuerzo a un músculo, el sujeto lo da entero y el otro descansa —que es el gesto que
+pide la instrucción—, y nada toca el reloj, de modo que el ciclo sigue donde iba cuando se
+deja de pedir.
+
+**Qué da ahora un ensayo**, medido sobre la envolvente de la propia aplicación:
+
+| | primer músculo | segundo músculo |
+|---|---|---|
+| referencia, como fracción del máximo de ese músculo | 0.67 | 0.69 |
+| máximo de la tarea, en % CVM | 53 % | 54 % |
+
+La referencia no es la desviación típica del músculo porque la envolvente de una señal
+gaussiana vale menos que ella (rectificada da σ·√(2/π), y el paso-bajo la suaviza más). Lo que
+importa es que la tarea lee alrededor de la mitad que pide el ciclo, con holgura, en lugar de
+más que el máximo. Y el **índice de coactivación de la presa simulada sale 81 %**, frente al
+20 % de la flexión y el 33 % de la extensión: la forma de las cifras de banco de esta práctica
+(apartado 8.2), que es lo que un ensayo debería enseñar.
+
+**Lo demás de la versión** no toca la aplicación: dos pruebas que esperaban por reloj a que
+otro hilo hiciera algo —y fallaban en los runners cargados con un índice fuera de rango que
+parecía un worker roto— esperan ahora al suceso, y la descripción del depósito en Zenodo deja
+de ofrecer un perfil de ECG entre las características, que no es seleccionable en ninguna
+versión publicada.
+
+**El material adjunto** se regeneró con la 3.6.0 y **no cambia ninguna cifra ni ninguna
+captura**: esta versión no toca ni un texto de pantalla. Solo se mueven el pie del PDF de
+ejemplo y la línea de versión del CSV.
+
+### 1.1 De la 3.4.0 a la 3.5.0
 
 Una versión menor (PR #45 a #62). Añade lo que una práctica necesita alrededor
 de la medida y repara los dos documentos que se lleva el alumnado. **Las
@@ -158,7 +204,7 @@ registro sin recortar sigue pasando; y el registro de cinemática vuelve a dar
 contracciones, retraso electromecánico mediano de 42 ms y máximo de la tarea del
 123 % CVM.
 
-### 1.1 De la 3.3.0 a la 3.4.0
+### 1.2 De la 3.3.0 a la 3.4.0
 
 Una versión menor (PR #39 a #43): cambia lo que enseña la pestaña de análisis
 y cómo numera sus paneles. Ningún cálculo cambia.
@@ -237,7 +283,7 @@ Los paneles dibujan lo que calcula el análisis; ninguno calcula nada. Donde sí
 cambian las figuras del artículo es en las capturas de la pestaña de análisis
 (apartado 10).
 
-### 1.2 De la 3.2.0 a la 3.3.0
+### 1.3 De la 3.2.0 a la 3.3.0
 
 Una versión menor (PR #35 a #37): una cifra que enseña el programa puede
 cambiar, y un panel se dibuja de otra manera. Ningún otro cálculo cambia.
@@ -273,11 +319,11 @@ cambiar, y un panel se dibuja de otra manera. Ningún otro cálculo cambia.
 
 **Lo que el §5 del artículo cita no cambia con la 3.3.0**: las referencias,
 los máximos de tarea, la tabla A, la figura 6, «lo que no hay que hacer», la
-sensibilidad y el borde son los de la tabla del apartado 1.2, medidos sobre la
+sensibilidad y el borde son los de la tabla del apartado 1.3, medidos sobre la
 etiqueta `v3.2.0` y comprobados sobre la `v3.3.0`. Ninguna figura del artículo
 enseña el panel 3.
 
-### 1.3 De la 3.1.2 a la 3.2.0
+### 1.4 De la 3.1.2 a la 3.2.0
 
 Una versión menor, no un parche, porque cambia los números que el programa
 produce para la misma señal (PR #29 a #32). **Un registro reanalizado con la
@@ -348,7 +394,7 @@ registro de las tres maniobras (`tests/test_coactivation_sin_recortar.py`)
 pasa con los valores nuevos, y el comando de la figura 6 da la figura
 regenerada que hay en `docs/articulo-advances/` (apartado 10).
 
-### 1.4 De la 3.1.1 a la 3.1.2
+### 1.5 De la 3.1.1 a la 3.1.2
 
 Un parche de lo que la calibración pide y de cómo se describe (PR #24 a #26).
 No cambia ningún cálculo, umbral ni valor por defecto.
@@ -366,7 +412,7 @@ No cambia ningún cálculo, umbral ni valor por defecto.
   máximo de la media móvil de 0.2 s de la envolvente, tal cual, sin restar
   reposo, y la mejor de las repeticiones. El manual decía que se restaba el
   reposo de la ventana.
-- **Las publicaciones llevan solo el código fuente** (apartado 1.10).
+- **Las publicaciones llevan solo el código fuente** (apartado 1.11).
 
 Ninguna figura del artículo enseña los textos de la calibración, y las cifras
 del apartado 8 no dependen de estos cambios. Comprobado sobre la etiqueta: la
@@ -374,7 +420,7 @@ prueba de aceptación que fija las cifras del registro de las tres maniobras
 (`tests/test_coactivation_sin_recortar.py`) pasa, y el comando de la figura 6
 da la misma figura, píxel a píxel.
 
-### 1.5 De la 3.1.0 a la 3.1.1
+### 1.6 De la 3.1.0 a la 3.1.1
 
 Un parche de una sola medida (PR #21). **La coactivación de una ventana con
 nombre se lee sobre la fase de registro sin recortar.** Hasta la 3.1.0, elegir
@@ -413,7 +459,7 @@ fragmentos concatenados (apartado 9, punto 11). El EDF afinado es una
 concatenación en disco y se lee como tal. Ninguna figura ni ningún control de
 la interfaz cambia.
 
-### 1.6 De la 3.0.0 a la 3.1.0
+### 1.7 De la 3.0.0 a la 3.1.0
 
 Son **39 commits** (29 sin contar las fusiones). La 3.1.0 no cambia el formato
 del archivo ni los cálculos: los módulos que calculan (`coactivation.py`,
@@ -472,7 +518,7 @@ puede mover resultados es la propuesta de filas del editor de fragmentos**:
   constantes del asistente, y las guías ya no hablan de esfuerzos mantenidos
   de cuatro segundos.
 
-### 1.7 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
+### 1.8 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
 
 Son **97 commits**. Lo que cambió de cara al artículo:
 
@@ -503,7 +549,7 @@ Son **97 commits**. Lo que cambió de cara al artículo:
   la excursión completa es ±1.635 mV, no ±1.65 mV. Nada expresado como
   cociente cambia.
 
-### 1.8 Dependencias
+### 1.9 Dependencias
 
 Declaradas en `pyproject.toml` y comprobadas en el entorno con el que se
 generó este informe:
@@ -522,14 +568,14 @@ generó este informe:
 | reportlab | `>=4.0` | 4.5.1 |
 | segno | `>=1.6` | 1.6.6 |
 
-### 1.9 Plataformas probadas
+### 1.10 Plataformas probadas
 
 La integración continua ejecuta la suite en **Ubuntu y Windows**, con
 **Python 3.10, 3.11 y 3.12**: seis combinaciones, todas en verde para
 `v3.1.2`. macOS no se prueba de forma automática. El hardware se ha probado
 solo en Windows 11.
 
-### 1.10 Instalación y arranque
+### 1.11 Instalación y arranque
 
 Desde el código fuente:
 
@@ -938,7 +984,7 @@ coactivación que imprime el informe.
 punto decimal en inglés, punto y coma de separador y coma decimal en español, que
 es lo que esperan Excel o LibreOffice configurados en español —con la otra
 combinación abren el archivo entero en una sola columna y leen 0.05 como texto—.
-Es la excepción declarada a la marca decimal única de la 3.5.0 (apartado 1.0), y
+Es la excepción declarada a la marca decimal única de la 3.5.0 (apartado 1.1), y
 la primera línea del archivo dice cuál de las dos parejas lleva.
 
 ### 5.6 Índice de coactivación
@@ -1118,19 +1164,19 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/tabs/acquisition.py:2525`**
   - EN: No network: the phones cannot reach this computer.
   - ES: Sin red: los móviles no pueden llegar a este equipo.
-- **`src/emgteach/gui/tabs/acquisition.py:3156`**
+- **`src/emgteach/gui/tabs/acquisition.py:3161`**
   - EN: ⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.
   - ES: ⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.
-- **`src/emgteach/gui/tabs/acquisition.py:3426`**
+- **`src/emgteach/gui/tabs/acquisition.py:3441`**
   - EN: {muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: {muscles}: esto no es un máximo. Calibre de nuevo con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/gui/tabs/acquisition.py:3447`**
+- **`src/emgteach/gui/tabs/acquisition.py:3462`**
   - EN: Channels not separated
   - ES: Canales sin separar
-- **`src/emgteach/gui/tabs/acquisition.py:3459`**
+- **`src/emgteach/gui/tabs/acquisition.py:3474`**
   - EN: Calibration failed (no signal).
   - ES: Calibración fallida (sin señal).
-- **`src/emgteach/gui/tabs/acquisition.py:3461`**
+- **`src/emgteach/gui/tabs/acquisition.py:3476`**
   - EN: Calibration failed
   - ES: Calibración fallida
 - **`src/emgteach/gui/tabs/analysis.py:475`**
@@ -1273,13 +1319,13 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/workers/acquisition.py:53`**
   - EN: The recording «{name}» could not be saved in the folder {folder} ({reason}). Choose another folder — Documents, for example — or another name, and press record again.
   - ES: El registro «{name}» no se ha podido guardar en la carpeta {folder} ({reason}). Elija otra carpeta —Documentos, por ejemplo— u otro nombre, y vuelva a pulsar grabar.
-- **`src/emgteach/workers/acquisition.py:456`**
+- **`src/emgteach/workers/acquisition.py:466`**
   - EN: Connection to {name} lost: {error}
   - ES: Conexión con {name} perdida: {error}
-- **`src/emgteach/workers/acquisition.py:559`**
+- **`src/emgteach/workers/acquisition.py:569`**
   - EN: Warning — annotation error: {error}
   - ES: Aviso — error de anotación: {error}
-- **`src/emgteach/workers/acquisition.py:564`**
+- **`src/emgteach/workers/acquisition.py:574`**
   - EN: Warning — EDF close error: {error}
   - ES: Aviso — error al cerrar el EDF: {error}
 - **`src/emgteach/workers/analysis.py:409`**
@@ -1342,9 +1388,9 @@ adjunto está en `docs/informe-sourcebook/` y lo produce
 `tools/informe_material.py`.
 
 **Todas las cifras de este apartado están medidas con la 3.2.0** sobre su
-etiqueta y **no cambian con la 3.3.0 ni con la 3.4.0** (apartados 1.2 y 1.1);
+etiqueta y **no cambian con la 3.3.0 ni con la 3.4.0** (apartados 1.3 y 1.2);
 las que cambiaron respecto de la 3.1.2, y cuánto, están en la tabla del
-apartado 1.3. Las del 8.3 no pasan por la coactivación.
+apartado 1.4. Las del 8.3 no pasan por la coactivación.
 
 ### 8.1 Registro de ejemplo: el par flexor / extensor
 
@@ -1400,8 +1446,8 @@ porcentajes de abajo significan lo que dicen.
 | Presa | 88.0–97.0 s | **79 %** (78.6) | 11.4 / 7.7 % CVM |
 
 Medido con la 3.2.0: cada maniobra es una máscara sobre la fase de registro sin
-recortar, el reposo que se resta es el de la fase entera (apartados 1.5 y
-5.6) y la referencia es el pico de la envolvente (apartado 1.3). Con la 3.1.2
+recortar, el reposo que se resta es el de la fase entera (apartados 1.6 y
+5.6) y la referencia es el pico de la envolvente (apartado 1.4). Con la 3.1.2
 —referencia de 0.2 s y suelo del 5 %— la tabla era 28.3 / no reportada / 75.7 %
 con medias 14.1 / 5.8 · 4.2 / 6.2 · 14.5 / 9.1; con el pico y el suelo del 5 %
 la flexión se quedaba sin número (el extensor, en 4.9 %), y es la razón del
@@ -1462,7 +1508,7 @@ para no medir. Para esta práctica, la ventana es la maniobra entera.
    con su curso temporal, reposos incluidos; concatenar las contracciones mide
    otra cosa. **Las cifras publicables son las del registro sin recortar.**
    Desde la 3.1.1, elegir los fragmentos en la pestaña sobre el original ya
-   no concatena para la coactivación (apartado 1.5); el aviso vale para el
+   no concatena para la coactivación (apartado 1.6); el aviso vale para el
    archivo afinado.
 2. **El borde de la ventana: el reposo que entra ya no mueve el índice.** Con
    la 3.0.0, estrechar la presa 0.8 s por delante la llevaba de 76 % a 70 %,
@@ -1591,8 +1637,11 @@ la tarea, 123 % CVM.
    placa simulada, el diagnóstico, el registro de eventos y la recuperación—,
    repara el informe y el CSV y deja una sola marca decimal, y las tres cosas
    que mueven números son faltas que se reparan, declaradas una por una
-   (apartado 1.0); es la que describe el artículo, y lo que venga después irá
-   a versiones posteriores sin cambiar lo que describe.
+   (apartado 1.1). La 3.6.0 no cambia ningún cálculo: hace que la placa
+   simulada obedezca a la calibración, de modo que un ensayo sin hardware
+   enseñe lo que enseña la práctica (apartado 1.0); es la que describe el
+   artículo, y lo que venga después irá a versiones posteriores sin cambiar
+   lo que describe.
 10. **La k = 4.4 del par es empírica**: es el valor que dio una fila por
     maniobra en los registros en que se probó. Con otra piel, otro montaje u
     otra forma de hacer las maniobras puede proponer de más o de menos; por
@@ -1624,8 +1673,8 @@ la tarea, 123 % CVM.
   `ESPEC-niveles-y-avisos-emgteach.md` y `ESPEC-panel9-en-CVM.md`. Antes vivían
   solo en la carpeta del artículo.
 - **El README no menciona ninguna ruta sintética.** Dice la versión correcta
-  (3.5.0) y el número correcto de pruebas (1205 en la etiqueta; en `main` son
-  1206, con la prueba que guarda la espera de las señales). No es
+  (3.6.0) y el número correcto de pruebas (1217, las mismas que en la
+  etiqueta). No es
   cuestión de disciplina: `tests/test_readme.py::test_the_test_count_is_current`
   cuenta las pruebas recogidas y falla si el README dice otra cosa.
 - **El material del artículo se genera aparte del del informe**, en
@@ -1685,6 +1734,10 @@ la tarea, 123 % CVM.
   segmento del CSV es idéntica byte a byte una vez descontados los finales de
   línea, y la referencia de CVM, el máximo de la tarea y las métricas del informe
   son las mismas.
+  **Con la 3.6.0, regenerado otra vez y sin una sola diferencia visible**: esta
+  versión no toca ningún texto de pantalla ni ningún cálculo, así que las ocho
+  capturas y los recortes salen idénticos byte a byte, y el PDF y el CSV de
+  ejemplo solo cambian en el pie y en la línea de versión.
   La figura 6 sale idéntica píxel a píxel (su PDF cambia en los metadatos), y
   los recortes de las figuras 3 y 7, la figura 4b, las capturas de adquisición
   y de normalización y el CSV salen idénticos; los PDF de ejemplo, por lo
