@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The simulated board is quiet for as long as the calibration lasts.** It was told to give a maximum while an effort was asked for and then let go of, and its twelve-second cycle went on firing through the countdowns, the rests and the change of muscle: the screen asked the student to rest and the trace showed contractions, which in a rehearsal without hardware is the moment the screen is watched most. The wizard now asks for rest from the warm-up onwards — `instruct` takes 0.0 as «nothing, stay still», which is an instruction, against `None`, which is the absence of one — and gives the cycle back when it finishes or is cancelled. The ten seconds of warm-up draw a flat trace, which is the honest thing: a board in software warms nothing up.
 
+### Changed
+
+- **The live time axis is the recording's clock.** The plots drew `np.arange(n) / FS` — seconds counted from the left edge of the visible window — so a recording two minutes long read 0…5 s for as long as it lasted: the signal ran inside a window whose numbers never moved, nothing said when anything had happened, and a live screen looked like a stopped one. The tab already kept the absolute count and already used it to place the marker lines; the axis carries it now, each mark is drawn at the second it happened, and the three plots label their bottom axis in seconds, which matters once the numbers no longer start at zero. The empty tab still shows 0…window, the session review at stop still shows the whole file from zero, and nothing computed changes.
+
 ## [3.6.0] — 2026-09-19
 
 **The simulated board obeys the calibration.** A session rehearsed without the
