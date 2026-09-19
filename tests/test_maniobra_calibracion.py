@@ -33,20 +33,24 @@ def _gesto(mode: str, canal: int, idioma: str = "en",
 
 
 def test_the_pair_names_each_forearm_gesture() -> None:
-    """With the pair of the practical guide, which is the default."""
-    flexor, extensor = _gesto(MODE_PAIR, 0), _gesto(MODE_PAIR, 1)
+    """With the pair of the practical guide, which is the default.
+
+    Said short, since the wizard says it in the three seconds before the
+    effort: the rule, then the gesture, then nothing.
+    """
+    flexor, extensor = _gesto(MODE_PAIR, 0).lower(), _gesto(MODE_PAIR, 1).lower()
     assert "jerk" in flexor and "wrist flexion" in flexor and "fist" in flexor
     assert "jerk" in extensor and "wrist extension" in extensor
     assert "hand open" in extensor
-    assert "sacudida" in _gesto(MODE_PAIR, 0, "es")
+    assert "sacudida" in _gesto(MODE_PAIR, 0, "es").lower()
 
 
 def test_another_pair_names_its_own_gesture_or_none() -> None:
     """The rule is the same for every pair; the example is the pair's."""
-    codo = _gesto(MODE_PAIR, 0, par=PAIR_ARM)
+    codo = _gesto(MODE_PAIR, 0, par=PAIR_ARM).lower()
     assert "jerk" in codo and "elbow flexion" in codo
     assert "wrist" not in codo
-    otro = _gesto(MODE_PAIR, 0, par=PAIR_OTHER)
+    otro = _gesto(MODE_PAIR, 0, par=PAIR_OTHER).lower()
     assert "jerk" in otro
     for anatomia in ("wrist", "elbow", "fist", "forearm"):
         assert anatomia not in otro, otro

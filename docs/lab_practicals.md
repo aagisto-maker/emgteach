@@ -136,6 +136,15 @@ without stopping the recording:
 4. In the pair practical a 5 s **preparation** follows and the **recording** of
    the task begins. In the other two practicals the calibration is launched with
    the **«Calibrate MVC»** button while recording, and the recording goes on.
+5. **And in the pair practical the guide goes on into the task**: six
+   contractions led by one muscle, six by the other, and last the manoeuvre
+   that works both at once, held three times. The row of boxes along the
+   bottom of the panel is the map — one per contraction, in the colour that
+   muscle has in the plots, filled as each one is detected. The six are free,
+   at your own pace, so **«Done — next» (or the space bar) is what moves the
+   session on**, not the boxes: if the detector misses one the box stays
+   empty and nothing else changes. The count that counts is the one the
+   analysis makes afterwards.
 
 The reference is **the highest point the envelope reaches across the three
 repetitions**. Why brief?

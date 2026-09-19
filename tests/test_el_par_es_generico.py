@@ -28,8 +28,8 @@ ANATOMIA = re.compile(
 )
 #: What every calibration instruction has to say before any of that.
 PRINCIPIO = {
-    "en": "the movement this muscle makes",
-    "es": "movimiento que hace este músculo",
+    "en": "brief, explosive jerk",
+    "es": "Sacudida breve y explosiva",
 }
 
 
@@ -41,7 +41,7 @@ def _la_regla() -> list[tuple[str, str]]:
     even by accident — it is a separate sentence, said after.
     """
     claves = [k for k in i18n._ES
-              if k.startswith("When the count reaches 0: one brief, explosive maximal jerk")]
+              if k.startswith("A brief, explosive jerk")]
     assert len(claves) == 1, claves
     return [("en", claves[0]), ("es", i18n._ES[claves[0]])]
 
@@ -54,7 +54,7 @@ def test_the_calibration_instruction_is_the_rule_and_names_no_pair() -> None:
 
 def test_the_example_comes_after_the_rule_for_every_pair() -> None:
     """What the wizard actually says, assembled as the tab assembles it."""
-    from emgteach.pairs import PAIRS, pair_calibration_example
+    from emgteach.pairs import PAIRS, pair_calibration_cue
 
     for lang in ("en", "es"):
         anterior = i18n.get_language()
@@ -63,8 +63,8 @@ def test_the_example_comes_after_the_rule_for_every_pair() -> None:
             regla = _la_regla()[0 if lang == "en" else 1][1]
             for par in PAIRS:
                 for canal in (0, 1):
-                    ejemplo = pair_calibration_example(par, canal)
-                    frase = f"{regla} {ejemplo}" if ejemplo else regla
+                    ejemplo = pair_calibration_cue(par, canal)
+                    frase = f"{regla} {ejemplo}." if ejemplo else regla
                     assert PRINCIPIO[lang] in frase
                     anatomia = ANATOMIA.search(frase)
                     if anatomia is None:

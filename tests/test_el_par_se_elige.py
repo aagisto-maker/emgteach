@@ -25,7 +25,7 @@ from emgteach.pairs import (
     PAIR_FOREARM,
     PAIR_OTHER,
     PAIRS,
-    pair_calibration_example,
+    pair_calibration_cue,
     pair_hint,
     pair_image,
     pair_label,
@@ -58,18 +58,18 @@ class TestTheTable:
         assert PAIRS[0] == PAIR_FOREARM
         assert pair_image(PAIR_FOREARM, "electrodos") == "electrodos"
         assert "FCR" in pair_hint(PAIR_FOREARM, 0)
-        assert "wrist flexion" in pair_calibration_example(PAIR_FOREARM, 0)
+        assert "Wrist flexion" in pair_calibration_cue(PAIR_FOREARM, 0)
         assert pair_warning(PAIR_FOREARM) == ""      # the defaults are its own
 
     def test_the_arm_has_its_own_names_gestures_and_picture_names(self) -> None:
         assert "biceps" in pair_hint(PAIR_ARM, 0)
         assert "triceps" in pair_hint(PAIR_ARM, 1)
-        assert "elbow flexion" in pair_calibration_example(PAIR_ARM, 0)
+        assert "Elbow flexion" in pair_calibration_cue(PAIR_ARM, 0)
         assert pair_image(PAIR_ARM, "electrodos") == "electrodos_biceps"
         assert "forearm pair" in pair_warning(PAIR_ARM)
 
     def test_another_pair_is_the_rule_and_nothing_else(self) -> None:
-        assert pair_calibration_example(PAIR_OTHER, 0) == ""
+        assert pair_calibration_cue(PAIR_OTHER, 0) == ""
         assert pair_image(PAIR_OTHER, "electrodos") is None
         assert "e.g." not in pair_hint(PAIR_OTHER, 0)
         assert "forearm pair" in pair_warning(PAIR_OTHER)
@@ -107,10 +107,10 @@ class TestTheTabFollowsIt:
 
     def test_the_instruction_of_the_effort_follows_the_pair(self, tab) -> None:
         _elegir(tab, PAIR_ARM)
-        codo = tab._mvc_gesto(0)
+        codo = tab._mvc_gesto(0).lower()
         assert "jerk" in codo and "elbow flexion" in codo and "wrist" not in codo
         _elegir(tab, PAIR_OTHER)
-        otro = tab._mvc_gesto(0)
+        otro = tab._mvc_gesto(0).lower()
         assert "jerk" in otro
         for anatomia in ("wrist", "elbow", "forearm", "fist"):
             assert anatomia not in otro, otro
@@ -185,7 +185,7 @@ def test_no_threshold_moves_with_the_pair() -> None:
     antes = dataclasses.asdict(EMG_PROFILE)
     for par in PAIRS:
         pair_hint(par, 0)
-        pair_calibration_example(par, 0)
+        pair_calibration_cue(par, 0)
         pair_warning(par)
     assert dataclasses.asdict(EMG_PROFILE) == antes
 

@@ -72,7 +72,7 @@ from emgteach.devices import (
     create_device,
 )
 from emgteach.dsp import LiveQualityMonitor, process_offline
-from emgteach.gui.imagenes import imagen as imagen_de_la_practica
+from emgteach.gui.imagenes import imagen
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
@@ -102,7 +102,8 @@ from emgteach.pairs import (
     DEFAULT_PAIR,
     PAIRS,
     normalise_pair,
-    pair_calibration_example,
+    pair_calibration_cue,
+    pair_coactivation_cue,
     pair_hint,
     pair_image,
     pair_label,
@@ -156,6 +157,27 @@ MAX_MARKER_LINES = 40
 MVC_TICK_MS = 100   # state-machine tick
 MVC_READY_S = 3.0   # "get ready" countdown before each contraction
 MVC_REST_S = 2.0    # relax pause between reps / muscles
+
+#: The free manoeuvres of the pair practical: six contractions led by one
+#: muscle, then six led by the other, **at the student's own pace**. The
+#: wizard counts them and never sets their rhythm: a guided rhythm would
+#: give cleaner data and would change the protocol the article describes,
+#: and free movement is what a reciprocal pattern needs — a wrist pushing
+#: against something brings the antagonist in to stabilise it.
+MANIOBRAS_POR_MUSCULO = 6
+
+#: And the manoeuvre that works both at once, last so its fatigue does not
+#: reach the others. Three holds with a pause between, which the analysis
+#: reads as a single window because consecutive fragments with the same
+#: name are grouped. The numbers are the practical guide's.
+COACT_REPS = 3
+COACT_HOLD_S = 5.0
+COACT_REST_S = 2.0
+
+#: The co-activation manoeuvre's colour in the map of the phase. The two
+#: muscles have theirs (``_CHANNEL_COLORS``) and this belongs to neither;
+#: orange is free and collides with nothing on this screen.
+COLOR_COACT = (230, 126, 34)
 #: Blocks of data (~10 per second) the armed session flow keeps trying for
 #: before handing the calibration back to the operator.
 MVC_FLOW_MAX_TRIES = 30
@@ -514,6 +536,20 @@ class AcquisitionTab(QWidget):
         self._prep_aviso = ""
         self._prep_elapsed = 0.0
         self._prep_timer = QTimer(self)
+        #: Which phase of the guided session is running, if any:
+        #: ``""`` | ``"cal"`` | ``"maniobras"`` | ``"coact"``.
+        self._guia_fase = ""
+        #: The manoeuvres phase: which muscle leads now, and how many of
+        #: each muscle's have been detected. The counts fill the map and
+        #: nothing else: they never end the phase.
+        self._man_grupo = 0
+        self._man_hechas = [0, 0]
+        self._coact_rep = 0
+        self._coact_fase = ""
+        self._coact_elapsed = 0.0
+        self._coact_timer = QTimer(self)
+        self._coact_timer.setInterval(MVC_TICK_MS)
+        self._coact_timer.timeout.connect(self._coact_tick)
         self._prep_timer.setInterval(MVC_TICK_MS)
         self._prep_timer.timeout.connect(self._prep_tick)
         # Floating guide drawn over the plots during the wizard.
@@ -1048,6 +1084,20 @@ class AcquisitionTab(QWidget):
         # force-velocity plan — before it ends on its own. Shown only while
         # one runs; Esc does the same from anywhere on the tab. Before, there
         # was no way out but to wait for the six efforts to pass.
+        # The way on through a phase the application must not time. The
+        # six manoeuvres are free, so nothing but the student knows when
+        # they are done — and if the detector misses one, the phase still
+        # has to be able to end. Shown only while that phase runs, so the
+        # row is the one it always was the rest of the time.
+        self._btn_paso_hecho = QPushButton(tr("Done — next (Space)"))
+        self._btn_paso_hecho.setVisible(False)
+        self._btn_paso_hecho.setToolTip(
+            tr("Go on to the next part of the session."))
+        self._btn_paso_hecho.clicked.connect(self._paso_siguiente)
+        ctrl_layout.addWidget(self._btn_paso_hecho)
+        atajo_paso = QShortcut(QKeySequence(Qt.Key.Key_Space), self)
+        atajo_paso.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        atajo_paso.activated.connect(self._paso_siguiente)
         self._btn_cancelar_guia = QPushButton(tr("Cancel guide (Esc)"))
         self._btn_cancelar_guia.setVisible(False)
         self._btn_cancelar_guia.setToolTip(
@@ -1565,7 +1615,7 @@ class AcquisitionTab(QWidget):
         the ones for it are still to be drawn.
         """
         clave = pair_image(self._par, nombre)
-        return imagen_de_la_practica(clave) if clave else None
+        return imagen(clave) if clave else None
 
     def _on_par_changed(self) -> None:
         """The pair changed: what the interface says follows, nothing else.
@@ -2232,6 +2282,8 @@ class AcquisitionTab(QWidget):
             self._update_quality(raw)
         # Live muscle-load monitor (calibration or per-block load update).
         self._process_load(env)
+        # And the map of the free manoeuvres, if one is being asked for.
+        self._guia_detecta(env)
         # Re-broadcast to classroom followers (no-op if not running).
         self._bcast_live(env)
         # Green LED: there is traffic. The timer will set it back to yellow if
@@ -3014,6 +3066,7 @@ class AcquisitionTab(QWidget):
             else tr("Calibration started on its own.")
         )
         self._reposition_mvc_overlay()
+        self._guia_mapa("cal")
         self._mvc_enter_warmup()
         self._mvc_timer.start()
 
@@ -3099,6 +3152,30 @@ class AcquisitionTab(QWidget):
         c = self._mvc_muscle
         return labels[c] if c < len(labels) else tr("Muscle {n}").format(n=c + 1)
 
+    def _guia_mapa(self, fase: str) -> None:
+        """Set the phase, and with it the row of boxes that maps it.
+
+        One box per action the phase asks for, in the colour of the muscle
+        that leads it — ``_CHANNEL_COLORS``, the same colour that muscle
+        has in the traces and in its load bar, because a student who sees
+        blue in the plot and red in the wizard has been told two things.
+        The warm-up asks for nothing countable and gets no row.
+        """
+        self._guia_fase = fase
+        if fase == "cal":
+            colores = [_CHANNEL_COLORS[c]
+                       for c in range(self._n_channels)
+                       for _ in range(self._mvc_reps)]
+        elif fase == "maniobras":
+            colores = [_CHANNEL_COLORS[c]
+                       for c in range(min(2, self._n_channels))
+                       for _ in range(MANIOBRAS_POR_MUSCULO)]
+        elif fase == "coact":
+            colores = [COLOR_COACT] * COACT_REPS
+        else:
+            colores = []
+        self._mvc_overlay.set_steps(colores)
+
     def _mvc_enter_warmup(self) -> None:
         """A few easy contractions before the first maximal one.
 
@@ -3136,13 +3213,11 @@ class AcquisitionTab(QWidget):
             total = self._profile.warmup_s
             cuenta = max(1, int(np.ceil(total - self._mvc_elapsed)))
             titulo = tr("Warm up first")
-            detalle = tr(
-                "Two or three easy contractions of each muscle. The first "
-                "maximal effort of a session is never the strongest one."
-            )
-            self._mvc_overlay.show_ready(
-                titulo, cuenta, detalle, self.imagen_del_par("calibracion")
-            )
+            # One line while something is being done; the why of it — that
+            # the first maximal effort of a session is never the strongest —
+            # is in the tour, the guide and the manual, where there is time.
+            detalle = tr("Two or three easy contractions of each muscle.")
+            self._mvc_overlay.show_ready(titulo, cuenta, detalle)
             self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
             self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
             if self._mvc_elapsed >= total:
@@ -3158,11 +3233,12 @@ class AcquisitionTab(QWidget):
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 count,
                 detalle,
-                # The gesture being asked for, where it is being asked:
-                # the picture lives in the tour, and the tour is offered
-                # once, months before this countdown. Of this pair, and
-                # none at all for a pair nobody has drawn.
-                self.imagen_del_par("calibracion"),
+                # Only the first time each muscle is asked. The calibration
+                # is the one counter-intuitive gesture of the practical — a
+                # brief explosive jerk, not a push you lean into — and a
+                # picture pays for itself once; by the second repetition it
+                # is a panel taller than it needs to be over the traces.
+                imagen("sacudida") if self._mvc_rep == 0 else None,
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
@@ -3281,6 +3357,10 @@ class AcquisitionTab(QWidget):
         self._write_phase_marker(
             cal_end_marker(self._mvc_muscle, self._mvc_rep + 1)
         )
+        # One box of the map per repetition closed, and never before: the
+        # wizard sets the rhythm here, so it knows.
+        self._mvc_overlay.mark_step(
+            self._mvc_muscle * self._mvc_reps + self._mvc_rep)
         # Rest, not «do as you like»: between one effort and the next come
         # the countdowns and the change of muscle, and a device left to
         # itself fires during them.
@@ -3307,7 +3387,7 @@ class AcquisitionTab(QWidget):
             self._mvc_finish_all()
 
     def _mvc_gesto(self, c: int) -> str:
-        """What the effort is, said while the count runs.
+        """What the effort is, said while the count runs — in one line.
 
         A brief, explosive maximal jerk, not a sustained push against
         something fixed: a reference is only a yardstick if it recruits the
@@ -3317,16 +3397,19 @@ class AcquisitionTab(QWidget):
         the pair's (:mod:`emgteach.pairs`), and with a pair the application
         knows nothing about the rule stands on its own, which is the whole
         point of stating it first.
+
+        **Both said short.** This is read in the three seconds before a
+        maximal effort, and the sentences that were here wrapped to three
+        lines: what wraps while somebody is about to move is read by
+        nobody. The reasoning above is in the tour, the guide and the
+        manual, and :func:`emgteach.pairs.pair_calibration_example` still
+        says the gesture properly for where there is room.
         """
-        regla = tr(
-            "When the count reaches 0: one brief, explosive maximal jerk of the "
-            "movement this muscle makes — a jerk, not a sustained push against "
-            "something fixed."
-        )
+        regla = tr("A brief, explosive jerk — not a sustained push.")
         if self._mode != MODE_PAIR or c not in (0, 1):
             return regla
-        ejemplo = pair_calibration_example(self._par, c)
-        return f"{regla} {ejemplo}" if ejemplo else regla
+        ejemplo = pair_calibration_cue(self._par, c)
+        return f"{regla} {ejemplo}." if ejemplo else regla
 
     def _mvc_compute_muscle(self, c: int) -> None:
         window = max(1, round(self._profile.mvc_peak_window_s * FS))
@@ -3427,12 +3510,177 @@ class AcquisitionTab(QWidget):
         self._mvc_overlay.hide_overlay()
         self._bcast_calib(False)
         self._mvc_info(tr("Recording — the calibration is behind you."))
+        # And the session goes on. Until now the wizard stopped here and
+        # left the student alone in the part that produces the data.
+        if self._mode == MODE_PAIR and not self._fv_flow_pending:
+            self._guia_maniobras(0)
+            return
         self._log(tr(
             "Recording phase started. Everything before this point — the "
             "calibration and this pause — stays out of the analysis."
         ))
         if self._fv_flow_pending:
             self._lanzar_estudio_fv()
+
+    # -- the task, guided: the free manoeuvres and the one that joins them --
+
+    def _guia_maniobras(self, grupo: int) -> None:
+        """Ask for one muscle's share of the free manoeuvres.
+
+        The application names the **muscle**, never the manoeuvre: the guide
+        does that, per pair, which is where a name can be checked against a
+        gesture (:func:`emgteach.coactivation.propose_labels` says the same
+        thing about the windows it labels).
+        """
+        if grupo == 0:
+            self._guia_mapa("maniobras")
+            self._man_hechas = [0, 0]
+            self._rearmar_deteccion_guiada()
+        self._man_grupo = grupo
+        self._btn_paso_hecho.setVisible(True)
+        self._btn_cancelar_guia.setVisible(True)
+        self._reposition_mvc_overlay()
+        self._pinta_maniobras()
+
+    def _pinta_maniobras(self) -> None:
+        etiquetas = self._active_labels()
+        c = min(self._man_grupo, len(etiquetas) - 1)
+        titulo = tr("{n} contractions of {label}").format(
+            n=MANIOBRAS_POR_MUSCULO, label=etiquetas[c])
+        self._mvc_overlay.show_phase(
+            titulo, tr("At your own pace; «{button}» when you finish.")
+            .format(button=tr("Done — next")))
+        self._reposition_mvc_overlay()
+        self._mvc_info(titulo)
+        self._bcast_calib(True, "task", titulo, "")
+
+    def _rearmar_deteccion_guiada(self) -> None:
+        """Fresh onset detectors for the map, fed from the live envelope.
+
+        The tab's own, not the worker's: the worker's write a marker per
+        onset into the recording, and whether a recording carries automatic
+        onsets is the operator's choice and not something a progress bar
+        gets to decide. Same detector and same settings, so the rule that
+        fills a box is the rule the analysis will apply later.
+        """
+        from emgteach.dsp import OnsetDetector
+
+        kwargs = dict(self._profile.onset_kwargs())
+        kwargs["k"] = self._spin_k.value()
+        self._det_guia = [OnsetDetector(FS, **kwargs)
+                          for _ in range(self._n_channels)]
+
+    def _guia_detecta(self, env: list) -> None:
+        """Count the free manoeuvres, and only count them.
+
+        **The boxes inform; they do not govern.** A detector that misses one
+        must not be able to strand a student in a phase that will not end,
+        so nothing here can finish the phase — that is the button's job —
+        and an extra onset past the last box is dropped rather than
+        complained about. If boxes are left empty and the signal says
+        otherwise, the count that counts is the one the analysis makes.
+        """
+        if self._guia_fase != "maniobras" or not getattr(self, "_det_guia", None):
+            return
+        c = self._man_grupo
+        if c >= len(self._det_guia) or c >= len(env):
+            return
+        n = len(self._det_guia[c].process(np.asarray(env[c], dtype=float)))
+        for _ in range(n):
+            if self._man_hechas[c] >= MANIOBRAS_POR_MUSCULO:
+                break
+            self._mvc_overlay.mark_step(
+                c * MANIOBRAS_POR_MUSCULO + self._man_hechas[c])
+            self._man_hechas[c] += 1
+        if n:
+            self._mvc_overlay.update()
+
+    @Slot()
+    def _paso_siguiente(self) -> None:
+        """On to the next part, because the student says so.
+
+        The one phase the application must not time: the manoeuvres are
+        free — a wrist pushing against something brings the antagonist in
+        to stabilise it, and the reciprocal pattern is what the practical
+        is for — so only the person doing them knows when they are done.
+        """
+        if self._guia_fase != "maniobras":
+            return
+        if self._man_grupo + 1 < min(2, self._n_channels):
+            self._guia_maniobras(self._man_grupo + 1)
+            return
+        self._guia_coactivacion()
+
+    def _guia_coactivacion(self) -> None:
+        """The manoeuvre that works both muscles at once, and is timed."""
+        self._guia_mapa("coact")
+        self._btn_paso_hecho.setVisible(False)
+        self._coact_rep = 0
+        self._coact_fase = "ready"
+        self._coact_elapsed = 0.0
+        self._coact_timer.start()
+        self._coact_tick()
+
+    @Slot()
+    def _coact_tick(self) -> None:
+        self._coact_elapsed += MVC_TICK_MS / 1000.0
+        recolocar = True
+        titulo = tr("Both muscles at once")
+        pista = (pair_coactivation_cue(self._par) if self._mode == MODE_PAIR
+                 else tr("Work both muscles at once and hold"))
+        if self._coact_fase == "ready":
+            cuenta = max(1, int(np.ceil(MVC_READY_S - self._coact_elapsed)))
+            self._mvc_overlay.show_ready(titulo, cuenta, pista)
+            self._bcast_calib(True, "ready", titulo, pista, count=cuenta)
+            if self._coact_elapsed >= MVC_READY_S:
+                self._coact_fase = "hold"
+                self._coact_elapsed = 0.0
+        elif self._coact_fase == "hold":
+            frac = min(1.0, self._coact_elapsed / COACT_HOLD_S)
+            self._mvc_overlay.show_phase(titulo, pista, running=frac)
+            self._bcast_calib(True, "contract", titulo, pista, progress=frac)
+            if self._coact_elapsed >= COACT_HOLD_S:
+                self._mvc_overlay.mark_step(self._coact_rep)
+                self._coact_rep += 1
+                self._coact_elapsed = 0.0
+                if self._coact_rep >= COACT_REPS:
+                    self._guia_fin()
+                    return
+                self._coact_fase = "rest"
+        elif self._coact_fase == "rest":
+            self._mvc_overlay.show_relax(tr("Next one in a moment"))
+            if self._coact_elapsed >= COACT_REST_S:
+                self._coact_fase = "ready"
+                self._coact_elapsed = 0.0
+        if recolocar:
+            # Each step of this phase is a different height, and the box is
+            # anchored by its bottom edge while the task runs.
+            self._reposition_mvc_overlay()
+
+    def _guia_fin(self) -> None:
+        """The session has asked for everything it asks for."""
+        self._coact_timer.stop()
+        self._coact_fase = ""
+        self._guia_fase = ""
+        self._btn_paso_hecho.setVisible(False)
+        self._btn_cancelar_guia.setVisible(False)
+        self._mvc_overlay.show_done(
+            tr("Task recorded"),
+            tr("Stop the recording when you are ready."))
+        self._log(tr("The guided task is finished; the recording goes on."))
+        QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
+        QTimer.singleShot(5000, lambda: self._bcast_calib(False))
+
+    def _guia_cancelar(self) -> None:
+        """Out of the guided task, leaving the recording running."""
+        self._coact_timer.stop()
+        self._coact_fase = ""
+        self._guia_fase = ""
+        self._btn_paso_hecho.setVisible(False)
+        self._btn_cancelar_guia.setVisible(False)
+        self._mvc_overlay.set_steps([])
+        self._mvc_overlay.hide_overlay()
+        self._bcast_calib(False)
 
     def _write_mvc_ref_marker(self, c: int) -> None:
         """Carry this channel's MVC reference into the EDF as an annotation.
@@ -3583,6 +3831,7 @@ class AcquisitionTab(QWidget):
 
     def _mvc_cancel(self) -> None:
         """Abort the wizard (e.g. on stop/disconnect)."""
+        self._guia_cancelar()
         self._instruct_device(0, None)     # nothing is being asked any more
         self._mvc_timer.stop()
         self._prep_timer.stop()
@@ -3609,6 +3858,10 @@ class AcquisitionTab(QWidget):
         # Esc means «stop guiding me»: a kinematics session whose
         # calibration is cancelled does not go on to cue the loads either.
         self._fv_flow_pending = False
+        if self._guia_fase in ("maniobras", "coact"):
+            self._guia_cancelar()
+            self._log(tr("Guided task cancelled; the recording goes on."))
+            return
         if self._mvc_active:
             self._mvc_cancel()
             self._prep_aviso = ""
@@ -3999,12 +4252,30 @@ class AcquisitionTab(QWidget):
         self._reposition_mvc_overlay()
 
     def _reposition_mvc_overlay(self) -> None:
-        """Centre the floating MVC guide near the top of the plot area."""
+        """Centre the floating guide, and keep it off the plots while the
+        task is being recorded.
+
+        During the calibration it sits over the top of the plot area, where
+        it always has: nothing is being read off the traces while the
+        subject is being counted down to a maximal effort.
+
+        During the task it is the other way round — the student works from
+        their own load bars and traces, and figure 5 of the article is a
+        live capture of exactly that region — so the box is anchored
+        **above** the plots instead, bottom edge to their top. At a window
+        this size the two plots come out clear and the load bars do not:
+        there is no 460-pixel-wide gap outside that region to put it in,
+        and of the two the traces are what the manoeuvre is watched on.
+        """
         ov = self._mvc_overlay
         x = max(0, (self.width() - ov.width()) // 2)
         y = 72
         if hasattr(self, "_grp_plots"):
-            y = max(72, self._grp_plots.geometry().top() + 8)
+            arriba = self._grp_plots.geometry().top()
+            if self._guia_fase in ("maniobras", "coact"):
+                y = max(4, arriba - ov.height() - 6)
+            else:
+                y = max(72, arriba + 8)
         ov.move(x, y)
 
     @Slot()
