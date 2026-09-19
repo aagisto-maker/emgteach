@@ -214,7 +214,8 @@ class AcquisitionWorker(QThread):
         return time.monotonic() - t
 
     @Slot(str)
-    def instruct(self, channel_index: int, level: float | None) -> None:
+    def instruct(self, channel_index: int, level: float | None,
+                 *, repeat_s: float | None = None) -> None:
         """Tell the device what is being asked of a muscle right now.
 
         Thread-safe in the same way as :meth:`add_marker`: called from the
@@ -222,7 +223,7 @@ class AcquisitionWorker(QThread):
         so by writing one attribute, which the next block reads; one that
         cannot — a board — does nothing (:meth:`AcquisitionDevice.instruct`).
         """
-        self._device.instruct(channel_index, level)
+        self._device.instruct(channel_index, level, repeat_s=repeat_s)
 
     def add_marker(self, label: str) -> None:
         """Record an event marker at the current acquisition time.
