@@ -256,6 +256,14 @@ and leaves when the tab changes.
 **Device configuration**
 - Device type (BITalino or Arduino + MyoWare), in the single-muscle practical
   only; elsewhere the row reads «Device: BITalino».
+- **Pair** (in the agonist/antagonist practical only): which pair of muscles it is being
+  run on. «Forearm (FCR / ECR)» is the practical guide's, and the one with pictures; «Arm
+  (biceps / triceps)» is the variant the guide writes up, with its own examples; and
+  «Another pair» leaves the rule of the calibration without an example and shows no
+  pictures. **No limit changes with the pair** — the floor of the index, the
+  channel-separation criterion and the ranges of the calibration checks were measured on
+  the forearm — which is why the other two say they are worth checking on a test
+  recording. The pair chosen goes into the EDF header.
 - **MAC** address (BITalino) or **COM port** (Arduino), always editable; «Default»
   restores the saved one. Writing `simulada` connects a BITalino simulated in software,
   to try the application, the recording and the classroom broadcast without the

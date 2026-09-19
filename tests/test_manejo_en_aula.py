@@ -1096,7 +1096,7 @@ class TestTheTourShowsWhatToDo:
                 assert QImage(str(ruta)).width() >= 800, ruta
 
     def test_the_picture_follows_the_language(self) -> None:
-        from emgteach.gui.tour import imagen
+        from emgteach.gui.imagenes import imagen
         from emgteach.i18n import get_language, set_language
 
         anterior = get_language()
@@ -1125,7 +1125,7 @@ class TestTheTourShowsWhatToDo:
             assert all(s.image_path() is None for s in build_tour(main_window))
 
     def test_the_panel_shows_the_picture_and_widens_for_it(self, main_window) -> None:
-        from emgteach.gui.tour import imagen
+        from emgteach.gui.imagenes import imagen
         from emgteach.gui.widgets.coach import CoachMark, CoachStep
 
         marca = CoachMark(main_window)

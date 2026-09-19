@@ -104,6 +104,41 @@ _ES = {
     # --- muscle labels (acquisition) ---
     "Agonist — e.g. FCR": "Agonista, p. ej. FCR",
     "Antagonist — e.g. ECR": "Antagonista, p. ej. ECR",
+    # --- which pair the practical is on (emgteach.pairs) ---
+    "Agonist — e.g. biceps": "Agonista, p. ej. bíceps",
+    "Antagonist — e.g. triceps": "Antagonista, p. ej. tríceps",
+    "Pair:": "Par:",
+    "Pair: {name}": "Par: {name}",
+    "Forearm (FCR / ECR)": "Antebrazo (FCR / ECR)",
+    "Arm (biceps / triceps)": "Brazo (bíceps / tríceps)",
+    "Another pair": "Otro par",
+    "Which pair of muscles this practical is being run on. It changes what "
+    "the interface shows and says — the examples, the pictures — and nothing "
+    "it computes: the limits are the same for every pair, and they were "
+    "measured on the forearm.":
+        "Con qué par de músculos se hace la práctica. Cambia lo que la "
+        "interfaz enseña y dice —los ejemplos, las imágenes— y nada de lo "
+        "que calcula: los límites son los mismos con cualquier par, y están "
+        "medidos en el antebrazo.",
+    "The default limits were measured on the forearm pair: check them on a "
+    "test recording before using this one with a group.":
+        "Los límites por omisión están medidos sobre el par del antebrazo: "
+        "compruébelos con un registro de prueba antes de usar este con un "
+        "grupo.",
+    "There are no pictures for this pair.":
+        "No hay imágenes para este par.",
+    "On the forearm: wrist flexion, clenching the fist with all your "
+    "strength.":
+        "En el antebrazo: flexión de muñeca, cerrando el puño con toda la "
+        "fuerza.",
+    "On the forearm: wrist extension, with the hand open and the fingers "
+    "stretched out as far as they go.":
+        "En el antebrazo: extensión de muñeca, con la mano abierta y los "
+        "dedos extendidos a tope.",
+    "On the arm: elbow flexion against something that does not give.":
+        "En el brazo: flexión de codo contra algo que no cede.",
+    "On the arm: elbow extension against something that does not give.":
+        "En el brazo: extensión de codo contra algo que no cede.",
     "Agonist": "Agonista",
     "Antagonist": "Antagonista",
     # --- acquisition: output path, test identifier, k ---
@@ -149,23 +184,8 @@ _ES = {
         "segundo canal de la placa o su acelerómetro, así que lo fijan y el "
         "selector no aparece.",
     # --- calibration wizard: brief maximal efforts ---
-    "When the count reaches 0: one brief, explosive maximal jerk of the "
-    "movement this muscle makes — on the forearm, wrist flexion, clenching "
-    "the fist with all your strength. A jerk, not a sustained push against "
-    "something fixed.":
-        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva, a la "
-        "máxima potencia, del movimiento que hace este músculo; en el "
-        "antebrazo, flexión de muñeca cerrando el puño con toda la fuerza. "
-        "Una sacudida, no un empuje sostenido contra algo fijo.",
-    "When the count reaches 0: one brief, explosive maximal jerk of the "
-    "movement this muscle makes — on the forearm, wrist extension, with the "
-    "hand open and the fingers stretched out as far as they go. A jerk, not "
-    "a sustained push against something fixed.":
-        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva, a la "
-        "máxima potencia, del movimiento que hace este músculo; en el "
-        "antebrazo, extensión de muñeca con la mano abierta y los dedos "
-        "extendidos a tope. Una sacudida, no un empuje sostenido contra algo "
-        "fijo.",
+    # The rule on its own; the gesture that illustrates it belongs to the
+    # pair and lives in emgteach.pairs.
     "When the count reaches 0: one brief, explosive maximal jerk of the "
     "movement this muscle makes — a jerk, not a sustained push against "
     "something fixed.":
