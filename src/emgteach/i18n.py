@@ -261,11 +261,11 @@ _ES = {
     # --- «?» texts per box (help_texts.py) ---
     "Choose the device and the port it appears on; on a laboratory computer "
     "this is set once and kept. The test identifier written here goes into "
-    "the recording's header and the report.":
+    "the recording's header and the report. Use a code, never the participant's name: the EDF header travels with the file.":
         "Elija el dispositivo y el puerto en el que aparece; en un ordenador "
         "de laboratorio esto se fija una vez y se conserva. El identificador "
         "de prueba que se escribe aquí va a la cabecera del registro y al "
-        "informe.",
+        "informe. Use un código, nunca el nombre del participante: la cabecera del EDF viaja con el archivo.",
     "In the practicals that need a reference, the session asks for the "
     "maximal contraction first and the task afterwards, and writes both into "
     "one file.":

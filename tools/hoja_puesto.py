@@ -62,7 +62,8 @@ TEXTOS = {
         "t": ["Electrodos", "Conectar", "Grabar", "Calibración", "La tarea", "Analizar"],
         "s": [
             "canal 1 FCR · canal 2 ECR · referencia sobre el cúbito",
-            "con la placa encendida",
+            "con la placa encendida · en «Identificador de prueba», un código, "
+            "nunca el nombre",
             "calentamiento: {warm} s, 2 o 3 contracciones suaves",
             "{n} {por} FCR · {n} {por} ECR · una sacudida explosiva en los {dur} s de cada aviso",
             "{f} flexiones · {e} extensiones · {p} presa de 5 s · 2 s quieto entre maniobras",
@@ -76,7 +77,8 @@ TEXTOS = {
         "t": ["Electrodes", "Connect", "Record", "Calibration", "The task", "Analyse"],
         "s": [
             "channel 1 FCR · channel 2 ECR · reference on the ulna",
-            "with the board switched on",
+            "with the board switched on · in «Test identifier», a code, never "
+            "a name",
             "warm-up: {warm} s, two or three easy contractions",
             "{n} {por} FCR · {n} {por} ECR · one explosive jerk in the {dur} s of each cue",
             "{f} flexions · {e} extensions · {p} grip of 5 s · 2 s still in between",
