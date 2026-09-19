@@ -29,11 +29,11 @@ not known in advance, and show none.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
+from emgteach.gui.imagenes import imagen
 from emgteach.gui.widgets.coach import CoachStep
-from emgteach.i18n import get_language, tr
+from emgteach.i18n import tr
 from emgteach.modes import (
     MODE_PAIR,
     MODE_SINGLE,
@@ -45,19 +45,6 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from emgteach.gui.app import MainWindow
 
 TAB_ACQ, TAB_ANA, TAB_MVC = 0, 1, 2
-
-_IMAGENES = Path(__file__).resolve().parent / "assets" / "recorrido"
-
-
-def imagen(nombre: str) -> str | None:
-    """The tour picture ``nombre`` in the interface's language, else in
-    English, else None."""
-    for idioma in (get_language(), "en"):
-        ruta = _IMAGENES / f"{nombre}_{idioma}.png"
-        if ruta.is_file():
-            return str(ruta)
-    return None
-
 
 def build_tour(win: MainWindow) -> list[CoachStep]:
     """The steps for the mode currently selected."""

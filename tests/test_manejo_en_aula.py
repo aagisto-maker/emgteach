@@ -1087,11 +1087,11 @@ class TestTheTourShowsWhatToDo:
     def test_both_pictures_exist_in_both_languages(self) -> None:
         from PySide6.QtGui import QImage
 
-        import emgteach.gui.tour as tour
+        import emgteach.gui.imagenes as imagenes
 
         for nombre in ("electrodos", "calibracion"):
             for idioma in ("es", "en"):
-                ruta = tour._IMAGENES / f"{nombre}_{idioma}.png"
+                ruta = imagenes._IMAGENES / f"{nombre}_{idioma}.png"
                 assert ruta.is_file(), ruta
                 assert QImage(str(ruta)).width() >= 800, ruta
 

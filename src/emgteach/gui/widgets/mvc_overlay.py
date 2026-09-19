@@ -29,7 +29,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QFrame
 
 from emgteach.i18n import tr
@@ -54,6 +54,12 @@ class MvcOverlay(QFrame):
 
     _W = 460
     _H = 210                  #: minimum height; the panel grows past it
+
+    #: How much of the window the picture may take, and the air under it.
+    #: Capped like the tour's (``coach._IMG_MAX_FRAC``) so a tall picture
+    #: on a small screen still leaves the plots and the message in view.
+    _IMG_MAX_FRAC = 0.28
+    _IMG_GAP = 10
 
     #: Type size of the message band, and the room around it.
     _SUB_PT = 12
@@ -87,22 +93,34 @@ class MvcOverlay(QFrame):
         self._count = ""
         self._progress = 0.0       # window progress 0..1
         self._effort = 0.0         # live effort 0..1 (of the running peak)
+        self._pixmap = QPixmap()   # the gesture being asked for, or nothing
         self.resize(self._W, self._H)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.hide()
 
     # -- driven by the wizard ------------------------------------------------
 
-    def show_ready(self, title: str, count: int, subtitle: str = "") -> None:
+    def show_ready(self, title: str, count: int, subtitle: str = "",
+                   image: str | None = None) -> None:
+        """The countdown before an effort, with the gesture it asks for.
+
+        *image* is a path, or ``None`` for the panel of always: without
+        one nothing about the layout changes. The picture belongs with the
+        instruction, not with the effort — while the student is squeezing
+        they are watching the bar, and a taller panel would cover the
+        plots just then.
+        """
         self._mode = "ready"
         self._title = title
         self._count = str(count)
         self._subtitle = subtitle
+        self._set_image(image)
         self._present()
 
     def show_contract(
         self, title: str, secs_left: float, progress: float, effort: float
     ) -> None:
+        self._set_image(None)          # the effort is watched on the bar
         self._mode = "contract"
         self._title = title
         self._count = f"{secs_left:.0f}"
@@ -112,6 +130,7 @@ class MvcOverlay(QFrame):
         self._present()
 
     def show_relax(self, subtitle: str = "") -> None:
+        self._set_image(None)
         self._mode = "relax"
         self._title = ""
         self._subtitle = subtitle
@@ -122,12 +141,14 @@ class MvcOverlay(QFrame):
 
         Used for a quick concentric action where a hold timer or effort bar
         would only distract (and could read as 'something is missing')."""
+        self._set_image(None)
         self._mode = "action"
         self._title = word
         self._subtitle = subtitle
         self._present()
 
     def show_done(self, title: str, subtitle: str) -> None:
+        self._set_image(None)
         self._mode = "done"
         self._title = title
         self._subtitle = subtitle
@@ -184,9 +205,46 @@ class MvcOverlay(QFrame):
             return 0
         return self.title_height() - self._TITLE[self._mode][2]
 
+    def _set_image(self, ruta: str | None) -> None:
+        """Load the picture for the panel's width, or clear it.
+
+        The width is fixed — the tab centres the panel by it — so the
+        picture is scaled to the text's own width and capped in height by
+        a share of the window it floats over.
+        """
+        pix = QPixmap(ruta) if ruta else QPixmap()
+        if pix.isNull():
+            self._pixmap = QPixmap()
+            return
+        ancho = self._W - 2 * self._SUB_MARGIN
+        alto_max = max(90, int(self._alto_disponible() * self._IMG_MAX_FRAC))
+        escala = min(ancho / pix.width(), alto_max / pix.height())
+        self._pixmap = pix.scaled(
+            max(1, int(pix.width() * escala)), max(1, int(pix.height() * escala)),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+
+    def _alto_disponible(self) -> int:
+        """The window the panel floats over, or a sane number without one."""
+        padre = self.parentWidget()
+        return padre.height() if padre is not None else 600
+
+    def _image_extra(self) -> int:
+        """How far the message moves down for the picture, if there is one."""
+        return 0 if self._pixmap.isNull() else self._pixmap.height() + self._IMG_GAP
+
+    def image_rect(self) -> tuple[int, int, int, int]:
+        """``(x, y, w, h)`` of the picture; empty when there is none."""
+        if self._pixmap.isNull():
+            return (0, 0, 0, 0)
+        top = self._TOP.get(self._mode, 152) + self._title_extra()
+        x = (self._W - self._pixmap.width()) // 2
+        return (x, top, self._pixmap.width(), self._pixmap.height())
+
     def message_rect(self) -> tuple[int, int, int, int]:
         """``(x, y, w, h)`` of the band the message is drawn in."""
-        top = self._TOP.get(self._mode, 152) + self._title_extra()
+        top = self._TOP.get(self._mode, 152) + self._title_extra() + self._image_extra()
         ancho = self._W - 2 * self._SUB_MARGIN
         return (
             self._SUB_MARGIN, top, ancho,
@@ -206,7 +264,7 @@ class MvcOverlay(QFrame):
 
     def height_for_text(self) -> int:
         """The height this panel needs for what it is about to draw."""
-        top = self._TOP.get(self._mode, 152) + self._title_extra()
+        top = self._TOP.get(self._mode, 152) + self._title_extra() + self._image_extra()
         return max(self._H, top + self.text_height() + self._BOTTOM)
 
     # -- painting ------------------------------------------------------------
@@ -241,6 +299,10 @@ class MvcOverlay(QFrame):
             self._text(p, self._title, 0, 40, w, 60, 38, bold=True, colour=_EFFORT)
         elif self._mode == "done":
             self._title_band(p, colour=_OK)
+
+        if not self._pixmap.isNull():
+            x, y, _w, _h = self.image_rect()
+            p.drawPixmap(x, y, self._pixmap)
 
         # One path for every message, wrapped, in the band measured above. The
         # single-line strips this replaces are what let the long warnings —
