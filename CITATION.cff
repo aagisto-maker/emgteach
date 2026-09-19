@@ -54,10 +54,13 @@ abstract: >-
   prepared and taught without hardware, a connection diagnostic for the
   station, an event log beside every recording and a recovery for a recording
   whose process died; and it repairs the session report, whose table of
-  contractions lost four columns off the page, and the CSV export.
+  contractions lost four columns off the page, and the CSV export. In version
+  3.6.0 the simulated board obeys the calibration, so a session rehearsed
+  without hardware reads in % MVC as a real one does; nothing computed
+  changes.
 type: software
-version: 3.5.0
-date-released: "2026-09-18"
+version: 3.6.0
+date-released: "2026-09-19"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

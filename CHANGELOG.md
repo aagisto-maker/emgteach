@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] — 2026-09-19
+
+**The simulated board obeys the calibration.** A session rehearsed without the
+board teaches what the practical teaches: the wizard tells the device when it
+is asking for a maximum, the synthetic subject gives it, and the task then
+reads 53 % and 54 % of the reference instead of more than 100 % of it, with the
+grip co-activating at 81 % against 20 % and 33 % for the alternating gestures.
+Nothing computed changes and no recording made with the board reads
+differently. See [`docs/RELEASE_NOTES_v3.6.0.md`](docs/RELEASE_NOTES_v3.6.0.md).
+
 ### Fixed
 
 - **The simulated board obeys the calibration.** Its subject repeats a fixed twelve-second cycle that starts when the board is connected and never reaches full activation — 0.50 for the flexion, 0.50 for the extension, 0.40 for the grip — and it read nothing from the application, so the calibration span fell wherever the cycle happened to be: at rest half the time, or on an edge, which passes without a warning and leaves a reference half way up. The task then read above 100 % of the maximal voluntary contraction, and a session rehearsed without hardware taught the opposite of what the practical is about. The wizard already knows when it is asking for a maximum, because it opens a `CAL` span and closes it; it now says so to the device as well (`AcquisitionDevice.instruct`, a no-op for every backend that cannot act on it — a board has no say in what the person attached to it does). While an effort is asked of one muscle the simulated subject gives it in full and rests the other, and the cycle goes on from where it was when the asking stops. Measured: the reference comes out at 0.67 and 0.69 of each muscle's maximum (the envelope of a Gaussian signal, not its standard deviation), the task reads 53 % and 54 % of it, and the grip's co-activation index is 81 % against 20 % and 33 % for the alternating gestures — the shape of the practical's own finding, which is what a rehearsal should show.
@@ -649,7 +659,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.5.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.6.0...HEAD
+[3.6.0]: https://github.com/aagisto-maker/emgteach/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/aagisto-maker/emgteach/compare/v3.4.0...v3.5.0
 [3.4.0]: https://github.com/aagisto-maker/emgteach/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/aagisto-maker/emgteach/compare/v3.2.0...v3.3.0

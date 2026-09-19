@@ -24,7 +24,15 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.5.0 is **the kit for the laboratory**: a BITalino the
+`emgteach` v3.6.0 makes **the simulated board obey the calibration**: the
+wizard tells the device when it is asking for a maximum, and the simulated
+board gives it, so a session rehearsed without it reads in % MVC as
+a real one does — about 53 % for the alternating gestures and a grip that
+co-activates — instead of above 100 % of its own maximum. Nothing computed
+changes. See
+[`docs/RELEASE_NOTES_v3.6.0.md`](docs/RELEASE_NOTES_v3.6.0.md).
+
+v3.5.0 was **the kit for the laboratory**: a BITalino the
 application simulates, so a practical can be prepared and taught where the
 board is not at hand; a connection diagnostic that answers why a station
 does not connect; the event log of every recording saved beside it, and a
