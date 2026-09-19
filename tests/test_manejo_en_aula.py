@@ -1148,6 +1148,30 @@ class TestTheTourShowsWhatToDo:
         prueba = (raiz / "packaging" / "run_emgteach.py").read_text(encoding="utf-8")
         assert "tour picture missing" in prueba
 
+    def test_the_self_test_still_imports_what_it_names(self) -> None:
+        """El punto de entrada congelado importa de la aplicación por su
+        nombre, y **nada de la batería lo ejecuta**: el día que un módulo se
+        mueve, el `.py` sigue pasando y es el exe el que se cae, ya empaquetado
+        —así se descubrió que `imagen()` se había ido de `tour` a `imagenes`—.
+        Aquí se resuelven esos import uno a uno."""
+        import ast
+        import importlib
+
+        raiz = Path(__file__).resolve().parents[1]
+        fuente = (raiz / "packaging" / "run_emgteach.py").read_text(encoding="utf-8")
+        nombrados = [
+            (nodo.module, alias.name)
+            for nodo in ast.walk(ast.parse(fuente))
+            if isinstance(nodo, ast.ImportFrom)
+            and (nodo.module or "").startswith("emgteach")
+            for alias in nodo.names
+        ]
+        assert nombrados, "el punto de entrada ya no importa nada de emgteach"
+        for modulo, nombre in nombrados:
+            assert hasattr(importlib.import_module(modulo), nombre), (
+                f"{modulo} ya no ofrece {nombre}: el exe se caería al arrancar"
+            )
+
 
 def _luminancia(color: str) -> float:
     canales = (int(color[i:i + 2], 16) / 255 for i in (1, 3, 5))
