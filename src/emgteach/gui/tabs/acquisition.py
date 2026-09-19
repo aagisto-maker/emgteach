@@ -98,6 +98,17 @@ from emgteach.modes import (
     normalise_mode,
 )
 from emgteach.mvc import mvc_from_reps, mvc_ref_marker
+from emgteach.pairs import (
+    DEFAULT_PAIR,
+    PAIRS,
+    normalise_pair,
+    pair_calibration_example,
+    pair_hint,
+    pair_image,
+    pair_label,
+    pair_protocol_suffix,
+    pair_warning,
+)
 from emgteach.phases import (
     CALIBRATION,
     PREPARATION,
@@ -209,7 +220,6 @@ _CHANNEL_DEFAULT_LABELS = ["EMG1", "EMG2"]
 #: left empty. A name a student can read back — «agonist», «antagonist» —
 #: rather than a channel number; the anatomical one is still theirs to
 #: type. Callables so tr() runs in the language of the moment.
-_LABEL_HINTS = [lambda: tr("Agonist — e.g. FCR"), lambda: tr("Antagonist — e.g. ECR")]
 _LABEL_FALLBACKS = [lambda: tr("Agonist"), lambda: tr("Antagonist")]
 # Defaults used in earlier versions; they are migrated to the ones above if
 # still stored in QSettings (this does not overwrite names chosen by the user,
@@ -481,6 +491,11 @@ class AcquisitionTab(QWidget):
         #: but it has to exist before anyone calls that — and _flow_needs_
         #: calibration reads it on every press of the record button.
         self._mode = DEFAULT_MODE
+        #: Which pair the agonist/antagonist practical is on. Content
+        #: only — the examples, the pictures, the hint in each label box —
+        #: and no threshold moves with it (:mod:`emgteach.pairs`).
+        self._par = normalise_pair(
+            self._settings.value("adquisicion/par", DEFAULT_PAIR))
         #: Which step of the kinematics sequence the floating panel last
         #: offered, so it is offered once and not after every event.
         self._paso_mostrado = ""
@@ -816,13 +831,31 @@ class AcquisitionTab(QWidget):
             if stored in _OLD_DEFAULT_LABELS[i] or stored == _CHANNEL_DEFAULT_LABELS[i]:
                 stored = ""
             edit.setText(stored)
-            edit.setPlaceholderText(_LABEL_HINTS[i]())
+            edit.setPlaceholderText(pair_hint(self._par, i))
             # Room for the 16 characters the EDF label allows: these are the
             # muscle names, the one thing on this row the student really reads.
             edit.setMinimumWidth(130)
             edit.textChanged.connect(self._on_label_changed)
             self._edit_labels.append(edit)
             labels_row.addWidget(edit, stretch=1)
+        # Which pair this practical is on. In the labels row on purpose:
+        # that is where the muscles are named, and it keeps the selector
+        # away from the load bars, which is what the article's live figure
+        # shows and cannot be taken again.
+        self._lbl_par = QLabel(tr("Pair:"))
+        labels_row.addWidget(self._lbl_par)
+        self._combo_par = QComboBox()
+        for par in PAIRS:
+            self._combo_par.addItem(pair_label(par), par)
+        self._combo_par.setCurrentIndex(PAIRS.index(self._par))
+        self._combo_par.setToolTip(tr(
+            "Which pair of muscles this practical is being run on. It "
+            "changes what the interface shows and says — the examples, the "
+            "pictures — and nothing it computes: the limits are the same for "
+            "every pair, and they were measured on the forearm."
+        ))
+        self._combo_par.currentIndexChanged.connect(self._on_par_changed)
+        labels_row.addWidget(self._combo_par)
         ch_row.addWidget(self._box_labels, stretch=1)
         # Whole accelerometer block in one container, shown only by the
         # kinematics mode. Its caption is a plain label so that hiding the
@@ -1512,6 +1545,46 @@ class AcquisitionTab(QWidget):
         self._bcast_config()
 
     @Slot()
+    def _protocolo(self) -> str:
+        """What the EDF header records this recording as.
+
+        The practical, and — in the pair one — which pair it was run on, so
+        that the analysis and the report of a file recorded months ago do
+        not have to guess.
+        """
+        base = mode_protocol(self._mode)
+        if self._mode != MODE_PAIR:
+            return base
+        return f"{base} ({pair_protocol_suffix(self._par)})"
+
+    def imagen_del_par(self, nombre: str) -> str | None:
+        """The picture *nombre* of the pair in use, or ``None``.
+
+        None because the pair has no pictures — «another pair» is any pair,
+        and a figure of somebody else's arm is worse than none — or because
+        the ones for it are still to be drawn.
+        """
+        clave = pair_image(self._par, nombre)
+        return imagen_de_la_practica(clave) if clave else None
+
+    def _on_par_changed(self) -> None:
+        """The pair changed: what the interface says follows, nothing else.
+
+        The hints are placeholders, so a name already typed is left alone;
+        and what the teacher has to know before using a pair is said in the
+        log, which is where someone setting a station up is looking.
+        """
+        self._par = normalise_pair(self._combo_par.currentData())
+        self._settings.setValue("adquisicion/par", self._par)
+        for i, edit in enumerate(self._edit_labels):
+            edit.setPlaceholderText(pair_hint(self._par, i))
+        self._log(tr("Pair: {name}").format(name=pair_label(self._par)))
+        aviso = pair_warning(self._par)
+        if aviso:
+            self._log(aviso)
+        if not self.imagen_del_par("calibracion"):
+            self._log(tr("There are no pictures for this pair."))
+
     def _on_label_changed(self) -> None:
         for i, edit in enumerate(self._edit_labels):
             self._settings.setValue(f"adquisicion/label_{i}", edit.text())
@@ -1962,7 +2035,7 @@ class AcquisitionTab(QWidget):
             # code beside it says less than one that says the code twice.
             student_name=self._edit_student_code.text().strip(),
             student_code=self._edit_student_code.text().strip(),
-            protocol=mode_protocol(self._mode),
+            protocol=self._protocolo(),
             equipment=device.name,
         )
         # Live quality check against the device's true physical rails.
@@ -3068,7 +3141,7 @@ class AcquisitionTab(QWidget):
                 "maximal effort of a session is never the strongest one."
             )
             self._mvc_overlay.show_ready(
-                titulo, cuenta, detalle, imagen_de_la_practica("calibracion")
+                titulo, cuenta, detalle, self.imagen_del_par("calibracion")
             )
             self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
             self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
@@ -3087,8 +3160,9 @@ class AcquisitionTab(QWidget):
                 detalle,
                 # The gesture being asked for, where it is being asked:
                 # the picture lives in the tour, and the tour is offered
-                # once, months before this countdown.
-                imagen_de_la_practica("calibracion"),
+                # once, months before this countdown. Of this pair, and
+                # none at all for a pair nobody has drawn.
+                self.imagen_del_par("calibracion"),
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
@@ -3239,31 +3313,20 @@ class AcquisitionTab(QWidget):
         something fixed: a reference is only a yardstick if it recruits the
         muscle mass the task recruits, and a surface electrode sees the
         compartment beneath it rather than one muscle. The rule is the same
-        for any pair; the gesture is not, so the instruction states the rule
-        first and names the forearm as the example — the pair of the
-        practical guide, whose task includes a grip, and clenching the fist
-        brings in the finger flexors that a push of the wrist leaves out.
+        for any pair and is said first; the gesture that illustrates it is
+        the pair's (:mod:`emgteach.pairs`), and with a pair the application
+        knows nothing about the rule stands on its own, which is the whole
+        point of stating it first.
         """
-        if self._mode == MODE_PAIR and c == 0:
-            return tr(
-                "When the count reaches 0: one brief, explosive maximal jerk of "
-                "the movement this muscle makes — on the forearm, wrist flexion, "
-                "clenching the fist with all your strength. A jerk, not a "
-                "sustained push against something fixed."
-            )
-        if self._mode == MODE_PAIR and c == 1:
-            return tr(
-                "When the count reaches 0: one brief, explosive maximal jerk of "
-                "the movement this muscle makes — on the forearm, wrist "
-                "extension, with the hand open and the fingers stretched out as "
-                "far as they go. A jerk, not a sustained push against something "
-                "fixed."
-            )
-        return tr(
+        regla = tr(
             "When the count reaches 0: one brief, explosive maximal jerk of the "
             "movement this muscle makes — a jerk, not a sustained push against "
             "something fixed."
         )
+        if self._mode != MODE_PAIR or c not in (0, 1):
+            return regla
+        ejemplo = pair_calibration_example(self._par, c)
+        return f"{regla} {ejemplo}" if ejemplo else regla
 
     def _mvc_compute_muscle(self, c: int) -> None:
         window = max(1, round(self._profile.mvc_peak_window_s * FS))
@@ -4392,7 +4455,11 @@ class AcquisitionTab(QWidget):
         # The hint in the first box names what the practical records: one
         # muscle, or the agonist of a pair.
         self._edit_labels[0].setPlaceholderText(
-            tr("Muscle — e.g. biceps") if mode_channels(mode) == 1 else _LABEL_HINTS[0]())
+            tr("Muscle — e.g. biceps") if mode_channels(mode) == 1
+            else pair_hint(self._par, 0))
+        # Which pair is a question only the pair practical asks.
+        for w in (self._lbl_par, self._combo_par):
+            w.setVisible(self._mode == MODE_PAIR)
 
         # Belongs to the kinematics practical, not to the fine controls.
         uses_acc = mode_uses_acc(mode)

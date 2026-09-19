@@ -33,25 +33,48 @@ PRINCIPIO = {
 }
 
 
-def _instrucciones() -> list[tuple[str, str]]:
-    """The wizard's calibration instructions, as ``(language, text)``."""
+def _la_regla() -> list[tuple[str, str]]:
+    """The one calibration instruction, as ``(language, text)``.
+
+    One, now: the rule. The gesture that illustrates it is the pair's and
+    lives in :mod:`emgteach.pairs`, so it cannot be written before the rule
+    even by accident — it is a separate sentence, said after.
+    """
     claves = [k for k in i18n._ES
               if k.startswith("When the count reaches 0: one brief, explosive maximal jerk")]
-    assert len(claves) == 3, claves        # agonist, antagonist, and the general one
-    return ([("en", k) for k in claves]
-            + [("es", i18n._ES[k]) for k in claves])
+    assert len(claves) == 1, claves
+    return [("en", claves[0]), ("es", i18n._ES[claves[0]])]
 
 
-def test_every_calibration_instruction_states_the_rule_before_the_example() -> None:
-    for lang, texto in _instrucciones():
+def test_the_calibration_instruction_is_the_rule_and_names_no_pair() -> None:
+    for lang, texto in _la_regla():
         assert PRINCIPIO[lang] in texto, (lang, texto)
-        anatomia = ANATOMIA.search(texto)
-        if anatomia is None:
-            continue                       # the general instruction names no pair
-        assert texto.index(PRINCIPIO[lang]) < anatomia.start(), (
-            f"[{lang}] the pair is named before the rule: {texto[:80]!r}")
+        assert not ANATOMIA.search(texto), (lang, texto)
 
-    # And the montage warning asks for the limb to be supported, whichever it is.
+
+def test_the_example_comes_after_the_rule_for_every_pair() -> None:
+    """What the wizard actually says, assembled as the tab assembles it."""
+    from emgteach.pairs import PAIRS, pair_calibration_example
+
+    for lang in ("en", "es"):
+        anterior = i18n.get_language()
+        try:
+            i18n.set_language(lang)
+            regla = _la_regla()[0 if lang == "en" else 1][1]
+            for par in PAIRS:
+                for canal in (0, 1):
+                    ejemplo = pair_calibration_example(par, canal)
+                    frase = f"{regla} {ejemplo}" if ejemplo else regla
+                    assert PRINCIPIO[lang] in frase
+                    anatomia = ANATOMIA.search(frase)
+                    if anatomia is None:
+                        continue           # «another pair»: the rule on its own
+                    assert frase.index(PRINCIPIO[lang]) < anatomia.start(), (lang, par, frase)
+        finally:
+            i18n.set_language(anterior)
+
+def test_the_montage_warning_and_the_paper_labels_name_no_muscle() -> None:
+    # The montage warning asks for the limb to be supported, whichever it is.
     aviso = next(k for k in i18n._ES if k.startswith("{pairs}. Move the electrode pairs"))
     for texto in (aviso, i18n._ES[aviso]):
         assert not ANATOMIA.search(texto), texto
