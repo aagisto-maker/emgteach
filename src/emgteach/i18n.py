@@ -1391,7 +1391,8 @@ _ES = {
         "Guarda una imagen de la ventana (F12). Va junto al registro, con el "
         "nombre de este más la fecha y la hora; no pregunta nada.",
     "Screenshot saved: {path}": "Captura guardada: {path}",
-    "Auto": "Auto",
+    "One every {s:.0f} s while recording":
+        "Una cada {s:.0f} s mientras se graba",
     "Take a picture by itself every {s:.0f} s, but only while a recording is "
     "running, and at most {n} per recording. It needs no switching off: "
     "outside a recording it does nothing.":

@@ -502,9 +502,10 @@ puede mover resultados es la propuesta de filas del editor de fragmentos**:
 - **La envolvente en vivo sigue al pico** y vuelve poco a poco a la escala de
   las flechas; los móviles reciben el PDF antes que el CSV, y la emisión dice
   cuándo ningún móvil puede alcanzarla.
-- **Capturas de pantalla** con F12 desde cualquier pestaña y un botón `Auto`
-  que las hace solo, cada tres segundos y únicamente mientras se graba, con el
-  nombre del registro al que pertenecen; el registro **se nombra con el
+- **Capturas de pantalla** con F12 desde cualquier pestaña y, en la flechita
+  del propio botón «Captura», una entrada que las hace solas, cada tres
+  segundos y únicamente mientras se graba, con el nombre del registro al que
+  pertenecen; el registro **se nombra con el
   identificador de prueba**; **«Guardar EDF afinado…» se ofrece en todas las
   prácticas** en cuanto hay fragmentos elegidos; y «Calibrar CVM» recupera su
   tamaño de botón en las dos prácticas sin caja de fuerza-velocidad. Las
