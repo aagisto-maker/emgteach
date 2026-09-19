@@ -31,7 +31,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from emgteach.gui.imagenes import imagen
 from emgteach.gui.widgets.coach import CoachStep
 from emgteach.i18n import tr
 from emgteach.modes import (
@@ -40,11 +39,27 @@ from emgteach.modes import (
     mode_fixed_labels,
     mode_uses_acc,
 )
+from emgteach.pairs import pair_warning
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from emgteach.gui.app import MainWindow
 
 TAB_ACQ, TAB_ANA, TAB_MVC = 0, 1, 2
+
+def _aviso_del_par(adq, mode: str) -> str:
+    """What has to be known before using a pair that is not the guide's.
+
+    Empty for the forearm, and that is deliberate: the tour of the default
+    pair has to come out word for word as it was — figure 4 of the article
+    is a capture of two of its steps.
+    """
+    if mode != MODE_PAIR:
+        return ""
+    aviso = pair_warning(adq._par)
+    if aviso and not adq.imagen_del_par("electrodos"):
+        aviso += " " + tr("There are no pictures for this pair.")
+    return (" " + aviso) if aviso else ""
+
 
 def build_tour(win: MainWindow) -> list[CoachStep]:
     """The steps for the mode currently selected."""
@@ -103,10 +118,10 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             "Switch the board on and connect the electrodes: the positive and "
             "the negative go on the midline of the muscle, the reference on a "
             "neutral point, over a bone if possible."
-        ) + " " + nombres,
+        ) + " " + nombres + _aviso_del_par(adq, mode),
         lambda: adq._btn_conectar,
         tab=TAB_ACQ,
-        image=(lambda: imagen("electrodos")) if mode == MODE_PAIR else None,
+        image=(lambda: adq.imagen_del_par("electrodos")) if mode == MODE_PAIR else None,
     ))
 
     # 3 ── Record, with the maximum inside the recording.
@@ -123,7 +138,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
         ),
         lambda: adq._btn_grabar,
         tab=TAB_ACQ,
-        image=(lambda: imagen("calibracion")) if mode == MODE_PAIR else None,
+        image=(lambda: adq.imagen_del_par("calibracion")) if mode == MODE_PAIR else None,
     ))
 
     # The kinematics practical has two things nobody would guess: where the

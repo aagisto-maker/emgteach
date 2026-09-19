@@ -316,6 +316,13 @@ Permite **registrar** una sesión y observarla en vivo.
 **Configuración del dispositivo**
 - Tipo de dispositivo (BITalino o Arduino + MyoWare), solo en la práctica de un
   músculo; en las otras dos la fila dice «Dispositivo: BITalino».
+- **Par** (solo en la práctica agonista / antagonista): con qué par de músculos se hace.
+  «Antebrazo (FCR / ECR)» es el del guion y el que trae las imágenes; «Brazo (bíceps /
+  tríceps)» es la variante escrita en el guion, con sus propios ejemplos; y «Otro par» deja
+  la regla de la calibración sin ejemplo y sin imágenes, para cualquier par. **Ningún
+  límite cambia con el par** —el suelo del índice, la separación entre canales y los rangos
+  de la calibración están medidos en el antebrazo—, y por eso los otros dos avisan de que
+  conviene comprobarlos con un registro de prueba. El par elegido va a la cabecera del EDF.
 - Dirección **MAC** (BITalino) o **puerto COM** (Arduino), siempre editable. El
   botón «Por defecto» restaura la guardada. Escribiendo `simulada` se conecta una
   BITalino simulada por programa, para probar la aplicación, la grabación y la

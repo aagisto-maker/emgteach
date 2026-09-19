@@ -39,11 +39,13 @@ class TestThePicturesAreNotTheTours:
     def test_a_picture_nobody_drew_is_none(self) -> None:
         assert imagen("no_existe") is None
 
-    def test_the_tour_reads_them_from_there_too(self) -> None:
-        """Moved, not copied: one resolver for the tour and for the panel."""
+    def test_nobody_reads_them_from_the_tour_any_more(self) -> None:
+        """Moved, not copied. The tour reaches them through the acquisition
+        tab, which is the one that knows which pair they have to be of."""
         from emgteach.gui import tour
 
-        assert tour.imagen is imagen
+        assert not hasattr(tour, "imagen")
+        assert not hasattr(tour, "_IMAGENES")
 
 
 class TestThePanelTakesOne:
