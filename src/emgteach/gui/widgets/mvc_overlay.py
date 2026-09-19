@@ -22,6 +22,13 @@ sacudida muscular simple (breve) de FCR con la máxima fuerza posible») is
 twice the panel's width at that size. So the title band is measured too, and
 everything under it — the countdown, the bars, the message — moves down by
 whatever the title grew.
+
+**The row of steps along the bottom is the map of the phase**: one empty box
+per action the phase asks for, in the colour of the muscle it belongs to,
+filled as each one is done. It answers a different question from the
+countdown — the count says *now*, the row says *where I am and how much is
+left* — so the two live together. It is drawn as a footer band, under
+everything else, which is why adding it moved none of the layout above it.
 """
 
 from __future__ import annotations
@@ -41,6 +48,7 @@ _EFFORT = QColor(39, 174, 96)      # green (effort fill)
 _PEAK = QColor(241, 196, 15)       # amber (peak marker)
 _OK = QColor(46, 204, 113)
 _MUTED = QColor(190, 190, 200)
+_STEP_EMPTY = QColor(38, 38, 48)   # the box before its action is done
 
 _WRAP_TOP = int(
     Qt.AlignmentFlag.AlignHCenter
@@ -61,6 +69,18 @@ class MvcOverlay(QFrame):
     _IMG_MAX_FRAC = 0.28
     _IMG_GAP = 10
 
+    #: The footer row: one box per action of the phase. Vertical, because a
+    #: row of uprights reads as a row of things to do; the horizontal bars
+    #: in this panel already mean «time running».
+    _STEP_H = 22
+    _STEP_W = 13
+    _STEP_GAP = 5
+    _STEP_TOP_GAP = 12
+
+    #: The bar that runs a hold, in the phase box.
+    _RUN_H = 14
+    _RUN_GAP = 12
+
     #: Type size of the message band, and the room around it.
     _SUB_PT = 12
     _SUB_MARGIN = 18          # px each side
@@ -73,6 +93,7 @@ class MvcOverlay(QFrame):
         "ready": (15, 18, 30),
         "contract": (16, 14, 30),
         "done": (20, 26, 36),
+        "phase": (15, 14, 26),
     }
 
     #: Where the message band starts in each mode with a single-line title —
@@ -83,6 +104,7 @@ class MvcOverlay(QFrame):
         "relax": 126,
         "action": 126,
         "done": 76,
+        "phase": 52,
     }
 
     def __init__(self, parent=None) -> None:
@@ -94,9 +116,45 @@ class MvcOverlay(QFrame):
         self._progress = 0.0       # window progress 0..1
         self._effort = 0.0         # live effort 0..1 (of the running peak)
         self._pixmap = QPixmap()   # the gesture being asked for, or nothing
+        #: ``[colour, done]`` per action of the phase; empty for no footer.
+        self._steps: list[list] = []
+        self._running: float | None = None   # a hold in progress, 0..1
         self.resize(self._W, self._H)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.hide()
+
+    # -- the map of the phase ------------------------------------------------
+
+    def set_steps(self, colours) -> None:
+        """Lay out one empty box per action, in the order they are asked for.
+
+        *colours* is one ``(r, g, b)`` per action — the muscle's own, so the
+        colour in the row is the colour of its trace — or empty for a phase
+        that has no actions to count, like the warm-up.
+        """
+        self._steps = [[QColor(*c), False] for c in (colours or [])]
+
+    def mark_step(self, index: int) -> None:
+        """Fill one box. Out of range is ignored on purpose: the row informs,
+        it does not govern, so more actions than boxes is not an error —
+        the count that matters is the one the analysis makes afterwards.
+        """
+        if 0 <= index < len(self._steps):
+            self._steps[index][1] = True
+
+    def steps_done(self) -> list[bool]:
+        """Which boxes are filled, in order."""
+        return [bool(hecho) for _colour, hecho in self._steps]
+
+    def steps_rect(self) -> tuple[int, int, int, int]:
+        """``(x, y, w, h)`` of the footer row; empty when there is none."""
+        if not self._steps:
+            return (0, 0, 0, 0)
+        n = len(self._steps)
+        ancho = n * self._STEP_W + (n - 1) * self._STEP_GAP
+        return ((self._W - ancho) // 2,
+                self.height() - self._BOTTOM - self._STEP_H,
+                ancho, self._STEP_H)
 
     # -- driven by the wizard ------------------------------------------------
 
@@ -111,6 +169,7 @@ class MvcOverlay(QFrame):
         plots just then.
         """
         self._mode = "ready"
+        self._running = None
         self._title = title
         self._count = str(count)
         self._subtitle = subtitle
@@ -122,6 +181,7 @@ class MvcOverlay(QFrame):
     ) -> None:
         self._set_image(None)          # the effort is watched on the bar
         self._mode = "contract"
+        self._running = None
         self._title = title
         self._count = f"{secs_left:.0f}"
         self._progress = max(0.0, min(1.0, progress))
@@ -132,6 +192,7 @@ class MvcOverlay(QFrame):
     def show_relax(self, subtitle: str = "") -> None:
         self._set_image(None)
         self._mode = "relax"
+        self._running = None
         self._title = ""
         self._subtitle = subtitle
         self._present()
@@ -143,13 +204,34 @@ class MvcOverlay(QFrame):
         would only distract (and could read as 'something is missing')."""
         self._set_image(None)
         self._mode = "action"
+        self._running = None
         self._title = word
         self._subtitle = subtitle
+        self._present()
+
+    def show_phase(self, title: str, subtitle: str = "", *,
+                   running: float | None = None) -> None:
+        """A phase of the session: what to do, the map, and a hold if there is one.
+
+        The box the free manoeuvres and the grip are guided by. It is short
+        on purpose — the student is watching their own load bars and traces
+        while they work, and those are exactly what a tall panel covers.
+
+        *running* is a hold in progress, 0..1, drawn as a bar that fills with
+        the clock; ``None`` for a phase nobody is timing.
+        """
+        self._set_image(None)
+        self._mode = "phase"
+        self._title = title
+        self._subtitle = subtitle
+        self._running = (None if running is None
+                         else max(0.0, min(1.0, float(running))))
         self._present()
 
     def show_done(self, title: str, subtitle: str) -> None:
         self._set_image(None)
         self._mode = "done"
+        self._running = None
         self._title = title
         self._subtitle = subtitle
         self._present()
@@ -230,6 +312,14 @@ class MvcOverlay(QFrame):
         padre = self.parentWidget()
         return padre.height() if padre is not None else 600
 
+    def _steps_extra(self) -> int:
+        """How much taller the panel is for its footer row."""
+        return 0 if not self._steps else self._STEP_H + self._STEP_TOP_GAP
+
+    def _running_extra(self) -> int:
+        """How far the message moves down for the hold bar, if there is one."""
+        return 0 if self._running is None else self._RUN_H + self._RUN_GAP
+
     def _image_extra(self) -> int:
         """How far the message moves down for the picture, if there is one."""
         return 0 if self._pixmap.isNull() else self._pixmap.height() + self._IMG_GAP
@@ -244,12 +334,16 @@ class MvcOverlay(QFrame):
 
     def message_rect(self) -> tuple[int, int, int, int]:
         """``(x, y, w, h)`` of the band the message is drawn in."""
-        top = self._TOP.get(self._mode, 152) + self._title_extra() + self._image_extra()
+        top = self._mensaje_top()
         ancho = self._W - 2 * self._SUB_MARGIN
         return (
             self._SUB_MARGIN, top, ancho,
-            max(0, self.height() - top - self._BOTTOM),
+            max(0, self.height() - top - self._BOTTOM - self._steps_extra()),
         )
+
+    def _mensaje_top(self) -> int:
+        return (self._TOP.get(self._mode, 152) + self._title_extra()
+                + self._image_extra() + self._running_extra())
 
     def text_height(self, text: str | None = None) -> int:
         """Height the message needs, wrapped, at the panel's own width."""
@@ -263,9 +357,15 @@ class MvcOverlay(QFrame):
         return rect.height()
 
     def height_for_text(self) -> int:
-        """The height this panel needs for what it is about to draw."""
-        top = self._TOP.get(self._mode, 152) + self._title_extra() + self._image_extra()
-        return max(self._H, top + self.text_height() + self._BOTTOM)
+        """The height this panel needs for what it is about to draw.
+
+        The phase box is not held to the minimum the calibration needs: it
+        floats while the student is working and the two plots and the load
+        bars under it are what they are working from.
+        """
+        alto = (self._mensaje_top() + self.text_height() + self._BOTTOM
+                + self._steps_extra())
+        return alto if self._mode == "phase" else max(self._H, alto)
 
     # -- painting ------------------------------------------------------------
 
@@ -299,6 +399,22 @@ class MvcOverlay(QFrame):
             self._text(p, self._title, 0, 40, w, 60, 38, bold=True, colour=_EFFORT)
         elif self._mode == "done":
             self._title_band(p, colour=_OK)
+        elif self._mode == "phase":
+            self._title_band(p, colour=_FG)
+            if self._running is not None:
+                y = self._TOP["phase"] + d + self._RUN_GAP // 2
+                self._bar(p, 24, y, w - 48, self._RUN_H, self._running,
+                          _EFFORT, peak=None)
+
+        # The footer row, last of the layout and first of what is looked at
+        # while the work is being done.
+        if self._steps:
+            x, y, _w, _h = self.steps_rect()
+            for colour, hecho in self._steps:
+                p.setPen(QPen(colour, 2))
+                p.setBrush(colour if hecho else _STEP_EMPTY)
+                p.drawRoundedRect(x, y, self._STEP_W, self._STEP_H, 3, 3)
+                x += self._STEP_W + self._STEP_GAP
 
         if not self._pixmap.isNull():
             x, y, _w, _h = self.image_rect()

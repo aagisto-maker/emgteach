@@ -115,6 +115,36 @@ _ES = {
     "forearm": "antebrazo",
     "arm": "brazo",
     "another pair": "otro par",
+    # --- el asistente de la sesión guiada: una línea y un imperativo ---
+    "Wrist flexion, fist clenched": "Flexión de muñeca, puño cerrado",
+    "Wrist extension, hand open": "Extensión de muñeca, mano abierta",
+    "Elbow flexion": "Flexión de codo",
+    "Elbow extension": "Extensión de codo",
+    "Close your fist and hold": "Cierre el puño y manténgalo",
+    "Tighten both muscles at once and hold":
+        "Apriete los dos músculos a la vez y manténgalo",
+    "Work both muscles at once and hold":
+        "Trabaje los dos músculos a la vez y manténgalo",
+    "Done — next (Space)": "Hecho — siguiente (Espacio)",
+    "Done — next": "Hecho — siguiente",
+    "Go on to the next part of the session.":
+        "Pasar a la parte siguiente de la sesión.",
+    "{n} contractions of {label}": "{n} contracciones de {label}",
+    "At your own pace; «{button}» when you finish.":
+        "A su ritmo; «{button}» al terminar.",
+    "Both muscles at once": "Los dos músculos a la vez",
+    "Next one in a moment": "La siguiente enseguida",
+    "Task recorded": "Tarea registrada",
+    "Stop the recording when you are ready.":
+        "Detenga la grabación cuando quiera.",
+    "The guided task is finished; the recording goes on.":
+        "La tarea guiada ha terminado; la grabación sigue.",
+    "Guided task cancelled; the recording goes on.":
+        "Tarea guiada cancelada; la grabación sigue.",
+    "A brief, explosive jerk — not a sustained push.":
+        "Sacudida breve y explosiva, no un empuje sostenido.",
+    "Two or three easy contractions of each muscle.":
+        "Dos o tres contracciones suaves de cada músculo.",
     "Which pair of muscles this practical is being run on. It changes what "
     "the interface shows and says — the examples, the pictures — and nothing "
     "it computes: the limits are the same for every pair, and they were "
@@ -130,18 +160,6 @@ _ES = {
         "grupo.",
     "There are no pictures for this pair.":
         "No hay imágenes para este par.",
-    "On the forearm: wrist flexion, clenching the fist with all your "
-    "strength.":
-        "En el antebrazo: flexión de muñeca, cerrando el puño con toda la "
-        "fuerza.",
-    "On the forearm: wrist extension, with the hand open and the fingers "
-    "stretched out as far as they go.":
-        "En el antebrazo: extensión de muñeca, con la mano abierta y los "
-        "dedos extendidos a tope.",
-    "On the arm: elbow flexion against something that does not give.":
-        "En el brazo: flexión de codo contra algo que no cede.",
-    "On the arm: elbow extension against something that does not give.":
-        "En el brazo: extensión de codo contra algo que no cede.",
     "Agonist": "Agonista",
     "Antagonist": "Antagonista",
     # --- acquisition: output path, test identifier, k ---
@@ -186,15 +204,6 @@ _ES = {
         "un músculo puede usar el Arduino; las otras dos necesitan el "
         "segundo canal de la placa o su acelerómetro, así que lo fijan y el "
         "selector no aparece.",
-    # --- calibration wizard: brief maximal efforts ---
-    # The rule on its own; the gesture that illustrates it belongs to the
-    # pair and lives in emgteach.pairs.
-    "When the count reaches 0: one brief, explosive maximal jerk of the "
-    "movement this muscle makes — a jerk, not a sustained push against "
-    "something fixed.":
-        "Cuando la cuenta llegue a 0: una sacudida breve y explosiva, a la "
-        "máxima potencia, del movimiento que hace este músculo; una "
-        "sacudida, no un empuje sostenido contra algo fijo.",
     "Maximum, short and hard — {label}{rep}":
         "¡Máximo, breve y fuerte! — {label}{rep}",
     "e.g. bench 3, attempt 2": "p. ej. mesa 3, intento 2",
@@ -1047,7 +1056,7 @@ _ES = {
     "Relax": "Relaje",
     "Effort {pct:.0f} %": "Esfuerzo {pct:.0f} %",
     "One explosive jerk at maximal power — brief, not held":
-        "Una sacudida explosiva a la máxima potencia: breve, no sostenida",
+        "Sacudida explosiva al máximo: breve, no sostenida",
     "MVC ready — {summary}. You can start recording.":
         "CVM lista — {summary}. Ya se puede empezar a grabar.",
     "MVC calibrated: {summary}": "CVM calibrada: {summary}",

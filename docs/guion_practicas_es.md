@@ -428,7 +428,14 @@ por extender la muñeca.
 **Procedimiento.**
 1. **Iniciar grabación**. Calibrar los dos músculos como dice el apartado 4 (una
    sacudida con el puño cerrado para el FCR, con la mano abierta para el ECR).
-2. En el registro, y siempre en este orden, con 2 s de quietud entre maniobras:
+2. **La aplicación guía también esta parte**: pide las seis de un músculo, las
+   seis del otro y la presa, con una fila de casillas —una por contracción,
+   del color que ese músculo tiene en las gráficas— que se van llenando según
+   se detectan. Las seis son libres, al ritmo de quien las hace, así que quien
+   pasa de una parte a la siguiente es **«Hecho — siguiente»** (o la barra
+   espaciadora), no las casillas: si el detector se salta una, la casilla se
+   queda vacía y no pasa nada más. En el registro, y siempre en este orden,
+   con 2 s de quietud entre maniobras:
    **seis flexiones** de muñeca (1 s cada una, libres, sin resistencia),
    **seis extensiones**, también libres, y por último la **presa**. Libres
    porque, si la muñeca empuja contra algo, el antagonista entra a

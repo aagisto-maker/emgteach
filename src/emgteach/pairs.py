@@ -50,7 +50,8 @@ __all__ = [
     "PAIR_FOREARM",
     "PAIR_OTHER",
     "normalise_pair",
-    "pair_calibration_example",
+    "pair_calibration_cue",
+    "pair_coactivation_cue",
     "pair_has_pictures",
     "pair_hint",
     "pair_image",
@@ -124,31 +125,6 @@ def pair_image(pair: str, nombre: str) -> str | None:
     return None if sufijo is None else f"{nombre}{sufijo}"
 
 
-def pair_calibration_example(pair: str, channel: int) -> str:
-    """The sentence that follows the rule of the calibration, or ``""``.
-
-    The rule — one brief, explosive maximal jerk of the movement this muscle
-    makes — is the same for every pair and is not here: it is in the
-    instruction. This is the gesture that illustrates it, which is the pair's.
-    With a pair the application knows nothing about there is no example, and
-    the rule stands on its own.
-    """
-    par = normalise_pair(pair)
-    if par == PAIR_FOREARM:
-        return (
-            tr("On the forearm: wrist flexion, clenching the fist with all "
-               "your strength."),
-            tr("On the forearm: wrist extension, with the hand open and the "
-               "fingers stretched out as far as they go."),
-        )[channel]
-    if par == PAIR_ARM:
-        return (
-            tr("On the arm: elbow flexion against something that does not give."),
-            tr("On the arm: elbow extension against something that does not give."),
-        )[channel]
-    return ""
-
-
 def pair_warning(pair: str) -> str:
     """The line the teacher has to read before using this pair, or ``""``.
 
@@ -163,6 +139,44 @@ def pair_warning(pair: str) -> str:
         "The default limits were measured on the forearm pair: check them on a "
         "test recording before using this one with a group."
     )
+
+
+def pair_calibration_cue(pair: str, channel: int) -> str:
+    """The gesture in four words, for the countdown, or ``""``.
+
+    Four words because it is read in the three seconds before a maximal
+    effort: a sentence that wraps to two lines there is read by nobody.
+    The table used to carry a full one as well — «On the forearm: wrist
+    flexion, clenching the fist with all your strength» — and once the
+    wizard stopped showing it, nothing did: the practical guide, the
+    manual and the station sheet all say it properly, which is where a
+    sentence of that length can actually be read.
+    """
+    par = normalise_pair(pair)
+    if par == PAIR_FOREARM:
+        return (tr("Wrist flexion, fist clenched"),
+                tr("Wrist extension, hand open"))[channel]
+    if par == PAIR_ARM:
+        return (tr("Elbow flexion"), tr("Elbow extension"))[channel]
+    return ""
+
+
+def pair_coactivation_cue(pair: str) -> str:
+    """The manoeuvre that puts both muscles to work at once.
+
+    The one manoeuvre of the practical that is not a movement of one
+    muscle against the other, and the one that gives the co-activation
+    index. It is the pair's: on the forearm a grip, because the finger
+    flexors cross the wrist and the extensors hold it; on the arm there is
+    nothing to grip, so it is a co-contraction. With a pair the
+    application knows nothing about, what it can say is what the manoeuvre
+    is *for*, and the guide says how.
+    """
+    return {
+        PAIR_FOREARM: tr("Close your fist and hold"),
+        PAIR_ARM: tr("Tighten both muscles at once and hold"),
+        PAIR_OTHER: tr("Work both muscles at once and hold"),
+    }[normalise_pair(pair)]
 
 
 def pair_protocol_suffix(pair: str) -> str:
