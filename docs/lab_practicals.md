@@ -138,7 +138,8 @@ without stopping the recording:
    the **«Calibrate MVC»** button while recording, and the recording goes on.
 5. **And in the pair practical the guide goes on into the task**: six
    contractions led by one muscle, six by the other, and last the manoeuvre
-   that works both at once, held three times. The row of boxes along the
+   that works both at once, held once for about eight seconds. The row of
+   boxes along the
    bottom of the panel is the map — one per contraction, in the colour that
    muscle has in the plots, filled as each one is detected. The six are free,
    at your own pace, so **«Done — next» (or the space bar) is what moves the
