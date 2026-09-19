@@ -129,8 +129,10 @@ class AcquisitionDevice(ABC):
         channel_index : int
             Which muscle is being asked, in the order :meth:`read` returns.
         level : float or None
-            The activation asked of it, 1.0 being its maximum, or ``None``
-            to stop asking and let the device do whatever it does.
+            The activation asked of it, 1.0 being its maximum and 0.0 being
+            «nothing, stay still» — which is what the calibration asks for
+            between one effort and the next — or ``None`` to stop asking
+            and let the device do whatever it does.
         """
 
     @abstractmethod

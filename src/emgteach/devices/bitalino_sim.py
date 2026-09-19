@@ -140,7 +140,12 @@ class _SyntheticSubject:
         self._asked: tuple[int, float] | None = None
 
     def instruct(self, channel_index: int, level: float | None) -> None:
-        """Ask this muscle for *level*, or stop asking with ``None``."""
+        """Ask this muscle for *level*, or stop asking with ``None``.
+
+        ``0.0`` is an instruction like any other — «do nothing» — and
+        leaves both muscles at rest; ``None`` is the absence of one, and
+        gives the cycle back.
+        """
         self._asked = None if level is None else (int(channel_index), float(level))
 
     def activation(self, t: float) -> tuple[float, float]:
