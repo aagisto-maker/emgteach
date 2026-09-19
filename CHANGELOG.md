@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The picture of the gesture, where the gesture is asked for.** The two pictures of the pair practical — the electrodes and the calibration — were drawn for the guided tour, and the tour is offered once, at the first start, and after that only from the «Guide» button. During the exercise what is on screen is the calibration panel, and that panel could not show a picture. So the figure existed and was not there at the moment it is needed: when the application asks for the jerk. `MvcOverlay.show_ready` now takes an optional picture, drawn between the countdown and the message, scaled to the panel's own width and capped at a share of the window; without one nothing about the panel changes. The countdown of each effort and the warm-up show the calibration picture. The effort itself does not: while squeezing, the student watches the bar, and a taller panel would cover the plots just then. The pictures stop belonging to the tour — `emgteach.gui.imagenes.imagen` is where both read them — so a panel of the acquisition tab no longer imports from the guided tour to reach a figure.
+
 ## [3.6.0] — 2026-09-19
 
 **The simulated board obeys the calibration.** A session rehearsed without the
