@@ -367,13 +367,18 @@ class TestTheGripBoxDoesNotHideWhatItTellsYouToWatch:
         adq._mvc_overlay.show_relax("x")
         assert adq._mvc_overlay._loads == []
 
-    def test_the_box_stays_off_the_plots(self, adq) -> None:
-        """Lo que no puede tapar sigue sin taparlo: las dos gráficas son lo que
-        la figura 5 del artículo captura, y el alumno trabaja sobre ellas."""
+    def test_the_box_stays_off_the_load_bars(self, adq) -> None:
+        """Y lo que no puede tapar son las barras, no las gráficas.
+
+        De todo lo que hay en esta pantalla, las barras son lo que el guion
+        manda mirar y de donde se lee cada % CVM; la traza en bruto es lo
+        único que se puede tapar unos segundos sin que nadie pierda el
+        hilo. El cuadro empieza dentro del área de gráficas, así que todo
+        lo que hay por encima queda libre.
+        """
         adq._n_channels = 2
-        adq._guia_coactivacion()
-        adq._coact_fase = "hold"
-        adq._coact_elapsed = 1.0
-        adq._coact_tick()
-        ov = adq._mvc_overlay
-        assert ov.y() + ov.height() <= adq._grp_plots.geometry().top()
+        for arranque in (lambda: adq._guia_maniobras(0),
+                         adq._guia_coactivacion):
+            arranque()
+            ov = adq._mvc_overlay
+            assert ov.y() >= adq._grp_plots.geometry().top(), adq._guia_fase
