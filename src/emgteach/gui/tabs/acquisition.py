@@ -3029,6 +3029,10 @@ class AcquisitionTab(QWidget):
         self._mvc_phase = "warmup"
         self._mvc_elapsed = 0.0
         self._write_phase_marker(warmup_start_marker())
+        # Quiet from here until the wizard ends: a device that obeys is
+        # asked for nothing between efforts, so the trace shows rest while
+        # the subject is told to rest. Only the simulated board acts on it.
+        self._instruct_device(0, 0.0)
 
     def _mvc_enter_ready(self) -> None:
         self._mvc_phase = "ready"
@@ -3187,7 +3191,10 @@ class AcquisitionTab(QWidget):
         self._write_phase_marker(
             cal_end_marker(self._mvc_muscle, self._mvc_rep + 1)
         )
-        self._instruct_device(self._mvc_muscle, None)
+        # Rest, not «do as you like»: between one effort and the next come
+        # the countdowns and the change of muscle, and a device left to
+        # itself fires during them.
+        self._instruct_device(self._mvc_muscle, 0.0)
         self._mvc_capture[self._mvc_muscle].append(
             np.asarray(self._mvc_cur_buf, dtype=float)
         )
@@ -3399,6 +3406,7 @@ class AcquisitionTab(QWidget):
         self._mvc_timer.stop()
         self._mvc_active = False
         self._mvc_phase = "done"
+        self._instruct_device(0, None)     # nothing is being asked any more
         self._btn_cancelar_guia.setVisible(False)
         ok = [c for c in range(self._n_channels) if self._mvc_ref[c]]
         self._prep_aviso = ""
@@ -3496,6 +3504,7 @@ class AcquisitionTab(QWidget):
 
     def _mvc_cancel(self) -> None:
         """Abort the wizard (e.g. on stop/disconnect)."""
+        self._instruct_device(0, None)     # nothing is being asked any more
         self._mvc_timer.stop()
         self._prep_timer.stop()
         self._mvc_active = False

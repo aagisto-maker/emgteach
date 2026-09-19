@@ -219,10 +219,32 @@ def adquisicion(qapp):
     tab.close()
 
 
-class TestTheWizardSaysItToTheDevice:
-    """Where the instruction comes from: the span the wizard already marks."""
+class TestItIsQuietForAsLongAsTheWizardLasts:
+    """Between one effort and the next the subject was asked for nothing, so
+    the cycle went on firing while the screen asked the student to rest.
 
-    def test_the_effort_opens_with_the_instruction_and_closes_without_it(
+    ``instruct(c, 0.0)`` is an instruction — «do nothing» — and ``None`` is
+    the absence of one. The wizard now asks for rest from the moment it opens
+    until it closes, and gives the cycle back only at the end.
+    """
+
+    def test_between_two_efforts_the_subject_rests(self) -> None:
+        s = _SyntheticSubject(acc_channel=None, seed=5)
+        s.instruct(0, 0.0)
+        # The quiet half of the cycle and the noisy one, all of it asked to rest.
+        for t0 in (1.0, 5.0, 9.0):
+            mv = _tramo(s, t0, 0.4)
+            assert np.std(mv[:, 0]) == pytest.approx(_REST_MV, rel=0.25), t0
+            assert np.std(mv[:, 1]) == pytest.approx(_REST_MV, rel=0.25), t0
+
+    def test_and_afterwards_the_cycle_is_back(self) -> None:
+        s = _SyntheticSubject(acc_channel=None, seed=5)
+        s.instruct(0, 0.0)
+        assert s.activation(1.0) == (0.0, 0.0)
+        s.instruct(0, None)
+        assert s.activation(1.0)[0] > 0.4          # the flexion, where it was
+
+    def test_the_wizard_asks_for_rest_from_the_warm_up_to_the_end(
         self, adquisicion
     ) -> None:
         from emgteach.gui.tabs.acquisition import MVC_READY_S
@@ -231,20 +253,24 @@ class TestTheWizardSaysItToTheDevice:
         tab = adquisicion
         tab._iniciar_calibracion(auto_flow=False)
         try:
+            # Opening the wizard runs the warm-up: rest asked for at once.
+            assert tab._worker.instructions[0] == (0, 0.0)
             tab._mvc_muscle = 0
             tab._mvc_rep = 0
             tab._mvc_phase = "ready"
             tab._mvc_elapsed = MVC_READY_S
-            tab._mvc_tick()                       # the countdown reaches 0
+            tab._mvc_tick()                                  # the countdown ends
             assert tab._mvc_phase == "contract"
             assert "CAL start ch=1 rep=1" in tab._worker.markers
-            assert tab._worker.instructions == [(0, 1.0)]
-
+            assert tab._worker.instructions[-1] == (0, 1.0)      # the effort
             tab._mvc_cur_buf = [0.0] * 10
             tab._mvc_elapsed = EMG_PROFILE.mvc_burst_s
-            tab._mvc_tick()                       # the effort is over
+            tab._mvc_tick()
+            # Over: the span closes and rest is asked for again, not the cycle.
             assert "CAL end ch=1 rep=1" in tab._worker.markers
-            assert tab._worker.instructions[-1] == (0, None)
+            assert tab._worker.instructions[-1] == (0, 0.0)
         finally:
             if tab._mvc_active:
                 tab._mvc_cancel()
+        # Cancelling (or finishing) gives the cycle back.
+        assert tab._worker.instructions[-1] == (0, None)
