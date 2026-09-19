@@ -21,7 +21,9 @@ from emgteach.gui.tabs.acquisition import (
     COACT_HOLD_S,
     COACT_REPS,
     COLOR_COACT,
+    MANIOBRA_CADA_S,
     MANIOBRAS_POR_MUSCULO,
+    MVC_READY_S,
     MVC_TICK_MS,
 )
 from emgteach.modes import MODE_PAIR
@@ -100,7 +102,7 @@ class TestTheMapIsFilledAsItGoes:
         adq._mvc_reps = 3
         adq._guia_mapa("cal")
         monkeypatch.setattr(adq, "_write_phase_marker", lambda *_a: None)
-        monkeypatch.setattr(adq, "_instruct_device", lambda *_a: None)
+        monkeypatch.setattr(adq, "_instruct_device", lambda *_a, **_k: None)
         monkeypatch.setattr(adq, "_mvc_compute_muscle", lambda *_a: None)
         adq._mvc_muscle, adq._mvc_rep = 0, 0
         adq._mvc_cur_buf, adq._mvc_cross_buf = [1.0], {}
@@ -238,3 +240,92 @@ class TestNoSubtitleWrapsWhileSomethingIsBeingDone:
                 assert ov.text_height(texto) <= una, (idioma, texto)
         finally:
             set_language(antes)
+
+
+class TestWhatTheRehearsalFound:
+    """Cuatro cosas que solo se ven ensayando, y ninguna prueba veía.
+
+    Ángel pasó la sesión entera con la placa simulada y salieron: casillas
+    vacías en el calentamiento que no se llenaban nunca, una cuenta atrás que
+    solo era un número, las contracciones del primer músculo sin contar, y la
+    presa que no llegaba al registro.
+    """
+
+    def test_the_warm_up_shows_no_boxes_it_will_not_fill(self, adq) -> None:
+        """Una fila de casillas vacías que no se llena es una promesa que la
+        fase no cumple; el mapa de la calibración sale con la primera cuenta
+        atrás, que es lo primero que llena una."""
+        from emgteach.profiles import EMG_PROFILE
+
+        adq._iniciar_calibracion(auto_flow=False)
+        try:
+            adq._mvc_phase = "warmup"
+            adq._mvc_elapsed = 0.0
+            adq._mvc_tick()
+            assert adq._mvc_overlay.steps_done() == []
+            adq._mvc_elapsed = EMG_PROFILE.warmup_s
+            adq._mvc_tick()                       # se acaba el calentamiento
+            assert adq._mvc_phase == "ready"
+            assert len(adq._mvc_overlay.steps_done()) == (
+                adq._n_channels * adq._mvc_reps)
+        finally:
+            if adq._mvc_active:
+                adq._mvc_cancel()
+
+    def test_the_countdown_is_also_a_bar_and_not_the_green_one(self, adq) -> None:
+        """El número dice *ahora* y la barra dice *cuánto falta*; en azul,
+        que en este panel es el tiempo, y nunca en el verde del esfuerzo."""
+        from emgteach.gui.widgets.mvc_overlay import _ACCENT, _EFFORT
+
+        ov = adq._mvc_overlay
+        ov.show_ready("x", 2, "y", waiting=0.4)
+        assert ov._waiting == pytest.approx(0.4)
+        ov.show_contract("x", 1.0, 0.5, 0.5)
+        assert ov._waiting is None, "el esfuerzo no lleva cuenta atrás"
+        assert _ACCENT != _EFFORT
+
+    def test_each_muscle_gets_a_resting_second_before_it_is_asked(
+        self, adq
+    ) -> None:
+        """El detector mide su reposo en el primer segundo que ve, así que la
+        fase abre con uno. Sin él, el primer músculo contaba **cero** de sus
+        seis y el segundo los seis: el segundo se había pasado el turno del
+        primero en reposo, de modo que su línea base era de verdad."""
+        pedidos = []
+        adq._instruct_device = lambda c, lv, **k: pedidos.append(
+            (c, lv, k.get("repeat_s")))
+        adq._n_channels = 2
+        adq._guia_maniobras(0)
+        assert all(nivel == 0.0 for _c, nivel, _r in pedidos), pedidos
+        assert all(rep is None for _c, _n, rep in pedidos), pedidos
+        pedidos.clear()
+        adq._maniobras_en_marcha(0)               # pasado el segundo
+        assert (0, 0.5, MANIOBRA_CADA_S) in pedidos, pedidos
+        assert (1, 0.0, None) in pedidos, "el otro músculo, en reposo"
+
+    def test_and_nothing_is_asked_if_the_phase_moved_on_meanwhile(
+        self, adq
+    ) -> None:
+        pedidos = []
+        adq._instruct_device = lambda c, lv, **k: pedidos.append((c, lv))
+        adq._n_channels = 2
+        adq._guia_maniobras(0)
+        adq._guia_fase = ""
+        pedidos.clear()
+        adq._maniobras_en_marcha(0)
+        assert pedidos == []
+
+    def test_the_co_activation_asks_for_both_muscles_at_once(self, adq) -> None:
+        """La maniobra que da el índice. Con la instrucción de antes —un
+        músculo, el otro forzado a reposo— no se podía pedir, y un ensayo se
+        quedaba sin presa ninguna en el registro."""
+        pedidos = []
+        adq._instruct_device = lambda c, lv, **k: pedidos.append((c, lv))
+        adq._n_channels = 2
+        adq._guia_coactivacion()
+        adq._coact_fase = "ready"
+        adq._coact_elapsed = MVC_READY_S
+        pedidos.clear()
+        adq._coact_tick()
+        assert adq._coact_fase == "hold"
+        assert sorted(pedidos) == [(0, 0.4), (1, 0.4)], pedidos

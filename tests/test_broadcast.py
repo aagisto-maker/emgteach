@@ -80,8 +80,14 @@ def test_broadcast_reaches_a_follower(qapp) -> None:
     # presupuesto, no por el servidor —`client_count()` daba 1, o sea que la
     # conexión estaba hecha y solo faltaba que llegara el texto—. Esperando
     # por la condición sigue tardando lo mismo cuando todo va rápido.
+    # Y el techo, holgado: esperando por la condición, un techo solo cuesta
+    # tiempo cuando lo que se espera no llega —es decir, cuando la prueba
+    # tiene que fallar—, así que ponerlo corto no compra nada y compra
+    # fallos. Con tres segundos volvió a caerse en dos corredores de Linux
+    # a la vez, con `client_count()` en 1: la conexión hecha y el texto en
+    # camino. Una pasada sana sigue tardando milisegundos.
     loop = QEventLoop()
-    QTimer.singleShot(3000, loop.quit)
+    QTimer.singleShot(15000, loop.quit)
 
     def _ya_estan() -> None:
         if any('"t":"config"' in m for m in received) and any(

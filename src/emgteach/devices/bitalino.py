@@ -291,7 +291,8 @@ class BitalinoDevice(AcquisitionDevice):
 
     # -- AcquisitionDevice interface -----------------------------------------
 
-    def instruct(self, channel_index: int, level: float | None) -> None:
+    def instruct(self, channel_index: int, level: float | None,
+                 *, repeat_s: float | None = None) -> None:
         """Pass the instruction to the simulated board; a real one ignores it.
 
         The board cannot be told what the person attached to it should do.
@@ -305,7 +306,7 @@ class BitalinoDevice(AcquisitionDevice):
         with self._conn_lock:
             ser = self._serial
         if ser is not None:
-            ser.instruct(channel_index, level)
+            ser.instruct(channel_index, level, repeat_s=repeat_s)
 
     def open(self) -> None:
         """Open the virtual COM port and start streaming.

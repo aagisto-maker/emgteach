@@ -166,6 +166,12 @@ MVC_REST_S = 2.0    # relax pause between reps / muscles
 #: against something brings the antagonist in to stabilise it.
 MANIOBRAS_POR_MUSCULO = 6
 
+#: How often the **simulated** subject performs one of them, when it is
+#: asked for them at all. A person sets their own pace and this says
+#: nothing about it; a board ignores it. The guide asks for about a second
+#: each with a couple of seconds between, so six take some twenty.
+MANIOBRA_CADA_S = 3.0
+
 #: And the manoeuvre that works both at once, last so its fatigue does not
 #: reach the others. Three holds with a pause between, which the analysis
 #: reads as a single window because consecutive fragments with the same
@@ -3066,7 +3072,12 @@ class AcquisitionTab(QWidget):
             else tr("Calibration started on its own.")
         )
         self._reposition_mvc_overlay()
-        self._guia_mapa("cal")
+        # No boxes yet: the warm-up asks for two or three easy contractions
+        # and counts none of them, and a row of empty boxes that never
+        # fills is a promise the phase does not keep. The map of the
+        # calibration appears with the first countdown, which is the first
+        # thing that fills one.
+        self._guia_mapa("")
         self._mvc_enter_warmup()
         self._mvc_timer.start()
 
@@ -3221,6 +3232,7 @@ class AcquisitionTab(QWidget):
             self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
             self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
             if self._mvc_elapsed >= total:
+                self._guia_mapa("cal")
                 self._mvc_enter_ready()
             return
 
@@ -3233,12 +3245,17 @@ class AcquisitionTab(QWidget):
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 count,
                 detalle,
+                # The same seconds as a bar, which is read without counting.
+                # Blue, because in this panel blue is time running and green
+                # is the effort itself: two bars of one colour would be one
+                # more thing to work out while about to move.
                 # Only the first time each muscle is asked. The calibration
                 # is the one counter-intuitive gesture of the practical — a
                 # brief explosive jerk, not a push you lean into — and a
                 # picture pays for itself once; by the second repetition it
                 # is a panel taller than it needs to be over the traces.
                 imagen("sacudida") if self._mvc_rep == 0 else None,
+                waiting=min(1.0, self._mvc_elapsed / MVC_READY_S),
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
@@ -3265,7 +3282,7 @@ class AcquisitionTab(QWidget):
                 # it, the simulated one gives the maximum being asked for,
                 # so a rehearsal without hardware calibrates against a
                 # real one instead of against its own cycle.
-                self._instruct_device(self._mvc_muscle, 1.0)
+                self._pedir_al_sujeto({self._mvc_muscle: 1.0})
         elif self._mvc_phase == "contract":
             # A second and a half: long enough to reach the peak, too short
             # to settle onto the plateau that used to drag the reference down.
@@ -3364,7 +3381,7 @@ class AcquisitionTab(QWidget):
         # Rest, not «do as you like»: between one effort and the next come
         # the countdowns and the change of muscle, and a device left to
         # itself fires during them.
-        self._instruct_device(self._mvc_muscle, 0.0)
+        self._pedir_al_sujeto({})
         self._mvc_capture[self._mvc_muscle].append(
             np.asarray(self._mvc_cur_buf, dtype=float)
         )
@@ -3438,14 +3455,37 @@ class AcquisitionTab(QWidget):
             and not any(self._mvc_ref[: self._n_channels])
         )
 
-    def _instruct_device(self, channel_index: int, level: float | None) -> None:
+    def _instruct_device(self, channel_index: int, level: float | None,
+                         *, repeat_s: float | None = None) -> None:
         """Say what is being asked of a muscle, if there is a device to tell.
 
         Only the simulated board acts on it; the call is harmless with any
         other, and with none at all.
         """
         if self._worker and self._worker.isRunning():
-            self._worker.instruct(channel_index, level)
+            self._worker.instruct(channel_index, level, repeat_s=repeat_s)
+
+    def _pedir_al_sujeto(self, pedido: dict[int, float], *,
+                         repeat_s: float | None = None) -> None:
+        """Say what every muscle is being asked for, and not only one.
+
+        *pedido* is ``{channel: level}``; the channels left out are asked
+        for rest, and an empty one asks every muscle to stay still. ``None``
+        — give the subject back to itself — is :meth:`_soltar_al_sujeto`.
+
+        One call per muscle, because the instruction is per muscle: the
+        manoeuvre that works both at once could not be asked for at all
+        while asking one meant «and the other rests».
+        """
+        for c in range(self._n_channels):
+            nivel = pedido.get(c, 0.0)
+            self._instruct_device(
+                c, nivel, repeat_s=repeat_s if nivel > 0.0 else None)
+
+    def _soltar_al_sujeto(self) -> None:
+        """Nothing is being asked any more: the device does what it does."""
+        for c in range(self._n_channels):
+            self._instruct_device(c, None)
 
     def _write_phase_marker(self, label: str) -> None:
         """Write a phase annotation, if there is an open recording to write to.
@@ -3488,7 +3528,9 @@ class AcquisitionTab(QWidget):
             "The recording starts when the count reaches 0. "
             "The calibration is already saved."
         )
-        self._mvc_overlay.show_ready(titulo, cuenta, detalle)
+        self._mvc_overlay.show_ready(
+            titulo, cuenta, detalle,
+            waiting=min(1.0, self._prep_elapsed / max(total, 1e-9)))
         self._mvc_info(tr("Get ready to record: {n}").format(n=cuenta))
         self._bcast_calib(True, "prep", titulo, detalle, count=cuenta)
         if self._prep_elapsed < total:
@@ -3535,12 +3577,38 @@ class AcquisitionTab(QWidget):
         if grupo == 0:
             self._guia_mapa("maniobras")
             self._man_hechas = [0, 0]
-            self._rearmar_deteccion_guiada()
         self._man_grupo = grupo
+        # A fresh detector for each muscle, and **a second of rest before
+        # anything is asked of it**: the detector measures its resting
+        # level from the first second of signal it sees, so a phase that
+        # opens with a contraction sets a threshold nothing afterwards
+        # crosses. That is how the first muscle came out counting none of
+        # its six while the second counted all of them — the second had
+        # spent the first muscle's turn being asked for rest, so its
+        # baseline was a real one. Same family as the badly calibrated
+        # rest that 3.5.0 fixed in the analysis.
+        self._rearmar_deteccion_guiada()
+        self._pedir_al_sujeto({})
+        QTimer.singleShot(
+            int(1000 * (self._profile.onset_baseline_s + 0.5)),
+            lambda g=grupo: self._maniobras_en_marcha(g))
         self._btn_paso_hecho.setVisible(True)
         self._btn_cancelar_guia.setVisible(True)
         self._reposition_mvc_overlay()
         self._pinta_maniobras()
+
+    def _maniobras_en_marcha(self, grupo: int) -> None:
+        """The resting second is over: ask for the contractions.
+
+        Only the simulated board acts on this — its subject repeats a
+        twelve-second cycle of its own, so while the screen asked for six
+        contractions of one muscle a rehearsal showed one of each every
+        twelve seconds. Repeated and not held, because these are six
+        separate contractions, which is what the boxes count.
+        """
+        if self._guia_fase != "maniobras" or self._man_grupo != grupo:
+            return
+        self._pedir_al_sujeto({grupo: 0.5}, repeat_s=MANIOBRA_CADA_S)
 
     def _pinta_maniobras(self) -> None:
         etiquetas = self._active_labels()
@@ -3630,16 +3698,24 @@ class AcquisitionTab(QWidget):
                  else tr("Work both muscles at once and hold"))
         if self._coact_fase == "ready":
             cuenta = max(1, int(np.ceil(MVC_READY_S - self._coact_elapsed)))
-            self._mvc_overlay.show_ready(titulo, cuenta, pista)
+            self._mvc_overlay.show_ready(
+                titulo, cuenta, pista,
+                waiting=min(1.0, self._coact_elapsed / MVC_READY_S))
             self._bcast_calib(True, "ready", titulo, pista, count=cuenta)
             if self._coact_elapsed >= MVC_READY_S:
                 self._coact_fase = "hold"
                 self._coact_elapsed = 0.0
+                # Both at once: this is the manoeuvre the co-activation
+                # index is computed from, and the one the old instruction
+                # — one muscle, the other forced to rest — could not ask
+                # for. Without it a rehearsal recorded no grip at all.
+                self._pedir_al_sujeto({0: 0.4, 1: 0.4})
         elif self._coact_fase == "hold":
             frac = min(1.0, self._coact_elapsed / COACT_HOLD_S)
             self._mvc_overlay.show_phase(titulo, pista, running=frac)
             self._bcast_calib(True, "contract", titulo, pista, progress=frac)
             if self._coact_elapsed >= COACT_HOLD_S:
+                self._pedir_al_sujeto({})
                 self._mvc_overlay.mark_step(self._coact_rep)
                 self._coact_rep += 1
                 self._coact_elapsed = 0.0
@@ -3660,6 +3736,7 @@ class AcquisitionTab(QWidget):
     def _guia_fin(self) -> None:
         """The session has asked for everything it asks for."""
         self._coact_timer.stop()
+        self._soltar_al_sujeto()
         self._coact_fase = ""
         self._guia_fase = ""
         self._btn_paso_hecho.setVisible(False)
@@ -3674,6 +3751,8 @@ class AcquisitionTab(QWidget):
     def _guia_cancelar(self) -> None:
         """Out of the guided task, leaving the recording running."""
         self._coact_timer.stop()
+        if self._guia_fase in ("maniobras", "coact"):
+            self._soltar_al_sujeto()
         self._coact_fase = ""
         self._guia_fase = ""
         self._btn_paso_hecho.setVisible(False)
@@ -3733,7 +3812,7 @@ class AcquisitionTab(QWidget):
         self._mvc_timer.stop()
         self._mvc_active = False
         self._mvc_phase = "done"
-        self._instruct_device(0, None)     # nothing is being asked any more
+        self._soltar_al_sujeto()
         self._btn_cancelar_guia.setVisible(False)
         ok = [c for c in range(self._n_channels) if self._mvc_ref[c]]
         self._prep_aviso = ""
@@ -3832,7 +3911,7 @@ class AcquisitionTab(QWidget):
     def _mvc_cancel(self) -> None:
         """Abort the wizard (e.g. on stop/disconnect)."""
         self._guia_cancelar()
-        self._instruct_device(0, None)     # nothing is being asked any more
+        self._soltar_al_sujeto()
         self._mvc_timer.stop()
         self._prep_timer.stop()
         self._mvc_active = False

@@ -112,7 +112,10 @@ class AcquisitionDevice(ABC):
 
     # Not abstract: a backend that cannot act on this — every real board —
     # should not have to write an empty method to say so.
-    def instruct(self, channel_index: int, level: float | None) -> None:  # noqa: B027
+    def instruct(  # noqa: B027
+        self, channel_index: int, level: float | None,
+        *, repeat_s: float | None = None,
+    ) -> None:
         """Tell the device what the subject is being asked to do, if it can act.
 
         The application knows when it is asking for a maximal effort of one
@@ -133,6 +136,18 @@ class AcquisitionDevice(ABC):
             «nothing, stay still» — which is what the calibration asks for
             between one effort and the next — or ``None`` to stop asking
             and let the device do whatever it does.
+        repeat_s : float, optional
+            When given, *level* is not held but performed as a contraction
+            of about a second every *repeat_s* seconds, which is what the
+            free manoeuvres of the task are: six of one muscle at the
+            student's own pace. Without it the level is held.
+
+        **One instruction per channel.** Asking one muscle says nothing
+        about the other, so the caller says what the other is doing too:
+        the calibration asks the one for its maximum and the other for
+        rest, and the manoeuvre that works both at once asks both. It used
+        to be one instruction for the pair, with the muscle not named
+        forced to rest, and that could not express a grip at all.
         """
 
     @abstractmethod

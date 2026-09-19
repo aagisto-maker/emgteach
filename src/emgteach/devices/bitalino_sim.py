@@ -48,6 +48,10 @@ _CYCLE = (
     (8.5, 10.5, 0.40, 0.40),    # grip: both at once
 )
 _RAMP_S = 0.25
+#: How long one of the task's free contractions lasts, when the
+#: application asks for them repeated. The practical guide asks for six
+#: of about a second each, with a couple of seconds between them.
+_BURST_S = 1.0
 #: Standard deviation of the EMG in mV: at rest, and at full activation.
 _REST_MV = 0.006
 _MAX_MV = (0.30, 0.20)
@@ -133,20 +137,38 @@ class _SyntheticSubject:
         self._rng = random.Random(seed)
         self._movement = 0.0
         self._delay: list[float] = []
-        #: ``(muscle, level)`` while the application is asking for an
-        #: effort, ``None`` the rest of the time. Written from the
-        #: interface thread and read in the worker's: one attribute, one
-        #: assignment, no state in between to catch half done.
-        self._asked: tuple[int, float] | None = None
+        #: ``{muscle: (level, repeat_s)}`` while the application is asking
+        #: for something of that muscle, and the muscles missing from it
+        #: follow the cycle. Empty the rest of the time. Replaced whole,
+        #: never mutated: written from the interface thread and read in
+        #: the worker's, so one assignment and no state in between to
+        #: catch half done.
+        self._asked: dict[int, tuple[float, float | None]] = {}
 
-    def instruct(self, channel_index: int, level: float | None) -> None:
-        """Ask this muscle for *level*, or stop asking with ``None``.
+    def instruct(self, channel_index: int, level: float | None,
+                 *, repeat_s: float | None = None) -> None:
+        """Ask this muscle for *level*, or stop asking it with ``None``.
 
         ``0.0`` is an instruction like any other — «do nothing» — and
-        leaves both muscles at rest; ``None`` is the absence of one, and
-        gives the cycle back.
+        ``None`` is the absence of one, which gives this muscle back to
+        the cycle. **Per muscle**: what the other is doing is whatever it
+        was last told, or the cycle. Asking muscle 0 used to force muscle
+        1 to rest, which was right for the calibration and made the
+        manoeuvre that works both at once impossible to ask for.
+
+        With *repeat_s* the level is not held: the muscle contracts for
+        about a second every *repeat_s* seconds, which is what the free
+        manoeuvres of the task look like. A rehearsal without hardware
+        then shows the six contractions the screen is asking for instead
+        of the one every twelve seconds the cycle happens to give.
         """
-        self._asked = None if level is None else (int(channel_index), float(level))
+        pedido = dict(self._asked)
+        if level is None:
+            pedido.pop(int(channel_index), None)
+        else:
+            pedido[int(channel_index)] = (
+                float(level), None if repeat_s is None else float(repeat_s))
+        self._asked = pedido
 
     def activation(self, t: float) -> tuple[float, float]:
         """What each muscle is doing at *t*: what was asked, or the cycle.
@@ -158,15 +180,26 @@ class _SyntheticSubject:
         where it was when the asking stops.
         """
         asked = self._asked
-        if asked is not None:
-            muscle, level = asked
-            return (level, 0.0) if muscle == 0 else (0.0, level)
         phase = t % CYCLE_S
-        a1 = a2 = 0.0
+        ciclo = [0.0, 0.0]
         for start, end, l1, l2 in _CYCLE:
             r = _ramp(phase, start, end, _RAMP_S)
-            a1, a2 = max(a1, l1 * r), max(a2, l2 * r)
-        return a1, a2
+            ciclo[0], ciclo[1] = max(ciclo[0], l1 * r), max(ciclo[1], l2 * r)
+        fuera = []
+        for c in (0, 1):
+            pedido = asked.get(c)
+            if pedido is None:
+                fuera.append(ciclo[c])
+                continue
+            level, repeat_s = pedido
+            if repeat_s is None or repeat_s <= 0:
+                fuera.append(level)
+                continue
+            # One contraction of about a second per period, ramped like
+            # the cycle's so the onset detector sees the same edge it
+            # would see on a real one.
+            fuera.append(level * _ramp(t % repeat_s, 0.0, _BURST_S, _RAMP_S))
+        return (fuera[0], fuera[1])
 
     def sample(self, t: float, fs: float, channels: list[int]) -> list[int]:
         """ADC counts for the enabled *channels*, in ascending order."""
@@ -221,9 +254,10 @@ class SimulatedBitalinoPort:
         self._sent = 0
         self._seq = 0
 
-    def instruct(self, channel_index: int, level: float | None) -> None:
+    def instruct(self, channel_index: int, level: float | None,
+                 *, repeat_s: float | None = None) -> None:
         """Pass the application's instruction on to the synthetic subject."""
-        self._subject.instruct(channel_index, level)
+        self._subject.instruct(channel_index, level, repeat_s=repeat_s)
 
     # -- the commands
     def write(self, data: bytes) -> int:

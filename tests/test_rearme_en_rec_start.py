@@ -89,7 +89,7 @@ class _FakeWorker:
     def add_marker(self, label: str) -> None:
         self.events.append(str(label))
 
-    def instruct(self, channel_index: int, level: float | None) -> None:
+    def instruct(self, channel_index: int, level: float | None, **_k) -> None:
         self.events.append(f"instruct ch={channel_index} level={level}")
 
     def stop(self) -> None:

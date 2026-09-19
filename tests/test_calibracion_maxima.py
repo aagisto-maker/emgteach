@@ -90,7 +90,7 @@ class _FakeWorker:
     def add_marker(self, label: str) -> None:
         self.markers.append(str(label))
 
-    def instruct(self, channel_index: int, level: float | None) -> None:
+    def instruct(self, channel_index: int, level: float | None, **_k) -> None:
         self.instructions.append((channel_index, level))
 
     def stop(self) -> None:

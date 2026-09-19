@@ -96,6 +96,9 @@ class MvcOverlay(QFrame):
         "phase": (15, 14, 26),
     }
 
+    #: How much taller the countdown box is for the bar under its number.
+    _WAIT_EXTRA = 22
+
     #: Where the message band starts in each mode with a single-line title —
     #: i.e. how much room the countdown, the bars or the title need above it.
     _TOP: ClassVar[dict[str, int]] = {
@@ -119,6 +122,7 @@ class MvcOverlay(QFrame):
         #: ``[colour, done]`` per action of the phase; empty for no footer.
         self._steps: list[list] = []
         self._running: float | None = None   # a hold in progress, 0..1
+        self._waiting: float | None = None   # a countdown in progress, 0..1
         self.resize(self._W, self._H)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.hide()
@@ -159,7 +163,8 @@ class MvcOverlay(QFrame):
     # -- driven by the wizard ------------------------------------------------
 
     def show_ready(self, title: str, count: int, subtitle: str = "",
-                   image: str | None = None) -> None:
+                   image: str | None = None, *,
+                   waiting: float | None = None) -> None:
         """The countdown before an effort, with the gesture it asks for.
 
         *image* is a path, or ``None`` for the panel of always: without
@@ -167,9 +172,17 @@ class MvcOverlay(QFrame):
         instruction, not with the effort — while the student is squeezing
         they are watching the bar, and a taller panel would cover the
         plots just then.
+
+        *waiting* is the same seconds as a bar, 0..1. The number says
+        *now* and is the signal to start; the bar says *how much is left*,
+        which is read without counting. It is drawn in the panel's blue —
+        time running — and never in the green of the effort bar, so two
+        bars never mean two different things in one colour.
         """
         self._mode = "ready"
         self._running = None
+        self._waiting = (None if waiting is None
+                         else max(0.0, min(1.0, float(waiting))))
         self._title = title
         self._count = str(count)
         self._subtitle = subtitle
@@ -181,6 +194,7 @@ class MvcOverlay(QFrame):
     ) -> None:
         self._set_image(None)          # the effort is watched on the bar
         self._mode = "contract"
+        self._waiting = None
         self._running = None
         self._title = title
         self._count = f"{secs_left:.0f}"
@@ -192,6 +206,7 @@ class MvcOverlay(QFrame):
     def show_relax(self, subtitle: str = "") -> None:
         self._set_image(None)
         self._mode = "relax"
+        self._waiting = None
         self._running = None
         self._title = ""
         self._subtitle = subtitle
@@ -204,6 +219,7 @@ class MvcOverlay(QFrame):
         would only distract (and could read as 'something is missing')."""
         self._set_image(None)
         self._mode = "action"
+        self._waiting = None
         self._running = None
         self._title = word
         self._subtitle = subtitle
@@ -222,6 +238,7 @@ class MvcOverlay(QFrame):
         """
         self._set_image(None)
         self._mode = "phase"
+        self._waiting = None
         self._title = title
         self._subtitle = subtitle
         self._running = (None if running is None
@@ -231,6 +248,7 @@ class MvcOverlay(QFrame):
     def show_done(self, title: str, subtitle: str) -> None:
         self._set_image(None)
         self._mode = "done"
+        self._waiting = None
         self._running = None
         self._title = title
         self._subtitle = subtitle
@@ -316,6 +334,10 @@ class MvcOverlay(QFrame):
         """How much taller the panel is for its footer row."""
         return 0 if not self._steps else self._STEP_H + self._STEP_TOP_GAP
 
+    def _waiting_extra(self) -> int:
+        """How far the message moves down for the countdown bar."""
+        return 0 if self._waiting is None else self._WAIT_EXTRA
+
     def _running_extra(self) -> int:
         """How far the message moves down for the hold bar, if there is one."""
         return 0 if self._running is None else self._RUN_H + self._RUN_GAP
@@ -328,7 +350,8 @@ class MvcOverlay(QFrame):
         """``(x, y, w, h)`` of the picture; empty when there is none."""
         if self._pixmap.isNull():
             return (0, 0, 0, 0)
-        top = self._TOP.get(self._mode, 152) + self._title_extra()
+        top = (self._TOP.get(self._mode, 152) + self._title_extra()
+               + self._waiting_extra())
         x = (self._W - self._pixmap.width()) // 2
         return (x, top, self._pixmap.width(), self._pixmap.height())
 
@@ -343,7 +366,8 @@ class MvcOverlay(QFrame):
 
     def _mensaje_top(self) -> int:
         return (self._TOP.get(self._mode, 152) + self._title_extra()
-                + self._image_extra() + self._running_extra())
+                + self._waiting_extra() + self._image_extra()
+                + self._running_extra())
 
     def text_height(self, text: str | None = None) -> int:
         """Height the message needs, wrapped, at the panel's own width."""
@@ -383,6 +407,8 @@ class MvcOverlay(QFrame):
         if self._mode == "ready":
             self._title_band(p, colour=_FG)
             self._text(p, self._count, 0, 55 + d, w, 90, 64, bold=True, colour=_ACCENT)
+            if self._waiting is not None:
+                self._bar(p, 24, 145 + d, w - 48, 10, self._waiting, _ACCENT)
         elif self._mode == "contract":
             self._title_band(p, colour=_EFFORT)
             self._text(p, self._count + " s", 0, 44 + d, w, 34, 22, bold=True)

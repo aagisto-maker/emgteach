@@ -59,14 +59,49 @@ def _envolvente(mv: np.ndarray) -> np.ndarray:
 
 
 class TestTheSubjectDoesWhatItIsAsked:
-    def test_while_asked_the_muscle_is_at_its_maximum_and_the_other_at_rest(self) -> None:
+    def test_the_muscle_asked_does_what_it_is_asked(self) -> None:
         s = _SyntheticSubject(acc_channel=None, seed=1)
         for muscle in (0, 1):
             s.instruct(muscle, 1.0)
             for t in (0.0, 3.0, 9.0, 11.9):      # anywhere in the cycle
-                a = s.activation(t)
-                assert a[muscle] == pytest.approx(1.0)
-                assert a[1 - muscle] == pytest.approx(0.0)
+                assert s.activation(t)[muscle] == pytest.approx(1.0)
+            s.instruct(muscle, None)
+
+    def test_and_the_one_not_asked_follows_the_cycle(self) -> None:
+        """One instruction per muscle: asking one says nothing about the
+        other, and the caller says what the other is doing.
+
+        It used to be one instruction for the pair, with the muscle not
+        named forced to rest — right for the calibration, and it made the
+        manoeuvre that works **both at once** impossible to ask for, so a
+        rehearsal of the task recorded no grip at all.
+        """
+        s = _SyntheticSubject(acc_channel=None, seed=1)
+        libre = [s.activation(t)[1] for t in (1.5, 5.5, 9.5)]
+        s.instruct(0, 1.0)
+        assert [s.activation(t)[1] for t in (1.5, 5.5, 9.5)] == libre
+        s.instruct(1, 0.0)
+        assert [s.activation(t)[1] for t in (1.5, 5.5, 9.5)] == [0.0, 0.0, 0.0]
+
+    def test_both_at_once_is_a_thing_that_can_be_asked_for(self) -> None:
+        s = _SyntheticSubject(acc_channel=None, seed=1)
+        s.instruct(0, 0.4)
+        s.instruct(1, 0.4)
+        for t in (0.0, 3.0, 9.0):
+            assert s.activation(t) == pytest.approx((0.4, 0.4))
+
+    def test_repeated_is_a_contraction_now_and_then_and_not_a_level(self) -> None:
+        """What the free manoeuvres of the task look like: six of them, not
+        one held. Without this a rehearsal showed the cycle's one
+        contraction every twelve seconds while the screen asked for six.
+        """
+        s = _SyntheticSubject(acc_channel=None, seed=1)
+        s.instruct(0, 0.5, repeat_s=3.0)
+        s.instruct(1, 0.0)
+        alto = [s.activation(t)[0] for t in (0.5, 3.5, 6.5, 9.5)]
+        bajo = [s.activation(t)[0] for t in (2.0, 5.0, 8.0, 11.0)]
+        assert all(a > 0.4 for a in alto), alto
+        assert all(b == 0.0 for b in bajo), bajo
 
     def test_the_cycle_is_where_it_was_when_the_asking_stops(self) -> None:
         """Nothing in the instruction touches the clock."""
@@ -80,6 +115,7 @@ class TestTheSubjectDoesWhatItIsAsked:
     def test_the_amplitude_follows_the_level_asked(self) -> None:
         s = _SyntheticSubject(acc_channel=None, seed=7)
         s.instruct(0, 1.0)
+        s.instruct(1, 0.0)
         mv = _tramo(s, 0.0, 1.0)
         assert np.std(mv[:, 0]) == pytest.approx(_MAX_MV[0], rel=0.15)
         assert np.std(mv[:, 1]) == pytest.approx(_REST_MV, rel=0.25)
@@ -194,7 +230,7 @@ class _WorkerDeMentira:
     def add_marker(self, label: str) -> None:
         self.markers.append(str(label))
 
-    def instruct(self, channel_index: int, level: float | None) -> None:
+    def instruct(self, channel_index: int, level: float | None, **_k) -> None:
         self.instructions.append((channel_index, level))
 
     def stop(self) -> None:
@@ -231,6 +267,7 @@ class TestItIsQuietForAsLongAsTheWizardLasts:
     def test_between_two_efforts_the_subject_rests(self) -> None:
         s = _SyntheticSubject(acc_channel=None, seed=5)
         s.instruct(0, 0.0)
+        s.instruct(1, 0.0)
         # The quiet half of the cycle and the noisy one, all of it asked to rest.
         for t0 in (1.0, 5.0, 9.0):
             mv = _tramo(s, t0, 0.4)
@@ -240,8 +277,10 @@ class TestItIsQuietForAsLongAsTheWizardLasts:
     def test_and_afterwards_the_cycle_is_back(self) -> None:
         s = _SyntheticSubject(acc_channel=None, seed=5)
         s.instruct(0, 0.0)
+        s.instruct(1, 0.0)
         assert s.activation(1.0) == (0.0, 0.0)
         s.instruct(0, None)
+        s.instruct(1, None)
         assert s.activation(1.0)[0] > 0.4          # the flexion, where it was
 
     def test_the_wizard_asks_for_rest_from_the_warm_up_to_the_end(

@@ -340,7 +340,7 @@ class TestBestOfThreeAndTheFinalPanel:
             def add_marker(self, *_a) -> None:
                 pass
 
-            def instruct(self, *_a) -> None:
+            def instruct(self, *_a, **_k) -> None:
                 pass
 
         tab._worker = Corriendo()

@@ -28,7 +28,7 @@ class _FakeWorker:
     def add_marker(self, label: str) -> None:
         self.markers.append(label)
 
-    def instruct(self, channel_index: int, level: float | None) -> None:
+    def instruct(self, channel_index: int, level: float | None, **_k) -> None:
         """Only the simulated board acts on this; here it is noted."""
         self.instructions.append((channel_index, level))
 

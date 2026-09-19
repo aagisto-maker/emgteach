@@ -240,7 +240,7 @@ class TestTheAcquisitionTabAfterTheBench:
             def add_marker(self, label):
                 self.markers.append(label)
 
-            def instruct(self, channel_index, level):
+            def instruct(self, channel_index, level, **_k):
                 pass
 
         adq.apply_mode(MODE_KINEMATICS, False)
