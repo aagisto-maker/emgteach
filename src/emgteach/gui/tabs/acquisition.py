@@ -156,6 +156,12 @@ MAX_MARKER_LINES = 40
 # Guided MVC-calibration wizard timing.
 MVC_TICK_MS = 100   # state-machine tick
 MVC_READY_S = 3.0   # "get ready" countdown before each contraction
+#: And the first of each muscle, which is the one that carries the
+#: pictogram of the gesture. Three seconds is enough to get ready and not
+#: enough to look at a drawing and then get ready: the picture went by
+#: before it could be read. Nothing recorded moves with this — the ``CAL``
+#: span opens when the effort does, not when the count starts.
+MVC_READY_PRIMERA_S = 7.0
 MVC_REST_S = 2.0    # relax pause between reps / muscles
 
 #: The free manoeuvres of the pair practical: six contractions led by one
@@ -3228,7 +3234,11 @@ class AcquisitionTab(QWidget):
             # the first maximal effort of a session is never the strongest —
             # is in the tour, the guide and the manual, where there is time.
             detalle = tr("Two or three easy contractions of each muscle.")
-            self._mvc_overlay.show_ready(titulo, cuenta, detalle)
+            # The picture of what is coming, where there is most time to
+            # look at it: ten seconds with nothing to do but warm up.
+            self._mvc_overlay.show_ready(
+                titulo, cuenta, detalle, imagen("sacudida"),
+                waiting=min(1.0, self._mvc_elapsed / max(total, 1e-9)))
             self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
             self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
             if self._mvc_elapsed >= total:
@@ -3237,9 +3247,11 @@ class AcquisitionTab(QWidget):
             return
 
         if self._mvc_phase == "ready":
+            total_cuenta = (MVC_READY_PRIMERA_S if self._mvc_rep == 0
+                            else MVC_READY_S)
             if self._mvc_elapsed <= MVC_TICK_MS / 1000.0:
                 self._mvc_rest_buf = []      # one baseline per repetition
-            count = max(1, int(np.ceil(MVC_READY_S - self._mvc_elapsed)))
+            count = max(1, int(np.ceil(total_cuenta - self._mvc_elapsed)))
             detalle = self._mvc_gesto(self._mvc_muscle)
             self._mvc_overlay.show_ready(
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
@@ -3255,7 +3267,7 @@ class AcquisitionTab(QWidget):
                 # picture pays for itself once; by the second repetition it
                 # is a panel taller than it needs to be over the traces.
                 imagen("sacudida") if self._mvc_rep == 0 else None,
-                waiting=min(1.0, self._mvc_elapsed / MVC_READY_S),
+                waiting=min(1.0, self._mvc_elapsed / total_cuenta),
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
@@ -3265,7 +3277,7 @@ class AcquisitionTab(QWidget):
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 detalle, count=count,
             )
-            if self._mvc_elapsed >= MVC_READY_S:
+            if self._mvc_elapsed >= total_cuenta:
                 self._mvc_phase = "contract"
                 self._mvc_elapsed = 0.0
                 self._mvc_cur_buf = []
