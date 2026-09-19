@@ -414,8 +414,14 @@ class TestTheTimeWindowControls:
 
     @staticmethod
     def _span(tab) -> float:
+        """How much time is drawn, which is what the buttons change.
+
+        Read as the extent and not as the last value: the axis carries the
+        seconds of the recording, so the right edge is where the recording is,
+        the same however wide the window.
+        """
         x, _y = tab._curves_raw[0].getData()
-        return 0.0 if x is None or not len(x) else float(x[-1])
+        return 0.0 if x is None or not len(x) else float(x[-1] - x[0])
 
     def test_widening_moves_the_axis_with_nothing_recording(self, tab, qapp):
         tab._refresh_plots(force=True)

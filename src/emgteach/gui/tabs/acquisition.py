@@ -1262,6 +1262,8 @@ class AcquisitionTab(QWidget):
         self._plot_raw.getAxis("left").enableAutoSIPrefix(False)
         self._plot_raw.setYRange(*self._y_ranges_init[0])
         self._plot_raw.setLabel("left", "mV")
+        # With numbers that no longer start at zero, the unit has to be said.
+        self._plot_raw.setLabel("bottom", "s")
         self._plot_raw.showGrid(x=True, y=True, alpha=0.3)
         for c in range(MAX_CHANNELS):
             self._curves_raw.append(
@@ -1286,6 +1288,7 @@ class AcquisitionTab(QWidget):
         self._plot_env.getAxis("left").enableAutoSIPrefix(False)   # see above
         self._plot_env.setYRange(*self._y_ranges_init[1])
         self._plot_env.setLabel("left", "mV")
+        self._plot_env.setLabel("bottom", "s")
         self._plot_env.showGrid(x=True, y=True, alpha=0.3)
         for c in range(MAX_CHANNELS):
             self._curves_env.append(
@@ -1301,6 +1304,7 @@ class AcquisitionTab(QWidget):
             title=tr("Accelerometer (normalised g)")
         )
         self._plot_acc.setLabel("left", "g")
+        self._plot_acc.setLabel("bottom", "s")
         self._plot_acc.showGrid(x=True, y=True, alpha=0.3)
         self._plot_acc.setYRange(-1.0, 1.0, padding=0)
         self._curve_acc = self._plot_acc.plot(
@@ -2218,9 +2222,13 @@ class AcquisitionTab(QWidget):
             return
 
         n = min(self._n_visible, MAX_POINTS)
-        # X axis in seconds relative to the start of the visible window (all
-        # buffers have the same length, so it is computed only once).
-        t = np.arange(n) / FS
+        # X axis in seconds of the recording, not of the window: the
+        # numbers advance with it. Drawn from zero, a recording two
+        # minutes long read 0…5 s for as long as it lasted, and the
+        # student had no way of saying when something happened — nor of
+        # telling a live screen from a stopped one. All the buffers have
+        # the same length, so it is computed once.
+        t = (self._total_samples - n + np.arange(n)) / FS
 
         # In stacked mode (2 channels) the raw plot is drawn shifted to each
         # lane and scaled by the gain: displayed = baseline + gain·signal.
@@ -2243,11 +2251,12 @@ class AcquisitionTab(QWidget):
             arr_acc = np.array(list(self._buf_acc))[-n:]
             self._curve_acc.setData(t, arr_acc)
 
-        # Reposition the marker lines: each event is placed according to how
-        # many samples ago it occurred, within the visible window.
-        win_s = n / FS
+        # Reposition the marker lines. Each event already carries the
+        # second of the recording it happened at, which is now the axis's
+        # own unit: it is drawn there, and the filter of what is on screen
+        # is the one of always.
         visible = [
-            win_s - (self._total_samples - tiempo * FS) / FS
+            tiempo
             for tiempo, _label in self._marker_events
             if 0 <= self._total_samples - tiempo * FS <= n
         ]
