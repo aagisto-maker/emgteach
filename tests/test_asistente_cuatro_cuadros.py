@@ -223,6 +223,12 @@ class TestNoSubtitleWrapsWhileSomethingIsBeingDone:
             adq._n_channels = 2
             ov = adq._mvc_overlay
             textos = []
+            # La cuenta atrás del esfuerzo, que era la única que pasaba de
+            # una línea: decía la regla y después el gesto. Ahora dice el
+            # gesto, y la regla la lleva el pictograma de al lado y el
+            # título del propio esfuerzo.
+            for canal in (0, 1):
+                textos.append(adq._mvc_gesto(canal))
             adq._guia_maniobras(0)
             textos.append(ov._subtitle)
             adq._coact_fase = "hold"

@@ -108,10 +108,10 @@ class TestTheTabFollowsIt:
     def test_the_instruction_of_the_effort_follows_the_pair(self, tab) -> None:
         _elegir(tab, PAIR_ARM)
         codo = tab._mvc_gesto(0).lower()
-        assert "jerk" in codo and "elbow flexion" in codo and "wrist" not in codo
+        assert "elbow flexion" in codo and "wrist" not in codo
         _elegir(tab, PAIR_OTHER)
         otro = tab._mvc_gesto(0).lower()
-        assert "jerk" in otro
+        assert "jerk" in otro, "sin gesto que nombrar, la regla"
         for anatomia in ("wrist", "elbow", "forearm", "fist"):
             assert anatomia not in otro, otro
 

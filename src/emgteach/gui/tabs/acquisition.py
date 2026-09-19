@@ -3415,18 +3415,24 @@ class AcquisitionTab(QWidget):
         knows nothing about the rule stands on its own, which is the whole
         point of stating it first.
 
-        **Both said short.** This is read in the three seconds before a
-        maximal effort, and the sentences that were here wrapped to three
-        lines: what wraps while somebody is about to move is read by
-        nobody. The reasoning above is in the tour, the guide and the
-        manual, and :func:`emgteach.pairs.pair_calibration_example` still
-        says the gesture properly for where there is room.
+        **One line, and the gesture when there is one.** This is read in
+        the three seconds before a maximal effort, where a sentence that
+        wraps is read by nobody. The rule used to be said here too, ahead
+        of the gesture, and the two together were two lines.
+
+        The rule is not lost by leaving: the pictogram beside this line
+        says it without words — a sharp peak ticked against a plateau
+        crossed — and the effort itself, a second and a half later, is
+        titled with it (:meth:`MvcOverlay._hint_contract`). What is left
+        here is what this particular countdown is for: which movement.
+        And a pair the application knows nothing about has no gesture to
+        name, so it gets the rule, which is the one thing true of any
+        pair — the instruction never assumes a forearm.
         """
         regla = tr("A brief, explosive jerk — not a sustained push.")
         if self._mode != MODE_PAIR or c not in (0, 1):
             return regla
-        ejemplo = pair_calibration_cue(self._par, c)
-        return f"{regla} {ejemplo}." if ejemplo else regla
+        return pair_calibration_cue(self._par, c) or regla
 
     def _mvc_compute_muscle(self, c: int) -> None:
         window = max(1, round(self._profile.mvc_peak_window_s * FS))
