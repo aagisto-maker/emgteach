@@ -4378,30 +4378,25 @@ class AcquisitionTab(QWidget):
         self._reposition_mvc_overlay()
 
     def _reposition_mvc_overlay(self) -> None:
-        """Centre the floating guide, and keep it off the plots while the
-        task is being recorded.
+        """Centre the floating guide at the top of the plot area.
 
-        During the calibration it sits over the top of the plot area, where
-        it always has: nothing is being read off the traces while the
-        subject is being counted down to a maximal effort.
+        **Never above it**, which is where the load bars are. The bars are
+        what the student is told to work from — the grip is held «guiándose
+        por la barra de carga hacia el 50–60 %» and every % MVC on screen
+        is read off them — so a box that covers them covers the
+        measurement. The raw trace is the one thing on this screen that can
+        be covered for a few seconds without anybody losing their place.
 
-        During the task it is the other way round — the student works from
-        their own load bars and traces, and figure 5 of the article is a
-        live capture of exactly that region — so the box is anchored
-        **above** the plots instead, bottom edge to their top. At a window
-        this size the two plots come out clear and the load bars do not:
-        there is no 460-pixel-wide gap outside that region to put it in,
-        and of the two the traces are what the manoeuvre is watched on.
+        It was the other way round for a day, on the grounds that figure 5
+        of the article captures the bars **and** the plots and the traces
+        were the more useful of the two. Tried with the board: the boxes of
+        the task sat on the bars and hid them.
         """
         ov = self._mvc_overlay
         x = max(0, (self.width() - ov.width()) // 2)
         y = 72
         if hasattr(self, "_grp_plots"):
-            arriba = self._grp_plots.geometry().top()
-            if self._guia_fase in ("maniobras", "coact"):
-                y = max(4, arriba - ov.height() - 6)
-            else:
-                y = max(72, arriba + 8)
+            y = max(72, self._grp_plots.geometry().top() + 8)
         ov.move(x, y)
 
     @Slot()
