@@ -56,6 +56,7 @@ __all__ = [
     "pair_image",
     "pair_label",
     "pair_protocol_suffix",
+    "pair_short_label",
     "pair_warning",
 ]
 
@@ -165,10 +166,28 @@ def pair_warning(pair: str) -> str:
 
 
 def pair_protocol_suffix(pair: str) -> str:
-    """What the EDF header adds about the pair, so the file says which it was."""
+    """What the EDF header adds about the pair, so the file says which it was.
+
+    Untranslated, like the protocol it is appended to: the header outlives
+    the session. :func:`pair_short_label` is the same thing for reading.
+    """
     par = normalise_pair(pair)
     return {
         PAIR_FOREARM: "forearm",
         PAIR_ARM: "arm",
         PAIR_OTHER: "other",
     }[par]
+
+
+def pair_short_label(pair: str) -> str:
+    """The pair in one word, translated: for a report, beside the practical.
+
+    Shorter than :func:`pair_label`, which names the muscles because it is
+    what the selector shows. Inside a bracket after the practical, those
+    brackets would nest.
+    """
+    return {
+        PAIR_FOREARM: tr("forearm"),
+        PAIR_ARM: tr("arm"),
+        PAIR_OTHER: tr("another pair"),
+    }[normalise_pair(pair)]

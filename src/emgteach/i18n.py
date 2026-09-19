@@ -112,6 +112,9 @@ _ES = {
     "Forearm (FCR / ECR)": "Antebrazo (FCR / ECR)",
     "Arm (biceps / triceps)": "Brazo (bíceps / tríceps)",
     "Another pair": "Otro par",
+    "forearm": "antebrazo",
+    "arm": "brazo",
+    "another pair": "otro par",
     "Which pair of muscles this practical is being run on. It changes what "
     "the interface shows and says — the examples, the pictures — and nothing "
     "it computes: the limits are the same for every pair, and they were "
