@@ -379,3 +379,76 @@ def test_the_worker_computes_the_second_muscles_metrics_too(qapp, tmp_path: Path
         assert key in r, key
     assert 0.0 < r["rms_global_2"] < r["rms_global"], "the second channel is half the first"
     assert 0.0 < r["iemg_2"] < r["iemg"]
+
+
+class TestTheProtocolIsReadInTheReadersLanguage:
+    """La etiqueta se traducía y el valor no, así que un informe en español
+    decía «Protocolo: agonist/antagonist (forearm)».
+
+    El valor guardado **no se toca**: la cabecera del EDF sobrevive a la
+    sesión y un registro español y uno inglés de la misma práctica tienen
+    que decir lo mismo. Lo que se traduce es lo que se enseña.
+    """
+
+    def test_every_value_this_application_writes_is_recognised(self) -> None:
+        from emgteach.modes import MODE_PAIR, MODES, mode_protocol, protocol_label
+        from emgteach.pairs import PAIRS, pair_protocol_suffix
+
+        for modo in MODES:
+            base = mode_protocol(modo)
+            crudos = (
+                [f"{base} ({pair_protocol_suffix(p)})" for p in PAIRS]
+                if modo == MODE_PAIR else [base]
+            )
+            for crudo in crudos:
+                assert protocol_label(crudo), crudo
+
+    def test_the_spelling_of_the_older_versions_too(self) -> None:
+        """Los registros de la 3.6.0 y anteriores se leen durante años."""
+        from emgteach.modes import protocol_label
+
+        assert protocol_label("agonist/antagonist contraction")
+
+    def test_and_it_is_translated(self) -> None:
+        from emgteach.modes import protocol_label
+
+        antes = get_language()
+        try:
+            set_language("es")
+            es = protocol_label("agonist/antagonist (forearm)")
+            set_language("en")
+            en = protocol_label("agonist/antagonist (forearm)")
+        finally:
+            set_language(antes)
+        assert es and en and es != en
+        assert "antebrazo" in es and "forearm" in en
+        assert "agonist/antagonist" not in es, "el valor crudo no puede asomar"
+
+    def test_what_it_did_not_write_keeps_its_own_words(self) -> None:
+        """Un archivo de otra herramienta se lee mejor en sus palabras que
+        adivinado en las nuestras."""
+        from emgteach.modes import protocol_label
+
+        for crudo in ("", "   ", "EMG protocol 3", "agonist/antagonist (ankle)",
+                      "single-muscle contraction (forearm)",
+                      "agonist/antagonist (forearm"):
+            assert protocol_label(crudo) is None, crudo
+
+    def test_the_report_prints_the_translated_one(self, tmp_path: Path) -> None:
+        out = tmp_path / "par.pdf"
+        antes = get_language()
+        try:
+            set_language("es")
+            build_session_report(out, _resultado_de_par(), panels=[], meta={
+                "protocol": "agonist/antagonist (forearm)"})
+            texto = _pdf_text(out)
+        finally:
+            set_language(antes)
+        assert "antebrazo" in texto
+        assert "agonist/antagonist" not in texto
+
+    def test_and_falls_back_to_the_raw_value(self, tmp_path: Path) -> None:
+        out = tmp_path / "otro.pdf"
+        build_session_report(out, _resultado_de_par(), panels=[], meta={
+            "protocol": "recorded with something else"})
+        assert "recorded with something else" in _pdf_text(out)

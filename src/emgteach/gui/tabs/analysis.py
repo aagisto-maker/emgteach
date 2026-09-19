@@ -248,7 +248,7 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
-from emgteach.tuning import build_tuned_edf, tuned_path
+from emgteach.tuning import DERIVED_PREFIX, build_tuned_edf, tuned_path
 from emgteach.workers import AnalysisWorker
 
 
@@ -1437,7 +1437,14 @@ class AnalysisTab(QWidget):
                 "nothing."
             ).format(button=tr("Select fragments…"))
         else:
-            paso, boton, texto = "", None, ""
+            # Nothing left to choose: what is left is to keep what was
+            # chosen. This used to be the end of the line, and the
+            # reminder to save the tuned recording existed but was only
+            # ever called from the force-velocity study — so in the pair
+            # practical, the one that names its fragments and measures
+            # per manoeuvre, it never fired at all.
+            self._ofrecer_afinado()
+            return
         self._lbl_siguiente.setText(texto)
         self._lbl_siguiente.setVisible(bool(texto))
 
@@ -2003,13 +2010,15 @@ class AnalysisTab(QWidget):
         self._pendiente = False
         self._refresh_coactivation(result)
         self._refresh_contractions(result)
-        self._actualizar_siguiente_paso()
         self._set_controles_habilitados(True)
         self._progress.setVisible(False)
         self._btn_guardar.setEnabled(True)
         self._btn_informe.setEnabled(True)
         self._btn_csv.setEnabled(True)
         self._btn_afinado.setEnabled(True)
+        # After the buttons, not before: the step it names is the one
+        # that asks whether «Save tuned EDF…» can be pressed yet.
+        self._actualizar_siguiente_paso()
         duracion_total = float(result["times"][-1])
         self._duracion_total = duracion_total
         self._time_range.set_total_duration(duracion_total)
@@ -2277,6 +2286,13 @@ class AnalysisTab(QWidget):
         recording that is already a derived one.
         """
         if self._paso_mostrado == "afinado" or not self._btn_afinado.isEnabled():
+            return
+        # A derived recording already carries the decisions: saving a
+        # tuned copy of a tuned copy is the one case where this would be
+        # advice against the reader's interest. The docstring promised
+        # this and nothing checked it while the only caller was a study
+        # that cannot run on a derived file.
+        if self._edf_origin.startswith(DERIVED_PREFIX):
             return
         self._paso_mostrado = "afinado"
         texto = tr(

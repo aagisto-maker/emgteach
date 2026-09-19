@@ -103,12 +103,60 @@ class TestItSaysWhichEditorComesFirst:
         tab._actualizar_siguiente_paso()
         assert "fragment" in tab._lbl_siguiente.text().lower()
 
-    def test_when_both_are_done_it_says_nothing(self, tab) -> None:
+    def test_when_both_are_done_it_points_at_keeping_them(self, tab) -> None:
+        """Y aquí se acababa la línea. Lo que queda por hacer cuando ya no
+        queda nada que elegir es **guardar lo elegido**: las repeticiones
+        aceptadas y los fragmentos se decidieron en pantalla y no están en el
+        archivo, así que el mismo registro abierto mañana da otros números.
+        El recordatorio existía —`_ofrecer_afinado`— pero su única llamada
+        estaba dentro del estudio de fuerza-velocidad, de modo que en la
+        práctica del par, que es la que se usa, no se disparaba nunca."""
         tab._last_result = {"cal_rep_values": {0: [1.0]}}
         tab._cal_keep = {0: {0}}
         tab._selected_segments = [(1.0, 2.0)]
+        tab._btn_afinado.setEnabled(True)
+        tab._actualizar_siguiente_paso()
+        assert "edf" in tab._lbl_siguiente.text().lower()
+        assert tab._paso_mostrado == "afinado"
+
+    def test_and_only_once_for_each_recording(self, tab) -> None:
+        """Se reanaliza en cuanto se toca un editor; un cartel flotante por
+        reanálisis sería un cartel cada vez que se mueve un fragmento."""
+        avisos = []
+        tab.coach_step.connect(lambda *a: avisos.append(a))
+        tab._last_result = {"cal_rep_values": {0: [1.0]}}
+        tab._cal_keep = {0: {0}}
+        tab._selected_segments = [(1.0, 2.0)]
+        tab._btn_afinado.setEnabled(True)
+        for _ in range(3):
+            tab._actualizar_siguiente_paso()
+        assert len(avisos) == 1
+
+    def test_it_says_nothing_while_it_cannot_be_saved(self, tab) -> None:
+        """Antes del primer análisis el botón no está disponible, y un paso
+        que apunta a un botón apagado es peor que ninguno."""
+        tab._last_result = {"cal_rep_values": {0: [1.0]}}
+        tab._cal_keep = {0: {0}}
+        tab._selected_segments = [(1.0, 2.0)]
+        tab._btn_afinado.setEnabled(False)
         tab._actualizar_siguiente_paso()
         assert tab._lbl_siguiente.text() == ""
+
+    def test_nor_over_a_recording_that_is_already_derived(self, tab) -> None:
+        """Un EDF afinado ya lleva dentro lo que se decidió; afinar el afinado
+        es el único caso en que este consejo va contra quien lo lee. El
+        docstring lo prometía y nada lo comprobaba, porque su único llamador
+        era un estudio que no corre sobre un archivo derivado."""
+        from emgteach.tuning import DERIVED_PREFIX
+
+        tab._last_result = {"cal_rep_values": {0: [1.0]}}
+        tab._cal_keep = {0: {0}}
+        tab._selected_segments = [(1.0, 2.0)]
+        tab._btn_afinado.setEnabled(True)
+        tab._edf_origin = f"{DERIVED_PREFIX} from P01.edf"
+        tab._actualizar_siguiente_paso()
+        assert tab._lbl_siguiente.text() == ""
+        assert tab._paso_mostrado != "afinado"
 
     def test_before_any_analysis_it_says_nothing(self, tab) -> None:
         tab._last_result = None

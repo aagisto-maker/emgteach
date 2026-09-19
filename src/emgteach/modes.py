@@ -50,6 +50,7 @@ __all__ = [
     "mode_shows_fine_controls",
     "mode_uses_acc",
     "normalise_mode",
+    "protocol_label",
 ]
 
 MODE_SINGLE = "single"
@@ -176,6 +177,53 @@ def mode_protocol(mode: str) -> str:
         MODE_PAIR: "agonist/antagonist",
         MODE_KINEMATICS: "muscle kinematics",
     }[normalise_mode(mode)]
+
+
+#: The header values this application has written, and the practical each
+#: one names. The second spelling of the pair is what 3.6.0 and earlier
+#: wrote, before the pair had to fit in the header beside it: recordings
+#: made with those versions are read for years and still say it.
+_PROTOCOL_MODES: dict[str, str] = {
+    "single-muscle contraction": MODE_SINGLE,
+    "agonist/antagonist": MODE_PAIR,
+    "agonist/antagonist contraction": MODE_PAIR,
+    "muscle kinematics": MODE_KINEMATICS,
+}
+
+
+def protocol_label(protocol: str) -> str | None:
+    """What a header's protocol value is called in the reader's language.
+
+    The stored value is deliberately untranslated (:func:`mode_protocol`):
+    the header outlives the session and a Spanish recording and an English
+    one of the same practical have to say the same thing. A report, on the
+    other hand, is read now and by one person, so the translation happens
+    on the way out.
+
+    ``None`` for anything this application did not write — a file from
+    another tool, or a spelling no version of this one used. The caller
+    shows the raw value then, which is honest: an unknown protocol is
+    better read in its own words than guessed at in ours.
+    """
+    from emgteach.pairs import PAIRS, pair_protocol_suffix, pair_short_label
+
+    crudo = (protocol or "").strip()
+    if not crudo:
+        return None
+    base, marca, resto = crudo.partition(" (")
+    modo = _PROTOCOL_MODES.get(base)
+    if modo is None:
+        return None
+    if not marca:
+        return mode_label(modo)
+    # Only the pair practical adds anything, and only its own pairs.
+    if modo != MODE_PAIR or not resto.endswith(")"):
+        return None
+    sufijo = resto[:-1]
+    for par in PAIRS:
+        if pair_protocol_suffix(par) == sufijo:
+            return f"{mode_label(modo)} ({pair_short_label(par)})"
+    return None
 
 
 def mode_uses_acc(mode: str) -> bool:

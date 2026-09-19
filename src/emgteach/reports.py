@@ -57,6 +57,7 @@ from emgteach.figures import (
     draw_rms_panel,
 )
 from emgteach.i18n import tr
+from emgteach.modes import protocol_label
 from emgteach.mvc import (
     AUTO_COLOR,
     NO_LOAD_MSG,
@@ -669,7 +670,9 @@ def build_session_report(
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
     if protocol:
-        header_lines.append(tr("Protocol: {p}").format(p=protocol))
+        header_lines.append(
+            tr("Protocol: {p}").format(p=protocol_label(protocol) or protocol)
+        )
     if derived:
         # «DERIVED from …»: a tuned copy says so in its header, and so
         # must the report made from it.
@@ -1036,7 +1039,9 @@ def build_mvc_report(
     if edf_name:
         header_lines.append(tr("File: {name}").format(name=edf_name))
     if protocol:
-        header_lines.append(tr("Protocol: {p}").format(p=protocol))
+        header_lines.append(
+            tr("Protocol: {p}").format(p=protocol_label(protocol) or protocol)
+        )
     if derived:
         # «DERIVED from …»: a tuned copy says so in its header, and so
         # must the report made from it.
