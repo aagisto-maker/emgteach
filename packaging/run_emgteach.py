@@ -67,7 +67,7 @@ def _selftest_body() -> None:
 
     # The tour's pictures are data files, not modules: a build that left them
     # out would start, and show the tour without them.
-    from emgteach.gui.tour import imagen
+    from emgteach.gui.imagenes import imagen
 
     for _nombre in ("electrodos", "calibracion"):
         if imagen(_nombre) is None:

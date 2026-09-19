@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The simulated board is quiet for as long as the calibration lasts.** It was told to give a maximum while an effort was asked for and then let go of, and its twelve-second cycle went on firing through the countdowns, the rests and the change of muscle: the screen asked the student to rest and the trace showed contractions, which in a rehearsal without hardware is the moment the screen is watched most. The wizard now asks for rest from the warm-up onwards — `instruct` takes 0.0 as «nothing, stay still», which is an instruction, against `None`, which is the absence of one — and gives the cycle back when it finishes or is cancelled. The ten seconds of warm-up draw a flat trace, which is the honest thing: a board in software warms nothing up.
 
+- **The packaged application starts again.** `imagen()` moved from `gui/tour.py` to `gui/imagenes.py` when the picture of the gesture reached the exercise panel, and the frozen entry point still asked the tour for it: the `.py` did not care — nothing in the suite runs that file — so the suite stayed green and it was the self-test of the built exe that failed, with the build already made. The entry point asks the right module now, and a test resolves every name it imports from the application, so a module that moves is caught where it is cheap to fix.
+
 ## [3.6.0] — 2026-09-19
 
 **The simulated board obeys the calibration.** A session rehearsed without the
