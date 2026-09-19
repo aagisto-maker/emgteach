@@ -133,9 +133,29 @@ class _SyntheticSubject:
         self._rng = random.Random(seed)
         self._movement = 0.0
         self._delay: list[float] = []
+        #: ``(muscle, level)`` while the application is asking for an
+        #: effort, ``None`` the rest of the time. Written from the
+        #: interface thread and read in the worker's: one attribute, one
+        #: assignment, no state in between to catch half done.
+        self._asked: tuple[int, float] | None = None
 
-    @staticmethod
-    def activation(t: float) -> tuple[float, float]:
+    def instruct(self, channel_index: int, level: float | None) -> None:
+        """Ask this muscle for *level*, or stop asking with ``None``."""
+        self._asked = None if level is None else (int(channel_index), float(level))
+
+    def activation(self, t: float) -> tuple[float, float]:
+        """What each muscle is doing at *t*: what was asked, or the cycle.
+
+        While an effort is asked of one muscle the other is at rest: the
+        instruction of the calibration is a jerk of that muscle, and a
+        maximum measured with the other one firing would be a maximum of
+        something else. Nothing here touches the clock, so the cycle is
+        where it was when the asking stops.
+        """
+        asked = self._asked
+        if asked is not None:
+            muscle, level = asked
+            return (level, 0.0) if muscle == 0 else (0.0, level)
         phase = t % CYCLE_S
         a1 = a2 = 0.0
         for start, end, l1, l2 in _CYCLE:
@@ -195,6 +215,10 @@ class SimulatedBitalinoPort:
         self._t0 = 0.0
         self._sent = 0
         self._seq = 0
+
+    def instruct(self, channel_index: int, level: float | None) -> None:
+        """Pass the application's instruction on to the synthetic subject."""
+        self._subject.instruct(channel_index, level)
 
     # -- the commands
     def write(self, data: bytes) -> int:

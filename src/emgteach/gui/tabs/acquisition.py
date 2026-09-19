@@ -3091,6 +3091,11 @@ class AcquisitionTab(QWidget):
                 self._write_phase_marker(
                     cal_start_marker(self._mvc_muscle, self._mvc_rep + 1)
                 )
+                # And the same thing said to the device: a board ignores
+                # it, the simulated one gives the maximum being asked for,
+                # so a rehearsal without hardware calibrates against a
+                # real one instead of against its own cycle.
+                self._instruct_device(self._mvc_muscle, 1.0)
         elif self._mvc_phase == "contract":
             # A second and a half: long enough to reach the peak, too short
             # to settle onto the plateau that used to drag the reference down.
@@ -3182,6 +3187,7 @@ class AcquisitionTab(QWidget):
         self._write_phase_marker(
             cal_end_marker(self._mvc_muscle, self._mvc_rep + 1)
         )
+        self._instruct_device(self._mvc_muscle, None)
         self._mvc_capture[self._mvc_muscle].append(
             np.asarray(self._mvc_cur_buf, dtype=float)
         )
@@ -3262,6 +3268,15 @@ class AcquisitionTab(QWidget):
             mode_requires_calibration(self._mode)
             and not any(self._mvc_ref[: self._n_channels])
         )
+
+    def _instruct_device(self, channel_index: int, level: float | None) -> None:
+        """Say what is being asked of a muscle, if there is a device to tell.
+
+        Only the simulated board acts on it; the call is harmless with any
+        other, and with none at all.
+        """
+        if self._worker and self._worker.isRunning():
+            self._worker.instruct(channel_index, level)
 
     def _write_phase_marker(self, label: str) -> None:
         """Write a phase annotation, if there is an open recording to write to.

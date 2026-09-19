@@ -259,7 +259,10 @@ and leaves when the tab changes.
 - **MAC** address (BITalino) or **COM port** (Arduino), always editable; «Default»
   restores the saved one. Writing `simulada` connects a BITalino simulated in software,
   to try the application, the recording and the classroom broadcast without the
-  board. A text file `bitalino.txt` next to the application, with the address
+  board. The synthetic subject **obeys the calibration** — it gives the maximum
+  when the wizard asks for one — so a whole session can be rehearsed and the task
+  reads in % MVC as a real one does: about 50 % for the flexion and the
+  extension, and 40 % for the grip, which co-activates. A text file `bitalino.txt` next to the application, with the address
   on its first line, sets it for the station: the tab starts with it and
   «Default» returns to it, so it is written once per station instead of typed
   in every session.

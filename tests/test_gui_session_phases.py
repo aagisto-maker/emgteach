@@ -28,12 +28,16 @@ class _FakeWorker:
 
     def __init__(self) -> None:
         self.markers: list[str] = []
+        self.instructions: list[tuple[int, float | None]] = []
 
     def isRunning(self) -> bool:      # Qt's spelling, matched on purpose
         return True
 
     def add_marker(self, label: str) -> None:
         self.markers.append(str(label))
+
+    def instruct(self, channel_index: int, level: float | None) -> None:
+        self.instructions.append((channel_index, level))
 
     def stop(self) -> None:
         """The tab stops the worker when the recording ends; nothing to do here."""

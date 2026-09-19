@@ -240,6 +240,9 @@ class TestTheAcquisitionTabAfterTheBench:
             def add_marker(self, label):
                 self.markers.append(label)
 
+            def instruct(self, channel_index, level):
+                pass
+
         adq.apply_mode(MODE_KINEMATICS, False)
         adq._settings.setValue("adquisicion/fv_loads", "2, 4")
         adq._worker = _Worker()
