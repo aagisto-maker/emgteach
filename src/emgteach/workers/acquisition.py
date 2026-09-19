@@ -214,6 +214,16 @@ class AcquisitionWorker(QThread):
         return time.monotonic() - t
 
     @Slot(str)
+    def instruct(self, channel_index: int, level: float | None) -> None:
+        """Tell the device what is being asked of a muscle right now.
+
+        Thread-safe in the same way as :meth:`add_marker`: called from the
+        Qt thread while the worker reads. A device that can act on it does
+        so by writing one attribute, which the next block reads; one that
+        cannot — a board — does nothing (:meth:`AcquisitionDevice.instruct`).
+        """
+        self._device.instruct(channel_index, level)
+
     def add_marker(self, label: str) -> None:
         """Record an event marker at the current acquisition time.
 

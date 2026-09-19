@@ -20,12 +20,17 @@ def _block(env_mv: float, n: int = 1000) -> dict:
 class _FakeWorker:
     def __init__(self) -> None:
         self.markers: list[str] = []
+        self.instructions: list[tuple[int, float | None]] = []
 
     def isRunning(self) -> bool:
         return True
 
     def add_marker(self, label: str) -> None:
         self.markers.append(label)
+
+    def instruct(self, channel_index: int, level: float | None) -> None:
+        """Only the simulated board acts on this; here it is noted."""
+        self.instructions.append((channel_index, level))
 
     def stop_forced(self) -> None:
         pass

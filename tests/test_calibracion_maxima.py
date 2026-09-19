@@ -80,12 +80,18 @@ class TestTheReferenceIsTheRealMaximum:
 class _FakeWorker:
     def __init__(self) -> None:
         self.markers: list[str] = []
+        #: What the tab asks of the device, which only the simulated
+        #: board acts on (``AcquisitionDevice.instruct``).
+        self.instructions: list[tuple[int, float | None]] = []
 
     def isRunning(self) -> bool:
         return True
 
     def add_marker(self, label: str) -> None:
         self.markers.append(str(label))
+
+    def instruct(self, channel_index: int, level: float | None) -> None:
+        self.instructions.append((channel_index, level))
 
     def stop(self) -> None:
         pass

@@ -319,7 +319,10 @@ Permite **registrar** una sesión y observarla en vivo.
 - Dirección **MAC** (BITalino) o **puerto COM** (Arduino), siempre editable. El
   botón «Por defecto» restaura la guardada. Escribiendo `simulada` se conecta una
   BITalino simulada por programa, para probar la aplicación, la grabación y la
-  difusión a los móviles sin la placa. Un archivo de texto `bitalino.txt` junto a
+  difusión a los móviles sin la placa. El sujeto simulado **obedece a la
+  calibración** —da el máximo cuando el asistente lo pide—, así que la sesión
+  entera se puede ensayar y la tarea se lee en % CVM como en una real: alrededor
+  del 50 % en la flexión y en la extensión, y del 40 % en la presa, que coactiva. Un archivo de texto `bitalino.txt` junto a
   la aplicación, con la dirección en su primera línea, la fija para el puesto:
   la pestaña arranca con ella y «Por defecto» vuelve a ella, así que se escribe
   una vez por puesto y no en cada sesión.

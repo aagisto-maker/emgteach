@@ -110,6 +110,29 @@ class AcquisitionDevice(ABC):
     def close(self) -> None:
         """Close the connection in an orderly fashion."""
 
+    # Not abstract: a backend that cannot act on this — every real board —
+    # should not have to write an empty method to say so.
+    def instruct(self, channel_index: int, level: float | None) -> None:  # noqa: B027
+        """Tell the device what the subject is being asked to do, if it can act.
+
+        The application knows when it is asking for a maximal effort of one
+        muscle: the calibration wizard opens a span and closes it. A board
+        has no say in what the person attached to it does, so it ignores
+        this — which is what this default does. The simulated board obeys,
+        so that a rehearsal without hardware calibrates against a real
+        maximum instead of against whatever its cycle was doing when the
+        span opened, and the task then reads the share of it that the cycle
+        says.
+
+        Parameters
+        ----------
+        channel_index : int
+            Which muscle is being asked, in the order :meth:`read` returns.
+        level : float or None
+            The activation asked of it, 1.0 being its maximum, or ``None``
+            to stop asking and let the device do whatever it does.
+        """
+
     @abstractmethod
     def force_close(self) -> None:
         """Close the connection immediately, callable from any thread.

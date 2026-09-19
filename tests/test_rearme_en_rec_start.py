@@ -89,6 +89,9 @@ class _FakeWorker:
     def add_marker(self, label: str) -> None:
         self.events.append(str(label))
 
+    def instruct(self, channel_index: int, level: float | None) -> None:
+        self.events.append(f"instruct ch={channel_index} level={level}")
+
     def stop(self) -> None:
         """The tab stops the worker when the recording ends; nothing to do here."""
 
