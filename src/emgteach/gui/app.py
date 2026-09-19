@@ -25,7 +25,15 @@ from PySide6.QtCore import (
     Slot,
     qInstallMessageHandler,
 )
-from PySide6.QtGui import QColor, QFont, QKeySequence, QPainter, QPixmap, QShortcut
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QFont,
+    QKeySequence,
+    QPainter,
+    QPixmap,
+    QShortcut,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -34,6 +42,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLayout,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QSplashScreen,
     QTabWidget,
@@ -109,6 +118,11 @@ AUTO_CAPTURA_MS = 3000
 #: limit a recording left running wrote a picture every three seconds for as
 #: long as it ran, into the recordings folder, session after session.
 AUTO_CAPTURA_MAX = 60
+
+#: What the screenshot button carries while the automatic ones are armed.
+#: Inside the menu the tick is out of sight, and arming this is only worth
+#: something because it can then be forgotten.
+MARCA_ARMADA = " ●"
 
 # ---------------------------------------------------------------------------
 # Shared styling for all tabs
@@ -242,29 +256,49 @@ class MainWindow(QMainWindow):
         # system tool during a session: it steals the focus, it asks where to
         # put the file, and both things happen while a subject is holding a
         # contraction. One key, one file, one line in the log.
-        btn_captura = QToolButton()
-        btn_captura.setText(tr("Screenshot"))
-        btn_captura.setAutoRaise(True)
-        btn_captura.setToolTip(tr(
+        #
+        # The body of the button takes that picture and the arrow beside it
+        # offers the same picture taken by the clock. They were two buttons
+        # in a row, and a corner that grows one button per idea stops being
+        # read: taking a picture now and having them taken for you are the
+        # same idea, so they are one control with two ways in.
+        self._btn_captura = QToolButton()
+        self._btn_captura.setText(tr("Screenshot"))
+        self._btn_captura.setAutoRaise(True)
+        self._btn_captura.setToolTip(tr(
             "Save a picture of the window (F12). It goes beside the recording, "
             "under its name plus the date and time; nothing is asked."))
-        btn_captura.clicked.connect(self._guardar_captura)
+        self._btn_captura.clicked.connect(self._guardar_captura)
 
         # In this practical the subject and the operator are the same person,
         # so a key that has to be pressed at the right instant is one thing
         # too many — and it is the picture that gets missed, never the
         # contraction. Armed once, this takes them by itself, and afterwards
         # the best one is chosen with time to spare.
-        self._btn_auto_captura = QToolButton()
-        self._btn_auto_captura.setText(tr("Auto"))
-        self._btn_auto_captura.setCheckable(True)
-        self._btn_auto_captura.setAutoRaise(True)
-        self._btn_auto_captura.setToolTip(tr(
+        self._act_auto_captura = QAction(
+            tr("One every {s:.0f} s while recording").format(
+                s=AUTO_CAPTURA_MS / 1000),
+            self,
+        )
+        self._act_auto_captura.setCheckable(True)
+        self._act_auto_captura.setToolTip(tr(
             "Take a picture by itself every {s:.0f} s, but only while a "
             "recording is running, and at most {n} per recording. It needs no "
             "switching off: outside a recording it does nothing."
         ).format(s=AUTO_CAPTURA_MS / 1000, n=AUTO_CAPTURA_MAX))
-        self._btn_auto_captura.toggled.connect(self._auto_captura_conmutada)
+        self._act_auto_captura.toggled.connect(self._auto_captura_conmutada)
+        menu_captura = QMenu(self._btn_captura)
+        menu_captura.setToolTipsVisible(True)
+        menu_captura.addAction(self._act_auto_captura)
+        self._btn_captura.setMenu(menu_captura)
+        self._btn_captura.setPopupMode(
+            QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        # The room for the mark is reserved from the start, or the corner bar
+        # would grow and shrink by the width of a dot every time the automatic
+        # ones are armed, and everything in the row would shuffle sideways.
+        self._btn_captura.setText(tr("Screenshot") + MARCA_ARMADA)
+        self._btn_captura.setMinimumWidth(self._btn_captura.sizeHint().width())
+        self._btn_captura.setText(tr("Screenshot"))
 
         #: Runs while the button is down, and only writes during a recording.
         #: Driving it off the clock rather than off the record button means
@@ -297,8 +331,7 @@ class MainWindow(QMainWindow):
         corner_lay.addWidget(self._combo_mode)
         corner_lay.addWidget(self._lbl_nivel)
         corner_lay.addWidget(self._combo_lang)
-        corner_lay.addWidget(btn_captura)
-        corner_lay.addWidget(self._btn_auto_captura)
+        corner_lay.addWidget(self._btn_captura)
         corner_lay.addWidget(btn_tour)
         corner_lay.addWidget(btn_about)
         tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
@@ -595,6 +628,13 @@ class MainWindow(QMainWindow):
 
     @Slot(bool)
     def _auto_captura_conmutada(self, armada: bool) -> None:
+        # Arming this is worth something only because it can then be
+        # forgotten, and that is the very reason the corner has to say so
+        # without being asked: with the menu closed its tick is out of
+        # sight, so the button carries a mark for as long as pictures are
+        # being taken by themselves.
+        self._btn_captura.setText(
+            tr("Screenshot") + (MARCA_ARMADA if armada else ""))
         if armada:
             self._timer_captura.start()
             self._mensaje_en_las_tres(tr(

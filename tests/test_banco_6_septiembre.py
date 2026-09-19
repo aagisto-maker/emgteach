@@ -113,25 +113,25 @@ class TestTheAutomaticScreenshot:
             # Desarmado antes de cerrar: el reloj vive mientras viva la
             # ventana, y una prueba que lo deje corriendo se lo pasa a las
             # siguientes.
-            win._btn_auto_captura.setChecked(False)
+            win._act_auto_captura.setChecked(False)
             s.clear()
             win.close()
             win.deleteLater()
             qapp.processEvents()
 
-    def test_it_is_a_button_and_starts_disarmed(self, ventana) -> None:
-        """Un botón y no un ajuste: no siempre se quiere capturar."""
-        assert ventana._btn_auto_captura.isCheckable()
-        assert not ventana._btn_auto_captura.isChecked()
+    def test_it_is_armed_by_hand_and_starts_disarmed(self, ventana) -> None:
+        """Algo que se arma y no un ajuste: no siempre se quiere capturar."""
+        assert ventana._act_auto_captura.isCheckable()
+        assert not ventana._act_auto_captura.isChecked()
         assert not ventana._timer_captura.isActive()
 
     def test_arming_it_starts_the_clock(self, ventana) -> None:
         from emgteach.gui.app import AUTO_CAPTURA_MS
 
-        ventana._btn_auto_captura.setChecked(True)
+        ventana._act_auto_captura.setChecked(True)
         assert ventana._timer_captura.isActive()
         assert ventana._timer_captura.interval() == AUTO_CAPTURA_MS
-        ventana._btn_auto_captura.setChecked(False)
+        ventana._act_auto_captura.setChecked(False)
         assert not ventana._timer_captura.isActive()
 
     def test_armed_but_not_recording_writes_nothing(
@@ -139,7 +139,7 @@ class TestTheAutomaticScreenshot:
     ) -> None:
         """Puede quedarse pulsado toda la tarde: fuera de una grabación no
         escribe nada, que es lo que lo hace no tener que desactivarse."""
-        ventana._btn_auto_captura.setChecked(True)
+        ventana._act_auto_captura.setChecked(True)
         for _ in range(5):
             ventana._tic_captura()
         assert list(tmp_path.glob("*.png")) == []
@@ -148,7 +148,7 @@ class TestTheAutomaticScreenshot:
         self, ventana, tmp_path, monkeypatch
     ) -> None:
         monkeypatch.setattr(ventana._tab_adq, "is_recording", lambda: True)
-        ventana._btn_auto_captura.setChecked(True)
+        ventana._act_auto_captura.setChecked(True)
         for _ in range(3):
             ventana._tic_captura()
         assert len(list(tmp_path.glob("*.png"))) == 3
@@ -159,7 +159,7 @@ class TestTheAutomaticScreenshot:
         """Treinta líneas enterrarían los marcadores, que es para lo que está
         el registro de eventos. Lo que se dice es el total, al terminar."""
         monkeypatch.setattr(ventana._tab_adq, "is_recording", lambda: True)
-        ventana._btn_auto_captura.setChecked(True)
+        ventana._act_auto_captura.setChecked(True)
         for _ in range(3):
             ventana._tic_captura()
         assert "Captura guardada" not in ventana._logger.toPlainText()

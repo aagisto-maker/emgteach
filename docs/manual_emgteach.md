@@ -180,10 +180,12 @@ rectified and envelope.]
 > the wizard's cue panel and the next-step panel do, being children
 > of the window. The path goes to the event log.
 >
-> **«Auto»**, beside it, takes one by itself every 3 s, but only while
-> a recording runs, and at most 60 per recording (three minutes); the
-> log says how many were saved when the recording ends, and says so
-> once if the limit is reached.
+> **The arrow of that same button** opens one entry, «one every 3 s
+> while recording»: ticked, pictures are taken by themselves, but only
+> while a recording runs, and at most 60 per recording (three minutes).
+> While it is armed the button reads «Screenshot ●», so the state can be
+> seen with the menu closed. The log says how many were saved when the
+> recording ends, and says so once if the limit is reached.
 >
 > **The event log of each recording is saved beside it**, as
 > `<name>.eventos.txt`, when the recording ends — well or badly. It is

@@ -225,10 +225,13 @@ rectificado y envolvente— para ilustrar la cadena de procesado.]
 > del paso siguiente, que son hijos de la ventana. La ruta queda escrita
 > en el registro de eventos.
 >
-> **«Auto»**, a su lado, hace una sola cada 3 s, pero solo mientras se
-> graba y como mucho 60 por registro (tres minutos); al terminar la
-> grabación el registro de eventos dice cuántas se guardaron, y lo dice
-> una vez si se llega al tope.
+> **La flechita de ese mismo botón** abre una entrada, «una cada 3 s
+> mientras se graba»: marcada, las capturas se hacen solas, pero solo
+> mientras se graba y como mucho 60 por registro (tres minutos).
+> Mientras está armada el botón pone «Captura ●», de modo que el estado
+> se ve con el menú cerrado. Al terminar la grabación el registro de
+> eventos dice cuántas se guardaron, y lo dice una vez si se llega al
+> tope.
 >
 > **El registro de eventos de cada grabación se guarda junto a ella**,
 > como `<nombre>.eventos.txt`, al terminar, bien o mal. Es el archivo

@@ -160,7 +160,7 @@ def test_automatic_screenshots_stop_at_the_limit_and_say_so_once(qapp, tmp_path,
     try:
         monkeypatch.setattr(app_mod, "AUTO_CAPTURA_MAX", 3)
         monkeypatch.setattr(win._tab_adq, "is_recording", lambda: True)
-        win._btn_auto_captura.setChecked(True)
+        win._act_auto_captura.setChecked(True)
         for _ in range(6):
             win._tic_captura()
         assert len(list(tmp_path.glob("*.png"))) == 3
@@ -179,7 +179,7 @@ def test_automatic_screenshots_stop_at_the_limit_and_say_so_once(qapp, tmp_path,
         win._tic_captura()
         assert len(list(tmp_path.glob("*.png"))) == 4
     finally:
-        win._btn_auto_captura.setChecked(False)
+        win._act_auto_captura.setChecked(False)
         settings.clear()
         win.close()
         win.deleteLater()
