@@ -340,7 +340,7 @@ class TestWhatTheRehearsalFound:
 class TestTheGripBoxDoesNotHideWhatItTellsYouToWatch:
     """El cuadro flota justo encima de las barras de carga, y el guion manda
     mirarlas: «manténgalo firme pero submáximo, **guiándose por la barra de
-    carga hacia el 50–60 %**». Un panel que esconde aquello a lo que apunta la
+    carga hacia el 50-60 %**». Un panel que esconde aquello a lo que apunta la
     instrucción es peor que ningún panel, así que las lleva dentro.
     """
 
