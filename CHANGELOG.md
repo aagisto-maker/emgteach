@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The help of the test identifier says it has to be a code.** «The test identifier written here goes into the recording header and the report» said where it goes and not what it must be, and the commitment that goes to the ethics committee is that recordings are identified by a code and not by a name from the moment they are acquired. Both languages now end that help with «Use a code, never the participant name: the EDF header travels with the file», and the station sheet — the paper in front of the student while they fill that box — says it in its own two words. The tool holds up what the protocol promises instead of leaving it to the protocol alone.
+
 ### Fixed
 
 - **The simulated board is quiet for as long as the calibration lasts.** It was told to give a maximum while an effort was asked for and then let go of, and its twelve-second cycle went on firing through the countdowns, the rests and the change of muscle: the screen asked the student to rest and the trace showed contractions, which in a rehearsal without hardware is the moment the screen is watched most. The wizard now asks for rest from the warm-up onwards — `instruct` takes 0.0 as «nothing, stay still», which is an instruction, against `None`, which is the absence of one — and gives the cycle back when it finishes or is cancelled. The ten seconds of warm-up draw a flat trace, which is the honest thing: a board in software warms nothing up.

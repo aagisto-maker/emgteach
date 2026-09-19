@@ -65,7 +65,8 @@ _TEXTS = {
         ) + " " + tr(
             "Choose the device and the port it appears on; on a laboratory "
             "computer this is set once and kept. The test identifier written "
-            "here goes into the recording's header and the report."
+            "here goes into the recording's header and the report. "
+            "Use a code, never the participant's name: the EDF header travels with the file."
         ),
     ),
     "acq.control": lambda: (
