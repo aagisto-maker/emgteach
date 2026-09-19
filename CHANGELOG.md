@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The live time axis is the recording's clock.** The plots drew `np.arange(n) / FS` — seconds counted from the left edge of the visible window — so a recording two minutes long read 0…5 s for as long as it lasted: the signal ran inside a window whose numbers never moved, nothing said when anything had happened, and a live screen looked like a stopped one. The tab already kept the absolute count and already used it to place the marker lines; the axis carries it now, each mark is drawn at the second it happened, and the three plots label their bottom axis in seconds, which matters once the numbers no longer start at zero. The empty tab still shows 0…window, the session review at stop still shows the whole file from zero, and nothing computed changes.
 
+### Added
+
+- **The picture of the gesture, where the gesture is asked for.** The two pictures of the pair practical — the electrodes and the calibration — were drawn for the guided tour, and the tour is offered once, at the first start, and after that only from the «Guide» button. During the exercise what is on screen is the calibration panel, and that panel could not show a picture. So the figure existed and was not there at the moment it is needed: when the application asks for the jerk. `MvcOverlay.show_ready` now takes an optional picture, drawn between the countdown and the message, scaled to the panel's own width and capped at a share of the window; without one nothing about the panel changes. The countdown of each effort and the warm-up show the calibration picture. The effort itself does not: while squeezing, the student watches the bar, and a taller panel would cover the plots just then. The pictures stop belonging to the tour — `emgteach.gui.imagenes.imagen` is where both read them — so a panel of the acquisition tab no longer imports from the guided tour to reach a figure.
+
 ## [3.6.0] — 2026-09-19
 
 **The simulated board obeys the calibration.** A session rehearsed without the
