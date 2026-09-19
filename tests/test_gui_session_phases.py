@@ -82,14 +82,16 @@ def _una_repeticion(tab) -> None:
     what is under test is which annotations come out and in what order, not how
     long a countdown lasts.
     """
-    from emgteach.gui.tabs.acquisition import MVC_READY_S
+    from emgteach.gui.tabs.acquisition import MVC_READY_PRIMERA_S
 
     tab._mvc_reps = 1
     tab._mvc_bursts = 0                     # no brief efforts either
     tab._mvc_muscle = 0
     tab._mvc_rep = 0
     tab._mvc_phase = "ready"
-    tab._mvc_elapsed = MVC_READY_S          # the countdown has just run out
+    # The first of each muscle has the longer count — it is the one that
+    # carries the pictogram — and this is rep 0.
+    tab._mvc_elapsed = MVC_READY_PRIMERA_S  # the countdown has just run out
     tab._mvc_tick()                         # → contract, opens the CAL span
     tab._mvc_cur_buf = [0.10] * 100
     tab._mvc_finish_rep()                   # closes it, computes, finishes

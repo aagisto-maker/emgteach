@@ -52,8 +52,15 @@ def test_the_calibration_instruction_is_the_rule_and_names_no_pair() -> None:
         assert not ANATOMIA.search(texto), (lang, texto)
 
 
-def test_the_example_comes_after_the_rule_for_every_pair() -> None:
-    """What the wizard actually says, assembled as the tab assembles it."""
+def test_the_instruction_never_assumes_a_pair_it_was_not_told_about() -> None:
+    """What the wizard actually says, assembled as the tab assembles it.
+
+    The countdown says the gesture of the pair in use, and for a pair the
+    application knows nothing about there is no gesture to say — so it says
+    the rule, which is true of any pair and names no anatomy. That is the
+    thing this file exists to guard: the instruction converging on the
+    forearm whichever two muscles the electrodes are on.
+    """
     from emgteach.pairs import PAIRS, pair_calibration_cue
 
     for lang in ("en", "es"):
@@ -64,12 +71,11 @@ def test_the_example_comes_after_the_rule_for_every_pair() -> None:
             for par in PAIRS:
                 for canal in (0, 1):
                     ejemplo = pair_calibration_cue(par, canal)
-                    frase = f"{regla} {ejemplo}." if ejemplo else regla
-                    assert PRINCIPIO[lang] in frase
-                    anatomia = ANATOMIA.search(frase)
-                    if anatomia is None:
-                        continue           # «another pair»: the rule on its own
-                    assert frase.index(PRINCIPIO[lang]) < anatomia.start(), (lang, par, frase)
+                    frase = ejemplo or regla
+                    if not ejemplo:
+                        # No gesture: the rule, and no anatomy in it.
+                        assert PRINCIPIO[lang] in frase, (lang, par)
+                        assert not ANATOMIA.search(frase), (lang, par, frase)
         finally:
             i18n.set_language(anterior)
 

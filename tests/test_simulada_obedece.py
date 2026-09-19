@@ -286,7 +286,7 @@ class TestItIsQuietForAsLongAsTheWizardLasts:
     def test_the_wizard_asks_for_rest_from_the_warm_up_to_the_end(
         self, adquisicion
     ) -> None:
-        from emgteach.gui.tabs.acquisition import MVC_READY_S
+        from emgteach.gui.tabs.acquisition import MVC_READY_PRIMERA_S
         from emgteach.profiles import EMG_PROFILE
 
         tab = adquisicion
@@ -297,7 +297,7 @@ class TestItIsQuietForAsLongAsTheWizardLasts:
             tab._mvc_muscle = 0
             tab._mvc_rep = 0
             tab._mvc_phase = "ready"
-            tab._mvc_elapsed = MVC_READY_S
+            tab._mvc_elapsed = MVC_READY_PRIMERA_S     # la primera, más larga
             tab._mvc_tick()                                  # the countdown ends
             assert tab._mvc_phase == "contract"
             assert "CAL start ch=1 rep=1" in tab._worker.markers

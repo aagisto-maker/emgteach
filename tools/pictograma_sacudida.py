@@ -54,7 +54,7 @@ def _meseta(t: np.ndarray) -> np.ndarray:
 
 
 def dibuja(destino: Path = SALIDA) -> Path:
-    fig, ejes = plt.subplots(1, 2, figsize=(3.4, 1.15), dpi=200)
+    fig, ejes = plt.subplots(1, 2, figsize=(3.4, 1.30), dpi=200)
     t = np.linspace(0, 1, 400)
     for ax, y, color, marca in (
         (ejes[0], _pico(t), VERDE, "✓"),
@@ -63,10 +63,13 @@ def dibuja(destino: Path = SALIDA) -> Path:
         ax.plot(t, y, color=color, linewidth=2.6, solid_capstyle="round")
         ax.fill_between(t, 0, y, color=color, alpha=0.16)
         ax.set_xlim(0, 1)
-        ax.set_ylim(-0.08, 1.35)
+        ax.set_ylim(-0.08, 1.55)
         ax.axis("off")
         # The mark goes in the corner, away from the curve it judges.
-        ax.text(0.95, 1.18, marca, color=color, fontsize=13, fontweight="bold",
+        # Grande: a la distancia a la que se mira este panel, el visto y la
+        # cruz son lo primero que se lee, y son lo que dice cuál de las dos
+        # formas se pide.
+        ax.text(0.95, 1.30, marca, color=color, fontsize=26, fontweight="bold",
                 ha="right", va="top")
         # A baseline, so the shape reads as a signal and not as a hill.
         ax.plot([0, 1], [0, 0], color=TINTA, linewidth=0.9, alpha=0.8)
