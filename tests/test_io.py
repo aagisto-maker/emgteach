@@ -615,3 +615,49 @@ def test_the_recording_carries_the_code_and_not_the_name(tmp_path, campo) -> Non
         w.add_samples(np.zeros(2000))
     leido = read_edf_metadata(destino)
     assert getattr(leido, campo) == "A1"
+
+
+class TestEveryProtocolTheAppCanWriteFits:
+    """El ensayo con la placa simulada lo encontró, y ninguna prueba podía.
+
+    Las cadenas del protocolo estaban en `modes.py` y el presupuesto en `io.py`,
+    y nada las había medido juntas: al añadir el par a la cabecera, la
+    combinación por omisión —la del antebrazo, la de la práctica del par—
+    llegó a cuarenta caracteres contra treinta y nueve, de modo que **cada
+    registro** salía con el protocolo recortado y un aviso en el registro de
+    eventos. Aquí se mide cada combinación que la aplicación puede escribir.
+    """
+
+    def _protocolos(self) -> list[str]:
+        from emgteach.modes import MODE_PAIR, MODES, mode_protocol
+        from emgteach.pairs import PAIRS, pair_protocol_suffix
+
+        fuera = []
+        for modo in MODES:
+            base = mode_protocol(modo)
+            if modo != MODE_PAIR:
+                fuera.append(base)
+                continue
+            fuera += [f"{base} ({pair_protocol_suffix(p)})" for p in PAIRS]
+        return fuera
+
+    def test_none_of_them_overruns_the_header(self) -> None:
+        largos = {p: len(p) for p in self._protocolos()
+                  if len(p) > EDF_RECORDING_IDENT_BUDGET}
+        assert not largos, f"se salen de {EDF_RECORDING_IDENT_BUDGET}: {largos}"
+
+    def test_and_the_bench_still_has_a_name(self) -> None:
+        """Que quepa no basta: si no sobra nada, el equipo se queda en blanco y
+        el archivo deja de decir en qué puesto se grabó."""
+        from emgteach.io import _compact_equipment
+
+        corto = _compact_equipment("BITalino (98:D3:91:FE:44:E4)")
+        pobres = {
+            p: EDF_RECORDING_IDENT_BUDGET - len(p)
+            for p in self._protocolos()
+            if EDF_RECORDING_IDENT_BUDGET - len(p) < len("BITalino")
+        }
+        assert not pobres, (
+            f"no queda sitio ni para «BITalino» (el equipo compacto es "
+            f"{corto!r}, {len(corto)} caracteres): {pobres}"
+        )

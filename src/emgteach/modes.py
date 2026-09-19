@@ -159,10 +159,21 @@ def mode_protocol(mode: str) -> str:
     Deliberately **not** translated: the header outlives the session and is
     read by whoever opens the file later, so a Spanish recording and an English
     one describing the same practical have to say the same thing.
+
+    **And it has to fit.** EDF+ leaves thirty-nine characters to be shared
+    between this field and the ones naming the bench, and the protocol is the
+    one that never gives way (:meth:`emgteach.io.RecordingMetadata.fit_to_edf_budget`),
+    so every character spent here is taken from the device string. The pair
+    practical adds which pair it was run on, and «agonist/antagonist
+    contraction (forearm)» came to forty: one over the whole budget, so the
+    header lost its closing bracket and warned on every single recording. The
+    word «contraction» was what paid for it: a field called the protocol does
+    not need to say that a muscle recording is of contractions, and the pair
+    is worth more than the word — it cannot be recovered from anywhere else.
     """
     return {
         MODE_SINGLE: "single-muscle contraction",
-        MODE_PAIR: "agonist/antagonist contraction",
+        MODE_PAIR: "agonist/antagonist",
         MODE_KINEMATICS: "muscle kinematics",
     }[normalise_mode(mode)]
 
