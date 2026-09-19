@@ -72,6 +72,7 @@ from emgteach.devices import (
     create_device,
 )
 from emgteach.dsp import LiveQualityMonitor, process_offline
+from emgteach.gui.imagenes import imagen as imagen_de_la_practica
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
@@ -3066,7 +3067,9 @@ class AcquisitionTab(QWidget):
                 "Two or three easy contractions of each muscle. The first "
                 "maximal effort of a session is never the strongest one."
             )
-            self._mvc_overlay.show_ready(titulo, cuenta, detalle)
+            self._mvc_overlay.show_ready(
+                titulo, cuenta, detalle, imagen_de_la_practica("calibracion")
+            )
             self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
             self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
             if self._mvc_elapsed >= total:
@@ -3082,6 +3085,10 @@ class AcquisitionTab(QWidget):
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 count,
                 detalle,
+                # The gesture being asked for, where it is being asked:
+                # the picture lives in the tour, and the tour is offered
+                # once, months before this countdown.
+                imagen_de_la_practica("calibracion"),
             )
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
