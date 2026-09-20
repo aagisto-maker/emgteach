@@ -840,3 +840,11 @@ class TestMvcWorker:
 
         mvc.start()
         _wait_for_signal(qapp, mvc.result_ready, timeout_ms=15000)
+        # ``result_ready`` is the last statement of ``run()``, and the wait ends
+        # on an event posted from inside it: the main thread can be back here,
+        # and done with the test, before the worker has finished winding out of
+        # ``run()``. Measured on an idle desktop, it was still running at this
+        # point in 2 of 20 attempts. Every other worker in this file is waited
+        # for; this one was not, and it is the last test of the last file, so
+        # what it left running was still running when the session closed over it.
+        mvc.wait(15000)
