@@ -23,7 +23,7 @@ from PySide6.QtCore import QCoreApplication, QEventLoop, QTimer
 
 from emgteach import RecordingMetadata, SignalProfile
 from emgteach.devices import AcquisitionDevice
-from emgteach.io import read_edf_metadata, read_edf_pyedflib
+from emgteach.io import edf_duration, read_edf_metadata, read_edf_pyedflib
 from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
 pytestmark = pytest.mark.gui
@@ -558,6 +558,15 @@ class TestAnalysisWorker:
     """Run the analysis worker on an EDF produced by AcquisitionWorker."""
 
     def _generate_edf(self, qapp: QCoreApplication, tmp_path: Path) -> str:
+        """A short recording for the analysis tests to read.
+
+        It runs for 2 200 ms of **wall clock**, so how much of that reaches
+        the file is up to the machine: on a loaded two-core runner with the
+        coverage tracer on it has come out at **1.999 s**, twice in one day.
+        Anything that needs the length reads it from the file with
+        :func:`emgteach.io.edf_duration`; nothing here may assume 2.2 s, or
+        2.0, or any round number at all.
+        """
         device = _FakeDevice(fs=1000)
         worker = AcquisitionWorker(
             device=device, save_dir=str(tmp_path), n_per_read=100
@@ -758,21 +767,28 @@ class TestAnalysisWorker:
         r = results[0]
         assert r["roi_start_s"] == 0.5
         assert r["roi_end_s"] == 1.8
-        # Cropped analysis runs on ~1.3 s, not the full ~2.2 s recording.
+        # Cropped analysis runs on ~1.3 s, not the whole recording. How long
+        # the whole one is, the file says — it is not a round number.
         assert abs(r["duration"] - 1.3) < 0.15
-        assert r["full_duration_s"] > 2.0
+        assert r["full_duration_s"] == pytest.approx(
+            edf_duration(edf_path), abs=0.05)
+        assert r["full_duration_s"] > r["duration"] + 0.5
 
     def test_multi_fragment_analysis_concatenates(
         self, qapp: QCoreApplication, tmp_path: Path
     ) -> None:
         pytest.importorskip("mne")
-        edf_path = self._generate_edf(qapp, tmp_path)  # ~2.2 s recording
+        edf_path = self._generate_edf(qapp, tmp_path)
 
-        # Keep two disjoint 0.7 s fragments -> ~1.4 s of concatenated signal.
+        # Two disjoint fragments, the second one **inside the file**: asking
+        # past its end is clamped by the analysis, which is right and is
+        # what failed here the day the recording came out at 1.999 s.
+        fin = min(2.0, edf_duration(edf_path))
+        segmentos = [(0.2, 0.9), (1.3, fin)]
         analysis = AnalysisWorker(
             edf_path=edf_path,
             channel_name="EMG",
-            roi_segments=[(0.2, 0.9), (1.3, 2.0)],
+            roi_segments=segmentos,
         )
         results: list[dict] = []
         errors: list[str] = []
@@ -784,9 +800,9 @@ class TestAnalysisWorker:
 
         assert not errors, f"Analysis emitted errors: {errors}"
         r = results[0]
-        assert r["roi_segments"] == [(0.2, 0.9), (1.3, 2.0)]
+        assert r["roi_segments"] == segmentos
         # Duration is the sum of the kept fragments, not the whole file.
-        assert abs(r["duration"] - 1.4) < 0.15
+        assert abs(r["duration"] - (0.7 + fin - 1.3)) < 0.15
 
     def test_too_short_selection_emits_error(
         self, qapp: QCoreApplication, tmp_path: Path
