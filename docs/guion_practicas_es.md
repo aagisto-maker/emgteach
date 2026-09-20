@@ -621,7 +621,10 @@ y el EMG la activación.
    (calentamiento y tres sacudidas máximas, breves y explosivas), anuncia
    el estudio y, para cada carga, pide las
    repeticiones de **una elevación rápida**, cada una con su cuenta atrás y
-   marcada en el fichero con su carga. No hay otro máximo en vacío entre
+   marcada en el fichero con su carga. Debajo del cuadro van **dos filas de
+   casillas**: arriba los levantamientos de la carga que se está haciendo y
+   abajo el experimento entero, agrupado por carga y con la que toca
+   perfilada. No hay otro máximo en vacío entre
    medias: la calibración ya lo fue. Basta seguir la pantalla; «Cancelar guía
    (Esc)» la detiene sin parar la grabación.
 3. **Detener**. En Análisis, la tabla de contracciones trae una fila por

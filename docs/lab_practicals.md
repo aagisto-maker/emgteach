@@ -563,8 +563,10 @@ and the EMG the activation.
    it names the file, **calibrates the maximum first** (warm-up and three
    brief, explosive maximal jerks), announces the study and,
    for each load, cues the repetitions of **one quick lift**, each with its
-   countdown and marked in the file with its load. No separate maximum without
-   load in between: the calibration was the maximum. Just follow the screen; «Cancel
+   countdown and marked in the file with its load. Under the panel are **two
+   rows of boxes**: above, the lifts of the load in hand; below, the whole
+   experiment, grouped by load with the one being lifted outlined. No separate
+   maximum without load in between: the calibration was the maximum. Just follow the screen; «Cancel
    guide (Esc)» stops it without stopping the recording.
 3. **Stop**. In Analysis, the contraction table holds one row per lift with
    its load, and **«Force-velocity study…»** reads those rows and returns four
