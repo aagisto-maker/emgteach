@@ -185,6 +185,84 @@ MANIOBRA_CADA_S = 3.0
 #: costs a lone false positive its effect.
 MANIOBRA_REPOSO_S = 1.0
 
+#: What counts as a manoeuvre: the muscle over this share of **its own
+#: maximum**, and **held there** for ``MANIOBRA_MINIMA_S``. It stops
+#: counting when the envelope drops under seven tenths of the floor, so one
+#: effort is one box however it wobbles in the middle.
+#:
+#: Both numbers are measured on the first rehearsal with the real board,
+#: which is also why this stopped being the ``OnsetDetector``'s job. That
+#: detector sets its threshold at the resting level plus k standard
+#: deviations of the **first second of the phase**; on a real forearm it
+#: counted **six onsets for four contractions**, because the envelope dips
+#: in the middle of an effort and half a second of refractory does not
+#: cover it. Six boxes filled with four manoeuvres, and then the phase
+#: waited for two it had already counted.
+#:
+#: **Amplitude alone cannot do it, and the kinematics recording of the
+#: same afternoon proves it without depending on anybody's memory.** Its
+#: six cued lifts are marked in the file, so which excursion is which is
+#: not a matter of opinion:
+#:
+#: ===================  ===============  ==============
+#: over 10 % MVC        held             peak
+#: ===================  ===============  ==============
+#: the six marked       0.72 to 0.80 s   66 to 91 % MVC
+#: everything else      0.06 to 0.26 s   12 to 29 % MVC
+#: ===================  ===============  ==============
+#:
+#: The leftovers reach **29 % MVC** — over the 20 % floor that was
+#: proposed first — while a free flexion, the weakest gesture of the
+#: practical with no resistance on purpose, can be gentler than that. A
+#: floor cannot separate them. Their **duration** can, by a factor of
+#: three either way, and 0.30 s sits in the middle of that gap.
+#:
+#: There is **no refractory**: the rule is an excursion, so it counts once
+#: per crossing however long the effort runs. One was proposed at 1.5 s and
+#: withdrawn — the manoeuvres of that rehearsal came 1.83 s apart and the
+#: student sets the pace, so a refractory that long is a trap, not a guard.
+#: **De qué son porcentaje estos porcentajes.** De la referencia que esa
+#: sesión midió, no del máximo real del músculo, y las dos cosas pueden no
+#: coincidir: en el registro donde se midieron todo esto, una flexión
+#: **libre y sin resistencia** llegó al 103,6 % de la referencia, y las
+#: otras tres al 65, 69 y 81 %. Por la regla que la propia aplicación
+#: escribe junto a la constante en ``profiles.py`` —la referencia *es* el
+#: pico de un esfuerzo máximo, así que si la tarea lo supera el esfuerzo no
+#: fue máximo—, esa referencia se quedó corta. El orden de las cosas no
+#: cambia y la regla sigue siendo la buena, pero **el margen medido no es
+#: el margen real**: con una referencia a dos tercios del máximo, este
+#: suelo del 10 % es un 6,7 % y el rebote del 12,2 % es un 8 %. Por eso el
+#: ensayo que se repita con la placa **solo vale si su calibración pasa**
+#: ``_mvc_check_is_a_maximum``.
+MANIOBRA_MINIMO_PCT = 10.0
+MANIOBRA_MINIMA_S = 0.30
+
+#: And what «at rest» means for moving on, in the same units — because the
+#: resting level **during** the task is not the one measured before it. In
+#: that rehearsal the phase opened at 1.5 % MVC and the task ran between
+#: 3 and 8 %, so a threshold built from the opening second was never crossed
+#: downwards again and the phase could not end by itself. Under a tenth of
+#: the maximum there were stretches of two and of five seconds.
+MANIOBRA_REPOSO_PCT = 10.0
+
+#: And the line that makes «the phase can never fail to end» true instead of
+#: merely possible. The button lets a student end it; this ends it. After
+#: this long with **nothing new counted** — the map full or not, **and
+#: whether or not the muscle is at rest** — the session moves on. Asking
+#: for rest here as well would hang the timeout on the same nail that came
+#: loose: rest that never comes is the failure this is the net for.
+#:
+#: It is the answer to what a stricter count would otherwise cost: a rule
+#: that counts well can still leave the phase waiting for a contraction it
+#: never counts, and then the hang has only moved from the rest to the
+#: count. It is also the net under the case where the calibration was not a
+#: real maximum (``_mvc_check_is_a_maximum``): a share of a maximum that
+#: was not one may never be crossed, and the phase still has to end.
+#:
+#: Twelve seconds is about five times the pace of that rehearsal, where the
+#: manoeuvres came 1.8 to 2.3 s apart.
+MANIOBRA_SIN_NOVEDAD_S = 12.0
+
 #: And the manoeuvre that works both at once, last so its fatigue does not
 #: reach the others: **one hold of about eight seconds**.
 #:
@@ -587,6 +665,10 @@ class AcquisitionTab(QWidget):
         self._man_grupo = 0
         self._man_hechas = [0, 0]
         self._man_quieto_n = 0
+        #: Muestras seguidas por encima del suelo, por canal, y cuántas
+        #: llevan sin contarse: el conteo es por excursión sostenida.
+        self._man_alto_n = [0] * MAX_CHANNELS
+        self._man_sin_novedad_n = 0
         self._coact_rep = 0
         #: What each muscle is reading right now, as a % of its own
         #: reference. The load bars show it, and so does the guide's box
@@ -3645,16 +3727,16 @@ class AcquisitionTab(QWidget):
             self._man_hechas = [0, 0]
         self._man_grupo = grupo
         self._man_quieto_n = 0
-        # A fresh detector for each muscle, and **a second of rest before
-        # anything is asked of it**: the detector measures its resting
-        # level from the first second of signal it sees, so a phase that
-        # opens with a contraction sets a threshold nothing afterwards
-        # crosses. That is how the first muscle came out counting none of
-        # its six while the second counted all of them — the second had
-        # spent the first muscle's turn being asked for rest, so its
-        # baseline was a real one. Same family as the badly calibrated
-        # rest that 3.5.0 fixed in the analysis.
-        self._rearmar_deteccion_guiada()
+        # Nothing counted yet, and **a second of rest before anything is
+        # asked of this muscle**. The rest was put here because the count
+        # was an `OnsetDetector` measuring its threshold from the first
+        # second it saw, and a phase that opened with a contraction set a
+        # threshold nothing afterwards crossed — the first muscle counted
+        # none of its six that way. The count is a share of the muscle's
+        # own maximum now and needs no baseline, but the quiet second
+        # stays: the guide asks for a couple of seconds between manoeuvres
+        # and the analysis reads the rest between them.
+        self._rearmar_conteo_guiado()
         self._pedir_al_sujeto({})
         QTimer.singleShot(
             int(1000 * (self._profile.onset_baseline_s + 0.5)),
@@ -3690,50 +3772,58 @@ class AcquisitionTab(QWidget):
         self._mvc_info(titulo)
         self._bcast_calib(True, "task", titulo, "")
 
-    def _rearmar_deteccion_guiada(self) -> None:
-        """Fresh onset detectors for the map, fed from the live envelope.
-
-        The tab's own, not the worker's: the worker's write a marker per
-        onset into the recording, and whether a recording carries automatic
-        onsets is the operator's choice and not something a progress bar
-        gets to decide. Same detector and same settings, so the rule that
-        fills a box is the rule the analysis will apply later.
-        """
-        from emgteach.dsp import OnsetDetector
-
-        kwargs = dict(self._profile.onset_kwargs())
-        kwargs["k"] = self._spin_k.value()
-        self._det_guia = [OnsetDetector(FS, **kwargs)
-                          for _ in range(self._n_channels)]
+    def _rearmar_conteo_guiado(self) -> None:
+        """Start a muscle's turn with nothing counted and nothing in hand."""
+        self._man_alto_n = [0] * MAX_CHANNELS
+        self._man_quieto_n = 0
+        self._man_sin_novedad_n = 0
 
     def _guia_detecta(self, env: list) -> None:
         """Count the free manoeuvres, and only count them.
 
-        **A detector that misses one must not strand anybody.** Nothing
-        here ends the phase: that is :meth:`_guia_reposo`, which waits for
-        the map to be full *and* for the muscle to go quiet, and the button
-        is the way out for the day neither happens. An extra onset past the
-        last box is dropped rather than complained about; if boxes are left
-        empty and the signal says otherwise, the count that counts is the
-        one the analysis makes afterwards.
+        One box per **excursion held above the floor**: the muscle over
+        ``MANIOBRA_MINIMO_PCT`` of its own maximum for ``MANIOBRA_MINIMA_S``,
+        counted the instant it has been there long enough — so the box
+        fills while the contraction is being made and not after it — and
+        not again until the envelope has come back down. Only the muscle
+        whose turn it is is looked at, so what the other one reads through
+        crosstalk counts nothing here.
+
+        **Nothing in this method ends the phase**: that is
+        :meth:`_guia_reposo`. An extra one past the last box is dropped
+        rather than complained about; if boxes are left empty and the
+        signal says otherwise, the count that counts is the one the
+        analysis makes afterwards.
         """
-        if self._guia_fase != "maniobras" or not getattr(self, "_det_guia", None):
+        if self._guia_fase != "maniobras":
             return
         c = self._man_grupo
-        if c >= len(self._det_guia) or c >= len(env):
+        if c >= len(env) or not len(env[c]):
             return
-        n = len(self._det_guia[c].process(np.asarray(env[c], dtype=float)))
-        for _ in range(n):
-            if self._man_hechas[c] >= MANIOBRAS_POR_MUSCULO:
-                break
-            self._mvc_overlay.mark_step(
-                c * MANIOBRAS_POR_MUSCULO + self._man_hechas[c])
-            self._man_hechas[c] += 1
-        if n:
+        ref = self._mvc_ref[c]
+        if not ref:
+            return            # sin referencia no hay porcentaje de nada
+        pct = np.asarray(env[c], dtype=float) / float(ref) * 100.0
+        minimo = max(1, round(MANIOBRA_MINIMA_S * FS))
+        marcadas = 0
+        self._man_sin_novedad_n += pct.size
+        for v in pct:
+            if v >= MANIOBRA_MINIMO_PCT:
+                self._man_alto_n[c] += 1
+                if self._man_alto_n[c] == minimo:     # una vez por excursión
+                    self._man_sin_novedad_n = 0
+                    if self._man_hechas[c] < MANIOBRAS_POR_MUSCULO:
+                        self._mvc_overlay.mark_step(
+                            c * MANIOBRAS_POR_MUSCULO + self._man_hechas[c])
+                        self._man_hechas[c] += 1
+                        marcadas += 1
+            elif v < MANIOBRA_MINIMO_PCT * 0.7:
+                self._man_alto_n[c] = 0              # se acabó el esfuerzo
+        if marcadas:
             self._mvc_overlay.update()
-        self._guia_reposo(c, np.asarray(env[c], dtype=float))
+        self._guia_reposo(c, pct)
 
-    def _guia_reposo(self, c: int, bloque) -> None:
+    def _guia_reposo(self, c: int, pct) -> None:
         """Move on once the group is complete and the muscle is back at rest.
 
         **The phase ends when the contractions it asked for are done, or
@@ -3744,25 +3834,38 @@ class AcquisitionTab(QWidget):
         it was protecting, which was only that nobody be stranded by a
         missed onset.
 
-        Advancing on the last onset would cut that contraction's own tail
-        off, so the rule is the last box filled **and** a second of rest
-        after it, measured against the detector's own threshold: the rule
-        that fills a box is the rule that decides the phase is over. That
-        second is also the quiet the guide asks for between manoeuvres,
-        and it drops a lone false positive on the way. One that gets
-        through costs no data — the recording is continuous and the count
-        that counts is the analysis's — it only moves a phase annotation.
+        Advancing on the last contraction would cut its own tail off, so
+        the rule is **the map full — or nothing new counted for
+        ``MANIOBRA_SIN_NOVEDAD_S`` — and then a second under
+        ``MANIOBRA_REPOSO_PCT`` of the maximum**. The two halves do
+        different jobs: the full map is the phase ending because it has
+        what it asked for, and the timeout is what makes «this phase can
+        never fail to end» true rather than merely possible, for the day a
+        contraction is never counted. The rest second is also the quiet the
+        guide asks for between manoeuvres, and it costs a lone false
+        positive its effect. One that gets through costs no data — the
+        recording is continuous and the count that counts is the
+        analysis's — it only moves a phase annotation.
         """
+        if self._man_sin_novedad_n >= MANIOBRA_SIN_NOVEDAD_S * FS:
+            # El límite, y **sin pedir reposo**: un límite atado al reposo no
+            # es un límite. Si el reposo no llega —que es exactamente el
+            # fallo que todo esto arregla—, los dos caminos se quedarían
+            # colgados del mismo clavo. Nada se corta por medio: doce
+            # segundos sin contar nada quiere decir que no ha habido ningún
+            # esfuerzo sostenido, porque uno de 0,3 s ya se habría contado.
+            self._man_quieto_n = 0
+            self._paso_siguiente()
+            return
         if self._man_hechas[c] < MANIOBRAS_POR_MUSCULO:
             self._man_quieto_n = 0
             return
-        umbral = self._det_guia[c].threshold
-        if umbral is None or not bloque.size:
+        if not pct.size:
             return
-        if float(np.max(bloque)) >= umbral:
+        if float(np.max(pct)) >= MANIOBRA_REPOSO_PCT:
             self._man_quieto_n = 0
             return
-        self._man_quieto_n += int(bloque.size)
+        self._man_quieto_n += int(pct.size)
         if self._man_quieto_n >= MANIOBRA_REPOSO_S * FS:
             self._man_quieto_n = 0
             self._paso_siguiente()
