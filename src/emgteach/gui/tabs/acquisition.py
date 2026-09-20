@@ -237,6 +237,13 @@ FV_INTRO_S = 4.0
 #: seconds to get the next weight in hand and set up with it; and one second
 #: of lift, because the lift is what is measured and it is quick — a longer
 #: window only adds the rest that follows it to the row.
+#: How long the row of the load that has just finished stays full before it
+#: belongs to the next load. The box of the last lift was filled and the row
+#: started over in the same instant, so the one that completes a group was
+#: the only box of the study nobody ever saw full — and it is the one that
+#: says «that load is done».
+FV_ULTIMA_VISIBLE_S = 0.5
+
 FV_REPS_DEF = 3
 FV_PREP_DEF_S = 6.0
 FV_LIFT_DEF_S = 1.0
@@ -4450,14 +4457,28 @@ class AcquisitionTab(QWidget):
         self._fv_rep = 0
         self._fv_idx += 1
         if self._fv_idx < len(self._fv_loads):
-            # The top row is the load in hand, so it starts over; the row
-            # under it is the experiment and keeps everything it has.
-            self._mvc_overlay.clear_steps(0)
-            self._fv_grupo()
+            # The top row is the load in hand and starts over — but not yet:
+            # it is shown full for half a second first, because the box that
+            # completes a group is the one that says the load is done.
+            QTimer.singleShot(int(1000 * FV_ULTIMA_VISIBLE_S),
+                              lambda i=self._fv_idx: self._fv_pasar_de_carga(i))
             self._fv_phase = "rest"           # rest, then the next load
             self._fv_elapsed = 0.0
         else:
             self._fv_finish_all()
+
+    def _fv_pasar_de_carga(self, idx: int) -> None:
+        """Hand the top row to the next load, once the last one has been seen.
+
+        Late on purpose (:data:`FV_ULTIMA_VISIBLE_S`), and it checks it is
+        still wanted: a wizard cancelled or already further on in that half
+        second must not have its map wiped by a timer from before.
+        """
+        if not self._fv_active or self._fv_idx != idx:
+            return
+        self._mvc_overlay.clear_steps(0)
+        self._fv_grupo()
+        self._mvc_overlay.update()
 
     def _fv_finish_all(self) -> None:
         self._fv_timer.stop()
@@ -4468,7 +4489,11 @@ class AcquisitionTab(QWidget):
             self._btn_grabar.setEnabled(True)
             self._btn_calibrar.setEnabled(True)
         self._update_fv_button()          # re-enabled once the wizard ends
-        self._mvc_overlay.set_steps([])
+        # The last lift of the last load fills the last box: it is left on
+        # screen for the same half second as every other group's, and then
+        # the map goes with the study.
+        QTimer.singleShot(int(1000 * FV_ULTIMA_VISIBLE_S),
+                          lambda: self._mvc_overlay.set_steps([]))
         n = len(self._fv_loads)
         self._fv_info(
             tr(
