@@ -14,15 +14,12 @@ tenían antes.
 """
 from __future__ import annotations
 
-import time
-
 import pytest
 
 from emgteach.gui.tabs.acquisition import (
     _CHANNEL_COLORS,
     COLOR_COACT,
     FV_INTRO_S,
-    FV_ULTIMA_VISIBLE_S,
 )
 from emgteach.modes import MODE_KINEMATICS, MODE_PAIR
 
@@ -79,12 +76,11 @@ def _estudio(tab, cargas=(2.0, 4.0, 6.0), reps=2):
     return tab._mvc_overlay
 
 
-def _deja_pasar(qapp, segundos: float) -> None:
-    """Deja correr el bucle de eventos: aquí hay un `singleShot` de verdad."""
-    fin = time.monotonic() + segundos
-    while time.monotonic() < fin:
-        qapp.processEvents()
-        time.sleep(0.01)
+def _cuenta_atras(tab) -> None:
+    """Un tic de la cuenta atrás de la carga que toque."""
+    tab._fv_phase = "ready"
+    tab._fv_elapsed = 0.0
+    tab._fv_tick()
 
 
 def _colores(fila) -> list:
@@ -181,42 +177,41 @@ class TestTheStudyHasTheSameBoxes:
         assert ov.steps_done(1) == [True, False, False, False, False, False]
 
     def test_a_new_load_starts_the_top_row_over_and_moves_the_outline(
-        self, adq, qapp
+        self, adq
     ) -> None:
         ov = _estudio(adq, (2.0, 4.0), reps=2)
         for _ in range(2):
             adq._fv_finish_contract()
         assert adq._fv_idx == 1, "se pasó a la carga siguiente"
-        # La casilla que cierra el grupo se ve llena antes de que la fila
-        # sea de la carga siguiente.
+        # La casilla que cierra el grupo se queda a la vista todo el
+        # descanso: es la que dice que esa carga está hecha.
         assert ov.steps_done(0) == [True, True], "llena, y todavía a la vista"
         assert ov._grupos[1] == (0, 1), "y el perfilado, donde estaba"
-        _deja_pasar(qapp, FV_ULTIMA_VISIBLE_S + 0.3)
+        _cuenta_atras(adq)
         assert ov.steps_done(0) == [False, False], "la de arriba, otra vez"
         assert ov.steps_done(1) == [True, True, False, False], "y la de abajo no"
         assert ov._grupos[1] == (2, 3)
 
-    def test_and_a_wizard_cancelled_in_that_half_second_keeps_its_map(
-        self, adq, qapp
-    ) -> None:
-        """El temporizador es de antes; lo que encuentre al disparar puede
-        no ser suyo."""
+    def test_and_the_countdown_claims_the_row_only_once(self, adq) -> None:
+        """Diez tics por segundo, y la fila se vacía en el primero."""
         ov = _estudio(adq, (2.0, 4.0), reps=2)
         for _ in range(2):
             adq._fv_finish_contract()
-        adq._fv_cancel()
-        adq._mvc_overlay.set_steps([[_CHANNEL_COLORS[1]] * 3])
-        _deja_pasar(qapp, FV_ULTIMA_VISIBLE_S + 0.3)
-        assert ov.steps_rows() == 1, "no le tocó el mapa a nadie más"
+        _cuenta_atras(adq)
+        adq._fv_finish_contract()          # la primera de la carga nueva
+        assert ov.steps_done(0) == [True, False]
+        adq._fv_tick()                     # sigue la misma cuenta atrás
+        assert ov.steps_done(0) == [True, False], "no la vuelve a vaciar"
 
-    def test_the_map_goes_when_the_study_does(self, adq, qapp) -> None:
+    def test_the_map_goes_when_the_study_does(self, adq) -> None:
         ov = _estudio(adq, (2.0, 4.0), reps=1)
         adq._fv_finish_contract()
-        _deja_pasar(qapp, FV_ULTIMA_VISIBLE_S + 0.3)
+        _cuenta_atras(adq)
         adq._fv_finish_contract()
         assert not adq._fv_active
+        # El estudio entero, completo, debajo del cuadro que lo dice.
         assert ov.steps_done(1) == [True, True], "la última, llena y a la vista"
-        _deja_pasar(qapp, FV_ULTIMA_VISIBLE_S + 0.3)
+        adq._fv_cerrar_mapa()              # lo que hace el temporizador de 5 s
         assert ov.steps_rows() == 0
 
     def test_and_when_it_is_cancelled(self, adq) -> None:
@@ -258,16 +253,16 @@ class TestTheTopRowSitsOverItsOwnGroup:
         assert ov._row_metrics(0)[:2] == ov._row_metrics(1)[:2]
         assert ov._row_metrics(0)[2] > ov._row_metrics(1)[2], "la de arriba, más alta"
 
-    def test_and_it_moves_with_the_load(self, adq, qapp) -> None:
+    def test_and_it_moves_with_the_load(self, adq) -> None:
         ov = _estudio(adq, (2.0, 4.0, 6.0), reps=3)
         x_inicial = ov.steps_rect(1)[0]
         caja, hueco, _alto = ov._row_metrics(1)
         for _ in range(3):
             adq._fv_finish_contract()
         assert adq._fv_idx == 1
-        # Se mueve cuando la fila terminada ha estado a la vista, no antes.
+        # Se mueve con la cuenta atrás de la carga siguiente, no antes.
         assert ov.steps_rect(0)[0] == x_inicial
-        _deja_pasar(qapp, FV_ULTIMA_VISIBLE_S + 0.3)
+        _cuenta_atras(adq)
         # Tres casillas y el hueco que separa una carga de la siguiente.
         assert ov.steps_rect(0)[0] == x_inicial + 4 * (caja + hueco)
 

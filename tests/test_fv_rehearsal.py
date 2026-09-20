@@ -82,20 +82,18 @@ class TestItMatchesTheRealWizard:
         from emgteach.gui.tabs.acquisition import MVC_TICK_MS, AcquisitionTab
 
         class Overlay:
-            # The map of the phase is part of this panel's API too: the
-            # wizard fills a box per lift and starts the top row over at
-            # each load. A stand-in that does not answer to it would make
-            # this test fail for the shape of the double, not the wizard.
-            def show_ready(self, *a, **k): pass
-            def show_contract(self, *a, **k): pass
-            def show_relax(self, *a, **k): pass
-            def show_action(self, *a, **k): pass
-            def show_done(self, *a, **k): pass
-            def set_steps(self, *a, **k): pass
-            def mark_step(self, *a, **k): pass
-            def clear_steps(self, *a, **k): pass
-            def mark_group(self, *a, **k): pass
-            def align_rows(self, *a, **k): pass
+            """Everything the wizard says to the panel, heard and ignored.
+
+            What this test is about is the state machine, not the panel. A
+            double with one method per thing the wizard says has to be
+            taught each new one, and then it fails for the shape of the
+            double instead of for anything the wizard does — which it did
+            three times in one day while the map was being built. It
+            answers to everything now.
+            """
+
+            def __getattr__(self, _nombre):
+                return lambda *a, **k: None
 
         class Stub:
             _fv_current_load = AcquisitionTab._fv_current_load
@@ -103,6 +101,7 @@ class TestItMatchesTheRealWizard:
             _fv_finish_contract = AcquisitionTab._fv_finish_contract
             _fv_grupo = AcquisitionTab._fv_grupo
             _fv_mapa = AcquisitionTab._fv_mapa
+            _fv_fila_de_esta_carga = AcquisitionTab._fv_fila_de_esta_carga
             _fv_tick = AcquisitionTab._fv_tick
 
             def __init__(self):
