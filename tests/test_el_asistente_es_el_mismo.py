@@ -76,6 +76,13 @@ def _estudio(tab, cargas=(2.0, 4.0, 6.0), reps=2):
     return tab._mvc_overlay
 
 
+def _cuenta_atras(tab) -> None:
+    """Un tic de la cuenta atrás de la carga que toque."""
+    tab._fv_phase = "ready"
+    tab._fv_elapsed = 0.0
+    tab._fv_tick()
+
+
 def _colores(fila) -> list:
     return [None if c is None else (c.red(), c.green(), c.blue())
             for c, _hecho in fila]
@@ -176,15 +183,35 @@ class TestTheStudyHasTheSameBoxes:
         for _ in range(2):
             adq._fv_finish_contract()
         assert adq._fv_idx == 1, "se pasó a la carga siguiente"
+        # La casilla que cierra el grupo se queda a la vista todo el
+        # descanso: es la que dice que esa carga está hecha.
+        assert ov.steps_done(0) == [True, True], "llena, y todavía a la vista"
+        assert ov._grupos[1] == (0, 1), "y el perfilado, donde estaba"
+        _cuenta_atras(adq)
         assert ov.steps_done(0) == [False, False], "la de arriba, otra vez"
         assert ov.steps_done(1) == [True, True, False, False], "y la de abajo no"
         assert ov._grupos[1] == (2, 3)
 
+    def test_and_the_countdown_claims_the_row_only_once(self, adq) -> None:
+        """Diez tics por segundo, y la fila se vacía en el primero."""
+        ov = _estudio(adq, (2.0, 4.0), reps=2)
+        for _ in range(2):
+            adq._fv_finish_contract()
+        _cuenta_atras(adq)
+        adq._fv_finish_contract()          # la primera de la carga nueva
+        assert ov.steps_done(0) == [True, False]
+        adq._fv_tick()                     # sigue la misma cuenta atrás
+        assert ov.steps_done(0) == [True, False], "no la vuelve a vaciar"
+
     def test_the_map_goes_when_the_study_does(self, adq) -> None:
         ov = _estudio(adq, (2.0, 4.0), reps=1)
         adq._fv_finish_contract()
+        _cuenta_atras(adq)
         adq._fv_finish_contract()
         assert not adq._fv_active
+        # El estudio entero, completo, debajo del cuadro que lo dice.
+        assert ov.steps_done(1) == [True, True], "la última, llena y a la vista"
+        adq._fv_cerrar_mapa()              # lo que hace el temporizador de 5 s
         assert ov.steps_rows() == 0
 
     def test_and_when_it_is_cancelled(self, adq) -> None:
@@ -233,6 +260,9 @@ class TestTheTopRowSitsOverItsOwnGroup:
         for _ in range(3):
             adq._fv_finish_contract()
         assert adq._fv_idx == 1
+        # Se mueve con la cuenta atrás de la carga siguiente, no antes.
+        assert ov.steps_rect(0)[0] == x_inicial
+        _cuenta_atras(adq)
         # Tres casillas y el hueco que separa una carga de la siguiente.
         assert ov.steps_rect(0)[0] == x_inicial + 4 * (caja + hueco)
 

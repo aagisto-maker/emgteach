@@ -614,6 +614,7 @@ class AcquisitionTab(QWidget):
         self._fv_prep_s = 5.0         # "prepare" countdown before each contraction
         self._fv_window_s = 6.0       # duration of each contraction window
         self._fv_elapsed = 0.0        # seconds spent in the current phase
+        self._fv_fila_de = -1         # which load the top row belongs to
         self._fv_mvc_buf: list[float] = []   # envelope during the MVC maximum
         self._fv_mvc_peak = 0.0
         self._fv_mvc_cur = 0.0
@@ -4275,6 +4276,7 @@ class AcquisitionTab(QWidget):
             if i:
                 todas.append(None)        # the gap that separates two loads
             todas.extend([colour] * self._fv_reps)
+        self._fv_fila_de = self._fv_idx
         self._mvc_overlay.set_steps([[colour] * self._fv_reps, todas])
         # The row of the load in hand goes over its own group, not in the
         # middle of the row of every load.
@@ -4372,6 +4374,7 @@ class AcquisitionTab(QWidget):
                 self._fv_phase = "ready"
                 self._fv_elapsed = 0.0
         elif self._fv_phase == "ready":
+            self._fv_fila_de_esta_carga()
             count = max(1, int(np.ceil(prep_s - self._fv_elapsed)))
             self._mvc_overlay.show_ready(
                 tr("Prepare {kg:g} kg{prog}").format(kg=kg, prog=self._fv_progress()),
@@ -4450,14 +4453,32 @@ class AcquisitionTab(QWidget):
         self._fv_rep = 0
         self._fv_idx += 1
         if self._fv_idx < len(self._fv_loads):
-            # The top row is the load in hand, so it starts over; the row
-            # under it is the experiment and keeps everything it has.
-            self._mvc_overlay.clear_steps(0)
-            self._fv_grupo()
+            # The top row is **not** started over here. The box just filled
+            # is the one that completes the group — the one that says this
+            # load is done — and starting the row over in the same instant
+            # meant it was the only box of the study nobody ever saw full.
+            # It stays up through the rest and becomes the next load's when
+            # that load's countdown begins.
             self._fv_phase = "rest"           # rest, then the next load
             self._fv_elapsed = 0.0
         else:
             self._fv_finish_all()
+
+    def _fv_fila_de_esta_carga(self) -> None:
+        """Hand the top row to the load whose countdown is starting.
+
+        Called from the countdown and not from the lift that finished the
+        previous load: that lift's box is what says the load is done, and
+        it is left on screen for the whole rest before the row means
+        something else. Once per load — the countdown ticks ten times a
+        second and this has to happen on the first of them.
+        """
+        if self._fv_fila_de == self._fv_idx:
+            return
+        self._fv_fila_de = self._fv_idx
+        self._mvc_overlay.clear_steps(0)
+        self._fv_grupo()
+        self._mvc_overlay.update()
 
     def _fv_finish_all(self) -> None:
         self._fv_timer.stop()
@@ -4468,7 +4489,6 @@ class AcquisitionTab(QWidget):
             self._btn_grabar.setEnabled(True)
             self._btn_calibrar.setEnabled(True)
         self._update_fv_button()          # re-enabled once the wizard ends
-        self._mvc_overlay.set_steps([])
         n = len(self._fv_loads)
         self._fv_info(
             tr(
@@ -4486,7 +4506,15 @@ class AcquisitionTab(QWidget):
         self._log(
             tr("Force-velocity acquisition finished: {n} loads.").format(n=n)
         )
-        QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
+        # The map stays under this panel, full: the last lift of the last
+        # load has a box too, and the end of the study is worth seeing
+        # whole. It goes when the panel goes.
+        QTimer.singleShot(5000, self._fv_cerrar_mapa)
+
+    def _fv_cerrar_mapa(self) -> None:
+        """Drop the map and hide the panel, once the finished study is seen."""
+        self._mvc_overlay.set_steps([])
+        self._mvc_overlay.hide_overlay()
 
     def _fv_cancel(self) -> None:
         """Abort the guided F-V wizard (e.g. on stop/disconnect)."""
