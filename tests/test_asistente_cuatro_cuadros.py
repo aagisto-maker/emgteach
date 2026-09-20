@@ -24,6 +24,7 @@ from emgteach.gui.tabs.acquisition import (
     FS,
     MANIOBRA_CADA_S,
     MANIOBRA_REPOSO_S,
+    MANIOBRA_SIN_NOVEDAD_S,
     MANIOBRAS_POR_MUSCULO,
     MVC_READY_S,
     MVC_TICK_MS,
@@ -66,6 +67,16 @@ def _colores(tab, fila: int = 0) -> list[tuple[int, int, int]]:
             for c, _hecho in tab._mvc_overlay._steps[fila] if c is not None]
 
 
+def _con_referencia(tab, grupo: int = 0) -> None:
+    """La fase de maniobras con las dos referencias medidas.
+
+    El conteo va en **% de la CVM de cada músculo**, así que sin ellas no
+    cuenta nada: es lo mismo que le pasaría a una sesión sin calibrar.
+    """
+    tab._mvc_ref[0] = tab._mvc_ref[1] = 1.0
+    tab._guia_maniobras(grupo)
+
+
 def _reposo(tab, bloques: int = 12, n: int = 200) -> None:
     """Reposo con ruido: los primeros bloques son la línea base del detector."""
     rng = np.random.default_rng(3)
@@ -82,6 +93,7 @@ def _quieto(tab, segundos: float) -> None:
 
 
 def _contraccion(tab, canal: int = 0) -> None:
+    """Una contracción al 50 % de la referencia de ese músculo."""
     alto, bajo = np.full(400, 0.5), np.full(400, 0.01)
     tab._guia_detecta([alto, bajo] if canal == 0 else [bajo, alto])
 
@@ -134,7 +146,7 @@ class TestTheMapIsFilledAsItGoes:
 
     def test_a_detected_contraction_fills_one_of_the_manoeuvres(self, adq) -> None:
         adq._n_channels = 2
-        adq._guia_maniobras(0)
+        _con_referencia(adq)
         assert adq._mvc_overlay.steps_done()[0] is False
         # Un bloque en reposo para la línea base, y otro con una contracción.
         rng = np.random.default_rng(3)
@@ -149,7 +161,7 @@ class TestTheMapIsFilledAsItGoes:
         self, adq
     ) -> None:
         adq._n_channels = 2
-        adq._guia_maniobras(0)
+        _con_referencia(adq)
         _reposo(adq)
         adq._man_hechas = [MANIOBRAS_POR_MUSCULO, 0]
         for i in range(MANIOBRAS_POR_MUSCULO):
@@ -179,24 +191,36 @@ class TestTheManoeuvresEndWhenTheyAreDoneOrWhenTheStudentSaysSo:
 
     def test_the_six_and_a_second_of_quiet_move_it_on(self, adq) -> None:
         adq._n_channels = 2
-        adq._guia_maniobras(0)
+        _con_referencia(adq)
         _reposo(adq)
         for _ in range(MANIOBRAS_POR_MUSCULO):
             _contraccion(adq, 0)
-            _quieto(adq, 0.4)
+            _quieto(adq, 1.5)          # el hueco que el conteo exige
         assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO
-        assert adq._man_grupo == 0, "cuatro décimas no son un segundo"
-        _quieto(adq, MANIOBRA_REPOSO_S)
         assert adq._man_grupo == 1, "no pasó al segundo músculo"
+
+    def test_and_not_before_the_second_is_up(self, adq) -> None:
+        adq._n_channels = 2
+        _con_referencia(adq)
+        _reposo(adq)
+        for _ in range(MANIOBRAS_POR_MUSCULO - 1):
+            _contraccion(adq, 0)
+            _quieto(adq, 1.5)
+        _contraccion(adq, 0)
+        assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO
+        _quieto(adq, 0.4)
+        assert adq._man_grupo == 0, "cuatro décimas no son un segundo"
+        _quieto(adq, 0.8)
+        assert adq._man_grupo == 1
 
     def test_the_last_contraction_on_its_own_does_not(self, adq) -> None:
         """Pasar en el instante de la sexta le cortaría su propia cola."""
         adq._n_channels = 2
-        adq._guia_maniobras(0)
+        _con_referencia(adq)
         _reposo(adq)
         for _ in range(MANIOBRAS_POR_MUSCULO - 1):
             _contraccion(adq, 0)
-            _quieto(adq, 0.4)
+            _quieto(adq, 1.5)
         _contraccion(adq, 0)
         assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO
         assert adq._man_grupo == 0
@@ -205,12 +229,12 @@ class TestTheManoeuvresEndWhenTheyAreDoneOrWhenTheStudentSaysSo:
         """Cinco de seis y todo el reposo del mundo: la fase no acaba sola,
         y por eso el botón está a la vista mientras dura."""
         adq._n_channels = 2
-        adq._guia_maniobras(0)
+        _con_referencia(adq)
         _reposo(adq)
         for _ in range(MANIOBRAS_POR_MUSCULO - 1):
             _contraccion(adq, 0)
-            _quieto(adq, 0.4)
-        _quieto(adq, 5 * MANIOBRA_REPOSO_S)
+            _quieto(adq, 1.5)
+        _quieto(adq, 5 * MANIOBRA_REPOSO_S)   # menos que el límite
         assert adq._man_grupo == 0
         assert adq._btn_paso_hecho.isVisible()
         adq._paso_siguiente()
@@ -220,8 +244,8 @@ class TestTheManoeuvresEndWhenTheyAreDoneOrWhenTheStudentSaysSo:
         self, adq
     ) -> None:
         adq._n_channels = 2
-        adq._guia_maniobras(0)
-        adq._guia_maniobras(1)
+        _con_referencia(adq)
+        _con_referencia(adq, 1)
         _reposo(adq)
         adq._man_hechas[1] = MANIOBRAS_POR_MUSCULO
         _quieto(adq, MANIOBRA_REPOSO_S)
@@ -254,6 +278,88 @@ class TestTheManoeuvresEndWhenTheyAreDoneOrWhenTheStudentSaysSo:
         adq._guia_fase = ""
         adq._paso_siguiente()
         assert adq._guia_fase == ""
+
+
+class TestWhatTheRealBoardFound:
+    """El primer ensayo con la placa de verdad: el mapa mentía.
+
+    Contaba **seis inicios para cuatro contracciones** —la envolvente baja
+    en mitad de un esfuerzo y medio segundo de refractario no lo tapa— y la
+    diafonía del otro músculo disparaba también. Con las casillas llenas de
+    mentira, la fase se quedó esperando dos contracciones que ya había
+    contado, y hubo que pasar con el botón.
+    """
+
+    def test_one_effort_that_wobbles_in_the_middle_counts_once(self, adq) -> None:
+        """Justo lo que pasó: dos inicios a medio segundo, un solo gesto. La
+        envolvente baja en mitad del esfuerzo y vuelve a subir, y mientras no
+        cruce hacia abajo el suelo con holgura sigue siendo el mismo."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        alto = np.concatenate([np.full(300, 0.5), np.full(150, 0.08),
+                               np.full(300, 0.5)])
+        adq._guia_detecta([alto, np.full(alto.size, 0.01)])
+        assert adq._man_hechas[0] == 1
+
+    def test_and_two_separated_by_rest_are_two(self, adq) -> None:
+        adq._n_channels = 2
+        _con_referencia(adq)
+        _contraccion(adq, 0)
+        _quieto(adq, 0.6)
+        _contraccion(adq, 0)
+        assert adq._man_hechas[0] == 2, "sin refractario que se las coma"
+
+    def test_a_rebound_is_too_short_to_count(self, adq) -> None:
+        """Lo que sobraba tras cada esfuerzo en el registro de verdad duró
+        0,28 s y 0,04 s; las contracciones, de 0,64 a 0,97 s. Lo que las
+        separa es el tiempo, no la amplitud: una flexión libre es el gesto
+        más flojo de la práctica y vive en la misma banda que un rebote."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        adq._guia_detecta([np.full(280, 0.5), np.full(280, 0.01)])
+        assert adq._man_hechas[0] == 0, "0,28 s no es una contracción"
+        _quieto(adq, 0.6)
+        _contraccion(adq, 0)
+        assert adq._man_hechas[0] == 1
+
+    def test_a_gentle_flexion_still_counts(self, adq) -> None:
+        """El suelo va por debajo de la más floja: las flexiones son libres
+        y sin resistencia a propósito, y dejar fuera un tercio de las que el
+        guion pide no sería un suelo, sería otro protocolo."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        adq._guia_detecta([np.full(500, 0.13), np.full(500, 0.01)])
+        assert adq._man_hechas[0] == 1, "un 13 % sostenido es una contracción"
+
+    def test_the_other_muscle_is_not_even_looked_at(self, adq) -> None:
+        """La diafonía no infla la cuenta en vivo: en el turno de uno, el
+        otro canal ni se mira. Lo que lee, entre un cuarto y un tercio de su propia referencia, es real y donde importan es en
+        el análisis."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        adq._guia_detecta([np.full(600, 0.01), np.full(600, 0.9)])
+        assert adq._man_hechas == [0, 0]
+
+    def test_and_the_phase_ends_even_if_the_count_never_gets_there(
+        self, adq
+    ) -> None:
+        """Con una regla de conteo más estricta el cuelgue no desaparece: se
+        muda del reposo a la cuenta. El límite es lo que hace verdadero que
+        la fase **no pueda no terminar**; el botón solo hace que se pueda."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        _contraccion(adq, 0)
+        _quieto(adq, MANIOBRA_SIN_NOVEDAD_S + 1.0)
+        assert adq._man_hechas[0] == 1, "solo se contó una de las seis"
+        assert adq._man_grupo == 1, "y aun así pasó de fase"
+
+    def test_and_without_a_reference_nothing_is_counted(self, adq) -> None:
+        """El conteo va en % de la CVM: sin calibrar no hay porcentaje."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        adq._mvc_ref[0] = None
+        _contraccion(adq, 0)
+        assert adq._man_hechas[0] == 0
 
 
 class TestTheHoldRunsOnTheClock:
