@@ -4213,6 +4213,7 @@ class AcquisitionTab(QWidget):
         self._fv_mvc_buf = []
         self._fv_mvc_peak = 0.0
         self._fv_mvc_cur = 0.0
+        self._fv_mapa()
         self._btn_calibrar.setEnabled(False)
         self._btn_grabar.setEnabled(False)
         self._update_fv_button()          # disabled while the wizard runs
@@ -4224,6 +4225,39 @@ class AcquisitionTab(QWidget):
                 "Force-velocity study: {n} loads, {r} lifts each, lightest first."
             ).format(n=len(self._fv_loads), r=self._fv_reps))
         self._fv_timer.start()
+
+    def _fv_mapa(self) -> None:
+        """The two rows this study is read from: this load, and all of it.
+
+        The pair practical had a map of its phase and this one had none,
+        so the same application looked finished in one practical and bare
+        in the other. Above, the lifts of **the load in hand**; below,
+        **the whole experiment**, grouped by load with a gap between
+        groups and the group being lifted outlined.
+
+        One colour for every box — the channel's, the one its trace and
+        its load bar already have. In the pair the row's colour says which
+        muscle leads, because there are two; here there is one muscle and
+        a colour per load would be a second scale competing with the only
+        one that means something. The gaps already say where a load ends.
+
+        (The kilos are not the ``loads`` this panel draws as bars: those
+        are what the muscle is pulling as a share of its own maximum, a
+        different thing that happens to have the same name.)
+        """
+        colour = _CHANNEL_COLORS[0]
+        todas: list = []
+        for i in range(len(self._fv_loads)):
+            if i:
+                todas.append(None)        # the gap that separates two loads
+            todas.extend([colour] * self._fv_reps)
+        self._mvc_overlay.set_steps([[colour] * self._fv_reps, todas])
+        self._fv_grupo()
+
+    def _fv_grupo(self) -> None:
+        """Outline the load being lifted, in the row that maps them all."""
+        primera = self._fv_idx * self._fv_reps
+        self._mvc_overlay.mark_group(1, primera, primera + self._fv_reps - 1)
 
     def _fv_current_load(self) -> float:
         if 0 <= self._fv_idx < len(self._fv_loads):
@@ -4376,6 +4410,9 @@ class AcquisitionTab(QWidget):
 
     def _fv_finish_contract(self) -> None:
         """Advance to the next rep, next load, or finish."""
+        self._mvc_overlay.mark_step(self._fv_rep, row=0)
+        self._mvc_overlay.mark_step(
+            self._fv_idx * self._fv_reps + self._fv_rep, row=1)
         self._fv_rep += 1
         if self._fv_rep < self._fv_reps:
             self._fv_phase = "rest"           # rest, then another rep, same load
@@ -4384,6 +4421,10 @@ class AcquisitionTab(QWidget):
         self._fv_rep = 0
         self._fv_idx += 1
         if self._fv_idx < len(self._fv_loads):
+            # The top row is the load in hand, so it starts over; the row
+            # under it is the experiment and keeps everything it has.
+            self._mvc_overlay.clear_steps(0)
+            self._fv_grupo()
             self._fv_phase = "rest"           # rest, then the next load
             self._fv_elapsed = 0.0
         else:
@@ -4398,6 +4439,7 @@ class AcquisitionTab(QWidget):
             self._btn_grabar.setEnabled(True)
             self._btn_calibrar.setEnabled(True)
         self._update_fv_button()          # re-enabled once the wizard ends
+        self._mvc_overlay.set_steps([])
         n = len(self._fv_loads)
         self._fv_info(
             tr(
@@ -4423,6 +4465,7 @@ class AcquisitionTab(QWidget):
         self._fv_active = False
         self._fv_phase = ""
         self._btn_cancelar_guia.setVisible(False)
+        self._mvc_overlay.set_steps([])
         if not self._mvc_active:
             self._mvc_overlay.hide_overlay()
 

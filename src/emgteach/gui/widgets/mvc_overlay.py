@@ -29,6 +29,14 @@ filled as each one is done. It answers a different question from the
 countdown — the count says *now*, the row says *where I am and how much is
 left* — so the two live together. It is drawn as a footer band, under
 everything else, which is why adding it moved none of the layout above it.
+
+**The same four things in every practical.** This panel offers a title, the
+map of the phase, a bar for whatever is running and the load bars — and what
+changes from one study to another is what fills them, never the shape. Each
+study used to build its own: the pair practical had a map and the
+force-velocity study had none, so the same application looked finished in one
+and bare in the other. Anything a phase wants that is not one of those four
+belongs here, once, and not in the tab that drives it.
 """
 
 from __future__ import annotations
@@ -77,6 +85,15 @@ class MvcOverlay(QFrame):
     _STEP_GAP = 5
     _STEP_TOP_GAP = 12
 
+    #: A row under the first is the overview — the whole experiment, not the
+    #: part in hand — and is drawn shorter, so the two are told apart without
+    #: a word that would then have to be translated. ``_STEP_MIN_W`` is how
+    #: narrow a box may get before a long row would be wider than the panel:
+    #: a map has to be whole.
+    _STEP_H_SUB = 12
+    _STEP_ROW_GAP = 7
+    _STEP_MIN_W = 4
+
     #: The bar that runs a hold, in the phase box, and the load bars under it.
     _RUN_H = 14
     _RUN_GAP = 12
@@ -121,8 +138,11 @@ class MvcOverlay(QFrame):
         self._progress = 0.0       # window progress 0..1
         self._effort = 0.0         # live effort 0..1 (of the running peak)
         self._pixmap = QPixmap()   # the gesture being asked for, or nothing
-        #: ``[colour, done]`` per action of the phase; empty for no footer.
-        self._steps: list[list] = []
+        #: ``[colour, done]`` per slot, per row; empty for no footer. A
+        #: slot whose colour is ``None`` is a gap and not a box.
+        self._steps: list[list[list]] = []
+        #: Row → the span of actions being worked on, outlined.
+        self._grupos: dict[int, tuple[int, int]] = {}
         self._running: float | None = None   # a hold in progress, 0..1
         self._waiting: float | None = None   # a countdown in progress, 0..1
         #: ``(fraction, colour)`` per muscle, and the band being aimed for.
@@ -134,36 +154,123 @@ class MvcOverlay(QFrame):
 
     # -- the map of the phase ------------------------------------------------
 
-    def set_steps(self, colours) -> None:
+    def set_steps(self, rows) -> None:
         """Lay out one empty box per action, in the order they are asked for.
 
-        *colours* is one ``(r, g, b)`` per action — the muscle's own, so the
+        *rows* is one ``(r, g, b)`` per action — the muscle's own, so the
         colour in the row is the colour of its trace — or empty for a phase
         that has no actions to count, like the warm-up.
-        """
-        self._steps = [[QColor(*c), False] for c in (colours or [])]
 
-    def mark_step(self, index: int) -> None:
+        A phase that maps two things at once passes **a list of rows**
+        instead, drawn top to bottom: the force-velocity study maps the load
+        being lifted above and the whole experiment below. A ``None`` in a
+        row is **a gap and not a box**, which is how one load is told from
+        the next; a colour per load would compete with the channel's own,
+        and the channel's colour is the one that already means something —
+        it is the colour of its trace and of its load bar.
+
+        A flat list is one row and behaves exactly as it always did, so the
+        three phases of the pair practical pass what they passed and get
+        what they got.
+        """
+        filas = [list(fila) for fila in self._filas(rows)]
+        self._steps = [] if not any(filas) else [
+            [[None if c is None else QColor(*c), False] for c in fila]
+            for fila in filas
+        ]
+        self._grupos = {}
+
+    @staticmethod
+    def _filas(rows) -> list:
+        """One row or several: a flat list of colours is a single row."""
+        filas = list(rows or [])
+        plano = all(
+            c is None or (isinstance(c, (tuple, list)) and len(c) == 3
+                          and all(isinstance(v, (int, float)) for v in c))
+            for c in filas
+        )
+        return [filas] if filas and plano else filas
+
+    def _acciones(self, row: int) -> list[list]:
+        """The boxes of a row, gaps left out: a caller counts actions."""
+        if not (0 <= row < len(self._steps)):
+            return []
+        return [casilla for casilla in self._steps[row]
+                if casilla[0] is not None]
+
+    def mark_step(self, index: int, row: int = 0) -> None:
         """Fill one box. Out of range is ignored on purpose: the row informs,
         it does not govern, so more actions than boxes is not an error —
         the count that matters is the one the analysis makes afterwards.
         """
-        if 0 <= index < len(self._steps):
-            self._steps[index][1] = True
+        acciones = self._acciones(row)
+        if 0 <= index < len(acciones):
+            acciones[index][1] = True
 
-    def steps_done(self) -> list[bool]:
-        """Which boxes are filled, in order."""
-        return [bool(hecho) for _colour, hecho in self._steps]
+    def clear_steps(self, row: int = 0) -> None:
+        """Empty one row's boxes again, keeping its layout.
 
-    def steps_rect(self) -> tuple[int, int, int, int]:
-        """``(x, y, w, h)`` of the footer row; empty when there is none."""
+        The study's top row is the load being lifted, so it starts over
+        with each load while the row under it — the whole experiment —
+        keeps everything it has.
+        """
+        for casilla in self._acciones(row):
+            casilla[1] = False
+
+    def mark_group(self, row: int, first: int, last: int) -> None:
+        """Outline actions *first* to *last* of a row as the group in hand.
+
+        What tells one group from another is the gap between them; what
+        says which one is being done now is this outline. Neither is a
+        colour, on purpose.
+        """
+        self._grupos[row] = (int(first), int(last))
+
+    def steps_done(self, row: int = 0) -> list[bool]:
+        """Which boxes of a row are filled, in order; a gap is not a box."""
+        return [bool(hecho) for _colour, hecho in self._acciones(row)]
+
+    def steps_rows(self) -> int:
+        """How many rows the map has."""
+        return len(self._steps)
+
+    def _row_metrics(self, row: int) -> tuple[int, int, int]:
+        """``(box, gap, height)`` of a row, shrunk to fit the panel's width.
+
+        A map has to be whole: the study can ask for eight loads of five
+        lifts, which is forty boxes and does not fit at the size the six
+        of a muscle are drawn at. Narrower boxes still read as a row of
+        things to do; boxes that run off the panel do not.
+        """
+        alto = self._STEP_H if row == 0 else self._STEP_H_SUB
+        n = len(self._steps[row]) if 0 <= row < len(self._steps) else 0
+        if n <= 0:
+            return (0, 0, alto)
+        disponible = self._W - 2 * self._SUB_MARGIN
+        ancho, hueco = self._STEP_W, self._STEP_GAP
+        if n * ancho + (n - 1) * hueco > disponible:
+            hueco = 2
+            ancho = max(self._STEP_MIN_W, (disponible - (n - 1) * hueco) // n)
+        return (ancho, hueco, alto)
+
+    def _footer_height(self) -> int:
+        """The whole footer: its rows and the air between them."""
         if not self._steps:
+            return 0
+        altos = [self._row_metrics(r)[2] for r in range(len(self._steps))]
+        return sum(altos) + self._STEP_ROW_GAP * (len(altos) - 1)
+
+    def steps_rect(self, row: int = 0) -> tuple[int, int, int, int]:
+        """``(x, y, w, h)`` of one row of the footer; empty without one."""
+        if not (0 <= row < len(self._steps)) or not self._steps[row]:
             return (0, 0, 0, 0)
-        n = len(self._steps)
-        ancho = n * self._STEP_W + (n - 1) * self._STEP_GAP
-        return ((self._W - ancho) // 2,
-                self.height() - self._BOTTOM - self._STEP_H,
-                ancho, self._STEP_H)
+        ancho, hueco, alto = self._row_metrics(row)
+        n = len(self._steps[row])
+        total = n * ancho + (n - 1) * hueco
+        y = self.height() - self._BOTTOM - self._footer_height()
+        for anterior in range(row):
+            y += self._row_metrics(anterior)[2] + self._STEP_ROW_GAP
+        return ((self._W - total) // 2, y, total, alto)
 
     # -- driven by the wizard ------------------------------------------------
 
@@ -352,8 +459,9 @@ class MvcOverlay(QFrame):
         return padre.height() if padre is not None else 600
 
     def _steps_extra(self) -> int:
-        """How much taller the panel is for its footer row."""
-        return 0 if not self._steps else self._STEP_H + self._STEP_TOP_GAP
+        """How much taller the panel is for its footer rows."""
+        return (0 if not self._steps
+                else self._footer_height() + self._STEP_TOP_GAP)
 
     def _waiting_extra(self) -> int:
         """How far the message moves down for the countdown bar."""
@@ -466,15 +574,22 @@ class MvcOverlay(QFrame):
                            self._LOAD_H + 6, 9, colour=QColor(*colour))
                 y += self._LOAD_H + self._LOAD_GAP
 
-        # The footer row, last of the layout and first of what is looked at
-        # while the work is being done.
-        if self._steps:
-            x, y, _w, _h = self.steps_rect()
-            for colour, hecho in self._steps:
-                p.setPen(QPen(colour, 2))
-                p.setBrush(colour if hecho else _STEP_EMPTY)
-                p.drawRoundedRect(x, y, self._STEP_W, self._STEP_H, 3, 3)
-                x += self._STEP_W + self._STEP_GAP
+        # The footer rows, last of the layout and first of what is looked
+        # at while the work is being done.
+        for fila in range(len(self._steps)):
+            x, y, _w, alto = self.steps_rect(fila)
+            caja, hueco, _alto = self._row_metrics(fila)
+            grupo = self._grupos.get(fila)
+            i = 0                     # actions, because a gap is not a box
+            for colour, hecho in self._steps[fila]:
+                if colour is not None:
+                    en_curso = (grupo is not None
+                                and grupo[0] <= i <= grupo[1])
+                    p.setPen(QPen(_FG if en_curso else colour, 2))
+                    p.setBrush(colour if hecho else _STEP_EMPTY)
+                    p.drawRoundedRect(x, y, caja, alto, 3, 3)
+                    i += 1
+                x += caja + hueco
 
         if not self._pixmap.isNull():
             x, y, _w, _h = self.image_rect()

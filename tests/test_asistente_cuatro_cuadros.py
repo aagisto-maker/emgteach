@@ -61,9 +61,9 @@ def adq(qapp, tmp_path):
         qapp.processEvents()
 
 
-def _colores(tab) -> list[tuple[int, int, int]]:
+def _colores(tab, fila: int = 0) -> list[tuple[int, int, int]]:
     return [(c.red(), c.green(), c.blue())
-            for c, _hecho in tab._mvc_overlay._steps]
+            for c, _hecho in tab._mvc_overlay._steps[fila] if c is not None]
 
 
 def _reposo(tab, bloques: int = 12, n: int = 200) -> None:
