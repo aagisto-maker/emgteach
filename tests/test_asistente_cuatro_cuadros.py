@@ -353,6 +353,50 @@ class TestWhatTheRealBoardFound:
         assert adq._man_hechas[0] == 1, "solo se contó una de las seis"
         assert adq._man_grupo == 1, "y aun así pasó de fase"
 
+    def test_and_the_limit_does_not_ask_for_rest(self, adq) -> None:
+        """Un límite atado al reposo no es un límite: si el reposo no llega
+        —el fallo mismo que esto viene a tapar— los dos caminos se quedarían
+        colgados del mismo clavo. Aquí la señal nunca baja del 10 %."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        ruido = np.full(int(0.5 * FS), 0.12)      # 12 % sin llegar a ser nada
+        for _ in range(int(MANIOBRA_SIN_NOVEDAD_S / 0.5) + 2):
+            adq._guia_detecta([ruido, ruido])
+            if adq._man_grupo:
+                break
+        assert adq._man_grupo == 1, "no terminó sin reposo"
+
+    def test_two_efforts_a_second_apart_are_two(self, adq) -> None:
+        """Sin refractario, lo que mantiene unido un esfuerzo es la
+        histéresis; dos de verdad, con su valle en medio, son dos. El ritmo
+        lo pone el alumno y puede ir más rápido que el del ensayo."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        _contraccion(adq, 0)
+        _quieto(adq, 0.5)
+        _contraccion(adq, 0)
+        assert adq._man_hechas[0] == 2
+
+    def test_the_rest_starts_when_the_signal_drops_not_when_the_box_fills(
+        self, adq
+    ) -> None:
+        """La casilla se llena a los 0,3 s de empezar el esfuerzo, que es
+        mejor —se ve contar mientras se aprieta—, pero la fase no puede
+        darse por terminada con la sexta todavía en marcha."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        adq._man_hechas = [MANIOBRAS_POR_MUSCULO - 1, 0]
+        for i in range(MANIOBRAS_POR_MUSCULO - 1):
+            adq._mvc_overlay.mark_step(i)
+        # La sexta, sostenida mucho más de un segundo: se cuenta enseguida y
+        # la fase no debe pasar mientras dure.
+        for _ in range(4):
+            adq._guia_detecta([np.full(400, 0.5), np.full(400, 0.01)])
+        assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO
+        assert adq._man_grupo == 0, "no se pasa con el esfuerzo en marcha"
+        _quieto(adq, 1.2)
+        assert adq._man_grupo == 1
+
     def test_and_without_a_reference_nothing_is_counted(self, adq) -> None:
         """El conteo va en % de la CVM: sin calibrar no hay porcentaje."""
         adq._n_channels = 2

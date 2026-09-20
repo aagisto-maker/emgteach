@@ -211,6 +211,19 @@ MANIOBRA_REPOSO_S = 1.0
 #: per crossing however long the effort runs. One was proposed at 1.5 s and
 #: withdrawn — the manoeuvres of that rehearsal came 1.83 s apart and the
 #: student sets the pace, so a refractory that long is a trap, not a guard.
+#: **De qué son porcentaje estos porcentajes.** De la referencia que esa
+#: sesión midió, no del máximo real del músculo, y las dos cosas pueden no
+#: coincidir: en el registro donde se midieron todo esto, una flexión
+#: **libre y sin resistencia** llegó al 103,6 % de la referencia, y las
+#: otras tres al 65, 69 y 81 %. Por la regla que la propia aplicación
+#: escribe junto a la constante en ``profiles.py`` —la referencia *es* el
+#: pico de un esfuerzo máximo, así que si la tarea lo supera el esfuerzo no
+#: fue máximo—, esa referencia se quedó corta. El orden de las cosas no
+#: cambia y la regla sigue siendo la buena, pero **el margen medido no es
+#: el margen real**: con una referencia a dos tercios del máximo, este
+#: suelo del 10 % es un 6,7 % y el rebote del 12,2 % es un 8 %. Por eso el
+#: ensayo que se repita con la placa **solo vale si su calibración pasa**
+#: ``_mvc_check_is_a_maximum``.
 MANIOBRA_MINIMO_PCT = 10.0
 MANIOBRA_MINIMA_S = 0.30
 
@@ -224,8 +237,10 @@ MANIOBRA_REPOSO_PCT = 10.0
 
 #: And the line that makes «the phase can never fail to end» true instead of
 #: merely possible. The button lets a student end it; this ends it. After
-#: this long with **nothing new counted** — the map full or not — a muscle
-#: back at rest moves the session on by itself.
+#: this long with **nothing new counted** — the map full or not, **and
+#: whether or not the muscle is at rest** — the session moves on. Asking
+#: for rest here as well would hang the timeout on the same nail that came
+#: loose: rest that never comes is the failure this is the net for.
 #:
 #: It is the answer to what a stricter count would otherwise cost: a rule
 #: that counts well can still leave the phase waiting for a contraction it
@@ -3822,9 +3837,17 @@ class AcquisitionTab(QWidget):
         recording is continuous and the count that counts is the
         analysis's — it only moves a phase annotation.
         """
-        completo = self._man_hechas[c] >= MANIOBRAS_POR_MUSCULO
-        vencido = self._man_sin_novedad_n >= MANIOBRA_SIN_NOVEDAD_S * FS
-        if not (completo or vencido):
+        if self._man_sin_novedad_n >= MANIOBRA_SIN_NOVEDAD_S * FS:
+            # El límite, y **sin pedir reposo**: un límite atado al reposo no
+            # es un límite. Si el reposo no llega —que es exactamente el
+            # fallo que todo esto arregla—, los dos caminos se quedarían
+            # colgados del mismo clavo. Nada se corta por medio: doce
+            # segundos sin contar nada quiere decir que no ha habido ningún
+            # esfuerzo sostenido, porque uno de 0,3 s ya se habría contado.
+            self._man_quieto_n = 0
+            self._paso_siguiente()
+            return
+        if self._man_hechas[c] < MANIOBRAS_POR_MUSCULO:
             self._man_quieto_n = 0
             return
         if not pct.size:
