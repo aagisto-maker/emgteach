@@ -30,6 +30,19 @@ on:
       - "packaging/**"
       - ".github/workflows/build-windows-exe.yml"
 
+# One run per branch. Force-pushing to a pull request does not cancel the run
+# already going: without this, the superseded one keeps its runners to the end
+# — twelve of them for this workflow — and on 20 September four zombie runs
+# between two sessions jammed the queue until they were cancelled by hand.
+#
+# Only a pull request is cancelled. A push to main is the one commit that has
+# to be tested whatever else is happening, and two merges close together would
+# otherwise leave the first one untested; a tag build and a manual run are not
+# things anybody wants taken away either.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
