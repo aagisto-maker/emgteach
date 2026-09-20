@@ -431,10 +431,13 @@ por extender la muñeca.
 2. **La aplicación guía también esta parte**: pide las seis de un músculo, las
    seis del otro y la presa, con una fila de casillas —una por contracción,
    del color que ese músculo tiene en las gráficas— que se van llenando según
-   se detectan. Las seis son libres, al ritmo de quien las hace, así que quien
-   pasa de una parte a la siguiente es **«Hecho — siguiente»** (o la barra
-   espaciadora), no las casillas: si el detector se salta una, la casilla se
-   queda vacía y no pasa nada más. En el registro, y siempre en este orden,
+   se detectan. Las seis son libres, al ritmo de quien las hace, y la
+   aplicación **pasa sola** a la parte siguiente cuando ha contado las seis y
+   el músculo lleva un segundo en reposo —no en el instante de la sexta, que
+   le cortaría la cola—. **«Hecho — siguiente»** (o la barra espaciadora) pasa
+   cuando se quiera, y es lo que hay que usar si el detector se salta una: la
+   casilla se queda vacía y la fase, sin él, no acabaría. En el registro, y
+   siempre en este orden,
    con 2 s de quietud entre maniobras:
    **seis flexiones** de muñeca (1 s cada una, libres, sin resistencia),
    **seis extensiones**, también libres, y por último la **presa**. Libres
@@ -618,7 +621,10 @@ y el EMG la activación.
    (calentamiento y tres sacudidas máximas, breves y explosivas), anuncia
    el estudio y, para cada carga, pide las
    repeticiones de **una elevación rápida**, cada una con su cuenta atrás y
-   marcada en el fichero con su carga. No hay otro máximo en vacío entre
+   marcada en el fichero con su carga. Debajo del cuadro van **dos filas de
+   casillas**: arriba los levantamientos de la carga que se está haciendo y
+   abajo el experimento entero, agrupado por carga y con la que toca
+   perfilada. No hay otro máximo en vacío entre
    medias: la calibración ya lo fue. Basta seguir la pantalla; «Cancelar guía
    (Esc)» la detiene sin parar la grabación.
 3. **Detener**. En Análisis, la tabla de contracciones trae una fila por

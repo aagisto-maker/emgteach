@@ -127,11 +127,11 @@ _ES = {
         "Trabaje los dos músculos a la vez y manténgalo",
     "Done — next (Space)": "Hecho — siguiente (Espacio)",
     "Done — next": "Hecho — siguiente",
-    "Go on to the next part of the session.":
-        "Pasar a la parte siguiente de la sesión.",
+    "Go on now, without waiting for the count.":
+        "Pasar ya, sin esperar a la cuenta.",
     "{n} contractions of {label}": "{n} contracciones de {label}",
-    "At your own pace; «{button}» when you finish.":
-        "A su ritmo; «{button}» al terminar.",
+    "At your own pace; it moves on at {n}, or with «{button}».":
+        "A su ritmo; pasa sola a las {n}, o con «{button}».",
     "Both muscles at once": "Los dos músculos a la vez",
     "Next one in a moment": "La siguiente enseguida",
     "Task recorded": "Tarea registrada",

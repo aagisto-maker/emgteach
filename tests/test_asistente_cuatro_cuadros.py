@@ -6,10 +6,10 @@ cuadros, uno por fase, con una fila de casillas que es el mapa de lo que
 falta — una por acción, del color del músculo que la lleva — y un imperativo
 por cuadro.
 
-Lo que estas pruebas guardan es, sobre todo, **que el mapa informa y no
-gobierna**: la fase de las maniobras termina cuando lo dice el alumno, no
-cuando se llenan las doce casillas, porque un detector que se salte una no
-puede dejar a nadie encerrado en una fase que no acaba.
+Lo que estas pruebas guardan es, sobre todo, **que la fase de las maniobras
+no puede dejar de acabar**: acaba al contar las seis y quedarse el músculo en
+reposo, o cuando lo dice el alumno, y el botón sigue ahí todo el rato para el
+día en que el detector se salte una.
 """
 from __future__ import annotations
 
@@ -21,7 +21,9 @@ from emgteach.gui.tabs.acquisition import (
     COACT_HOLD_S,
     COACT_REPS,
     COLOR_COACT,
+    FS,
     MANIOBRA_CADA_S,
+    MANIOBRA_REPOSO_S,
     MANIOBRAS_POR_MUSCULO,
     MVC_READY_S,
     MVC_TICK_MS,
@@ -59,9 +61,29 @@ def adq(qapp, tmp_path):
         qapp.processEvents()
 
 
-def _colores(tab) -> list[tuple[int, int, int]]:
+def _colores(tab, fila: int = 0) -> list[tuple[int, int, int]]:
     return [(c.red(), c.green(), c.blue())
-            for c, _hecho in tab._mvc_overlay._steps]
+            for c, _hecho in tab._mvc_overlay._steps[fila] if c is not None]
+
+
+def _reposo(tab, bloques: int = 12, n: int = 200) -> None:
+    """Reposo con ruido: los primeros bloques son la línea base del detector."""
+    rng = np.random.default_rng(3)
+    for _ in range(bloques):
+        tab._guia_detecta([rng.normal(0.01, 0.002, n),
+                           rng.normal(0.01, 0.002, n)])
+
+
+def _quieto(tab, segundos: float) -> None:
+    """Reposo liso, por debajo de cualquier umbral, en bloques de 100 ms."""
+    n = int(0.1 * FS)
+    for _ in range(max(1, round(segundos / 0.1))):
+        tab._guia_detecta([np.full(n, 0.004), np.full(n, 0.004)])
+
+
+def _contraccion(tab, canal: int = 0) -> None:
+    alto, bajo = np.full(400, 0.5), np.full(400, 0.01)
+    tab._guia_detecta([alto, bajo] if canal == 0 else [bajo, alto])
 
 
 class TestTheFourPhasesComeInOrder:
@@ -128,28 +150,83 @@ class TestTheMapIsFilledAsItGoes:
     ) -> None:
         adq._n_channels = 2
         adq._guia_maniobras(0)
+        _reposo(adq)
         adq._man_hechas = [MANIOBRAS_POR_MUSCULO, 0]
         for i in range(MANIOBRAS_POR_MUSCULO):
             adq._mvc_overlay.mark_step(i)
-        rng = np.random.default_rng(4)
-        for _ in range(12):
-            adq._guia_detecta([rng.normal(0.01, 0.002, 200),
-                               rng.normal(0.01, 0.002, 200)])
-        adq._guia_detecta([np.full(400, 0.5), np.full(400, 0.01)])
+        _contraccion(adq, 0)
         hechas = adq._mvc_overlay.steps_done()
         assert hechas[:MANIOBRAS_POR_MUSCULO] == [True] * MANIOBRAS_POR_MUSCULO
         assert hechas[MANIOBRAS_POR_MUSCULO:] == [False] * MANIOBRAS_POR_MUSCULO
         assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO
+        assert adq._man_grupo == 0, "una contracción de más no pasa de fase"
 
 
-class TestTheManoeuvresEndWhenTheStudentSaysSo:
-    """El requisito que evita el desastre.
+class TestTheManoeuvresEndWhenTheyAreDoneOrWhenTheStudentSaysSo:
+    """El requisito que evita el desastre, escrito como debía estarlo.
 
     El guion pide seis flexiones **libres**, al ritmo del alumno, y el
     artículo describe esa libertad; así que las casillas solo pueden
     rellenarse detectando. Un detector se salta una antes o después, y si la
     fase dependiera de las doce casillas, el alumno se quedaría encerrado.
+
+    De ahí no se sigue que el botón tenga que ser la **única** salida, que
+    es lo que estuvo siendo un día: se sigue que tiene que existir. La fase
+    acaba al contar lo que pedía —y quedarse el músculo en reposo, para no
+    cortarle la cola a la última— o cuando lo dice el alumno. Lo que nunca
+    puede pasar es que no acabe.
     """
+
+    def test_the_six_and_a_second_of_quiet_move_it_on(self, adq) -> None:
+        adq._n_channels = 2
+        adq._guia_maniobras(0)
+        _reposo(adq)
+        for _ in range(MANIOBRAS_POR_MUSCULO):
+            _contraccion(adq, 0)
+            _quieto(adq, 0.4)
+        assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO
+        assert adq._man_grupo == 0, "cuatro décimas no son un segundo"
+        _quieto(adq, MANIOBRA_REPOSO_S)
+        assert adq._man_grupo == 1, "no pasó al segundo músculo"
+
+    def test_the_last_contraction_on_its_own_does_not(self, adq) -> None:
+        """Pasar en el instante de la sexta le cortaría su propia cola."""
+        adq._n_channels = 2
+        adq._guia_maniobras(0)
+        _reposo(adq)
+        for _ in range(MANIOBRAS_POR_MUSCULO - 1):
+            _contraccion(adq, 0)
+            _quieto(adq, 0.4)
+        _contraccion(adq, 0)
+        assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO
+        assert adq._man_grupo == 0
+
+    def test_a_missed_onset_leaves_the_button_as_the_way_out(self, adq) -> None:
+        """Cinco de seis y todo el reposo del mundo: la fase no acaba sola,
+        y por eso el botón está a la vista mientras dura."""
+        adq._n_channels = 2
+        adq._guia_maniobras(0)
+        _reposo(adq)
+        for _ in range(MANIOBRAS_POR_MUSCULO - 1):
+            _contraccion(adq, 0)
+            _quieto(adq, 0.4)
+        _quieto(adq, 5 * MANIOBRA_REPOSO_S)
+        assert adq._man_grupo == 0
+        assert adq._btn_paso_hecho.isVisible()
+        adq._paso_siguiente()
+        assert adq._man_grupo == 1
+
+    def test_the_second_muscle_moves_on_to_the_grip_the_same_way(
+        self, adq
+    ) -> None:
+        adq._n_channels = 2
+        adq._guia_maniobras(0)
+        adq._guia_maniobras(1)
+        _reposo(adq)
+        adq._man_hechas[1] = MANIOBRAS_POR_MUSCULO
+        _quieto(adq, MANIOBRA_REPOSO_S)
+        assert adq._guia_fase == "coact"
+        assert not adq._btn_paso_hecho.isVisible()
 
     def test_it_goes_on_with_the_boxes_empty(self, adq) -> None:
         adq._n_channels = 2
