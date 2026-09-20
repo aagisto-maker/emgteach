@@ -260,7 +260,13 @@ class TestTheHoldRunsOnTheClock:
     def test_the_bar_fills_and_the_box_is_marked_at_the_end(self, adq) -> None:
         adq._n_channels = 2
         adq._guia_coactivacion()
-        adq._coact_fase = "hold"
+        # La cuenta atrás no enseña casillas: no llena ninguna. El mapa sale
+        # con la presa, que es la que llena la suya.
+        assert adq._mvc_overlay.steps_rows() == 0
+        adq._coact_elapsed = MVC_READY_S
+        adq._coact_tick()
+        assert adq._coact_fase == "hold"
+        assert adq._mvc_overlay.steps_done() == [False] * COACT_REPS
         adq._coact_elapsed = 0.0
         pasos = int(COACT_HOLD_S / (MVC_TICK_MS / 1000.0))
         adq._coact_tick()

@@ -3771,8 +3771,14 @@ class AcquisitionTab(QWidget):
         self._guia_coactivacion()
 
     def _guia_coactivacion(self) -> None:
-        """The manoeuvre that works both muscles at once, and is timed."""
-        self._guia_mapa("coact")
+        """The manoeuvre that works both muscles at once, and is timed.
+
+        The map waits for the hold: the countdown before it fills nothing,
+        and a box under a countdown is a promise that countdown does not
+        keep.
+        """
+        self._guia_fase = "coact"
+        self._mvc_overlay.set_steps([])
         self._btn_paso_hecho.setVisible(False)
         self._coact_rep = 0
         self._coact_fase = "ready"
@@ -3794,6 +3800,8 @@ class AcquisitionTab(QWidget):
                 waiting=min(1.0, self._coact_elapsed / MVC_READY_S))
             self._bcast_calib(True, "ready", titulo, pista, count=cuenta)
             if self._coact_elapsed >= MVC_READY_S:
+                if self._coact_rep == 0:
+                    self._guia_mapa("coact")   # the hold is what fills it
                 self._coact_fase = "hold"
                 self._coact_elapsed = 0.0
                 # Both at once: this is the manoeuvre the co-activation
@@ -4213,7 +4221,7 @@ class AcquisitionTab(QWidget):
         self._fv_mvc_buf = []
         self._fv_mvc_peak = 0.0
         self._fv_mvc_cur = 0.0
-        self._fv_mapa()
+        self._mvc_overlay.set_steps([])
         self._btn_calibrar.setEnabled(False)
         self._btn_grabar.setEnabled(False)
         self._update_fv_button()          # disabled while the wizard runs
@@ -4244,6 +4252,12 @@ class AcquisitionTab(QWidget):
         (The kilos are not the ``loads`` this panel draws as bars: those
         are what the muscle is pulling as a share of its own maximum, a
         different thing that happens to have the same name.)
+
+        A map is built **when the phase that fills it starts**, not
+        before: the announcement of the study, and the maximum that may
+        open it, fill nothing, and a row of boxes under them is a promise
+        those boxes do not keep. Same rule the warm-up follows in the pair
+        practical.
         """
         colour = _CHANNEL_COLORS[0]
         todas: list = []
@@ -4252,6 +4266,9 @@ class AcquisitionTab(QWidget):
                 todas.append(None)        # the gap that separates two loads
             todas.extend([colour] * self._fv_reps)
         self._mvc_overlay.set_steps([[colour] * self._fv_reps, todas])
+        # The row of the load in hand goes over its own group, not in the
+        # middle of the row of every load.
+        self._mvc_overlay.align_rows(0, 1)
         self._fv_grupo()
 
     def _fv_grupo(self) -> None:
@@ -4299,6 +4316,7 @@ class AcquisitionTab(QWidget):
             )
             self._fv_info(tr("Now the force-velocity study"))
             if self._fv_elapsed >= FV_INTRO_S:
+                self._fv_mapa()
                 self._fv_phase = "ready"
                 self._fv_elapsed = 0.0
         elif self._fv_phase == "mvc_ready":
@@ -4340,6 +4358,7 @@ class AcquisitionTab(QWidget):
             )
             self._fv_info(tr("Relax — the loads come next…"))
             if self._fv_elapsed >= FV_MVC_TO_LOADS_REST_S:
+                self._fv_mapa()
                 self._fv_phase = "ready"
                 self._fv_elapsed = 0.0
         elif self._fv_phase == "ready":

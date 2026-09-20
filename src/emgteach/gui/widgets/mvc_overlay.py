@@ -143,6 +143,8 @@ class MvcOverlay(QFrame):
         self._steps: list[list[list]] = []
         #: Row → the span of actions being worked on, outlined.
         self._grupos: dict[int, tuple[int, int]] = {}
+        #: Row → the row it is drawn over, box above box.
+        self._alineadas: dict[int, int] = {}
         self._running: float | None = None   # a hold in progress, 0..1
         self._waiting: float | None = None   # a countdown in progress, 0..1
         #: ``(fraction, colour)`` per muscle, and the band being aimed for.
@@ -179,6 +181,7 @@ class MvcOverlay(QFrame):
             for fila in filas
         ]
         self._grupos = {}
+        self._alineadas = {}
 
     @staticmethod
     def _filas(rows) -> list:
@@ -226,6 +229,37 @@ class MvcOverlay(QFrame):
         """
         self._grupos[row] = (int(first), int(last))
 
+    def align_rows(self, row: int, over: int) -> None:
+        """Draw *row* above the group marked in *over*, box over box.
+
+        Centred, a short row sits over whichever boxes of the long one
+        happen to be in the middle, and the eye pairs the wrong ones. The
+        study's top row is the load being lifted and the row under it is
+        every load, so above its own group the two say the same thing
+        twice — which is the whole point of having both. The aligned row
+        takes the other's box size as well: boxes of two widths do not
+        line up, however carefully they are placed.
+        """
+        self._alineadas[row] = over
+
+    def _slot_de_accion(self, row: int, accion: int) -> int:
+        """Where the *accion*-th box of a row sits, counting the gaps."""
+        i = 0
+        for slot, (colour, _hecho) in enumerate(self._steps[row]):
+            if colour is None:
+                continue
+            if i == accion:
+                return slot
+            i += 1
+        return 0
+
+    def _alineada_sobre(self, row: int) -> int | None:
+        """The row this one is drawn over, if it is and that row exists."""
+        destino = self._alineadas.get(row)
+        if destino is None or destino == row:
+            return None
+        return destino if 0 <= destino < len(self._steps) else None
+
     def steps_done(self, row: int = 0) -> list[bool]:
         """Which boxes of a row are filled, in order; a gap is not a box."""
         return [bool(hecho) for _colour, hecho in self._acciones(row)]
@@ -246,6 +280,10 @@ class MvcOverlay(QFrame):
         n = len(self._steps[row]) if 0 <= row < len(self._steps) else 0
         if n <= 0:
             return (0, 0, alto)
+        destino = self._alineada_sobre(row)
+        if destino is not None:
+            ancho, hueco, _suyo = self._row_metrics(destino)
+            return (ancho, hueco, alto)
         disponible = self._W - 2 * self._SUB_MARGIN
         ancho, hueco = self._STEP_W, self._STEP_GAP
         if n * ancho + (n - 1) * hueco > disponible:
@@ -270,7 +308,13 @@ class MvcOverlay(QFrame):
         y = self.height() - self._BOTTOM - self._footer_height()
         for anterior in range(row):
             y += self._row_metrics(anterior)[2] + self._STEP_ROW_GAP
-        return ((self._W - total) // 2, y, total, alto)
+        destino = self._alineada_sobre(row)
+        if destino is None:
+            return ((self._W - total) // 2, y, total, alto)
+        x0 = self.steps_rect(destino)[0]
+        primera = self._grupos.get(destino, (0, 0))[0]
+        x = x0 + self._slot_de_accion(destino, primera) * (ancho + hueco)
+        return (x, y, total, alto)
 
     # -- driven by the wizard ------------------------------------------------
 
