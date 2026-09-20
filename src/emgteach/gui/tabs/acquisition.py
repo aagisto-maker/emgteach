@@ -3237,6 +3237,10 @@ class AcquisitionTab(QWidget):
         """
         self._mvc_phase = "warmup"
         self._mvc_elapsed = 0.0
+        # Sin mapa hasta que haya algo que contar, y a cero por si esta es
+        # la segunda calibración de la sesión.
+        self._guia_fase = ""
+        self._mvc_overlay.set_steps([])
         self._write_phase_marker(warmup_start_marker())
         # Quiet from here until the wizard ends: a device that obeys is
         # asked for nothing between efforts, so the trace shows rest while
@@ -3274,7 +3278,6 @@ class AcquisitionTab(QWidget):
             self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
             self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
             if self._mvc_elapsed >= total:
-                self._guia_mapa("cal")
                 self._mvc_enter_ready()
             return
 
@@ -3419,7 +3422,14 @@ class AcquisitionTab(QWidget):
             cal_end_marker(self._mvc_muscle, self._mvc_rep + 1)
         )
         # One box of the map per repetition closed, and never before: the
-        # wizard sets the rhythm here, so it knows.
+        # wizard sets the rhythm here, so it knows. **The map itself arrives
+        # with the first of them**, not with the countdown before it: the
+        # countdown fills no box, and a row of empty boxes under a panel
+        # that will not fill them is a promise that panel does not keep —
+        # the more so here, where the countdown already carries the picture
+        # of the gesture and the box after it is the one that visibly fills.
+        if self._guia_fase != "cal":
+            self._guia_mapa("cal")
         self._mvc_overlay.mark_step(
             self._mvc_muscle * self._mvc_reps + self._mvc_rep)
         # Rest, not «do as you like»: between one effort and the next come
