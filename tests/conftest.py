@@ -7,8 +7,10 @@ headless CI runner without a display server.
 
 from __future__ import annotations
 
+import faulthandler
 import gc
 import os
+import sys
 
 import pytest
 
@@ -22,6 +24,63 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 # macOS find theirs through fontconfig and need nothing.
 if os.name == "nt" and os.path.isdir(r"C:\Windows\Fonts"):
     os.environ.setdefault("QT_QPA_FONTDIR", r"C:\Windows\Fonts")
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Make Qt's fatal messages visible, because otherwise nothing is.
+
+    Twice on 19 September the ``windows-latest / Python 3.10`` job ended with
+    ``exit code 1`` and **no** ``FAILED`` line: every test walked, the log
+    stopping in the middle of the last file and not one word about why. Two
+    things conspired to make that silence.
+
+    The first is Qt. When something goes fatally wrong -- a ``QThread``
+    destroyed while it is still running is the one we are chasing -- Qt calls
+    the installed message handler and then aborts through ``__fastfail``.
+    That is not a signal, so ``faulthandler`` never sees it; the
+    ``faulthandler_timeout`` in ``ci.yml`` catches a *hang* and can say
+    nothing about an abort. And the exit status, ``0xC0000409``, comes out of
+    the PowerShell the runner wraps the step in as plain ``1``, which is
+    indistinguishable from a test having failed.
+
+    The second is pytest's own capture. It redirects file descriptors 1 and 2
+    into temporary files and only shows what it caught when a test fails; a
+    process that aborts never gets that far, so Qt's message died in the
+    capture. Hence the suspend below: the handler writes to the terminal the
+    runner is actually reading, and flushes before Qt pulls the floor away.
+
+    What comes out is the sentence that was missing -- which thread, by name,
+    and a stack for every thread alive at that instant, so the next time this
+    happens the log says who was still running instead of nothing at all.
+    """
+    try:
+        from PySide6.QtCore import QtMsgType, qInstallMessageHandler
+    except Exception:  # pragma: no cover -- Qt-free environment, nothing to guard
+        return
+
+    capman = config.pluginmanager.getplugin("capturemanager")
+    etiquetas = {QtMsgType.QtFatalMsg: "FATAL", QtMsgType.QtCriticalMsg: "CRITICAL"}
+
+    def handler(mode, _context, message: str) -> None:
+        etiqueta = etiquetas.get(mode)
+        if etiqueta is None:          # debug, info, warning: Qt's own business
+            return
+        mortal = mode == QtMsgType.QtFatalMsg
+        if capman is not None:
+            capman.suspend_global_capture(in_=False)
+        try:
+            sys.stdout.flush()
+            sys.stderr.write(f"\n[Qt {etiqueta}] {message}\n")
+            if mortal:
+                # Qt aborts the moment this returns, so the stacks have to be
+                # taken here: afterwards there is no process left to ask.
+                faulthandler.dump_traceback(file=sys.stderr, all_threads=True)
+            sys.stderr.flush()
+        finally:
+            if capman is not None and not mortal:
+                capman.resume_global_capture()
+
+    qInstallMessageHandler(handler)
 
 
 @pytest.fixture(autouse=True)

@@ -17,6 +17,9 @@ jobs:
     # A GUI test that hangs used to hold the job for six hours. The job now
     # gives up after half an hour, and pytest's faulthandler dumps the stack
     # of whatever was running after ten minutes, so the log says where.
+    # That covers a hang and only a hang: an abort is not a timeout and not a
+    # signal either, so the stack of one has to come from the Qt message
+    # handler that tests/conftest.py installs.
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -67,6 +70,11 @@ jobs:
       - name: Run tests with coverage
         env:
           QT_QPA_PLATFORM: offscreen
+          # Unbuffered, so a process that dies without flushing still leaves
+          # the log stopping exactly where it died. Twice on 19 September this
+          # job ended mid-report with nothing said, and the few hundred lines
+          # sitting in the buffer went with it.
+          PYTHONUNBUFFERED: "1"
         run: pytest --cov=emgteach --cov-report=term-missing --cov-report=xml -m "not hardware" -o faulthandler_timeout=600
 
       - name: Validate numerical accuracy of the metrics
