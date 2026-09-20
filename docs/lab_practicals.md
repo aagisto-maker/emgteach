@@ -142,10 +142,12 @@ without stopping the recording:
    boxes along the
    bottom of the panel is the map — one per contraction, in the colour that
    muscle has in the plots, filled as each one is detected. The six are free,
-   at your own pace, so **«Done — next» (or the space bar) is what moves the
-   session on**, not the boxes: if the detector misses one the box stays
-   empty and nothing else changes. The count that counts is the one the
-   analysis makes afterwards.
+   at your own pace, and the session **moves on by itself** once it has counted
+   the six and the muscle has been at rest for a second — not on the sixth
+   itself, which would cut its own tail off. **«Done — next» (or the space
+   bar)** moves it on whenever you want, and is what to use if the detector
+   misses one: that box stays empty and, without it, the phase would not end.
+   The count that counts is the one the analysis makes afterwards.
 
 The reference is **the highest point the envelope reaches across the three
 repetitions**. Why brief?
