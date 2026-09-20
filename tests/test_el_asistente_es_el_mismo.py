@@ -267,6 +267,37 @@ class TestTheTopRowSitsOverItsOwnGroup:
         assert ov.steps_rect(0)[0] == x_inicial + 4 * (caja + hueco)
 
 
+class TestTheLiftHasTheBarsEveryOtherEffortHas:
+    """El mismo panel que cualquier otro esfuerzo de la aplicación: la barra
+    azul de la ventana que se está grabando y la verde, más ancha, de lo que
+    el músculo está tirando. Durante un tiempo fue un «¡Levante!» a secas,
+    con el argumento de que las barras distraen de un gesto rápido; mirado en
+    pantalla es al revés, y además todos los demás esfuerzos lo dicen así."""
+
+    def test_the_lift_shows_the_window_and_the_force(self, adq) -> None:
+        ov = _estudio(adq, (2.0, 4.0), reps=2)
+        adq._mvc_ref[0] = 1.0
+        adq._carga_inst[0] = 40.0
+        adq._fv_phase = "contract"
+        adq._fv_elapsed = 0.5
+        adq._fv_tick()
+        assert ov._mode == "contract"
+        assert 0.0 < ov._progress < 1.0, "la ventana que se está grabando"
+        assert ov._effort == pytest.approx(0.4), "lo que el músculo tira"
+
+    def test_and_it_says_which_load_and_rep_not_the_rule_of_the_jerk(
+        self, adq
+    ) -> None:
+        """La regla de la calibración —una sacudida máxima y breve— no vale
+        para una subida con peso, así que el cuadro dice dónde se está."""
+        ov = _estudio(adq, (2.0, 4.0), reps=2)
+        adq._fv_phase = "contract"
+        adq._fv_elapsed = 0.5
+        adq._fv_tick()
+        assert ov._subtitle != ov._hint_contract()
+        assert "1" in ov._subtitle
+
+
 class TestALongRowStaysInsideThePanel:
     """Ocho cargas de cinco subidas son cuarenta casillas, y el mapa tiene
     que estar entero: casillas más estrechas siguen leyéndose como una fila,

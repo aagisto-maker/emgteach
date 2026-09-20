@@ -124,7 +124,6 @@ class MvcOverlay(QFrame):
         "ready": 152,
         "contract": 160,
         "relax": 126,
-        "action": 126,
         "done": 76,
         "phase": 52,
     }
@@ -347,8 +346,15 @@ class MvcOverlay(QFrame):
         self._present()
 
     def show_contract(
-        self, title: str, secs_left: float, progress: float, effort: float
+        self, title: str, secs_left: float, progress: float, effort: float,
+        subtitle: str | None = None,
     ) -> None:
+        """An effort being made: the window in blue, the force in green.
+
+        *subtitle* replaces the calibration's rule for an effort that is
+        not a maximal jerk — the loaded lift of the force-velocity study
+        says which load and which repetition instead.
+        """
         self._set_image(None)          # the effort is watched on the bar
         self._mode = "contract"
         self._waiting = None
@@ -358,7 +364,8 @@ class MvcOverlay(QFrame):
         self._count = f"{secs_left:.0f}"
         self._progress = max(0.0, min(1.0, progress))
         self._effort = max(0.0, min(1.0, effort))
-        self._subtitle = self._hint_contract()
+        self._subtitle = (self._hint_contract() if subtitle is None
+                          else subtitle)
         self._present()
 
     def show_relax(self, subtitle: str = "") -> None:
@@ -368,20 +375,6 @@ class MvcOverlay(QFrame):
         self._running = None
         self._loads = []
         self._title = ""
-        self._subtitle = subtitle
-        self._present()
-
-    def show_action(self, word: str, subtitle: str = "") -> None:
-        """A single big 'go now' cue (e.g. Lift!) — no bars, no countdown.
-
-        Used for a quick concentric action where a hold timer or effort bar
-        would only distract (and could read as 'something is missing')."""
-        self._set_image(None)
-        self._mode = "action"
-        self._waiting = None
-        self._running = None
-        self._loads = []
-        self._title = word
         self._subtitle = subtitle
         self._present()
 
@@ -599,9 +592,6 @@ class MvcOverlay(QFrame):
         elif self._mode == "relax":
             self._text(p, self._relax_word(), 0, 40, w, 60, 40, bold=True,
                        colour=_ACCENT)
-        elif self._mode == "action":
-            # Just the cue word, large and green — no bars or countdown.
-            self._text(p, self._title, 0, 40, w, 60, 38, bold=True, colour=_EFFORT)
         elif self._mode == "done":
             self._title_band(p, colour=_OK)
         elif self._mode == "phase":

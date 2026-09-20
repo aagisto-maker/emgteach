@@ -115,10 +115,19 @@ class TestItMatchesTheRealWizard:
                 self._fv_phase = "mvc_ready"
                 self._fv_mvc_cur = 0.0
                 self._fv_mvc_peak = 1.0
+                # What each muscle is reading right now: the lift's effort
+                # bar comes from here, as it does in the tab.
+                self._carga_inst = [0.0, 0.0]
                 self._mvc_overlay = Overlay()
                 self.seen: list[tuple[str, float]] = []
 
             def _fv_info(self, text): pass
+
+            # Collaborators the state machine talks to and this test does
+            # not: what the simulated subject is asked for goes to a board
+            # that is not here.
+            def _pedir_al_sujeto(self, *a, **k): pass
+            def _soltar_al_sujeto(self, *a, **k): pass
             def _fv_compute_mvc(self): pass
 
             def _fv_begin_contract(self, kg):

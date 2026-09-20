@@ -237,6 +237,11 @@ FV_INTRO_S = 4.0
 #: seconds to get the next weight in hand and set up with it; and one second
 #: of lift, because the lift is what is measured and it is quick — a longer
 #: window only adds the rest that follows it to the row.
+#: What the **simulated** subject is asked for during a cued lift. A board
+#: ignores it and a person does what the weight asks; it is here so that a
+#: rehearsal of this study records lifts instead of a flat line.
+FV_NIVEL_SIMULADO = 0.6
+
 FV_REPS_DEF = 3
 FV_PREP_DEF_S = 6.0
 FV_LIFT_DEF_S = 1.0
@@ -4386,13 +4391,20 @@ class AcquisitionTab(QWidget):
             if self._fv_elapsed >= prep_s:
                 self._fv_begin_contract(kg)
         elif self._fv_phase == "contract":
-            # A quick concentric lift — no hold. Show only the big "Lift!" cue
-            # (no hold timer or effort bar) and move straight to relax, so the
-            # accelerometer captures the shortening velocity rather than a flat
-            # isometric hold.
-            self._mvc_overlay.show_action(
+            # The same two bars as every other effort the application asks
+            # for: the window being recorded, in blue, and what the muscle
+            # is pulling, in green, as a share of the maximum this session
+            # measured. For a while this cue was a bare «Lift!», on the
+            # grounds that bars would distract from a quick concentric
+            # action; watched on screen it is the other way round — they
+            # say what is being recorded and how much is left of it, and
+            # every other effort in the application says it like this.
+            self._mvc_overlay.show_contract(
                 tr("Lift {kg:g} kg!").format(kg=kg),
-                self._fv_progress().strip(),
+                max(0.0, lift_s - self._fv_elapsed),
+                min(1.0, self._fv_elapsed / lift_s),
+                self._carga_inst[0] / 100.0,
+                subtitle=self._fv_progress().strip(),
             )
             self._fv_info(tr("Lift {kg:g} kg — then relax").format(kg=kg))
             if self._fv_elapsed >= lift_s:
@@ -4438,10 +4450,15 @@ class AcquisitionTab(QWidget):
 
         if self._worker and self._worker.isRunning():
             self._worker.add_marker(fv_load_marker(kg))
+        # Only the simulated board acts on this. Without it a rehearsal of
+        # this study records a muscle that never lifts anything — and now
+        # that the cue shows the effort, a flat bar on every lift.
+        self._pedir_al_sujeto({0: FV_NIVEL_SIMULADO})
         self._log(tr("Force-velocity: contraction with {kg:g} kg.").format(kg=kg))
 
     def _fv_finish_contract(self) -> None:
         """Advance to the next rep, next load, or finish."""
+        self._pedir_al_sujeto({})          # the lift is over: rest
         self._mvc_overlay.mark_step(self._fv_rep, row=0)
         self._mvc_overlay.mark_step(
             self._fv_idx * self._fv_reps + self._fv_rep, row=1)
@@ -4482,6 +4499,7 @@ class AcquisitionTab(QWidget):
 
     def _fv_finish_all(self) -> None:
         self._fv_timer.stop()
+        self._soltar_al_sujeto()
         self._fv_active = False
         self._fv_phase = "done"
         self._btn_cancelar_guia.setVisible(False)
@@ -4519,6 +4537,7 @@ class AcquisitionTab(QWidget):
     def _fv_cancel(self) -> None:
         """Abort the guided F-V wizard (e.g. on stop/disconnect)."""
         self._fv_timer.stop()
+        self._soltar_al_sujeto()
         self._fv_active = False
         self._fv_phase = ""
         self._btn_cancelar_guia.setVisible(False)
