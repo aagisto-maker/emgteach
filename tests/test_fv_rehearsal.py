@@ -95,12 +95,14 @@ class TestItMatchesTheRealWizard:
             def mark_step(self, *a, **k): pass
             def clear_steps(self, *a, **k): pass
             def mark_group(self, *a, **k): pass
+            def align_rows(self, *a, **k): pass
 
         class Stub:
             _fv_current_load = AcquisitionTab._fv_current_load
             _fv_progress = AcquisitionTab._fv_progress
             _fv_finish_contract = AcquisitionTab._fv_finish_contract
             _fv_grupo = AcquisitionTab._fv_grupo
+            _fv_mapa = AcquisitionTab._fv_mapa
             _fv_tick = AcquisitionTab._fv_tick
 
             def __init__(self):

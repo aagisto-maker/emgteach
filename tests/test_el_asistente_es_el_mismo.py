@@ -16,7 +16,11 @@ from __future__ import annotations
 
 import pytest
 
-from emgteach.gui.tabs.acquisition import _CHANNEL_COLORS, COLOR_COACT
+from emgteach.gui.tabs.acquisition import (
+    _CHANNEL_COLORS,
+    COLOR_COACT,
+    FV_INTRO_S,
+)
 from emgteach.modes import MODE_KINEMATICS, MODE_PAIR
 
 pytestmark = pytest.mark.gui
@@ -60,9 +64,15 @@ def adq(qapp, tmp_path):
 
 
 def _estudio(tab, cargas=(2.0, 4.0, 6.0), reps=2):
-    """El estudio guiado, sin el reloj: los tics se dan a mano."""
+    """El estudio guiado, sin el reloj: los tics se dan a mano.
+
+    Se deja correr hasta la primera cuenta atrás, que es la que arma el
+    mapa: el aviso del principio no llena ninguna casilla.
+    """
     tab._fv_start(list(cargas), reps, 1.0, 1.0, con_maximo=False)
     tab._fv_timer.stop()
+    tab._fv_elapsed = FV_INTRO_S
+    tab._fv_tick()
     return tab._mvc_overlay
 
 
@@ -181,6 +191,50 @@ class TestTheStudyHasTheSameBoxes:
         ov = _estudio(adq, (2.0, 4.0), reps=1)
         adq._fv_cancel()
         assert ov.steps_rows() == 0
+
+
+class TestNoBoxPromisesWhatItDoesNotFill:
+    """El aviso del principio enseñaba el mapa entero vacío, y no llena
+    ninguna casilla: la que las llena es la cuenta atrás de cada carga, que
+    es cuando sale. Es la misma regla que sigue el calentamiento del par."""
+
+    def test_the_announcement_shows_no_boxes(self, adq) -> None:
+        adq._fv_start([2.0, 4.0], 2, 1.0, 1.0, con_maximo=False)
+        adq._fv_timer.stop()
+        adq._fv_tick()
+        assert adq._fv_phase == "intro"
+        assert adq._mvc_overlay.steps_rows() == 0
+
+    def test_and_the_first_countdown_brings_them(self, adq) -> None:
+        ov = _estudio(adq, (2.0, 4.0), reps=2)
+        assert adq._fv_phase == "ready"
+        assert ov.steps_rows() == 2
+
+
+class TestTheTopRowSitsOverItsOwnGroup:
+    """Centrada, la fila corta se pone encima de las casillas de la larga que
+    caigan en medio, y el ojo empareja las que no son."""
+
+    def test_the_first_load_starts_where_the_row_starts(self, adq) -> None:
+        ov = _estudio(adq, (2.0, 4.0, 6.0), reps=3)
+        assert ov.steps_rect(0)[0] == ov.steps_rect(1)[0]
+
+    def test_and_the_boxes_are_the_same_size_or_they_would_not_line_up(
+        self, adq
+    ) -> None:
+        ov = _estudio(adq, (2.0, 4.0, 6.0), reps=3)
+        assert ov._row_metrics(0)[:2] == ov._row_metrics(1)[:2]
+        assert ov._row_metrics(0)[2] > ov._row_metrics(1)[2], "la de arriba, más alta"
+
+    def test_and_it_moves_with_the_load(self, adq) -> None:
+        ov = _estudio(adq, (2.0, 4.0, 6.0), reps=3)
+        x_inicial = ov.steps_rect(1)[0]
+        caja, hueco, _alto = ov._row_metrics(1)
+        for _ in range(3):
+            adq._fv_finish_contract()
+        assert adq._fv_idx == 1
+        # Tres casillas y el hueco que separa una carga de la siguiente.
+        assert ov.steps_rect(0)[0] == x_inicial + 4 * (caja + hueco)
 
 
 class TestALongRowStaysInsideThePanel:
