@@ -199,13 +199,23 @@ MANIOBRA_REPOSO_S = 1.0
 #: cover it. Six boxes filled with four manoeuvres, and then the phase
 #: waited for two it had already counted.
 #:
-#: **Amplitude alone cannot do it.** A free flexion is the weakest gesture
-#: of the practical — no resistance, on purpose — and the rebounds that
-#: follow an effort live in the same band. What separates them is **how
-#: long they last**, by a factor of five: in that recording the real
-#: contractions held for 0.64, 0.66, 0.67, 0.71 s and up to 0.97 s, while
-#: what is left over lasted 0.28 s and 0.04 s. So the floor is low enough
-#: not to lose a gentle flexion and the time does the deciding.
+#: **Amplitude alone cannot do it, and the kinematics recording of the
+#: same afternoon proves it without depending on anybody's memory.** Its
+#: six cued lifts are marked in the file, so which excursion is which is
+#: not a matter of opinion:
+#:
+#: ===================  ===============  ==============
+#: over 10 % MVC        held             peak
+#: ===================  ===============  ==============
+#: the six marked       0.72 to 0.80 s   66 to 91 % MVC
+#: everything else      0.06 to 0.26 s   12 to 29 % MVC
+#: ===================  ===============  ==============
+#:
+#: The leftovers reach **29 % MVC** — over the 20 % floor that was
+#: proposed first — while a free flexion, the weakest gesture of the
+#: practical with no resistance on purpose, can be gentler than that. A
+#: floor cannot separate them. Their **duration** can, by a factor of
+#: three either way, and 0.30 s sits in the middle of that gap.
 #:
 #: There is **no refractory**: the rule is an excursion, so it counts once
 #: per crossing however long the effort runs. One was proposed at 1.5 s and
