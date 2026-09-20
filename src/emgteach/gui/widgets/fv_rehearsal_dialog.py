@@ -476,8 +476,18 @@ class ForceVelocityRehearsalDialog(QDialog):
                 tr("Prepare {kg:g} kg{prog}").format(kg=kg, prog=prog), count,
                 tr("Lift {kg:g} kg when the count reaches 0").format(kg=kg))
         elif cue.phase == PHASE_LIFT:
-            self._overlay.show_action(
-                tr("Lift {kg:g} kg!").format(kg=kg), prog.strip())
+            # The same panel the wizard shows: the window in blue and the
+            # force in green, here as a share of the maximum this rehearsal
+            # measured from its own recording.
+            i = int((cue.start + elapsed) * self._fs)
+            seg = self._env_full[int(cue.start * self._fs):max(i + 1, 1)]
+            esfuerzo = (float(seg[-1] / self._mvc_ref)
+                        if seg.size and self._mvc_ref > 0 else 0.0)
+            self._overlay.show_contract(
+                tr("Lift {kg:g} kg!").format(kg=kg),
+                max(0.0, cue.seconds - elapsed),
+                min(1.0, elapsed / cue.seconds), esfuerzo,
+                subtitle=prog.strip())
         elif cue.phase == PHASE_REST:
             last = cue.index == len(self._loads) and cue.rep == reps
             nxt = self._loads[cue.index] if cue.index < len(self._loads) else kg

@@ -194,7 +194,14 @@ class TestTheCuePanelIsTheRealOne:
         for _ in range(len(dlg._cues)):
             modes.add(dlg._overlay._mode)
             dlg._next_step()
-        assert {"ready", "contract", "relax", "action", "done"} <= modes
+        assert {"ready", "contract", "relax", "done"} <= modes
+
+    def test_the_lift_shows_the_two_bars_the_wizard_shows(self, dlg) -> None:
+        """El ensayo es el ensayo de esto: si el panel no fuera el mismo,
+        dejaría de serlo."""
+        lift = next(i for i, c in enumerate(dlg._cues) if c.phase == PHASE_LIFT)
+        dlg._apply_cue(lift)
+        assert dlg._overlay._mode == "contract"
 
     def test_the_lift_cue_names_its_load(self, dlg) -> None:
         lift = next(i for i, c in enumerate(dlg._cues) if c.phase == PHASE_LIFT)
