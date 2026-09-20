@@ -340,10 +340,12 @@ class TestWhatTheRehearsalFound:
     presa que no llegaba al registro.
     """
 
-    def test_the_warm_up_shows_no_boxes_it_will_not_fill(self, adq) -> None:
-        """Una fila de casillas vacías que no se llena es una promesa que la
-        fase no cumple; el mapa de la calibración sale con la primera cuenta
-        atrás, que es lo primero que llena una."""
+    def test_no_panel_shows_boxes_it_will_not_fill(self, adq, monkeypatch) -> None:
+        """Una fila de casillas vacías que no se llena es una promesa que ese
+        cuadro no cumple. Ni el calentamiento ni la cuenta atrás llenan
+        ninguna —y la cuenta atrás lleva además el pictograma, que es lo que
+        hay que mirar ahí—, así que el mapa lo trae **la primera repetición
+        cerrada**, que es la que llena la primera."""
         from emgteach.profiles import EMG_PROFILE
 
         adq._iniciar_calibracion(auto_flow=False)
@@ -351,12 +353,20 @@ class TestWhatTheRehearsalFound:
             adq._mvc_phase = "warmup"
             adq._mvc_elapsed = 0.0
             adq._mvc_tick()
-            assert adq._mvc_overlay.steps_done() == []
+            assert adq._mvc_overlay.steps_done() == [], "el calentamiento"
             adq._mvc_elapsed = EMG_PROFILE.warmup_s
             adq._mvc_tick()                       # se acaba el calentamiento
             assert adq._mvc_phase == "ready"
-            assert len(adq._mvc_overlay.steps_done()) == (
-                adq._n_channels * adq._mvc_reps)
+            assert adq._mvc_overlay.steps_done() == [], "la cuenta atrás"
+            monkeypatch.setattr(adq, "_write_phase_marker", lambda *_a: None)
+            monkeypatch.setattr(adq, "_instruct_device", lambda *_a, **_k: None)
+            monkeypatch.setattr(adq, "_mvc_compute_muscle", lambda *_a: None)
+            adq._mvc_muscle, adq._mvc_rep = 0, 0
+            adq._mvc_cur_buf, adq._mvc_cross_buf = [1.0], {}
+            adq._mvc_finish_rep()                 # la primera, cerrada
+            hechas = adq._mvc_overlay.steps_done()
+            assert len(hechas) == adq._n_channels * adq._mvc_reps
+            assert hechas[0] is True, "sale con una llena, no vacío"
         finally:
             if adq._mvc_active:
                 adq._mvc_cancel()
