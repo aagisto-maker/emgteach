@@ -66,8 +66,19 @@ def pytest_configure(config: pytest.Config) -> None:
         if etiqueta is None:          # debug, info, warning: Qt's own business
             return
         mortal = mode == QtMsgType.QtFatalMsg
-        if capman is not None:
-            capman.suspend_global_capture(in_=False)
+
+        # Nothing below may raise. This runs inside a Qt callback, and an
+        # instrument able to break the run it is watching is worse than none;
+        # the suspension is tried separately so that losing it still leaves
+        # the message, which is the part worth having.
+        suspendida = False
+        try:
+            if capman is not None and capman.is_globally_capturing():
+                capman.suspend_global_capture(in_=False)
+                suspendida = True
+        except Exception:  # pragma: no cover -- older pytest, or no capture
+            pass
+
         try:
             sys.stdout.flush()
             sys.stderr.write(f"\n[Qt {etiqueta}] {message}\n")
@@ -76,9 +87,14 @@ def pytest_configure(config: pytest.Config) -> None:
                 # taken here: afterwards there is no process left to ask.
                 faulthandler.dump_traceback(file=sys.stderr, all_threads=True)
             sys.stderr.flush()
+        except Exception:  # pragma: no cover -- never break the run
+            pass
         finally:
-            if capman is not None and not mortal:
-                capman.resume_global_capture()
+            if suspendida and not mortal:
+                try:
+                    capman.resume_global_capture()
+                except Exception:  # pragma: no cover
+                    pass
 
     qInstallMessageHandler(handler)
 
