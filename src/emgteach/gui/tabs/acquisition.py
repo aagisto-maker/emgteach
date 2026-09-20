@@ -178,6 +178,13 @@ MANIOBRAS_POR_MUSCULO = 6
 #: each with a couple of seconds between, so six take some twenty.
 MANIOBRA_CADA_S = 3.0
 
+#: How long the muscle has to stay quiet, once its last box is filled, for
+#: the wizard to move on by itself. Moving on at the instant the last onset
+#: is detected would cut that contraction's own tail off; a second of rest
+#: after it is also the quiet the guide asks for between manoeuvres, and it
+#: costs a lone false positive its effect.
+MANIOBRA_REPOSO_S = 1.0
+
 #: And the manoeuvre that works both at once, last so its fatigue does not
 #: reach the others: **one hold of about eight seconds**.
 #:
@@ -566,11 +573,15 @@ class AcquisitionTab(QWidget):
         #: Which phase of the guided session is running, if any:
         #: ``""`` | ``"cal"`` | ``"maniobras"`` | ``"coact"``.
         self._guia_fase = ""
-        #: The manoeuvres phase: which muscle leads now, and how many of
-        #: each muscle's have been detected. The counts fill the map and
-        #: nothing else: they never end the phase.
+        #: The manoeuvres phase: which muscle leads now, how many of each
+        #: muscle's have been detected, and how many samples the signal
+        #: has been back at rest for since the last one. The counts fill
+        #: the map, and a full map plus that rest is what moves the phase
+        #: on. Samples and not seconds: a second added up out of tenths
+        #: never quite reaches one.
         self._man_grupo = 0
         self._man_hechas = [0, 0]
+        self._man_quieto_n = 0
         self._coact_rep = 0
         #: What each muscle is reading right now, as a % of its own
         #: reference. The load bars show it, and so does the guide's box
@@ -1115,15 +1126,16 @@ class AcquisitionTab(QWidget):
         # force-velocity plan — before it ends on its own. Shown only while
         # one runs; Esc does the same from anywhere on the tab. Before, there
         # was no way out but to wait for the six efforts to pass.
-        # The way on through a phase the application must not time. The
-        # six manoeuvres are free, so nothing but the student knows when
-        # they are done — and if the detector misses one, the phase still
-        # has to be able to end. Shown only while that phase runs, so the
-        # row is the one it always was the rest of the time.
+        # The way out of a phase the application must not time. The six
+        # manoeuvres are free, so the phase ends when they have been
+        # counted or when the student says so — what it may never do is
+        # fail to end, and this button is what makes sure of that the day
+        # the detector misses one. Shown only while that phase runs, so
+        # the row is the one it always was the rest of the time.
         self._btn_paso_hecho = QPushButton(tr("Done — next (Space)"))
         self._btn_paso_hecho.setVisible(False)
         self._btn_paso_hecho.setToolTip(
-            tr("Go on to the next part of the session."))
+            tr("Go on now, without waiting for the count."))
         self._btn_paso_hecho.clicked.connect(self._paso_siguiente)
         ctrl_layout.addWidget(self._btn_paso_hecho)
         atajo_paso = QShortcut(QKeySequence(Qt.Key.Key_Space), self)
@@ -3616,6 +3628,7 @@ class AcquisitionTab(QWidget):
             self._guia_mapa("maniobras")
             self._man_hechas = [0, 0]
         self._man_grupo = grupo
+        self._man_quieto_n = 0
         # A fresh detector for each muscle, and **a second of rest before
         # anything is asked of it**: the detector measures its resting
         # level from the first second of signal it sees, so a phase that
@@ -3654,8 +3667,9 @@ class AcquisitionTab(QWidget):
         titulo = tr("{n} contractions of {label}").format(
             n=MANIOBRAS_POR_MUSCULO, label=etiquetas[c])
         self._mvc_overlay.show_phase(
-            titulo, tr("At your own pace; «{button}» when you finish.")
-            .format(button=tr("Done — next")))
+            titulo,
+            tr("At your own pace; it moves on at {n}, or with «{button}».")
+            .format(n=MANIOBRAS_POR_MUSCULO, button=tr("Done — next")))
         self._reposition_mvc_overlay()
         self._mvc_info(titulo)
         self._bcast_calib(True, "task", titulo, "")
@@ -3679,12 +3693,13 @@ class AcquisitionTab(QWidget):
     def _guia_detecta(self, env: list) -> None:
         """Count the free manoeuvres, and only count them.
 
-        **The boxes inform; they do not govern.** A detector that misses one
-        must not be able to strand a student in a phase that will not end,
-        so nothing here can finish the phase — that is the button's job —
-        and an extra onset past the last box is dropped rather than
-        complained about. If boxes are left empty and the signal says
-        otherwise, the count that counts is the one the analysis makes.
+        **A detector that misses one must not strand anybody.** Nothing
+        here ends the phase: that is :meth:`_guia_reposo`, which waits for
+        the map to be full *and* for the muscle to go quiet, and the button
+        is the way out for the day neither happens. An extra onset past the
+        last box is dropped rather than complained about; if boxes are left
+        empty and the signal says otherwise, the count that counts is the
+        one the analysis makes afterwards.
         """
         if self._guia_fase != "maniobras" or not getattr(self, "_det_guia", None):
             return
@@ -3700,15 +3715,53 @@ class AcquisitionTab(QWidget):
             self._man_hechas[c] += 1
         if n:
             self._mvc_overlay.update()
+        self._guia_reposo(c, np.asarray(env[c], dtype=float))
+
+    def _guia_reposo(self, c: int, bloque) -> None:
+        """Move on once the group is complete and the muscle is back at rest.
+
+        **The phase ends when the contractions it asked for are done, or
+        when the student says so; what it may never do is fail to end.**
+        For a day the button was the only way out, which broke the flow of
+        a session whose other two studies run straight through — and the
+        requirement that put it there was written more strongly than what
+        it was protecting, which was only that nobody be stranded by a
+        missed onset.
+
+        Advancing on the last onset would cut that contraction's own tail
+        off, so the rule is the last box filled **and** a second of rest
+        after it, measured against the detector's own threshold: the rule
+        that fills a box is the rule that decides the phase is over. That
+        second is also the quiet the guide asks for between manoeuvres,
+        and it drops a lone false positive on the way. One that gets
+        through costs no data — the recording is continuous and the count
+        that counts is the analysis's — it only moves a phase annotation.
+        """
+        if self._man_hechas[c] < MANIOBRAS_POR_MUSCULO:
+            self._man_quieto_n = 0
+            return
+        umbral = self._det_guia[c].threshold
+        if umbral is None or not bloque.size:
+            return
+        if float(np.max(bloque)) >= umbral:
+            self._man_quieto_n = 0
+            return
+        self._man_quieto_n += int(bloque.size)
+        if self._man_quieto_n >= MANIOBRA_REPOSO_S * FS:
+            self._man_quieto_n = 0
+            self._paso_siguiente()
 
     @Slot()
     def _paso_siguiente(self) -> None:
-        """On to the next part, because the student says so.
+        """On to the next part: the six are counted, or the student says so.
 
-        The one phase the application must not time: the manoeuvres are
+        The one phase the application must not **time**: the manoeuvres are
         free — a wrist pushing against something brings the antagonist in
         to stabilise it, and the reciprocal pattern is what the practical
-        is for — so only the person doing them knows when they are done.
+        is for — so nothing here counts seconds, and the six are whatever
+        the muscle does at its own pace. Ending itself once it has what it
+        asked for is a different thing, and :meth:`_guia_reposo` does it.
+        This is the way out that has to exist either way.
         """
         if self._guia_fase != "maniobras":
             return
