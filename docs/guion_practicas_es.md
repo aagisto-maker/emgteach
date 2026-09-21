@@ -79,9 +79,10 @@ aplicación tiene un **«?»** en su esquina con la explicación de lo que hace.
 ### 1 · Colocar los electrodos
 
 Regla general: dos electrodos activos sobre el **vientre del músculo**, alineados
-con las fibras y separados **2 cm entre centros**; el de referencia sobre **hueso**
-(olécranon o estiloides cubital). Piel limpia y seca, sin crema. Si la señal sale
-pequeña, desplazar el par uno o dos centímetros hacia el tendón.
+con las fibras y separados **2 cm entre centros**; el de referencia sobre **hueso**,
+y **uno solo aunque haya dos canales**, porque los dos sensores comparten la masa
+de la placa (en el antebrazo, el **olécranon**). Piel limpia y seca, sin crema. Si
+la señal sale pequeña, desplazar el par uno o dos centímetros hacia el tendón.
 
 El par que usa este guion en las prácticas 1 y 2 es el del antebrazo: **flexor
 radial del carpo** (FCR, cara anterior) y **extensores radiales del carpo** (ECR,
@@ -390,7 +391,11 @@ sino de un estático alto y mantenido.
 ## Práctica 2 — Contracción agonista / antagonista (nivel intermedio)
 
 **Montaje.** Dos canales: **FCR** en el canal 1 (A1) y **ECR** en el canal 2 (A2),
-referencia común en el olécranon o una en cada estiloides. Selector en
+y **una sola referencia, compartida por los dos, en el olécranon**; el cable de
+referencia del otro sensor se queda sin electrodo. No es una preferencia: está
+comprobado en el banco, con los dos pares sobre el mismo músculo, que quitar la
+referencia de cualquiera de los dos sensores no cambia ni la amplitud ni el ruido,
+y una referencia menos es una conexión menos que equivocar. Selector en
 **Contracción agonista / antagonista**. Etiquetas: FCR y ECR.
 
 **Lo que enseña la aplicación en esta práctica.** Al pulsar **Iniciar grabación**

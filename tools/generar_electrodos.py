@@ -15,12 +15,28 @@ The radial and ulnar sides are labelled in every panel on purpose. Turning a
 forearm from the volar to the dorsal view swaps left and right, and a reader
 who works it out from the silhouette alone has a fair chance of putting the
 extensor pair on the ulnar side, over the wrong muscle entirely.
+
+Each muscle is drawn in **its channel's colour in the application** —
+``COLOUR_1`` and ``COLOUR_2`` of :mod:`emgteach.charts`, the ones its traces
+and load bars carry — because a reader looks at this figure and then at the
+screen, and two keys for the same two muscles is one too many. It was drawn
+with both bellies red.
+
+There is **one reference, on the olecranon**, shared by both channels. It was
+drawn once per panel, on the ulnar styloid, with «one per sensor» in the
+legend, while whether the two sensors needed one each was still to be checked
+on the bench. It was checked (21 September 2026), with both pairs over the same
+muscle: taking either sensor's reference away changed neither the amplitude
+nor the noise. The olecranon is where the recording behind the article's
+numbers had it.
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+
+from emgteach.charts import COLOUR_1, COLOUR_2
 
 RAIZ = Path(__file__).resolve().parent.parent
 DESTINO = RAIZ / "docs"
@@ -63,7 +79,8 @@ TEXTOS = {
         "leyenda_reg": "Electrodos de registro",
         "leyenda_reg_txt": "dos por músculo, separados 2 cm de centro a centro y alineados con las fibras (a lo largo del músculo).",
         "leyenda_ref": "Electrodo de referencia",
-        "leyenda_ref_txt": "sobre hueso, donde no hay músculo: olécranon o estiloides cubital. Uno por sensor.",
+        "olecranon": "Olécranon\n(referencia)",
+        "leyenda_ref_txt": "uno solo, compartido por los dos canales, sobre el olécranon (la punta del codo).",
         "pie": "Piel limpia, seca y sin crema. Si la señal sale pequeña, desplace el par 1–2 cm en sentido distal y repita la comprobación.",
     },
     "en": {
@@ -89,7 +106,8 @@ TEXTOS = {
         "leyenda_reg": "Recording electrodes",
         "leyenda_reg_txt": "two per muscle, 2 cm apart centre to centre, aligned with the fibres (along the muscle).",
         "leyenda_ref": "Reference electrode",
-        "leyenda_ref_txt": "on bone, clear of muscle: olecranon or ulnar styloid. One per sensor.",
+        "olecranon": "Olecranon\n(reference)",
+        "leyenda_ref_txt": "a single one, shared by both channels, on the olecranon (the tip of the elbow).",
         "pie": "Skin clean, dry and free of cream. If the signal is small, move the pair 1–2 cm distally and check again.",
     },
 }
@@ -142,7 +160,7 @@ def _multilinea(x: float, y: float, texto: str, size: float, anchor: str,
     return "".join(out)
 
 
-def _panel(cx: float, t: dict, volar: bool) -> str:
+def _panel(cx: float, t: dict, volar: bool, colour: str) -> str:
     """One view. ``volar`` also decides which side of the panel is radial."""
     p: list[str] = []
     p.append(f'<path d="{_brazo(cx)}" fill="url(#piel)" stroke="#A9744C" '
@@ -193,8 +211,8 @@ def _panel(cx: float, t: dict, volar: bool) -> str:
 
     # The muscle belly, centred on the third-point.
     p.append(f'<ellipse cx="{mx}" cy="{my + 10}" rx="31" ry="56" '
-             f'fill="#C0392B" fill-opacity="0.16" stroke="#C0392B" '
-             f'stroke-opacity="0.35" stroke-width="1.2"/>')
+             f'fill="{colour}" fill-opacity="0.18" stroke="{colour}" '
+             f'stroke-opacity="0.45" stroke-width="1.2"/>')
 
     # The pair, along the muscle, 2 cm apart.
     p.append(_electrodo(mx, my - 12))
@@ -217,11 +235,19 @@ def _panel(cx: float, t: dict, volar: bool) -> str:
     p.append(_hueso(*dist, etiqueta_dist.replace("\n", " "),
                     anchor_dist, dx_dist))
 
-    # Reference, on bone at the wrist, ulnar side.
-    rx = cx + 44 if volar else cx - 44
-    p.append(f'<circle cx="{rx}" cy="378" r="8.5" fill="#2E8B57" '
-             f'stroke="#DFF0E6" stroke-width="2.4"/>'
-             f'<circle cx="{rx}" cy="378" r="3" fill="#DFF0E6"/>')
+    # The one reference, on the olecranon: the tip of the elbow, seen from
+    # behind, between the epicondyles and nearer the ulnar one. Drawn once,
+    # in the dorsal view, because there is only one.
+    if not volar:
+        ox, oy = cx - 10, 150
+        p.append(f'<line x1="{ox - 7}" y1="{oy + 7}" x2="{ox - 70}" '
+                 f'y2="{oy + 60}" stroke="#1F3A5F" stroke-width="1.1" '
+                 f'stroke-dasharray="3 2"/>')
+        p.append(f'<circle cx="{ox}" cy="{oy}" r="8.5" fill="#2E8B57" '
+                 f'stroke="#DFF0E6" stroke-width="2.4"/>'
+                 f'<circle cx="{ox}" cy="{oy}" r="3" fill="#DFF0E6"/>')
+        p.append(_multilinea(ox - 74, oy + 66, t["olecranon"], 12.5, "end",
+                             "#1F3A5F", weight="600"))
     return "".join(p)
 
 
@@ -243,13 +269,13 @@ def construir(lang: str) -> str:
         f'<text x="{W / 2}" y="62" font-size="13" text-anchor="middle" '
         f'fill="#55636F">{t["sub"]}</text>',
     ]
-    for cx, cab, m, mb, volar, prueba in (
-        (izq, t["volar"], t["m1"], t["m1b"], True, t["prueba1"]),
-        (der, t["dorsal"], t["m2"], t["m2b"], False, t["prueba2"]),
+    for cx, cab, m, mb, volar, prueba, colour in (
+        (izq, t["volar"], t["m1"], t["m1b"], True, t["prueba1"], COLOUR_1),
+        (der, t["dorsal"], t["m2"], t["m2b"], False, t["prueba2"], COLOUR_2),
     ):
         out.append(f'<text x="{cx}" y="96" font-size="14.5" '
                    f'font-weight="bold" text-anchor="middle" '
-                   f'fill="#0D7D7D">{cab}</text>')
+                   f'fill="{colour}">{cab}</text>')
         out.append(f'<text x="{cx}" y="116" font-size="13.5" '
                    f'text-anchor="middle" fill="#16202A" '
                    f'font-weight="600">{m}</text>')
@@ -258,7 +284,8 @@ def construir(lang: str) -> str:
         # The drawing sits below the two heading lines rather than starting
         # at the top of the panel: the muscle's latin name fell inside the
         # forearm otherwise.
-        out.append(f'<g transform="translate(0,34)">{_panel(cx, t, volar)}</g>')
+        out.append(f'<g transform="translate(0,34)">'
+                   f'{_panel(cx, t, volar, colour)}</g>')
         out.append(_multilinea(cx, 556, prueba, 11.5, "middle", "#55636F",
                                lh=14))
 

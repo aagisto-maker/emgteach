@@ -13,7 +13,10 @@ of the article's Figure 1:
   metacarpal; electrodes on the belly, 5 cm from the epicondyle;
 * extensor carpi radialis: lateral epicondyle towards the ulnar styloid;
   electrodes a quarter of the way down that line;
-* the reference over the ulnar styloid, one for both channels;
+* the reference over the olecranon, one for both channels — on the ulnar
+  styloid until 21 September 2026, when the bench showed a second reference
+  changes nothing and the olecranon is where the recording behind the
+  article's numbers had it;
 * the pair 2 cm apart, along the muscle.
 
 What changes from the figure is the colour, which follows the application's
@@ -74,6 +77,9 @@ FCR = [(184, 236), (158, 300), (130, 372), (106, 448), (88, 542)]
 ECR = [(482, 216), (470, 286), (462, 356), (464, 436), (470, 528)]
 EPITROCLEA, EPICONDILO = (184, 236), (480, 230)
 ESTILOIDES_CUBITO = (409, Y_MUNECA + 4)
+#: The point of the elbow seen from behind, between the epicondyles and nearer
+#: the medial one: the rounded prominence of the posterior arm of the base.
+OLECRANON = (400, 200)
 
 
 def cm(v: float) -> float:
@@ -185,9 +191,9 @@ TEXTOS = {
         "cara1": "flexor radial del carpo\ncara anterior",
         "cara2": "extensores radiales del carpo\ncara posterior",
         "epitroclea": "epitróclea", "epicondilo": "epicóndilo\nlateral",
-        "estiloides": "estiloides\ndel cúbito",
+        "olecranon": "olécranon",
         "par": "pareja sobre el vientre del músculo, a lo largo de él",
-        "ref": "referencia: una sola, para los dos canales",
+        "ref": "referencia: una sola, en el olécranon, para los dos canales",
         "calibracion": "La calibración, paso a paso",
         "calent": "Calentamiento\n{warm} s\n2 o 3 contracciones\nsuaves de cada músculo",
         "fcr": "FCR\n{n} esfuerzos máximos\nde {dur} s",
@@ -202,9 +208,9 @@ TEXTOS = {
         "cara1": "flexor carpi radialis\nanterior face",
         "cara2": "extensor carpi radialis\nposterior face",
         "epitroclea": "medial\nepicondyle", "epicondilo": "lateral\nepicondyle",
-        "estiloides": "ulnar\nstyloid",
+        "olecranon": "olecranon",
         "par": "pair on the muscle belly, along the muscle",
-        "ref": "reference: one, shared by both channels",
+        "ref": "reference: one, on the olecranon, shared by both channels",
         "calibracion": "The calibration, step by step",
         "calent": "Warm-up\n{warm} s · two or three\neasy contractions\nof each muscle",
         "fcr": "FCR\n{n} maximal efforts\nof {dur} s",
@@ -247,13 +253,13 @@ def electrodos(idioma: str) -> Path:
     lz.vientre(ECR, 1.7, MUS_2, lz.silueta(300, 545))
     lz.electrodos(*punto_fcr())
     lz.electrodos(*punto_ecr())
-    lz.referencia(*ESTILOIDES_CUBITO)
+    lz.referencia(*OLECRANON)
     lz.hito(*EPITROCLEA, t["epitroclea"], 20, -26, "left", 8.2)
     lz.hito(*EPICONDILO, t["epicondilo"], -4, 26, "center", 8.2)
-    xr, yr = lz.px(*ESTILOIDES_CUBITO)
-    ax.plot([xr, xr - 22], [yr, yr + 16], color=HUESO, lw=1.0, zorder=8)
-    ax.text(xr - 25, yr + 16, t["estiloides"], fontsize=8.2, color=HUESO,
-            ha="right", va="center", linespacing=1.15, zorder=9)
+    xr, yr = lz.px(*OLECRANON)
+    ax.plot([xr, xr - 10], [yr, yr + 17], color=HUESO, lw=1.0, zorder=8)
+    ax.text(xr - 10, yr + 19, t["olecranon"], fontsize=8.2, color=HUESO,
+            ha="center", va="bottom", zorder=9)
     # The 5 cm that places the FCR pair, from the epicondyle.
     xe, ye = lz.px(*EPITROCLEA)
     xf, yf, _ = punto_fcr()
@@ -310,14 +316,14 @@ def calibracion(idioma: str) -> Path:
             ha="center", va="center", wrap=True)
     # Which forearm, and what to do, for each name on the screen.
     for (recorte, ctrl, wcm, x0, col, clave, punto, xs_sil) in (
-        ((30, 180, 265, 572), FCR, 1.5, 8, MUS_1, "gesto_fcr", punto_fcr(), (30, 265)),
-        ((300, 180, 545, 572), ECR, 1.7, W / 2 + 4, MUS_2, "gesto_ecr", punto_ecr(), (300, 545)),
+        ((30, 166, 265, 572), FCR, 1.5, 8, MUS_1, "gesto_fcr", punto_fcr(), (30, 265)),
+        ((300, 166, 545, 572), ECR, 1.7, W / 2 + 4, MUS_2, "gesto_ecr", punto_ecr(), (300, 545)),
     ):
         lz = Lienzo(ax, recorte, x0, 8, 64)
         lz.vientre(ctrl, wcm, col, lz.silueta(*xs_sil))
         lz.electrodos(*punto)
         if clave == "gesto_ecr":
-            lz.referencia(*ESTILOIDES_CUBITO)
+            lz.referencia(*OLECRANON)
         cabeza, _, resto = t[clave].partition("\n")
         ax.text(x0 + 70, 8 + lz.alto - 6, cabeza, fontsize=9.2, fontweight="bold",
                 color=col, ha="left", va="top")
