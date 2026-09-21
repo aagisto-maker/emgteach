@@ -145,9 +145,10 @@ without stopping the recording:
    at your own pace, and the session **moves on by itself** once it has counted
    the six and the muscle has been at rest for a second — not on the sixth
    itself, which would cut its own tail off. **«Done — next» (or the space
-   bar)** moves it on whenever you want, and is what to use if the detector
-   misses one: that box stays empty and, without it, the phase would not end.
-   The count that counts is the one the analysis makes afterwards.
+   bar)** moves it on whenever you want. If the detector misses one, that box
+   stays empty and the phase moves on anyway after 12 s with nothing new
+   counted; the button brings that forward. The count that counts is the one
+   the analysis makes afterwards.
 
 The reference is **the highest point the envelope reaches across the three
 repetitions**. Why brief?
