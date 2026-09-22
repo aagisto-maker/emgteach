@@ -440,9 +440,10 @@ por extender la muñeca.
    aplicación **pasa sola** a la parte siguiente cuando ha contado las seis y
    el músculo lleva un segundo en reposo —no en el instante de la sexta, que
    le cortaría la cola—. **«Hecho — siguiente»** (o la barra espaciadora) pasa
-   cuando se quiera, y es lo que hay que usar si el detector se salta una: la
-   casilla se queda vacía y la fase, sin él, no acabaría. En el registro, y
-   siempre en este orden,
+   cuando se quiera. Si el detector se salta una, la casilla se queda vacía y
+   la fase pasa igual al cabo de 12 s sin contar nada nuevo; el botón lo
+   adelanta. Lo que cuenta es lo que cuente después el análisis. En el
+   registro, y siempre en este orden,
    con 2 s de quietud entre maniobras:
    **seis flexiones** de muñeca (1 s cada una, libres, sin resistencia),
    **seis extensiones**, también libres, y por último la **presa**. Libres

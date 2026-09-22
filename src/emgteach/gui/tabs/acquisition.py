@@ -186,9 +186,10 @@ MANIOBRA_CADA_S = 3.0
 MANIOBRA_REPOSO_S = 1.0
 
 #: What counts as a manoeuvre: the muscle over this share of **its own
-#: maximum**, and **held there** for ``MANIOBRA_MINIMA_S``. It stops
-#: counting when the envelope drops under seven tenths of the floor, so one
-#: effort is one box however it wobbles in the middle.
+#: maximum**, and **held there** for ``MANIOBRA_MINIMA_S``. The effort is
+#: over when the envelope drops under seven tenths of the floor **or stays
+#: under the floor for** ``MANIOBRA_SALIDA_S``, so one effort is one box
+#: however it wobbles in the middle.
 #:
 #: Both numbers are measured on the first rehearsal with the real board,
 #: which is also why this stopped being the ``OnsetDetector``'s job. That
@@ -237,12 +238,47 @@ MANIOBRA_REPOSO_S = 1.0
 MANIOBRA_MINIMO_PCT = 10.0
 MANIOBRA_MINIMA_S = 0.30
 
+#: And how long under the floor ends an effort, whatever the level. The exit
+#: was only the amplitude one — seven tenths of the floor, 7 % — and the
+#: resting level **during** the task, measured on the one forearm this has
+#: been tried on (the author's right, 20 September 2026), ran from 3 to 8 %:
+#: **the exit fell inside the rest.** Somebody who rests at the top of that
+#: band never goes back under 7 % between two manoeuvres, the excursion never
+#: ends, and only the first of the six is counted — the twelve seconds of
+#: ``MANIOBRA_SIN_NOVEDAD_S`` then close a phase with one box in six.
+#:
+#: Measuring each person's rest and placing the thresholds above it was
+#: proposed, from the quiet second and a half that opens each muscle's turn.
+#: It is the mistake the ``OnsetDetector`` already made here: the rest before
+#: the task is not the rest during it — 1.5 % against 3 to 8 % in the same
+#: recording, see ``MANIOBRA_REPOSO_PCT``. Narrowing the hysteresis to fit
+#: between the rest and the floor (an exit at 9 %) would only move the bet
+#: from 7 to 9. A time does not bet on a level at all: whatever the rest is,
+#: if it is under the floor, a pause between two manoeuvres is under it for
+#: a second or more, and the dip in the middle of one effort is not. On the
+#: real recording the two rules fill the same boxes at the same instants, 4
+#: for the flexor and 6 for the extensor — the rest there stayed mostly under
+#: 7 % — and with the reference shrunk to 0.6 of itself, which lifts the whole
+#: rest band by two thirds, they still do.
+#:
+#: The same 0.30 s as ``MANIOBRA_MINIMA_S``: held that long above the floor
+#: to count, that long under it to end.
+MANIOBRA_SALIDA_S = 0.30
+
 #: And what «at rest» means for moving on, in the same units — because the
 #: resting level **during** the task is not the one measured before it. In
 #: that rehearsal the phase opened at 1.5 % MVC and the task ran between
 #: 3 and 8 %, so a threshold built from the opening second was never crossed
 #: downwards again and the phase could not end by itself. Under a tenth of
 #: the maximum there were stretches of two and of five seconds.
+#:
+#: **The margin is two points, and it was measured on one forearm** — the
+#: author's right, on 20 September 2026: the rest reached 8 % and this is
+#: 10 %. The count no longer depends on it (``MANIOBRA_SALIDA_S``), but moving
+#: on does. What says whether it holds is how long the phase takes to move on
+#: after the sixth box: **one second** is this rest, which is right; **twelve**
+#: is ``MANIOBRA_SIN_NOVEDAD_S``, the net, and means the rest never came under
+#: this line — then it is this number that has to move, before November.
 MANIOBRA_REPOSO_PCT = 10.0
 
 #: And the line that makes «the phase can never fail to end» true instead of
@@ -665,9 +701,11 @@ class AcquisitionTab(QWidget):
         self._man_grupo = 0
         self._man_hechas = [0, 0]
         self._man_quieto_n = 0
-        #: Muestras seguidas por encima del suelo, por canal, y cuántas
-        #: llevan sin contarse: el conteo es por excursión sostenida.
+        #: Muestras por encima del suelo en la excursión en curso, por
+        #: canal (el conteo es por excursión sostenida), y muestras seguidas
+        #: por debajo, que son las que la dan por acabada.
         self._man_alto_n = [0] * MAX_CHANNELS
+        self._man_bajo_n = [0] * MAX_CHANNELS
         self._man_sin_novedad_n = 0
         self._coact_rep = 0
         #: What each muscle is reading right now, as a % of its own
@@ -3775,6 +3813,7 @@ class AcquisitionTab(QWidget):
     def _rearmar_conteo_guiado(self) -> None:
         """Start a muscle's turn with nothing counted and nothing in hand."""
         self._man_alto_n = [0] * MAX_CHANNELS
+        self._man_bajo_n = [0] * MAX_CHANNELS
         self._man_quieto_n = 0
         self._man_sin_novedad_n = 0
 
@@ -3785,7 +3824,9 @@ class AcquisitionTab(QWidget):
         ``MANIOBRA_MINIMO_PCT`` of its own maximum for ``MANIOBRA_MINIMA_S``,
         counted the instant it has been there long enough — so the box
         fills while the contraction is being made and not after it — and
-        not again until the envelope has come back down. Only the muscle
+        not again until the envelope has come back down: under seven tenths
+        of the floor, or under the floor for ``MANIOBRA_SALIDA_S``, which is
+        what ends it for somebody whose rest sits above 7 %. Only the muscle
         whose turn it is is looked at, so what the other one reads through
         crosstalk counts nothing here.
 
@@ -3805,10 +3846,12 @@ class AcquisitionTab(QWidget):
             return            # sin referencia no hay porcentaje de nada
         pct = np.asarray(env[c], dtype=float) / float(ref) * 100.0
         minimo = max(1, round(MANIOBRA_MINIMA_S * FS))
+        salida = max(1, round(MANIOBRA_SALIDA_S * FS))
         marcadas = 0
         self._man_sin_novedad_n += pct.size
         for v in pct:
             if v >= MANIOBRA_MINIMO_PCT:
+                self._man_bajo_n[c] = 0
                 self._man_alto_n[c] += 1
                 if self._man_alto_n[c] == minimo:     # una vez por excursión
                     self._man_sin_novedad_n = 0
@@ -3817,8 +3860,11 @@ class AcquisitionTab(QWidget):
                             c * MANIOBRAS_POR_MUSCULO + self._man_hechas[c])
                         self._man_hechas[c] += 1
                         marcadas += 1
-            elif v < MANIOBRA_MINIMO_PCT * 0.7:
-                self._man_alto_n[c] = 0              # se acabó el esfuerzo
+            else:
+                self._man_bajo_n[c] += 1
+                if (v < MANIOBRA_MINIMO_PCT * 0.7
+                        or self._man_bajo_n[c] >= salida):
+                    self._man_alto_n[c] = 0          # se acabó el esfuerzo
         if marcadas:
             self._mvc_overlay.update()
         self._guia_reposo(c, pct)

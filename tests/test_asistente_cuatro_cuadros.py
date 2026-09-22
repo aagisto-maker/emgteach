@@ -24,6 +24,7 @@ from emgteach.gui.tabs.acquisition import (
     FS,
     MANIOBRA_CADA_S,
     MANIOBRA_REPOSO_S,
+    MANIOBRA_SALIDA_S,
     MANIOBRA_SIN_NOVEDAD_S,
     MANIOBRAS_POR_MUSCULO,
     MVC_READY_S,
@@ -404,6 +405,54 @@ class TestWhatTheRealBoardFound:
         adq._mvc_ref[0] = None
         _contraccion(adq, 0)
         assert adq._man_hechas[0] == 0
+
+
+class TestARestAtTheTopOfTheBand:
+    """La franja de dos puntos. El reposo **durante** la tarea iba del 3 al
+    8 % de la CVM en el único antebrazo en que se ha medido, y el esfuerzo
+    solo se daba por acabado al bajar del 7 %: la salida caía dentro del
+    reposo. Quien reposa en lo alto de esa banda no vuelve a bajar del 7 %
+    entre dos maniobras, y se contaba la primera y ninguna más. Ahora un
+    esfuerzo acaba también por tiempo bajo el suelo, sea cual sea el nivel.
+    """
+
+    @staticmethod
+    def _serie(tab, reposo_pct: float) -> None:
+        """Seis de 0,8 s al 60 %, cada una seguida de 1,2 s de reposo."""
+        esfuerzo = np.full(int(0.8 * FS), 0.6)
+        reposo = np.full(int(1.2 * FS), reposo_pct / 100.0)
+        for _ in range(MANIOBRAS_POR_MUSCULO):
+            tab._guia_detecta([esfuerzo, np.full(esfuerzo.size, 0.01)])
+            tab._guia_detecta([reposo, np.full(reposo.size, 0.01)])
+
+    def test_six_with_the_rest_at_eight_and_a_half_are_six(self, adq) -> None:
+        adq._n_channels = 2
+        _con_referencia(adq)
+        self._serie(adq, 8.5)
+        assert adq._man_hechas[0] == MANIOBRAS_POR_MUSCULO, "se contaba una"
+        assert adq._man_grupo == 1, "y 8,5 % es reposo para pasar de fase"
+
+    def test_a_dip_shorter_than_the_exit_does_not_split_an_effort(
+        self, adq
+    ) -> None:
+        """La salida por tiempo no puede partir en dos lo que la histéresis
+        mantenía unido: un valle breve bajo el suelo es el mismo esfuerzo."""
+        adq._n_channels = 2
+        _con_referencia(adq)
+        valle = int(0.5 * MANIOBRA_SALIDA_S * FS)
+        alto = np.concatenate([np.full(400, 0.6), np.full(valle, 0.085),
+                               np.full(400, 0.6)])
+        adq._guia_detecta([alto, np.full(alto.size, 0.01)])
+        assert adq._man_hechas[0] == 1
+
+    def test_and_a_pause_as_long_as_the_exit_ends_it(self, adq) -> None:
+        adq._n_channels = 2
+        _con_referencia(adq)
+        pausa = int(1.2 * MANIOBRA_SALIDA_S * FS)
+        alto = np.concatenate([np.full(400, 0.6), np.full(pausa, 0.085),
+                               np.full(400, 0.6)])
+        adq._guia_detecta([alto, np.full(alto.size, 0.01)])
+        assert adq._man_hechas[0] == 2
 
 
 class TestTheHoldRunsOnTheClock:
