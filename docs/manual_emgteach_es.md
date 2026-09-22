@@ -122,6 +122,11 @@ de dispositivo en la pestaña de Adquisición).
 - Electrodos sobre el **vientre muscular**, alineados con la dirección de las
   fibras, con un electrodo de **referencia** en una zona eléctricamente neutra
   (p. ej. una prominencia ósea).
+- Con dos canales, **una sola referencia**, compartida: los dos sensores
+  comparten la masa de la placa, y está comprobado en el banco que una segunda
+  referencia no cambia nada. En el antebrazo va sobre el **olécranon**; el par
+  entero, medido desde los relieves óseos, está en
+  [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md).
 - Piel limpia para reducir la impedancia y los artefactos.
 
 [Figura sugerida: foto/ilustración de la colocación de electrodos en un músculo
@@ -695,6 +700,16 @@ sesiones.
 > 9 y en el informe, porque todos los porcentajes posteriores están mal en la
 > misma proporción. Las repeticiones que salieron flojas se descartan en
 > «Repeticiones de la calibración…» y la referencia se recalcula.
+>
+> **Lo que las dos referencias no comparan: los dos canales.** La referencia de
+> cada canal se mide en su propio bloque de sacudidas, y una sacudida no es igual
+> a la siguiente, así que dividir una referencia entre la otra exagera lo
+> distinto que leen los dos canales. Con los dos pares sobre el mismo músculo, en
+> el banco, el cociente de las referencias salió 1.84 y el medido dentro de una
+> misma contracción, 1.27. Para saber si dos canales leen lo mismo se comparan
+> **dentro de la misma contracción**, nunca por sus referencias. Para el % CVM no
+> importa: cada músculo se divide por la suya, y un factor constante de un canal
+> se cancela.
 
 ### 5.2 Medidas de amplitud: RMS, iEMG, envolvente
 

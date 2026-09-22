@@ -82,9 +82,10 @@ application has a **«?»** in its corner explaining what it does.
 ### 1 · Place the electrodes
 
 General rule: two active electrodes over the **muscle belly**, aligned with the
-fibres and **2 cm apart centre to centre**; the reference over **bone** (olecranon
-or ulnar styloid). Clean, dry skin, no cream. If the signal comes out small, move
-the pair one or two centimetres towards the tendon.
+fibres and **2 cm apart centre to centre**; the reference over **bone**, and **only
+one even with two channels**, because both sensors share the board's ground (on the
+forearm, the **olecranon**). Clean, dry skin, no cream. If the signal comes out
+small, move the pair one or two centimetres towards the tendon.
 
 The pair this guide uses in practicals 1 and 2 is the forearm pair: **flexor carpi
 radialis** (FCR, anterior side) and **extensor carpi radialis** (ECR, posterior
@@ -404,7 +405,11 @@ from a high, sustained static level.
 ## Practical 2 — Agonist / antagonist contraction (intermediate level)
 
 **Set-up.** Two channels: **FCR** on channel 1 (A1) and **ECR** on channel 2 (A2),
-common reference on the olecranon or one on each styloid. Selector on **Agonist /
+and **a single reference, shared by both, on the olecranon**; the other sensor's
+reference lead is left without an electrode. This is not a preference: it was
+checked on the bench, with both pairs over the same muscle, that removing the
+reference of either sensor changes neither the amplitude nor the noise, and one
+reference fewer is one connection fewer to get wrong. Selector on **Agonist /
 antagonist contraction**. Labels: FCR and ECR.
 
 **What the application shows in this practical.** On **Start recording** the

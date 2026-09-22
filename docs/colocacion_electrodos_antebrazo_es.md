@@ -75,14 +75,28 @@ el antebrazo en pronación. El relieve aparece justo distal al epicóndilo.
 
 ### El electrodo de referencia
 
-Sobre hueso, donde no haya músculo debajo: **olécranon** (punta del codo) o
-**estiloides cubital** (lado del meñique, en la muñeca). Cada sensor BITalino
-lleva su propia referencia.
+**Uno solo, compartido por los dos canales, sobre el olécranon** (la punta del
+codo). Es hueso, no hay músculo debajo y queda a una distancia parecida de los dos
+pares, que están los dos en el tercio proximal. Cada sensor BITalino trae su cable
+de referencia; el del otro sensor se queda sin electrodo.
 
-**Esto es justamente lo que hay que comprobar en el banco:** si las dos
-referencias pueden compartir prominencia —adyacentes pero sin tocarse— o si los
-canales se interfieren. Si nota interferencia, sepárelas: una al olécranon y la
-otra a la estiloides cubital.
+**Era lo que quedaba por comprobar en el banco, y está comprobado** (21 de
+septiembre de 2026). Con los dos pares sobre el **mismo** músculo —así la
+fisiología es idéntica y cualquier diferencia entre los canales es del aparato—
+se registró con las dos referencias puestas, sin la de un sensor, sin la del otro
+y con un latiguillo sin conductor de referencia, todo sin despegar un electrodo.
+El cociente entre los dos canales se quedó entre **1.21 y 1.33** en los cuatro
+montajes, que es lo que se mueve de una sacudida a otra dentro de un mismo
+registro, y el suelo de ruido fue el mismo en los cuatro, 0.004 mV. **Los dos
+sensores comparten la masa de la placa, y con eso basta**: una segunda referencia
+no aporta nada, y una referencia menos es una conexión menos que equivocar.
+
+**Mejor el latiguillo de tres cables, aunque el de dos funciona.** Sin conductor
+de referencia propio, ese canal pasó a tener el 11 % de su ruido en la banda de
+la red en lugar del 3 %. Aquí no importa —0.004 mV contra contracciones de 0.1 a
+0.3 mV—, pero en una sala con seis puestos, regletas y cargadores puede dejar de
+ser despreciable. Ante interferencia de red, lo primero es comprobar la
+referencia.
 
 ---
 

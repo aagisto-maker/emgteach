@@ -61,7 +61,7 @@ TEXTOS = {
         "pie": "¿Dudas? El «?» de cada cuadro de la aplicación lo explica.",
         "t": ["Electrodos", "Conectar", "Grabar", "Calibración", "La tarea", "Analizar"],
         "s": [
-            "canal 1 FCR · canal 2 ECR · referencia sobre el cúbito",
+            "canal 1 FCR · canal 2 ECR · una referencia, en el olécranon",
             "con la placa encendida · en «Identificador de prueba», un código, "
             "nunca el nombre",
             "calentamiento: {warm} s, 2 o 3 contracciones suaves",
@@ -76,7 +76,7 @@ TEXTOS = {
         "pie": "Questions? The «?» on each box of the application explains it.",
         "t": ["Electrodes", "Connect", "Record", "Calibration", "The task", "Analyse"],
         "s": [
-            "channel 1 FCR · channel 2 ECR · reference on the ulna",
+            "channel 1 FCR · channel 2 ECR · one reference, on the olecranon",
             "with the board switched on · in «Test identifier», a code, never "
             "a name",
             "warm-up: {warm} s, two or three easy contractions",

@@ -109,7 +109,10 @@ say so.
 ### 2.2 Electrode placement
 
 Two active electrodes over the **muscle belly**, aligned with the fibres and
-**20 mm apart**; a **reference** on bone. Clean, dry skin. The forearm pair used in
+**20 mm apart**; a **reference** on bone, and **only one** with two channels: both
+sensors share the board's ground, and a second reference was checked on the bench
+to change nothing. On the forearm it goes on the **olecranon**. Clean, dry skin.
+The forearm pair used in
 the practicals (flexor and extensor carpi radialis), measured from the bony
 landmarks, is described in
 [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md).
@@ -516,6 +519,16 @@ millivolts depend on skin impedance, electrode position and anatomy.
 > in red, «not a maximum», on the card, over panel 9 and in the report, because
 > every later percentage is wrong in the same proportion. Weak repetitions are
 > discarded in «Calibration repetitions…» and the reference is recomputed.
+>
+> **What the two references do not compare: the two channels.** Each channel's
+> reference is measured in its own block of jerks, and no jerk is the same as the
+> next, so dividing one reference by the other exaggerates how differently the
+> two channels read. With both pairs over the same muscle, on the bench, the
+> ratio of the references came out at 1.84 and the one measured within the same
+> contraction at 1.27. To know whether two channels read alike, compare them
+> **within the same contraction**, never through their references. For % MVC it
+> does not matter: each muscle is divided by its own, and a constant factor in
+> one channel cancels.
 
 ### 5.2 Amplitude measures: RMS, iEMG, envelope
 
