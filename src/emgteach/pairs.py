@@ -171,9 +171,17 @@ def pair_coactivation_cue(pair: str) -> str:
     nothing to grip, so it is a co-contraction. With a pair the
     application knows nothing about, what it can say is what the manoeuvre
     is *for*, and the guide says how.
+
+    **The grip names the thing gripped.** «Close your fist and hold» was
+    done, on the bench, with the fist closed on nothing: the extensors
+    stayed silent, the grip gave no index, and the one manoeuvre of the
+    practical that produces a number produced none. Squeezing an object is
+    what puts a flexor moment on the wrist for the extensors to hold, so
+    the instruction on screen says to squeeze something, and says what —
+    the ball, which is what the practical guide puts on the bench.
     """
     return {
-        PAIR_FOREARM: tr("Close your fist and hold"),
+        PAIR_FOREARM: tr("Squeeze the ball hard and hold it"),
         PAIR_ARM: tr("Tighten both muscles at once and hold"),
         PAIR_OTHER: tr("Work both muscles at once and hold"),
     }[normalise_pair(pair)]

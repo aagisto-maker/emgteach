@@ -120,7 +120,7 @@ _ES = {
     "Wrist extension, hand open": "Extensión de muñeca, mano abierta",
     "Elbow flexion": "Flexión de codo",
     "Elbow extension": "Extensión de codo",
-    "Close your fist and hold": "Cierre el puño y manténgalo",
+    "Squeeze the ball hard and hold it": "Apriete la pelota con fuerza y manténgala",
     "Tighten both muscles at once and hold":
         "Apriete los dos músculos a la vez y manténgalo",
     "Work both muscles at once and hold":
