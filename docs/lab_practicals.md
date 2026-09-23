@@ -674,7 +674,7 @@ grey under the summary cards and in the «?» of the tables.
 | Task effort | 20–80 % MVC | a typical submaximal effort; > 100 % sustained says the calibration was not maximal |
 | Task maximum with a sound calibration | 90–125 % MVC | recorded sessions with a correct calibration; the application warns in red from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 %; finger extensor during wrist flexion at 75 % ≈ 15 % |
-| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported», or low (≈ 30 %) if the antagonist passes the floor; firm grip squeezing the ball: clearly higher (55 % on the bench) | the index measures shared activity; in a clean flexion the antagonist stays below the 5 % floor |
+| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported», or low (≈ 30 %) if the antagonist passes the floor; firm grip squeezing the ball: clearly higher (55 % on the bench) | the index measures shared activity; in a clean flexion the antagonist stays below the 4.5 % floor |
 | Channel separation (cross-talk) | ≤ 20–25 % of its own reference | measured with well-placed electrodes; > 50 %, «channels not separated» |
 | Static load (P10) | ≤ 2–5 % MVC (the application uses 5) | Jonsson 1978, 1982 |
 | Median load (P50) | ≤ 10–14 % MVC (the application uses 14) | Jonsson 1978, 1982 |
