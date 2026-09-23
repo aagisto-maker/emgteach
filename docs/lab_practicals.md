@@ -508,8 +508,7 @@ form a progression worth reading whole before answering:
 **A 30 % in the flexions is not a mistake.** It means the ECR passed the 4.5 %
 floor while the FCR worked, which depends on how much each person stabilises the
 wrist; on the bench the same person gave «not reported» in one session and 30 %
-in another. What does not change is the order: the grip comes out clearly above
-(55 % on the bench, squeezing the ball).
+in another. What does not change is the order: the grip comes out clearly above.
 
 The grip is the only manoeuvre of this montage that always produces a number, and the
 comparison with the fast alternation of exercise 2b closes the argument: in both
@@ -674,7 +673,7 @@ grey under the summary cards and in the «?» of the tables.
 | Task effort | 20–80 % MVC | a typical submaximal effort; > 100 % sustained says the calibration was not maximal |
 | Task maximum with a sound calibration | 90–125 % MVC | recorded sessions with a correct calibration; the application warns in red from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 %; finger extensor during wrist flexion at 75 % ≈ 15 % |
-| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported», or low (≈ 30 %) if the antagonist passes the floor; firm grip squeezing the ball: clearly higher (55 % on the bench) | the index measures shared activity; in a clean flexion the antagonist stays below the 4.5 % floor |
+| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported», or low (≈ 30 %) if the antagonist passes the floor; firm grip squeezing the ball: clearly higher | the index measures shared activity; in a clean flexion the antagonist stays below the 4.5 % floor |
 | Channel separation (cross-talk) | ≤ 20–25 % of its own reference | measured with well-placed electrodes; > 50 %, «channels not separated» |
 | Static load (P10) | ≤ 2–5 % MVC (the application uses 5) | Jonsson 1978, 1982 |
 | Median load (P50) | ≤ 10–14 % MVC (the application uses 14) | Jonsson 1978, 1982 |

@@ -506,7 +506,7 @@ una progresión; conviene leerla entera antes de responder:
 suelo del 4.5 % mientras el FCR trabajaba, lo que depende de cuánto estabilice
 cada persona la muñeca; en el banco, la misma persona dio «no se informa» en una
 sesión y 30 % en otra. Lo que no cambia es el orden: la presa sale claramente
-por encima (55 % en el banco apretando la pelota).
+por encima.
 
 La presa es la única maniobra de este montaje que da siempre un número, y la
 comparación con la alternancia rápida del ejercicio 2b es la que cierra el
@@ -731,7 +731,7 @@ aparecen en gris bajo las fichas del resumen y en los «?» de las tablas.
 | Esfuerzo de tarea | 20–80 % CVM | un esfuerzo submáximo típico; > 100 % sostenido dice que la calibración no fue máxima |
 | Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones de banco con calibración correcta; la aplicación avisa en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 %; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
-| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa», o bajo (≈ 30 %) si el antagonista pasa del suelo; presa firme apretando la pelota: claramente más alto (55 % en el banco) | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4.5 % |
+| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa», o bajo (≈ 30 %) si el antagonista pasa del suelo; presa firme apretando la pelota: claramente más alto | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4.5 % |
 | Separación entre canales (diafonía) | ≤ 20–25 % de la propia referencia | banco con electrodos bien situados; > 50 %, «canales sin separar» |
 | Carga estática (P10) | ≤ 2–5 % CVM (la aplicación usa 5) | Jonsson 1978, 1982 |
 | Carga mediana (P50) | ≤ 10–14 % CVM (la aplicación usa 14) | Jonsson 1978, 1982 |
