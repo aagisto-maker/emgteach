@@ -134,6 +134,32 @@ class TestTheEditorProposesOneRowPerLift:
         assert filas == pytest.approx(ventanas, abs=0.01)
         dlg.deleteLater()
 
+    def test_a_lift_split_at_a_dip_is_joined_again(self, qapp) -> None:
+        """A rehearsal split the first lift into 48.16-48.64 and 48.65-49.42 s,
+        and the row kept the first half: 0.48 s where the others lasted 1.5."""
+        from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+        from emgteach.selection import Segment
+
+        dlg = FragmentSelectionDialog(_senal([]), FS, FILTROS, naming=False,
+                                      lifts=lift_windows_s(CUES[:2], 100.0))
+        trozos = [Segment(48.16, 48.64), Segment(48.65, 49.42),
+                  Segment(49.80, 50.30),          # a separate burst: not joined
+                  Segment(54.90, 56.10)]
+        filas = [(f.start_s, f.end_s) for f in dlg._por_levantamiento(trozos)]
+        assert filas == pytest.approx([(48.16, 49.42), (54.90, 56.10)])
+        dlg.deleteLater()
+
+    def test_the_join_never_takes_another_cues_lift(self, qapp) -> None:
+        from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+        from emgteach.selection import Segment
+
+        dlg = FragmentSelectionDialog(_senal([]), FS, FILTROS, naming=False,
+                                      lifts=[(10.0, 11.5), (11.5, 17.0)])
+        trozos = [Segment(10.2, 11.45), Segment(11.5, 12.4)]
+        filas = [(f.start_s, f.end_s) for f in dlg._por_levantamiento(trozos)]
+        assert filas == pytest.approx([(10.2, 11.45), (11.5, 12.4)])
+        dlg.deleteLater()
+
     def test_a_cue_before_the_lift_is_cut_off_the_preparation(self, qapp) -> None:
         """The detector joins picking up the weight to the lift."""
         from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
