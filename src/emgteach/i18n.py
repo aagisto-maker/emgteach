@@ -691,6 +691,12 @@ _ES = {
         "Redibujar. Las repeticiones de la misma carga se promedian. La "
         "velocidad está en unidades arbitrarias (el acelerómetro no está "
         "calibrado); la fuerza es la carga introducida.",
+    "{n} contraction(s) with no load marker: the wizard did not ask "
+    "for them, so they start unticked. Tick one and type its load to "
+    "use it.":
+        "{n} contracción(es) sin marca de carga: el asistente no las pidió, "
+        "así que empiezan desmarcadas. Para usar una, marcarla y escribir su "
+        "carga.",
     "⚠ The accelerometer barely moved (flat / pinned at a rail), so "
     "the velocities are ~0. Put it on the moving segment, oriented "
     "so its resting value sits mid-range (not at ±1 g), and lift "

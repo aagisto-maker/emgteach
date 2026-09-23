@@ -35,6 +35,9 @@ __all__ = [
     "assign_loads_to_reps",
     "force_velocity_curves",
     "fv_load_marker",
+    "lift_windows_s",
+    "marker_owners",
+    "markers_by_span",
     "movement_onset_signal",
     "parse_fv_load_markers",
     "rep_metrics",
@@ -100,6 +103,107 @@ def windows_from_markers(
             windows.append((i0, i1))
             loads.append(kg)
     return windows, loads
+
+
+def lift_windows_s(
+    load_markers: Sequence[tuple[float, float]],
+    duration_s: float,
+    max_window_s: float = 6.0,
+    gap_s: float = 0.5,
+) -> list[tuple[float, float]]:
+    """The same windows as :func:`windows_from_markers`, in seconds.
+
+    For whoever works in the file's clock rather than in samples: the
+    fragment editor, which proposes one row per lift the wizard marked.
+    """
+    out: list[tuple[float, float]] = []
+    onsets = [float(o) for o, _ in load_markers]
+    for i, onset in enumerate(onsets):
+        start = max(0.0, onset)
+        end = start + max_window_s
+        if i + 1 < len(onsets):
+            end = min(end, onsets[i + 1] - gap_s)
+        end = min(end, float(duration_s))
+        if end > start:
+            out.append((start, end))
+    return out
+
+
+def marker_owners(
+    onsets: Sequence[float],
+    spans: Sequence[tuple[float, float]],
+    max_window_s: float = 6.0,
+) -> list[int | None]:
+    """Which span each load marker belongs to — one span per marker at most.
+
+    A marker announces **one** lift: the first span that is still going on
+    when the marker is written (so one drawn a little before its cue still
+    counts) and that starts inside the marker's own window — before
+    ``max_window_s`` has passed and before the next marker. A span already
+    claimed by an earlier marker is not claimed again, and a marker that
+    finds no span is nobody's.
+
+    The rule it replaces gave every contraction the last marker before it
+    within six and a half seconds. On the bench, with the simulated subject
+    lifting after the wizard had finished and a student lifting before it
+    had started, that put two stray lifts under the heaviest load and one
+    under the lightest, and the study averaged them in. A lift the wizard
+    did not ask for has no load, and says so.
+    """
+    orden = sorted(range(len(spans)), key=lambda j: float(spans[j][0]))
+    marcas = sorted(range(len(onsets)), key=lambda i: float(onsets[i]))
+    out: list[int | None] = [None] * len(onsets)
+    tomadas: set[int] = set()
+    for pos, i in enumerate(marcas):
+        t = float(onsets[i])
+        limite = t + max_window_s
+        if pos + 1 < len(marcas):
+            limite = min(limite, float(onsets[marcas[pos + 1]]))
+        for j in orden:
+            a, b = float(spans[j][0]), float(spans[j][1])
+            if j in tomadas or b <= t:
+                continue
+            if a > t and a >= limite:
+                break
+            out[i] = j
+            tomadas.add(j)
+            break
+    return out
+
+
+def markers_by_span(
+    load_markers: Sequence[tuple[float, float]],
+    spans: Sequence[tuple[float, float]],
+    max_window_s: float = 6.0,
+) -> dict[int, list[tuple[float, float]]]:
+    """Which span each ``(onset_s, kg)`` load marker travels with, by index.
+
+    For cutting a recording into fragments: a marker inside a fragment
+    stays in it, however many that fragment holds — a fragment can be the
+    whole recording phase. A marker that falls between fragments — the
+    wizard writes it at the start of its window, and a fragment cut tight
+    round the lift begins after it — goes to the one fragment it announced
+    (:func:`marker_owners`) and to no other. It used to be copied to every
+    fragment starting within six and a half seconds of it, and a stray lift
+    after the last cue came out under the heaviest load.
+    """
+    salida: dict[int, list[tuple[float, float]]] = {}
+    fuera: list[tuple[float, float]] = []
+    for t, kg in sorted((float(t), float(kg)) for t, kg in load_markers):
+        dentro = next(
+            (j for j, (a, b) in enumerate(spans) if float(a) <= t < float(b)),
+            None)
+        if dentro is None:
+            fuera.append((t, kg))
+        else:
+            salida.setdefault(dentro, []).append((t, kg))
+    libres = [j for j in range(len(spans)) if j not in salida]
+    duenos = marker_owners([t for t, _ in fuera], [spans[j] for j in libres],
+                           max_window_s)
+    for (t, kg), k in zip(fuera, duenos, strict=True):
+        if k is not None:
+            salida.setdefault(libres[k], []).append((t, kg))
+    return salida
 
 
 def assign_loads_to_reps(

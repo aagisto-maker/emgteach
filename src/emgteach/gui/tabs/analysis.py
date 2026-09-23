@@ -201,7 +201,7 @@ from emgteach.figures import (
     draw_raw_panel,
     draw_rms_panel,
 )
-from emgteach.force_velocity import parse_fv_load_markers
+from emgteach.force_velocity import lift_windows_s, parse_fv_load_markers
 from emgteach.gui.help_texts import text as help_text
 from emgteach.gui.widgets.calibration_reps import CalibrationRepsDialog
 from emgteach.gui.widgets.canvas import ScrollingCanvas
@@ -1347,6 +1347,10 @@ class AnalysisTab(QWidget):
                 default_k=mode_detection_k(self._mode),
                 expected=(self._esperadas
                           or self._esperadas_de_la_sesion(path)),
+                # One row per lift the guided wizard marked, instead of
+                # whatever the detector found: a lift before the first cue
+                # or after the last one is not one the study asked for.
+                lifts=self._levantamientos_marcados(path),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -1491,6 +1495,17 @@ class AnalysisTab(QWidget):
             if cargas:
                 return (len(cargas),)
         return mode_expected_contractions(self._mode)
+
+    def _levantamientos_marcados(self, path: str) -> list[tuple[float, float]]:
+        """The guided wizard's lift windows in the file, or none.
+
+        From the annotations alone, like the expected count beside it.
+        """
+        try:
+            cargas = parse_fv_load_markers(read_edf_markers(path))
+            return lift_windows_s(cargas, edf_duration(path)) if cargas else []
+        except Exception:
+            return []
 
     def _deteccion_por_defecto(self) -> dict[str, float]:
         """The detection settings when the fragment editor was never opened:
