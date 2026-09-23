@@ -170,6 +170,9 @@ class BitalinoDevice(AcquisitionDevice):
     # fail with WinError 1168. Retry the open a few times before giving up.
     _OPEN_RETRIES = 4
     _OPEN_RETRY_GAP_S = 0.4
+    # A write that the Bluetooth link does not take blocks forever without
+    # a timeout, and the command bytes of the opening are writes: bounded.
+    _TIMEOUT_WRITE_S = 2.0
 
     # Sampling-rate byte encoding accepted by the firmware.
     _SRATE_CODE: ClassVar[dict[int, int]] = {1000: 3, 100: 2, 10: 1, 1: 0}
@@ -218,6 +221,8 @@ class BitalinoDevice(AcquisitionDevice):
         # Public channel list = what read() returns, in exposed order.
         self._channels = list(expose)
         self._serial = None  # type: ignore[var-annotated]
+        #: The port while open() is still talking to it; see force_close.
+        self._opening_serial = None
         self._resolved_port: str | None = None
         self._firmware = ""
         self._conn_lock = threading.Lock()
@@ -333,6 +338,9 @@ class BitalinoDevice(AcquisitionDevice):
                     )
                 )
             ser = self._open_serial(serial, resolved)
+            # Visible to force_close while the opening talks to it, so a
+            # handshake that hangs can be released from another thread.
+            self._opening_serial = ser
             try:
                 # Confirm we are actually talking to a BITalino before
                 # streaming, so a wrong COM port fails fast and clearly.
@@ -354,6 +362,8 @@ class BitalinoDevice(AcquisitionDevice):
                 except Exception:
                     pass
                 raise
+            finally:
+                self._opening_serial = None
             ser.timeout = self._TIMEOUT_READ_S
             self._resolved_port = resolved
             self._serial = ser
@@ -433,8 +443,17 @@ class BitalinoDevice(AcquisitionDevice):
     def force_close(self) -> None:
         """Close the COM port immediately from any thread.
 
-        Used by the watchdog described in this module's docstring.
+        Used by the watchdog described in this module's docstring. It also
+        closes a port that is still in its opening handshake — without the
+        connection lock, which the opening holds — so a board that stopped
+        answering half-way through the handshake does not keep the thread.
         """
+        abriendo = self._opening_serial
+        if abriendo is not None:
+            try:
+                abriendo.close()
+            except Exception:
+                pass
         with self._conn_lock:
             ser = self._serial
             if ser is None:
@@ -544,7 +563,8 @@ class BitalinoDevice(AcquisitionDevice):
         for attempt in range(self._OPEN_RETRIES):
             try:
                 return serial_mod.Serial(
-                    port=port, baudrate=self._BAUD, timeout=self._TIMEOUT_OPEN_S
+                    port=port, baudrate=self._BAUD, timeout=self._TIMEOUT_OPEN_S,
+                    write_timeout=self._TIMEOUT_WRITE_S,
                 )
             except Exception as exc:  # pyserial: SerialException — retry transient lock
                 last_exc = exc

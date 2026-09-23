@@ -973,6 +973,21 @@ _ES = {
     "Status: disconnected": "Estado: desconectado",
     "Status: connected (ready to record)": "Estado: conectado (listo para grabar)",
     "Status: recording…": "Estado: grabando…",
+    "Status: connecting to the board…": "Estado: conectando con la placa…",
+    "Status: the board did not answer": "Estado: la placa no respondió",
+    "The board did not answer": "La placa no respondió",
+    "No data arrived from the board in {s:.0f} s, so nothing is being "
+    "recorded. Check that the BITalino is switched on, switch it off "
+    "and on again, and try again. If it happens again, close emgteach "
+    "and open it again.":
+        "No ha llegado ningún dato de la placa en {s:.0f} s, así que no se "
+        "está grabando nada. Comprobar que el BITalino está encendido, "
+        "apagarlo y encenderlo, y volver a intentarlo. Si vuelve a pasar, "
+        "cerrar emgteach y abrirlo de nuevo.",
+    "The recording was stopped before the board answered; "
+    "nothing was recorded.":
+        "La grabación se detuvo antes de que la placa respondiera; no se "
+        "grabó nada.",
     "Event markers": "Marcadores de eventos",
     "Fatigue": "Fatiga",
     # The fragment editor's suggested manoeuvres (EMG_PROFILE.marker_presets).

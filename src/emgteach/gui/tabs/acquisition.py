@@ -360,6 +360,12 @@ FV_REPS_DEF = 3
 FV_PREP_DEF_S = 6.0
 FV_LIFT_DEF_S = 1.0
 
+#: Seconds a recording waits for the board's first block before it stops
+#: and says so. Reaching the board takes two or three seconds on the bench;
+#: finding it among the Bluetooth ports, a few more. Past this the status
+#: line was saying «recording…» over empty plots, and nothing was recorded.
+CONEXION_MAX_S = 20.0
+
 # Headroom applied to the live plots when they auto-scale after calibration:
 # the envelope top is this multiple of the MVC reference (so >100 %MVC phasic
 # bursts stay visible), the raw plot spans ±(peak × factor).
@@ -785,6 +791,18 @@ class AcquisitionTab(QWidget):
         self._watchdog_timer.setInterval(1000)
         self._watchdog_timer.timeout.connect(self._check_watchdog)
         self._watchdog_umbral_s = 3.0
+
+        # The watchdog only watches once samples flow. Before the first one
+        # the board is being reached, and that can hang with nothing to say
+        # so: this one waits for the first block and gives up after
+        # CONEXION_MAX_S (see _conexion_sin_datos).
+        self._conexion_timer = QTimer(self)
+        self._conexion_timer.setSingleShot(True)
+        self._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
+        self._conexion_timer.timeout.connect(self._conexion_sin_datos)
+        self._aviso_conexion: QMessageBox | None = None
+        #: The last recording ended before the board sent anything.
+        self._sin_respuesta = False
 
         # Local logger: own instance shown in this tab. Messages are mirrored
         # to the shared logger (self._logger) so the analysis tab also receives
@@ -2117,6 +2135,7 @@ class AcquisitionTab(QWidget):
         self._widget_arduino.setEnabled(True)
         self._edit_dir.setEnabled(True)
         self._set_channel_controls_enabled(True)
+        self._sin_respuesta = False
         self._lbl_estado.setText(tr("Status: disconnected"))
         self._set_led("off")
         self._led_idle_timer.stop()
@@ -2288,7 +2307,12 @@ class AcquisitionTab(QWidget):
 
         self._btn_grabar.setText(tr("Stop recording"))
         self._btn_conectar.setEnabled(False)
-        self._lbl_estado.setText(tr("Status: recording…"))
+        # «recording…» comes with the first block (_on_data_ready): until
+        # then nothing is being recorded, and a student who reads it
+        # believes otherwise.
+        self._lbl_estado.setText(tr("Status: connecting to the board…"))
+        self._sin_respuesta = False
+        self._conexion_timer.start()
         self._bcast_status(True)
         self._set_auto_controls_enabled(False)
         # Live muscle-load monitor: ready to calibrate while recording.
@@ -2354,6 +2378,7 @@ class AcquisitionTab(QWidget):
         self._btn_calibrar.setEnabled(False)
         self._prep_timer.stop()
         self._watchdog_timer.stop()
+        self._marcar_si_no_respondio()
         self._render_timer.stop()
         self._stop_load_monitor()
         self._bcast_status(False)
@@ -2365,6 +2390,14 @@ class AcquisitionTab(QWidget):
         self._lbl_estado.setText(self._estado_en_reposo())
         self._set_auto_controls_enabled(True)
 
+    def _marcar_si_no_respondio(self) -> None:
+        """A recording that ends before its first block: the board never
+        answered, and the status must not come back saying «connected»."""
+        if self._conexion_timer.isActive():
+            self._conexion_timer.stop()
+            self._sin_respuesta = True
+            self._set_led("off")
+
     def _estado_en_reposo(self) -> str:
         """What the status line says when nothing is being recorded.
 
@@ -2373,6 +2406,8 @@ class AcquisitionTab(QWidget):
         later, with «connected (ready to record)» under an unticked button.
         """
         if self._btn_conectar.isChecked():
+            if self._sin_respuesta:
+                return tr("Status: the board did not answer")
             return tr("Status: connected (ready to record)")
         return tr("Status: disconnected")
 
@@ -2382,6 +2417,11 @@ class AcquisitionTab(QWidget):
 
     @Slot(dict)
     def _on_data_ready(self, data: dict) -> None:
+        # The first block: the board answered, and from here the recording
+        # is one.
+        if self._conexion_timer.isActive():
+            self._conexion_timer.stop()
+            self._lbl_estado.setText(tr("Status: recording…"))
         # Start the watchdog on the first received sample (not before, so it
         # does not fire during device.open(), which can take up to 3 s on Arduino).
         if not self._watchdog_timer.isActive():
@@ -4810,6 +4850,7 @@ class AcquisitionTab(QWidget):
             self._guardar_eventos()
 
     def _restaurar_controles(self) -> None:
+        self._marcar_si_no_respondio()
         self._btn_grabar.setChecked(False)
         self._btn_grabar.setText(tr("Start recording"))
         self._btn_conectar.setEnabled(True)
@@ -5055,6 +5096,50 @@ class AcquisitionTab(QWidget):
     # ------------------------------------------------------------------
 
     @Slot()
+    def _conexion_sin_datos(self) -> None:
+        """No block from the board within CONEXION_MAX_S: stop, and say so.
+
+        On the bench the connection hung without a word — the log stopped at
+        «Connecting to BITalino…», the status said «recording…» and then,
+        once stopped, «connected (ready to record)», and no file was
+        written. A student believes the status line. So the recording stops
+        here, the status says the board did not answer, and a box says what
+        to do and offers to try again. The thread is asked to stop and to
+        release the port; if it is stuck where nothing can reach it, it
+        closes the board and records nothing once it comes back.
+        """
+        worker = self._worker
+        if worker is None or not worker.isRunning() or worker.is_streaming():
+            return
+        worker.stop_forced()
+        self._sin_respuesta = True
+        self._set_led("off")
+        self._detener_grabacion()      # the status says the board did not answer
+        texto = tr(
+            "No data arrived from the board in {s:.0f} s, so nothing is being "
+            "recorded. Check that the BITalino is switched on, switch it off "
+            "and on again, and try again. If it happens again, close emgteach "
+            "and open it again."
+        ).format(s=CONEXION_MAX_S)
+        self._err(texto)
+        caja = QMessageBox(
+            QMessageBox.Icon.Warning, tr("The board did not answer"), texto,
+            QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Close,
+            self)
+        caja.setDefaultButton(QMessageBox.StandardButton.Retry)
+        caja.finished.connect(self._tras_aviso_conexion)
+        self._aviso_conexion = caja
+        caja.open()
+
+    def _tras_aviso_conexion(self, respuesta: int) -> None:
+        """«Retry» starts the recording again, as the button would."""
+        self._aviso_conexion = None
+        if (respuesta == QMessageBox.StandardButton.Retry
+                and self._btn_grabar.isEnabled() and not self.is_recording()):
+            self._btn_grabar.setChecked(True)
+            self._toggle_grabacion()
+
+    @Slot()
     def _check_watchdog(self) -> None:
         """Check every 1 s that the worker keeps receiving samples."""
         if self._worker is None or not self._worker.isRunning():
@@ -5261,6 +5346,7 @@ class AcquisitionTab(QWidget):
         to finish to ensure the EDF is closed correctly.
         """
         self._watchdog_timer.stop()
+        self._conexion_timer.stop()
         self._render_timer.stop()
         self._load_timer.stop()
         self._broadcast.stop()

@@ -155,6 +155,9 @@ class AcquisitionWorker(QThread):
         self._onset_k = float(onset_k) if onset_k is not None else profile.onset_k
 
         self._running = False
+        #: Set by either stop and never cleared: a stop asked for while the
+        #: device was still opening has to survive the opening.
+        self._stop_requested = False
         self._opening = False
         self._streaming = False
         self._n_samples_total: int = 0
@@ -170,7 +173,16 @@ class AcquisitionWorker(QThread):
     # -- public control ------------------------------------------------------
 
     def stop(self) -> None:
-        """Request a clean stop; the thread finishes the current block."""
+        """Request a clean stop; the thread finishes the current block.
+
+        Asked for while the device is still opening, it is kept for when the
+        opening returns: the thread then closes the device and ends without
+        recording. It used to be overwritten — the reading loop set its own
+        flag back to running once the device answered — so a recording
+        stopped while the board was being reached started anyway, later,
+        holding the port.
+        """
+        self._stop_requested = True
         self._running = False
 
     @Slot()
@@ -191,6 +203,7 @@ class AcquisitionWorker(QThread):
         :meth:`AcquisitionDevice.force_close` releases the read with
         an exception, allowing the worker to finish.
         """
+        self._stop_requested = True
         self._running = False
         self._device.force_close()
 
@@ -365,6 +378,14 @@ class AcquisitionWorker(QThread):
             self.log.emit(tr("Connecting to {name}…").format(name=device.name))
             device.open()
             self._opening = False
+            if self._stop_requested:
+                # Stopped while the board was being reached: release it now
+                # (the finally closes it) and write nothing.
+                self.log.emit(tr(
+                    "The recording was stopped before the board answered; "
+                    "nothing was recorded."
+                ))
+                return
             self.log.emit(tr("Connection established. Starting acquisition."))
 
             # One independent filter chain per EMG channel; ACC channels get
@@ -451,7 +472,7 @@ class AcquisitionWorker(QThread):
                 self._markers_mutex.unlock()
 
             sleep_ms = max(1, int(self._n_per_read / fs * 500))
-            self._running = True
+            self._running = not self._stop_requested
 
             while self._running:
                 try:
