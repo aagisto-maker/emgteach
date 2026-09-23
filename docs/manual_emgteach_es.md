@@ -853,9 +853,9 @@ aprender, activa mucho los dos músculos y tiene lectura clínica inmediata.
 
 | Maniobra | Qué hacen los dos músculos | Qué da el índice |
 |---|---|---|
-| Flexiones | trabaja el flexor; el extensor no llega al suelo del 4.5 % | no se informa |
-| Extensiones | los papeles se intercambian | no se informa |
-| Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
+| Flexiones | trabaja el flexor; el extensor, poco o nada | «no se informa», o un índice bajo (en torno al 30 %) si el extensor pasa del suelo del 4.5 % |
+| Extensiones | los papeles se intercambian | lo mismo |
+| Presa, apretando una pelota | los dos trabajan a la vez | claramente más alto que en las maniobras recíprocas |
 | Alternancia rápida | los dos trabajan, pero por turnos | número bajo |
 
 > **De dónde salen estos límites.** El suelo del 4.5 %, el criterio de separación
@@ -921,7 +921,7 @@ no un fallo.
 | Esfuerzo de tarea | 20–80 % CVM | esfuerzos submáximos típicos |
 | Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones registradas con emgteach; aviso en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 % CVM; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
-| Índice de coactivación | recíproco: «no se informa»; presa firme: 60–95 % | Falconer y Winter (1985); Ervilha (2012) sobre coactivación voluntaria |
+| Índice de coactivación | recíproco: «no se informa», o bajo (≈ 30 %); presa firme sobre una pelota: claramente más alto (55 % en el banco) | Falconer y Winter (1985); Ervilha (2012) sobre coactivación voluntaria |
 | Separación entre canales | ≤ 20–25 % de la propia referencia | registros de emgteach con electrodos bien situados |
 | Carga estática, mediana, pico | ≤ 2–5, 10–14, 50–70 % CVM (la aplicación: 5, 14, 70) | Jonsson (1978, 1982) |
 | Retraso electromecánico | 30–100 ms; voluntario 35–80 | Cavanagh y Komi (1979): bíceps 41 ± 13 ms, tríceps 26 ± 11 ms |

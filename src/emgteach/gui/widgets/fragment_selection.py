@@ -43,6 +43,17 @@ split, likewise, goes to the valley the envelopes show between the two peaks
 (see :func:`emgteach.selection.split_fragment`), not to where a hand would
 put it, and the cut is drawn before it is made.
 
+**A lift the wizard asked for is a row; a lift it did not ask for is not.**
+In the kinematics practical the guided wizard writes one marker per lift, and
+the editor used to propose whatever the detector found: on the bench that was
+seven lifts for six markers — the subject lifted once before the first cue —
+and, with the simulated board, ten, three of them after the wizard had
+finished. The study then averaged the strays in under the nearest load. With
+markers in the file the proposal is **one row per marker**: the contraction
+that marker announced (:func:`emgteach.force_velocity.marker_owners`), or the
+marker's own window when the detector found nothing there. Anything else the
+detector sees is left dotted as a candidate, a click away, like any other.
+
 The dialog is constructible directly from signal arrays (so it can be unit
 tested headless) or from an EDF file via :meth:`FragmentSelectionDialog.from_edf`.
 """
@@ -80,6 +91,7 @@ from PySide6.QtWidgets import (
 from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.coactivation import _DOMINANCE, propose_labels
 from emgteach.dsp import process_offline
+from emgteach.force_velocity import marker_owners
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.i18n import tr
@@ -141,6 +153,9 @@ def _estilo_boton(pulsado: tuple[str, str, str] | None = None) -> str:
 #: below the floor, under which the resting noise itself clears the line.
 _K_CANDIDATE = 0.5
 _K_CANDIDATE_MIN = 1.0
+
+#: How far ahead of its cue a lift may start and still be that lift.
+_ANTICIPO_S = 0.5
 
 #: How long after the last slider move the proposal is rebuilt. Long enough
 #: that dragging does not rebuild at every pixel, short enough to feel live.
@@ -205,6 +220,10 @@ class FragmentSelectionDialog(QDialog):
     expected : sequence of int, optional
         How many contractions the protocol asks for: led by the first
         muscle, by the second and by both — or one total, with one muscle.
+    lifts : list of (float, float), optional
+        The guided wizard's lift windows, in the file's clock
+        (:func:`emgteach.force_velocity.lift_windows_s`). With them the
+        proposal is one row per lift.
     parent : QWidget, optional
         Parent widget.
     """
@@ -226,6 +245,7 @@ class FragmentSelectionDialog(QDialog):
         detection: dict[str, float] | None = None,
         default_k: float | None = None,
         expected: Sequence[int] | None = None,
+        lifts: Sequence[tuple[float, float]] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -297,6 +317,8 @@ class FragmentSelectionDialog(QDialog):
         #: their bounds: what the guide counts to say whether step 2 is done.
         self._revisadas: set[tuple[float, float]] = set()
         self._esperadas_iniciales = tuple(int(n) for n in (expected or ()))
+        #: The wizard's lift windows, when the recording has them.
+        self._lifts = [(float(a), float(b)) for a, b in (lifts or ())]
 
         # Envelope for the preview (downsampled when drawing).
         self._env = self._envolvente(self._raw)
@@ -409,6 +431,7 @@ class FragmentSelectionDialog(QDialog):
         detection: dict[str, float] | None = None,
         default_k: float | None = None,
         expected: Sequence[int] | None = None,
+        lifts: Sequence[tuple[float, float]] | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
@@ -437,6 +460,7 @@ class FragmentSelectionDialog(QDialog):
             detection=detection,
             default_k=default_k,
             expected=expected,
+            lifts=lifts,
             parent=parent,
         )
 
@@ -1040,6 +1064,8 @@ class FragmentSelectionDialog(QDialog):
         self._revisadas.clear()
         self._buscar_candidatos()
         filas = self._detectar(self._det["k"])
+        if self._lifts:
+            filas = self._por_levantamiento(filas)
         if self._naming:
             filas = [
                 Segment(f.start_s, f.end_s, f.score, f.reason, nombre)
@@ -1048,6 +1074,33 @@ class FragmentSelectionDialog(QDialog):
                 )
             ]
         self._set_rows(filas)
+
+    def _por_levantamiento(self, detectadas: list[Segment]) -> list[Segment]:
+        """One row per lift the wizard marked, and nothing else.
+
+        Each lift takes the contraction its marker announced; a lift whose
+        window the detector found nothing in is proposed as the window, to
+        be looked at rather than lost. What is left over stays a candidate.
+
+        The contraction is **cut to the lift's window**, from half a second
+        before the cue (``_ANTICIPO_S``: a lift can start a little ahead of
+        it) to the window's end. The detector joins the lift to whatever
+        the muscle did just before, and just before the cue it was picking
+        up the weight: on the bench one row began four seconds early.
+        """
+        duenos = marker_owners(
+            [a for a, _b in self._lifts],
+            [(f.start_s, f.end_s) for f in detectadas])
+        filas = []
+        for (a, b), j in zip(self._lifts, duenos, strict=True):
+            if j is None:
+                filas.append(Segment(a, b, reason="marker"))
+                continue
+            f = detectadas[j]
+            ini, fin = max(f.start_s, a - _ANTICIPO_S), min(f.end_s, b)
+            filas.append(Segment(ini, fin, f.score, f.reason, f.label)
+                         if fin > ini else f)
+        return _en_centesimas(filas)
 
     def _promover(self, candidato: Segment) -> None:
         """Make a candidate a row, named like the rest, in its place in time."""

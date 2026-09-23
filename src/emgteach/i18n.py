@@ -120,7 +120,7 @@ _ES = {
     "Wrist extension, hand open": "Extensión de muñeca, mano abierta",
     "Elbow flexion": "Flexión de codo",
     "Elbow extension": "Extensión de codo",
-    "Close your fist and hold": "Cierre el puño y manténgalo",
+    "Squeeze the ball hard and hold it": "Apriete la pelota con fuerza y manténgala",
     "Tighten both muscles at once and hold":
         "Apriete los dos músculos a la vez y manténgalo",
     "Work both muscles at once and hold":
@@ -691,6 +691,12 @@ _ES = {
         "Redibujar. Las repeticiones de la misma carga se promedian. La "
         "velocidad está en unidades arbitrarias (el acelerómetro no está "
         "calibrado); la fuerza es la carga introducida.",
+    "{n} contraction(s) with no load marker: the wizard did not ask "
+    "for them, so they start unticked. Tick one and type its load to "
+    "use it.":
+        "{n} contracción(es) sin marca de carga: el asistente no las pidió, "
+        "así que empiezan desmarcadas. Para usar una, marcarla y escribir su "
+        "carga.",
     "⚠ The accelerometer barely moved (flat / pinned at a rail), so "
     "the velocities are ~0. Put it on the moving segment, oriented "
     "so its resting value sits mid-range (not at ±1 g), and lift "
@@ -967,6 +973,21 @@ _ES = {
     "Status: disconnected": "Estado: desconectado",
     "Status: connected (ready to record)": "Estado: conectado (listo para grabar)",
     "Status: recording…": "Estado: grabando…",
+    "Status: connecting to the board…": "Estado: conectando con la placa…",
+    "Status: the board did not answer": "Estado: la placa no respondió",
+    "The board did not answer": "La placa no respondió",
+    "No data arrived from the board in {s:.0f} s, so nothing is being "
+    "recorded. Check that the BITalino is switched on, switch it off "
+    "and on again, and try again. If it happens again, close emgteach "
+    "and open it again.":
+        "No ha llegado ningún dato de la placa en {s:.0f} s, así que no se "
+        "está grabando nada. Comprobar que la placa BITalino está encendida, "
+        "apagarla y encenderla, y volver a intentarlo. Si vuelve a pasar, "
+        "cerrar emgteach y abrirlo de nuevo.",
+    "The recording was stopped before the board answered; "
+    "nothing was recorded.":
+        "La grabación se detuvo antes de que la placa respondiera; no se "
+        "grabó nada.",
     "Event markers": "Marcadores de eventos",
     "Fatigue": "Fatiga",
     # The fragment editor's suggested manoeuvres (EMG_PROFILE.marker_presets).

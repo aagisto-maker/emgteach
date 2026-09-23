@@ -33,6 +33,7 @@ from emgteach.fatigue import (
     fit_rms_vs_mdf,
 )
 from emgteach.force_velocity import (
+    markers_by_span,
     movement_onset_signal,
     parse_fv_load_markers,
     velocity_from_acc,
@@ -55,11 +56,6 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
-
-#: How long after its marker a guided-wizard load window reaches, plus a
-#: little: the same reach :func:`emgteach.contractions.load_of_each` uses to
-#: give a contraction its load.
-_VENTANA_CARGA_S = 6.5
 
 
 def _cola_de_la_pausa(envelope, fs: float, phases, profile):
@@ -553,8 +549,10 @@ class AnalysisWorker(QThread):
                 # their names: these are the contractions the table gets,
                 # one row each, numbered as the editor numbered them.
                 fragmentos_concat: list[Segment] = []
+                cargas_por_fragmento = markers_by_span(
+                    fv_loads, [(a, b) for (_i0, _i1, a, b, _n) in bounds])
                 offset = 0.0
-                for i0, i1, seg_a, seg_b, nombre in bounds:
+                for j, (i0, i1, seg_a, seg_b, nombre) in enumerate(bounds):
                     fragmentos_concat.append(
                         Segment(offset, offset + (i1 - i0) / fs, label=nombre or ""))
                     # A named fragment opens a window of the co-activation
@@ -575,11 +573,10 @@ class AnalysisWorker(QThread):
                     # A marker sits at the start of its window, half a
                     # second or more before the effort it announces, so a
                     # fragment cut tight round the effort leaves it outside:
-                    # one within the window's length before the fragment is
-                    # its load, and lands at the fragment's start.
-                    for t, kg in fv_loads:
-                        if seg_a - _VENTANA_CARGA_S <= t < seg_b:
-                            new_loads.append((offset + max(0.0, t - seg_a), kg))
+                    # it goes to the one fragment it announced (see
+                    # markers_by_span), at that fragment's start.
+                    for t, kg in cargas_por_fragmento.get(j, []):
+                        new_loads.append((offset + max(0.0, t - seg_a), kg))
                     offset += (i1 - i0) / fs
                 markers = sorted(new_markers)
                 fv_loads = sorted(new_loads)

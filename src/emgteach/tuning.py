@@ -239,34 +239,28 @@ def _cargas_por_tramo(
 ) -> list[tuple[float, str]]:
     """One load marker per kept fragment, at the fragment's own start.
 
-    The load is the last one the wizard called for at or before the middle of
-    the fragment — the same rule the analysis uses to give each contraction
-    its load (:func:`emgteach.contractions.load_of_each`), and it has to be
-    the same one or the derived file would disagree with the table it was
-    derived from. Deciding it on the fragment's *start* instead put one lift
-    of one recording under the previous load, because
-    the editor had drawn that fragment a little before its cue.
+    The load is the one of the marker that announced the fragment
+    (:func:`emgteach.force_velocity.markers_by_span`) — the same rule the
+    analysis uses to give each contraction its load, and it has to be the
+    same one or the derived file would disagree with the table it was
+    derived from. A fragment drawn a little before its cue still ends after
+    it, so it is still that cue's.
 
-    A fragment whose middle falls before the first cue — a stray effort, a
-    rehearsal — is given no load rather than a guess.
+    A fragment no cue announced — a stray effort before the first or after
+    the last, a rehearsal — is given no load rather than a guess. A
+    fragment holding several cues is given the first.
     """
-    from emgteach.force_velocity import fv_load_marker
+    from emgteach.force_velocity import fv_load_marker, markers_by_span
 
-    ordenadas = sorted((float(t), float(kg)) for t, kg in cargas)
-    if not ordenadas:
+    if not cargas:
         return []
+    por_tramo = markers_by_span(cargas, tramos)
     salida: list[tuple[float, str]] = []
     cursor = rec_start_s
-    for a, b in tramos:
-        medio = 0.5 * (a + b)
-        kg = None
-        for onset, valor in ordenadas:
-            if onset <= medio:
-                kg = valor
-            else:
-                break
-        if kg is not None:
-            salida.append((cursor, fv_load_marker(kg)))
+    for j, (a, b) in enumerate(tramos):
+        suyas = por_tramo.get(j)
+        if suyas:
+            salida.append((cursor, fv_load_marker(suyas[0][1])))
         cursor += b - a
     return salida
 

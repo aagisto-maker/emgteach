@@ -261,3 +261,46 @@ class TestNoTitleLeavesThePanel:
         overlay.show_relax("x")
         assert overlay.title_height() == 0
         assert overlay.title_rect() == (0, 0, 0, 0)
+
+
+class TestTheGripCountdownKeepsItsInstruction:
+    """The bench found the grip's instruction missing from the panel.
+
+    The grip's map is laid out when its countdown ends, a tick after the
+    countdown sized the panel, so the new row took the room the message had
+    been measured into. And the plot's title and top axis showed through a
+    translucent panel, the axis crossing the countdown's number just above
+    its bar.
+    """
+
+    def test_a_map_laid_out_on_screen_resizes_the_panel(self, overlay, idioma) -> None:
+        from emgteach.i18n import tr
+        from emgteach.pairs import PAIR_FOREARM, pair_coactivation_cue
+
+        pista = pair_coactivation_cue(PAIR_FOREARM)
+        overlay.show_ready(tr("Both muscles at once"), 1, pista, waiting=1.0)
+        antes = overlay.height()
+        overlay.set_steps([(230, 126, 34)])
+        assert overlay.height() > antes
+        _x, _y, _w, alto = overlay.message_rect()
+        assert alto >= overlay.text_height(pista)
+
+    def test_a_hidden_panel_is_not_resized_behind_anyones_back(self, overlay) -> None:
+        overlay.show_ready("Both muscles at once", 1, "x")
+        overlay.hide_overlay()
+        alto = overlay.height()
+        overlay.set_steps([(230, 126, 34)])
+        assert overlay.height() == alto
+
+    def test_the_panel_is_opaque(self) -> None:
+        from emgteach.gui.widgets import mvc_overlay
+
+        assert mvc_overlay._BG.alpha() == 255
+
+    def test_the_grip_names_what_is_squeezed(self, idioma) -> None:
+        """With the fist closed on nothing the extensors stay silent and
+        the grip gives no index: the instruction has to name an object."""
+        from emgteach.pairs import PAIR_FOREARM, pair_coactivation_cue
+
+        palabra = {"en": "ball", "es": "pelota"}[idioma]
+        assert palabra in pair_coactivation_cue(PAIR_FOREARM)

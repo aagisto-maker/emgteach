@@ -21,6 +21,7 @@ import numpy as np
 
 from emgteach.coactivation import dominant_muscle, resting_level
 from emgteach.dsp import compute_psd_mnf_mdf
+from emgteach.force_velocity import marker_owners
 from emgteach.selection import Segment, normalise_segments, suggest_significant_segments
 
 #: A contraction shorter than this has too few cycles of anything for a
@@ -203,32 +204,28 @@ def _onset_s(
 def load_of_each(
     rows: Sequence[Contraction],
     load_markers: Iterable[tuple[float, float]],
-    max_window_s: float = 6.5,
+    max_window_s: float = 6.0,
 ) -> list[float | None]:
     """The load, in kg, each contraction was made under — or ``None``.
 
     ``load_markers`` are the ``(onset_s, load_kg)`` pairs the guided
-    force-velocity wizard left at the start of each load's window (see
+    force-velocity wizard left at the start of each lift's window (see
     :func:`emgteach.force_velocity.parse_fv_load_markers`; the analysis
     worker hands them over as ``fv_loads``, in the analysed span's own
-    time). A contraction belongs to the last marker before its midpoint,
-    provided the midpoint falls within ``max_window_s`` of it — the wizard's
-    windows are six seconds. A contraction with no marker close enough (the
-    calibration efforts, a recording made without the wizard) gets ``None``,
-    and the chart that groups by load puts those in a group of their own
-    rather than losing them.
+    time). **Each marker gives its load to one contraction**, the one it
+    announced (:func:`emgteach.force_velocity.marker_owners`). A
+    contraction no marker announced — a calibration effort, a lift before
+    the wizard asked for the first or after it had finished, a recording
+    made without the wizard — gets ``None``, and the chart that groups by
+    load puts those in a group of their own rather than losing them.
     """
     marcas = sorted((float(t), float(kg)) for t, kg in load_markers)
-    out: list[float | None] = []
-    for r in rows:
-        mid = 0.5 * (float(r.start_s) + float(r.end_s))
-        carga: float | None = None
-        for onset, kg in marcas:
-            if onset <= mid + 0.5:
-                carga = kg if mid - onset <= max_window_s else None
-            else:
-                break
-        out.append(carga)
+    duenos = marker_owners([t for t, _ in marcas],
+                           [(r.start_s, r.end_s) for r in rows], max_window_s)
+    out: list[float | None] = [None] * len(rows)
+    for (_t, kg), j in zip(marcas, duenos, strict=True):
+        if j is not None:
+            out[j] = kg
     return out
 
 

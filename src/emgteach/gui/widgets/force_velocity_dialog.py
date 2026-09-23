@@ -117,6 +117,13 @@ class ForceVelocityDialog(QDialog):
         self._acc_warn.setVisible(False)
         left.addWidget(self._acc_warn)
 
+        # Says why some rows start unticked: see _fill_table.
+        self._aviso_sin_carga = QLabel("")
+        self._aviso_sin_carga.setWordWrap(True)
+        self._aviso_sin_carga.setStyleSheet("color:#8A5A00; font-size:11px;")
+        self._aviso_sin_carga.setVisible(False)
+        left.addWidget(self._aviso_sin_carga)
+
         btn_row = QHBoxLayout()
         self._btn_redraw = QPushButton(tr("Redraw"))
         self._btn_redraw.clicked.connect(self._redraw)
@@ -231,7 +238,17 @@ class ForceVelocityDialog(QDialog):
 
     def _fill_table(self, reps: list[int] | None = None) -> None:
         """``reps`` numbers the rows as the contraction table does; without
-        it they count from one."""
+        it they count from one.
+
+        **A row with no load, in a recording where the others have one, is
+        a lift the wizard did not ask for** — made before the first cue or
+        after the last — and it starts unticked, with a line saying so. It
+        used to start ticked, and with a load borrowed from the nearest
+        marker: on the bench two lifts after the wizard had finished were
+        averaged in as 7 kg. Nothing is hidden: the row is there, and
+        ticking it and typing a load puts it in. A recording with no
+        markers at all is typed by hand, and every row starts ticked.
+        """
         n = len(self._windows)
         self._table.setRowCount(n)
         read_only = ~Qt.ItemFlag.ItemIsEditable
@@ -243,6 +260,16 @@ class ForceVelocityDialog(QDialog):
             marker_loads = assign_loads_to_reps(
                 self._windows, self._fs, self._load_markers
             )
+        con_marcas = any(k is not None for k in marker_loads[:n])
+        sueltas = sum(
+            1 for i in range(n)
+            if con_marcas and (i >= len(marker_loads) or marker_loads[i] is None))
+        self._aviso_sin_carga.setText(tr(
+            "{n} contraction(s) with no load marker: the wizard did not ask "
+            "for them, so they start unticked. Tick one and type its load to "
+            "use it."
+        ).format(n=sueltas) if sueltas else "")
+        self._aviso_sin_carga.setVisible(bool(sueltas))
         for i in range(n):
             use = QTableWidgetItem()
             use.setFlags(
@@ -250,12 +277,14 @@ class ForceVelocityDialog(QDialog):
                 | Qt.ItemFlag.ItemIsUserCheckable
                 | Qt.ItemFlag.ItemIsEnabled
             )
-            use.setCheckState(Qt.CheckState.Checked)   # valid by default
+            kg = marker_loads[i] if i < len(marker_loads) else None
+            use.setCheckState(
+                Qt.CheckState.Unchecked if con_marcas and kg is None
+                else Qt.CheckState.Checked)
             self._table.setItem(i, 0, use)
             rep = QTableWidgetItem(str(reps[i] if reps is not None else i + 1))
             rep.setFlags(rep.flags() & read_only)
             self._table.setItem(i, 1, rep)
-            kg = marker_loads[i] if i < len(marker_loads) else None
             load = QTableWidgetItem("" if kg is None else f"{kg:g}")
             self._table.setItem(i, 2, load)
             emg = QTableWidgetItem(f"{self._emg_amp[i]:.3f}")

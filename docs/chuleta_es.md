@@ -77,7 +77,7 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
 | **Pico (% CVM)** | el esfuerzo respecto al propio máximo | tarea 20–80 % · > 150 % = la calibración no fue máxima |
 | **MNF / MDF** | frecuencia media / mediana del espectro | 80–170 / 60–150 Hz |
 | **MDF ↓ con el tiempo** | **fatiga** (pendiente negativa que ajuste, R² ≥ 0.30) | «no concluyente» = el registro no responde |
-| **Índice de coactivación** | actividad compartida por los dos músculos | recíproco: «no se informa» · presa: alto |
+| **Índice de coactivación** | actividad compartida por los dos músculos | recíproco: «no se informa» o bajo · presa: claramente más alto |
 | **Separación entre canales** | lo que un canal lee del otro músculo en su máximo | ≤ 25 % bien · > 50 % «sin separar» |
 | **P10 · P50 · P90** | carga estática · mediana · pico (Jonsson) | ≤ 5 · 14 · 70 % CVM |
 | **EMD** | de la señal eléctrica al movimiento | 30–100 ms |
@@ -91,7 +91,8 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
   el extensor.
 - **La tabla de coactivación dice «no se informa»** → en una flexión o extensión
   limpia es lo correcto; hace falta una **presa** para que dé número.
-- **La presa no coactiva** → la muñeca está apoyada en la mesa. Tiene que quedar
+- **La presa no coactiva** → se ha hecho con el puño cerrado en vacío: hay que
+  **apretar la pelota**. O la muñeca está apoyada en la mesa. Tiene que quedar
   **en el aire, fuera del borde**: apoyada, el tablero estabiliza y el extensor
   afloja. Y nunca se pide «extienda la muñeca»: los extensores entran solos.
 - **«Canales sin separar»** → separar los pares hacia el borde cubital y dorsal;

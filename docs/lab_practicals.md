@@ -463,14 +463,20 @@ epicondylitis, an injury of repeated gripping and not of extending the wrist.
      wrist beyond the edge, in the air**. If the wrist rests on the table, the
      table does the stabilising, the extensor relaxes and the manoeuvre measures
      nothing.
-   - Squeeze something that does not deform and gives a repeatable posture: a
-     rolled-up blood-pressure cuff, a tennis ball or a tightly rolled towel. A
-     hand dynamometer is better still, since it also quantifies the effort.
-   - «Close the fist hard and hold it» for **5 s**, firm but submaximal, guided by
-     the load bar towards 50–60 %. **Never say «extend the wrist»**: the extensors
-     have to come in on their own.
-   - Three 5 s grips 2 s apart give more signal and still count as one window,
-     since consecutive rows with the same name are grouped.
+   - **Squeeze a tennis ball**, which is what the screen names; failing one,
+     something that does not deform and gives a repeatable posture, such as a
+     rolled-up blood-pressure cuff or a tightly rolled towel. A hand
+     dynamometer is better still, since it also quantifies the effort. **With
+     the fist closed on nothing it does not work**: with nothing to squeeze
+     the extensor barely comes in (4 % of its reference on the bench) and the
+     grip gives no index.
+   - «Squeeze the ball hard and hold it» for **8 s**, firm but submaximal, guided
+     by the load bar towards 50–60 %. **Never say «extend the wrist»**: the
+     extensors have to come in on their own. The application times those eight
+     seconds and shows both load bars inside its own box, which is where to look
+     while squeezing.
+   - Repeating it gives more signal and still counts as one window, since
+     consecutive rows with the same name are grouped; the wizard guides one.
    - It goes last, so its fatigue does not contaminate the flexions or the
      extensions.
 4. **Stop**. In Analysis, review the repetitions and accept the fragments: the
@@ -494,12 +500,18 @@ form a progression worth reading whole before answering:
 
 | Manoeuvre | What the two muscles do | What the index gives |
 |---|---|---|
-| Flexions | the FCR works; the ECR stays under the 4.5 % floor | not reported |
-| Extensions | the roles swap | not reported |
-| Grip | both work at once | a high number, of the order of 60–95 % |
+| Flexions | the FCR works; the ECR little or not at all | «not reported» if the ECR stays under the 4.5 % floor; if it passes it, a low index, around 30 % |
+| Extensions | the roles swap | the same: «not reported» or around 30 % |
+| Grip | both work at once | clearly higher than in the reciprocal manoeuvres |
 | Fast alternation (2b) | both work, but by turns | a low number |
 
-The grip is the only manoeuvre of this montage that produces a number, and the
+**A 30 % in the flexions is not a mistake.** It means the ECR passed the 4.5 %
+floor while the FCR worked, which depends on how much each person stabilises the
+wrist; on the bench the same person gave «not reported» in one session and 30 %
+in another. What does not change is the order: the grip comes out clearly above
+(55 % on the bench, squeezing the ball).
+
+The grip is the only manoeuvre of this montage that always produces a number, and the
 comparison with the fast alternation of exercise 2b closes the argument: in both
 manoeuvres the two muscles work, but only in the grip do they work **at the same
 time**, which is what the index measures. Co-activation is a property of the task,
@@ -507,7 +519,8 @@ not of the muscle.
 
 **Questions.**
 - During the flexions, what does the ECR do? If its row says «not reported», why
-  is that the right answer and not a fault?
+  is that the right answer and not a fault? And if it gives a low number, what
+  does that say about how the wrist was held?
 - During the grip, who works? Explain why the wrist extensors contract hard when
   the hand closes although nobody extends anything, and what it has to do with
   lateral epicondylitis.
@@ -568,7 +581,9 @@ and the EMG the activation.
 2. The **«Force-velocity study»** box holds the first two steps of the
    sequence. **«F-V parameters…»** asks for the **plan** (the loads in order,
    the lifts per load, three by default, and the seconds to prepare and to
-   lift) and keeps it; **«Rehearse…»**, beside it, runs the whole procedure
+   lift) and keeps it. **The plan is kept on each computer**: beside the
+   button is the last one saved there, which need not be the default, so it
+   is worth a look before starting. **«Rehearse…»**, beside it, runs the whole procedure
    with no hardware, which is optional and worth one run before anyone holds
    a weight. Then **«Start recording»** runs the session by itself:
    it names the file, **calibrates the maximum first** (warm-up and three
@@ -659,7 +674,7 @@ grey under the summary cards and in the «?» of the tables.
 | Task effort | 20–80 % MVC | a typical submaximal effort; > 100 % sustained says the calibration was not maximal |
 | Task maximum with a sound calibration | 90–125 % MVC | recorded sessions with a correct calibration; the application warns in red from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 %; finger extensor during wrist flexion at 75 % ≈ 15 % |
-| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported»; firm grip: 60–95 % | the index measures shared activity; in a clean flexion the antagonist stays below the 5 % floor |
+| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported», or low (≈ 30 %) if the antagonist passes the floor; firm grip squeezing the ball: clearly higher (55 % on the bench) | the index measures shared activity; in a clean flexion the antagonist stays below the 5 % floor |
 | Channel separation (cross-talk) | ≤ 20–25 % of its own reference | measured with well-placed electrodes; > 50 %, «channels not separated» |
 | Static load (P10) | ≤ 2–5 % MVC (the application uses 5) | Jonsson 1978, 1982 |
 | Median load (P50) | ≤ 10–14 % MVC (the application uses 14) | Jonsson 1978, 1982 |
