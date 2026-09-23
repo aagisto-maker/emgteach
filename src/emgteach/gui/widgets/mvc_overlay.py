@@ -1,6 +1,6 @@
 """MvcOverlay — a floating, prominent guide for the MVC-calibration wizard.
 
-A semi-transparent panel drawn over the live plots that tells the subject,
+An opaque panel drawn over the live plots that tells the subject,
 one muscle at a time, exactly what to do: a big "get ready" countdown, then a
 "contract at maximum" phase with a window-progress bar and a **live effort
 bar** that rises and falls with the contraction force (with a peak marker),
@@ -37,6 +37,15 @@ study used to build its own: the pair practical had a map and the
 force-velocity study had none, so the same application looked finished in one
 and bare in the other. Anything a phase wants that is not one of those four
 belongs here, once, and not in the tab that drives it.
+
+**Opaque, and as tall as what it holds at every moment.** The panel was
+drawn at 88 % opacity, and on the bench that was enough for the plot's title
+and its top axis to show through it: the axis crossed the countdown just
+above the bar and read as the number cut off at the bottom. And the grip's
+map is laid out when its countdown ends, a tick after the countdown sized
+the panel, so for that tick the new row took the message's room and the
+instruction went missing. The panel now paints over everything under it,
+and a map laid out while the panel is on screen resizes it there and then.
 """
 
 from __future__ import annotations
@@ -49,7 +58,7 @@ from PySide6.QtWidgets import QFrame
 
 from emgteach.i18n import tr
 
-_BG = QColor(20, 20, 28, 225)      # near-opaque dark panel
+_BG = QColor(20, 20, 28)           # opaque: nothing under it shows through
 _FG = QColor(245, 245, 245)
 _ACCENT = QColor(46, 134, 222)     # blue (ready / progress)
 _EFFORT = QColor(39, 174, 96)      # green (effort fill)
@@ -181,6 +190,18 @@ class MvcOverlay(QFrame):
         ]
         self._grupos = {}
         self._alineadas = {}
+        self._reajustar()
+
+    def _reajustar(self) -> None:
+        """Take the height the new layout needs, if the panel is on screen.
+
+        The ``show_*`` methods size the panel for what they draw; a map laid
+        out between two of them — the grip's, when its countdown ends —
+        changed what there was to draw without anybody measuring it again.
+        """
+        if self.isVisible() and self._mode != "hidden":
+            self.resize(self._W, self.height_for_text())
+            self.update()
 
     @staticmethod
     def _filas(rows) -> list:
