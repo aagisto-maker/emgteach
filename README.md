@@ -279,5 +279,5 @@ and the automated test suite is part of the repository.
 
 The anatomical base of the electrode-placement figure and of the guided tour's pictures
 (`tools/recorrido/base_brazos_v2.png`) is an AI-generated image of two forearms, made
-without text or electrodes. Every muscle, landmark, electrode position and measurement
-drawn on top of it is the author's, to a scale measured on the image itself.
+without text or electrodes; the muscles, electrodes and labels are drawn over it by the
+figure script, to a scale measured on the image itself.

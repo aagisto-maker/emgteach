@@ -12,8 +12,9 @@ of the article's Figure 1:
 * each pair on its muscle's belly, **5 cm from the epicondyle of its own
   side** — the medial one for the flexor, the lateral one for the extensor;
   the styloid processes are not used, and the extensor's pair sat a quarter
-  of the way to the ulnar styloid until 23 September 2026, about 1.4 cm
-  higher than it is placed at the bench;
+  of the way to the ulnar styloid until 23 September 2026, some 6.4 cm from
+  the epicondyle: about 1.4 cm further from the elbow than it is placed at
+  the bench;
 * the reference over the olecranon, one for both channels — on the ulnar
   styloid until 21 September 2026, when the bench showed a second reference
   changes nothing and the olecranon is where the recording behind the

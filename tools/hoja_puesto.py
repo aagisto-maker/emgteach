@@ -53,6 +53,9 @@ TITULO, TXT, GRIS, BORDE = "#1F4E79", "#1f2933", "#55636F", "#C9D3DD"
 W, H = 842, 595                       # A4 landscape, in points
 DPI = 200
 POR = "\u00d7"                        # the multiplication sign, U+00D7
+#: Between a number and its unit, so a caption that has to be wrapped never
+#: leaves the «s» of the seconds alone on the next line.
+NBSP = "\u00a0"
 
 TEXTOS = {
     "es": {
@@ -64,9 +67,9 @@ TEXTOS = {
             "canal 1 FCR · canal 2 ECR · una referencia, en el olécranon",
             "con la placa encendida · en «Identificador de prueba», un código, "
             "nunca el nombre",
-            "calentamiento: {warm} s, 2 o 3 contracciones suaves",
-            "{n} {por} FCR · {n} {por} ECR · una sacudida explosiva en los {dur} s de cada aviso",
-            "{f} flexiones · {e} extensiones · {p} presa de {presa} s · 2 s quieto entre maniobras",
+            "calentamiento: {warm}{nbsp}s, 2 o 3 contracciones suaves",
+            "{n} {por} FCR · {n} {por} ECR · una sacudida explosiva en los {dur}{nbsp}s de cada aviso",
+            "{f} flexiones · {e} extensiones · {p} presa de {presa}{nbsp}s · 2{nbsp}s quieto entre maniobras",
             "la línea amarilla dice el paso; al final, el informe PDF",
         ],
     },
@@ -79,9 +82,9 @@ TEXTOS = {
             "channel 1 FCR · channel 2 ECR · one reference, on the olecranon",
             "with the board switched on · in «Test identifier», a code, never "
             "a name",
-            "warm-up: {warm} s, two or three easy contractions",
-            "{n} {por} FCR · {n} {por} ECR · one explosive jerk in the {dur} s of each cue",
-            "{f} flexions · {e} extensions · {p} grip of {presa} s · 2 s still in between",
+            "warm-up: {warm}{nbsp}s, two or three easy contractions",
+            "{n} {por} FCR · {n} {por} ECR · one explosive jerk in the {dur}{nbsp}s of each cue",
+            "{f} flexions · {e} extensions · {p} grip of {presa}{nbsp}s · 2{nbsp}s still in between",
             "the yellow line says the step; last, the PDF report",
         ],
     },
@@ -232,7 +235,7 @@ def componer(idioma: str, cap: dict[str, Path]) -> tuple[Path, Path]:
     # guided eight, and the sheet is what is on the bench.
     cifras = {"warm": cifra(EMG_PROFILE.warmup_s), "n": EMG_PROFILE.mvc_bursts,
               "dur": cifra(EMG_PROFILE.mvc_burst_s), "f": f, "e": e, "p": p,
-              "presa": cifra(COACT_HOLD_S), "por": POR}
+              "presa": cifra(COACT_HOLD_S), "por": POR, "nbsp": NBSP}
     imagenes = [
         [_recorte(ASSETS / f"electrodos_{idioma}.png", tmp, 0.065, 0.12)],
         [cap["practica"], cap["conectar"]],
