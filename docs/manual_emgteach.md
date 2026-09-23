@@ -698,7 +698,7 @@ fault.
 | Task effort | 20–80 % MVC | typical submaximal efforts |
 | Task maximum with a sound calibration | 90–125 % MVC | emgteach recorded sessions; red warning from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 % MVC; finger extensor during wrist flexion at 75 % ≈ 15 % |
-| Co-activation index | reciprocal: «not reported», or low (≈ 30 %); firm grip on a ball: clearly higher (55 % on the bench) | Falconer and Winter (1985); Ervilha (2012) on voluntary co-activation |
+| Co-activation index | reciprocal: «not reported», or low (≈ 30 %); firm grip on a ball: clearly higher | Falconer and Winter (1985); Ervilha (2012) on voluntary co-activation |
 | Channel separation | ≤ 20–25 % of its own reference | emgteach recordings with well-placed electrodes |
 | Static, median, peak load | ≤ 2–5, 10–14, 50–70 % MVC (the application: 5, 14, 70) | Jonsson (1978, 1982) |
 | Electromechanical delay | 30–100 ms; voluntary 35–80 | Cavanagh and Komi (1979): biceps 41 ± 13 ms, triceps 26 ± 11 ms |

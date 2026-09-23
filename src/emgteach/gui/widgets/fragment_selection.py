@@ -156,6 +156,9 @@ _K_CANDIDATE_MIN = 1.0
 
 #: How far ahead of its cue a lift may start and still be that lift.
 _ANTICIPO_S = 0.5
+#: A piece that starts this close after the one a cue took is the same lift,
+#: split by the detector at a dip.
+_UNION_S = 0.1
 
 #: How long after the last slider move the proposal is rebuilt. Long enough
 #: that dragging does not rebuild at every pixel, short enough to feel live.
@@ -1087,17 +1090,35 @@ class FragmentSelectionDialog(QDialog):
         it) to the window's end. The detector joins the lift to whatever
         the muscle did just before, and just before the cue it was picking
         up the weight: on the bench one row began four seconds early.
+
+        And the other way round, the detector can **split** a lift at a dip:
+        in a rehearsal the first lift came out as 48.16–48.64 and
+        48.65–49.42 s, and the cue took the first half, a row of 0.48 s
+        where the others lasted 1.5 to 2. A piece starting less than
+        ``_UNION_S`` after the one the cue took, inside the same window and
+        claimed by no other cue, is joined to it before the row is cut.
         """
         duenos = marker_owners(
             [a for a, _b in self._lifts],
             [(f.start_s, f.end_s) for f in detectadas])
+        tomadas = {j for j in duenos if j is not None}
+        orden = sorted(range(len(detectadas)), key=lambda k: detectadas[k].start_s)
         filas = []
         for (a, b), j in zip(self._lifts, duenos, strict=True):
             if j is None:
                 filas.append(Segment(a, b, reason="marker"))
                 continue
             f = detectadas[j]
-            ini, fin = max(f.start_s, a - _ANTICIPO_S), min(f.end_s, b)
+            fin_trozo = f.end_s
+            for k in orden:
+                g = detectadas[k]
+                if k == j or g.start_s < f.start_s:
+                    continue
+                if (k in tomadas or g.start_s - fin_trozo >= _UNION_S
+                        or g.start_s >= b):
+                    break
+                fin_trozo = max(fin_trozo, g.end_s)
+            ini, fin = max(f.start_s, a - _ANTICIPO_S), min(fin_trozo, b)
             filas.append(Segment(ini, fin, f.score, f.reason, f.label)
                          if fin > ini else f)
         return _en_centesimas(filas)
