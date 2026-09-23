@@ -981,8 +981,8 @@ _ES = {
     "and on again, and try again. If it happens again, close emgteach "
     "and open it again.":
         "No ha llegado ningún dato de la placa en {s:.0f} s, así que no se "
-        "está grabando nada. Comprobar que el BITalino está encendido, "
-        "apagarlo y encenderlo, y volver a intentarlo. Si vuelve a pasar, "
+        "está grabando nada. Comprobar que la placa BITalino está encendida, "
+        "apagarla y encenderla, y volver a intentarlo. Si vuelve a pasar, "
         "cerrar emgteach y abrirlo de nuevo.",
     "The recording was stopped before the board answered; "
     "nothing was recorded.":
