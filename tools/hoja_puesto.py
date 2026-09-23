@@ -66,7 +66,7 @@ TEXTOS = {
             "nunca el nombre",
             "calentamiento: {warm} s, 2 o 3 contracciones suaves",
             "{n} {por} FCR · {n} {por} ECR · una sacudida explosiva en los {dur} s de cada aviso",
-            "{f} flexiones · {e} extensiones · {p} presa de 5 s · 2 s quieto entre maniobras",
+            "{f} flexiones · {e} extensiones · {p} presa de {presa} s · 2 s quieto entre maniobras",
             "la línea amarilla dice el paso; al final, el informe PDF",
         ],
     },
@@ -81,7 +81,7 @@ TEXTOS = {
             "a name",
             "warm-up: {warm} s, two or three easy contractions",
             "{n} {por} FCR · {n} {por} ECR · one explosive jerk in the {dur} s of each cue",
-            "{f} flexions · {e} extensions · {p} grip of 5 s · 2 s still in between",
+            "{f} flexions · {e} extensions · {p} grip of {presa} s · 2 s still in between",
             "the yellow line says the step; last, the PDF report",
         ],
     },
@@ -219,6 +219,7 @@ def _colocar(fig, imagenes, x, y, w, h, *, px_a_pt=0.9, flecha="↓"):
 
 
 def componer(idioma: str, cap: dict[str, Path]) -> tuple[Path, Path]:
+    from emgteach.gui.tabs.acquisition import COACT_HOLD_S
     from emgteach.i18n import cifra
     from emgteach.modes import MODE_PAIR, mode_expected_contractions
     from emgteach.profiles import EMG_PROFILE
@@ -226,9 +227,12 @@ def componer(idioma: str, cap: dict[str, Path]) -> tuple[Path, Path]:
     t = TEXTOS[idioma]
     tmp = cap["practica"].parent
     f, e, p = mode_expected_contractions(MODE_PAIR)
+    # The grip's length comes from the constant the wizard runs on, like the
+    # calibration's numbers: the sheet said five seconds while the wizard
+    # guided eight, and the sheet is what is on the bench.
     cifras = {"warm": cifra(EMG_PROFILE.warmup_s), "n": EMG_PROFILE.mvc_bursts,
               "dur": cifra(EMG_PROFILE.mvc_burst_s), "f": f, "e": e, "p": p,
-              "por": POR}
+              "presa": cifra(COACT_HOLD_S), "por": POR}
     imagenes = [
         [_recorte(ASSETS / f"electrodos_{idioma}.png", tmp, 0.065, 0.12)],
         [cap["practica"], cap["conectar"]],
