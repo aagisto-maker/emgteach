@@ -702,7 +702,11 @@ antagonista» y `Muscle kinematics` / «Cinemática muscular».
    propone a partir del identificador de prueba y de la fecha
    (`P01_2026-09-06_09-15.edf`), en Documentos mientras no se elija otra
    carpeta, y empieza. El botón pasa a `Stop recording` / «Detener grabación» y el estado
-   a `Status: recording…` / «Estado: grabando…».
+   a `Status: connecting to the board…` / «Estado: conectando con la placa…»,
+   y con el primer bloque de datos a `Status: recording…` / «Estado:
+   grabando…». Si en 20 s no llega ninguno, la grabación se detiene, el estado
+   dice `Status: the board did not answer` / «Estado: la placa no respondió» y
+   un aviso ofrece volver a intentarlo.
 4. `Calibrate MVC` / «Calibrar CVM», en la caja `Muscle load (live MVC)` /
    «Carga muscular (CVM en vivo)», lanza el asistente. Es un cuadro oscuro
    flotante sobre las gráficas, con esta secuencia por músculo: calentamiento
@@ -788,45 +792,45 @@ números de la calibración.
 
 El recorrido tiene **9** pasos definidos en `src/emgteach/gui/tour.py`; cuáles se muestran depende de la práctica.
 
-- **`src/emgteach/gui/tour.py:69`**
+- **`src/emgteach/gui/tour.py:71`**
   - EN: Choose the practical first
   - ES: Elegir primero la práctica
   - EN: Everything else follows from this. Each mode records what that practical needs — one muscle, an agonist/antagonist pair, or a muscle plus the accelerometer — and the rest of the interface offers only the measurements that make sense for it. The coloured band beside it is the level: basic, intermediate or advanced.
   - ES: Todo lo demás sale de aquí. Cada modo registra lo que esa práctica necesita (un músculo, un par agonista/antagonista, o un músculo más el acelerómetro) y el resto de la interfaz ofrece solo las medidas que tienen sentido para ella. La banda de color de al lado es el nivel: básico, intermedio o avanzado.
-- **`src/emgteach/gui/tour.py:113`**
+- **`src/emgteach/gui/tour.py:115`**
   - EN: Connecting the sensor
   - ES: Conexión del sensor
-- **`src/emgteach/gui/tour.py:126`**
+- **`src/emgteach/gui/tour.py:128`**
   - EN: Recording
   - ES: Registro
   - EN: Press record. The session asks first for a maximal contraction — the reference every measurement is expressed against — and then for the task. Both go into one file, so nothing has to be matched up afterwards. Watch the live trace: at rest it should be a flat line with only baseline noise. A signal that never returns to baseline usually means a loose electrode, not a tonic muscle. Each contraction onset is marked on its own.
   - ES: Pulse grabar. La sesión pide primero una contracción máxima (la referencia respecto a la que se expresa cada medida) y después la tarea. Las dos van a un solo archivo, así que no hay que emparejar nada después. Observe el trazo en directo: en reposo debe ser una línea plana con solo el ruido basal. Una señal que nunca vuelve a la línea base suele ser un electrodo suelto, no un músculo tónico. El inicio de cada contracción se marca solo.
-- **`src/emgteach/gui/tour.py:146`**
+- **`src/emgteach/gui/tour.py:148`**
   - EN: How to place the accelerometer
   - ES: Cómo situar el acelerómetro
   - EN: There are two possibilities: on the muscle it allows the mechanomyogram (MMG) to be measured, which runs in parallel with the electrical signal; on the moving segment of the joint it allows the movement, and the parameters associated with it, to be measured — including the delay between the muscle firing and the limb moving.
   - ES: Hay dos posibilidades: sobre el músculo permite medir el mecanomiograma (MMG), que corre en paralelo con la señal eléctrica; sobre el segmento móvil de la articulación permite medir el movimiento y los parámetros asociados a él, incluido el retraso entre que el músculo se activa y la extremidad se mueve.
-- **`src/emgteach/gui/tour.py:159`**
+- **`src/emgteach/gui/tour.py:161`**
   - EN: The force-velocity experiment, and its rehearsal
   - ES: El experimento fuerza-velocidad, y su ensayo
   - EN: The step-by-step wizard guides you through the contractions with different loads: with a greater load the velocity is lower, and that inverse relation is the force-velocity curve. As it is the longest procedure in the application, a simulation is provided as a rehearsal, so that what is going to be done live is understood first.
   - ES: El asistente paso a paso guía las contracciones con distintas cargas: con más carga la velocidad es menor, y esa relación inversa es la curva fuerza-velocidad. Como es el procedimiento más largo de la aplicación, se ofrece una simulación como ensayo, para entender primero lo que se va a hacer en vivo.
-- **`src/emgteach/gui/tour.py:175`**
+- **`src/emgteach/gui/tour.py:177`**
   - EN: Agonist and antagonist
   - ES: Agonista y antagonista
   - EN: The recording is analysed as soon as it is opened. Both muscles were calibrated while recording, so the two envelopes are overlaid in % MVC — the only form in which two different muscles compare at all, since each one's millivolts depend on its own electrodes and skin. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-activation, which holds the joint rigid and is typical of an unpractised or uncertain movement. The table below the panels gives one row per contraction, and which muscle led it.
   - ES: El registro se analiza en cuanto se abre. Los dos músculos se calibraron al grabar, así que las dos envolventes se superponen en % CVM, la única forma en que dos músculos distintos se pueden comparar, porque los milivoltios de cada uno dependen de sus electrodos y de su piel. En un movimiento limpio el agonista se activa mientras el antagonista queda casi en silencio; la activación simultánea es coactivación, que deja rígida la articulación y es típica de un movimiento poco practicado o inseguro. La tabla bajo los paneles da una fila por contracción, y qué músculo la lideró.
-- **`src/emgteach/gui/tour.py:193`**
+- **`src/emgteach/gui/tour.py:195`**
   - EN: Force-velocity study
   - ES: Estudio fuerza-velocidad
   - EN: The recording is analysed as soon as it is opened. The study builds the load-velocity, force-velocity and power curves from a recording where several known loads were lifted, and relates them to the EMG amplitude — that is, to how many motor units had to be recruited for each load. The panels also show the movement against the EMG and the delay between the two.
   - ES: El registro se analiza en cuanto se abre. El estudio construye las curvas carga-velocidad, fuerza-velocidad y potencia a partir de un registro en el que se levantaron varias cargas conocidas, y las relaciona con la amplitud del EMG, es decir, con cuántas unidades motoras hubo que reclutar para cada carga. Los paneles muestran también el movimiento frente al EMG y el retraso entre ambos.
-- **`src/emgteach/gui/tour.py:208`**
+- **`src/emgteach/gui/tour.py:210`**
   - EN: What the analysis shows
   - ES: Qué muestra el análisis
   - EN: The recording is analysed as soon as it is opened. Raw signal: what the contracting fibres produce. Normalised envelope: how activation changes over time, which is what is compared between efforts. Spectrum: how the activity is distributed across frequencies — as a sustained contraction fatigues the muscle, the median frequency (MDF) falls. The cards under the panels carry the numbers with their usual ranges, and the table beside them gives one row per contraction.
   - ES: El registro se analiza en cuanto se abre. Señal en bruto: lo que producen las fibras que se contraen. Envolvente normalizada: cómo cambia la activación con el tiempo, que es lo que se compara entre esfuerzos. Espectro: cómo se reparte la actividad entre frecuencias; a medida que una contracción sostenida fatiga el músculo, la frecuencia mediana (MDF) baja. Las fichas bajo los paneles llevan los números con sus rangos habituales, y la tabla de al lado da una fila por contracción.
-- **`src/emgteach/gui/tour.py:228`**
+- **`src/emgteach/gui/tour.py:230`**
   - EN: Why normalise at all
   - ES: Por qué normalizar
   - EN: A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working. The maximum is inside the recording: the session calibrates without stopping, so nothing else has to be chosen here.
@@ -861,13 +865,13 @@ constante repartida.
 | Duration of one effort | — | 1.5 | s | no editable | `src/emgteach/profiles.py:164` |
 | Warm-up | — | 10.0 | s | no editable | `src/emgteach/profiles.py:233` |
 | Preparation countdown | — | 5.0 | s | no editable | `src/emgteach/profiles.py:226` |
-| Ready countdown | — | 3.0 | s | no editable (MVC_READY_S = 3.0) | `src/emgteach/gui/tabs/acquisition.py:145` |
-| Rest between repetitions | — | 2.0 | s | no editable (MVC_REST_S = 2.0) | `src/emgteach/gui/tabs/acquisition.py:146` |
+| Ready countdown | — | 3.0 | s | no editable (MVC_READY_S = 3.0) | `src/emgteach/gui/tabs/acquisition.py:158` |
+| Rest between repetitions | — | 2.0 | s | no editable (MVC_REST_S = 2.0) | `src/emgteach/gui/tabs/acquisition.py:165` |
 | Auto-onset k | — | 3.0 | desv. típicas | Adquisición · «Marcadores de eventos» · k | `src/emgteach/profiles.py:248` |
 | Onset baseline | — | 1.0 | s | no editable | `src/emgteach/profiles.py:249` |
 | Onset refractory | — | 0.5 | s | no editable | `src/emgteach/profiles.py:250` |
-| Sensitivity | Sensibilidad | 3.0 · 4.4 · 3.0 | desv. típicas (un músculo · par · cinemática) | Análisis · «Seleccionar fragmentos…» · Sensibilidad («Restablecer» vuelve aquí) | `src/emgteach/modes.py:84` |
-| Marked / expected | Marcadas / esperadas | 6 · 6 · 1 | contracciones (flexión · extensión · presa; solo en el par) | Análisis · «Seleccionar fragmentos…» · esperadas | `src/emgteach/modes.py:90` |
+| Sensitivity | Sensibilidad | 3.0 · 4.4 · 3.0 | desv. típicas (un músculo · par · cinemática) | Análisis · «Seleccionar fragmentos…» · Sensibilidad («Restablecer» vuelve aquí) | `src/emgteach/modes.py:85` |
+| Marked / expected | Marcadas / esperadas | 6 · 6 · 1 | contracciones (flexión · extensión · presa; solo en el par) | Análisis · «Seleccionar fragmentos…» · esperadas | `src/emgteach/modes.py:91` |
 | Jonsson static limit (P10) | — | 5.0 | % CVM | no editable | `src/emgteach/profiles.py:127` |
 | Jonsson median limit (P50) | — | 14.0 | % CVM | no editable | `src/emgteach/profiles.py:128` |
 | Jonsson peak limit (P90) | — | 70.0 | % CVM | no editable | `src/emgteach/profiles.py:129` |
@@ -887,9 +891,9 @@ constante repartida.
 | Arduino ADC | — | 1023.0 | cuentas (10 bits) | no editable | `src/emgteach/devices/arduino.py:80` |
 | Arduino V_ref | — | 5.0 | V | no editable | `src/emgteach/devices/arduino.py:81` |
 | MyoWare gain | — | 200.0 | — | no editable | `src/emgteach/devices/arduino.py:82` |
-| F-V lifts per load | — | 3 | levantamientos | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:172` |
-| F-V preparation | — | 6.0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:173` |
-| F-V lift time | — | 1.0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:174` |
+| F-V lifts per load | — | 3 | levantamientos | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:359` |
+| F-V preparation | — | 6.0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:360` |
+| F-V lift time | — | 1.0 | s | Adquisición · «Parámetros de la F-V…» | `src/emgteach/gui/tabs/acquisition.py:361` |
 
 <<<PARAMETROS>>>
 
@@ -1099,13 +1103,13 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/exports.py:66`**
   - EN: not conclusive (the MDF trend does not fit)
   - ES: no concluyente (la tendencia de MDF no ajusta)
-- **`src/emgteach/gui/app.py:262`**
+- **`src/emgteach/gui/app.py:284`**
   - EN: Take a picture by itself every {s:.0f} s, but only while a recording is running, and at most {n} per recording. It needs no switching off: outside a recording it does nothing.
   - ES: Hace una captura sola cada {s:.0f} s, pero solo mientras se graba y como mucho {n} por registro. No hay que desactivarlo: fuera de una grabación no hace nada.
-- **`src/emgteach/gui/app.py:674`**
+- **`src/emgteach/gui/app.py:714`**
   - EN: The screenshot could not be saved: {error}
   - ES: No se pudo guardar la captura: {error}
-- **`src/emgteach/gui/app.py:679`**
+- **`src/emgteach/gui/app.py:719`**
   - EN: The screenshot could not be saved to: {path}
   - ES: No se pudo guardar la captura en: {path}
 - **`src/emgteach/gui/help_texts.py:39`**
@@ -1114,70 +1118,70 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/help_texts.py:59`**
   - EN: The application supports two devices: the BITalino over Bluetooth and the Arduino + MyoWare 2.0 over USB. Only the single-muscle practical can use the Arduino; the other two need the BITalino's second channel or its accelerometer, so they fix it and the selector does not appear.
   - ES: La aplicación admite dos dispositivos: la placa BITalino por Bluetooth y el Arduino + MyoWare 2.0 por USB. Solo la práctica de un músculo puede usar el Arduino; las otras dos necesitan el segundo canal de la placa o su acelerómetro, así que lo fijan y el selector no aparece.
-- **`src/emgteach/gui/help_texts.py:73`**
+- **`src/emgteach/gui/help_texts.py:74`**
   - EN: Start recording and ask for the contraction. Watch the live trace: at rest it should be a flat line with only baseline noise. A signal that never returns to baseline usually means a loose electrode or a poor contact, not a tonic muscle.
   - ES: Se inicia el registro y se pide la contracción. Conviene vigilar el trazado en vivo: en reposo debe ser una línea plana con solo ruido de base. Una señal que nunca vuelve a la línea de base suele indicar un electrodo suelto o mal contacto, no un músculo tónico.
-- **`src/emgteach/gui/help_texts.py:86`**
+- **`src/emgteach/gui/help_texts.py:87`**
   - EN: With this ticked the application timestamps each contraction onset as it finds it — the threshold is the resting level plus k standard deviations, and k is the knob beside it. The marks travel inside the EDF, so each effort can be found again during the analysis. Unticked, nothing is written: marking by hand during a recording asks the operator to keep up with a signal that does not wait.
   - ES: Con esto marcado, la aplicación anota el instante de cada inicio de contracción según lo encuentra: el umbral es el nivel de reposo más k desviaciones típicas, y k es el mando de al lado. Las marcas viajan dentro del EDF, así que cada esfuerzo se vuelve a encontrar en el análisis. Sin marcar, no se escribe ninguna: marcar a mano durante un registro es pedirle al operador que siga el ritmo de una señal que no espera.
-- **`src/emgteach/gui/help_texts.py:250`**
+- **`src/emgteach/gui/help_texts.py:251`**
   - EN: <b>Not detected</b>: the MDF stays flat or rises.
   - ES: <b>No detectada</b>: la MDF se mantiene o sube.
-- **`src/emgteach/gui/help_texts.py:252`**
+- **`src/emgteach/gui/help_texts.py:253`**
   - EN: <b>Not conclusive</b>: the line does not fit (low R²). This is usual with short or intermittent contractions; the recording does not answer the question, which is not the same as answering “no”.
   - ES: <b>No concluyente</b>: la recta no ajusta (R² bajo). Es lo habitual con contracciones cortas o intermitentes; el registro no responde a la pregunta, que no es lo mismo que responder «no».
-- **`src/emgteach/gui/help_texts.py:270`**
+- **`src/emgteach/gui/help_texts.py:271`**
   - EN: When it is not reported
   - ES: Cuándo no se informa
-- **`src/emgteach/gui/help_texts.py:299`**
+- **`src/emgteach/gui/help_texts.py:300`**
   - EN: One line per window, its seconds on the right. A purple bar is the index, with the number in it. A gold block means the index is not reported, and the small square beside it is the colour of the muscle that worked alone — in a clean flexion or extension that is the correct answer, not a fault. No square at all is a rest. The two mean activations are in the table.
   - ES: Una línea por ventana, con sus segundos a la derecha. Una barra morada es el índice, con el número dentro. Un bloque dorado quiere decir que el índice no se informa, y el cuadradito de al lado lleva el color del músculo que trabajó solo: en una flexión o una extensión limpias esa es la respuesta correcta, no un fallo. Sin cuadradito, es un reposo. Las dos activaciones medias están en la tabla.
-- **`src/emgteach/gui/help_texts.py:321`**
+- **`src/emgteach/gui/help_texts.py:322`**
   - EN: the highest point of the contraction's envelope, as a share of the maximum. A task effort is usually 20–80 %; above 100 % (in red) the calibration was not a maximum.
   - ES: el punto más alto de la envolvente de la contracción, como porcentaje del máximo. Un esfuerzo de tarea suele estar entre el 20 y el 80 %; por encima del 100 % (en rojo) la calibración no fue un máximo.
-- **`src/emgteach/gui/help_texts.py:325`**
+- **`src/emgteach/gui/help_texts.py:326`**
   - EN: median frequency of the spectrum. Typically 60–150 Hz for surface EMG of limb muscles; it falls along a sustained effort as the muscle fatigues. Not shown for contractions shorter than a quarter of a second.
   - ES: frecuencia mediana del espectro. Típicamente 60–150 Hz en EMG de superficie de músculos de las extremidades; baja a lo largo de un esfuerzo sostenido a medida que el músculo se fatiga. No se muestra en contracciones de menos de un cuarto de segundo.
-- **`src/emgteach/gui/help_texts.py:354`**
+- **`src/emgteach/gui/help_texts.py:355`**
   - EN: A raw amplitude cannot be compared between two people, or between two sessions of the same person: it depends on the electrodes, the skin and the fat beneath it. Expressing every value as a percentage of the maximal contraction cancels all of that out, because the two amplitudes share the same electrodes and the same skin: what is left is how hard the muscle is working. The maximum is inside the recording: the session calibrates without stopping, so nothing else has to be chosen here.
   - ES: Una amplitud bruta no se puede comparar entre dos personas, ni entre dos sesiones de la misma persona: depende de los electrodos, de la piel y de la grasa que hay debajo. Expresar cada valor como porcentaje de la contracción máxima cancela todo eso, porque las dos amplitudes comparten los mismos electrodos y la misma piel: lo que queda es cuánto está trabajando el músculo. El máximo está dentro del registro: la sesión calibra sin parar, así que aquí no hay nada más que elegir.
-- **`src/emgteach/gui/tabs/acquisition.py:304`**
+- **`src/emgteach/gui/tabs/acquisition.py:496`**
   - EN: This computer is not connected to any network, so the phones cannot reach it. Connect it to the network the phones use, or share this computer's own connection (Windows: Settings › Network & internet › Mobile hotspot) and connect the phones to that.
   - ES: Este equipo no está conectado a ninguna red, así que los móviles no pueden llegar a él. Conéctelo a la red que usan los móviles, o comparta la conexión del propio equipo (Windows: Configuración › Red e Internet › Zona con cobertura inalámbrica móvil) y conecte los móviles a ella.
-- **`src/emgteach/gui/tabs/acquisition.py:599`**
+- **`src/emgteach/gui/tabs/acquisition.py:837`**
   - EN: Error:
   - ES: Error:
-- **`src/emgteach/gui/tabs/acquisition.py:624`**
+- **`src/emgteach/gui/tabs/acquisition.py:862`**
   - EN: The event log could not be saved in {path}: {error}
   - ES: No se ha podido guardar el registro de eventos en {path}: {error}
-- **`src/emgteach/gui/tabs/acquisition.py:1038`**
+- **`src/emgteach/gui/tabs/acquisition.py:1309`**
   - EN: Live signal quality: saturation or a flat (disconnected) signal.
   - ES: Calidad de señal en vivo: saturación o señal plana (desconectada).
-- **`src/emgteach/gui/tabs/acquisition.py:1868`**
+- **`src/emgteach/gui/tabs/acquisition.py:2184`**
   - EN: The recording cannot be saved
   - ES: No se puede guardar el registro
-- **`src/emgteach/gui/tabs/acquisition.py:2122`**
+- **`src/emgteach/gui/tabs/acquisition.py:2459`**
   - EN: The session could not start the calibration on its own. Press «Calibrate MVC» when you are ready — the phases will be written just the same.
   - ES: La sesión no ha podido arrancar la calibración por su cuenta. Pulse «Calibrar CVM» cuando esté listo: las fases se escriben igual.
-- **`src/emgteach/gui/tabs/acquisition.py:2301`**
+- **`src/emgteach/gui/tabs/acquisition.py:2645`**
   - EN: The recording could not be shown for review: {err}
   - ES: No se pudo mostrar el registro para revisarlo: {err}
-- **`src/emgteach/gui/tabs/acquisition.py:2525`**
+- **`src/emgteach/gui/tabs/acquisition.py:2869`**
   - EN: No network: the phones cannot reach this computer.
   - ES: Sin red: los móviles no pueden llegar a este equipo.
-- **`src/emgteach/gui/tabs/acquisition.py:3161`**
+- **`src/emgteach/gui/tabs/acquisition.py:3561`**
   - EN: ⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.
   - ES: ⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.
-- **`src/emgteach/gui/tabs/acquisition.py:3441`**
+- **`src/emgteach/gui/tabs/acquisition.py:4168`**
   - EN: {muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: {muscles}: esto no es un máximo. Calibre de nuevo con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/gui/tabs/acquisition.py:3462`**
+- **`src/emgteach/gui/tabs/acquisition.py:4189`**
   - EN: Channels not separated
   - ES: Canales sin separar
-- **`src/emgteach/gui/tabs/acquisition.py:3474`**
+- **`src/emgteach/gui/tabs/acquisition.py:4201`**
   - EN: Calibration failed (no signal).
   - ES: Calibración fallida (sin señal).
-- **`src/emgteach/gui/tabs/acquisition.py:3476`**
+- **`src/emgteach/gui/tabs/acquisition.py:4203`**
   - EN: Calibration failed
   - ES: Calibración fallida
 - **`src/emgteach/gui/tabs/analysis.py:475`**
@@ -1189,58 +1193,58 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/tabs/analysis.py:885`**
   - EN: Highest point of the task's envelope, as % of the maximal contraction, read on the whole recording phase — from the start of the recording to the end of the file — whatever fragments are chosen: a maximum of the phase, not of the selection. Well above 100 % means the calibration was not a maximum.
   - ES: Punto más alto de la envolvente durante la tarea, en % de la contracción máxima, leído sobre la fase de registro entera —del inicio del registro al final del archivo—, se elijan los fragmentos que se elijan: es un máximo de la fase, no de la selección. Muy por encima del 100 % significa que la calibración no fue un máximo.
-- **`src/emgteach/gui/tabs/analysis.py:1354`**
+- **`src/emgteach/gui/tabs/analysis.py:1358`**
   - EN: Could not open the fragment editor: {error}
   - ES: No se pudo abrir el editor de fragmentos: {error}
-- **`src/emgteach/gui/tabs/analysis.py:1425`**
+- **`src/emgteach/gui/tabs/analysis.py:1429`**
   - EN: Next: «{button}». It decides which maximal efforts set the reference, and every % MVC below is measured against it — so it goes before choosing the fragments.
   - ES: Siguiente: «{button}». Decide qué esfuerzos máximos fijan la referencia, y todos los % CVM de abajo se miden contra ella, así que va antes de elegir los fragmentos.
-- **`src/emgteach/gui/tabs/analysis.py:1546`**
+- **`src/emgteach/gui/tabs/analysis.py:1568`**
   - EN: This recording carries no calibration. Only sessions recorded with the guided flow mark their maximal efforts.
   - ES: Este registro no trae calibración. Solo las sesiones grabadas con el flujo guiado marcan sus esfuerzos máximos.
-- **`src/emgteach/gui/tabs/analysis.py:1564`**
+- **`src/emgteach/gui/tabs/analysis.py:1586`**
   - EN: This recording carries no calibration spans, so the repetition list stays off. Only sessions recorded with the guided flow have them.
   - ES: Este registro no trae tramos de calibración, así que la lista de repeticiones queda apagada. Solo las sesiones grabadas con el flujo guiado los llevan.
-- **`src/emgteach/gui/tabs/analysis.py:1832`**
+- **`src/emgteach/gui/tabs/analysis.py:1854`**
   - EN: Whole recording: with no named windows this number does not measure anything. Open «{button}» and accept what it proposes.
   - ES: Registro completo: sin ventanas con nombre este número no mide nada. Abra «{button}» y acepte lo que propone.
-- **`src/emgteach/gui/tabs/analysis.py:2126`**
+- **`src/emgteach/gui/tabs/analysis.py:2150`**
   - EN: The report for the phones could not be made: {error}
   - ES: No se ha podido preparar el informe para los móviles: {error}
-- **`src/emgteach/gui/tabs/analysis.py:2164`**
+- **`src/emgteach/gui/tabs/analysis.py:2188`**
   - EN: Not conclusive (trend does not fit, R²={r2:.2f})
   - ES: No concluyente (la tendencia no ajusta, R²={r2:.2f})
-- **`src/emgteach/gui/tabs/analysis.py:2193`**
+- **`src/emgteach/gui/tabs/analysis.py:2217`**
   - EN: not a maximum
   - ES: no fue un máximo
-- **`src/emgteach/gui/tabs/analysis.py:2197`**
+- **`src/emgteach/gui/tabs/analysis.py:2221`**
   - EN: The task went well past the reference: the calibration did not capture a maximum, so every % MVC here is too high in the same proportion. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: La tarea superó con mucho la referencia: la calibración no recogió un máximo, así que todos los % CVM de aquí están inflados en la misma proporción. Vuelva a calibrar con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/gui/tabs/analysis.py:2264`**
+- **`src/emgteach/gui/tabs/analysis.py:2288`**
   - EN: Could not open the force-velocity study: {error}
   - ES: No se pudo abrir el estudio fuerza-velocidad: {error}
-- **`src/emgteach/gui/tabs/analysis.py:2301`**
+- **`src/emgteach/gui/tabs/analysis.py:2332`**
   - EN: Channel «{ch}»: flat — no signal (electrode not connected?).
   - ES: Canal «{ch}»: plano — sin señal (¿electrodo sin conectar?).
-- **`src/emgteach/gui/tabs/analysis.py:2306`**
+- **`src/emgteach/gui/tabs/analysis.py:2337`**
   - EN: Channel «{ch}»: saturated — the trace is pinned at the rails (check the electrode contact or the gain).
   - ES: Canal «{ch}»: saturado — la traza está pegada al tope (conviene revisar el contacto del electrodo o la ganancia).
-- **`src/emgteach/gui/tabs/analysis.py:2313`**
+- **`src/emgteach/gui/tabs/analysis.py:2344`**
   - EN: Channel «{ch}»: weak signal (low amplitude).
   - ES: Canal «{ch}»: señal débil (amplitud baja).
-- **`src/emgteach/gui/tabs/analysis.py:2441`**
+- **`src/emgteach/gui/tabs/analysis.py:2472`**
   - EN: Filtered EMG (20-450 Hz)
   - ES: EMG filtrado (20-450 Hz)
-- **`src/emgteach/gui/tabs/analysis.py:2747`**
+- **`src/emgteach/gui/tabs/analysis.py:2778`**
   - EN: The tuned recording cannot replace the one it comes from: tuning discards signal, so its source has to stay.
   - ES: El registro afinado no puede sustituir a aquel del que sale: afinar descarta señal, así que su origen tiene que quedarse.
-- **`src/emgteach/gui/tabs/analysis.py:2799`**
+- **`src/emgteach/gui/tabs/analysis.py:2830`**
   - EN: CSV export error: {error}
   - ES: Error al exportar CSV: {error}
-- **`src/emgteach/gui/tabs/analysis.py:2949`**
+- **`src/emgteach/gui/tabs/analysis.py:2980`**
   - EN: Error generating the PDF report: {error}
   - ES: Error al generar el informe PDF: {error}
-- **`src/emgteach/gui/tabs/analysis.py:3296`**
+- **`src/emgteach/gui/tabs/analysis.py:3327`**
   - EN: The recording does not match the mode
   - ES: El registro no concuerda con el modo
 - **`src/emgteach/gui/tabs/mvc.py:420`**
@@ -1258,19 +1262,19 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/tabs/mvc.py:1233`**
   - EN: 2. Envelope (no calibration in this recording)
   - ES: 2. Envolvente (este registro no trae calibración)
-- **`src/emgteach/gui/tour.py:128`**
+- **`src/emgteach/gui/tour.py:130`**
   - EN: Press record. The session asks first for a maximal contraction — the reference every measurement is expressed against — and then for the task. Both go into one file, so nothing has to be matched up afterwards. Watch the live trace: at rest it should be a flat line with only baseline noise. A signal that never returns to baseline usually means a loose electrode, not a tonic muscle. Each contraction onset is marked on its own.
   - ES: Pulse grabar. La sesión pide primero una contracción máxima (la referencia respecto a la que se expresa cada medida) y después la tarea. Las dos van a un solo archivo, así que no hay que emparejar nada después. Observe el trazo en directo: en reposo debe ser una línea plana con solo el ruido basal. Una señal que nunca vuelve a la línea base suele ser un electrodo suelto, no un músculo tónico. El inicio de cada contracción se marca solo.
-- **`src/emgteach/gui/tour.py:177`**
+- **`src/emgteach/gui/tour.py:179`**
   - EN: The recording is analysed as soon as it is opened. Both muscles were calibrated while recording, so the two envelopes are overlaid in % MVC — the only form in which two different muscles compare at all, since each one's millivolts depend on its own electrodes and skin. In a clean movement the agonist activates while the antagonist stays nearly silent; simultaneous activation is co-activation, which holds the joint rigid and is typical of an unpractised or uncertain movement. The table below the panels gives one row per contraction, and which muscle led it.
   - ES: El registro se analiza en cuanto se abre. Los dos músculos se calibraron al grabar, así que las dos envolventes se superponen en % CVM, la única forma en que dos músculos distintos se pueden comparar, porque los milivoltios de cada uno dependen de sus electrodos y de su piel. En un movimiento limpio el agonista se activa mientras el antagonista queda casi en silencio; la activación simultánea es coactivación, que deja rígida la articulación y es típica de un movimiento poco practicado o inseguro. La tabla bajo los paneles da una fila por contracción, y qué músculo la lideró.
 - **`src/emgteach/gui/widgets/calibration_reps.py:187`**
   - EN: Keep at least one repetition: a channel with none is not a calibration with a smaller reference, it is no calibration.
   - ES: Conserve al menos una repetición: un canal sin ninguna no es una calibración con una referencia menor, es no haber calibrado.
-- **`src/emgteach/gui/widgets/force_velocity_dialog.py:181`**
+- **`src/emgteach/gui/widgets/force_velocity_dialog.py:188`**
   - EN: ⚠ The accelerometer barely moved (flat / pinned at a rail), so the velocities are ~0. Put it on the moving segment, oriented so its resting value sits mid-range (not at ±1 g), and lift quickly.
   - ES: ⚠ El acelerómetro apenas se movió (plano / pegado a un extremo), así que las velocidades son ~0. Colocarlo en el segmento móvil, orientado para que en reposo quede a media escala (no en ±1 g), y levantar rápido.
-- **`src/emgteach/gui/widgets/force_velocity_dialog.py:338`**
+- **`src/emgteach/gui/widgets/force_velocity_dialog.py:367`**
   - EN: No velocity — accelerometer flat
 (see the warning)
   - ES: Sin velocidad — acelerómetro plano
@@ -1281,13 +1285,13 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/widgets/force_velocity_plan_dialog.py:108`**
   - EN: Contractions to perform at each load. The wizard prompts one at a time; keep it low (1-3) so fatigue does not bias the heavier loads.
   - ES: Contracciones a realizar en cada carga. El asistente las pide de una en una; manténgalo bajo (1-3) para que la fatiga no sesgue las cargas más pesadas.
-- **`src/emgteach/gui/widgets/fragment_selection.py:1418`**
+- **`src/emgteach/gui/widgets/fragment_selection.py:1471`**
   - EN: The count does not match ({detail}). Move the sensitivity until it does, or as close as it gets; what is left is put right in step 2. Then press ▶.
   - ES: El recuento no coincide ({detail}). Mueva la sensibilidad hasta que coincida, o hasta lo más cerca posible; lo que quede se corrige en el paso 2. Después pulse ▶.
-- **`src/emgteach/gui/widgets/fragment_selection.py:1444`**
+- **`src/emgteach/gui/widgets/fragment_selection.py:1497`**
   - EN: The count does not match yet ({detail}): look for what is missing among the dotted stretches, or drop what is left over.
   - ES: El recuento aún no coincide ({detail}): busque lo que falta entre los tramos punteados, o elimine lo que sobra.
-- **`src/emgteach/gui/widgets/fragment_selection.py:1531`**
+- **`src/emgteach/gui/widgets/fragment_selection.py:1584`**
   - EN: below the threshold: click to add
   - ES: bajo el umbral: pulse para añadir
 - **`src/emgteach/gui/widgets/fv_rehearsal_dialog.py:88`**
@@ -1302,52 +1306,52 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/recovery.py:101`**
   - EN: {path} does not have a readable EDF header.
   - ES: {path} no tiene una cabecera EDF legible.
-- **`src/emgteach/reports.py:140`**
+- **`src/emgteach/reports.py:141`**
   - EN: Not conclusive — the trend does not fit ({slope:+.2f} Hz/s, R²={r2:.2f}). Fatigue needs a contraction held long enough for the trend to show.
   - ES: No concluyente: la tendencia no ajusta ({slope:+.2f} Hz/s, R²={r2:.2f}). La fatiga necesita una contracción mantenida el tiempo suficiente para que la tendencia se vea.
-- **`src/emgteach/reports.py:221`**
+- **`src/emgteach/reports.py:222`**
   - EN: Filtered (20-450 Hz)
   - ES: Filtrado (20-450 Hz)
-- **`src/emgteach/reports.py:576`**
+- **`src/emgteach/reports.py:577`**
   - EN: The task exceeds the reference by a wide margin: the calibration did not capture a maximum, so every percentage in this report is too high in the same proportion. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: La tarea supera la referencia con mucho margen: la calibración no recogió un máximo, así que todos los porcentajes de este informe están inflados en la misma proporción. Vuelva a calibrar con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/reports.py:829`**
+- **`src/emgteach/reports.py:832`**
   - EN: Notch (mains)
   - ES: Notch (red eléctrica)
-- **`src/emgteach/tuning.py:350`**
+- **`src/emgteach/tuning.py:344`**
   - EN: the recording has no recording phase (no «REC start», no calibration and no load marks): there is nothing to tune
   - ES: el registro no tiene fase de registro (ni «REC start», ni calibración, ni marcas de carga): no hay nada que afinar
 - **`src/emgteach/workers/acquisition.py:53`**
   - EN: The recording «{name}» could not be saved in the folder {folder} ({reason}). Choose another folder — Documents, for example — or another name, and press record again.
   - ES: El registro «{name}» no se ha podido guardar en la carpeta {folder} ({reason}). Elija otra carpeta —Documentos, por ejemplo— u otro nombre, y vuelva a pulsar grabar.
-- **`src/emgteach/workers/acquisition.py:466`**
+- **`src/emgteach/workers/acquisition.py:488`**
   - EN: Connection to {name} lost: {error}
   - ES: Conexión con {name} perdida: {error}
-- **`src/emgteach/workers/acquisition.py:569`**
+- **`src/emgteach/workers/acquisition.py:591`**
   - EN: Warning — annotation error: {error}
   - ES: Aviso — error de anotación: {error}
-- **`src/emgteach/workers/acquisition.py:574`**
+- **`src/emgteach/workers/acquisition.py:596`**
   - EN: Warning — EDF close error: {error}
   - ES: Aviso — error al cerrar el EDF: {error}
-- **`src/emgteach/workers/analysis.py:409`**
+- **`src/emgteach/workers/analysis.py:405`**
   - EN: The selected fragments total {t:.2f} s, below the 1 s minimum required for analysis.
   - ES: Los fragmentos seleccionados suman {t:.2f} s, por debajo del mínimo de 1 s requerido para el análisis.
-- **`src/emgteach/workers/analysis.py:689`**
+- **`src/emgteach/workers/analysis.py:686`**
   - EN: MDF trend fitted over {n} of {total} segments (the rest were below the contraction threshold).
   - ES: Tendencia de MDF ajustada sobre {n} de {total} segmentos (el resto quedaba por debajo del umbral de contracción).
-- **`src/emgteach/workers/analysis.py:1071`**
+- **`src/emgteach/workers/analysis.py:1068`**
   - EN: not reported — no MVC reference for one of the channels
   - ES: no se informa — falta la referencia de CVM en uno de los canales
-- **`src/emgteach/workers/analysis.py:1085`**
+- **`src/emgteach/workers/analysis.py:1082`**
   - EN: ⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.
   - ES: ⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.
-- **`src/emgteach/workers/analysis.py:1093`**
+- **`src/emgteach/workers/analysis.py:1090`**
   - EN: No contraction detected in «{name}»: it never left its baseline.
   - ES: No se detecta contracción en «{name}»: no sale de su línea base.
-- **`src/emgteach/workers/analysis.py:1149`**
+- **`src/emgteach/workers/analysis.py:1146`**
   - EN: ⚠ «{name}» reaches {peak:.0f} % MVC, and spends {share:.0f} % of the recording above {limit:.0f} %. The calibration did not capture a maximum — the task beat it — so every percentage here is too high.
   - ES: ⚠ «{name}» llega al {peak:.0f} % de la CVM, y pasa el {share:.0f} % del registro por encima del {limit:.0f} %. La calibración no capturó un máximo —la tarea lo superó—, así que todos los porcentajes de aquí salen inflados.
-- **`src/emgteach/workers/analysis.py:1268`**
+- **`src/emgteach/workers/analysis.py:1265`**
   - EN: The contraction table could not be built: {err}
   - ES: No se pudo construir la tabla de contracciones: {err}
 - **`src/emgteach/workers/mvc.py:282`**
