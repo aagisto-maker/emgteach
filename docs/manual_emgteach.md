@@ -117,6 +117,11 @@ the practicals (flexor and extensor carpi radialis), measured from the bony
 landmarks, is described in
 [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md).
 
+![Where the muscles are and where the electrodes go](electrodos_antebrazo_en.png)
+
+Channel 1 at 5 cm from the medial epicondyle, channel 2 at 5 cm from the
+lateral epicondyle, one reference on the olecranon.
+
 ### 2.3 One or two channels (agonist / antagonist)
 
 Two channels are for **agonist/antagonist pairs**: co-activation and coordination.

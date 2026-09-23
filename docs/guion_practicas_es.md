@@ -91,6 +91,11 @@ es fácil cometer, está en
 [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md).
 La práctica 3 usa el bíceps braquial, con el acelerómetro en la muñeca.
 
+![Dónde están los músculos y dónde van los electrodos](electrodos_antebrazo_es.png)
+
+Canal 1 a 5 cm de la epitróclea, canal 2 a 5 cm del epicóndilo lateral, y una
+referencia sobre el olécranon.
+
 ### 2 · Conectar
 
 Pestaña **Adquisición**, caja **Configuración del dispositivo**:

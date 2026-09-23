@@ -9,10 +9,11 @@ made without text or electrodes; the muscle bellies, the landmarks and the
 electrode positions are the author's, taken as they are from the construction
 of the article's Figure 1:
 
-* flexor carpi radialis: medial epicondyle to the base of the second
-  metacarpal; electrodes on the belly, 5 cm from the epicondyle;
-* extensor carpi radialis: lateral epicondyle towards the ulnar styloid;
-  electrodes a quarter of the way down that line;
+* each pair on its muscle's belly, **5 cm from the epicondyle of its own
+  side** — the medial one for the flexor, the lateral one for the extensor;
+  the styloid processes are not used, and the extensor's pair sat a quarter
+  of the way to the ulnar styloid until 23 September 2026, about 1.4 cm
+  higher than it is placed at the bench;
 * the reference over the olecranon, one for both channels — on the ulnar
   styloid until 21 September 2026, when the bench showed a second reference
   changes nothing and the olecranon is where the recording behind the
@@ -76,7 +77,8 @@ CM_PX = (Y_MUNECA - Y_CODO) / 25.0
 FCR = [(184, 236), (158, 300), (130, 372), (106, 448), (88, 542)]
 ECR = [(482, 216), (470, 286), (462, 356), (464, 436), (470, 528)]
 EPITROCLEA, EPICONDILO = (184, 236), (480, 230)
-ESTILOIDES_CUBITO = (409, Y_MUNECA + 4)
+#: How far down the belly each pair sits, from its own epicondyle.
+DESDE_EPICONDILO_CM = 5.0
 #: The point of the elbow seen from behind, between the epicondyles and nearer
 #: the medial one: the rounded prominence of the posterior arm of the base.
 OLECRANON = (400, 200)
@@ -95,23 +97,24 @@ def curva(ctrl, n=160):
     return np.polyval(cx, tt), np.polyval(cy, tt), tt
 
 
-def punto_fcr():
-    """Electrode centre on the FCR belly, 5 cm from the epicondyle."""
-    xs, ys, _ = curva(FCR)
-    i = int(np.argmin(np.abs(np.hypot(xs - EPITROCLEA[0], ys - EPITROCLEA[1]) - cm(5.0))))
+def _punto(ctrl, origen):
+    """Electrode centre on a belly, 5 cm from its own epicondyle."""
+    xs, ys, _ = curva(ctrl)
+    i = int(np.argmin(np.abs(np.hypot(xs - origen[0], ys - origen[1])
+                             - cm(DESDE_EPICONDILO_CM))))
     ang = np.degrees(np.arctan2(xs[i + 3] - xs[i - 3], -(ys[i + 3] - ys[i - 3])))
     return xs[i], ys[i], ang
 
 
+def punto_fcr():
+    """The flexor's pair, measured from the medial epicondyle."""
+    return _punto(FCR, EPITROCLEA)
+
+
 def punto_ecr():
-    """Electrode centre on the ECR belly, a quarter of the way from the
-    lateral epicondyle to the ulnar styloid."""
-    xs, ys, _ = curva(ECR)
-    xq = EPICONDILO[0] + 0.25 * (ESTILOIDES_CUBITO[0] - EPICONDILO[0])
-    yq = Y_CODO + 0.25 * (Y_MUNECA - Y_CODO)
-    j = int(np.argmin(np.hypot(xs - xq, ys - yq)))
-    ang = np.degrees(np.arctan2(xs[j + 3] - xs[j - 3], -(ys[j + 3] - ys[j - 3])))
-    return xs[j], ys[j], ang
+    """The extensor's pair, measured from the lateral epicondyle, the same
+    way: the two channels are placed by one rule, not two."""
+    return _punto(ECR, EPICONDILO)
 
 
 class Lienzo:
@@ -260,15 +263,17 @@ def electrodos(idioma: str) -> Path:
     ax.plot([xr, xr - 10], [yr, yr + 17], color=HUESO, lw=1.0, zorder=8)
     ax.text(xr - 10, yr + 19, t["olecranon"], fontsize=8.2, color=HUESO,
             ha="center", va="bottom", zorder=9)
-    # The 5 cm that places the FCR pair, from the epicondyle.
-    xe, ye = lz.px(*EPITROCLEA)
-    xf, yf, _ = punto_fcr()
-    xn, yn = lz.px(xf, yf)
-    ax.annotate("", xy=(xn, yn), xytext=(xe, ye), zorder=7,
-                arrowprops=dict(arrowstyle="<->", color=MUS_1, lw=1.1,
-                                shrinkA=4, shrinkB=8))
-    ax.text((xe + xn) / 2 - 7, (ye + yn) / 2, "5 cm", fontsize=8.6,
-            fontweight="bold", color=MUS_1, ha="right", va="center", zorder=8)
+    # The 5 cm that places each pair, from the epicondyle of its own side.
+    for origen, punto, col, dx in ((EPITROCLEA, punto_fcr(), MUS_1, -7),
+                                   (EPICONDILO, punto_ecr(), MUS_2, 7)):
+        xe, ye = lz.px(*origen)
+        xn, yn = lz.px(punto[0], punto[1])
+        ax.annotate("", xy=(xn, yn), xytext=(xe, ye), zorder=7,
+                    arrowprops=dict(arrowstyle="<->", color=col, lw=1.1,
+                                    shrinkA=4, shrinkB=8))
+        ax.text((xe + xn) / 2 + dx, (ye + yn) / 2, "5 cm", fontsize=8.6,
+                fontweight="bold", color=col,
+                ha="right" if dx < 0 else "left", va="center", zorder=8)
     # Legend.
     ax.add_patch(FancyBboxPatch((8, 6), W - 16, 44,
                                 boxstyle="round,pad=0,rounding_size=5",
