@@ -1,7 +1,7 @@
 # Par agonista/antagonista del antebrazo: qué músculos y dónde exactamente
 
 Guía de banco para la práctica de coactivación. La figura que la acompaña es
-[`electrodos_antebrazo_es.svg`](electrodos_antebrazo_es.svg), generada por
+[`electrodos_antebrazo_es.png`](electrodos_antebrazo_es.png), generada por
 `tools/generar_electrodos.py`.
 
 ---
@@ -39,19 +39,20 @@ del antebrazo, y ya están en las prácticas 1, 2, 4 y 5.
 
 ## 2. Dónde exactamente
 
+![Dónde están los músculos y dónde van los electrodos](electrodos_antebrazo_es.png)
+
 El principio: **medir desde un relieve óseo**, no «sobre el vientre muscular».
-Los epicóndilos y las estiloides se palpan en cualquier persona; el vientre
-muscular no tiene bordes evidentes a través de la piel.
+Los epicóndilos y el olécranon se palpan en cualquier persona; el vientre
+muscular no tiene bordes evidentes a través de la piel. Los dos pares se miden
+igual: **desde el epicóndilo de su lado**.
 
 ### Canal 1 · flexor radial del carpo
 
 1. Palpe el **epicóndilo medial** (el saliente óseo del lado interno del codo,
    el del «hueso de la risa»).
-2. Palpe la **estiloides radial** (el saliente del lado del pulgar, en la
-   muñeca).
-3. Trace mentalmente la línea entre ambos y coloque el par a **un tercio de esa
-   línea desde el epicóndilo** — en un antebrazo adulto, unos **5–7 cm** distal
-   al epicóndilo medial.
+2. Coloque el par sobre el vientre del flexor radial del carpo, a unos **5 cm
+   distal al epicóndilo medial**, en la dirección de la base del segundo
+   metacarpiano.
 
 **Comprobación antes de pegar:** pida flexión de muñeca contra resistencia. El
 vientre se endurece bajo los dedos. Su tendón se marca en la muñeca, justo por
@@ -60,9 +61,8 @@ fuera (radial) del palmar largo cuando existe.
 ### Canal 2 · extensores radiales del carpo
 
 1. Palpe el **epicóndilo lateral** (saliente del lado del pulgar, en el codo).
-2. Tome como referencia distal el **centro del dorso de la muñeca**.
-3. Coloque el par a **un tercio de esa línea desde el epicóndilo** — unos
-   **5 cm** distal al epicóndilo lateral, en la cara dorsorradial.
+2. Coloque el par a unos **5 cm distal al epicóndilo lateral**, en la cara
+   dorsorradial.
 
 **Comprobación antes de pegar:** pida extensión de muñeca con el puño cerrado y
 el antebrazo en pronación. El relieve aparece justo distal al epicóndilo.

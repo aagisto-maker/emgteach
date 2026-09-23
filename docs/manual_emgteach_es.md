@@ -129,8 +129,10 @@ de dispositivo en la pestaña de Adquisición).
   [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md).
 - Piel limpia para reducir la impedancia y los artefactos.
 
-[Figura sugerida: foto/ilustración de la colocación de electrodos en un músculo
-(p. ej. bíceps braquial) con etiquetas de electrodo activo / referencia.]
+![Dónde están los músculos y dónde van los electrodos](electrodos_antebrazo_es.png)
+
+Canal 1 a 5 cm de la epitróclea, canal 2 a 5 cm del epicóndilo lateral, y una
+referencia sobre el olécranon.
 
 ### 2.3 Uno o dos canales (agonista / antagonista)
 

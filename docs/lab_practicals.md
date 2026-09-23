@@ -94,6 +94,11 @@ make, is in [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_ante
 (Spanish). Practical 3 uses the biceps brachii, with the accelerometer on the
 wrist.
 
+![Where the muscles are and where the electrodes go](electrodos_antebrazo_en.png)
+
+Channel 1 at 5 cm from the medial epicondyle, channel 2 at 5 cm from the
+lateral epicondyle, one reference on the olecranon.
+
 ### 2 · Connect
 
 **Acquisition** tab, **Device configuration** box:

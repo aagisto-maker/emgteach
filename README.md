@@ -276,3 +276,8 @@ requirements, wrote the functional specifications, selected the signal-processin
 published literature, reviewed every change and validated the application on hardware.
 The specifications that guided development are in `docs/` (files named `ESPEC-*.md`),
 and the automated test suite is part of the repository.
+
+The anatomical base of the electrode-placement figure and of the guided tour's pictures
+(`tools/recorrido/base_brazos_v2.png`) is an AI-generated image of two forearms, made
+without text or electrodes; the muscles, electrodes and labels are drawn over it by the
+figure script, to a scale measured on the image itself.
