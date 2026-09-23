@@ -81,7 +81,7 @@ limits.
 | **Peak (% MVC)** | the effort against its own maximum | task 20–80 % · > 150 % = the calibration was not maximal |
 | **MNF / MDF** | mean / median frequency of the spectrum | 80–170 / 60–150 Hz |
 | **MDF ↓ over time** | **fatigue** (a negative slope that fits, R² ≥ 0.30) | «not conclusive» = the recording does not answer |
-| **Co-activation index** | activity shared by the two muscles | reciprocal: «not reported» · grip: high |
+| **Co-activation index** | activity shared by the two muscles | reciprocal: «not reported» or low · grip: clearly higher |
 | **Channel separation** | what one channel reads of the other muscle at its maximum | ≤ 25 % fine · > 50 % «not separated» |
 | **P10 · P50 · P90** | static · median · peak load (Jonsson) | ≤ 5 · 14 · 70 % MVC |
 | **EMD** | from the electrical signal to the movement | 30–100 ms |
@@ -94,7 +94,8 @@ limits.
   jerk per effort, fist clenched for the flexor, hand open for the extensor.
 - **The co-activation table says «not reported»** → in a clean flexion or
   extension that is correct; a **grip** is needed for a number.
-- **The grip does not co-activate** → the wrist is resting on the table. It has to
+- **The grip does not co-activate** → it was made with the fist closed on
+  nothing: **squeeze the ball**. Or the wrist is resting on the table. It has to
   be **in the air, beyond the edge**: resting, the table stabilises and the
   extensor relaxes. And never ask for «extend the wrist»: the extensors come in on
   their own.

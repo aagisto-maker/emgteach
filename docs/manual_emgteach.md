@@ -634,9 +634,9 @@ and it has an immediate clinical reading.
 
 | Manoeuvre | What the two muscles do | What the index gives |
 |---|---|---|
-| Flexions | the flexor works; the extensor stays under the 4.5 % floor | not reported |
-| Extensions | the roles swap | not reported |
-| Grip | both work at once | a high number, of the order of 60–95 % |
+| Flexions | the flexor works; the extensor little or not at all | «not reported», or a low index (around 30 %) if the extensor passes the 4.5 % floor |
+| Extensions | the roles swap | the same |
+| Grip, squeezing a ball | both work at once | clearly higher than in the reciprocal manoeuvres |
 | Fast alternation | both work, but by turns | a low number |
 
 > **Where these limits come from.** The 4.5 % floor, the channel-separation
@@ -698,7 +698,7 @@ fault.
 | Task effort | 20–80 % MVC | typical submaximal efforts |
 | Task maximum with a sound calibration | 90–125 % MVC | emgteach recorded sessions; red warning from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 % MVC; finger extensor during wrist flexion at 75 % ≈ 15 % |
-| Co-activation index | reciprocal: «not reported»; firm grip: 60–95 % | Falconer and Winter (1985); Ervilha (2012) on voluntary co-activation |
+| Co-activation index | reciprocal: «not reported», or low (≈ 30 %); firm grip on a ball: clearly higher (55 % on the bench) | Falconer and Winter (1985); Ervilha (2012) on voluntary co-activation |
 | Channel separation | ≤ 20–25 % of its own reference | emgteach recordings with well-placed electrodes |
 | Static, median, peak load | ≤ 2–5, 10–14, 50–70 % MVC (the application: 5, 14, 70) | Jonsson (1978, 1982) |
 | Electromechanical delay | 30–100 ms; voluntary 35–80 | Cavanagh and Komi (1979): biceps 41 ± 13 ms, triceps 26 ± 11 ms |

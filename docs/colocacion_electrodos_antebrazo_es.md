@@ -227,8 +227,8 @@ El orden importa, porque la aplicación depende de él.
 > referencia no cambia: sale de la anotación, esté donde esté en el fichero.
 
 Lo que debe salir: flexión y extensión con **«no se informa»** —no hay
-coactivación que medir en un movimiento recíproco— y la presa con un índice
-alto. Que las dos primeras filas no den número **es parte de la demostración**.
+coactivación que medir en un movimiento recíproco— o, si el antagonista pasa del
+suelo, con un índice bajo; y la presa, apretando la pelota, claramente más alta. Que las dos primeras filas no den número **es parte de la demostración**.
 
 > **La última ventana se cierra donde acaba el esfuerzo, no donde se paró el
 > registro.** Cada ventana marcada la cierra la marca siguiente; la última no

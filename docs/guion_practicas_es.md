@@ -460,10 +460,13 @@ por extender la muñeca.
      arriba, y **la muñeca fuera del borde, en el aire**. Si la muñeca descansa
      sobre la mesa, el tablero hace de estabilizador, el extensor afloja y la
      maniobra no mide nada.
-   - Apretar algo que no se deforme y dé una postura repetible: un manguito de
-     tensión enrollado, una pelota de tenis o una toalla apretada. Con
-     dinamómetro de mano, mejor, porque además cuantifica el esfuerzo.
-   - «Cierre el puño con fuerza y manténgalo» **8 s**, firme pero submáximo,
+   - **Apretar una pelota de tenis**, que es lo que nombra la pantalla; si
+     no hay, algo que no se deforme y dé una postura repetible, como un
+     manguito de tensión enrollado o una toalla apretada. Con dinamómetro de
+     mano, mejor, porque además cuantifica el esfuerzo. **Con el puño cerrado
+     en vacío no sale**: sin nada que apretar, el extensor apenas se activa
+     (en el banco, un 4 % de su referencia) y la presa no da índice.
+   - «Apriete la pelota con fuerza y manténgala» **8 s**, firme pero submáximo,
      guiándose por la barra de carga hacia el 50–60 %. **Nunca «extienda la
      muñeca»**: los extensores tienen que entrar solos. La aplicación guía esos
      ocho segundos con su reloj y enseña las dos barras de carga dentro del
@@ -494,12 +497,18 @@ una progresión; conviene leerla entera antes de responder:
 
 | Maniobra | Qué hacen los dos músculos | Qué da el índice |
 |---|---|---|
-| Flexiones | trabaja el FCR; el ECR no llega al suelo del 4.5 % | no se informa |
-| Extensiones | los papeles se intercambian | no se informa |
-| Presa | los dos trabajan a la vez | número alto, del orden del 60–95 % |
+| Flexiones | trabaja el FCR; el ECR, poco o nada | «no se informa» si el ECR no llega al suelo del 4.5 %; si lo pasa, un índice bajo, en torno al 30 % |
+| Extensiones | los papeles se intercambian | lo mismo: «no se informa» o en torno al 30 % |
+| Presa | los dos trabajan a la vez | claramente más alto que en las maniobras recíprocas |
 | Alternancia rápida (2b) | los dos trabajan, pero por turnos | número bajo |
 
-La presa es la única maniobra de este montaje que produce un número, y la
+**Un 30 % en las flexiones no es un error.** Quiere decir que el ECR pasó del
+suelo del 4.5 % mientras el FCR trabajaba, lo que depende de cuánto estabilice
+cada persona la muñeca; en el banco, la misma persona dio «no se informa» en una
+sesión y 30 % en otra. Lo que no cambia es el orden: la presa sale claramente
+por encima (55 % en el banco apretando la pelota).
+
+La presa es la única maniobra de este montaje que da siempre un número, y la
 comparación con la alternancia rápida del ejercicio 2b es la que cierra el
 argumento: en las dos trabajan los dos músculos, pero solo en la presa trabajan **a
 la vez**, que es lo que el índice mide. La coactivación es una propiedad de la
@@ -507,7 +516,8 @@ tarea, no del músculo.
 
 **Cuestiones.**
 - En las flexiones, ¿qué hace el ECR? Si su fila dice «no se informa», ¿por qué es
-  eso la respuesta correcta y no un fallo?
+  eso la respuesta correcta y no un fallo? Y si da un número bajo, ¿qué dice de
+  cómo se sostuvo la muñeca?
 - Durante la presa, ¿quién trabaja? Explique por qué los extensores de la muñeca
   se contraen con fuerza al cerrar la mano aunque nadie extienda nada, y qué tiene
   que ver con la epicondilitis lateral.
@@ -625,7 +635,10 @@ y el EMG la activación.
 2. La caja **«Estudio fuerza-velocidad»** trae los dos primeros pasos de la
    secuencia. **«Parámetros de la F-V…»** pide el **plan** (las cargas en
    orden, cuántos levantamientos por carga —tres por defecto— y los segundos
-   de preparación y de levantamiento) y lo guarda; **«Ensayar…»**, a su lado,
+   de preparación y de levantamiento) y lo guarda. **El plan se guarda en
+   cada equipo**: al lado del botón se lee el último que se guardó ahí, que
+   no tiene por qué ser el de por defecto, así que conviene mirarlo antes de
+   empezar. **«Ensayar…»**, a su lado,
    recorre el procedimiento entero sin hardware, que es opcional y merece una
    pasada antes de que nadie sostenga un peso. Y **«Iniciar grabación»** lleva
    la sesión sola: pide el nombre del archivo, **calibra primero el máximo**
@@ -718,7 +731,7 @@ aparecen en gris bajo las fichas del resumen y en los «?» de las tablas.
 | Esfuerzo de tarea | 20–80 % CVM | un esfuerzo submáximo típico; > 100 % sostenido dice que la calibración no fue máxima |
 | Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones de banco con calibración correcta; la aplicación avisa en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 %; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
-| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa»; presa firme: 60–95 % | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4.5 % |
+| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa», o bajo (≈ 30 %) si el antagonista pasa del suelo; presa firme apretando la pelota: claramente más alto (55 % en el banco) | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4.5 % |
 | Separación entre canales (diafonía) | ≤ 20–25 % de la propia referencia | banco con electrodos bien situados; > 50 %, «canales sin separar» |
 | Carga estática (P10) | ≤ 2–5 % CVM (la aplicación usa 5) | Jonsson 1978, 1982 |
 | Carga mediana (P50) | ≤ 10–14 % CVM (la aplicación usa 14) | Jonsson 1978, 1982 |
