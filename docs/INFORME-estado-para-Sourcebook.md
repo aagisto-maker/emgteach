@@ -1043,7 +1043,7 @@ tendencia no ajusta, con su R².
 
 <<<AVISOS>>>
 
-Son **100** mensajes distintos. Se listan tal como están en el código, sin reordenar ni resumir.
+Son **101** mensajes distintos. Se listan tal como están en el código, sin reordenar ni resumir.
 
 - **`src/emgteach/charts.py:590`**
   - EN: not reported
@@ -1148,40 +1148,40 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/tabs/acquisition.py:496`**
   - EN: This computer is not connected to any network, so the phones cannot reach it. Connect it to the network the phones use, or share this computer's own connection (Windows: Settings › Network & internet › Mobile hotspot) and connect the phones to that.
   - ES: Este equipo no está conectado a ninguna red, así que los móviles no pueden llegar a él. Conéctelo a la red que usan los móviles, o comparta la conexión del propio equipo (Windows: Configuración › Red e Internet › Zona con cobertura inalámbrica móvil) y conecte los móviles a ella.
-- **`src/emgteach/gui/tabs/acquisition.py:837`**
+- **`src/emgteach/gui/tabs/acquisition.py:840`**
   - EN: Error:
   - ES: Error:
-- **`src/emgteach/gui/tabs/acquisition.py:862`**
+- **`src/emgteach/gui/tabs/acquisition.py:865`**
   - EN: The event log could not be saved in {path}: {error}
   - ES: No se ha podido guardar el registro de eventos en {path}: {error}
-- **`src/emgteach/gui/tabs/acquisition.py:1309`**
+- **`src/emgteach/gui/tabs/acquisition.py:1312`**
   - EN: Live signal quality: saturation or a flat (disconnected) signal.
   - ES: Calidad de señal en vivo: saturación o señal plana (desconectada).
-- **`src/emgteach/gui/tabs/acquisition.py:2184`**
+- **`src/emgteach/gui/tabs/acquisition.py:2190`**
   - EN: The recording cannot be saved
   - ES: No se puede guardar el registro
-- **`src/emgteach/gui/tabs/acquisition.py:2459`**
+- **`src/emgteach/gui/tabs/acquisition.py:2465`**
   - EN: The session could not start the calibration on its own. Press «Calibrate MVC» when you are ready — the phases will be written just the same.
   - ES: La sesión no ha podido arrancar la calibración por su cuenta. Pulse «Calibrar CVM» cuando esté listo: las fases se escriben igual.
-- **`src/emgteach/gui/tabs/acquisition.py:2645`**
+- **`src/emgteach/gui/tabs/acquisition.py:2651`**
   - EN: The recording could not be shown for review: {err}
   - ES: No se pudo mostrar el registro para revisarlo: {err}
-- **`src/emgteach/gui/tabs/acquisition.py:2869`**
+- **`src/emgteach/gui/tabs/acquisition.py:2875`**
   - EN: No network: the phones cannot reach this computer.
   - ES: Sin red: los móviles no pueden llegar a este equipo.
-- **`src/emgteach/gui/tabs/acquisition.py:3561`**
+- **`src/emgteach/gui/tabs/acquisition.py:3567`**
   - EN: ⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.
   - ES: ⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.
-- **`src/emgteach/gui/tabs/acquisition.py:4168`**
+- **`src/emgteach/gui/tabs/acquisition.py:4174`**
   - EN: {muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.
   - ES: {muscles}: esto no es un máximo. Calibre de nuevo con una sacudida breve y explosiva a la máxima potencia, no con un empuje sostenido contra algo fijo.
-- **`src/emgteach/gui/tabs/acquisition.py:4189`**
+- **`src/emgteach/gui/tabs/acquisition.py:4195`**
   - EN: Channels not separated
   - ES: Canales sin separar
-- **`src/emgteach/gui/tabs/acquisition.py:4201`**
+- **`src/emgteach/gui/tabs/acquisition.py:4207`**
   - EN: Calibration failed (no signal).
   - ES: Calibración fallida (sin señal).
-- **`src/emgteach/gui/tabs/acquisition.py:4203`**
+- **`src/emgteach/gui/tabs/acquisition.py:4209`**
   - EN: Calibration failed
   - ES: Calibración fallida
 - **`src/emgteach/gui/tabs/analysis.py:475`**
@@ -1285,13 +1285,13 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/gui/widgets/force_velocity_plan_dialog.py:108`**
   - EN: Contractions to perform at each load. The wizard prompts one at a time; keep it low (1-3) so fatigue does not bias the heavier loads.
   - ES: Contracciones a realizar en cada carga. El asistente las pide de una en una; manténgalo bajo (1-3) para que la fatiga no sesgue las cargas más pesadas.
-- **`src/emgteach/gui/widgets/fragment_selection.py:1471`**
+- **`src/emgteach/gui/widgets/fragment_selection.py:1600`**
   - EN: The count does not match ({detail}). Move the sensitivity until it does, or as close as it gets; what is left is put right in step 2. Then press ▶.
   - ES: El recuento no coincide ({detail}). Mueva la sensibilidad hasta que coincida, o hasta lo más cerca posible; lo que quede se corrige en el paso 2. Después pulse ▶.
-- **`src/emgteach/gui/widgets/fragment_selection.py:1497`**
+- **`src/emgteach/gui/widgets/fragment_selection.py:1626`**
   - EN: The count does not match yet ({detail}): look for what is missing among the dotted stretches, or drop what is left over.
   - ES: El recuento aún no coincide ({detail}): busque lo que falta entre los tramos punteados, o elimine lo que sobra.
-- **`src/emgteach/gui/widgets/fragment_selection.py:1584`**
+- **`src/emgteach/gui/widgets/fragment_selection.py:1719`**
   - EN: below the threshold: click to add
   - ES: bajo el umbral: pulse para añadir
 - **`src/emgteach/gui/widgets/fv_rehearsal_dialog.py:88`**
@@ -1327,10 +1327,13 @@ Envíe ese archivo, indicando qué estaba haciendo en ese momento.
 - **`src/emgteach/workers/acquisition.py:488`**
   - EN: Connection to {name} lost: {error}
   - ES: Conexión con {name} perdida: {error}
-- **`src/emgteach/workers/acquisition.py:591`**
+- **`src/emgteach/workers/acquisition.py:569`**
+  - EN: The abandoned connection attempt ended: {error}
+  - ES: Terminó el intento de conexión abandonado: {error}
+- **`src/emgteach/workers/acquisition.py:598`**
   - EN: Warning — annotation error: {error}
   - ES: Aviso — error de anotación: {error}
-- **`src/emgteach/workers/acquisition.py:596`**
+- **`src/emgteach/workers/acquisition.py:603`**
   - EN: Warning — EDF close error: {error}
   - ES: Aviso — error al cerrar el EDF: {error}
 - **`src/emgteach/workers/analysis.py:405`**
