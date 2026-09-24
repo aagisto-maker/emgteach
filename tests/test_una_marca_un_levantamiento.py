@@ -140,24 +140,34 @@ class TestTheEditorProposesOneRowPerLift:
         from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
         from emgteach.selection import Segment
 
-        dlg = FragmentSelectionDialog(_senal([]), FS, FILTROS, naming=False,
+        raw = _senal([(48.16, 49.42), (49.80, 50.30), (54.90, 56.10)])
+        dlg = FragmentSelectionDialog(raw, FS, FILTROS, naming=False,
                                       lifts=lift_windows_s(CUES[:2], 100.0))
         trozos = [Segment(48.16, 48.64), Segment(48.65, 49.42),
                   Segment(49.80, 50.30),          # a separate burst: not joined
                   Segment(54.90, 56.10)]
-        filas = [(f.start_s, f.end_s) for f in dlg._por_levantamiento(trozos)]
-        assert filas == pytest.approx([(48.16, 49.42), (54.90, 56.10)])
+        (a1, b1), (a2, b2) = [(f.start_s, f.end_s)
+                              for f in dlg._por_levantamiento(trozos)]
+        # The joined lift, to its envelope: the whole 48.16-49.42 s burst, and
+        # never the separate one that starts at 49.80.
+        assert a1 == pytest.approx(48.16, abs=0.15)
+        assert 49.30 < b1 < 49.80
+        assert a2 == pytest.approx(54.90, abs=0.15) and b2 == pytest.approx(56.10, abs=0.25)
         dlg.deleteLater()
 
     def test_the_join_never_takes_another_cues_lift(self, qapp) -> None:
         from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
         from emgteach.selection import Segment
 
-        dlg = FragmentSelectionDialog(_senal([]), FS, FILTROS, naming=False,
+        raw = _senal([(10.2, 11.45), (11.5, 12.4)])
+        dlg = FragmentSelectionDialog(raw, FS, FILTROS, naming=False,
                                       lifts=[(10.0, 11.5), (11.5, 17.0)])
         trozos = [Segment(10.2, 11.45), Segment(11.5, 12.4)]
-        filas = [(f.start_s, f.end_s) for f in dlg._por_levantamiento(trozos)]
-        assert filas == pytest.approx([(10.2, 11.45), (11.5, 12.4)])
+        (_a1, b1), (a2, b2) = [(f.start_s, f.end_s)
+                              for f in dlg._por_levantamiento(trozos)]
+        assert b1 <= a2, "the first lift stops where the second begins"
+        assert b1 <= 11.5 and a2 >= 11.45
+        assert b2 == pytest.approx(12.4, abs=0.25)
         dlg.deleteLater()
 
     def test_a_cue_before_the_lift_is_cut_off_the_preparation(self, qapp) -> None:
