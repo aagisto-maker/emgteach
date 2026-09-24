@@ -54,6 +54,17 @@ that marker announced (:func:`emgteach.force_velocity.marker_owners`), or the
 marker's own window when the detector found nothing there. Anything else the
 detector sees is left dotted as a candidate, a click away, like any other.
 
+**A proposed row holds the whole contraction, and nothing but it.** The
+detector's run begins where the envelope crosses its threshold, with the
+rise already under way, and ends where it crosses back, with the fall not
+over: in the pair practical every row had to be widened by hand. In
+force-velocity it was the other way round, the row ran from before the
+cue to the end of the window, three times the lift. One rule now for
+both (:meth:`FragmentSelectionDialog._a_la_envolvente`): from the row's
+peak, out to where the envelope comes back to rest, with a small margin,
+never over the next row; and in force-velocity, still inside «half a
+second before the cue → end of the window».
+
 The dialog is constructible directly from signal arrays (so it can be unit
 tested headless) or from an EDF file via :meth:`FragmentSelectionDialog.from_edf`.
 """
@@ -159,6 +170,11 @@ _ANTICIPO_S = 0.5
 #: A piece that starts this close after the one a cue took is the same lift,
 #: split by the detector at a dip.
 _UNION_S = 0.1
+#: The small margin a proposed row keeps either side of its contraction,
+#: which runs from where the envelope leaves rest to where it returns to it
+#: — «rest» being the dotted line half the sensitivity draws, the one the
+#: candidates are found with. See _a_la_envolvente.
+_BORDE_MARGEN_S = 0.05
 
 #: How long after the last slider move the proposal is rebuilt. Long enough
 #: that dragging does not rebuild at every pixel, short enough to feel live.
@@ -1067,8 +1083,8 @@ class FragmentSelectionDialog(QDialog):
         self._revisadas.clear()
         self._buscar_candidatos()
         filas = self._detectar(self._det["k"])
-        if self._lifts:
-            filas = self._por_levantamiento(filas)
+        filas = (self._por_levantamiento(filas) if self._lifts
+                 else self._a_la_envolvente(filas))
         if self._naming:
             filas = [
                 Segment(f.start_s, f.end_s, f.score, f.reason, nombre)
@@ -1103,10 +1119,10 @@ class FragmentSelectionDialog(QDialog):
             [(f.start_s, f.end_s) for f in detectadas])
         tomadas = {j for j in duenos if j is not None}
         orden = sorted(range(len(detectadas)), key=lambda k: detectadas[k].start_s)
-        filas = []
+        elegidas: list[Segment] = []
         for (a, b), j in zip(self._lifts, duenos, strict=True):
             if j is None:
-                filas.append(Segment(a, b, reason="marker"))
+                elegidas.append(Segment(a, b, reason="marker"))
                 continue
             f = detectadas[j]
             fin_trozo = f.end_s
@@ -1118,10 +1134,102 @@ class FragmentSelectionDialog(QDialog):
                         or g.start_s >= b):
                     break
                 fin_trozo = max(fin_trozo, g.end_s)
-            ini, fin = max(f.start_s, a - _ANTICIPO_S), min(fin_trozo, b)
+            elegidas.append(Segment(f.start_s, fin_trozo, f.score, f.reason, f.label))
+        # The edges by the envelope, and then the lift's own window.
+        filas = []
+        for (a, b), f in zip(self._lifts, self._a_la_envolvente(elegidas), strict=True):
+            ini, fin = max(f.start_s, a - _ANTICIPO_S), min(f.end_s, b)
             filas.append(Segment(ini, fin, f.score, f.reason, f.label)
                          if fin > ini else f)
         return _en_centesimas(filas)
+
+    def _reposo(self, env) -> float:
+        """The level a row's contraction is measured out to, for one envelope.
+
+        The line half the sensitivity draws, never above the detector's own.
+        """
+        a0, b0 = self._span
+        tramo = np.asarray(env[round(a0 * self._fs):round(b0 * self._fs)],
+                           dtype=np.float64)
+        k = self._det["k"]
+        _b, umbral = activity_threshold(tramo, k)
+        _b, reposo = activity_threshold(tramo, max(_K_CANDIDATE_MIN, k * _K_CANDIDATE))
+        return min(reposo, umbral)
+
+    def _a_la_envolvente(self, filas: list[Segment]) -> list[Segment]:
+        """Each row from where its contraction leaves rest to where it returns.
+
+        For every channel whose envelope clears the detector's line inside
+        the row — for as long as the detector asks of a contraction —, start
+        at the row's peak on that envelope and walk out on each side while
+        the envelope stays above rest. Rest is the line half the sensitivity
+        draws, dotted on the plot, the one the candidates are found with:
+        the detector's own line cuts the foot of the rise and the end of the
+        fall, which is what had to be widened by hand, and a share of the
+        peak was tried and rejected — on a strong contraction any share
+        above zero ended the row earlier than the detector did. The row is
+        the union over those
+        channels, plus ``_BORDE_MARGEN_S`` either side, and never reaches
+        into the row before or after it or out of the span. A row no
+        channel clears is left as it was, and so is a lift's window that
+        stands in for a contraction the detector did not find.
+
+        Walking from the peak, a row that held a contraction and the tail
+        of something else keeps the contraction; which is what a lift that
+        the detector had run into the next second needed.
+        """
+        if not filas:
+            return filas
+        a0, b0 = self._span
+        i0, i1 = round(a0 * self._fs), round(b0 * self._fs)
+        k = self._det["k"]
+        minimo = max(1, round(self._det["min_duration_s"] * self._fs))
+        canales = []
+        for env in self._envs:
+            tramo = np.asarray(env[i0:i1], dtype=np.float64)
+            _base, umbral = activity_threshold(tramo, k)
+            canales.append((env, umbral, self._reposo(env)))
+        orden = sorted(filas, key=lambda f: f.start_s)
+        salida: list[Segment] = []
+        for n, f in enumerate(orden):
+            antes = salida[-1].end_s if salida else a0
+            despues = orden[n + 1].start_s if n + 1 < len(orden) else b0
+            lo, hi = round(antes * self._fs), round(despues * self._fs) - 1
+            j0 = max(lo, round(f.start_s * self._fs))
+            j1 = min(hi + 1, round(f.end_s * self._fs))
+            ini = fin = None
+            # A lift's window proposed because nothing was detected in it
+            # has no contraction to fit, and is there to be looked at.
+            for env, umbral, reposo in ([] if f.reason == "marker" else canales):
+                if j1 <= j0:
+                    break
+                pico = j0 + int(np.argmax(env[j0:j1]))
+                if env[pico] <= umbral:
+                    continue
+                # Held over the line as long as the detector asks of a
+                # contraction: a flicker of noise over it is not one.
+                sobre_i = sobre_d = pico
+                while sobre_i > lo and env[sobre_i - 1] > umbral:
+                    sobre_i -= 1
+                while sobre_d < hi and env[sobre_d + 1] > umbral:
+                    sobre_d += 1
+                if sobre_d - sobre_i + 1 < minimo:
+                    continue
+                izq = pico
+                while izq > lo and env[izq - 1] > reposo:
+                    izq -= 1
+                der = pico
+                while der < hi and env[der + 1] > reposo:
+                    der += 1
+                ini = izq if ini is None else min(ini, izq)
+                fin = der if fin is None else max(fin, der)
+            if ini is None:
+                salida.append(f)
+                continue
+            a = max(antes, ini / self._fs - _BORDE_MARGEN_S)
+            b = min(despues, (fin + 1) / self._fs + _BORDE_MARGEN_S)
+            salida.append(Segment(a, b, f.score, f.reason, f.label) if b > a else f)
+        return _en_centesimas(salida)
 
     def _promover(self, candidato: Segment) -> None:
         """Make a candidate a row, named like the rest, in its place in time."""
@@ -1569,6 +1677,10 @@ class FragmentSelectionDialog(QDialog):
         umbrales = [umbral]
         self._ax.axhline(umbral, color=COLOUR_1, lw=0.8, ls="--", alpha=0.7,
                          label=tr("activity threshold"))
+        # And the rest a proposed row is measured out to (_a_la_envolvente):
+        # the rule that sets the edges is one that can be checked by eye.
+        self._ax.axhline(self._reposo(self._env), color=COLOUR_1, lw=0.7,
+                         ls=":", alpha=0.6, label=tr("rest"))
         if self._env_2 is not None:
             n2 = min(len(self._t), len(self._env_2))
             self._ax.plot(
@@ -1578,6 +1690,8 @@ class FragmentSelectionDialog(QDialog):
             _b2, umbral2 = activity_threshold(self._env_2[i0:i1], self._det["k"])
             umbrales.append(umbral2)
             self._ax.axhline(umbral2, color=COLOUR_2, lw=0.8, ls="--", alpha=0.7)
+            self._ax.axhline(self._reposo(self._env_2), color=COLOUR_2, lw=0.7,
+                             ls=":", alpha=0.6)
         # Every row, kept or not: the dropped ones in grey, so the click
         # that dropped one can bring it back.
         for w in self._row_widgets:

@@ -201,3 +201,147 @@ class TestTheOpeningCanBeReleased:
 
         BitalinoDevice(port="COM9")._open_serial(_Serial(), "COM9")
         assert pedidos[0]["write_timeout"] is not None
+
+
+# ---------------------------------------------------------------------------
+# The opening that holds the lock: Windows' CreateFile on a Bluetooth port
+# whose board is off. On the bench it took 52 s, and the 20-second warning
+# froze the window for all of them.
+# ---------------------------------------------------------------------------
+
+class _PuertoFalso:
+    """What serial.Serial returns once CreateFile lets go."""
+
+    def __init__(self) -> None:
+        self.cerrado = False
+        self.timeout = None
+
+    def close(self) -> None:
+        self.cerrado = True
+
+    def write(self, data: bytes) -> int:
+        return len(data)
+
+    def read(self, n: int = 1) -> bytes:
+        return b""
+
+
+def _bitalino_que_tarda(segundos: float = 60.0):
+    """A real BitalinoDevice whose port takes *segundos* to open, lock held."""
+    from emgteach.devices.bitalino import BitalinoDevice
+
+    class _Tarda(BitalinoDevice):
+        def __init__(self) -> None:
+            super().__init__(port="COM9")
+            self.soltar = threading.Event()
+            self.dentro = threading.Event()
+            self.puertos: list[_PuertoFalso] = []
+
+        def _resolve_port(self) -> str:
+            return "COM9"
+
+        def _open_serial(self, serial_mod, port):
+            self.dentro.set()
+            self.soltar.wait(segundos)            # inside CreateFile
+            puerto = _PuertoFalso()
+            self.puertos.append(puerto)
+            return puerto
+
+    return _Tarda()
+
+
+class TestForceCloseNeverWaits:
+    def test_it_returns_at_once_while_open_holds_the_lock(self) -> None:
+        dev = _bitalino_que_tarda()
+        errores: list[BaseException] = []
+
+        def abrir() -> None:
+            try:
+                dev.open()
+            except BaseException as exc:          # recorded, then asserted
+                errores.append(exc)
+
+        hilo = threading.Thread(target=abrir)
+        hilo.start()
+        assert dev.dentro.wait(2.0)
+        t0 = time.monotonic()
+        dev.force_close()
+        assert time.monotonic() - t0 < 0.2, "force_close waited for the opening"
+        dev.soltar.set()                          # Windows lets go, late
+        hilo.join(5.0)
+        assert not hilo.is_alive()
+        assert errores and isinstance(errores[0], RuntimeError)
+        assert dev.puertos[0].cerrado, "the port that arrived late is closed"
+        assert not dev.is_connected
+
+
+@pytest.fixture
+def pestana_que_tarda(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """The tab whose first board takes a minute to open and whose next one answers."""
+    from emgteach.gui.tabs import acquisition as acq_mod
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    settings = QSettings("emgteach-test", "placa-que-tarda")
+    settings.clear()
+    settings.setValue("app/mode", "single")
+    settings.setValue("adquisicion/device_type", 0)
+    settings.setValue("adquisicion/save_dir", str(tmp_path))
+    primera = _bitalino_que_tarda()
+    rapida = _Colgada()
+    rapida.soltar.set()
+    placas = [primera, rapida]
+    monkeypatch.setattr(acq_mod, "create_device", lambda *a, **k: placas.pop(0))
+    monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName",
+                        staticmethod(lambda *a, **k: (str(tmp_path / "a.edf"), "")))
+    tab = AcquisitionTab(LoggerWidget(), settings)
+    tab.apply_mode("single", False)
+    tab._edit_mac.setText("98:D3:91:FE:44:E4")
+    tab._conexion_timer.setInterval(300)
+    tab.primera, tab.rapida = primera, rapida
+    tab._btn_conectar.setChecked(True)
+    tab._toggle_conexion()
+    yield tab
+    primera.soltar.set()
+    if tab._aviso_conexion is not None:
+        tab._aviso_conexion.close()
+    tab.cleanup()
+    for w in (getattr(tab, "_worker", None),):
+        if w is not None:
+            w.wait(5000)
+
+
+@pytest.mark.gui
+class TestTheWarningDoesNotFreezeTheWindow:
+    def test_the_warning_comes_on_time_while_the_port_is_still_opening(
+        self, qapp, pestana_que_tarda
+    ) -> None:
+        tab = pestana_que_tarda
+        t0 = time.monotonic()
+        _grabar(tab)
+        assert _hasta(lambda: tab._aviso_conexion is not None, 3.0), \
+            "the warning waited for the port"
+        assert time.monotonic() - t0 < 2.0
+        assert tab.primera.dentro.is_set() and not tab.primera.soltar.is_set()
+        assert tab._lbl_estado.text() == tr("Status: the board did not answer")
+
+    def test_retry_waits_for_the_port_and_then_records(
+        self, qapp, pestana_que_tarda
+    ) -> None:
+        from PySide6.QtWidgets import QMessageBox
+
+        tab = pestana_que_tarda
+        _grabar(tab)
+        assert _hasta(lambda: tab._aviso_conexion is not None, 3.0)
+        viejo = tab._worker
+        t0 = time.monotonic()
+        tab._tras_aviso_conexion(QMessageBox.StandardButton.Retry)
+        assert time.monotonic() - t0 < 0.5, "Retry froze the window"
+        assert tab._worker is viejo, "no second connection while the port is taken"
+        assert tab._lbl_estado.text() == tr(
+            "Status: waiting for Windows to release the port…")
+        assert not tab._btn_grabar.isEnabled()
+        tab.primera.soltar.set()                  # Windows lets go
+        assert _hasta(lambda: tab._worker is not viejo and tab.is_recording(), 5.0)
+        assert _hasta(lambda: tab._lbl_estado.text() == tr("Status: recording…"), 5.0)
+        assert tab.primera.puertos[0].cerrado

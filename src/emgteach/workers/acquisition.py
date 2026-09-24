@@ -562,7 +562,14 @@ class AcquisitionWorker(QThread):
                 self.msleep(sleep_ms)
 
         except Exception as exc:
-            self.error.emit(str(exc))
+            if self._stop_requested and not self._streaming:
+                # The tab already said what happened, and has moved on:
+                # what the port says afterwards goes to the log, not to an
+                # error box for a recording nobody is waiting for.
+                self.log.emit(tr(
+                    "The abandoned connection attempt ended: {error}").format(error=exc))
+            else:
+                self.error.emit(str(exc))
         finally:
             self._opening = False
             self._streaming = False

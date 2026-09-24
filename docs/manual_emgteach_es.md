@@ -463,7 +463,11 @@ qué pide, y el «?» del cuadro los repite.
    flexiones, 6 extensiones y 1 presa en el par; en cinemática, una por
    levantamiento marcado por el asistente; en la de un músculo, ninguno— y se
    puede editar. El par abre en k = 4.4 y las demás en 3.0; la k usada queda en
-   el informe y en el CSV.
+   el informe y en el CSV. Cada fila propuesta abarca la contracción entera,
+   desde que la envolvente deja el reposo —la línea de puntos «reposo», donde pondría
+   el umbral la mitad de la sensibilidad— hasta que vuelve a él, con un margen pequeño y
+   sin pisar la fila siguiente; en cinemática, además, dentro de la ventana del
+   levantamiento.
 2. **Cada contracción por turno**, con ◀ ▶ o pulsándola en el gráfico; se
    resalta sin que los ejes se muevan. **Mantener**, **Eliminar** (queda rayada
    y se recupera con Mantener) y **Dividir**, que solo se ofrece cuando la fila
@@ -472,7 +476,9 @@ qué pide, y el «?» del cuadro los repite.
    línea de trazo y punto. Una marca se puede **arrastrar**: al soltarla toma
    los límites de la actividad sobre la que cae, y si cae sobre reposo vuelve a
    su sitio. Los tramos **punteados** son actividad que el umbral dejó fuera y
-   que ninguna fila cubre: un clic los añade. En el par, un botón por músculo
+   que ninguna fila cubre: un clic los añade. En cinemática, una subida que el
+   asistente no pidió se queda punteada, y si se añade con un clic entra sin
+   carga. En el par, un botón por músculo
    confirma quién llevó cada una.
 3. **«Usar estos fragmentos»** aplica la selección; hasta entonces no cambia
    nada. Cuando todo está revisado y el recuento coincide, el botón se pone en

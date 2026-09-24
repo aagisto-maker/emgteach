@@ -975,6 +975,12 @@ _ES = {
     "Status: recording…": "Estado: grabando…",
     "Status: connecting to the board…": "Estado: conectando con la placa…",
     "Status: the board did not answer": "Estado: la placa no respondió",
+    "Status: waiting for Windows to release the port…":
+        "Estado: esperando a que Windows libere el puerto…",
+    "The previous connection attempt is still holding the port; "
+    "the recording starts as soon as Windows releases it.":
+        "El intento de conexión anterior sigue ocupando el puerto; la "
+        "grabación empezará en cuanto Windows lo libere.",
     "The board did not answer": "La placa no respondió",
     "No data arrived from the board in {s:.0f} s, so nothing is being "
     "recorded. Check that the BITalino is switched on, switch it off "
@@ -984,6 +990,10 @@ _ES = {
         "está grabando nada. Comprobar que la placa BITalino está encendida, "
         "apagarla y encenderla, y volver a intentarlo. Si vuelve a pasar, "
         "cerrar emgteach y abrirlo de nuevo.",
+    "The connection attempt was given up before the board answered.":
+        "Se abandonó el intento de conexión antes de que la placa respondiera.",
+    "The abandoned connection attempt ended: {error}":
+        "Terminó el intento de conexión abandonado: {error}",
     "The recording was stopped before the board answered; "
     "nothing was recorded.":
         "La grabación se detuvo antes de que la placa respondiera; no se "
@@ -2202,6 +2212,7 @@ _ES = {
     'dropped': 'descartada',
     'Detection sensitivity (k)': 'Sensibilidad de detección (k)',
     'activity threshold': 'umbral de actividad',
+    'rest': 'reposo',
     'Table': 'Tabla',
     'Chart': 'Gráfico',
     'Contraction': 'Contracción',

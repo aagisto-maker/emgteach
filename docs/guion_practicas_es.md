@@ -186,13 +186,17 @@ siguiente:
    1. **Sensibilidad.** Moverla hasta que el recuento de al lado coincida con lo
       que se hizo: en el par, 6 flexiones, 6 extensiones y 1 presa; en
       cinemática, una por levantamiento. La línea discontinua es el umbral.
+      Cada fila propuesta abarca la contracción entera, desde que la
+      envolvente deja el reposo (la línea de puntos «reposo») hasta que vuelve a él:
+      no hace falta ampliarla a mano.
    2. **Cada contracción por turno**, con ▶ o pulsándola en el gráfico:
       **Mantener** si está bien, **Eliminar** si no debe contar (queda rayada y
       se recupera), **Dividir** si un tramo guarda dos picos (una línea de trazo
       y punto marca antes el corte), o **arrastrarla** sobre la contracción
       buena, donde encaja sola. Un tramo **punteado** es actividad que el umbral
-      dejó fuera: un clic lo añade. En el par, un botón por músculo confirma
-      quién la llevó.
+      dejó fuera: un clic lo añade. En cinemática, una subida que el asistente
+      no pidió se queda punteada; añadida con un clic entra sin carga. En el
+      par, un botón por músculo confirma quién la llevó.
    3. **«Usar estos fragmentos»**, cuando todo está revisado y el recuento
       coincide. Hasta entonces no se aplica nada.
 
