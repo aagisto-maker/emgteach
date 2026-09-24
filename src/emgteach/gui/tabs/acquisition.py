@@ -803,6 +803,9 @@ class AcquisitionTab(QWidget):
         self._aviso_conexion: QMessageBox | None = None
         #: The last recording ended before the board sent anything.
         self._sin_respuesta = False
+        #: A new recording was asked for while the previous attempt was
+        #: still inside the port's opening; it starts when that ends.
+        self._esperando_puerto = False
 
         # Local logger: own instance shown in this tab. Messages are mirrored
         # to the shared logger (self._logger) so the analysis tab also receives
@@ -2136,6 +2139,7 @@ class AcquisitionTab(QWidget):
         self._edit_dir.setEnabled(True)
         self._set_channel_controls_enabled(True)
         self._sin_respuesta = False
+        self._esperando_puerto = False
         self._lbl_estado.setText(tr("Status: disconnected"))
         self._set_led("off")
         self._led_idle_timer.stop()
@@ -2150,6 +2154,8 @@ class AcquisitionTab(QWidget):
             self._detener_grabacion()
 
     def _iniciar_grabacion(self) -> None:
+        if self._esperar_al_puerto():
+            return
         # The kinematics session needs its plan before it starts: the record
         # button runs the calibration and then cues the loads, and there is
         # no moment after this one to ask for them.
@@ -5131,11 +5137,57 @@ class AcquisitionTab(QWidget):
         self._aviso_conexion = caja
         caja.open()
 
+    def _esperar_al_puerto(self) -> bool:
+        """Hold a new recording until the previous attempt lets go of the port.
+
+        After the 20-second warning the attempt that did not answer can
+        still be inside Windows' opening of the Bluetooth port — on the
+        bench, for 52 s — and a new connection then finds the port taken.
+        So the new one waits, and says so, with the window answering; it
+        starts by itself when the old thread ends. The wait used to be a
+        ``wait()`` on the thread, which froze the window for as long.
+        """
+        viejo = self._worker
+        if viejo is None or not viejo.isRunning() or not viejo.is_opening():
+            return False
+        viejo.stop_forced()
+        self._btn_grabar.setChecked(False)
+        self._btn_grabar.setEnabled(False)
+        self._lbl_estado.setText(
+            tr("Status: waiting for Windows to release the port…"))
+        if not self._esperando_puerto:
+            self._esperando_puerto = True
+            self._log(tr(
+                "The previous connection attempt is still holding the port; "
+                "the recording starts as soon as Windows releases it."))
+            viejo.finished.connect(self._puerto_liberado)
+        return True
+
+    @Slot()
+    def _puerto_liberado(self) -> None:
+        """The attempt that held the port has ended: start the one asked for."""
+        if not self._esperando_puerto:
+            return
+        self._esperando_puerto = False
+        conectado = self._btn_conectar.isChecked()
+        self._btn_grabar.setEnabled(conectado)
+        self._lbl_estado.setText(self._estado_en_reposo())
+        if conectado and not self.is_recording():
+            self._btn_grabar.setChecked(True)
+            self._toggle_grabacion()
+
     def _tras_aviso_conexion(self, respuesta: int) -> None:
-        """«Retry» starts the recording again, as the button would."""
+        """«Retry» starts the recording again, as the button would.
+
+        The attempt that did not answer is usually still running, inside
+        the port's opening: that is not a recording in the way, it is the
+        port the retry has to wait for (_esperar_al_puerto).
+        """
         self._aviso_conexion = None
-        if (respuesta == QMessageBox.StandardButton.Retry
-                and self._btn_grabar.isEnabled() and not self.is_recording()):
+        if respuesta != QMessageBox.StandardButton.Retry or not self._btn_grabar.isEnabled():
+            return
+        abriendo = self._worker is not None and self._worker.is_opening()
+        if abriendo or not self.is_recording():
             self._btn_grabar.setChecked(True)
             self._toggle_grabacion()
 

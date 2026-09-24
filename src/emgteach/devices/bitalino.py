@@ -223,6 +223,9 @@ class BitalinoDevice(AcquisitionDevice):
         self._serial = None  # type: ignore[var-annotated]
         #: The port while open() is still talking to it; see force_close.
         self._opening_serial = None
+        #: Set by force_close: whatever open() is doing, it gives up as soon
+        #: as it can, closing what it has opened.
+        self._abandonar = False
         self._resolved_port: str | None = None
         self._firmware = ""
         self._conn_lock = threading.Lock()
@@ -326,6 +329,7 @@ class BitalinoDevice(AcquisitionDevice):
         """
         import serial  # lazy — keeps import time low when device is not used
 
+        self._abandonar = False
         self._validate_config()
         resolved = self._resolve_port()  # MAC -> COM, autodetect, or direct COM
 
@@ -342,6 +346,9 @@ class BitalinoDevice(AcquisitionDevice):
             # handshake that hangs can be released from another thread.
             self._opening_serial = ser
             try:
+                # Given up on while Windows was still opening the port
+                # (force_close could not reach it: it did not exist yet).
+                self._comprobar_abandono()
                 # Confirm we are actually talking to a BITalino before
                 # streaming, so a wrong COM port fails fast and clearly.
                 version = self._read_version(ser)
@@ -355,6 +362,7 @@ class BitalinoDevice(AcquisitionDevice):
                     )
                 self._firmware = version
                 self._set_sampling_rate(ser)
+                self._comprobar_abandono()
                 self._start_streaming(ser)
             except Exception:
                 try:
@@ -441,20 +449,32 @@ class BitalinoDevice(AcquisitionDevice):
                 self._serial = None
 
     def force_close(self) -> None:
-        """Close the COM port immediately from any thread.
+        """Close the COM port from any thread, **without ever waiting**.
 
-        Used by the watchdog described in this module's docstring. It also
-        closes a port that is still in its opening handshake — without the
-        connection lock, which the opening holds — so a board that stopped
-        answering half-way through the handshake does not keep the thread.
+        Used by the watchdog described in this module's docstring, and by the
+        acquisition tab when the board has not answered in 20 s — which is to
+        say from the interface's own thread. It used to take the connection
+        lock, and :meth:`open` holds that lock for the whole opening, including
+        the ``CreateFile`` that Windows can keep for most of a minute on a
+        Bluetooth port whose board is off: on the bench the window froze for
+        52 s, the 20-second warning came out together with the port's own
+        error, and a click on «Stop» waited in the queue.
+
+        So it never blocks. It marks the opening as given up — :meth:`open`
+        checks the mark as soon as it has a port and closes it —, closes a
+        port that is already in its handshake, and closes the streaming port
+        only if the lock is free, which it is whenever a read is blocked.
         """
+        self._abandonar = True
         abriendo = self._opening_serial
         if abriendo is not None:
             try:
                 abriendo.close()
             except Exception:
                 pass
-        with self._conn_lock:
+        if not self._conn_lock.acquire(blocking=False):
+            return                      # open() has it; the mark reaches it
+        try:
             ser = self._serial
             if ser is None:
                 return
@@ -463,6 +483,14 @@ class BitalinoDevice(AcquisitionDevice):
             except Exception:
                 pass
             self._serial = None
+        finally:
+            self._conn_lock.release()
+
+    def _comprobar_abandono(self) -> None:
+        """Stop the opening here if force_close gave it up meanwhile."""
+        if self._abandonar:
+            raise RuntimeError(tr(
+                "The connection attempt was given up before the board answered."))
 
     # -- protocol helpers ----------------------------------------------------
 
