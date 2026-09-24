@@ -2212,6 +2212,7 @@ _ES = {
     'dropped': 'descartada',
     'Detection sensitivity (k)': 'Sensibilidad de detección (k)',
     'activity threshold': 'umbral de actividad',
+    'rest': 'reposo',
     'Table': 'Tabla',
     'Chart': 'Gráfico',
     'Contraction': 'Contracción',

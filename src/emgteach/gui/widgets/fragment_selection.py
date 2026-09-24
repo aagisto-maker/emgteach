@@ -1143,6 +1143,19 @@ class FragmentSelectionDialog(QDialog):
                          if fin > ini else f)
         return _en_centesimas(filas)
 
+    def _reposo(self, env) -> float:
+        """The level a row's contraction is measured out to, for one envelope.
+
+        The line half the sensitivity draws, never above the detector's own.
+        """
+        a0, b0 = self._span
+        tramo = np.asarray(env[round(a0 * self._fs):round(b0 * self._fs)],
+                           dtype=np.float64)
+        k = self._det["k"]
+        _b, umbral = activity_threshold(tramo, k)
+        _b, reposo = activity_threshold(tramo, max(_K_CANDIDATE_MIN, k * _K_CANDIDATE))
+        return min(reposo, umbral)
+
     def _a_la_envolvente(self, filas: list[Segment]) -> list[Segment]:
         """Each row from where its contraction leaves rest to where it returns.
 
@@ -1170,14 +1183,12 @@ class FragmentSelectionDialog(QDialog):
         a0, b0 = self._span
         i0, i1 = round(a0 * self._fs), round(b0 * self._fs)
         k = self._det["k"]
-        k_bajo = max(_K_CANDIDATE_MIN, k * _K_CANDIDATE)
         minimo = max(1, round(self._det["min_duration_s"] * self._fs))
         canales = []
         for env in self._envs:
             tramo = np.asarray(env[i0:i1], dtype=np.float64)
             _base, umbral = activity_threshold(tramo, k)
-            _b, reposo = activity_threshold(tramo, k_bajo)
-            canales.append((env, umbral, min(reposo, umbral)))
+            canales.append((env, umbral, self._reposo(env)))
         orden = sorted(filas, key=lambda f: f.start_s)
         salida: list[Segment] = []
         for n, f in enumerate(orden):
@@ -1666,6 +1677,10 @@ class FragmentSelectionDialog(QDialog):
         umbrales = [umbral]
         self._ax.axhline(umbral, color=COLOUR_1, lw=0.8, ls="--", alpha=0.7,
                          label=tr("activity threshold"))
+        # And the rest a proposed row is measured out to (_a_la_envolvente):
+        # the rule that sets the edges is one that can be checked by eye.
+        self._ax.axhline(self._reposo(self._env), color=COLOUR_1, lw=0.7,
+                         ls=":", alpha=0.6, label=tr("rest"))
         if self._env_2 is not None:
             n2 = min(len(self._t), len(self._env_2))
             self._ax.plot(
@@ -1675,6 +1690,8 @@ class FragmentSelectionDialog(QDialog):
             _b2, umbral2 = activity_threshold(self._env_2[i0:i1], self._det["k"])
             umbrales.append(umbral2)
             self._ax.axhline(umbral2, color=COLOUR_2, lw=0.8, ls="--", alpha=0.7)
+            self._ax.axhline(self._reposo(self._env_2), color=COLOUR_2, lw=0.7,
+                             ls=":", alpha=0.6)
         # Every row, kept or not: the dropped ones in grey, so the click
         # that dropped one can bring it back.
         for w in self._row_widgets:

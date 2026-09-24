@@ -199,14 +199,17 @@ press. On switching to Analysis a box points at the next step:
    over its plot says which one you are on:
    1. **Sensitivity.** Move it until the count beside it matches what was done:
       in the pair, 6 flexions, 6 extensions and 1 grip; in kinematics, one per
-      lift. The dashed line is the threshold.
+      lift. The dashed line is the threshold. Each proposed row holds the
+      whole contraction, from where the envelope leaves rest (the dotted «rest» line)
+      to where it returns to it: there is no need to widen it by hand.
    2. **Each contraction in turn**, with ▶ or by clicking it on the plot:
       **Keep it** if it is right, **Drop it** if it should not count (it stays
       hatched and can be brought back), **Split it** if one stretch holds two
       peaks (a dash-dotted line shows the cut first), or **drag it** onto the
       right contraction, where it snaps into place. A **dotted** stretch is
-      activity the threshold left out: a click adds it. In the pair, one button
-      per muscle confirms who led it.
+      activity the threshold left out: a click adds it. In kinematics, a lift
+      the wizard did not ask for stays dotted; added with a click, it comes in
+      with no load. In the pair, one button per muscle confirms who led it.
    3. **«Use these fragments»**, once everything is reviewed and the count
       matches. Nothing is applied until then.
 

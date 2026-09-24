@@ -376,7 +376,10 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    flexions, 6 extensions and 1 grip in the pair; in kinematics, one per lift
    the wizard marked; none in the single-muscle practical — and can be edited.
    The pair opens on k = 4.4 and the others on 3.0; the k used goes into the
-   report and the CSV.
+   report and the CSV. Each proposed row holds the whole contraction, from
+   where the envelope leaves rest — the dotted «rest» line, drawn where half the
+   sensitivity would put the threshold — to where it returns to it, with a small margin and never over the
+   next row; in kinematics, still inside the lift's window.
 2. **Each contraction in turn**, with ◀ ▶ or by clicking it on the plot; it is
    highlighted without the axes moving. **Keep it**, **Drop it** (it stays
    hatched and Keep it brings it back) and **Split it**, offered only when the
@@ -385,7 +388,8 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    dash-dotted line. A mark can be **dragged**: on release it takes the bounds
    of the activity it is dropped over, and goes back if that is rest. **Dotted**
    stretches are activity the threshold left out and no row covers: a click
-   adds one. In the pair, one button per muscle confirms who led each.
+   adds one. In kinematics a lift the wizard did not ask for stays dotted,
+   and one added with a click has no load. In the pair, one button per muscle confirms who led each.
 3. **«Use these fragments»** applies the selection; nothing changes until then.
    Once everything is reviewed and the count matches, the button turns bold.
 
