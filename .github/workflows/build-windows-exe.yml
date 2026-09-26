@@ -10,11 +10,15 @@ name: Build Windows exe
 # to that build environment's versions, used here as constraints, so two
 # builds weeks apart bundle the same libraries.
 #
-# Releases carry no executable: publishing one does not trigger this
-# workflow and nothing is attached to it. An unsigned one-file PyInstaller
-# build is often flagged by antivirus software when downloaded (a known
-# false positive), so a release offers the source only. packaging/README.md
-# says how to attach the exe to releases again.
+# A version tag (v3.7.0 and on) also prepares the release, as a **draft**:
+# the application is renamed emgteach-vX.Y.Z-windows-x64.exe, GitHub attests
+# where it was built (actions/attest-build-provenance), its SHA-256 is
+# computed, and a draft release is created with the version's notes
+# (docs/RELEASE_NOTES_vX.Y.Z.md), the SHA-256 and the executable. A draft is
+# not published, so Zenodo — which archives on publication — is not told yet:
+# the executable goes through VirusTotal first, and the draft is published by
+# hand. The executable is not signed; the README says what Windows shows and
+# how to check the file. The diagnostic stays a workflow artifact only.
 #
 # workflow_dispatch only becomes available once this file is on the default
 # branch; the pull_request trigger (scoped to packaging changes) lets a PR
@@ -24,6 +28,7 @@ on:
   push:
     tags:
       - "exe-*"
+      - "v*"
   pull_request:
     branches: [main]
     paths:
@@ -79,6 +84,19 @@ jobs:
           Get-Content dist\emgteach_selftest.log
           exit $p.ExitCode
 
+      - name: The executable says the tag's version
+        # A release of v3.7.0 must not carry an executable that calls itself
+        # 3.6.0: the version is bumped before the tag, and this is where a
+        # tag put on the wrong commit is caught.
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $version = "${{ github.ref_name }}".Substring(1)
+          $log = Get-Content dist\emgteach_selftest.log -Raw
+          if ($log -notmatch "SELFTEST OK: emgteach $([regex]::Escape($version)) ") {
+            Write-Error "The executable does not say version $version`: $log"
+            exit 1
+          }
+
       - name: Build diagnostico_bitalino.exe
         run: pyinstaller --noconfirm --clean packaging/diagnostico_bitalino.spec
 
@@ -101,3 +119,72 @@ jobs:
             dist/diagnostico_bitalino.exe
           if-no-files-found: error
           compression-level: 6
+
+  release-draft:
+    name: Draft release with the attested executable
+    # Version tags only: an exe-* tag, a manual run and a pull request build
+    # and test, and stop there.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-exe
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write           # create the draft release and upload to it
+      id-token: write           # mint the OIDC token Sigstore signs with
+      attestations: write       # store the provenance attestation
+      artifact-metadata: write  # the artifact storage record the attestation needs
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@v5
+
+      - name: Download the executables
+        uses: actions/download-artifact@v4
+        with:
+          name: emgteach-windows-exe
+          path: dist
+
+      - name: Name the executable after the tag
+        run: |
+          mv dist/emgteach.exe "dist/emgteach-${TAG}-windows-x64.exe"
+          ls -l dist
+
+      - name: Attest where it was built
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/emgteach-${{ github.ref_name }}-windows-x64.exe
+
+      - name: Write the release notes, with the SHA-256
+        run: |
+          notes="docs/RELEASE_NOTES_${TAG}.md"
+          test -f "$notes" || { echo "::error::$notes does not exist"; exit 1; }
+          exe="emgteach-${TAG}-windows-x64.exe"
+          sha=$(sha256sum "dist/$exe" | cut -d' ' -f1)
+          {
+            cat "$notes"
+            echo
+            echo "## SHA-256 of the executable"
+            echo
+            echo '```'
+            echo "$sha  $exe"
+            echo '```'
+          } > release-notes.md
+          # The title is the notes' first line without its «# emgteach X.Y.Z — ».
+          title=$(head -n1 "$notes" | sed -E 's/^# *emgteach [^ ]+ — //')
+          echo "RELEASE_TITLE=${TAG} — ${title}" >> "$GITHUB_ENV"
+          echo "$sha  $exe" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create the draft release
+        # A draft and never a published release: publishing is what Zenodo
+        # archives, and it waits for the VirusTotal check. Refuses to touch a
+        # release that already exists, so a re-run cannot change what was
+        # published.
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::A release for $TAG already exists; nothing was changed."
+            exit 1
+          fi
+          gh release create "$TAG" --draft --verify-tag \
+            --title "$RELEASE_TITLE" --notes-file release-notes.md \
+            "dist/emgteach-${TAG}-windows-x64.exe"

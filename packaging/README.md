@@ -90,24 +90,26 @@ on demand (*Actions → Build Windows exe → Run workflow*), on a pushed `exe-*
 tag and on pull requests that touch `packaging/`. The two executables are
 kept as a workflow artifact named `emgteach-windows-exe`.
 
-It is not attached to releases, which carry the source only: an unsigned
-build meets the antivirus false positive described below as soon as it is
-downloaded. To attach it again, give the workflow back its
-`release: types: [published]` trigger, `permissions: contents: write` and a
-last step that runs
-`gh release upload "$TAG" "emgteach-$TAG-windows-x64.exe" --clobber`.
-Reverting the commit that removed them
-(`git log -- .github/workflows/build-windows-exe.yml`) restores all three.
+From v3.7.0 a version tag also prepares the release. The application is
+renamed `emgteach-vX.Y.Z-windows-x64.exe`, GitHub attests where it was built
+(`actions/attest-build-provenance`), and a **draft** release is created with
+`docs/RELEASE_NOTES_vX.Y.Z.md`, the executable's SHA-256 and the executable.
+The build fails if the executable does not say the tag's version. A draft is
+not published, so Zenodo, which archives on publication, is not told until
+the executable has been through VirusTotal and the draft is published by
+hand. The diagnostic stays a workflow artifact.
 
 ## Run (tester machine)
 
 Double-click `emgteach.exe`. The first launch is a few seconds slower (the
 one-file bundle self-extracts to a temp folder). No install, no admin rights.
 
-> **Antivirus note.** Unsigned one-file PyInstaller executables occasionally
-> trigger a SmartScreen / antivirus false positive. If Windows SmartScreen
-> appears, choose *More info → Run anyway*. Code-signing would remove this but
-> is out of scope for the test build.
+> **Antivirus note.** The executable is not signed, and unsigned one-file
+> PyInstaller executables occasionally trigger a SmartScreen / antivirus false
+> positive. If Windows SmartScreen appears, choose *More info → Run anyway*.
+> A released executable can be checked against the SHA-256 in its release
+> notes and with `gh attestation verify` (see the main README). If Microsoft
+> Defender flags a release, it is reported to Microsoft as a false positive.
 
 ### Hardware backends in the .exe
 
