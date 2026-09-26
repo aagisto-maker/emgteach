@@ -57,10 +57,14 @@ abstract: >-
   contractions lost four columns off the page, and the CSV export. In version
   3.6.0 the simulated board obeys the calibration, so a session rehearsed
   without hardware reads in % MVC as a real one does; nothing computed
-  changes.
+  changes. Version 3.7.0, the one the article describes, guides the whole
+  session into the task, with a map of each phase, a grip made squeezing a
+  ball, fragment rows from where each contraction leaves rest to where it
+  returns, one row per marked lift in the kinematics practical, and a
+  connection that says when the board does not answer.
 type: software
-version: 3.6.0
-date-released: "2026-09-19"
+version: 3.7.0
+date-released: "2026-09-26"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
