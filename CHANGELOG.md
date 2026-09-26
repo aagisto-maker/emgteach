@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] — 2026-09-26
+
+**The version the article describes, and the one the November practicals run
+on.** The guided session goes on into the task: four panels, each with a row
+of boxes that maps its phase, the free manoeuvres counted as they are made and
+the grip held for about eight seconds squeezing a ball; the force-velocity
+study has the same map. The fragment editor proposes each row from where its
+contraction leaves rest to where it returns, and in the kinematics practical
+one row per lift the wizard marked, each load going to the lift its cue
+announced. The pair practical says which pair it is on, one reference
+electrode goes on the olecranon, and both pairs are placed 5 cm from the
+epicondyle of their own side. A recording says it is connecting until the
+board answers, and gives up with a warning after 20 s without holding the
+window. For a given set of fragments the analysis computes what 3.6.0
+computed; what changes is the set the editor proposes, and a contraction that
+no load marker announced no longer borrows one. See
+[`docs/RELEASE_NOTES_v3.7.0.md`](docs/RELEASE_NOTES_v3.7.0.md).
+
 ### Added
 
 - **The force-velocity study has the same boxes as the pair practical.** One practical had a map of its phase and the other had none: the row of boxes — one per action, filled as each one is done — never existed in the force-velocity study, so the same application looked finished in one practical and bare in the other. What is frozen for the November practicals is not one practical, it is the application, and anybody who downloads it from the article's DOI can open the other one. The panel's map now takes rows: above, the lifts of the load in hand; below, the whole experiment, grouped by load with a gap between groups and the group being lifted outlined. The gap is what tells one load from another and the outline is what says which one is now — neither is a colour, because there is one muscle here and a palette of loads would compete with the only colour on that screen that already means something, the channel's own, which its trace and its load bar carry. A row too long for the panel shrinks its boxes rather than running off it: eight loads of five lifts is forty boxes and a map has to be whole. The generalisation is additive — a flat list of colours is still one row — so the three phases of the pair practical pass what they passed and get what they got, down to the pixel. And the principle is now written in the panel that has to keep it: the same title, map, running bar and load bars in every practical, and what changes is what fills them, never the shape.
@@ -747,7 +765,8 @@ channel diagnostic, and several accelerometer-plot and window fixes.
 - A BITalino watchdog that releases blocked Bluetooth reads in ~50 ms after
   disconnection.
 
-[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.6.0...HEAD
+[Unreleased]: https://github.com/aagisto-maker/emgteach/compare/v3.7.0...HEAD
+[3.7.0]: https://github.com/aagisto-maker/emgteach/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/aagisto-maker/emgteach/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/aagisto-maker/emgteach/compare/v3.4.0...v3.5.0
 [3.4.0]: https://github.com/aagisto-maker/emgteach/compare/v3.3.0...v3.4.0

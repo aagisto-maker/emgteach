@@ -24,7 +24,17 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.6.0 makes **the simulated board obey the calibration**: the
+`emgteach` v3.7.0 is **the version the article describes**, and the one the
+November practicals run on. The guided session goes on into the task, with a
+row of boxes that maps each phase and a grip made squeezing a ball; the
+fragment editor proposes each row from where its contraction leaves rest to
+where it returns, and one row per lift the force-velocity wizard marked; the
+pair practical names its pair, with one reference electrode on the olecranon;
+and a recording says it is connecting until the board answers. A Windows
+executable is attached to the release — see *Install* below. See
+[`docs/RELEASE_NOTES_v3.7.0.md`](docs/RELEASE_NOTES_v3.7.0.md).
+
+v3.6.0 made **the simulated board obey the calibration**: the
 wizard tells the device when it is asking for a maximum, and the simulated
 board gives it, so a session rehearsed without it reads in % MVC as
 a real one does — about 53 % for the alternating gestures and a grip that
@@ -167,10 +177,26 @@ cd emgteach
 pip install -e ".[dev]"
 ```
 
-No pre-built executable is attached to the releases: an unsigned one-file
-PyInstaller build is often flagged by antivirus software when downloaded.
-A standalone Windows executable can be built from the source with the
-recipe in [`packaging/`](packaging/README.md).
+### Windows executable
+
+From v3.7.0 each release carries a standalone Windows executable,
+`emgteach-vX.Y.Z-windows-x64.exe`: no Python, no install, no administrator
+rights. It is built by GitHub Actions from the release's tag, not on anybody's
+computer, so it is exactly the code of that version.
+
+- **It is not signed.** Windows may show «Windows protected your PC»
+  («Windows protegió su PC»): choose *More info → Run anyway* («Más
+  información → Ejecutar de todos modos»).
+- **Check it is the published file**: the release notes give its SHA-256. In
+  PowerShell, `Get-FileHash .\emgteach-v3.7.0-windows-x64.exe -Algorithm SHA256`
+  has to print the same value.
+- **Check where it was built**: with the GitHub CLI,
+  `gh attestation verify emgteach-v3.7.0-windows-x64.exe --repo aagisto-maker/emgteach`
+  confirms it came out of this repository's workflow, from that tag.
+
+The executable is not part of the Zenodo record, which archives the source
+code of the tag. The recipe to build it yourself is in
+[`packaging/`](packaging/README.md).
 
 On **Windows 11** the easiest way to install Python 3.12 is via
 **Microsoft Store** (search "Python 3.12"). It installs without
