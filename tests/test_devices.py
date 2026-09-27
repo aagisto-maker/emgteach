@@ -680,6 +680,47 @@ class TestBitalinoDeviceBasics:
         assert device.lost_frames == 0
         device.close()
 
+    def test_the_frame_read_ahead_to_confirm_is_kept_for_the_next_read(
+        self, fast_commands: None
+    ) -> None:
+        """A read that completes with the confirming frame already taken off
+        the port must leave it pending: the port has nothing more to give, so
+        if it were dropped the next read would time out."""
+        device = BitalinoDevice("COM5", channels=[0])
+        bad = bytearray(_encode_frame_1ch(500, seq=0))
+        bad[-1] ^= 0x01
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + bytes(bad)
+            + _encode_frame_1ch(100, seq=1) + _encode_frame_1ch(900, seq=2))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        np.testing.assert_array_equal(device.read_raw(1), [[100.0]])
+        assert not ser.binary_queue              # the confirming frame left the port
+        np.testing.assert_array_equal(device.read_raw(1), [[900.0]])
+        assert device.crc_errors == 3            # only the bad frame's bytes
+        assert device.lost_frames == 0
+        device.close()
+
+    def test_the_confirmation_accepts_fifteen_followed_by_zero(
+        self, fast_commands: None
+    ) -> None:
+        """The sequence number wraps at 16: a candidate numbered 15 is
+        confirmed by a frame numbered 0, not rejected as out of order."""
+        device = BitalinoDevice("COM5", channels=[0])
+        bad = bytearray(_encode_frame_1ch(500, seq=14))
+        bad[-1] ^= 0x01
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + bytes(bad)
+            + _encode_frame_1ch(100, seq=15) + _encode_frame_1ch(900, seq=0))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        np.testing.assert_array_equal(device.read_raw(2), [[100.0], [900.0]])
+        assert device.crc_errors == 3            # the candidate 15 was not discarded
+        assert device.lost_frames == 0
+        device.close()
+
     def test_read_raw_resynchronises_too(self, fast_commands: None) -> None:
         """The channel diagnostic reads raw codes; it takes the same path."""
         device = BitalinoDevice("COM5", channels=[0])
