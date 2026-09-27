@@ -10,7 +10,8 @@ it — it answers, in order, the questions a failed connection leaves open:
 3. Whether a BITalino is paired, and which COM port Windows gave it.
 4. Whether the board answers the version handshake, and how fast.
 5. Some seconds of acquisition: how many frames arrived, at what rate,
-   whether any failed its CRC, and whether each channel carries a signal.
+   how many bytes a failed CRC made it discard, how many frames the link
+   lost, and whether each channel carries a signal.
 
 It connects exactly as the acquisition tab does — the same
 :class:`~emgteach.devices.bitalino.BitalinoDevice`, the same address forms —
@@ -236,8 +237,16 @@ def _check_acquisition(address: str, seconds: float, channels: tuple[int, ...],
         n=data.shape[0], s=elapsed, hz=rate, fs=_FS)]
     if error:
         lines.append(tr("It stopped: {error}").format(error=error))
-    else:
-        lines.append(tr("No frame failed its CRC."))
+    # A frame that fails its CRC no longer stops the reading: the device skips
+    # it and resynchronises, so the counts are what tell a clean link from one
+    # that is getting by.
+    crc, lost = device.crc_errors, device.lost_frames
+    lines.append(tr("No frame failed its CRC.") if crc == 0 else tr(
+        "{n} byte(s) discarded after a failed CRC; the reading resynchronised."
+    ).format(n=crc))
+    lines.append(tr("No frame was lost: the sequence numbers are in order.")
+                 if lost == 0 else tr(
+        "{n} frame(s) lost, counted from the sequence numbers.").format(n=lost))
     top = device.physical_max
     for i, ch in enumerate(channels):
         col = data[:, i] if data.shape[0] else np.zeros(1)

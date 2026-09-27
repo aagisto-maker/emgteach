@@ -12,6 +12,45 @@ used.
 
 ---
 
+## 2026-09-27 — BITalino frames: resynchronise after a bad CRC, confirmed by the next frame
+
+**Context.** The pyserial backend (2026-06-28) decoded frames in fixed steps
+and raised «connection lost» at the first frame whose 4-bit CRC failed, so one
+corrupted byte cost the whole recording. ecgteach, forked from this backend,
+already resynchronises.
+
+**Options evaluated.** (a) Keep aborting; (b) port ecgteach's resynchronisation
+as it is; (c) port it and confirm each resynchronised frame with the next one.
+
+**Chosen: (c).** After a failed CRC the stream is scanned forward one byte at a
+time; every byte discarded counts as a CRC error, and 256 bytes in a row with
+no valid frame give the link up (about 80 single-channel frames: far more than
+a glitch, far less than a session). A window straddling two frames passes a
+4-bit CRC by chance one time in sixteen, and with (b) its sample reached the
+output. Here that is not harmless: the MVC calibration takes a maximum, and a
+garbage sample can reach full scale. So after discarding, a frame that
+validates is accepted only when the next frame also validates and carries the
+next sequence number; a chance pass of both is about one in 4096. The cost is
+reading one frame ahead while resynchronising, a millisecond at 1 kHz. The
+4-bit sequence number also counts the frames the link dropped (`lost_frames`);
+it wraps every 16, so a gap of exactly 16 is invisible and long dropouts are
+under-counted.
+
+**Frame resolution follows the slot, not the input.** ecgteach scales A5/A6 at
+6 bits whatever else is enabled. The frame has 10 bits in its first four
+analogue slots and 6 in the fifth and sixth, which exist only with more than
+four inputs enabled; the BITalino team confirms that with four channels or
+fewer all of them travel at 10 bits
+(http://forum.bitalino.com/viewtopic.php?f=17&t=467). Scaling by the input
+would read an accelerometer on A5 next to one EMG input 16 times too large, so
+`adc_max_for_slot` decides by the position in the frame.
+
+**Scope note.** The counters are not shown in the acquisition tab, and the EDF
+does not mark where frames were lost, as ecgteach does; that is left for a
+separate change.
+
+---
+
 ## 2026-06-28 — BITalino backend rewritten on pyserial (supersedes 2026-06-17 Decision 3)
 
 **Context.** Even bundled `--no-deps`, the external pure-Python `bitalino`

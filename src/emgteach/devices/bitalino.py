@@ -53,9 +53,13 @@ PC→BITalino ``0000 0000`` (``0x00``)                           Stop → idle
 ==========  =================================================  ==================
 
 The ``<Fs>`` field encodes 1000/100/10/1 Hz as ``3/2/1/0``. Each analog
-sample is packed into ``N`` bytes (10 bits for channels A1-A4, 6 bits for
-A5-A6) together with a 4-bit sequence number and four digital states; a
-4-bit CRC closes every frame and is validated on read.
+sample is packed into ``N`` bytes together with a 4-bit sequence number and
+four digital states. The frame has room for 10 bits in each of its first four
+analogue slots and 6 bits in the fifth and sixth, which only exist when five or
+six inputs are enabled. A 4-bit CRC closes every frame and is validated on
+read; a frame that fails it is skipped and the stream resynchronised (see
+:meth:`BitalinoDevice._read_frames`), and the sequence number counts the
+frames the link dropped (:attr:`BitalinoDevice.lost_frames`).
 
 Watchdog
 --------
@@ -229,6 +233,12 @@ class BitalinoDevice(AcquisitionDevice):
         self._resolved_port: str | None = None
         self._firmware = ""
         self._conn_lock = threading.Lock()
+        # Link accounting, from the 4-bit sequence number every frame carries
+        # and from the CRC. Reset when streaming starts.
+        self._lost_frames = 0
+        self._crc_errors = 0
+        self._last_seq: int | None = None
+        self._pending = bytearray()
 
     @property
     def _n_decode(self) -> int:
@@ -265,6 +275,23 @@ class BitalinoDevice(AcquisitionDevice):
     def firmware_version(self) -> str:
         """The version string the board answered on the last open, or ``""``."""
         return self._firmware
+
+    @property
+    def lost_frames(self) -> int:
+        """Frames the link dropped since streaming started.
+
+        Counted from the 4-bit sequence number in every frame: a jump of k
+        codes is k lost frames. The counter wraps every 16 frames, so a gap
+        of exactly 16 (or 32, ...) is invisible and a long dropout is
+        under-counted by a multiple of 16. What it reliably says is whether
+        the link is losing anything at all.
+        """
+        return self._lost_frames
+
+    @property
+    def crc_errors(self) -> int:
+        """Bytes discarded while resynchronising after a corrupted frame."""
+        return self._crc_errors
 
     @property
     def physical_min(self) -> float:
@@ -391,10 +418,7 @@ class BitalinoDevice(AcquisitionDevice):
         if ser is None:
             raise RuntimeError(tr("The BITalino device is not open."))
 
-        n = int(n_samples)
-        frame_bytes = self._frame_size()
-        raw_buf = self._receive_exact(ser, n * frame_bytes)  # blocking; no lock
-        adc = self._decode_frames(raw_buf, n)
+        adc = self._read_frames(ser, int(n_samples))  # blocking; no lock
         return self._adc_to_physical(adc)
 
     def read_raw(self, n_samples: int) -> FloatArray:
@@ -408,10 +432,7 @@ class BitalinoDevice(AcquisitionDevice):
             ser = self._serial
         if ser is None:
             raise RuntimeError(tr("The BITalino device is not open."))
-        n = int(n_samples)
-        frame_bytes = self._frame_size()
-        raw_buf = self._receive_exact(ser, n * frame_bytes)  # blocking; no lock
-        return self._decode_frames(raw_buf, n)
+        return self._read_frames(ser, int(n_samples))  # blocking; no lock
 
     def _adc_to_physical(self, adc: FloatArray | np.ndarray) -> FloatArray:
         """Select the exposed columns from the decoded frame and convert each to
@@ -419,12 +440,16 @@ class BitalinoDevice(AcquisitionDevice):
 
         ``adc`` has one column per *decoded* channel (A1..A5 when the ACC is on);
         only the positions in ``self._expose`` are returned, in exposed order.
+        Each column is scaled by the resolution of the frame slot it came in
+        (see :meth:`adc_max_for_slot`).
         """
         arr = np.asarray(adc, dtype=np.float64)
         out = np.empty((arr.shape[0], len(self._expose)), dtype=np.float64)
         for i, (pos, kind) in enumerate(zip(self._expose, self._kinds, strict=True)):
             col = arr[:, pos]
-            out[:, i] = self._raw_to_acc(col) if kind == "ACC" else self._raw_to_mv(col)
+            top = self.adc_max_for_slot(pos)
+            out[:, i] = (self._raw_to_acc(col, top) if kind == "ACC"
+                         else self._raw_to_mv(col, top))
         return out
 
     def close(self) -> None:
@@ -649,6 +674,10 @@ class BitalinoDevice(AcquisitionDevice):
 
     def _start_streaming(self, ser: object) -> None:
         """Send the live-acquisition start command for the active channels."""
+        self._lost_frames = 0
+        self._crc_errors = 0
+        self._last_seq = None
+        self._pending = bytearray()
         command = 0x01  # low two bits: 01 = live mode
         for ch in self._decode_channels:
             command |= 1 << (2 + ch)
@@ -673,25 +702,78 @@ class BitalinoDevice(AcquisitionDevice):
             buf.extend(chunk)
         return bytes(buf)
 
-    def _decode_frames(self, raw: bytes, n_samples: int) -> FloatArray:
-        """Decode *n_samples* BITalino frames into ``(n_samples, n_channels)`` ADC.
+    #: Bytes of unframed data tolerated while looking for the next frame
+    #: whose CRC validates, before the link is declared lost. About 80
+    #: single-channel frames: far more than a glitch, far less than a
+    #: session.
+    _MAX_RESYNC_BYTES = 256
 
-        Each frame carries a 4-bit CRC that is validated; a mismatch means
-        the serial stream lost framing and is reported so the watchdog and
-        worker can react.
+    def _read_frames(self, ser: object, n_samples: int) -> FloatArray:
+        """Read and decode *n_samples* frames into ``(n_samples, n_channels)``
+        ADC codes, resynchronising after a corrupted frame.
+
+        A single bad CRC used to abort the whole acquisition as "connection
+        lost". On a Bluetooth SPP link one corrupted byte in a session is
+        normal, and the abort cost the student the recording. The stream is
+        now scanned forward one byte at a time until a frame validates: every
+        byte discarded counts as a CRC error, every jump in the sequence
+        number as lost frames (see :attr:`lost_frames`), and only
+        :data:`_MAX_RESYNC_BYTES` in a row without a valid frame give the
+        link up.
+
+        A misaligned window validates by chance one time in sixteen, and the
+        sample it would yield is garbage — up to full scale, which is what
+        the MVC calibration looks for, since it takes the maximum. So after
+        discarding, a frame that validates is only a candidate: it is
+        accepted when the frame after it also validates and carries the next
+        sequence number, and otherwise the scan goes on. Two chance
+        validations in a row with consecutive numbers happen about one time
+        in 4096: one in 16 for each CRC, and one in 16 for the number.
         """
         n_ch = self._n_decode
         frame_bytes = self._frame_size()
         out = np.empty((n_samples, n_ch), dtype=np.float64)
-        for s in range(n_samples):
-            frame = list(raw[s * frame_bytes : (s + 1) * frame_bytes])
-            if not self._crc_ok(frame):
-                raise RuntimeError(
-                    tr("Corrupted BITalino frame (CRC mismatch) — connection lost.")
-                )
+        buf = self._pending
+        s = 0
+        skipped = 0
+        while s < n_samples:
+            if len(buf) < frame_bytes:
+                buf.extend(self._receive_exact(ser, frame_bytes - len(buf)))
+            frame = list(buf[:frame_bytes])
+            ok = self._crc_ok(frame)
+            if ok and skipped:
+                # Resynchronising: confirm the candidate with the frame after it.
+                if len(buf) < 2 * frame_bytes:
+                    buf.extend(self._receive_exact(ser, 2 * frame_bytes - len(buf)))
+                after = list(buf[frame_bytes:2 * frame_bytes])
+                ok = (self._crc_ok(after)
+                      and after[-1] >> 4 == ((frame[-1] >> 4) + 1) & 0x0F)
+            if not ok:
+                del buf[0]
+                self._crc_errors += 1
+                skipped += 1
+                if skipped > self._MAX_RESYNC_BYTES:
+                    raise RuntimeError(
+                        tr("Corrupted BITalino frames (CRC mismatch) — connection lost.")
+                    )
+                continue
+            del buf[:frame_bytes]
+            skipped = 0
+            # _crc_ok has cleared the CRC nibble; the high nibble is the
+            # frame's sequence number.
+            self._count_sequence(frame[-1] >> 4)
             for ch in range(n_ch):
                 out[s, ch] = self._extract_channel(frame, ch)
+            s += 1
         return out
+
+    def _count_sequence(self, seq: int) -> None:
+        """Advance the sequence check and count the frames a jump skipped."""
+        if self._last_seq is not None:
+            expected = (self._last_seq + 1) & 0x0F
+            if seq != expected:
+                self._lost_frames += (seq - expected) & 0x0F
+        self._last_seq = seq
 
     @staticmethod
     def _crc_ok(frame: list[int]) -> bool:
@@ -709,7 +791,8 @@ class BitalinoDevice(AcquisitionDevice):
 
     @staticmethod
     def _extract_channel(frame: list[int], ch: int) -> int:
-        """Extract the 10-bit (A1-A4) or 6-bit (A5-A6) analogue value of *ch*.
+        """Extract the analogue value in frame slot *ch* (0-based among the
+        enabled inputs): 10 bits in slots 0-3, 6 bits in slots 4-5.
 
         ``frame`` must already have its CRC nibble cleared (see
         :meth:`_crc_ok`). The bit packing follows the BITalino frame layout,
@@ -730,7 +813,29 @@ class BitalinoDevice(AcquisitionDevice):
     # -- ADC ↔ mV conversion -------------------------------------------------
 
     @classmethod
-    def _raw_to_mv(cls, raw_adc: FloatArray | np.ndarray) -> FloatArray:
+    def adc_max_for_slot(cls, slot: int) -> int:
+        """Full-scale ADC code of frame slot *slot* (0-based among the enabled
+        inputs, in ascending order).
+
+        The frame has 10 bits for each of its first four analogue slots and 6
+        bits for the fifth and sixth (see :meth:`_frame_size`), so the
+        resolution follows the slot, not the physical input: A5 recorded with
+        one other input travels in the second slot, at 10 bits. The 6-bit
+        slots only exist with five or six inputs enabled; scaling their codes
+        against the 10-bit full scale would under-read them by a factor of 16.
+        The BITalino team confirms it: with four channels or fewer all of them
+        travel at 10 bits, and A5/A6 drop to 6 bits only with more than four
+        (http://forum.bitalino.com/viewtopic.php?f=17&t=467).
+
+        ecgteach decides by the physical input instead (``adc_max_for``); here
+        that would read an accelerometer on A5 or A6, next to one EMG input,
+        16 times too large.
+        """
+        return (2**6 - 1) if int(slot) >= 4 else cls._ADC_MAX
+
+    @classmethod
+    def _raw_to_mv(cls, raw_adc: FloatArray | np.ndarray,
+                   adc_max: int | None = None) -> FloatArray:
         """Convert 10-bit BITalino ADC values to millivolts at the electrodes.
 
         The datasheet transfer function, with the volts-to-millivolts factor
@@ -738,7 +843,8 @@ class BitalinoDevice(AcquisitionDevice):
 
             EMG(mV) = (ADC / 2**n - 0.5) * VCC * 1000 / G
 
-        where ``n`` = 10 bits, ``VCC`` = 3.3 V and ``G`` = 1009. Dividing by
+        where ``n`` = 10 bits (6 in the fifth and sixth frame slots, passed as
+        *adc_max*), ``VCC`` = 3.3 V and ``G`` = 1009. Dividing by
         the gain is what makes the result a biopotential: the ADC reads the
         amplifier's output, not the signal at the skin.
 
@@ -747,7 +853,8 @@ class BitalinoDevice(AcquisitionDevice):
         other by coincidence — the gain is close to 1000 and a volt is 1000 mV
         — which is why the amplitudes looked plausible.
         """
-        normalised = (np.asarray(raw_adc, dtype=np.float64) / cls._ADC_MAX) - 0.5
+        top = cls._ADC_MAX if adc_max is None else adc_max
+        normalised = (np.asarray(raw_adc, dtype=np.float64) / top) - 0.5
         return normalised * cls._V_REF * 1000.0 / cls._GAIN_EMG
 
     @staticmethod
@@ -756,7 +863,8 @@ class BitalinoDevice(AcquisitionDevice):
         return BitalinoDevice._raw_to_mv(raw_adc)
 
     @classmethod
-    def _raw_to_acc(cls, raw_adc: FloatArray | np.ndarray) -> FloatArray:
+    def _raw_to_acc(cls, raw_adc: FloatArray | np.ndarray,
+                    adc_max: int | None = None) -> FloatArray:
         """Convert 10-bit BITalino ACC values (A4) to normalised acceleration (g).
 
         The accelerometer sample (A4, 0..1023) is mapped linearly onto the
@@ -765,8 +873,10 @@ class BitalinoDevice(AcquisitionDevice):
         and relative amplitude of the acceleration — enough for movement
         segmentation, artefact monitoring and tremor-frequency demonstrations
         — but not absolute g. A per-axis calibration step can refine it later.
+        In a 6-bit frame slot the full scale is *adc_max* (63) instead.
         """
-        return (np.asarray(raw_adc, dtype=np.float64) / cls._ADC_MAX_ACC) * 2.0 - 1.0
+        top = cls._ADC_MAX_ACC if adc_max is None else adc_max
+        return (np.asarray(raw_adc, dtype=np.float64) / top) * 2.0 - 1.0
 
     @staticmethod
     def raw_to_acc(raw_adc: FloatArray | np.ndarray) -> FloatArray:

@@ -906,6 +906,13 @@ _ES = {
         "Se detuvo: {error}",
     "No frame failed its CRC.":
         "Ninguna trama falló su CRC.",
+    "{n} byte(s) discarded after a failed CRC; the reading resynchronised.":
+        "{n} byte(s) descartado(s) tras un CRC fallido; la lectura se "
+        "resincronizó.",
+    "No frame was lost: the sequence numbers are in order.":
+        "No se perdió ninguna trama: los números de secuencia van en orden.",
+    "{n} frame(s) lost, counted from the sequence numbers.":
+        "{n} trama(s) perdida(s), contadas por los números de secuencia.",
     "flat: nothing reaches this input":
         "plana: a esta entrada no llega nada",
     "saturated in {pct:.0f} % of the samples":
@@ -1589,8 +1596,8 @@ _ES = {
     "Timeout while reading from the BITalino — connection lost.":
         "Tiempo de espera agotado al leer de la placa BITalino — conexión "
         "perdida.",
-    "Corrupted BITalino frame (CRC mismatch) — connection lost.":
-        "Trama de la placa BITalino corrupta (error de CRC) — conexión "
+    "Corrupted BITalino frames (CRC mismatch) — connection lost.":
+        "Tramas de la placa BITalino corruptas (error de CRC) — conexión "
         "perdida.",
 
     # --- PDF report ---
