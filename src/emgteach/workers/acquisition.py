@@ -161,6 +161,8 @@ class AcquisitionWorker(QThread):
         self._opening = False
         self._streaming = False
         self._n_samples_total: int = 0
+        #: Frames the device had reported lost when the last gap was marked.
+        self._lost_seen: int = 0
         self._markers: list[tuple[float, str]] = []
         self._markers_mutex = QMutex()
         self._last_sample_time: float | None = None
@@ -249,6 +251,27 @@ class AcquisitionWorker(QThread):
         """
         time_s = self._n_samples_total / self._device.fs
         self._record_marker(time_s, label)
+
+    def _note_lost_frames(self) -> None:
+        """Log and annotate a gap in the link, once per gap.
+
+        The sample counter keeps counting what arrived, so after a gap every
+        later time in the file is short by the frames that never came. The
+        annotation is what lets a reader see that, and where. Devices that
+        cannot tell (the Arduino) report no loss.
+        """
+        lost = int(getattr(self._device, "lost_frames", 0))
+        if lost <= self._lost_seen:
+            return
+        gap = lost - self._lost_seen
+        self._lost_seen = lost
+        time_s = self._n_samples_total / self._device.fs
+        self._record_marker(time_s, tr("Link: {n} frame(s) lost").format(n=gap))
+        self.log.emit(
+            tr("Warning — the link dropped {n} frame(s) ({total} so far).").format(
+                n=gap, total=lost
+            )
+        )
 
     def _record_marker(self, time_s: float, label: str) -> None:
         """Append a marker and emit it (shared by manual and automatic).
@@ -494,6 +517,7 @@ class AcquisitionWorker(QThread):
                 if block.ndim == 1:
                     block = block.reshape(-1, 1)
                 self._n_samples_total += len(block)
+                self._note_lost_frames()
 
                 # Process each channel through its own filter chain. Only
                 # the raw signal is written to the EDF (one channel per

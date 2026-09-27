@@ -37,17 +37,30 @@ it wraps every 16, so a gap of exactly 16 is invisible and long dropouts are
 under-counted.
 
 **Frame resolution follows the slot, not the input.** ecgteach scales A5/A6 at
-6 bits whatever else is enabled. The frame has 10 bits in its first four
-analogue slots and 6 in the fifth and sixth, which exist only with more than
-four inputs enabled; the BITalino team confirms that with four channels or
-fewer all of them travel at 10 bits
-(http://forum.bitalino.com/viewtopic.php?f=17&t=467). Scaling by the input
-would read an accelerometer on A5 next to one EMG input 16 times too large, so
-`adc_max_for_slot` decides by the position in the frame.
+6 bits whatever else is enabled. PLUX's documentation places the 6 bits on two
+of the six inputs when all of them are used at once: the core datasheet gives
+«4 in (10-bit) + 2 in (6-bit)»
+(https://support.pluxbiosignals.com/wp-content/uploads/2021/11/bitalino-core-datasheet.pdf),
+and the support page «How many channels does BITalino (r)evolution have?»
+(https://support.pluxbiosignals.com/knowledge-base/how-many-channels-does-bitalino-have/)
+says that when the channels are all used simultaneously, four operate at 10
+bits and the other two at 6. That those 6 bits are the fifth and sixth frame
+slots, which exist only with more than four inputs enabled, is our reading of
+the frame format (`_frame_size`, `_extract_channel`), not a statement of
+PLUX's. Scaling by the input would read an accelerometer on A5 next to one EMG
+input 16 times too large, so `adc_max_for_slot` decides by the position in the
+frame. The application never enables more than three inputs, so no recording
+changes either way.
 
-**Scope note.** The counters are not shown in the acquisition tab, and the EDF
-does not mark where frames were lost, as ecgteach does; that is left for a
-separate change.
+**Lost frames are marked.** When the sequence number shows a gap, the
+acquisition worker writes a line in the event log and an EDF+ annotation at the
+time the gap was noticed, once per gap. The sample counter counts what
+arrived, so after a gap every later time in the file is short by the frames
+that never came; without the annotation nothing in the file would say so.
+
+**Released as 3.7.1**, not 3.8.0: a bug fix, with no change to any interface,
+to the EDF format or to any calculation, and it has to reach the November
+practicals. 3.7.0 stays the version the article describes.
 
 ---
 

@@ -570,6 +570,9 @@ _ES = {
     "Connection established. Starting acquisition.": "Conexión establecida. Iniciando adquisición.",
     "Onset (auto)": "Inicio (auto)",
     "Onset (auto) — {label}": "Inicio (auto) — {label}",
+    "Link: {n} frame(s) lost": "Enlace: {n} trama(s) perdida(s)",
+    "Warning — the link dropped {n} frame(s) ({total} so far).":
+        "Aviso — el enlace ha perdido {n} trama(s) ({total} hasta ahora).",
     "Automatic onset detection enabled (k={k:.1f}).":
         "Detección automática de inicio activada (k={k:.1f}).",
     "Recording to: {path}": "Grabando en: {path}",

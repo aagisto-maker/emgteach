@@ -823,9 +823,15 @@ class BitalinoDevice(AcquisitionDevice):
         one other input travels in the second slot, at 10 bits. The 6-bit
         slots only exist with five or six inputs enabled; scaling their codes
         against the 10-bit full scale would under-read them by a factor of 16.
-        The BITalino team confirms it: with four channels or fewer all of them
-        travel at 10 bits, and A5/A6 drop to 6 bits only with more than four
-        (http://forum.bitalino.com/viewtopic.php?f=17&t=467).
+        PLUX's documentation places the 6 bits on two of the six inputs when
+        all are used at once ("4 in (10-bit) + 2 in (6-bit)", core datasheet,
+        https://support.pluxbiosignals.com/wp-content/uploads/2021/11/bitalino-core-datasheet.pdf;
+        support page "How many channels does BITalino (r)evolution have?",
+        https://support.pluxbiosignals.com/knowledge-base/how-many-channels-does-bitalino-have/).
+        That those two are the fifth and sixth frame slots, which exist only
+        with more than four inputs enabled, is a reading of the frame format,
+        not a statement of PLUX's. The application never enables more than
+        three.
 
         ecgteach decides by the physical input instead (``adc_max_for``); here
         that would read an accelerometer on A5 or A6, next to one EMG input,
