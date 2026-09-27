@@ -115,6 +115,9 @@ Pestaña **Adquisición**, caja **Configuración del dispositivo**:
   va a la cabecera del EDF y al informe.
 - Pulsar **Conectar**. El indicador pasa a amarillo (conectado) y a verde cuando
   llegan datos.
+- Con la placa se habla al pulsar **Iniciar grabación**. Si la placa no contesta,
+  espera el aviso y pulsa **Reintentar**; si Windows da error al abrir el puerto,
+  apaga y enciende la placa y vuelve a pulsar **Iniciar grabación**.
 
 ### 3 · Probar la señal antes de grabar
 

@@ -118,6 +118,10 @@ lateral epicondyle, one reference on the olecranon.
   EDF header and the report.
 - Press **Connect**. The indicator turns yellow (connected) and green when data
   arrives.
+- The board is reached when **Start recording** is pressed. If the board does not
+  answer, wait for the warning and press **Retry**; if Windows gives an error
+  opening the port, switch the board off and on and press **Start recording**
+  again.
 
 ### 3 · Test the signal before recording
 

@@ -72,6 +72,18 @@ TEXTOS = {
             "{f} flexiones · {e} extensiones · {p} presa de {presa}{nbsp}s apretando la pelota · 2{nbsp}s quieto entre maniobras",
             "la línea amarilla dice el paso; al final, el informe PDF",
         ],
+        # Under the six panels, the width of the page: neither fits in a
+        # panel's two lines, and the first happens at «Grabar», not «Conectar».
+        "avisos": [
+            ("Si no conecta:",
+             "si la placa no contesta, espera el aviso y pulsa «Reintentar»; si Windows "
+             "da error al abrir el puerto, apaga y enciende la placa y vuelve a pulsar "
+             "«Iniciar grabación»."),
+            ("En el análisis:",
+             "comprueba que cada contracción tiene su fila; las muy breves pueden salir "
+             "punteadas o sin marcar, y se añaden a mano (pulsando la punteada o con "
+             "«Añadir fragmento»)."),
+        ],
     },
     "en": {
         "cabecera": "emgteach · Agonist / antagonist practical, wrist",
@@ -86,6 +98,16 @@ TEXTOS = {
             "{n} {por} FCR · {n} {por} ECR · one explosive jerk in the {dur}{nbsp}s of each cue",
             "{f} flexions · {e} extensions · {p} grip of {presa}{nbsp}s squeezing the ball · 2{nbsp}s still in between",
             "the yellow line says the step; last, the PDF report",
+        ],
+        "avisos": [
+            ("If it does not connect:",
+             "if the board does not answer, wait for the warning and press «Retry»; if "
+             "Windows gives an error opening the port, switch the board off and on and "
+             "press «Start recording» again."),
+            ("In the analysis:",
+             "check that every contraction has its row; the very brief ones may come "
+             "out dotted or unmarked, and are added by hand (clicking the dotted one or "
+             "with «Add fragment»)."),
         ],
     },
 }
@@ -254,7 +276,7 @@ def componer(idioma: str, cap: dict[str, Path]) -> tuple[Path, Path]:
             va="center")
     ax.text(W - 26, H - 28, t["seis"], fontsize=12, color=GRIS, ha="right", va="center")
 
-    mx, arriba, abajo, hueco = 20, H - 50, 30, 12
+    mx, arriba, abajo, hueco = 20, H - 50, 92, 12
     cw = (W - 2 * mx - 2 * hueco) / 3
     ch = (arriba - abajo - hueco) / 2
     for k in range(6):
@@ -274,6 +296,29 @@ def componer(idioma: str, cap: dict[str, Path]) -> tuple[Path, Path]:
                 va="center", linespacing=1.2)
         _colocar(fig, imagenes[k], x + 10, y + 38, cw - 20, ch - 80)
 
+    # The two notes between the panels and the footer, each under its bold
+    # label and wrapped inside the page: measured, not guessed, since a line
+    # that runs off an A4 sheet is lost on the bench.
+    render = fig.canvas.get_renderer()
+    y = abajo - 14
+    for etiqueta, nota in t["avisos"]:
+        rotulo = ax.text(mx + 4, y, etiqueta, fontsize=9.4, fontweight="bold",
+                         color=TITULO, va="top")
+        x0 = mx + 4 + rotulo.get_window_extent(render).width * 72 / fig.dpi + 5
+        disponible = W - mx - 4 - x0
+        palabras, lineas = nota.split(), [""]
+        for palabra in palabras:
+            prueba = (lineas[-1] + " " + palabra).strip()
+            medida = ax.text(0, 0, prueba, fontsize=9.4)
+            cabe = medida.get_window_extent(render).width * 72 / fig.dpi <= disponible
+            medida.remove()
+            if cabe or not lineas[-1]:
+                lineas[-1] = prueba
+            else:
+                lineas.append(palabra)
+        ax.text(x0, y, "\n".join(lineas), fontsize=9.4, color=TXT, va="top",
+                linespacing=1.25)
+        y -= 12.5 * len(lineas) + 5
     ax.text(W / 2, 14, t["pie"], fontsize=10, color=GRIS, ha="center", va="center")
     pdf = SALIDA / f"hoja_puesto_{idioma}.pdf"
     png = SALIDA / f"hoja_puesto_{idioma}.png"
