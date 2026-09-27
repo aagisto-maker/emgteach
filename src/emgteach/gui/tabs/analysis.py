@@ -2754,6 +2754,19 @@ class AnalysisTab(QWidget):
             self._fig.savefig(ruta, dpi=150, bbox_inches="tight")
             self._logger.append_log(tr("Figure saved to: {path}").format(path=ruta))
 
+    def _aviso_afinado(self, msg: str) -> None:
+        """Say why the tuned recording was not written: in the log and in a
+        warning, since the operator is waiting on the save.
+
+        The two refusals of :meth:`_guardar_afinado` called ``self._err``,
+        which this tab never had — it belongs to the acquisition tab. So the
+        refusal itself raised, and «Error inesperado» came out instead of the
+        reason, for instance on a one-muscle recording, which has no phase
+        to tune.
+        """
+        self._logger.append_error(msg)
+        QMessageBox.warning(self, tr("Save tuned recording"), msg)
+
     @Slot()
     def _guardar_afinado(self) -> None:
         """Write the recording out with this analysis's decisions inside it.
@@ -2775,7 +2788,7 @@ class AnalysisTab(QWidget):
         if not destino:
             return
         if Path(destino).resolve() == Path(origen).resolve():
-            self._err(tr(
+            self._aviso_afinado(tr(
                 "The tuned recording cannot replace the one it comes from: "
                 "tuning discards signal, so its source has to stay."
             ))
@@ -2798,7 +2811,7 @@ class AnalysisTab(QWidget):
                 when=datetime.now(),
             )
         except Exception as exc:
-            self._err(tr("Could not write the tuned recording: {err}")
+            self._aviso_afinado(tr("Could not write the tuned recording: {err}")
                       .format(err=exc))
             return
         self._logger.append_log(tr(

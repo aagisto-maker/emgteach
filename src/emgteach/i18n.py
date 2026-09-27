@@ -570,6 +570,9 @@ _ES = {
     "Connection established. Starting acquisition.": "Conexión establecida. Iniciando adquisición.",
     "Onset (auto)": "Inicio (auto)",
     "Onset (auto) — {label}": "Inicio (auto) — {label}",
+    "Link: {n} frame(s) lost": "Enlace: {n} trama(s) perdida(s)",
+    "Warning — the link dropped {n} frame(s) ({total} so far).":
+        "Aviso — el enlace ha perdido {n} trama(s) ({total} hasta ahora).",
     "Automatic onset detection enabled (k={k:.1f}).":
         "Detección automática de inicio activada (k={k:.1f}).",
     "Recording to: {path}": "Grabando en: {path}",
@@ -906,6 +909,13 @@ _ES = {
         "Se detuvo: {error}",
     "No frame failed its CRC.":
         "Ninguna trama falló su CRC.",
+    "{n} byte(s) discarded after a failed CRC; the reading resynchronised.":
+        "{n} byte(s) descartado(s) tras un CRC fallido; la lectura se "
+        "resincronizó.",
+    "No frame was lost: the sequence numbers are in order.":
+        "No se perdió ninguna trama: los números de secuencia van en orden.",
+    "{n} frame(s) lost, counted from the sequence numbers.":
+        "{n} trama(s) perdida(s), contadas por los números de secuencia.",
     "flat: nothing reaches this input":
         "plana: a esta entrada no llega nada",
     "saturated in {pct:.0f} % of the samples":
@@ -1589,8 +1599,8 @@ _ES = {
     "Timeout while reading from the BITalino — connection lost.":
         "Tiempo de espera agotado al leer de la placa BITalino — conexión "
         "perdida.",
-    "Corrupted BITalino frame (CRC mismatch) — connection lost.":
-        "Trama de la placa BITalino corrupta (error de CRC) — conexión "
+    "Corrupted BITalino frames (CRC mismatch) — connection lost.":
+        "Tramas de la placa BITalino corruptas (error de CRC) — conexión "
         "perdida.",
 
     # --- PDF report ---

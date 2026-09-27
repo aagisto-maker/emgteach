@@ -39,6 +39,34 @@ def test_the_simulated_board_passes_and_the_report_is_written(tmp_path: Path) ->
     assert 900 <= rate <= 1100, acquisition.lines[0]
 
 
+def test_the_report_counts_what_a_failed_crc_discarded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A frame that fails its CRC no longer stops the reading, so «No frame
+    failed its CRC» would say what the device can no longer tell by raising:
+    the report reads the device's own counts instead."""
+    from emgteach.devices.bitalino import BitalinoDevice
+
+    monkeypatch.setattr(BitalinoDevice, "crc_errors", property(lambda _d: 7))
+    monkeypatch.setattr(BitalinoDevice, "lost_frames", property(lambda _d: 2))
+    result = diagnostics.run_diagnosis("simulada", seconds=0.5, folder=tmp_path,
+                                       say=lambda _s: None)
+    acquisition = next(c for c in result.checks if c.title == "Acquisition")
+    text = "\n".join(acquisition.lines)
+    assert "No frame failed its CRC." not in text
+    assert "7 byte(s) discarded after a failed CRC" in text
+    assert "2 frame(s) lost" in text
+    assert acquisition.ok, text          # a glitch is reported, not a failure
+
+
+def test_a_clean_link_says_so(tmp_path: Path) -> None:
+    result = diagnostics.run_diagnosis("simulada", seconds=0.5, folder=tmp_path,
+                                       say=lambda _s: None)
+    acquisition = next(c for c in result.checks if c.title == "Acquisition")
+    assert "No frame failed its CRC." in acquisition.lines
+    assert "No frame was lost: the sequence numbers are in order." in acquisition.lines
+
+
 def test_the_address_comes_from_bitalino_txt(tmp_path: Path) -> None:
     (tmp_path / station.ADDRESS_FILE).write_text("# puesto 3\nsimulada\n", encoding="utf-8")
     result = diagnostics.run_diagnosis(seconds=1.0, folder=tmp_path, say=lambda _s: None)

@@ -626,17 +626,251 @@ class TestBitalinoDeviceBasics:
             device.read(1)
         device.close()
 
-    def test_read_crc_mismatch_raises(self, fast_commands: None) -> None:
+    def test_a_corrupted_frame_is_skipped_and_counted(self, fast_commands: None) -> None:
+        """One bad CRC used to abort the acquisition as 'connection lost'.
+        On a Bluetooth link one corrupted byte in a session is normal; the
+        stream is resynchronised on the next frame that validates instead."""
         device = BitalinoDevice("COM5", channels=[0])
-        frame = bytearray(_encode_frame_1ch(500))
-        frame[-1] ^= 0x01  # corrupt the CRC nibble
+        bad = bytearray(_encode_frame_1ch(500, seq=0))
+        bad[-1] ^= 0x01  # corrupt the CRC nibble
+        good = _encode_frame_1ch(1023, seq=1) + _encode_frame_1ch(0, seq=2)
         ser = _FakeSerial()
-        ser.binary_queue = bytearray(_VERSION_REPLY + bytes(frame))
+        ser.binary_queue = bytearray(_VERSION_REPLY + bytes(bad) + good)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(2)
+        np.testing.assert_allclose(
+            out[:, 0], [device.physical_max, device.physical_min], rtol=1e-3)
+        assert device.crc_errors >= 1
+        assert device.lost_frames == 0
+        device.close()
+
+    def test_a_misaligned_window_that_validates_by_chance_never_reaches_the_output(
+        self, fast_commands: None
+    ) -> None:
+        """After a corrupted frame, a window straddling two frames can pass
+        the 4-bit CRC by chance (one time in sixteen). Its sample is garbage
+        — it can reach full scale, and the MVC calibration takes the
+        maximum —, so a candidate is only accepted when the next frame also
+        validates with the next sequence number."""
+        def valid(w: bytes) -> bool:
+            return (w[2] & 0x0F) == _bitalino_crc4([w[0], w[1], w[2] & 0xF0])
+
+        good = _encode_frame_1ch(512, seq=1) + _encode_frame_1ch(512, seq=2)
+        tail = _encode_frame_1ch(512, seq=3)
+        found = None
+        for v in range(1024):
+            bad = bytearray(_encode_frame_1ch(v, seq=0))
+            bad[-1] ^= 0x01
+            stream = bytes(bad) + good + tail
+            # The window one byte in validates, and decodes to something
+            # other than the true 512.
+            win = stream[1:4]
+            if valid(win) and (((win[1] & 0x0F) << 6) | (win[0] >> 2)) != 512:
+                found = stream
+                break
+        assert found is not None
+        device = BitalinoDevice("COM5", channels=[0])
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + found)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        np.testing.assert_array_equal(device.read_raw(2), [[512.0], [512.0]])
+        assert device.crc_errors == 3            # the three bytes of the bad frame
+        assert device.lost_frames == 0
+        device.close()
+
+    def test_the_frame_read_ahead_to_confirm_is_kept_for_the_next_read(
+        self, fast_commands: None
+    ) -> None:
+        """A read that completes with the confirming frame already taken off
+        the port must leave it pending: the port has nothing more to give, so
+        if it were dropped the next read would time out."""
+        device = BitalinoDevice("COM5", channels=[0])
+        bad = bytearray(_encode_frame_1ch(500, seq=0))
+        bad[-1] ^= 0x01
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + bytes(bad)
+            + _encode_frame_1ch(100, seq=1) + _encode_frame_1ch(900, seq=2))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        np.testing.assert_array_equal(device.read_raw(1), [[100.0]])
+        assert not ser.binary_queue              # the confirming frame left the port
+        np.testing.assert_array_equal(device.read_raw(1), [[900.0]])
+        assert device.crc_errors == 3            # only the bad frame's bytes
+        assert device.lost_frames == 0
+        device.close()
+
+    def test_the_confirmation_accepts_fifteen_followed_by_zero(
+        self, fast_commands: None
+    ) -> None:
+        """The sequence number wraps at 16: a candidate numbered 15 is
+        confirmed by a frame numbered 0, not rejected as out of order."""
+        device = BitalinoDevice("COM5", channels=[0])
+        bad = bytearray(_encode_frame_1ch(500, seq=14))
+        bad[-1] ^= 0x01
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + bytes(bad)
+            + _encode_frame_1ch(100, seq=15) + _encode_frame_1ch(900, seq=0))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        np.testing.assert_array_equal(device.read_raw(2), [[100.0], [900.0]])
+        assert device.crc_errors == 3            # the candidate 15 was not discarded
+        assert device.lost_frames == 0
+        device.close()
+
+    def test_read_raw_resynchronises_too(self, fast_commands: None) -> None:
+        """The channel diagnostic reads raw codes; it takes the same path."""
+        device = BitalinoDevice("COM5", channels=[0])
+        bad = bytearray(_encode_frame_1ch(500, seq=0))
+        bad[-1] ^= 0x01
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + bytes(bad)
+            + _encode_frame_1ch(700, seq=1) + _encode_frame_1ch(700, seq=2))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        np.testing.assert_array_equal(device.read_raw(1), [[700.0]])
+        assert device.crc_errors >= 1
+        device.close()
+
+    def test_lost_frames_are_counted_from_the_sequence_number(
+        self, fast_commands: None
+    ) -> None:
+        device = BitalinoDevice("COM5", channels=[0])
+        frames = b"".join(_encode_frame_1ch(512, seq=s) for s in (3, 4, 8, 9, 10))
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + frames)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        device.read(5)
+        assert device.lost_frames == 3          # 5, 6 and 7 never came
+        assert device.crc_errors == 0
+        device.close()
+
+    def test_the_sequence_wraps_at_sixteen_without_a_false_gap(
+        self, fast_commands: None
+    ) -> None:
+        device = BitalinoDevice("COM5", channels=[0])
+        frames = b"".join(_encode_frame_1ch(512, seq=s) for s in (14, 15, 0, 1))
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + frames)
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        device.read(4)
+        assert device.lost_frames == 0
+        device.close()
+
+    def test_unframed_garbage_gives_the_link_up_as_lost(self, fast_commands: None) -> None:
+        """Resynchronising is for a glitch, not for a stream of noise: after a
+        run of bytes in which no window validates, the read raises."""
+        rng = np.random.default_rng(0)
+        pattern = None
+        for _ in range(2000):
+            cand = [int(b) for b in rng.integers(0, 256, size=3)]
+            rotations = [cand[i:] + cand[:i] for i in range(3)]
+            if all((r[2] & 0x0F) != _bitalino_crc4([r[0], r[1], r[2] & 0xF0])
+                   for r in rotations):
+                pattern = bytes(cand)
+                break
+        assert pattern is not None
+        device = BitalinoDevice("COM5", channels=[0])
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + pattern * 200)
         with patch("serial.Serial", return_value=ser):
             device.open()
         with pytest.raises(RuntimeError, match="CRC"):
             device.read(1)
+        assert device.crc_errors > BitalinoDevice._MAX_RESYNC_BYTES
         device.close()
+
+    def test_link_counters_reset_when_streaming_starts(self, fast_commands: None) -> None:
+        device = BitalinoDevice("COM5", channels=[0])
+        bad = bytearray(_encode_frame_1ch(500, seq=0))
+        bad[-1] ^= 0x01
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + bytes(bad)
+            + b"".join(_encode_frame_1ch(512, seq=s) for s in (1, 2, 7))
+        )
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        device.read(3)
+        assert device.lost_frames == 4          # 3, 4, 5 and 6 never came
+        assert device.crc_errors >= 1
+        # A stray byte left pending must not carry over to the next session.
+        device._pending.extend(b"\x01")
+        device.close()
+        ser2 = _FakeSerial()
+        ser2.binary_queue = bytearray(_VERSION_REPLY + _encode_frame_1ch(1023, seq=0))
+        with patch("serial.Serial", return_value=ser2):
+            device.open()
+        assert device.lost_frames == 0
+        assert device.crc_errors == 0
+        np.testing.assert_array_equal(device.read_raw(1), [[1023.0]])
+        assert device.crc_errors == 0
+        device.close()
+
+    def test_the_simulated_board_numbers_its_frames_in_order(self) -> None:
+        """lost_frames trusts the sequence number; the board in software has
+        to number its frames as the real one does, or every practical run on
+        it would report losses that never happened."""
+        device = BitalinoDevice("simulada", channels=[0, 1], acc=True)
+        device.open()
+        try:
+            for _ in range(5):
+                device.read(100)
+        finally:
+            device.close()
+        assert device.lost_frames == 0
+        assert device.crc_errors == 0
+
+
+class TestBitalinoFrameSlots:
+    """The frame has 10 bits in its first four analogue slots and 6 in the
+    fifth and sixth: the resolution follows the slot, not the input."""
+
+    def test_the_resolution_follows_the_slot(self) -> None:
+        assert [BitalinoDevice.adc_max_for_slot(k) for k in range(6)] == [
+            1023, 1023, 1023, 1023, 63, 63]
+
+    def test_the_channel_list_accepts_a5_and_a6(self) -> None:
+        BitalinoDevice("COM5", channels=[4, 5])._validate_config()  # no error
+
+    def test_an_accelerometer_on_a5_next_to_one_emg_keeps_ten_bits(
+        self, fast_commands: None
+    ) -> None:
+        """EMG on A1 and the accelerometer on A5: two inputs, two 10-bit
+        slots. Scaled as a 6-bit input it would read 16 times too large."""
+        from emgteach.devices.bitalino_sim import encode_frame
+
+        device = BitalinoDevice("COM5", channels=[0], acc=True, acc_channel=4)
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(_VERSION_REPLY + encode_frame([1023, 767], seq=0))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(1)
+        device.close()
+        np.testing.assert_allclose(out[0, 0], device.physical_max, rtol=1e-3)
+        np.testing.assert_allclose(out[0, 1], 767 / 1023 * 2 - 1, rtol=1e-6)
+
+    def test_the_fifth_and_sixth_slots_are_scaled_at_six_bits(
+        self, fast_commands: None
+    ) -> None:
+        from emgteach.devices.bitalino_sim import encode_frame
+
+        device = BitalinoDevice("COM5", channels=[0, 1, 2, 3, 4, 5])
+        ser = _FakeSerial()
+        ser.binary_queue = bytearray(
+            _VERSION_REPLY + encode_frame([1023, 0, 512, 1023, 63, 0], seq=0))
+        with patch("serial.Serial", return_value=ser):
+            device.open()
+        out = device.read(1)
+        device.close()
+        np.testing.assert_allclose(out[0, [0, 3, 4]], device.physical_max, rtol=1e-3)
+        np.testing.assert_allclose(out[0, [1, 5]], device.physical_min, rtol=1e-3)
 
 
 class TestBitalinoConversion:

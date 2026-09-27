@@ -12,6 +12,58 @@ used.
 
 ---
 
+## 2026-09-27 — BITalino frames: resynchronise after a bad CRC, confirmed by the next frame
+
+**Context.** The pyserial backend (2026-06-28) decoded frames in fixed steps
+and raised «connection lost» at the first frame whose 4-bit CRC failed, so one
+corrupted byte cost the whole recording. ecgteach, forked from this backend,
+already resynchronises.
+
+**Options evaluated.** (a) Keep aborting; (b) port ecgteach's resynchronisation
+as it is; (c) port it and confirm each resynchronised frame with the next one.
+
+**Chosen: (c).** After a failed CRC the stream is scanned forward one byte at a
+time; every byte discarded counts as a CRC error, and 256 bytes in a row with
+no valid frame give the link up (about 80 single-channel frames: far more than
+a glitch, far less than a session). A window straddling two frames passes a
+4-bit CRC by chance one time in sixteen, and with (b) its sample reached the
+output. Here that is not harmless: the MVC calibration takes a maximum, and a
+garbage sample can reach full scale. So after discarding, a frame that
+validates is accepted only when the next frame also validates and carries the
+next sequence number; a chance pass of both is about one in 4096. The cost is
+reading one frame ahead while resynchronising, a millisecond at 1 kHz. The
+4-bit sequence number also counts the frames the link dropped (`lost_frames`);
+it wraps every 16, so a gap of exactly 16 is invisible and long dropouts are
+under-counted.
+
+**Frame resolution follows the slot, not the input.** ecgteach scales A5/A6 at
+6 bits whatever else is enabled. PLUX's documentation places the 6 bits on two
+of the six inputs when all of them are used at once: the core datasheet gives
+«4 in (10-bit) + 2 in (6-bit)»
+(https://support.pluxbiosignals.com/wp-content/uploads/2021/11/bitalino-core-datasheet.pdf),
+and the support page «How many channels does BITalino (r)evolution have?»
+(https://support.pluxbiosignals.com/knowledge-base/how-many-channels-does-bitalino-have/)
+says that when the channels are all used simultaneously, four operate at 10
+bits and the other two at 6. That those 6 bits are the fifth and sixth frame
+slots, which exist only with more than four inputs enabled, is our reading of
+the frame format (`_frame_size`, `_extract_channel`), not a statement of
+PLUX's. Scaling by the input would read an accelerometer on A5 next to one EMG
+input 16 times too large, so `adc_max_for_slot` decides by the position in the
+frame. The application never enables more than three inputs, so no recording
+changes either way.
+
+**Lost frames are marked.** When the sequence number shows a gap, the
+acquisition worker writes a line in the event log and an EDF+ annotation at the
+time the gap was noticed, once per gap. The sample counter counts what
+arrived, so after a gap every later time in the file is short by the frames
+that never came; without the annotation nothing in the file would say so.
+
+**Released as 3.7.1**, not 3.8.0: a bug fix, with no change to any interface,
+to the EDF format or to any calculation, and it has to reach the November
+practicals. 3.7.0 stays the version the article describes.
+
+---
+
 ## 2026-06-28 — BITalino backend rewritten on pyserial (supersedes 2026-06-17 Decision 3)
 
 **Context.** Even bundled `--no-deps`, the external pure-Python `bitalino`

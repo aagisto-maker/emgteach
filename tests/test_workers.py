@@ -251,6 +251,74 @@ class TestAcquisitionWorker:
             "antipattern would 10x-inflate."
         )
 
+    def test_a_gap_in_the_link_is_logged_and_annotated_once_per_gap(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """The device counts the frames its sequence number says were lost;
+        the worker turns each new gap into a line of the event log and an
+        EDF+ annotation at the time it was noticed. Without it, the times
+        after a gap are short by the frames that never came, and nothing in
+        the file says so."""
+
+        class _DroppingDevice(_FakeDevice):
+            def __init__(self) -> None:
+                super().__init__(fs=1000)
+                self._reads = 0
+
+            @property
+            def lost_frames(self) -> int:
+                # 7 frames lost by the third block, 3 more by the sixth.
+                if self._reads >= 6:
+                    return 10
+                return 7 if self._reads >= 3 else 0
+
+            def read(self, n_samples: int) -> np.ndarray:
+                self._reads += 1
+                return super().read(n_samples)
+
+        device = _DroppingDevice()
+        worker = AcquisitionWorker(device=device, save_dir=str(tmp_path), n_per_read=100)
+        logs: list[str] = []
+        worker.log.connect(logs.append)
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        QTimer.singleShot(800, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        assert device._reads >= 6, "the recording stopped before the second gap"
+        warnings = [line for line in logs if "the link dropped" in line]
+        assert warnings == [
+            "Warning — the link dropped 7 frame(s) (7 so far).",
+            "Warning — the link dropped 3 frame(s) (10 so far).",
+        ]
+        markers = read_edf_pyedflib(edf_paths[0])["markers"]
+        gaps = [(t, label) for t, label in markers if label.startswith("Link:")]
+        assert [label for _t, label in gaps] == [
+            "Link: 7 frame(s) lost", "Link: 3 frame(s) lost"]
+        # At the time each gap was noticed: after the third and sixth blocks.
+        np.testing.assert_allclose([t for t, _l in gaps], [0.3, 0.6], atol=1e-6)
+
+    def test_a_device_that_loses_nothing_leaves_no_gap_marks(
+        self, qapp: QCoreApplication, tmp_path: Path
+    ) -> None:
+        """The fake device has no lost_frames at all, like the Arduino."""
+        device = _FakeDevice(fs=1000)
+        worker = AcquisitionWorker(device=device, save_dir=str(tmp_path), n_per_read=100)
+        logs: list[str] = []
+        worker.log.connect(logs.append)
+        edf_paths: list[str] = []
+        worker.finished_ok.connect(edf_paths.append)
+        worker.start()
+        QTimer.singleShot(300, worker.stop)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=8000)
+        worker.wait(8000)
+
+        assert not [line for line in logs if "the link dropped" in line]
+        markers = read_edf_pyedflib(edf_paths[0])["markers"]
+        assert not [label for _t, label in markers if label.startswith("Link:")]
+
     def test_marker_is_persisted_as_edf_annotation(
         self, qapp: QCoreApplication, tmp_path: Path
     ) -> None:
