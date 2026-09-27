@@ -24,7 +24,13 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.7.0 is **the version the article describes**, and the one the
+`emgteach` v3.7.1 is a bug fix of v3.7.0 for the November practicals: a
+corrupted BITalino frame no longer ends the recording, a gap in the link is
+marked in the file, and saving the tuned recording says why it cannot instead
+of an unexpected error. Nothing computed changes. See
+[`docs/RELEASE_NOTES_v3.7.1.md`](docs/RELEASE_NOTES_v3.7.1.md).
+
+v3.7.0 is **the version the article describes**, and the one the
 November practicals run on. The guided session goes on into the task, with a
 row of boxes that maps each phase and a grip made squeezing a ball; the
 fragment editor proposes each row from where its contraction leaves rest to
@@ -188,10 +194,10 @@ computer, so it is exactly the code of that version.
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
   información → Ejecutar de todos modos»).
 - **Check it is the published file**: the release notes give its SHA-256. In
-  PowerShell, `Get-FileHash .\emgteach-v3.7.0-windows-x64.exe -Algorithm SHA256`
+  PowerShell, `Get-FileHash .\emgteach-v3.7.1-windows-x64.exe -Algorithm SHA256`
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
-  `gh attestation verify emgteach-v3.7.0-windows-x64.exe --repo aagisto-maker/emgteach`
+  `gh attestation verify emgteach-v3.7.1-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that tag.
 
 The executable is not part of the Zenodo record, which archives the source

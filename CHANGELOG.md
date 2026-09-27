@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Being prepared as **3.7.1**: a bug fix for the November practicals. With 3.7.0 one corrupted
-byte on the Bluetooth link ends a student's whole recording. No interface, no EDF format and no
-calculation changes; for a given set of fragments 3.7.1 computes what 3.7.0 computes, and 3.7.0
-stays the version the article describes. Recordings made with 3.7.0 open and read as before.
+## [3.7.1] — 2026-09-27
+
+**A bug fix for the November practicals.** With 3.7.0 one corrupted byte on the Bluetooth link
+ended a student's whole recording; now the reading resynchronises, and a gap in the link is
+marked in the file. Saving the tuned recording of a recording with nothing to tune says why
+instead of «Unexpected error». No interface, no EDF format and no calculation changes: for a given
+set of fragments 3.7.1 computes what 3.7.0 computes, and **3.7.0 stays the version the article
+describes**. Recordings made with 3.7.0 open and read as before. Checked at the bench with the
+BITalino on 27 September (diagnostic, CRC01 and CRC02 with no link warning or mark and the file's
+duration equal to the clock's); a real Bluetooth failure could not be provoked, at more than 4 m,
+so the resynchronisation is tested by the automated suite and by the board in normal use. See
+[`docs/RELEASE_NOTES_v3.7.1.md`](docs/RELEASE_NOTES_v3.7.1.md).
 
 ### Fixed
 
@@ -18,6 +26,10 @@ stays the version the article describes. Recordings made with 3.7.0 open and rea
 - **A gap in the link is marked in the file.** When the sequence number shows frames lost, the recording writes, once per gap, a line in its event log («Warning — the link dropped {n} frame(s) ({total} so far).») and an EDF+ annotation at the time the gap was noticed («Link: {n} frame(s) lost»). The sample counter counts what arrived, so after a gap every later time in the file is short by the frames that never came; before this, nothing in the file said so. Ported from ecgteach.
 - **The connection diagnostic says what a failed CRC cost.** It wrote «No frame failed its CRC» whenever the reading did not stop, which after the change above would no longer be true. It now reports the bytes discarded and the frames lost; a glitch is reported, and the check still passes.
 - **Saving the tuned recording says why it cannot, instead of «Unexpected error».** Both refusals of the analysis tab's save — a recording with nothing to tune, such as a one-muscle recording with no «REC start», calibration or load marks, and a destination that would overwrite the source — called a method the tab never had, so the refusal itself crashed and the reason never reached the screen. Found at the bench on the 3.7.1 check (CRC02); present since the tuned recording was introduced. The reason now comes as a warning and in the log.
+- **The guides say to check that every contraction has its row** in the one-muscle practical:
+  the fragment editor drops a contraction shorter than 0.5 s above the threshold, and there is no
+  expected count there to warn. The very brief ones come out dotted or unmarked and are added by
+  hand (`docs/guion_practicas_es.md`, `docs/lab_practicals.md`).
 - **The fifth and sixth frame slots are scaled at 6 bits.** The conversion assumed 10 bits for every channel. The frame has 10 bits in its first four analogue slots and 6 in the fifth and sixth, which exist only when five or six inputs are enabled, so the resolution now follows the slot (`adc_max_for_slot`). No configuration the application uses enables more than three inputs, so no recording changes: an accelerometer on A5 or A6 next to one EMG input travels in a 10-bit slot, and stays at 10 bits.
 
 ## [3.7.0] — 2026-09-26
