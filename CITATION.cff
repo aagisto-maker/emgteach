@@ -61,10 +61,14 @@ abstract: >-
   session into the task, with a map of each phase, a grip made squeezing a
   ball, fragment rows from where each contraction leaves rest to where it
   returns, one row per marked lift in the kinematics practical, and a
-  connection that says when the board does not answer.
+  connection that says when the board does not answer. Patch 3.7.1 keeps a
+  recording going when a BITalino frame arrives corrupted, resynchronising
+  on the next frames that validate, marks in the file the frames the link
+  lost, and makes saving the tuned recording say why it cannot; nothing
+  computed changes.
 type: software
-version: 3.7.0
-date-released: "2026-09-26"
+version: 3.7.1
+date-released: "2026-09-27"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

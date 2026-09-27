@@ -257,6 +257,12 @@ MDF) y las **fichas del resumen** (MNF, MDF, pendiente de la MDF, fatiga, máxim
 la tarea, RMS global, iEMG, duración, CVM). El botón **«Más paneles…»** revela el
 resto para quien quiera mirar más.
 
+**Fragmentos.** Comprueba que cada contracción tiene su fila; las muy breves
+pueden salir punteadas o sin marcar, y se añaden a mano (pulsando la punteada o
+con «Añadir fragmento»). El editor no propone una contracción que pase menos de
+0.5 s por encima del umbral, y en esta práctica no hay recuento de esperadas que
+lo avise.
+
 ### Ejercicio 1a · Primer registro: de la señal al número
 
 **Objetivo.** Obtener un registro limpio y reconocer las representaciones de la

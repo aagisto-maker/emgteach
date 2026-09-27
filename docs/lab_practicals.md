@@ -270,6 +270,12 @@ MVC, MDF) and the **summary cards** (MNF, MDF, MDF slope, fatigue, task maximum,
 global RMS, iEMG, duration, MVC). **«More panels…»** reveals the rest for anyone
 who wants to look further.
 
+**Fragments.** Check that every contraction has its row; the very brief ones may
+come out dotted or unmarked, and are added by hand (clicking the dotted one or
+with «Add fragment»). The editor does not propose a contraction that stays less
+than 0.5 s above the threshold, and in this practical there is no expected count
+to warn about it.
+
 ### Exercise 1a · First recording: from the signal to the number
 
 **Objective.** Obtain a clean recording and recognise the representations of the

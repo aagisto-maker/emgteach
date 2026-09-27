@@ -120,7 +120,7 @@ desde la rama). El diagnóstico da «Ninguna trama falló su CRC» y «No se per
 `CRC01` (agonista/antagonista, 104.0 s) y `CRC02` (un músculo, 15.0 s) no hay ningún aviso de enlace
 ni ninguna marca de tramas perdidas, y la duración del archivo coincide con la del reloj del registro
 de eventos: no se perdió nada. `CRC03` (alejarse con la placa) no llegó a provocar un fallo del
-Bluetooth a unos 3 m, así que **la resincronización y la marca de tramas perdidas están probadas por
+Bluetooth a más de 4 m, así que **la resincronización y la marca de tramas perdidas están probadas por
 la suite y no con la placa real**. El aviso del registro afinado se añadió tras `CRC02` y se comprueba
 con el kit reconstruido.
 
