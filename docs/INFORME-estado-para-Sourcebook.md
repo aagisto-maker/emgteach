@@ -63,7 +63,8 @@ ejecutable.
 prácticas de noviembre: con la 3.7.0, un byte corrupto por Bluetooth tira la grabación entera de un
 alumno. **La versión que describe el artículo sigue siendo la 3.7.0.** Para un conjunto dado de
 fragmentos la 3.7.1 calcula lo mismo, y no cambia ninguna pantalla del material del artículo salvo
-el texto del error de conexión. No cambia ninguna interfaz ni el formato del archivo. Las figuras
+el texto del error de conexión y el aviso que sustituye a un «Error inesperado» al guardar el
+registro afinado (abajo). No cambia ninguna interfaz ni el formato del archivo. Las figuras
 del artículo no se han regenerado.
 
 **Una trama corrupta ya no corta la grabación.** Una sola trama con el CRC de 4 bits mal la
@@ -108,9 +109,20 @@ sitúa los 6 bits en dos de las seis entradas cuando se usan todas; que sean esa
 solo existen con más de cuatro entradas activas, es lectura del formato de la trama. La aplicación
 nunca activa más de tres, así que **no cambia ningún registro**.
 
-**Comprobación.** La suite y la placa simulada, sí; con la placa real, pendiente de la hoja
-`HOJA-comprobacion-3.7.1.md` (diagnóstico, `CRC01` agonista/antagonista, `CRC02` un músculo y, si se
-puede, `CRC03` alejándose con la placa) antes de etiquetar.
+**Guardar el registro afinado ya no da «Error inesperado».** En la comprobación del banco (`CRC02`),
+guardar el afinado de un registro de un músculo —que no tiene fase que afinar— sacó «Error
+inesperado»: las dos negativas de esa función llamaban a un método que la pestaña de análisis no
+tiene. Venía de la versión que introdujo el afinado. Ahora el motivo sale como aviso, con el título
+«Guardar el registro afinado», y en el registro; los textos de las negativas no cambian.
+
+**Comprobación con la placa** (27 de septiembre, hoja `HOJA-comprobacion-3.7.1.md`, kit construido
+desde la rama). El diagnóstico da «Ninguna trama falló su CRC» y «No se perdió ninguna trama». En
+`CRC01` (agonista/antagonista, 104.0 s) y `CRC02` (un músculo, 15.0 s) no hay ningún aviso de enlace
+ni ninguna marca de tramas perdidas, y la duración del archivo coincide con la del reloj del registro
+de eventos: no se perdió nada. `CRC03` (alejarse con la placa) no llegó a provocar un fallo del
+Bluetooth a unos 3 m, así que **la resincronización y la marca de tramas perdidas están probadas por
+la suite y no con la placa real**. El aviso del registro afinado se añadió tras `CRC02` y se comprueba
+con el kit reconstruido.
 
 ### 1.1 De la 3.6.0 a la 3.7.0
 
