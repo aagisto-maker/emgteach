@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- **What to do when the board does not connect, and the brief contractions, on the station sheet
+  and in the guides.** The guides' «Connect» step says that the board is reached at «Start
+  recording», that if it does not answer the warning offers «Retry», and that if Windows gives an
+  error opening the port the board is switched off and on and «Start recording» pressed again.
+  At the 3.7.1 bench check four of the application's seven connection attempts went unanswered, once with
+  Windows error 1168. The station sheet carries that note and the one on brief contractions (they
+  may come out dotted or unmarked and are added by hand), under its six panels: neither fits in a
+  panel's two lines. Regenerated with `tools/hoja_puesto.py`.
+
 ## [3.7.1] — 2026-09-27
 
 **A bug fix for the November practicals.** With 3.7.0 one corrupted byte on the Bluetooth link
