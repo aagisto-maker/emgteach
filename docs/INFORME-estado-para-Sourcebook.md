@@ -3,8 +3,8 @@
 Escrito el 5 de septiembre de 2026 sobre `main`, después de publicar la versión
 3.0.0, y actualizado a la **3.1.0**, a la **3.1.1** y a la **3.1.2** tras publicarlas, el 13 de
 septiembre, y a la **3.2.0**, a la **3.3.0** y a la **3.4.0** el 14 de septiembre, y a la
-**3.5.0** el 18 de septiembre, a la **3.6.0** el 19 y a la **3.7.0** el 26; el 27 se
-añade lo que prepara la **3.7.1**, que no cambia la versión que describe el artículo.
+**3.5.0** el 18 de septiembre, a la **3.6.0** el 19 y a la **3.7.0** el 26, y a la **3.7.1** el 27,
+una corrección que no cambia la versión que describe el artículo.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
 Los textos de pantalla están **copiados literalmente** de
@@ -25,7 +25,7 @@ Donde algo no está hecho o no lo sé, lo dice.
 | Rama | `main` |
 | **Versión que describe el artículo** | `v3.7.0`, publicada el 26 de septiembre de 2026 |
 | DOI de esa versión | 10.5281/zenodo.22976106 |
-| En preparación | **3.7.1** (PR #103): corrección de un fallo para las prácticas de noviembre, sin etiquetar; no cambia ningún cálculo (apartado 1.0) |
+| Versión siguiente | `v3.7.1`, publicada el 27 de septiembre de 2026 (10.5281/zenodo.22999304, etiqueta en `dcb1ecd`, 1395 pruebas): corrección de un fallo para las prácticas de noviembre; no cambia ningún cálculo (apartado 1.0) |
 | DOI de concepto | 10.5281/zenodo.21002297 |
 | Commit de la etiqueta | `34294b4` |
 | Pruebas en la etiqueta | **1376 recogidas, 1375 pasan y 1 se salta** |
@@ -59,7 +59,8 @@ ejecutable.
 
 ### 1.0 De la 3.7.0 a la 3.7.1
 
-**En preparación, sin etiquetar** (PR #103). Es la corrección de un fallo y tiene que llegar a las
+**Publicada el 27 de septiembre de 2026** (PR #103 y #104; etiqueta en `dcb1ecd`, DOI
+10.5281/zenodo.22999304; la publicación lleva `emgteach-v3.7.1-windows-x64.exe`, atestiguado). Es la corrección de un fallo y tiene que llegar a las
 prácticas de noviembre: con la 3.7.0, un byte corrupto por Bluetooth tira la grabación entera de un
 alumno. **La versión que describe el artículo sigue siendo la 3.7.0.** Para un conjunto dado de
 fragmentos la 3.7.1 calcula lo mismo, y no cambia ninguna pantalla del material del artículo salvo
@@ -121,8 +122,8 @@ desde la rama). El diagnóstico da «Ninguna trama falló su CRC» y «No se per
 ni ninguna marca de tramas perdidas, y la duración del archivo coincide con la del reloj del registro
 de eventos: no se perdió nada. `CRC03` (alejarse con la placa) no llegó a provocar un fallo del
 Bluetooth a más de 4 m, así que **la resincronización y la marca de tramas perdidas están probadas por
-la suite y no con la placa real**. El aviso del registro afinado se añadió tras `CRC02` y se comprueba
-con el kit reconstruido.
+la suite y no con la placa real**. El aviso del registro afinado se añadió tras `CRC02` y se comprobó
+con el kit reconstruido: sobre `CRC02` sale el aviso y no «Error inesperado».
 
 ### 1.1 De la 3.6.0 a la 3.7.0
 
