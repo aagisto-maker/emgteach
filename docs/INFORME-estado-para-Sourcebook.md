@@ -3,7 +3,8 @@
 Escrito el 5 de septiembre de 2026 sobre `main`, después de publicar la versión
 3.0.0, y actualizado a la **3.1.0**, a la **3.1.1** y a la **3.1.2** tras publicarlas, el 13 de
 septiembre, y a la **3.2.0**, a la **3.3.0** y a la **3.4.0** el 14 de septiembre, y a la
-**3.5.0** el 18 de septiembre, a la **3.6.0** el 19 y a la **3.7.0** el 26.
+**3.5.0** el 18 de septiembre, a la **3.6.0** el 19 y a la **3.7.0** el 26; el 27 se
+añade lo que prepara la **3.7.1**, que no cambia la versión que describe el artículo.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
 Los textos de pantalla están **copiados literalmente** de
@@ -24,6 +25,7 @@ Donde algo no está hecho o no lo sé, lo dice.
 | Rama | `main` |
 | **Versión que describe el artículo** | `v3.7.0`, publicada el 26 de septiembre de 2026 |
 | DOI de esa versión | 10.5281/zenodo.22976106 |
+| En preparación | **3.7.1** (PR #103): corrección de un fallo para las prácticas de noviembre, sin etiquetar; no cambia ningún cálculo (apartado 1.0) |
 | DOI de concepto | 10.5281/zenodo.21002297 |
 | Commit de la etiqueta | `34294b4` |
 | Pruebas en la etiqueta | **1376 recogidas, 1375 pasan y 1 se salta** |
@@ -31,15 +33,16 @@ Donde algo no está hecho o no lo sé, lo dice.
 | Análisis estático | `ruff check .` limpio |
 
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
-guiado) se leen del **código de `main` en el momento de generarlos**. En esta
-actualización `main` coincide con la etiqueta `v3.7.0` en todo `src/`: lo único
-que va detrás de la etiqueta es el DOI de versión de `CITATION.cff`, este
-informe y el material regenerado. Así que lo que dicen los bloques es lo que
-hace la versión publicada. Lo que cambió de la 3.6.0 a la 3.7.0 está en el
-apartado 1.0, de la 3.5.0 a la 3.6.0 en el 1.1, de la 3.4.0 a la 3.5.0 en el
-1.2, de la 3.3.0 a la 3.4.0 en el 1.3, de la 3.2.0 a la 3.3.0 en el 1.4, de la
-3.1.2 a la 3.2.0 en el 1.5, de la 3.1.1 a la 3.1.2 en el 1.6, de la 3.1.0 a la
-3.1.1 en el 1.7, y de la 3.0.0 a la 3.1.0 en el 1.8.
+guiado) se leyeron del **código de la etiqueta `v3.7.0`**, la versión que
+describe el artículo, y **no se han regenerado para la 3.7.1**: lo que dicen es
+lo que hace la versión publicada. La 3.7.1 cambia en `src/` los textos que
+lista el apartado 1.0 y desplaza números de línea de `devices/bitalino.py`,
+`diagnostics.py`, `workers/acquisition.py` e `i18n.py`; nada más de lo que
+recogen los bloques. Lo que cambia de la 3.7.0 a la 3.7.1 está en el apartado
+1.0, de la 3.6.0 a la 3.7.0 en el 1.1, de la 3.5.0 a la 3.6.0 en el 1.2, de la
+3.4.0 a la 3.5.0 en el 1.3, de la 3.3.0 a la 3.4.0 en el 1.4, de la 3.2.0 a la
+3.3.0 en el 1.5, de la 3.1.2 a la 3.2.0 en el 1.6, de la 3.1.1 a la 3.1.2 en el
+1.7, de la 3.1.0 a la 3.1.1 en el 1.8, y de la 3.0.0 a la 3.1.0 en el 1.9.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:163`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
@@ -49,12 +52,67 @@ La versión etiquetada para el depósito es **3.7.0**, y es la que describe el
 artículo. **Su publicación de GitHub lleva el ejecutable de Windows**,
 `emgteach-v3.7.0-windows-x64.exe`, compilado por GitHub Actions desde la
 etiqueta, con atestación de procedencia y su SHA-256 en las notas (apartado
-1.12). No está firmado. Hasta la 3.6.0 las publicaciones llevaban solo el
+1.13). No está firmado. Hasta la 3.6.0 las publicaciones llevaban solo el
 código fuente; la regla se mantenía hasta tener una versión estable, y esa es la
 3.7.0. El registro de Zenodo archiva el código fuente de la etiqueta, no el
 ejecutable.
 
-### 1.0 De la 3.6.0 a la 3.7.0
+### 1.0 De la 3.7.0 a la 3.7.1
+
+**En preparación, sin etiquetar** (PR #103). Es la corrección de un fallo y tiene que llegar a las
+prácticas de noviembre: con la 3.7.0, un byte corrupto por Bluetooth tira la grabación entera de un
+alumno. **La versión que describe el artículo sigue siendo la 3.7.0.** Para un conjunto dado de
+fragmentos la 3.7.1 calcula lo mismo, y no cambia ninguna pantalla del material del artículo salvo
+el texto del error de conexión. No cambia ninguna interfaz ni el formato del archivo. Las figuras
+del artículo no se han regenerado.
+
+**Una trama corrupta ya no corta la grabación.** Una sola trama con el CRC de 4 bits mal la
+detenía como «conexión perdida». Ahora la lectura avanza byte a byte hasta que las tramas vuelven a
+validar, y solo da el enlace por perdido tras 256 bytes seguidos sin ninguna trama válida
+(`_MAX_RESYNC_BYTES`, `src/emgteach/devices/bitalino.py`). Tras descartar bytes, una trama que
+valida solo se acepta si la siguiente también valida y trae el número de secuencia siguiente: una
+ventana desalineada pasa el CRC por casualidad una vez de cada 16, y la muestra que daría podía
+llegar al fondo de escala y convertirse en la referencia de la calibración, que toma el máximo. Es
+un arreglo portado de ecgteach, con esa confirmación añadida.
+
+**El texto del error de conexión.** Solo sale ya tras esos 256 bytes:
+- 3.7.0 — EN: Corrupted BITalino frame (CRC mismatch) — connection lost. / ES: Trama de la placa
+  BITalino corrupta (error de CRC) — conexión perdida.
+- 3.7.1 — EN: Corrupted BITalino frames (CRC mismatch) — connection lost. / ES: Tramas de la placa
+  BITalino corruptas (error de CRC) — conexión perdida.
+
+**Un hueco en el enlace queda marcado.** El número de secuencia cuenta las tramas que el enlace
+perdió. Como el reloj del archivo cuenta lo que llegó, tras un hueco todos los tiempos posteriores
+quedan cortos por las tramas que no vinieron; hasta la 3.7.0 nada lo decía. Ahora, una vez por
+hueco, se escriben dos textos nuevos:
+- anotación EDF+, en el momento en que se notó — EN: Link: {n} frame(s) lost / ES: Enlace: {n}
+  trama(s) perdida(s);
+- línea del registro de eventos — EN: Warning — the link dropped {n} frame(s) ({total} so far). /
+  ES: Aviso — el enlace ha perdido {n} trama(s) ({total} hasta ahora).
+
+En un registro sin pérdidas no aparece ninguno de los dos.
+
+**El diagnóstico** (`diagnostico_bitalino`) ya no afirma «Ninguna trama falló su CRC» cuando la
+lectura sigue tras resincronizar: cuenta los bytes descartados y las tramas perdidas. Textos
+nuevos:
+- EN: {n} byte(s) discarded after a failed CRC; the reading resynchronised. / ES: {n} byte(s)
+  descartado(s) tras un CRC fallido; la lectura se resincronizó.
+- EN: No frame was lost: the sequence numbers are in order. / ES: No se perdió ninguna trama: los
+  números de secuencia van en orden.
+- EN: {n} frame(s) lost, counted from the sequence numbers. / ES: {n} trama(s) perdida(s),
+  contadas por los números de secuencia.
+
+**La resolución de la quinta y la sexta ranura.** La conversión suponía 10 bits en todos los
+canales; ahora escala a 6 bits la quinta y la sexta ranura de la trama. La documentación de PLUX
+sitúa los 6 bits en dos de las seis entradas cuando se usan todas; que sean esas dos ranuras, que
+solo existen con más de cuatro entradas activas, es lectura del formato de la trama. La aplicación
+nunca activa más de tres, así que **no cambia ningún registro**.
+
+**Comprobación.** La suite y la placa simulada, sí; con la placa real, pendiente de la hoja
+`HOJA-comprobacion-3.7.1.md` (diagnóstico, `CRC01` agonista/antagonista, `CRC02` un músculo y, si se
+puede, `CRC03` alejándose con la placa) antes de etiquetar.
+
+### 1.1 De la 3.6.0 a la 3.7.0
 
 La versión del artículo y la de las prácticas de noviembre (PR #70 a #101). Se ensayó de punta a
 punta con la placa simulada y se comprobó en el banco con el BITalino antes de etiquetarla
@@ -111,7 +169,7 @@ completas solo cambia esa franja de la barra, y los recortes de las figuras 4 y 
 En el ejemplo de CSV y de PDF solo cambian la versión, el pie y la línea «Protocol», que ahora se
 lee en el idioma del lector.
 
-### 1.1 De la 3.5.0 a la 3.6.0
+### 1.2 De la 3.5.0 a la 3.6.0
 
 Una versión menor con una sola cosa dentro (PR #67): **la placa simulada obedece a la
 calibración**. Ningún cálculo cambia y ningún registro hecho con la placa se lee distinto; lo
@@ -158,7 +216,7 @@ versión publicada.
 captura**: esta versión no toca ni un texto de pantalla. Solo se mueven el pie del PDF de
 ejemplo y la línea de versión del CSV.
 
-### 1.2 De la 3.4.0 a la 3.5.0
+### 1.3 De la 3.4.0 a la 3.5.0
 
 Una versión menor (PR #45 a #62). Añade lo que una práctica necesita alrededor
 de la medida y repara los dos documentos que se lleva el alumnado. **Las
@@ -264,7 +322,7 @@ registro sin recortar sigue pasando; y el registro de cinemática vuelve a dar
 contracciones, retraso electromecánico mediano de 42 ms y máximo de la tarea del
 123 % CVM.
 
-### 1.3 De la 3.3.0 a la 3.4.0
+### 1.4 De la 3.3.0 a la 3.4.0
 
 Una versión menor (PR #39 a #43): cambia lo que enseña la pestaña de análisis
 y cómo numera sus paneles. Ningún cálculo cambia.
@@ -343,7 +401,7 @@ Los paneles dibujan lo que calcula el análisis; ninguno calcula nada. Donde sí
 cambian las figuras del artículo es en las capturas de la pestaña de análisis
 (apartado 10).
 
-### 1.4 De la 3.2.0 a la 3.3.0
+### 1.5 De la 3.2.0 a la 3.3.0
 
 Una versión menor (PR #35 a #37): una cifra que enseña el programa puede
 cambiar, y un panel se dibuja de otra manera. Ningún otro cálculo cambia.
@@ -379,11 +437,11 @@ cambiar, y un panel se dibuja de otra manera. Ningún otro cálculo cambia.
 
 **Lo que el §5 del artículo cita no cambia con la 3.3.0**: las referencias,
 los máximos de tarea, la tabla A, la figura 6, «lo que no hay que hacer», la
-sensibilidad y el borde son los de la tabla del apartado 1.4, medidos sobre la
+sensibilidad y el borde son los de la tabla del apartado 1.6, medidos sobre la
 etiqueta `v3.2.0` y comprobados sobre la `v3.3.0`. Ninguna figura del artículo
 enseña el panel 3.
 
-### 1.5 De la 3.1.2 a la 3.2.0
+### 1.6 De la 3.1.2 a la 3.2.0
 
 Una versión menor, no un parche, porque cambia los números que el programa
 produce para la misma señal (PR #29 a #32). **Un registro reanalizado con la
@@ -454,7 +512,7 @@ registro de las tres maniobras (`tests/test_coactivation_sin_recortar.py`)
 pasa con los valores nuevos, y el comando de la figura 6 da la figura
 regenerada que hay en `docs/articulo-advances/` (apartado 10).
 
-### 1.6 De la 3.1.1 a la 3.1.2
+### 1.7 De la 3.1.1 a la 3.1.2
 
 Un parche de lo que la calibración pide y de cómo se describe (PR #24 a #26).
 No cambia ningún cálculo, umbral ni valor por defecto.
@@ -472,7 +530,7 @@ No cambia ningún cálculo, umbral ni valor por defecto.
   máximo de la media móvil de 0.2 s de la envolvente, tal cual, sin restar
   reposo, y la mejor de las repeticiones. El manual decía que se restaba el
   reposo de la ventana.
-- **Las publicaciones llevan solo el código fuente** (apartado 1.12).
+- **Las publicaciones llevan solo el código fuente** (apartado 1.13).
 
 Ninguna figura del artículo enseña los textos de la calibración, y las cifras
 del apartado 8 no dependen de estos cambios. Comprobado sobre la etiqueta: la
@@ -480,7 +538,7 @@ prueba de aceptación que fija las cifras del registro de las tres maniobras
 (`tests/test_coactivation_sin_recortar.py`) pasa, y el comando de la figura 6
 da la misma figura, píxel a píxel.
 
-### 1.7 De la 3.1.0 a la 3.1.1
+### 1.8 De la 3.1.0 a la 3.1.1
 
 Un parche de una sola medida (PR #21). **La coactivación de una ventana con
 nombre se lee sobre la fase de registro sin recortar.** Hasta la 3.1.0, elegir
@@ -519,7 +577,7 @@ fragmentos concatenados (apartado 9, punto 11). El EDF afinado es una
 concatenación en disco y se lee como tal. Ninguna figura ni ningún control de
 la interfaz cambia.
 
-### 1.8 De la 3.0.0 a la 3.1.0
+### 1.9 De la 3.0.0 a la 3.1.0
 
 Son **39 commits** (29 sin contar las fusiones). La 3.1.0 no cambia el formato
 del archivo ni los cálculos: los módulos que calculan (`coactivation.py`,
@@ -579,7 +637,7 @@ puede mover resultados es la propuesta de filas del editor de fragmentos**:
   constantes del asistente, y las guías ya no hablan de esfuerzos mantenidos
   de cuatro segundos.
 
-### 1.9 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
+### 1.10 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
 
 Son **97 commits**. Lo que cambió de cara al artículo:
 
@@ -610,7 +668,7 @@ Son **97 commits**. Lo que cambió de cara al artículo:
   la excursión completa es ±1.635 mV, no ±1.65 mV. Nada expresado como
   cociente cambia.
 
-### 1.10 Dependencias
+### 1.11 Dependencias
 
 Declaradas en `pyproject.toml` y comprobadas en el entorno con el que se
 generó este informe:
@@ -629,14 +687,14 @@ generó este informe:
 | reportlab | `>=4.0` | 4.5.1 |
 | segno | `>=1.6` | 1.6.6 |
 
-### 1.11 Plataformas probadas
+### 1.12 Plataformas probadas
 
 La integración continua ejecuta la suite en **Ubuntu y Windows**, con
 **Python 3.10, 3.11 y 3.12**: seis combinaciones, todas en verde para
 `v3.1.2`. macOS no se prueba de forma automática. El hardware se ha probado
 solo en Windows 11.
 
-### 1.12 Instalación y arranque
+### 1.13 Instalación y arranque
 
 Desde el código fuente:
 
@@ -842,7 +900,7 @@ Igual que la anterior salvo en estos puntos:
   hay que acordarse de pulsar «Calibrar CVM». El flujo es calibración →
   preparación (5 s) → registro, sin detener la adquisición.
 - El asistente calibra **primero un músculo y después el otro**.
-- **La sesión guiada sigue hasta la tarea** (apartado 1.0): seis maniobras
+- **La sesión guiada sigue hasta la tarea** (apartado 1.1): seis maniobras
   libres de cada músculo con su fila de casillas, que pasan solas, y una presa
   de 8 s apretando una pelota, con las barras de carga dentro del cuadro.
 - El editor de fragmentos abre con **k = 4.4** en vez de 3.0, y espera
@@ -1067,7 +1125,7 @@ coactivación que imprime el informe.
 punto decimal en inglés, punto y coma de separador y coma decimal en español, que
 es lo que esperan Excel o LibreOffice configurados en español —con la otra
 combinación abren el archivo entero en una sola columna y leen 0.05 como texto—.
-Es la excepción declarada a la marca decimal única de la 3.5.0 (apartado 1.2), y
+Es la excepción declarada a la marca decimal única de la 3.5.0 (apartado 1.3), y
 la primera línea del archivo dice cuál de las dos parejas lleva.
 
 ### 5.6 Índice de coactivación
@@ -1474,9 +1532,9 @@ adjunto está en `docs/informe-sourcebook/` y lo produce
 `tools/informe_material.py`.
 
 **Todas las cifras de este apartado están medidas con la 3.2.0** sobre su
-etiqueta y **no cambian con la 3.3.0 ni con la 3.4.0** (apartados 1.4 y 1.3);
+etiqueta y **no cambian con la 3.3.0 ni con la 3.4.0** (apartados 1.5 y 1.4);
 las que cambiaron respecto de la 3.1.2, y cuánto, están en la tabla del
-apartado 1.5. Las del 8.3 no pasan por la coactivación.
+apartado 1.6. Las del 8.3 no pasan por la coactivación.
 
 ### 8.1 Registro de ejemplo: el par flexor / extensor
 
@@ -1532,8 +1590,8 @@ porcentajes de abajo significan lo que dicen.
 | Presa | 88.0–97.0 s | **79 %** (78.6) | 11.4 / 7.7 % CVM |
 
 Medido con la 3.2.0: cada maniobra es una máscara sobre la fase de registro sin
-recortar, el reposo que se resta es el de la fase entera (apartados 1.7 y
-5.6) y la referencia es el pico de la envolvente (apartado 1.5). Con la 3.1.2
+recortar, el reposo que se resta es el de la fase entera (apartados 1.8 y
+5.6) y la referencia es el pico de la envolvente (apartado 1.6). Con la 3.1.2
 —referencia de 0.2 s y suelo del 5 %— la tabla era 28.3 / no reportada / 75.7 %
 con medias 14.1 / 5.8 · 4.2 / 6.2 · 14.5 / 9.1; con el pico y el suelo del 5 %
 la flexión se quedaba sin número (el extensor, en 4.9 %), y es la razón del
@@ -1594,7 +1652,7 @@ para no medir. Para esta práctica, la ventana es la maniobra entera.
    con su curso temporal, reposos incluidos; concatenar las contracciones mide
    otra cosa. **Las cifras publicables son las del registro sin recortar.**
    Desde la 3.1.1, elegir los fragmentos en la pestaña sobre el original ya
-   no concatena para la coactivación (apartado 1.7); el aviso vale para el
+   no concatena para la coactivación (apartado 1.8); el aviso vale para el
    archivo afinado.
 2. **El borde de la ventana: el reposo que entra ya no mueve el índice.** Con
    la 3.0.0, estrechar la presa 0.8 s por delante la llevaba de 76 % a 70 %,
@@ -1713,24 +1771,26 @@ la tarea, 123 % CVM.
 9. Del §13 de la especificación sigue vigente el aviso de que **este era el
    último cambio de arquitectura antes de la publicación**. La 3.1.0 lo
    respeta: cambia el manejo en el puesto y no el formato del archivo ni los
-   cálculos (apartado 1.7). La 3.1.1 cambia una sola medida, la coactivación
-   con fragmentos elegidos (apartado 1.6), y la 3.1.2 solo lo que la
-   calibración pide y cómo se describe (apartado 1.5). La 3.2.0 cambia el
+   cálculos (apartado 1.9). La 3.1.1 cambia una sola medida, la coactivación
+   con fragmentos elegidos (apartado 1.8), y la 3.1.2 solo lo que la
+   calibración pide y cómo se describe (apartado 1.7). La 3.2.0 cambia el
    estadístico de la referencia, el suelo del índice y la MDF de los
-   segmentos (apartado 1.4); la 3.3.0 lee el máximo de la tarea sobre la fase
-   entera y dibuja el panel 3 en relativo (apartado 1.3); la 3.4.0 cambia lo
+   segmentos (apartado 1.6); la 3.3.0 lee el máximo de la tarea sobre la fase
+   entera y dibuja el panel 3 en relativo (apartado 1.5); la 3.4.0 cambia lo
    que enseña la pestaña de análisis y cómo numera sus paneles, sin tocar
-   ningún cálculo (apartado 1.3). La 3.5.0 añade lo que rodea a la medida —la
+   ningún cálculo (apartado 1.4). La 3.5.0 añade lo que rodea a la medida —la
    placa simulada, el diagnóstico, el registro de eventos y la recuperación—,
    repara el informe y el CSV y deja una sola marca decimal, y las tres cosas
    que mueven números son faltas que se reparan, declaradas una por una
-   (apartado 1.2). La 3.6.0 no cambia ningún cálculo: hace que la placa
+   (apartado 1.3). La 3.6.0 no cambia ningún cálculo: hace que la placa
    simulada obedezca a la calibración, de modo que un ensayo sin hardware
-   enseñe lo que enseña la práctica (apartado 1.1). La 3.7.0 lleva la sesión
+   enseñe lo que enseña la práctica (apartado 1.2). La 3.7.0 lleva la sesión
    guiada hasta la tarea y propone las filas del editor hasta el reposo, sin
-   cambiar ningún cálculo para un conjunto dado de fragmentos (apartado 1.0);
+   cambiar ningún cálculo para un conjunto dado de fragmentos (apartado 1.1);
    es la que describe el artículo, y lo que venga después irá a versiones
-   posteriores sin cambiar lo que describe.
+   posteriores sin cambiar lo que describe. La 3.7.1 lo cumple: corrige que
+   una trama corrupta cortara la grabación y marca las tramas perdidas, sin
+   cambiar ningún cálculo (apartado 1.0).
 10. **La k = 4.4 del par es empírica**: es el valor que dio una fila por
     maniobra en los registros en que se probó. Con otra piel, otro montaje u
     otra forma de hacer las maniobras puede proponer de más o de menos; por
