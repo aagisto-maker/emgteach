@@ -5,7 +5,26 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.7.2] — 2026-09-29
+
+**The classroom broadcast on ports 8080 and 8443, and the ports in a file.**
+The broadcast served its page on 8070 and its data on 8071. Which ports get
+through depends on the network the phones are on, and that varies from one
+building to another, so the ports are no longer fixed in the application: a
+laboratory writes them in `difusion.txt`, next to the application, and without
+it the defaults are 8080 for the page and 8443 for the data. No analysis, no
+EDF format and no calculation changes; **3.7.0 stays the version the article
+describes**. See [`docs/RELEASE_NOTES_v3.7.2.md`](docs/RELEASE_NOTES_v3.7.2.md).
+
+### Changed
+
+- **The broadcast's default ports are 8080 (page) and 8443 (data)**, instead of 8070 and 8071. The follower link carries the page port and the page reads the data port from the server, so nothing a student opens names a port by hand. The guides, the cheat sheets and the manuals show `http://…:8080/?k=…`. A firewall rule opened for 8070 and 8071 has to be opened again for the new ports; the laboratory kit's `LEEME.txt` gives the command.
+
+### Added
+
+- **The ports in `difusion.txt`, next to the application.** A text file like `bitalino.txt`, but separate from it: the ports are the laboratory's and the same on every station, while the board's address changes from one station to the next. Two lines, `pagina = 8080` and `datos = 8443`, with `#` comments; a name left out keeps its default, and without the file both defaults hold. A value that cannot be used — not a number, outside 1-65535, the two ports equal, or a line that is neither name — puts back both defaults, and the log says once, at start, which line it was. Read by `emgteach.difusion.read_broadcast_ports`, Qt-free, the same module the sister applications will use.
+- **A busy port is named.** When another program held one of the ports, the warning was «Could not start classroom mode (port busy?).», without saying which. `BroadcastServer.start()` now leaves the port it could not open in `failed_port`, and the warning says that port and that other ports can be written in `difusion.txt`.
+- **«Nobody has joined» mentions the ports.** The warning shown when no phone has joined a while after the broadcast started adds one sentence: the network may also block the broadcast's ports, and they are changed in `difusion.txt`.
 
 ### Documentation
 

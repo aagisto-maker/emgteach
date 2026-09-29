@@ -65,10 +65,12 @@ abstract: >-
   recording going when a BITalino frame arrives corrupted, resynchronising
   on the next frames that validate, marks in the file the frames the link
   lost, and makes saving the tuned recording say why it cannot; nothing
-  computed changes.
+  computed changes. Patch 3.7.2 moves the classroom broadcast to ports 8080
+  and 8443 and lets a laboratory change them in a text file next to the
+  application; nothing computed changes.
 type: software
-version: 3.7.1
-date-released: "2026-09-27"
+version: 3.7.2
+date-released: "2026-09-29"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

@@ -12,6 +12,48 @@ used.
 
 ---
 
+## 2026-09-29 — Classroom broadcast: ports 8080 and 8443, changeable in difusion.txt
+
+**Context.** The broadcast opened 8070 for the page and 8071 for the data,
+fixed in `broadcast.py`. Which ports a network lets through is decided by
+whoever runs it and varies from one building to another; a network that
+admits only the usual web ports leaves the phones without the page, and the
+application had no way to change that short of a new version.
+
+**Options evaluated.** (a) Other fixed defaults; (b) the ports in the
+application's settings; (c) other defaults, and the ports in a text file next
+to the application.
+
+**Chosen: (c).** Defaults 8080 for the page and 8443 for the data, ports that
+networks usually leave open for web traffic, and `difusion.txt` next to the
+application to change them, read by `emgteach.difusion`. The settings (b) are
+per user account and per PC, while the ports are the laboratory's, the same on
+every station: a file travels with the application, as `bitalino.txt` already
+does for the board's address. It is a separate file because the address is
+the station's and the ports are the laboratory's. This is laboratory
+configuration, not a workaround for one network: the next network may admit
+other ports, and they are changed in the file without a new version. A line
+that cannot be used puts back both defaults and is reported once; a busy port
+is named in the warning (`BroadcastServer.failed_port`). The same module,
+file name and format serve ecgteach and eegteach.
+
+**Open risk: 8443 is the usual HTTPS port, and the data connection is not
+encrypted** (`QWebSocketServer`, `NonSecureMode`). A network that filters by
+port number alone lets it through. A network that inspects the protocol on
+8443 would cut it. The symptom tells it apart from a closed port:
+
+- **protocol cut on 8443:** the page loads on the phone, but stays at
+  «connecting…» or «reconnecting…» with no data; on the computer the follower
+  count stays at 0, and after 90 s (`ESPERA_SEGUIDORES_MS`) the «nobody has
+  joined» warning appears;
+- **port closed, or phones that cannot reach the computer:** the page does not
+  load at all.
+
+In the first case another data port is tried in `difusion.txt`. Encrypting the
+connection is not done in this version.
+
+---
+
 ## 2026-09-27 — BITalino frames: resynchronise after a bad CRC, confirmed by the next frame
 
 **Context.** The pyserial backend (2026-06-28) decoded frames in fixed steps
