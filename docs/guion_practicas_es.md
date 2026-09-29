@@ -239,7 +239,7 @@ tablas y las fichas.
 
 En una práctica en grupo, **una persona maneja el equipo** y el resto sigue la
 señal en el navegador del móvil. En Adquisición, casilla **«Difundir a móviles (en
-laboratorio)»**; aparece una dirección `http://…:8070/?k=…` y un botón **QR**.
+laboratorio)»**; aparece una dirección `http://…:8080/?k=…` y un botón **QR**.
 Todos en la misma Wi-Fi, y la dirección escrita con `http://`. El móvil solo mira
 y descarga: la sesión en CSV mientras se graba y, cuando el operador analiza, el
 informe PDF y los resultados. Cada activación genera un código nuevo; los enlaces

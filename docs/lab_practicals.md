@@ -253,7 +253,7 @@ figures, the calibration, the charts, the tables and the cards.
 
 In a group practical, **one person drives the equipment** and the rest follow the
 signal in their phone's browser. In Acquisition, tick **«Broadcast to phones (in
-the laboratory)»**; an address `http://…:8070/?k=…` and a **QR** button appear.
+the laboratory)»**; an address `http://…:8080/?k=…` and a **QR** button appear.
 Everyone on the same Wi-Fi, and the address typed with `http://`. The phone only
 watches and downloads: the session as CSV while recording and, when the operator
 analyses, the PDF report and the results. Each activation generates a new code;

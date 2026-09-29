@@ -479,13 +479,21 @@ saturation warnings.
 **One machine** (the computer driving the BITalino) broadcasts the live session
 to the phones of the rest of the group, who **follow** in the browser with nothing
 to install. Tick **«Broadcast to phones (in the laboratory)»** in Acquisition: a
-local-network address `http://<PC-IP>:8070/?k=<code>`, a «Copy link» button and a
+local-network address `http://<PC-IP>:8080/?k=<code>`, a «Copy link» button and a
 **QR**. Each activation generates a new session code; old links expire. Followers
 see the envelope of each channel and the % MVC bar live, the calibration cues, and,
 after the operator's analysis, can download the **report (PDF)** — the only download
 the page offers, because a CSV on a phone is a file a student does not open, and if
 they do they do not know what to look at. Phones only watch; they cannot control the
 equipment.
+
+The broadcast uses two ports, 8080 for the page and 8443 for the live data. Which
+ports get through depends on the network, so they are not fixed in the application:
+a text file `difusion.txt` next to it, the same on every station of the laboratory,
+can change them (`pagina = 8080`, `datos = 8443`). If another program holds one of
+them, the warning says which; if the page loads on the phones but stays at
+«connecting…» with no data, the network is letting the page through and cutting the
+data, and another data port is worth trying in `difusion.txt`.
 
 ---
 

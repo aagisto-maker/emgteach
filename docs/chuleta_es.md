@@ -41,7 +41,7 @@ se recalcula.* Fondo de escala BITalino ±1635 µV.
 
 ### Seguir la sesión desde el móvil
 Casilla **«Difundir a móviles (en laboratorio)»** → **QR** o enlace
-`http://…:8070/?k=…`. Misma Wi-Fi, con `http://`. Cada activación cambia el código.
+`http://…:8080/?k=…`. Misma Wi-Fi, con `http://`. Cada activación cambia el código.
 
 ### Analizar (Análisis)
 Al abrir el registro se analiza solo. Seguir los cuadros que aparecen, en orden:
