@@ -173,3 +173,29 @@ def test_registered_download_is_served(qapp) -> None:
         assert b"a,b" not in resp
 
     srv.stop()
+
+
+def test_the_default_ports_are_8080_and_8443() -> None:
+    from emgteach.broadcast import BroadcastServer
+
+    assert BroadcastServer().ports() == (8080, 8443)
+
+
+@pytest.mark.parametrize(("busy", "which"), [("page", 8120), ("data", 8121)])
+def test_a_busy_port_is_named(qapp, busy: str, which: int) -> None:
+    from PySide6.QtNetwork import QHostAddress, QTcpServer
+
+    from emgteach.broadcast import BroadcastServer
+
+    blocker = QTcpServer()
+    assert blocker.listen(QHostAddress(QHostAddress.SpecialAddress.Any), which)
+    srv = BroadcastServer(http_port=8120, ws_port=8121)
+    try:
+        assert not srv.start()
+        assert srv.failed_port == which
+        assert not srv.is_running()
+    finally:
+        blocker.close()
+    assert srv.start()
+    assert srv.failed_port is None
+    srv.stop()

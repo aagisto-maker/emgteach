@@ -71,6 +71,7 @@ from emgteach.devices import (
     ArduinoDevice,
     create_device,
 )
+from emgteach.difusion import PORTS_FILE
 from emgteach.dsp import LiveQualityMonitor, process_offline
 from emgteach.gui.imagenes import imagen
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
@@ -507,7 +508,9 @@ def aviso_sin_seguidores() -> str:
     The two usual causes in a university cannot be seen or fixed from here:
     the wired computers and the Wi-Fi on separate networks that do not route
     to each other, or a Wi-Fi that keeps its clients from seeing one another.
-    What can be said is the one arrangement that always works.
+    A third can be fixed at the laboratory: a network that blocks the
+    broadcast's ports, which are changed in difusion.txt. What can be said
+    besides is the one arrangement that always works.
     """
     return tr(
         "Nobody has joined the broadcast yet. If the phones do not load the "
@@ -516,7 +519,26 @@ def aviso_sin_seguidores() -> str:
         "universities, and neither can be fixed from here. What always works: "
         "share this computer's own connection (Windows: Settings › Network & "
         "internet › Mobile hotspot) and connect the phones to that."
-    )
+    ) + " " + tr(
+        "The network may also block the broadcast's ports; they are changed "
+        "in {file}, next to the application."
+    ).format(file=PORTS_FILE)
+
+
+def aviso_puerto_ocupado(puerto: int) -> str:
+    """Said when the broadcast cannot open one of its ports."""
+    return tr(
+        "Could not start classroom mode: port {port} is in use by another "
+        "program. Other ports can be written in {file}, next to the application."
+    ).format(port=puerto, file=PORTS_FILE)
+
+
+def aviso_puertos_no_validos(linea: str, pagina: int, datos: int) -> str:
+    """Said once at start when a line of difusion.txt cannot be used."""
+    return tr(
+        "The line «{line}» of {file} is not valid; the broadcast uses ports "
+        "{page} and {data}."
+    ).format(line=linea, file=PORTS_FILE, page=pagina, data=datos)
 
 # Interval (ms) after the last received data beyond which there is considered
 # to be no traffic (the LED goes from green to yellow).
@@ -1724,6 +1746,13 @@ class AcquisitionTab(QWidget):
             return self._station_address
         return DEFAULT_BITALINO_ADDR
 
+    def report_ports_problem(self, line: str) -> None:
+        """Say once, where the operator reads, that difusion.txt has a bad line."""
+        pagina, datos = self._broadcast.ports()
+        QTimer.singleShot(
+            0, lambda: self._err(aviso_puertos_no_validos(line, pagina, datos))
+        )
+
     def _log_station_address(self) -> None:
         self._log(
             tr("BITalino address taken from {file}: {addr}").format(
@@ -2878,7 +2907,11 @@ class AcquisitionTab(QWidget):
                     self._vigilar_seguidores(True)
             else:
                 self._chk_aula.setChecked(False)
-                self._err(tr("Could not start classroom mode (port busy?)."))
+                puerto = self._broadcast.failed_port
+                self._err(
+                    aviso_puerto_ocupado(puerto) if puerto is not None
+                    else tr("Could not start classroom mode (port busy?).")
+                )
         else:
             self._vigilar_seguidores(False)
             self._broadcast.stop()

@@ -833,6 +833,19 @@ _ES = {
         "Difusión a móviles activada — los alumnos pueden seguir en {url}",
     "Could not start classroom mode (port busy?).":
         "No se pudo iniciar la difusión a móviles (¿puerto ocupado?).",
+    "Could not start classroom mode: port {port} is in use by another "
+    "program. Other ports can be written in {file}, next to the application.":
+        "No se pudo iniciar la difusión a móviles: el puerto {port} lo usa "
+        "otro programa. Puede escribir otros puertos en {file}, junto a la "
+        "aplicación.",
+    "The line «{line}» of {file} is not valid; the broadcast uses ports "
+    "{page} and {data}.":
+        "La línea «{line}» de {file} no es válida; la difusión usa los "
+        "puertos {page} y {data}.",
+    "The network may also block the broadcast's ports; they are changed "
+    "in {file}, next to the application.":
+        "También puede que la red bloquee los puertos de la difusión; se "
+        "cambian en {file}, junto a la aplicación.",
     "Classroom mode off — previous follower links are now invalid.":
         "Difusión a móviles desactivada — los enlaces anteriores ya no son "
         "válidos.",
