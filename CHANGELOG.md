@@ -5,7 +5,7 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.7.2] — 2026-09-29
+## [3.7.2] — 2026-10-02
 
 **The classroom broadcast on ports 8080 and 8443, and the ports in a file.**
 The broadcast served its page on 8070 and its data on 8071. Which ports get

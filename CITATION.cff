@@ -70,7 +70,7 @@ abstract: >-
   application; nothing computed changes.
 type: software
 version: 3.7.2
-date-released: "2026-09-29"
+date-released: "2026-10-02"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
