@@ -634,7 +634,7 @@ sirve la práctica, no un ajuste fino.
 **Activación (pestaña Adquisición).**
 - Casilla **«Difundir a móviles (en laboratorio)»**. Al activarla se levanta un
   servidor en la **red local** y se muestra la dirección **«Los alumnos abren:
-  `http://<IP‑del‑PC>:8070/?k=<código>`»** y el número de seguidores conectados. Los mensajes
+  `http://<IP‑del‑PC>:8080/?k=<código>`»** y el número de seguidores conectados. Los mensajes
   del registro de eventos hablan de **«modo seguimiento en móviles»**.
 - Junto a ella, **«Copiar enlace»** y un botón **QR** que muestra un código para
   abrir la página con la cámara del móvil.
@@ -642,6 +642,13 @@ sirve la práctica, no un ajuste fino.
   viaja en el enlace. Los enlaces de una práctica anterior dejan de valer en
   cuanto esa difusión se detiene.
 - El PC y los móviles deben estar en la **misma red Wi‑Fi o LAN**.
+- La difusión usa dos puertos, el **8080** para la página y el **8443** para los
+  datos en vivo. Qué puertos deja pasar la red cambia de un sitio a otro, así que no
+  están fijos en la aplicación: un archivo de texto **`difusion.txt`** junto a ella,
+  igual en todos los puestos del laboratorio, puede cambiarlos (`pagina = 8080`,
+  `datos = 8443`). Si otro programa ocupa uno, el aviso dice cuál; si la página carga
+  en los móviles pero se queda en «conectando…» sin datos, la red deja pasar la página
+  y corta los datos, y conviene probar otro puerto de datos en `difusion.txt`.
 
 **Qué ven los seguidores** (página de solo lectura):
 - La **envolvente** de cada canal en tiempo real y la **barra de % CVM** con sus

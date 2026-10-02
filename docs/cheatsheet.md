@@ -42,7 +42,7 @@ recomputed.* BITalino full scale ±1.635 mV.
 
 ### Following the session on a phone
 Tick **«Broadcast to phones (in the laboratory)»** → **QR** or the link
-`http://…:8070/?k=…`. Same Wi-Fi, with `http://`. Each activation changes the code.
+`http://…:8080/?k=…`. Same Wi-Fi, with `http://`. Each activation changes the code.
 
 ### Analyse (Analysis)
 The recording is analysed on its own when opened. Follow the boxes that appear, in

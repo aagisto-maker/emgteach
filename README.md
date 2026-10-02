@@ -24,7 +24,13 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.7.1 is a bug fix of v3.7.0 for the November practicals: a
+`emgteach` v3.7.2 moves the classroom broadcast to ports 8080 (page) and
+8443 (data), and lets a laboratory change them in a `difusion.txt` next to the
+application, since which ports get through depends on the network; a busy
+port is named in the warning. Nothing computed changes. See
+[`docs/RELEASE_NOTES_v3.7.2.md`](docs/RELEASE_NOTES_v3.7.2.md).
+
+v3.7.1 is a bug fix of v3.7.0 for the November practicals: a
 corrupted BITalino frame no longer ends the recording, a gap in the link is
 marked in the file, and saving the tuned recording says why it cannot instead
 of an unexpected error. Nothing computed changes. See
@@ -131,7 +137,9 @@ panels and a channel-quality check when a recording is opened. Since
 v3.0.0 the accelerometer's input is a stated convention — muscle on A1,
 accelerometer on A2 — rather than a selectable channel. v1.4.0 introduced the **classroom
 broadcast**: students follow the live session in their own phone
-browsers, with a per-session access code and a scan-to-join QR. v1.1.0
+browsers, with a per-session access code and a scan-to-join QR; since
+v3.7.2 on ports 8080 and 8443, which a laboratory can change in a
+`difusion.txt` next to the application. v1.1.0
 added an **assisted fragment editor**, **CSV export** and a **live
 signal-quality check**; v1.0.0 reimplemented the BITalino backend over
 `pyserial` (no PyBluez) and added a recipe for a standalone Windows
@@ -140,7 +148,7 @@ executable.
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **1395 tests** passing on Linux and Windows across Python
+test suite of **1419 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
@@ -194,10 +202,10 @@ computer, so it is exactly the code of that version.
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
   información → Ejecutar de todos modos»).
 - **Check it is the published file**: the release notes give its SHA-256. In
-  PowerShell, `Get-FileHash .\emgteach-v3.7.1-windows-x64.exe -Algorithm SHA256`
+  PowerShell, `Get-FileHash .\emgteach-v3.7.2-windows-x64.exe -Algorithm SHA256`
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
-  `gh attestation verify emgteach-v3.7.1-windows-x64.exe --repo aagisto-maker/emgteach`
+  `gh attestation verify emgteach-v3.7.2-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that tag.
 
 The executable is not part of the Zenodo record, which archives the source

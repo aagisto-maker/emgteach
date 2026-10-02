@@ -267,7 +267,7 @@ class TestTheTeacherIsNotLeftGuessing:
         monkeypatch.setattr(servidor, "stop", lambda: None)
         monkeypatch.setattr(servidor, "broadcast", lambda payload: None)
         monkeypatch.setattr(
-            servidor, "follower_url", lambda: "http://10.0.0.5:8070/?k=abc"
+            servidor, "follower_url", lambda: "http://10.0.0.5:8080/?k=abc"
         )
         errores: list[str] = []
         monkeypatch.setattr(adq, "_err", errores.append)
@@ -312,6 +312,38 @@ class TestTheTeacherIsNotLeftGuessing:
         adq._on_toggle_broadcast(True)
         adq._on_toggle_broadcast(False)
         assert not adq._timer_sin_seguidores.isActive()
+
+    def test_a_busy_port_is_named_with_the_file_to_change_it(
+        self, adq, monkeypatch
+    ) -> None:
+        import emgteach.gui.tabs.acquisition as mod
+
+        monkeypatch.setattr(adq._broadcast, "start", lambda: False)
+        monkeypatch.setattr(adq._broadcast, "failed_port", 8080)
+        adq._on_toggle_broadcast(True)
+        assert adq._errores_prueba == [mod.aviso_puerto_ocupado(8080)]
+        assert "8080" in adq._errores_prueba[0]
+        assert "difusion.txt" in adq._errores_prueba[0]
+        assert not adq._chk_aula.isChecked()
+
+    def test_a_bad_line_of_difusion_txt_is_said_once(self, adq, qapp) -> None:
+        adq.report_ports_problem("datos = x")
+        qapp.processEvents()
+        assert len(adq._errores_prueba) == 1
+        assert "datos = x" in adq._errores_prueba[0]
+        assert "8080" in adq._errores_prueba[0] and "8443" in adq._errores_prueba[0]
+
+    def test_nobody_joined_names_the_ports_file(self) -> None:
+        from emgteach.gui.tabs.acquisition import aviso_sin_seguidores
+        from emgteach.i18n import get_language, set_language
+
+        anterior = get_language()
+        try:
+            for idioma in ("en", "es"):
+                set_language(idioma)
+                assert "difusion.txt" in aviso_sin_seguidores()
+        finally:
+            set_language(anterior)
 
     def test_both_warnings_name_the_way_that_always_works(self) -> None:
         from emgteach.gui.tabs.acquisition import aviso_sin_red, aviso_sin_seguidores

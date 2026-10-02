@@ -39,9 +39,12 @@ from PySide6.QtCore import QObject, QUrlQuery, Signal
 from PySide6.QtNetwork import QHostAddress, QNetworkInterface, QTcpServer
 from PySide6.QtWebSockets import QWebSocketProtocol, QWebSocketServer
 
-# Default ports for the classroom broadcast (HTTP page + WebSocket data).
-DEFAULT_HTTP_PORT = 8070
-DEFAULT_WS_PORT = 8071
+from emgteach.difusion import DEFAULT_DATA_PORT, DEFAULT_PAGE_PORT
+
+# Default ports for the classroom broadcast (HTTP page + WebSocket data); a
+# laboratory changes them in difusion.txt next to the application.
+DEFAULT_HTTP_PORT = DEFAULT_PAGE_PORT
+DEFAULT_WS_PORT = DEFAULT_DATA_PORT
 
 _DASHBOARD = Path(__file__).resolve().parent / "web" / "dashboard.html"
 
@@ -210,6 +213,8 @@ class BroadcastServer(QObject):
         self._last_config: dict | None = None
         self._downloads: dict = {}   # path -> (bytes, content_type, filename)
         self._token: str = ""        # per-session access code; minted on start()
+        #: The port :meth:`start` could not open, or ``None``.
+        self.failed_port: int | None = None
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -217,10 +222,12 @@ class BroadcastServer(QObject):
         """Start both servers. Returns ``True`` on success.
 
         Mints a fresh session code, so links shared for a previous
-        broadcast stop working.
+        broadcast stop working. On failure, :attr:`failed_port` says which
+        port could not be opened.
         """
         if self.is_running():
             return True
+        self.failed_port = None
         # 6 lowercase hex chars: easy to (re)type on a phone, and with the
         # link only valid while this session runs, ample against guessing.
         self._token = secrets.token_hex(3)
@@ -234,6 +241,7 @@ class BroadcastServer(QObject):
         http = _HttpServer(html, self._downloads, self._token, self)
         if not http.listen(QHostAddress(QHostAddress.SpecialAddress.Any), self._http_port):
             http.deleteLater()
+            self.failed_port = self._http_port
             return False
         ws = QWebSocketServer(
             "emgteach", QWebSocketServer.SslMode.NonSecureMode, self
@@ -242,6 +250,7 @@ class BroadcastServer(QObject):
             http.close()
             http.deleteLater()
             ws.deleteLater()
+            self.failed_port = self._ws_port
             return False
         ws.newConnection.connect(self._on_ws_connection)
         self._http = http
@@ -274,6 +283,10 @@ class BroadcastServer(QObject):
 
     def is_running(self) -> bool:
         return self._ws is not None
+
+    def ports(self) -> tuple[int, int]:
+        """The page port and the data port this server uses."""
+        return self._http_port, self._ws_port
 
     def client_count(self) -> int:
         return len(self._clients)
@@ -358,7 +371,8 @@ def _demo_main() -> int:
     app = QCoreApplication(sys.argv)
     srv = BroadcastServer()
     if not srv.start():
-        print("Could not start the broadcast server (port busy?).", file=sys.stderr)
+        print(f"Could not start the broadcast server: port {srv.failed_port} busy.",
+              file=sys.stderr)
         return 1
     print(f"emgteach dashboard preview (demo data) at {srv.follower_url()}")
     srv.broadcast({"t": "config", "n": 2,

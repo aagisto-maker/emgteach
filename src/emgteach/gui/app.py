@@ -53,6 +53,7 @@ from PySide6.QtWidgets import (
 
 from emgteach import __version__
 from emgteach.broadcast import BroadcastServer
+from emgteach.difusion import read_broadcast_ports
 from emgteach.gui.tabs.acquisition import AcquisitionTab
 from emgteach.gui.tabs.analysis import AnalysisTab
 from emgteach.gui.tabs.mvc import MvcTab
@@ -170,13 +171,17 @@ class MainWindow(QMainWindow):
 
         # Classroom broadcast — shared so the Analysis tab can also push its
         # results/report to the student followers (the Acquisition tab owns the
-        # on/off toggle and the live stream).
-        self._broadcast = BroadcastServer(parent=self)
+        # on/off toggle and the live stream). Its ports are the laboratory's,
+        # read from difusion.txt next to the application (emgteach.difusion).
+        pagina, datos, puertos_mal = read_broadcast_ports()
+        self._broadcast = BroadcastServer(http_port=pagina, ws_port=datos, parent=self)
 
         # Tabs
         self._tab_adq = AcquisitionTab(self._logger, settings, broadcast=self._broadcast)
         self._tab_ana = AnalysisTab(self._logger, settings, broadcast=self._broadcast)
         self._tab_cvm = MvcTab(self._logger, settings)
+        if puertos_mal is not None:
+            self._tab_adq.report_ports_problem(puertos_mal)
 
         # What a student almost always wants is to analyse and normalise the
         # recording they just made, so it travels between the tabs instead of
