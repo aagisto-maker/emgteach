@@ -52,8 +52,9 @@ and read as before.
 that are good, lines that are not, the file next to the frozen executable), a
 port held by another program named by the server, and the warnings.
 
-**Not yet on the university Wi-Fi.** The five-minute check with the simulated
-board and a phone on that network is on the laboratory checklist.
+**On the university Wi-Fi**, checked on 1 October 2026 with the simulated
+board: a phone on that network followed the session, with the page on 8080 and
+the data on 8443.
 
 ## The Windows executable
 
