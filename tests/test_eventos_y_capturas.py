@@ -145,6 +145,23 @@ def test_each_recording_keeps_only_its_own_lines(qapp, tab, tmp_path) -> None:
     assert "second.edf" not in first
 
 
+def test_a_recording_replaces_the_logs_of_an_earlier_one_of_its_name(qapp, tab, tmp_path) -> None:
+    """3.8.0, from ecgteach 0.4.0: a recording accepted over an earlier one of
+    the same name replaces its .eventos.txt (written from the start since
+    3.8.0) and its .marcas.txt (opened for writing by the worker, removed on a
+    good close); neither is added to the end of the old one."""
+    from emgteach.recovery import sidecar_path
+
+    target = tmp_path / "same.edf"
+    events_path(target).write_text("# an earlier recording\n00:00:00  old line\n",
+                                   encoding="utf-8")
+    sidecar_path(target).write_text("# old marks\n1.0\told\n", encoding="utf-8")
+    _record(qapp, tab, target)
+    text = events_path(target).read_text(encoding="utf-8")
+    assert "same.edf" in text and "old line" not in text
+    assert not sidecar_path(target).exists(), "the earlier marks are still beside it"
+
+
 def test_automatic_screenshots_stop_at_the_limit_and_say_so_once(qapp, tmp_path, monkeypatch) -> None:
     from emgteach.gui import app as app_mod
     from emgteach.gui.app import MainWindow

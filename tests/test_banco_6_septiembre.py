@@ -10,6 +10,8 @@ señal, y una función que sale de ellos:
 """
 from __future__ import annotations
 
+import re
+
 import pytest
 
 
@@ -77,7 +79,11 @@ class TestTheDefaultFileName:
             adq._btn_grabar.setChecked(True)
             adq._toggle_grabacion()
             assert "ruta" in visto, "no se llegó a abrir el diálogo de guardar"
-            assert visto["ruta"].split("\\")[-1].split("/")[-1].startswith("P01_")
+            nombre = visto["ruta"].split("\\")[-1].split("/")[-1]
+            assert nombre.startswith("P01_")
+            # Con los segundos (3.8.0, de ecgteach 0.4.0): dos grabaciones en
+            # el mismo minuto proponían el mismo nombre.
+            assert re.fullmatch(r"P01_\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d\.edf", nombre), nombre
         finally:
             s.clear()
             win.close()

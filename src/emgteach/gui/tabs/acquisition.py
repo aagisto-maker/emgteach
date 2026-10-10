@@ -2260,7 +2260,7 @@ class AcquisitionTab(QWidget):
         # timestamped default name. Cancelling aborts the recording start.
         save_dir = self._edit_dir.text().strip() or "."
         default_name = nombre_por_defecto(
-            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M}"
+            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
         )
         ruta, _ = QFileDialog.getSaveFileName(
             self, tr("Save EDF recording as…"),

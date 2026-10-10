@@ -9,6 +9,7 @@ spectral content within tight tolerances.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import numpy as np
@@ -251,11 +252,12 @@ class TestConstruction:
 class TestBuildTimestampedPath:
     def test_default_directory_and_prefix(self) -> None:
         p = build_timestamped_path()
-        # Format: ./emg_YYYY-MM-DD_HH-MM.edf
+        # Format: ./emg_YYYY-MM-DD_HH-MM-SS.edf. With the seconds since 3.8.0
+        # (from ecgteach 0.4.0): two recordings in the same minute got the
+        # same name.
         name = Path(p).name
         assert name.startswith("emg_") and name.endswith(".edf")
-        # YYYY-MM-DD_HH-MM has length 16
-        assert len(name) == len("emg_") + 16 + len(".edf")
+        assert re.fullmatch(r"emg_\d{4}-\d\d-\d\d_\d\d-\d\d-\d\d\.edf", name), name
 
     def test_custom_directory_prefix_suffix(self, tmp_path: Path) -> None:
         p = build_timestamped_path(tmp_path, prefix="bitalino", suffix=".bdf")
