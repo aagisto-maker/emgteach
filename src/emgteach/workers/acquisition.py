@@ -119,6 +119,10 @@ class AcquisitionWorker(QThread):
     log = Signal(str)
     finished_ok = Signal(str)
     error = Signal(str)
+    #: The file could not be written mid-recording, by its message: said in a
+    #: box as well as in the log (``error`` carries it too, for the log and
+    #: the controls). Emitted at once, while the recording stops.
+    escritura_fallida = Signal(str)
     marker_added = Signal(float, str)
     marker_removed = Signal(float, str)
 
@@ -572,7 +576,26 @@ class AcquisitionWorker(QThread):
                     # «Signal OK» is worse than one that ends here. What was
                     # written stays on disk; the cleanup says how much.
                     self._write_failed = True
-                    self.error.emit(mensaje_fallo_guardado(edf_path, exc))
+                    mensaje = mensaje_fallo_guardado(edf_path, exc)
+                    self.escritura_fallida.emit(mensaje)
+                    self.error.emit(mensaje)
+                    break
+
+                # Once a second, the file is still where it is being
+                # written. The writer hands whole records to the EDF library,
+                # which buffers them in its own FILE*, and a folder that goes
+                # (a memory stick taken out) need not fail a write for a long
+                # while: reproduced for 3.8.0, the recording went on saying
+                # it recorded, as on the ecgteach bench of 5 Oct 2026. A file
+                # that is no longer in its folder is a write that has failed.
+                if (self._n_samples_total // fs
+                        != (self._n_samples_total - len(block)) // fs
+                        and not os.path.exists(edf_path)):
+                    self._write_failed = True
+                    mensaje = mensaje_fallo_guardado(
+                        edf_path, tr("the file is no longer in its folder"))
+                    self.escritura_fallida.emit(mensaje)
+                    self.error.emit(mensaje)
                     break
 
                 self.data_ready.emit(

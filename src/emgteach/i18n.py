@@ -1490,6 +1490,7 @@ _ES = {
         "({reason}). Elija otra carpeta —Documentos, por ejemplo— u otro "
         "nombre, y vuelva a pulsar grabar.",
     "The recording cannot be saved": "No se puede guardar el registro",
+    "the file is no longer in its folder": "el archivo ya no está en su carpeta",
     # --- difusión al aula: que el profesor no se quede a ciegas ---
     "This computer is not connected to any network, so the phones cannot "
     "reach it. Connect it to the network the phones use, or share this "

@@ -837,6 +837,8 @@ class AcquisitionTab(QWidget):
         self._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         self._conexion_timer.timeout.connect(self._conexion_sin_datos)
         self._aviso_conexion: QMessageBox | None = None
+        #: The box that says a file could not be written mid-recording.
+        self._aviso_guardado: QMessageBox | None = None
         #: The last recording ended before the board sent anything.
         self._sin_respuesta = False
         #: A new recording was asked for while the previous attempt was
@@ -2405,6 +2407,7 @@ class AcquisitionTab(QWidget):
         worker = self._worker
         worker.error.connect(lambda msg, w=worker: self._on_error(msg, w))
         worker.finished_ok.connect(lambda path, w=worker: self._on_finished(path, w))
+        worker.escritura_fallida.connect(self._on_escritura_fallida)
         self._worker.marker_added.connect(self._on_marker_added)
         self._worker.start()
         self._salir_revision()
@@ -4962,6 +4965,22 @@ class AcquisitionTab(QWidget):
         self._err(msg)
         if worker is None or worker is self._worker:
             self._restaurar_controles()
+
+    @Slot(str)
+    def _on_escritura_fallida(self, mensaje: str) -> None:
+        """The file could not be written mid-recording: said in a box at once.
+
+        Not modal: the recording is already stopping, and the window has to
+        come back ready to record somewhere else. The log has it too.
+        """
+        caja = QMessageBox(
+            QMessageBox.Icon.Warning, tr("The recording cannot be saved"), mensaje,
+            QMessageBox.StandardButton.Ok, self,
+        )
+        caja.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        caja.setWindowModality(Qt.WindowModality.NonModal)
+        self._aviso_guardado = caja
+        caja.show()
 
     def _on_finished(self, edf_path: str, worker: AcquisitionWorker | None = None) -> None:
         """*worker* has ended. Its file, if it left one worth opening, goes to
