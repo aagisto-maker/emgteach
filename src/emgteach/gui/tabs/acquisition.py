@@ -72,6 +72,7 @@ from emgteach.devices import (
     ArduinoDevice,
     create_device,
 )
+from emgteach.devices.bitalino_sim import is_simulated_address
 from emgteach.difusion import PORTS_FILE
 from emgteach.dsp import LiveQualityMonitor, process_offline
 from emgteach.gui.imagenes import imagen
@@ -853,6 +854,9 @@ class AcquisitionTab(QWidget):
         self._eventos: list[str] | None = None
         self._eventos_ruta = ""
         self._eventos_archivo: TextIO | None = None
+        #: The real BITalino sent data in the last recording: the next one
+        #: needs it switched off and on (see _estado_en_reposo).
+        self._placa_reiniciar = False
 
         # Classroom broadcast: re-streams the live monitor to student browsers
         # over the local network (the operator PC owns the single BITalino link).
@@ -2208,6 +2212,8 @@ class AcquisitionTab(QWidget):
         self._widget_arduino.setEnabled(False)
         self._edit_dir.setEnabled(False)
         self._set_channel_controls_enabled(False)
+        self._placa_reiniciar = False
+        self._lbl_estado.setToolTip("")
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._set_led("idle")
         self._update_fv_button()
@@ -2230,6 +2236,8 @@ class AcquisitionTab(QWidget):
         self._set_channel_controls_enabled(True)
         self._sin_respuesta = False
         self._esperando_puerto = False
+        self._placa_reiniciar = False
+        self._lbl_estado.setToolTip("")
         self._lbl_estado.setText(tr("Status: disconnected"))
         self._set_led("off")
         self._led_idle_timer.stop()
@@ -2246,6 +2254,8 @@ class AcquisitionTab(QWidget):
     def _iniciar_grabacion(self) -> None:
         if self._esperar_al_puerto():
             return
+        self._placa_reiniciar = False
+        self._lbl_estado.setToolTip("")
         # The kinematics session needs its plan before it starts: the record
         # button runs the calibration and then cues the loads, and there is
         # no moment after this one to ask for them.
@@ -2502,9 +2512,20 @@ class AcquisitionTab(QWidget):
         recording: a disconnection in the middle of one used to end, a second
         later, with «connected (ready to record)» under an unticked button.
         """
+        self._lbl_estado.setToolTip("")
         if self._btn_conectar.isChecked():
             if self._sin_respuesta:
                 return tr("Status: the board did not answer")
+            if self._placa_reiniciar:
+                # 3.8.0, from ecgteach 0.4.0 (bench of 5 Oct 2026): after a
+                # recording with the real BITalino, the next one did not
+                # connect (Windows errors 1168 and 121) until the board was
+                # switched off and on. Not investigated, by Ángel's decision:
+                # said, where the operator looks — short on screen, whole in
+                # the tooltip.
+                self._lbl_estado.setToolTip(tr(
+                    "Status: for the next recording, switch the BITalino board off and on"))
+                return tr("Status: switch the board off and on")
             return tr("Status: connected (ready to record)")
         return tr("Status: disconnected")
 
@@ -2519,6 +2540,13 @@ class AcquisitionTab(QWidget):
         if self._conexion_timer.isActive():
             self._conexion_timer.stop()
             self._lbl_estado.setText(tr("Status: recording…"))
+            # The real BITalino answered: the next recording needs it switched
+            # off and on. Not the simulated board, and not the Arduino (USB
+            # cable, no Bluetooth link; the bench saw it only on the BITalino).
+            self._placa_reiniciar = (
+                self._combo_device_type.currentIndex() == 0
+                and not is_simulated_address(self._edit_mac.text().strip())
+            )
         # Start the watchdog on the first received sample (not before, so it
         # does not fire during device.open(), which can take up to 3 s on Arduino).
         if not self._watchdog_timer.isActive():
