@@ -5,6 +5,31 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] — unreleased
+
+**What the sister applications found, brought to emgteach.** The bench of
+ecgteach 0.4.0 and eegteach 0.3.0 (5–6 October 2026) turned up faults whose code
+emgteach shares; this version carries the fixes over, piece by piece and not by
+copying files, and nothing else: what had been planned for 3.8.0 moves to 3.9.0.
+No analysis, no EDF format and no calculation changes; **3.7.0 stays the version
+the article describes**.
+
+### Fixed
+
+- **A phone that joins the classroom broadcast late still gets the report. This fault affects the published 3.7.2.** The «download» frame that puts the PDF on the phones went once, to the phones connected at that instant; one that opened the page afterwards, or reconnected after its screen went off, was sent only the session's configuration and never saw the button. The server now keeps the last frame of each kind and sends it to every phone that connects, after the configuration. The offers are forgotten with a new configuration, when a new recording starts (its start sends a status frame, not a configuration) and when the broadcast stops, so a phone never gets an earlier recording's report. Ported by hand from ecgteach: only the resending, since emgteach's `broadcast.py` differs from ecgteach's in its frames, its demo and its zones.
+- **The event log is written line by line while the recording runs.** `<name>.eventos.txt` was written whole when the recording ended, so a process killed in mid-recording (Task Manager, `taskkill /F`) left the EDF and its `.marcas.txt` and not the one file meant to say what happened. The log is now opened beside the recording when it starts, in write mode, and each line goes to it as it is written, flushed and synced to disk, as the marks' mirror already did. If it cannot be opened, or stops taking lines, the whole log is written at the end as before. A recording that reuses a name replaces the earlier log; it is not added to its end.
+- **The default name of a recording carries the seconds** (`P07_2026-10-06_10-15-42.edf`, and `build_timestamped_path()` the same): two recordings in the same minute were offered the same name.
+- **A file that disappears in mid-recording stops it at once, and a box says so.** Reproduced with the real writer: with the recording's folder deleted, the recording went on for as long as it was left, said nothing, and at the end reported «EDF file saved» for a file that was no longer there. The EDF library buffers whole records, and a write to a file whose folder has gone need not fail for a long while. Once a second the recording now checks that its file is still in its folder; if not, it stops, the log says why and how much was written, and a non-modal box («The recording cannot be saved») says it too. A write that fails outright, which already stopped the recording, now shows the same box.
+- **The save dialog does not open in a folder that is no longer there.** After a recording to a memory stick that was then taken out, the next dialog started from the missing folder. It now starts from the default folder (Documents), and the log says which folder was gone.
+
+### Added
+
+- **After a recording with the BITalino, the status says to switch it off and on.** At the bench every new recording needed the board switched off and on, or Windows answered with errors 1168 or 121; the cause is not investigated, it is said where the operator looks. When a recording in which the real BITalino sent data ends, the status reads «Status: switch the board off and on» («Estado: apague y encienda la placa»), with the whole sentence in its tooltip, until the next recording or connection. Not with the simulated board, not with the Arduino, and not when the board did not answer (that status stays). The laboratory kit of 3.7.2 already says it in its `LEEME.txt`.
+
+### Tests
+
+- The «Retry» test waits for each step of the application instead of two fixed five-second waits, with a ceiling of 30 s, and a failure says which step did not come. It failed once on the CI on 2 October without saying which wait it was.
+
 ## [3.7.2] — 2026-10-02
 
 **The classroom broadcast on ports 8080 and 8443, and the ports in a file.**

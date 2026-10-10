@@ -12,6 +12,43 @@ used.
 
 ---
 
+## 2026-10-10 — 3.8.0: what ecgteach and eegteach found, ported piece by piece
+
+**Context.** ecgteach and eegteach began as copies of emgteach's acquisition
+code, and the bench of ecgteach 0.4.0 and eegteach 0.3.0 (5–6 October 2026)
+found faults in that shared code: the late phone without the report, the event
+log written only at the end, the default name without seconds, the file that
+disappears without a word, the dialog on a folder that is gone, and the board
+that has to be switched off and on.
+
+**Options evaluated.** (a) Copy the sister applications' files over
+emgteach's; (b) port each fix by hand, with its test, only where emgteach's
+code has the fault; (c) a shared package for the three applications.
+
+**Chosen: (b).** The files are no longer the same: `broadcast.py` alone
+carries emgteach's own frames (`load`, `calib`), demo and %MVC zones, and a
+copy would have taken them away. Each fix came with a test that failed on
+emgteach before it, and where emgteach already did the right thing (the marks'
+mirror, opened in write mode and synced mark by mark) nothing was touched.
+(c) is the right shape in the long run, and a refactor too large for a short
+release a month before the practicals. The release is kept short on purpose:
+what had been planned for 3.8.0 moves to 3.9.0.
+
+**Three differences from the sister applications.** The status that says to
+switch the board off and on is for the BITalino only: the Arduino is on a USB
+cable, and the bench saw the fault only on the Bluetooth link. The box that
+says a file could not be written is non-modal in the strict sense — shown,
+not opened as window-modal — so the window stays usable while the recording
+stops. And the check that the file is still in its folder was reproduced on
+emgteach before it was applied, as the brief asked: with the real writer and
+the folder deleted, the recording went on without a word.
+
+**Open risk.** The ports reproduce faults seen on the ecgteach and eegteach
+bench, not on emgteach's: the board-restart status in particular is said, not
+explained. The 3.8.0 bench is what confirms them on this application.
+
+---
+
 ## 2026-09-29 — Classroom broadcast: ports 8080 and 8443, changeable in difusion.txt
 
 **Context.** The broadcast opened 8070 for the page and 8071 for the data,
