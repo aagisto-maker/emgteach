@@ -79,6 +79,14 @@ def _hasta(condicion, segundos: float) -> bool:
     return False
 
 
+def _esperar(condicion, que: str, segundos: float = 30.0) -> None:
+    """Wait for *condicion*; if it never comes, say which one it was."""
+    t0 = time.monotonic()
+    if not _hasta(condicion, segundos):
+        raise AssertionError(
+            f"waited {time.monotonic() - t0:.1f} s for {que}, and it did not come")
+
+
 @pytest.mark.gui
 class TestAStopWhileOpeningSurvivesTheOpening:
     def test_the_thread_ends_without_recording(self, qapp, tmp_path: Path) -> None:
@@ -332,7 +340,8 @@ class TestTheWarningDoesNotFreezeTheWindow:
 
         tab = pestana_que_tarda
         _grabar(tab)
-        assert _hasta(lambda: tab._aviso_conexion is not None, 3.0)
+        _esperar(lambda: tab._aviso_conexion is not None,
+                 "the warning that the board did not answer")
         viejo = tab._worker
         t0 = time.monotonic()
         tab._tras_aviso_conexion(QMessageBox.StandardButton.Retry)
@@ -342,6 +351,14 @@ class TestTheWarningDoesNotFreezeTheWindow:
             "Status: waiting for Windows to release the port…")
         assert not tab._btn_grabar.isEnabled()
         tab.primera.soltar.set()                  # Windows lets go
-        assert _hasta(lambda: tab._worker is not viejo and tab.is_recording(), 5.0)
-        assert _hasta(lambda: tab._lbl_estado.text() == tr("Status: recording…"), 5.0)
+        # Each wait says which step did not come, and waits for the step
+        # itself: it returns as soon as the application gets there, so the
+        # ceiling only matters on a slow machine. Five fixed seconds failed
+        # once on the CI (2 Oct 2026) without saying which of the two it was
+        # (3.8.0, from ecgteach 0.4.0).
+        _esperar(lambda: tab._worker is not viejo,
+                 "the new worker after the old one let go of the port")
+        _esperar(tab.is_recording, "the new worker to be recording")
+        _esperar(lambda: tab._lbl_estado.text() == tr("Status: recording…"),
+                 "the first block, with the status saying it records")
         assert tab.primera.puertos[0].cerrado
