@@ -165,3 +165,29 @@ def test_the_real_writer_with_its_folder_deleted(pestana) -> None:
     assert _hasta(lambda: _caja(tab) is not None, 2.0), "no box said it"
     dicho = tab._local_log.toPlainText()
     assert tr("EDF file saved: {path}").format(path=tab.carpeta / "a.edf") not in dicho
+
+
+def test_a_folder_that_is_gone_is_not_where_the_dialog_opens(pestana, monkeypatch) -> None:
+    """3.8.0, from ecgteach 0.4.0 (ecg 1): the stick taken out after a
+    recording that went to it. The next save dialog opened on a folder that
+    was not there; it opens in Documents now, and the log says so."""
+    from emgteach.gui.tabs import acquisition as acq_mod
+    from emgteach.gui.tabs.acquisition import carpeta_por_defecto
+
+    tab = pestana
+    pedido: list[str] = []
+
+    def dialogo(_padre, _titulo, inicio, _filtro):
+        pedido.append(inicio)
+        return "", ""                               # cancelled
+
+    monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName", staticmethod(dialogo))
+    ida = tab.carpeta / "la_memoria_que_se_saco"
+    tab._edit_dir.setText(str(ida))
+    tab._btn_grabar.setChecked(True)
+    tab._toggle_grabacion()
+    assert pedido, "the save dialog was not opened"
+    assert Path(pedido[-1]).parent == Path(carpeta_por_defecto())
+    assert tab._edit_dir.text() == carpeta_por_defecto()
+    assert str(ida) in tab._local_log.toPlainText()
+    assert not tab.is_recording()

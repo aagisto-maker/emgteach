@@ -1491,6 +1491,9 @@ _ES = {
         "nombre, y vuelva a pulsar grabar.",
     "The recording cannot be saved": "No se puede guardar el registro",
     "the file is no longer in its folder": "el archivo ya no está en su carpeta",
+    "The folder {folder} is no longer there; the recording is proposed in "
+    "{default}.":
+        "La carpeta {folder} ya no está; el registro se propone en {default}.",
     # --- difusión al aula: que el profesor no se quede a ciegas ---
     "This computer is not connected to any network, so the phones cannot "
     "reach it. Connect it to the network the phones use, or share this "

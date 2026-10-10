@@ -2271,6 +2271,19 @@ class AcquisitionTab(QWidget):
         # "Save figure" dialogs), pre-filled with the destination folder and a
         # timestamped default name. Cancelling aborts the recording start.
         save_dir = self._edit_dir.text().strip() or "."
+        if not Path(save_dir).is_dir():
+            # The folder of the last recording is gone — a memory stick taken
+            # out. The dialog opens where recordings go by default, and the
+            # field says so, instead of starting from a place that is not
+            # there (3.8.0, from ecgteach 0.4.0).
+            falta, save_dir = save_dir, carpeta_por_defecto()
+            self._edit_dir.setText(save_dir)
+            self._log(tr(
+                "The folder {folder} is no longer there; the recording is "
+                "proposed in {default}."
+            ).format(folder=falta, default=save_dir))
+        # With the seconds (3.8.0, from ecgteach 0.4.0): two recordings in
+        # the same minute proposed the same name.
         default_name = nombre_por_defecto(
             self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
         )
