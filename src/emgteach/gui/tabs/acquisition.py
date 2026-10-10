@@ -30,11 +30,12 @@ The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread)
 from __future__ import annotations
 
 import html
+import os
 import re
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, TextIO
 
 import numpy as np
 import pyqtgraph as pg
@@ -136,9 +137,21 @@ EVENTS_SUFFIX = ".eventos.txt"
 
 
 def events_path(edf_path: str | Path) -> Path:
-    """The event log saved beside *edf_path* when its recording ends."""
+    """The event log written beside *edf_path* while its recording runs."""
     p = Path(edf_path)
     return p.with_name(p.stem + EVENTS_SUFFIX)
+
+
+def _escribir_linea(f: TextIO, linea: str) -> bool:
+    """Append *linea* to the open event log and push it to disk; ``False``
+    when the file can no longer be written."""
+    try:
+        f.write(linea + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    except (OSError, ValueError):
+        return False
+    return True
 
 
 # Number of samples in the ring buffer (= 30 s at 1000 Hz)
@@ -834,10 +847,12 @@ class AcquisitionTab(QWidget):
         # them if it needs them.
         self._local_log = LoggerWidget()
         # The lines this tab writes while a recording runs, as plain text
-        # with the time, and the file they belong to; saved beside it when
-        # the recording ends (_guardar_eventos). ``None`` between recordings.
+        # with the time, and the file they belong to. Each line also goes to
+        # <name>.eventos.txt as it is written, so a recording whose process
+        # dies keeps its log (_abrir_eventos); ``None`` between recordings.
         self._eventos: list[str] | None = None
         self._eventos_ruta = ""
+        self._eventos_archivo: TextIO | None = None
 
         # Classroom broadcast: re-streams the live monitor to student browsers
         # over the local network (the operator PC owns the single BITalino link).
@@ -866,23 +881,69 @@ class AcquisitionTab(QWidget):
         if self._eventos is None:
             return
         texto = html.unescape(re.sub(r"<[^>]+>", "", str(msg))).strip()
-        self._eventos.append(f"{datetime.now():%H:%M:%S}  {texto}")
+        linea = f"{datetime.now():%H:%M:%S}  {texto}"
+        self._eventos.append(linea)
+        f = getattr(self, "_eventos_archivo", None)
+        if f is not None and not _escribir_linea(f, linea):
+            # A file that cannot take one more line (a stick taken out) is
+            # dropped; what it holds stays, and the end writes the whole log
+            # again if it can.
+            self._eventos_archivo = None
+
+    def _abrir_eventos(self) -> None:
+        """Start <name>.eventos.txt with the lines kept so far.
+
+        Ported from ecgteach 0.4.0 (bench of 5 October 2026, E7): with the
+        process killed mid-way, the marks survived in .marcas.txt and the
+        event log — written only at the end — did not, so the one file meant
+        to say what happened was the one missing. It is now written as the
+        recording runs, line by line, each one pushed to disk. Opened for
+        writing (``"w"``), it also replaces the log of an earlier recording
+        of the same name. If it cannot be opened, the log is written at the
+        end as before.
+        """
+        anterior, self._eventos_archivo = self._eventos_archivo, None
+        if anterior is not None:
+            try:
+                anterior.close()
+            except OSError:
+                pass
+        if not self._eventos or not self._eventos_ruta:
+            return
+        try:
+            f = open(events_path(self._eventos_ruta), "w", encoding="utf-8")
+        except OSError:
+            return
+        if all(_escribir_linea(f, linea) for linea in self._eventos):
+            self._eventos_archivo = f
+        else:
+            f.close()
 
     def _guardar_eventos(self) -> None:
-        """Write the recording's event log beside it, ``<name>.eventos.txt``.
+        """Close the recording's event log beside it, ``<name>.eventos.txt``.
 
         The log on screen dies with the application, and it is what tells
         what happened when something went wrong without an exception —
-        the lines a teacher would send. Written when the recording ends,
-        well or badly; a file that cannot be written is said in the log
-        and changes nothing else.
+        the lines a teacher would send. Since 3.8.0 it is written line by
+        line as the recording runs (_abrir_eventos), and here it is only
+        closed; if that file could not be opened or stopped taking lines,
+        the whole log is written now, well or badly. A file that cannot be
+        written is said in the log and changes nothing else.
         """
         eventos, self._eventos = self._eventos, None
+        escrito = getattr(self, "_eventos_archivo", None)
+        self._eventos_archivo = None
+        if escrito is not None:
+            try:
+                escrito.close()
+            except OSError:
+                escrito = None
         if not eventos or not self._eventos_ruta:
             return
         destino = events_path(self._eventos_ruta)
         try:
-            destino.write_text("\n".join(eventos) + "\n", encoding="utf-8")
+            if escrito is None:
+                destino.write_text("\n".join(eventos) + "\n", encoding="utf-8")
         except OSError as exc:
             self._err(tr("The event log could not be saved in {path}: {error}")
                       .format(path=destino, error=exc))
@@ -2223,13 +2284,14 @@ class AcquisitionTab(QWidget):
         # Named now, before a single sample arrives: a screenshot taken during
         # the calibration has to carry the same base name as the recording.
         self._ruta_registro = ruta
-        # The event log of this recording starts here, and is saved beside
-        # it when the recording ends.
+        # The event log of this recording starts here, and is written
+        # beside it as it runs.
         self._eventos_ruta = ruta
         self._eventos = [
             f"# emgteach {__version__} — {Path(ruta).name} — "
             f"{datetime.now():%Y-%m-%d %H:%M:%S}"
         ]
+        self._abrir_eventos()
         save_dir = str(Path(ruta).parent)
         self._edit_dir.setText(save_dir)
         self._settings.setValue("adquisicion/save_dir", save_dir)
