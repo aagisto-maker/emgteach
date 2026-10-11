@@ -21,9 +21,13 @@ class _FakeWorker:
     def __init__(self) -> None:
         self.markers: list[str] = []
         self.instructions: list[tuple[int, float | None]] = []
+        self.stopped = False
 
     def isRunning(self) -> bool:
         return True
+
+    def stop(self) -> None:
+        self.stopped = True
 
     def add_marker(self, label: str) -> None:
         self.markers.append(label)
@@ -237,6 +241,8 @@ def test_guided_force_velocity_marks_each_load(qapp) -> None:
     fv_markers = parse_fv_load_markers([(0.0, m) for m in worker.markers])
     assert [kg for _onset, kg in fv_markers] == [2.0, 2.0, 4.0, 4.0, 6.0, 6.0]
     assert worker.markers == [fv_load_marker(kg) for kg in [2, 2, 4, 4, 6, 6]]
+    # And the last load ends the recording (decision of 11 Oct 2026).
+    assert worker.stopped
     tab.cleanup()
 
 

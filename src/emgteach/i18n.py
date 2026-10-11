@@ -135,10 +135,10 @@ _ES = {
     "Both muscles at once": "Los dos músculos a la vez",
     "Next one in a moment": "La siguiente enseguida",
     "Task recorded": "Tarea registrada",
-    "Stop the recording when you are ready.":
-        "Detenga la grabación cuando quiera.",
-    "The guided task is finished; the recording goes on.":
-        "La tarea guiada ha terminado; la grabación sigue.",
+    "The recording has stopped.": "La grabación se ha detenido.",
+    "The guided task is finished.": "La tarea guiada ha terminado.",
+    "Recording stopped automatically: guided session finished.":
+        "Grabación detenida automáticamente: sesión terminada.",
     "Guided task cancelled; the recording goes on.":
         "Tarea guiada cancelada; la grabación sigue.",
     "A brief, explosive jerk — not a sustained push.":
@@ -806,10 +806,14 @@ _ES = {
     "Force-velocity study.":
         "{n} cargas marcadas.\nDetener la grabación y abrir el estudio "
         "fuerza-velocidad.",
-    "Force-velocity: {n} loads recorded. Stop recording, then open "
-    "the Force-velocity study in the Analysis tab.":
-        "Fuerza-velocidad: {n} cargas grabadas. Detenga la grabación y abra el "
-        "estudio fuerza-velocidad en la pestaña Análisis.",
+    "Force-velocity: {n} loads recorded. The recording has stopped; "
+    "open the Force-velocity study in the Analysis tab.":
+        "Fuerza-velocidad: {n} cargas grabadas. La grabación se ha detenido; "
+        "abra el estudio fuerza-velocidad en la pestaña Análisis.",
+    "{n} loads marked.\nThe recording has stopped: open the "
+    "Force-velocity study.":
+        "{n} cargas marcadas.\nLa grabación se ha detenido: abra el estudio "
+        "fuerza-velocidad.",
     "Force-velocity acquisition finished: {n} loads.":
         "Adquisición fuerza-velocidad terminada: {n} cargas.",
     # Movement-vs-EMG analysis panel (accelerometer on the moving segment).

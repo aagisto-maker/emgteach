@@ -859,6 +859,10 @@ class AcquisitionTab(QWidget):
         #: The real BITalino sent data in the last recording: the next one
         #: needs it switched off and on (see _estado_en_reposo).
         self._placa_reiniciar = False
+        #: The recording is being stopped because the guided session ended:
+        #: the cancels it runs leave the «Task recorded» panel and its map
+        #: on screen for their five seconds (see _parar_al_terminar_sesion).
+        self._conservar_panel = False
 
         # Classroom broadcast: re-streams the live monitor to student browsers
         # over the local network (the operator PC owns the single BITalino link).
@@ -2257,6 +2261,7 @@ class AcquisitionTab(QWidget):
         if self._esperar_al_puerto():
             return
         self._placa_reiniciar = False
+        self._conservar_panel = False
         self._lbl_estado.setToolTip("")
         # The kinematics session needs its plan before it starts: the record
         # button runs the calibration and then cues the loads, and there is
@@ -4206,10 +4211,11 @@ class AcquisitionTab(QWidget):
         self._btn_cancelar_guia.setVisible(False)
         self._mvc_overlay.show_done(
             tr("Task recorded"),
-            tr("Stop the recording when you are ready."))
-        self._log(tr("The guided task is finished; the recording goes on."))
+            tr("The recording has stopped."))
+        self._log(tr("The guided task is finished."))
         QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
         QTimer.singleShot(5000, lambda: self._bcast_calib(False))
+        self._parar_al_terminar_sesion()
 
     def _guia_cancelar(self) -> None:
         """Out of the guided task, leaving the recording running."""
@@ -4220,9 +4226,10 @@ class AcquisitionTab(QWidget):
         self._guia_fase = ""
         self._btn_paso_hecho.setVisible(False)
         self._btn_cancelar_guia.setVisible(False)
-        self._mvc_overlay.set_steps([])
-        self._mvc_overlay.hide_overlay()
-        self._bcast_calib(False)
+        if not self._conservar_panel:
+            self._mvc_overlay.set_steps([])
+            self._mvc_overlay.hide_overlay()
+            self._bcast_calib(False)
 
     def _write_mvc_ref_marker(self, c: int) -> None:
         """Carry this channel's MVC reference into the EDF as an annotation.
@@ -4381,10 +4388,11 @@ class AcquisitionTab(QWidget):
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False
         self._mvc_phase = ""
-        self._mvc_overlay.hide_overlay()
+        if not self._conservar_panel:
+            self._mvc_overlay.hide_overlay()
+            self._bcast_calib(False)
         self._btn_cancelar_guia.setVisible(False)
         self._update_fv_button()
-        self._bcast_calib(False)
 
     @Slot()
     def _cancelar_guiado(self) -> None:
@@ -4849,14 +4857,14 @@ class AcquisitionTab(QWidget):
         n = len(self._fv_loads)
         self._fv_info(
             tr(
-                "Force-velocity: {n} loads recorded. Stop recording, then open "
-                "the Force-velocity study in the Analysis tab."
+                "Force-velocity: {n} loads recorded. The recording has stopped; "
+                "open the Force-velocity study in the Analysis tab."
             ).format(n=n)
         )
         self._mvc_overlay.show_done(
             tr("Loads recorded"),
             tr(
-                "{n} loads marked.\nStop recording, then open the "
+                "{n} loads marked.\nThe recording has stopped: open the "
                 "Force-velocity study."
             ).format(n=n),
         )
@@ -4867,6 +4875,38 @@ class AcquisitionTab(QWidget):
         # load has a box too, and the end of the study is worth seeing
         # whole. It goes when the panel goes.
         QTimer.singleShot(5000, self._fv_cerrar_mapa)
+        self._parar_al_terminar_sesion()
+
+    def _parar_al_terminar_sesion(self) -> None:
+        """The guided session has asked for everything: so does the recording.
+
+        Decision of 11 Oct 2026, as ecgteach and eegteach do: at the end of
+        the pair practical's task and of the kinematics practical's last load
+        the recording stops by itself, and the event log says why. The panel
+        that says the task is recorded stays its five seconds: the cancels
+        the stop runs, now and when the thread ends, leave it alone
+        (_conservar_panel). The one-muscle
+        practical has no guided end and is never stopped here; «Cancel
+        guide» does not come here either.
+        """
+        if not self.is_recording():
+            return
+        self._log(tr("Recording stopped automatically: guided session finished."))
+        # Until the panel's own five seconds are up: the thread's «finished»
+        # comes after this returns and runs the cancels again.
+        self._conservar_panel = True
+        QTimer.singleShot(5000, self._soltar_panel)
+        self._btn_grabar.setChecked(False)
+        self._detener_grabacion()
+
+    def _soltar_panel(self) -> None:
+        """The five seconds are up: the phones' guide panel goes too, as the
+        cancels would have sent it at the stop."""
+        if not self._conservar_panel:
+            return
+        self._conservar_panel = False
+        if not self.is_recording():
+            self._bcast_calib(False)
 
     def _fv_cerrar_mapa(self) -> None:
         """Drop the map and hide the panel, once the finished study is seen."""
@@ -4880,6 +4920,8 @@ class AcquisitionTab(QWidget):
         self._fv_active = False
         self._fv_phase = ""
         self._btn_cancelar_guia.setVisible(False)
+        if self._conservar_panel:
+            return
         self._mvc_overlay.set_steps([])
         if not self._mvc_active:
             self._mvc_overlay.hide_overlay()
