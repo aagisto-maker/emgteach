@@ -47,6 +47,21 @@ the folder deleted, the recording went on without a word.
 bench, not on emgteach's: the board-restart status in particular is said, not
 explained. The 3.8.0 bench is what confirms them on this application.
 
+**Decisions of 11 October 2026.** The board-restart status stays BITalino
+only, and the save box stays non-modal: a recording cut short by a medium
+that disappears is not a use case — nobody records onto a memory stick —
+and for such anomalous conditions (a stick taken out, a folder that goes, a
+process killed) the application has to say so and not corrupt what is
+already written; restarting it is an acceptable answer, and nothing more is
+spent on that front. The metrics («results») are resent to a late phone with
+the report. A file that cannot be created no longer reads as a board that did
+not answer (ported from ecgteach). The recording stops by itself at the end of
+the pair and kinematics guided sessions, as in the sister applications; the
+one-muscle practical has no guided end. The diagnostic's warning for a
+saturated or flat channel goes to 3.9.0 — «ready, with a warning» past 50 % of
+the samples at rest, not eegteach's 10 %, since in EMG a strong contraction
+saturates too. The PR is merged after its own bench, not after ecgteach's.
+
 ---
 
 ## 2026-09-29 — Classroom broadcast: ports 8080 and 8443, changeable in difusion.txt

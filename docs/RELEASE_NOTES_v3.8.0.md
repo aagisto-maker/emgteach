@@ -15,8 +15,9 @@ before.
   to download the PDF reached only the phones connected at the moment the
   report was saved; a phone that opened the page afterwards, or reconnected
   after its screen went off, never had it. Each phone that connects now gets
-  it. A new recording, a new configuration or stopping the broadcast forget
-  it, so no phone gets an earlier recording's report.
+  it, with the metrics of the analysis. A new recording, a new
+  configuration or stopping the broadcast forget them, so no phone gets an
+  earlier recording's report.
 
 ## The recording
 
@@ -33,6 +34,13 @@ before.
   now stops within a second, the log says why, and a box says «The recording
   cannot be saved» («No se puede guardar el registro») without blocking the
   window.
+- **A file that cannot be created is said as such**, in a box, and no
+  longer as «the board did not answer».
+- **The recording stops by itself when the guided session ends**: after
+  the grip in the pair practical and after the last load in the kinematics
+  practical. The event log says why, and the panel that says the task is
+  recorded stays its five seconds. The one-muscle practical records until it
+  is stopped, and «Cancel guide» never stops the recording.
 - **The save dialog does not open in a folder that is gone.** It opens in
   Documents, and the log names the folder that was missing.
 - **After a recording with the BITalino, the status says «Estado: apague y
@@ -42,11 +50,12 @@ before.
 
 ## How it was tested
 
-**By the automated suite**, 1433 tests, among them: a real WebSocket follower
+**By the automated suite**, 1439 tests, among them: a real WebSocket follower
 that joins after the report; a process recording the simulated board that is
 killed, with its event log checked afterwards; the recording's folder deleted
-with the real writer running; and the status after a recording with a board
-that answers and with the simulated one.
+with the real writer running; the status after a recording with a board
+that answers and with the simulated one; and the end of each guided session
+stopping its recording.
 
 **At the bench**: see the 3.8.0 bench list.
 
