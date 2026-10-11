@@ -52,7 +52,11 @@ classifiers = [
 # a virtual COM port, and the backend speaks its wire protocol directly over
 # `pyserial` (already a hard dependency, shared with the Arduino backend).
 dependencies = [
-    "PySide6>=6.6,<7.0",
+    # 6.12.0 frees None one time too many: on Python 3.10 and 3.11, where None
+    # is not immortal, the test suite aborts with «none_dealloc» while
+    # collecting widgets (CI of 10-11 Oct 2026). The executable is built
+    # with 6.11.2 (packaging/requirements-exe.txt).
+    "PySide6>=6.6,<7.0,!=6.12.0",
     "pyqtgraph>=0.13",
     "numpy==1.26.4",
     "scipy==1.13.1",
