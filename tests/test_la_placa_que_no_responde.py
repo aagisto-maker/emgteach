@@ -149,6 +149,14 @@ def _grabar(tab) -> None:
 @pytest.mark.gui
 class TestTheTabSaysWhatIsHappening:
     def test_it_says_connecting_until_the_first_block(self, qapp, pestana) -> None:
+        from emgteach.gui.tabs.acquisition import CONEXION_MAX_S
+
+        # The fixture's 300 ms limit is for the test of the limit, below. Here
+        # the board answers, and on a slow runner the lines written to the
+        # event log before the first block (each one synced to disk since
+        # 3.8.0) took longer than that once (Windows, Python 3.10, 11 Oct
+        # 2026): the limit fired first. The application waits CONEXION_MAX_S.
+        pestana._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         _grabar(pestana)
         assert pestana._lbl_estado.text() == tr("Status: connecting to the board…")
         pestana.placa.soltar.set()
@@ -350,6 +358,11 @@ class TestTheWarningDoesNotFreezeTheWindow:
         assert tab._lbl_estado.text() == tr(
             "Status: waiting for Windows to release the port…")
         assert not tab._btn_grabar.isEnabled()
+        # The second board answers: the 300 ms limit the first one needed is
+        # not what this checks (see test_it_says_connecting_until_the_first_block).
+        from emgteach.gui.tabs.acquisition import CONEXION_MAX_S
+
+        tab._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         tab.primera.soltar.set()                  # Windows lets go
         # Each wait says which step did not come, and waits for the step
         # itself: it returns as soon as the application gets there, so the
