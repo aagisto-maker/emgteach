@@ -70,3 +70,9 @@ with ✱.
 - **ORCID:** [0000-0001-7165-2135](https://orcid.org/0000-0001-7165-2135)
 - **Email:** medardo@ucm.es
 - **CRediT roles:** Supervision · Validation · Writing – review & editing
+
+## AI assistance
+
+The use of an AI coding tool (Claude Code, Anthropic) in developing emgteach
+is declared in the README, under «How this software was developed», and in the
+publications that describe the software.
