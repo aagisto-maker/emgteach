@@ -106,7 +106,11 @@ def test_stopping_and_starting_again_at_once_keeps_the_new_recording_live(qapp, 
     _pump(qapp, 500)                               # the old thread's signals arrive
     assert tab.is_recording()
     assert tab._btn_grabar.isChecked() and tab._btn_grabar.text() == tr("Stop recording")
-    assert tab._lbl_estado.text() == tr("Status: recording…")
+    # Waited for, not assumed after the 500 ms: on the Windows runner with
+    # Python 3.10 the second board's first block came later than that once
+    # (11 Oct 2026), the event log's lines being synced to disk since 3.8.0.
+    _until(qapp, lambda: tab._lbl_estado.text() == tr("Status: recording…"), 8.0,
+           "the second recording's first block")
     assert not tab._revisando, "the plots follow the new recording, not the old file"
     assert tab._render_timer.isActive() and tab._load_timer.isActive()
     n = tab._total_samples
