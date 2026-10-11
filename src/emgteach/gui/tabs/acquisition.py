@@ -2518,8 +2518,13 @@ class AcquisitionTab(QWidget):
         answered, and the status must not come back saying «connected»."""
         if self._conexion_timer.isActive():
             self._conexion_timer.stop()
-            self._sin_respuesta = True
-            self._set_led("off")
+            # A file that could not be created is not a board that did not
+            # answer: the board answered, and the next recording can start
+            # (3.8.0, from ecgteach 9a33ef3).
+            worker = self._worker
+            if worker is None or not worker.placa_respondio():
+                self._sin_respuesta = True
+                self._set_led("off")
 
     def _estado_en_reposo(self) -> str:
         """What the status line says when nothing is being recorded.
@@ -4981,7 +4986,7 @@ class AcquisitionTab(QWidget):
 
     @Slot(str)
     def _on_escritura_fallida(self, mensaje: str) -> None:
-        """The file could not be written mid-recording: said in a box at once.
+        """The file could not be created or written: said in a box at once.
 
         Not modal: the recording is already stopping, and the window has to
         come back ready to record somewhere else. The log has it too.

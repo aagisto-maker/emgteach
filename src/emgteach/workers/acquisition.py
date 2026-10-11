@@ -119,7 +119,7 @@ class AcquisitionWorker(QThread):
     log = Signal(str)
     finished_ok = Signal(str)
     error = Signal(str)
-    #: The file could not be written mid-recording, by its message: said in a
+    #: The file could not be created or written, by its message: said in a
     #: box as well as in the log (``error`` carries it too, for the log and
     #: the controls). Emitted at once, while the recording stops.
     escritura_fallida = Signal(str)
@@ -171,6 +171,10 @@ class AcquisitionWorker(QThread):
         self._markers_mutex = QMutex()
         self._last_sample_time: float | None = None
         self._write_failed = False
+        #: The device's opening returned: the board answered, whatever
+        #: happened after it (a file that cannot be created is not a board
+        #: that did not answer).
+        self._respondio = False
         self._rearm_onsets = False
         # The marks' mirror on disk, open while a recording is (see
         # emgteach.recovery). Guarded by the markers' mutex.
@@ -212,6 +216,10 @@ class AcquisitionWorker(QThread):
         self._stop_requested = True
         self._running = False
         self._device.force_close()
+
+    def placa_respondio(self) -> bool:
+        """``True`` once the device's opening has returned."""
+        return self._respondio
 
     def is_opening(self) -> bool:
         """``True`` while the device is being opened (no samples yet)."""
@@ -405,6 +413,7 @@ class AcquisitionWorker(QThread):
             self.log.emit(tr("Connecting to {name}…").format(name=device.name))
             device.open()
             self._opening = False
+            self._respondio = True
             if self._stop_requested:
                 # Stopped while the board was being reached: release it now
                 # (the finally closes it) and write nothing.
@@ -477,7 +486,9 @@ class AcquisitionWorker(QThread):
                     edf_path, channels=channels, metadata=self._metadata
                 )
             except OSError as exc:
-                raise OSError(mensaje_fallo_guardado(edf_path, exc)) from exc
+                mensaje = mensaje_fallo_guardado(edf_path, exc)
+                self.escritura_fallida.emit(mensaje)
+                raise OSError(mensaje) from exc
             self.log.emit(tr("Recording to: {path}").format(path=edf_path))
             # What the EDF+ identification block could not hold. Said here,
             # while the bench can still act on it, rather than discovered at

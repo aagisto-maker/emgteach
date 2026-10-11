@@ -191,3 +191,31 @@ def test_a_folder_that_is_gone_is_not_where_the_dialog_opens(pestana, monkeypatc
     assert tab._edit_dir.text() == carpeta_por_defecto()
     assert str(ida) in tab._local_log.toPlainText()
     assert not tab.is_recording()
+
+
+def test_a_file_that_cannot_be_created_is_not_a_board_that_did_not_answer(
+    pestana, monkeypatch
+) -> None:
+    """Decision of 11 Oct 2026 (point 3, ecgteach 9a33ef3): the board answered
+    and the file could not be created. The status must not say the board did
+    not answer, a box must say the file could not be made, and the tab must
+    record again once there is somewhere to write."""
+    import emgteach.workers.acquisition as wmod
+
+    real = wmod.BufferedEdfWriter
+
+    def no_se_puede(*_a, **_k):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(wmod, "BufferedEdfWriter", no_se_puede)
+    tab = pestana
+    tab._btn_grabar.setChecked(True)
+    tab._toggle_grabacion()
+    assert _hasta(lambda: tab._worker is not None and not tab._worker.isRunning(), 8.0)
+    _hasta(lambda: False, 0.3)
+    assert _caja(tab) is not None and "a.edf" in _caja(tab), "no box said it"
+    assert tab._lbl_estado.text() == tr("Status: connected (ready to record)")
+    monkeypatch.setattr(wmod, "BufferedEdfWriter", real)
+    tab._btn_grabar.setChecked(True)
+    tab._toggle_grabacion()
+    assert _hasta(lambda: tab._lbl_estado.text() == tr("Status: recording…"), 8.0)
