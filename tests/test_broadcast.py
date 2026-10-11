@@ -283,3 +283,37 @@ def test_the_report_of_an_earlier_recording_is_not_offered(qapp, new) -> None:
         assert not any('"t":"download"' in m for m in late), late
     finally:
         srv.stop()
+
+
+def test_a_follower_who_joins_after_the_results_still_gets_them(qapp) -> None:
+    """Decision of 11 Oct 2026 (A1): the metrics travel with the report. A
+    phone that joined after them saw the download button over an empty
+    results panel; it now gets the last «results» frame too, and a new
+    config or a new recording forgets it, as it does the report."""
+    from emgteach.broadcast import BroadcastServer
+
+    results = {"t": "results", "file": "P07.edf", "mnf": 81.2, "mdf": 70.4,
+               "mdf_slope": -0.31, "rms": 0.42, "iemg": 12.3, "duration": 30.0,
+               "fatigue": -1}
+    srv = BroadcastServer(http_port=8128, ws_port=8129)
+    assert srv.start()
+    try:
+        srv.broadcast({"t": "config", "n": 1, "labels": ["Bíceps"], "recording": False})
+        srv.broadcast(results)
+        late = _follow(srv, 8129)
+        assert any('"t":"results"' in m and "P07.edf" in m for m in late), late
+        for new in ({"t": "config", "n": 1, "labels": ["Tríceps"], "recording": False},
+                    {"t": "status", "recording": True}):
+            srv.broadcast(results)
+            srv.broadcast(new)
+            late = _follow(srv, 8129)
+            assert not any('"t":"results"' in m for m in late), (new, late)
+        srv.broadcast(results)              # on offer when the broadcast stops
+    finally:
+        srv.stop()
+    assert srv.start()
+    try:
+        late = _follow(srv, 8129)
+        assert not any('"t":"results"' in m for m in late), late
+    finally:
+        srv.stop()
