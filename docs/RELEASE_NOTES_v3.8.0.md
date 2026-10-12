@@ -17,7 +17,8 @@ before.
   after its screen went off, never had it. Each phone that connects now gets
   it, with the metrics of the analysis. A new recording, a new
   configuration or stopping the broadcast forget them, so no phone gets an
-  earlier recording's report.
+  earlier recording's report, and a page that stays open clears them when
+  the next recording starts.
 
 ## The recording
 
@@ -50,7 +51,7 @@ before.
 
 ## How it was tested
 
-**By the automated suite**, 1439 tests, among them: a real WebSocket follower
+**By the automated suite**, 1442 tests, among them: a real WebSocket follower
 that joins after the report; a process recording the simulated board that is
 killed, with its event log checked afterwards; the recording's folder deleted
 with the real writer running; the status after a recording with a board
