@@ -328,14 +328,21 @@ class BroadcastServer(QObject):
             # once, to whoever was connected at that instant: a phone that
             # opens the page later, or reconnects after its screen goes off,
             # never saw it (ecgteach bench of 5 Oct 2026, E11; the 3.7.2 too).
-            if self._last_config is not None:
-                client.sendTextMessage(json.dumps(self._last_config))
-            if self._last_results is not None:
-                client.sendTextMessage(
-                    json.dumps(self._last_results, separators=(",", ":")))
-            for offer in self._offers.values():
-                client.sendTextMessage(json.dumps(offer, separators=(",", ":")))
+            for frame in self.frames_for_a_new_follower():
+                client.sendTextMessage(frame)
             self.clients_changed.emit(len(self._clients))
+
+    def frames_for_a_new_follower(self) -> list[str]:
+        """What a follower that connects now is sent, in order: the session's
+        configuration, the last metrics and the files on offer."""
+        frames = []
+        if self._last_config is not None:
+            frames.append(json.dumps(self._last_config))
+        if self._last_results is not None:
+            frames.append(json.dumps(self._last_results, separators=(",", ":")))
+        for offer in self._offers.values():
+            frames.append(json.dumps(offer, separators=(",", ":")))
+        return frames
 
     def _drop(self, client) -> None:
         try:
