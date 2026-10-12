@@ -35,6 +35,13 @@ def _kinds(frames: list[str]) -> list[dict]:
     return [m for m in map(json.loads, frames) if m["t"] in ("results", "download")]
 
 
+def _state(srv, frames: list[str]) -> str:
+    """What the follower got and what the server holds, for a failure."""
+    return (f"got {[json.loads(f)['t'] for f in frames]}; server running="
+            f"{srv.is_running()} offers={sorted(srv._offers)} "
+            f"results={srv._last_results is not None} clients={srv.client_count()}")
+
+
 @pytest.mark.gui
 def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkeypatch) -> None:
     from emgteach.broadcast import BroadcastServer
@@ -67,8 +74,9 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
         # First recording, its analysis and its report (M8).
         _record(qapp, tab, tmp_path / "a.edf", 3.0)
         _until(qapp, lambda: "report" in srv._offers, 60.0, "the first report")
-        first = _kinds(_follow(srv, 8131, wait_ms=2000))
-        assert [m["t"] for m in first] == ["results", "download"]
+        got = _follow(srv, 8131, wait_ms=2000)
+        first = _kinds(got)
+        assert [m["t"] for m in first] == ["results", "download"], _state(srv, got)
         assert first[0]["file"] == "a.edf"
 
         # Second recording, started from the tab: a phone that joins while
@@ -78,8 +86,9 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
         tab._toggle_grabacion()
         _until(qapp, lambda: tab._worker is not None and tab._total_samples > 300,
                8.0, "the second recording")
-        during = list(map(json.loads, _follow(srv, 8131, wait_ms=2000)))
-        assert during[0]["t"] == "config"
+        got = _follow(srv, 8131, wait_ms=2000)
+        during = list(map(json.loads, got))
+        assert during and during[0]["t"] == "config", _state(srv, got)
         assert not [m for m in during if m["t"] in ("results", "download")]
 
         # And after it, only the second recording's own analysis.
@@ -87,8 +96,9 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
         tab._toggle_grabacion()
         _until(qapp, lambda: not tab.is_recording(), 5.0, "the recording to end")
         _until(qapp, lambda: "report" in srv._offers, 60.0, "the second report")
-        after = _kinds(_follow(srv, 8131, wait_ms=2000))
-        assert [m["t"] for m in after] == ["results", "download"]
+        got = _follow(srv, 8131, wait_ms=2000)
+        after = _kinds(got)
+        assert [m["t"] for m in after] == ["results", "download"], _state(srv, got)
         assert after[0]["file"] == "b.edf"
         assert after[1]["name"].startswith("b")
     finally:
