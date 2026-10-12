@@ -24,8 +24,9 @@ from emgteach.i18n import tr
 
 pytestmark = pytest.mark.gui
 
-_LARGA = "Status: for the next recording, switch the BITalino board off and on"
-_CORTA = "Status: switch the board off and on"
+_LARGA = ("Status: for the next recording, switch the BITalino board off and on, "
+          "wait about 20 s and press «Start recording»")
+_CORTA = "Status: switch the board off and on, wait about 20 s and press Start"
 
 
 class _Placa(AcquisitionDevice):
@@ -117,7 +118,8 @@ def test_after_a_recording_with_the_board_it_says_to_restart_it(
 
 def test_the_restart_status_is_short_and_the_tooltip_says_it_all(qapp) -> None:
     """ecgteach, annex of 6 Oct 2026, point 31: the long sentence came out
-    clipped; on screen it is short, and the whole sentence is in the tooltip."""
+    clipped; on screen it is short, and the whole sentence is in the tooltip.
+    Both say to wait about 20 s since the bench of 12 Oct 2026 (M6, E3)."""
     from emgteach.gui.tabs.acquisition import AcquisitionTab
     from emgteach.gui.widgets.logger import LoggerWidget
     from emgteach.i18n import get_language, set_language
@@ -131,9 +133,11 @@ def test_the_restart_status_is_short_and_the_tooltip_says_it_all(qapp) -> None:
         tab._btn_conectar.setChecked(True)
         tab._placa_reiniciar = True
         tab._lbl_estado.setText(tab._estado_en_reposo())
-        assert tab._lbl_estado.text() == "Estado: apague y encienda la placa"
+        assert tab._lbl_estado.text() == (
+            "Estado: apague y encienda la placa, espere unos 20 s y pulse Iniciar")
         assert tab._lbl_estado.toolTip() == (
-            "Estado: para la siguiente grabación, apague y encienda la placa BITalino")
+            "Estado: para la siguiente grabación, apague y encienda la placa BITalino, "
+            "espere unos 20 s y pulse «Iniciar grabación»")
     finally:
         set_language(antes)
         tab.cleanup()

@@ -2550,8 +2550,9 @@ class AcquisitionTab(QWidget):
                 # said, where the operator looks — short on screen, whole in
                 # the tooltip.
                 self._lbl_estado.setToolTip(tr(
-                    "Status: for the next recording, switch the BITalino board off and on"))
-                return tr("Status: switch the board off and on")
+                    "Status: for the next recording, switch the BITalino board off and on, "
+                    "wait about 20 s and press «Start recording»"))
+                return tr("Status: switch the board off and on, wait about 20 s and press Start")
             return tr("Status: connected (ready to record)")
         return tr("Status: disconnected")
 

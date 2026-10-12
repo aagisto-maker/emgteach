@@ -1002,9 +1002,12 @@ _ES = {
     "Status: recording…": "Estado: grabando…",
     "Status: connecting to the board…": "Estado: conectando con la placa…",
     "Status: the board did not answer": "Estado: la placa no respondió",
-    "Status: switch the board off and on": "Estado: apague y encienda la placa",
-    "Status: for the next recording, switch the BITalino board off and on":
-        "Estado: para la siguiente grabación, apague y encienda la placa BITalino",
+    "Status: switch the board off and on, wait about 20 s and press Start":
+        "Estado: apague y encienda la placa, espere unos 20 s y pulse Iniciar",
+    "Status: for the next recording, switch the BITalino board off and on, "
+    "wait about 20 s and press «Start recording»":
+        "Estado: para la siguiente grabación, apague y encienda la placa BITalino, "
+        "espere unos 20 s y pulse «Iniciar grabación»",
     "Status: waiting for Windows to release the port…":
         "Estado: esperando a que Windows libere el puerto…",
     "The previous connection attempt is still holding the port; "

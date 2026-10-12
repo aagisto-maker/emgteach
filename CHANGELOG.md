@@ -25,7 +25,7 @@ the article describes**.
 
 ### Added
 
-- **After a recording with the BITalino, the status says to switch it off and on.** At the bench every new recording needed the board switched off and on, or Windows answered with errors 1168 or 121; the cause is not investigated, it is said where the operator looks. When a recording in which the real BITalino sent data ends, the status reads «Status: switch the board off and on» («Estado: apague y encienda la placa»), with the whole sentence in its tooltip, until the next recording or connection. Not with the simulated board, not with the Arduino, and not when the board did not answer (that status stays). The laboratory kit of 3.7.2 already says it in its `LEEME.txt`.
+- **After a recording with the BITalino, the status says to switch it off and on.** At the bench every new recording needed the board switched off and on, or Windows answered with errors 1168 or 121; the cause is not investigated, it is said where the operator looks. When a recording in which the real BITalino sent data ends, the status reads «Status: switch the board off and on, wait about 20 s and press Start» («Estado: apague y encienda la placa, espere unos 20 s y pulse Iniciar»), with the whole sentence in its tooltip, until the next recording or connection. Not with the simulated board, not with the Arduino, and not when the board did not answer (that status stays). The laboratory kit of 3.7.2 already says it in its `LEEME.txt`. The 20 s are from the bench of 12 October 2026 (M6): with the board switched on and «Start recording» pressed at once, it stayed «Connecting…» and Windows gave error 121 after 100 s; after 20 s it connected at the first attempt.
 
 ### Changed
 

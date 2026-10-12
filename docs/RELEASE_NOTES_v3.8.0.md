@@ -45,9 +45,11 @@ before.
 - **The save dialog does not open in a folder that is gone.** It opens in
   Documents, and the log names the folder that was missing.
 - **After a recording with the BITalino, the status says «Estado: apague y
-  encienda la placa»**, with the whole sentence in its tooltip, until the
-  next recording or connection. At the bench every new recording needed the
-  board switched off and on. Not with the simulated board or the Arduino.
+  encienda la placa, espere unos 20 s y pulse Iniciar»**, with the whole
+  sentence in its tooltip, until the next recording or connection. At the
+  bench every new recording needed the board switched off and on, and
+  pressed at once after switching it on it did not connect. Not with the
+  simulated board or the Arduino.
 
 ## How it was tested
 
