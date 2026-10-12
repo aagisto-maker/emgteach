@@ -67,7 +67,7 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
         # First recording, its analysis and its report (M8).
         _record(qapp, tab, tmp_path / "a.edf", 3.0)
         _until(qapp, lambda: "report" in srv._offers, 60.0, "the first report")
-        first = _kinds(_follow(srv, 8131))
+        first = _kinds(_follow(srv, 8131, wait_ms=2000))
         assert [m["t"] for m in first] == ["results", "download"]
         assert first[0]["file"] == "a.edf"
 
@@ -78,7 +78,7 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
         tab._toggle_grabacion()
         _until(qapp, lambda: tab._worker is not None and tab._total_samples > 300,
                8.0, "the second recording")
-        during = list(map(json.loads, _follow(srv, 8131)))
+        during = list(map(json.loads, _follow(srv, 8131, wait_ms=2000)))
         assert during[0]["t"] == "config"
         assert not [m for m in during if m["t"] in ("results", "download")]
 
@@ -87,7 +87,7 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
         tab._toggle_grabacion()
         _until(qapp, lambda: not tab.is_recording(), 5.0, "the recording to end")
         _until(qapp, lambda: "report" in srv._offers, 60.0, "the second report")
-        after = _kinds(_follow(srv, 8131))
+        after = _kinds(_follow(srv, 8131, wait_ms=2000))
         assert [m["t"] for m in after] == ["results", "download"]
         assert after[0]["file"] == "b.edf"
         assert after[1]["name"].startswith("b")
