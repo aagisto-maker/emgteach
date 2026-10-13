@@ -987,8 +987,10 @@ def build_timestamped_path(
 ) -> str:
     """Generate a timestamped filename inside ``directory``.
 
-    The timestamp uses the ``%Y-%m-%d_%H-%M`` format. Useful for the
-    acquisition tab to avoid overwriting previous sessions.
+    The timestamp uses the ``%Y-%m-%d_%H-%M-%S`` format, with the seconds
+    since 3.8.0: two recordings in the same minute used to get the same
+    name. Useful for the acquisition tab to avoid overwriting previous
+    sessions.
 
     Parameters
     ----------
@@ -1002,9 +1004,9 @@ def build_timestamped_path(
     Returns
     -------
     str
-        Path of the form ``<directory>/<prefix>_YYYY-MM-DD_HH-MM<suffix>``.
+        Path of the form ``<directory>/<prefix>_YYYY-MM-DD_HH-MM-SS<suffix>``.
     """
-    ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return str(Path(directory) / f"{prefix}_{ts}{suffix}")
 
 

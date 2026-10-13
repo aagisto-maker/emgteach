@@ -97,8 +97,8 @@ class TestItFitsALaboratoryLaptop:
         antes = get_language()
 
         frases = [
-            ("Force-velocity: {n} loads recorded. Stop recording, then open "
-             "the Force-velocity study in the Analysis tab.", {"n": 4}),
+            ("Force-velocity: {n} loads recorded. The recording has stopped; "
+             "open the Force-velocity study in the Analysis tab.", {"n": 4}),
             ("Relax. The maximum starts in {s:.0f} s.", {"s": 3}),
             ("Hold the maximum! {s:.0f} s", {"s": 3}),
             ("Force-velocity: {kg:g} kg — lift {r} of {rn}.",

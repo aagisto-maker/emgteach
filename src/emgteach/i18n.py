@@ -135,10 +135,10 @@ _ES = {
     "Both muscles at once": "Los dos músculos a la vez",
     "Next one in a moment": "La siguiente enseguida",
     "Task recorded": "Tarea registrada",
-    "Stop the recording when you are ready.":
-        "Detenga la grabación cuando quiera.",
-    "The guided task is finished; the recording goes on.":
-        "La tarea guiada ha terminado; la grabación sigue.",
+    "The recording has stopped.": "La grabación se ha detenido.",
+    "The guided task is finished.": "La tarea guiada ha terminado.",
+    "Recording stopped automatically: guided session finished.":
+        "Grabación detenida automáticamente: sesión terminada.",
     "Guided task cancelled; the recording goes on.":
         "Tarea guiada cancelada; la grabación sigue.",
     "A brief, explosive jerk — not a sustained push.":
@@ -806,10 +806,14 @@ _ES = {
     "Force-velocity study.":
         "{n} cargas marcadas.\nDetener la grabación y abrir el estudio "
         "fuerza-velocidad.",
-    "Force-velocity: {n} loads recorded. Stop recording, then open "
-    "the Force-velocity study in the Analysis tab.":
-        "Fuerza-velocidad: {n} cargas grabadas. Detenga la grabación y abra el "
-        "estudio fuerza-velocidad en la pestaña Análisis.",
+    "Force-velocity: {n} loads recorded. The recording has stopped; "
+    "open the Force-velocity study in the Analysis tab.":
+        "Fuerza-velocidad: {n} cargas grabadas. La grabación se ha detenido; "
+        "abra el estudio fuerza-velocidad en la pestaña Análisis.",
+    "{n} loads marked.\nThe recording has stopped: open the "
+    "Force-velocity study.":
+        "{n} cargas marcadas.\nLa grabación se ha detenido: abra el estudio "
+        "fuerza-velocidad.",
     "Force-velocity acquisition finished: {n} loads.":
         "Adquisición fuerza-velocidad terminada: {n} cargas.",
     # Movement-vs-EMG analysis panel (accelerometer on the moving segment).
@@ -998,6 +1002,12 @@ _ES = {
     "Status: recording…": "Estado: grabando…",
     "Status: connecting to the board…": "Estado: conectando con la placa…",
     "Status: the board did not answer": "Estado: la placa no respondió",
+    "Status: switch the board off and on, wait about 20 s and press Start":
+        "Estado: apague y encienda la placa, espere unos 20 s y pulse Iniciar",
+    "Status: for the next recording, switch the BITalino board off and on, "
+    "wait about 20 s and press «Start recording»":
+        "Estado: para la siguiente grabación, apague y encienda la placa BITalino, "
+        "espere unos 20 s y pulse «Iniciar grabación»",
     "Status: waiting for Windows to release the port…":
         "Estado: esperando a que Windows libere el puerto…",
     "The previous connection attempt is still holding the port; "
@@ -1487,6 +1497,10 @@ _ES = {
         "({reason}). Elija otra carpeta —Documentos, por ejemplo— u otro "
         "nombre, y vuelva a pulsar grabar.",
     "The recording cannot be saved": "No se puede guardar el registro",
+    "the file is no longer in its folder": "el archivo ya no está en su carpeta",
+    "The folder {folder} is no longer there; the recording is proposed in "
+    "{default}.":
+        "La carpeta {folder} ya no está; el registro se propone en {default}.",
     # --- difusión al aula: que el profesor no se quede a ciegas ---
     "This computer is not connected to any network, so the phones cannot "
     "reach it. Connect it to the network the phones use, or share this "

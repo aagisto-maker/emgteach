@@ -79,6 +79,14 @@ def _hasta(condicion, segundos: float) -> bool:
     return False
 
 
+def _esperar(condicion, que: str, segundos: float = 30.0) -> None:
+    """Wait for *condicion*; if it never comes, say which one it was."""
+    t0 = time.monotonic()
+    if not _hasta(condicion, segundos):
+        raise AssertionError(
+            f"waited {time.monotonic() - t0:.1f} s for {que}, and it did not come")
+
+
 @pytest.mark.gui
 class TestAStopWhileOpeningSurvivesTheOpening:
     def test_the_thread_ends_without_recording(self, qapp, tmp_path: Path) -> None:
@@ -141,6 +149,14 @@ def _grabar(tab) -> None:
 @pytest.mark.gui
 class TestTheTabSaysWhatIsHappening:
     def test_it_says_connecting_until_the_first_block(self, qapp, pestana) -> None:
+        from emgteach.gui.tabs.acquisition import CONEXION_MAX_S
+
+        # The fixture's 300 ms limit is for the test of the limit, below. Here
+        # the board answers, and on a slow runner the lines written to the
+        # event log before the first block (each one synced to disk since
+        # 3.8.0) took longer than that once (Windows, Python 3.10, 11 Oct
+        # 2026): the limit fired first. The application waits CONEXION_MAX_S.
+        pestana._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         _grabar(pestana)
         assert pestana._lbl_estado.text() == tr("Status: connecting to the board…")
         pestana.placa.soltar.set()
@@ -332,7 +348,8 @@ class TestTheWarningDoesNotFreezeTheWindow:
 
         tab = pestana_que_tarda
         _grabar(tab)
-        assert _hasta(lambda: tab._aviso_conexion is not None, 3.0)
+        _esperar(lambda: tab._aviso_conexion is not None,
+                 "the warning that the board did not answer")
         viejo = tab._worker
         t0 = time.monotonic()
         tab._tras_aviso_conexion(QMessageBox.StandardButton.Retry)
@@ -341,7 +358,20 @@ class TestTheWarningDoesNotFreezeTheWindow:
         assert tab._lbl_estado.text() == tr(
             "Status: waiting for Windows to release the port…")
         assert not tab._btn_grabar.isEnabled()
+        # The second board answers: the 300 ms limit the first one needed is
+        # not what this checks (see test_it_says_connecting_until_the_first_block).
+        from emgteach.gui.tabs.acquisition import CONEXION_MAX_S
+
+        tab._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         tab.primera.soltar.set()                  # Windows lets go
-        assert _hasta(lambda: tab._worker is not viejo and tab.is_recording(), 5.0)
-        assert _hasta(lambda: tab._lbl_estado.text() == tr("Status: recording…"), 5.0)
+        # Each wait says which step did not come, and waits for the step
+        # itself: it returns as soon as the application gets there, so the
+        # ceiling only matters on a slow machine. Five fixed seconds failed
+        # once on the CI (2 Oct 2026) without saying which of the two it was
+        # (3.8.0, from ecgteach 0.4.0).
+        _esperar(lambda: tab._worker is not viejo,
+                 "the new worker after the old one let go of the port")
+        _esperar(tab.is_recording, "the new worker to be recording")
+        _esperar(lambda: tab._lbl_estado.text() == tr("Status: recording…"),
+                 "the first block, with the status saying it records")
         assert tab.primera.puertos[0].cerrado

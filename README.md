@@ -24,7 +24,17 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.7.2 moves the classroom broadcast to ports 8080 (page) and
+`emgteach` v3.8.0 brings over what the bench of the sister applications,
+ecgteach and eegteach, found in code they share with emgteach: a phone that
+joins the classroom broadcast late now gets the report (a fault of the
+published 3.7.2), the event log is written line by line so a crash keeps it,
+the default file name carries the seconds, a recording whose file disappears
+stops at once and says so, the save dialog does not open in a folder that is
+gone, and after a recording with the BITalino the status says to switch it off
+and on. Nothing computed changes. See
+[`docs/RELEASE_NOTES_v3.8.0.md`](docs/RELEASE_NOTES_v3.8.0.md).
+
+v3.7.2 moves the classroom broadcast to ports 8080 (page) and
 8443 (data), and lets a laboratory change them in a `difusion.txt` next to the
 application, since which ports get through depends on the network; a busy
 port is named in the warning. Nothing computed changes. See
@@ -148,7 +158,7 @@ executable.
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **1419 tests** passing on Linux and Windows across Python
+test suite of **1442 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
@@ -202,10 +212,10 @@ computer, so it is exactly the code of that version.
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
   información → Ejecutar de todos modos»).
 - **Check it is the published file**: the release notes give its SHA-256. In
-  PowerShell, `Get-FileHash .\emgteach-v3.7.2-windows-x64.exe -Algorithm SHA256`
+  PowerShell, `Get-FileHash .\emgteach-v3.8.0-windows-x64.exe -Algorithm SHA256`
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
-  `gh attestation verify emgteach-v3.7.2-windows-x64.exe --repo aagisto-maker/emgteach`
+  `gh attestation verify emgteach-v3.8.0-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that tag.
 
 The executable is not part of the Zenodo record, which archives the source

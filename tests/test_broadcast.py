@@ -199,3 +199,121 @@ def test_a_busy_port_is_named(qapp, busy: str, which: int) -> None:
     assert srv.start()
     assert srv.failed_port is None
     srv.stop()
+
+
+def _follow(srv, port: int, wait_ms: int = 600) -> list[str]:
+    """Connect one follower, wait, and return what it received."""
+    from PySide6.QtCore import QEventLoop, QTimer, QUrl
+    from PySide6.QtWebSockets import QWebSocket
+
+    received: list[str] = []
+    ws = QWebSocket()
+    ws.textMessageReceived.connect(received.append)
+    ws.open(QUrl(f"ws://127.0.0.1:{port}/?k={srv._token}"))
+    loop = QEventLoop()
+    QTimer.singleShot(wait_ms, loop.quit)
+    loop.exec()
+    ws.close()
+    loop2 = QEventLoop()
+    QTimer.singleShot(200, loop2.quit)
+    loop2.exec()
+    return received
+
+
+def test_a_follower_who_joins_after_the_report_still_gets_it(qapp) -> None:
+    """Ported from ecgteach 0.4.0 (bench of 5 Oct 2026, E11), and the same in
+    the 3.7.2: the «download» frame went once, to whoever was connected at that
+    instant, so a phone that opened the page later, or reconnected after its
+    screen went off, never got the report."""
+    from emgteach.broadcast import BroadcastServer
+
+    srv = BroadcastServer(http_port=8122, ws_port=8123)
+    assert srv.start()
+    try:
+        srv.broadcast({"t": "config", "n": 1, "labels": ["Bíceps"], "recording": False})
+        srv.register_download("/report.pdf", b"%PDF-1.4", "application/pdf", "emg_informe.pdf")
+        srv.broadcast({"t": "download", "kind": "report", "url": "/report.pdf",
+                       "name": "emg_informe.pdf"})
+        late = _follow(srv, 8123)
+        assert any('"t":"download"' in m and "report.pdf" in m for m in late), late
+        # And the phone that reconnects (screen off, a Wi-Fi hiccup) gets it again.
+        again = _follow(srv, 8123)
+        assert any('"t":"download"' in m for m in again), again
+    finally:
+        srv.stop()
+
+
+def test_a_new_broadcast_does_not_offer_the_old_report(qapp) -> None:
+    from emgteach.broadcast import BroadcastServer
+
+    srv = BroadcastServer(http_port=8124, ws_port=8125)
+    assert srv.start()
+    srv.register_download("/report.pdf", b"%PDF-1.4", "application/pdf", "emg_informe.pdf")
+    srv.broadcast({"t": "download", "kind": "report", "url": "/report.pdf",
+                   "name": "emg_informe.pdf"})
+    srv.stop()
+    assert srv.start()
+    try:
+        late = _follow(srv, 8125)
+        assert not any('"t":"download"' in m for m in late), late
+    finally:
+        srv.stop()
+
+
+@pytest.mark.parametrize("new", [
+    {"t": "config", "n": 1, "labels": ["Tríceps"], "recording": False},
+    {"t": "status", "recording": True},
+])
+def test_the_report_of_an_earlier_recording_is_not_offered(qapp, new) -> None:
+    """With the broadcast on from one recording to the next, a phone joining
+    during the second must not get the first one's PDF. A new config, or the
+    start of a new recording (a status frame, sent by the acquisition tab),
+    forgets the offers."""
+    from emgteach.broadcast import BroadcastServer
+
+    srv = BroadcastServer(http_port=8126, ws_port=8127)
+    assert srv.start()
+    try:
+        srv.broadcast({"t": "config", "n": 1, "labels": ["Bíceps"], "recording": False})
+        srv.register_download("/report.pdf", b"%PDF-1.4", "application/pdf", "emg_informe.pdf")
+        srv.broadcast({"t": "download", "kind": "report", "url": "/report.pdf",
+                       "name": "emg_informe.pdf"})
+        srv.broadcast(new)
+        late = _follow(srv, 8127)
+        assert not any('"t":"download"' in m for m in late), late
+    finally:
+        srv.stop()
+
+
+def test_a_follower_who_joins_after_the_results_still_gets_them(qapp) -> None:
+    """Decision of 11 Oct 2026 (A1): the metrics travel with the report. A
+    phone that joined after them saw the download button over an empty
+    results panel; it now gets the last «results» frame too, and a new
+    config or a new recording forgets it, as it does the report."""
+    from emgteach.broadcast import BroadcastServer
+
+    results = {"t": "results", "file": "P07.edf", "mnf": 81.2, "mdf": 70.4,
+               "mdf_slope": -0.31, "rms": 0.42, "iemg": 12.3, "duration": 30.0,
+               "fatigue": -1}
+    srv = BroadcastServer(http_port=8128, ws_port=8129)
+    assert srv.start()
+    try:
+        srv.broadcast({"t": "config", "n": 1, "labels": ["Bíceps"], "recording": False})
+        srv.broadcast(results)
+        late = _follow(srv, 8129)
+        assert any('"t":"results"' in m and "P07.edf" in m for m in late), late
+        for new in ({"t": "config", "n": 1, "labels": ["Tríceps"], "recording": False},
+                    {"t": "status", "recording": True}):
+            srv.broadcast(results)
+            srv.broadcast(new)
+            late = _follow(srv, 8129)
+            assert not any('"t":"results"' in m for m in late), (new, late)
+        srv.broadcast(results)              # on offer when the broadcast stops
+    finally:
+        srv.stop()
+    assert srv.start()
+    try:
+        late = _follow(srv, 8129)
+        assert not any('"t":"results"' in m for m in late), late
+    finally:
+        srv.stop()

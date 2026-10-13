@@ -257,6 +257,7 @@ function connect() {
     if (m.t === "config") {
       nCh = m.n; labels = m.labels || []; buildChannels();
       document.getElementById("rec").classList.toggle("on", !!m.recording);
+      clearResults();
     } else if (m.t === "data") {
       if (m.env) pushData(m.env);
     } else if (m.t === "load") {
@@ -270,6 +271,7 @@ function connect() {
       addDownload(m);
     } else if (m.t === "status") {
       document.getElementById("rec").classList.toggle("on", !!m.recording);
+      if (m.recording) clearResults();
     }
   };
 }
@@ -278,6 +280,16 @@ function dot(on) {
   document.getElementById("cs").textContent = on ? t("connected") : t("reconnecting");
 }
 // ---- analysis results / downloads ----
+// A new recording or a new session: the last one's metrics and report go,
+// as they go from the server (bench of 12 Oct 2026, M10). A page that was
+// open kept them on screen, under the new recording.
+function clearResults() {
+  document.getElementById("results").style.display = "none";
+  document.getElementById("resMetrics").innerHTML = "";
+  const a = document.getElementById("dl_report");
+  if (a) a.remove();
+  document.getElementById("pdfHint").style.display = "";
+}
 function showResults(m) {
   document.getElementById("results").style.display = "block";
   const fat = m.fatigue < 0 ? t("fatDetected") : m.fatigue > 0 ? t("fatNotDetected") : t("fatUndetermined");

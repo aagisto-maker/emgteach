@@ -30,11 +30,12 @@ The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread)
 from __future__ import annotations
 
 import html
+import os
 import re
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, TextIO
 
 import numpy as np
 import pyqtgraph as pg
@@ -71,6 +72,7 @@ from emgteach.devices import (
     ArduinoDevice,
     create_device,
 )
+from emgteach.devices.bitalino_sim import is_simulated_address
 from emgteach.difusion import PORTS_FILE
 from emgteach.dsp import LiveQualityMonitor, process_offline
 from emgteach.gui.imagenes import imagen
@@ -136,9 +138,21 @@ EVENTS_SUFFIX = ".eventos.txt"
 
 
 def events_path(edf_path: str | Path) -> Path:
-    """The event log saved beside *edf_path* when its recording ends."""
+    """The event log written beside *edf_path* while its recording runs."""
     p = Path(edf_path)
     return p.with_name(p.stem + EVENTS_SUFFIX)
+
+
+def _escribir_linea(f: TextIO, linea: str) -> bool:
+    """Append *linea* to the open event log and push it to disk; ``False``
+    when the file can no longer be written."""
+    try:
+        f.write(linea + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    except (OSError, ValueError):
+        return False
+    return True
 
 
 # Number of samples in the ring buffer (= 30 s at 1000 Hz)
@@ -823,6 +837,8 @@ class AcquisitionTab(QWidget):
         self._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         self._conexion_timer.timeout.connect(self._conexion_sin_datos)
         self._aviso_conexion: QMessageBox | None = None
+        #: The box that says a file could not be written mid-recording.
+        self._aviso_guardado: QMessageBox | None = None
         #: The last recording ended before the board sent anything.
         self._sin_respuesta = False
         #: A new recording was asked for while the previous attempt was
@@ -834,10 +850,19 @@ class AcquisitionTab(QWidget):
         # them if it needs them.
         self._local_log = LoggerWidget()
         # The lines this tab writes while a recording runs, as plain text
-        # with the time, and the file they belong to; saved beside it when
-        # the recording ends (_guardar_eventos). ``None`` between recordings.
+        # with the time, and the file they belong to. Each line also goes to
+        # <name>.eventos.txt as it is written, so a recording whose process
+        # dies keeps its log (_abrir_eventos); ``None`` between recordings.
         self._eventos: list[str] | None = None
         self._eventos_ruta = ""
+        self._eventos_archivo: TextIO | None = None
+        #: The real BITalino sent data in the last recording: the next one
+        #: needs it switched off and on (see _estado_en_reposo).
+        self._placa_reiniciar = False
+        #: The recording is being stopped because the guided session ended:
+        #: the cancels it runs leave the «Task recorded» panel and its map
+        #: on screen for their five seconds (see _parar_al_terminar_sesion).
+        self._conservar_panel = False
 
         # Classroom broadcast: re-streams the live monitor to student browsers
         # over the local network (the operator PC owns the single BITalino link).
@@ -866,23 +891,69 @@ class AcquisitionTab(QWidget):
         if self._eventos is None:
             return
         texto = html.unescape(re.sub(r"<[^>]+>", "", str(msg))).strip()
-        self._eventos.append(f"{datetime.now():%H:%M:%S}  {texto}")
+        linea = f"{datetime.now():%H:%M:%S}  {texto}"
+        self._eventos.append(linea)
+        f = getattr(self, "_eventos_archivo", None)
+        if f is not None and not _escribir_linea(f, linea):
+            # A file that cannot take one more line (a stick taken out) is
+            # dropped; what it holds stays, and the end writes the whole log
+            # again if it can.
+            self._eventos_archivo = None
+
+    def _abrir_eventos(self) -> None:
+        """Start <name>.eventos.txt with the lines kept so far.
+
+        Ported from ecgteach 0.4.0 (bench of 5 October 2026, E7): with the
+        process killed mid-way, the marks survived in .marcas.txt and the
+        event log — written only at the end — did not, so the one file meant
+        to say what happened was the one missing. It is now written as the
+        recording runs, line by line, each one pushed to disk. Opened for
+        writing (``"w"``), it also replaces the log of an earlier recording
+        of the same name. If it cannot be opened, the log is written at the
+        end as before.
+        """
+        anterior, self._eventos_archivo = self._eventos_archivo, None
+        if anterior is not None:
+            try:
+                anterior.close()
+            except OSError:
+                pass
+        if not self._eventos or not self._eventos_ruta:
+            return
+        try:
+            f = open(events_path(self._eventos_ruta), "w", encoding="utf-8")
+        except OSError:
+            return
+        if all(_escribir_linea(f, linea) for linea in self._eventos):
+            self._eventos_archivo = f
+        else:
+            f.close()
 
     def _guardar_eventos(self) -> None:
-        """Write the recording's event log beside it, ``<name>.eventos.txt``.
+        """Close the recording's event log beside it, ``<name>.eventos.txt``.
 
         The log on screen dies with the application, and it is what tells
         what happened when something went wrong without an exception —
-        the lines a teacher would send. Written when the recording ends,
-        well or badly; a file that cannot be written is said in the log
-        and changes nothing else.
+        the lines a teacher would send. Since 3.8.0 it is written line by
+        line as the recording runs (_abrir_eventos), and here it is only
+        closed; if that file could not be opened or stopped taking lines,
+        the whole log is written now, well or badly. A file that cannot be
+        written is said in the log and changes nothing else.
         """
         eventos, self._eventos = self._eventos, None
+        escrito = getattr(self, "_eventos_archivo", None)
+        self._eventos_archivo = None
+        if escrito is not None:
+            try:
+                escrito.close()
+            except OSError:
+                escrito = None
         if not eventos or not self._eventos_ruta:
             return
         destino = events_path(self._eventos_ruta)
         try:
-            destino.write_text("\n".join(eventos) + "\n", encoding="utf-8")
+            if escrito is None:
+                destino.write_text("\n".join(eventos) + "\n", encoding="utf-8")
         except OSError as exc:
             self._err(tr("The event log could not be saved in {path}: {error}")
                       .format(path=destino, error=exc))
@@ -2147,6 +2218,8 @@ class AcquisitionTab(QWidget):
         self._widget_arduino.setEnabled(False)
         self._edit_dir.setEnabled(False)
         self._set_channel_controls_enabled(False)
+        self._placa_reiniciar = False
+        self._lbl_estado.setToolTip("")
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
         self._set_led("idle")
         self._update_fv_button()
@@ -2169,6 +2242,8 @@ class AcquisitionTab(QWidget):
         self._set_channel_controls_enabled(True)
         self._sin_respuesta = False
         self._esperando_puerto = False
+        self._placa_reiniciar = False
+        self._lbl_estado.setToolTip("")
         self._lbl_estado.setText(tr("Status: disconnected"))
         self._set_led("off")
         self._led_idle_timer.stop()
@@ -2185,6 +2260,9 @@ class AcquisitionTab(QWidget):
     def _iniciar_grabacion(self) -> None:
         if self._esperar_al_puerto():
             return
+        self._placa_reiniciar = False
+        self._conservar_panel = False
+        self._lbl_estado.setToolTip("")
         # The kinematics session needs its plan before it starts: the record
         # button runs the calibration and then cues the loads, and there is
         # no moment after this one to ask for them.
@@ -2198,8 +2276,21 @@ class AcquisitionTab(QWidget):
         # "Save figure" dialogs), pre-filled with the destination folder and a
         # timestamped default name. Cancelling aborts the recording start.
         save_dir = self._edit_dir.text().strip() or "."
+        if not Path(save_dir).is_dir():
+            # The folder of the last recording is gone — a memory stick taken
+            # out. The dialog opens where recordings go by default, and the
+            # field says so, instead of starting from a place that is not
+            # there (3.8.0, from ecgteach 0.4.0).
+            falta, save_dir = save_dir, carpeta_por_defecto()
+            self._edit_dir.setText(save_dir)
+            self._log(tr(
+                "The folder {folder} is no longer there; the recording is "
+                "proposed in {default}."
+            ).format(folder=falta, default=save_dir))
+        # With the seconds (3.8.0, from ecgteach 0.4.0): two recordings in
+        # the same minute proposed the same name.
         default_name = nombre_por_defecto(
-            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M}"
+            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
         )
         ruta, _ = QFileDialog.getSaveFileName(
             self, tr("Save EDF recording as…"),
@@ -2223,13 +2314,14 @@ class AcquisitionTab(QWidget):
         # Named now, before a single sample arrives: a screenshot taken during
         # the calibration has to carry the same base name as the recording.
         self._ruta_registro = ruta
-        # The event log of this recording starts here, and is saved beside
-        # it when the recording ends.
+        # The event log of this recording starts here, and is written
+        # beside it as it runs.
         self._eventos_ruta = ruta
         self._eventos = [
             f"# emgteach {__version__} — {Path(ruta).name} — "
             f"{datetime.now():%Y-%m-%d %H:%M:%S}"
         ]
+        self._abrir_eventos()
         save_dir = str(Path(ruta).parent)
         self._edit_dir.setText(save_dir)
         self._settings.setValue("adquisicion/save_dir", save_dir)
@@ -2333,6 +2425,7 @@ class AcquisitionTab(QWidget):
         worker = self._worker
         worker.error.connect(lambda msg, w=worker: self._on_error(msg, w))
         worker.finished_ok.connect(lambda path, w=worker: self._on_finished(path, w))
+        worker.escritura_fallida.connect(self._on_escritura_fallida)
         self._worker.marker_added.connect(self._on_marker_added)
         self._worker.start()
         self._salir_revision()
@@ -2430,8 +2523,13 @@ class AcquisitionTab(QWidget):
         answered, and the status must not come back saying «connected»."""
         if self._conexion_timer.isActive():
             self._conexion_timer.stop()
-            self._sin_respuesta = True
-            self._set_led("off")
+            # A file that could not be created is not a board that did not
+            # answer: the board answered, and the next recording can start
+            # (3.8.0, from ecgteach 9a33ef3).
+            worker = self._worker
+            if worker is None or not worker.placa_respondio():
+                self._sin_respuesta = True
+                self._set_led("off")
 
     def _estado_en_reposo(self) -> str:
         """What the status line says when nothing is being recorded.
@@ -2440,9 +2538,21 @@ class AcquisitionTab(QWidget):
         recording: a disconnection in the middle of one used to end, a second
         later, with «connected (ready to record)» under an unticked button.
         """
+        self._lbl_estado.setToolTip("")
         if self._btn_conectar.isChecked():
             if self._sin_respuesta:
                 return tr("Status: the board did not answer")
+            if self._placa_reiniciar:
+                # 3.8.0, from ecgteach 0.4.0 (bench of 5 Oct 2026): after a
+                # recording with the real BITalino, the next one did not
+                # connect (Windows errors 1168 and 121) until the board was
+                # switched off and on. Not investigated, by Ángel's decision:
+                # said, where the operator looks — short on screen, whole in
+                # the tooltip.
+                self._lbl_estado.setToolTip(tr(
+                    "Status: for the next recording, switch the BITalino board off and on, "
+                    "wait about 20 s and press «Start recording»"))
+                return tr("Status: switch the board off and on, wait about 20 s and press Start")
             return tr("Status: connected (ready to record)")
         return tr("Status: disconnected")
 
@@ -2457,6 +2567,13 @@ class AcquisitionTab(QWidget):
         if self._conexion_timer.isActive():
             self._conexion_timer.stop()
             self._lbl_estado.setText(tr("Status: recording…"))
+            # The real BITalino answered: the next recording needs it switched
+            # off and on. Not the simulated board, and not the Arduino (USB
+            # cable, no Bluetooth link; the bench saw it only on the BITalino).
+            self._placa_reiniciar = (
+                self._combo_device_type.currentIndex() == 0
+                and not is_simulated_address(self._edit_mac.text().strip())
+            )
         # Start the watchdog on the first received sample (not before, so it
         # does not fire during device.open(), which can take up to 3 s on Arduino).
         if not self._watchdog_timer.isActive():
@@ -4095,10 +4212,11 @@ class AcquisitionTab(QWidget):
         self._btn_cancelar_guia.setVisible(False)
         self._mvc_overlay.show_done(
             tr("Task recorded"),
-            tr("Stop the recording when you are ready."))
-        self._log(tr("The guided task is finished; the recording goes on."))
+            tr("The recording has stopped."))
+        self._log(tr("The guided task is finished."))
         QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
         QTimer.singleShot(5000, lambda: self._bcast_calib(False))
+        self._parar_al_terminar_sesion()
 
     def _guia_cancelar(self) -> None:
         """Out of the guided task, leaving the recording running."""
@@ -4109,9 +4227,10 @@ class AcquisitionTab(QWidget):
         self._guia_fase = ""
         self._btn_paso_hecho.setVisible(False)
         self._btn_cancelar_guia.setVisible(False)
-        self._mvc_overlay.set_steps([])
-        self._mvc_overlay.hide_overlay()
-        self._bcast_calib(False)
+        if not self._conservar_panel:
+            self._mvc_overlay.set_steps([])
+            self._mvc_overlay.hide_overlay()
+            self._bcast_calib(False)
 
     def _write_mvc_ref_marker(self, c: int) -> None:
         """Carry this channel's MVC reference into the EDF as an annotation.
@@ -4270,10 +4389,11 @@ class AcquisitionTab(QWidget):
         self._mvc_flow_auto = False
         self._mvc_flow_pending = False
         self._mvc_phase = ""
-        self._mvc_overlay.hide_overlay()
+        if not self._conservar_panel:
+            self._mvc_overlay.hide_overlay()
+            self._bcast_calib(False)
         self._btn_cancelar_guia.setVisible(False)
         self._update_fv_button()
-        self._bcast_calib(False)
 
     @Slot()
     def _cancelar_guiado(self) -> None:
@@ -4738,14 +4858,14 @@ class AcquisitionTab(QWidget):
         n = len(self._fv_loads)
         self._fv_info(
             tr(
-                "Force-velocity: {n} loads recorded. Stop recording, then open "
-                "the Force-velocity study in the Analysis tab."
+                "Force-velocity: {n} loads recorded. The recording has stopped; "
+                "open the Force-velocity study in the Analysis tab."
             ).format(n=n)
         )
         self._mvc_overlay.show_done(
             tr("Loads recorded"),
             tr(
-                "{n} loads marked.\nStop recording, then open the "
+                "{n} loads marked.\nThe recording has stopped: open the "
                 "Force-velocity study."
             ).format(n=n),
         )
@@ -4756,6 +4876,38 @@ class AcquisitionTab(QWidget):
         # load has a box too, and the end of the study is worth seeing
         # whole. It goes when the panel goes.
         QTimer.singleShot(5000, self._fv_cerrar_mapa)
+        self._parar_al_terminar_sesion()
+
+    def _parar_al_terminar_sesion(self) -> None:
+        """The guided session has asked for everything: so does the recording.
+
+        Decision of 11 Oct 2026, as ecgteach and eegteach do: at the end of
+        the pair practical's task and of the kinematics practical's last load
+        the recording stops by itself, and the event log says why. The panel
+        that says the task is recorded stays its five seconds: the cancels
+        the stop runs, now and when the thread ends, leave it alone
+        (_conservar_panel). The one-muscle
+        practical has no guided end and is never stopped here; «Cancel
+        guide» does not come here either.
+        """
+        if not self.is_recording():
+            return
+        self._log(tr("Recording stopped automatically: guided session finished."))
+        # Until the panel's own five seconds are up: the thread's «finished»
+        # comes after this returns and runs the cancels again.
+        self._conservar_panel = True
+        QTimer.singleShot(5000, self._soltar_panel)
+        self._btn_grabar.setChecked(False)
+        self._detener_grabacion()
+
+    def _soltar_panel(self) -> None:
+        """The five seconds are up: the phones' guide panel goes too, as the
+        cancels would have sent it at the stop."""
+        if not self._conservar_panel:
+            return
+        self._conservar_panel = False
+        if not self.is_recording():
+            self._bcast_calib(False)
 
     def _fv_cerrar_mapa(self) -> None:
         """Drop the map and hide the panel, once the finished study is seen."""
@@ -4769,6 +4921,8 @@ class AcquisitionTab(QWidget):
         self._fv_active = False
         self._fv_phase = ""
         self._btn_cancelar_guia.setVisible(False)
+        if self._conservar_panel:
+            return
         self._mvc_overlay.set_steps([])
         if not self._mvc_active:
             self._mvc_overlay.hide_overlay()
@@ -4872,6 +5026,22 @@ class AcquisitionTab(QWidget):
         self._err(msg)
         if worker is None or worker is self._worker:
             self._restaurar_controles()
+
+    @Slot(str)
+    def _on_escritura_fallida(self, mensaje: str) -> None:
+        """The file could not be created or written: said in a box at once.
+
+        Not modal: the recording is already stopping, and the window has to
+        come back ready to record somewhere else. The log has it too.
+        """
+        caja = QMessageBox(
+            QMessageBox.Icon.Warning, tr("The recording cannot be saved"), mensaje,
+            QMessageBox.StandardButton.Ok, self,
+        )
+        caja.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        caja.setWindowModality(Qt.WindowModality.NonModal)
+        self._aviso_guardado = caja
+        caja.show()
 
     def _on_finished(self, edf_path: str, worker: AcquisitionWorker | None = None) -> None:
         """*worker* has ended. Its file, if it left one worth opening, goes to

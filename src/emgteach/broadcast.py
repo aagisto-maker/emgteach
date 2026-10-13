@@ -212,6 +212,13 @@ class BroadcastServer(QObject):
         self._clients: list = []
         self._last_config: dict | None = None
         self._downloads: dict = {}   # path -> (bytes, content_type, filename)
+        # The last «download» frame of each kind: sent again to every follower
+        # who connects, as the config is (see _on_ws_connection).
+        self._offers: dict[str, dict] = {}
+        # The last «results» frame (the metrics of the analysis), sent again
+        # to every follower who connects and forgotten with the offers: a
+        # phone that joined late got the report's button over an empty panel.
+        self._last_results: dict | None = None
         self._token: str = ""        # per-session access code; minted on start()
         #: The port :meth:`start` could not open, or ``None``.
         self.failed_port: int | None = None
@@ -279,6 +286,8 @@ class BroadcastServer(QObject):
             self._http = None
         self._last_config = None
         self._downloads.clear()
+        self._offers.clear()
+        self._last_results = None
         self.clients_changed.emit(0)
 
     def is_running(self) -> bool:
@@ -314,10 +323,26 @@ class BroadcastServer(QObject):
                 continue
             client.disconnected.connect(lambda c=client: self._drop(c))
             self._clients.append(client)
-            # A late joiner needs the current session config to initialise.
-            if self._last_config is not None:
-                client.sendTextMessage(json.dumps(self._last_config))
+            # A late joiner needs the current session config to initialise,
+            # and the files already on offer. The «download» frame used to go
+            # once, to whoever was connected at that instant: a phone that
+            # opens the page later, or reconnects after its screen goes off,
+            # never saw it (ecgteach bench of 5 Oct 2026, E11; the 3.7.2 too).
+            for frame in self.frames_for_a_new_follower():
+                client.sendTextMessage(frame)
             self.clients_changed.emit(len(self._clients))
+
+    def frames_for_a_new_follower(self) -> list[str]:
+        """What a follower that connects now is sent, in order: the session's
+        configuration, the last metrics and the files on offer."""
+        frames = []
+        if self._last_config is not None:
+            frames.append(json.dumps(self._last_config))
+        if self._last_results is not None:
+            frames.append(json.dumps(self._last_results, separators=(",", ":")))
+        for offer in self._offers.values():
+            frames.append(json.dumps(offer, separators=(",", ":")))
+        return frames
 
     def _drop(self, client) -> None:
         try:
@@ -336,6 +361,19 @@ class BroadcastServer(QObject):
         """Send one JSON frame to every connected follower."""
         if payload.get("t") == "config":
             self._last_config = payload  # remember for late joiners
+            # A new session: the files of the last one are not offered in it.
+            self._offers.clear()
+            self._last_results = None
+        elif payload.get("t") == "status" and payload.get("recording"):
+            # A new recording, too: its start sends a status, not a config,
+            # and a phone joining during the second recording would get the
+            # first one's report.
+            self._offers.clear()
+            self._last_results = None
+        elif payload.get("t") == "results":
+            self._last_results = payload
+        elif payload.get("t") == "download":
+            self._offers[str(payload.get("kind", ""))] = payload
         if not self._clients:
             return
         msg = json.dumps(payload, separators=(",", ":"))
