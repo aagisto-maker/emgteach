@@ -150,13 +150,17 @@ vio afectado.
 real que entra después del informe, un proceso que graba la placa simulada y se mata, con su registro
 de eventos comprobado después, la carpeta de la grabación borrada con el escritor real en marcha, el
 estado tras una grabación con una placa que responde y con la simulada, y el final de cada sesión
-guiada deteniendo su grabación. Del banco del 12 de octubre salen `M6` y `M10` (arriba). El 14 de
-octubre se comprobaron `M1` y `M5` con el ejecutable de una compilación manual del mismo commit
-(ejecución 38524074185 de `build-windows-exe.yml`, `emgteach.exe` con SHA-256
-`cf359598d13739c48253c68c50f53cc88228553614bc0abe3cafb46a7c0e2efe`). El ejecutable publicado es
-otra compilación del mismo código: PyInstaller no reproduce el archivo byte a byte, así que su SHA-256
-es otro. La lista de banco de la 3.8.0 no está en el repositorio, y este informe no recoge el resto
-de sus resultados.
+guiada deteniendo su grabación. El banco del 12 de octubre recorrió la lista completa de la 3.8.0
+con el ejecutable de `bf67213` (SHA-256
+`34ccf18551da214041975e48bd5dec1aebc5b53cc99a2af51f6e6d6f0eb04864`) y no encontró nada que
+bloquease; `M18` y `M19` (memoria USB) no se hicieron por decisión del autor, porque ecgteach ya lo
+había probado. El 14 de octubre se comprobaron `M1` y `M5` dos veces: primero con el ejecutable de
+una compilación manual de `a055ec3` (ejecución 38524074185, SHA-256
+`cf359598d13739c48253c68c50f53cc88228553614bc0abe3cafb46a7c0e2efe`) y después, antes de publicar,
+con el ejecutable del borrador de la release, que es el publicado (ejecución 38530769582, SHA-256
+`c566bf6297e459e205d6f35c7880d2af589a044262870b6164b0605885dcd37a`). Los dos SHA difieren porque
+PyInstaller no reproduce el archivo byte a byte. La lista de banco de la 3.8.0 no está en el
+repositorio.
 
 ### 1.1 De la 3.7.1 a la 3.7.2
 
