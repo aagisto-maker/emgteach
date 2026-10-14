@@ -205,8 +205,10 @@ pip install -e ".[dev]"
 
 From v3.7.0 each release carries a standalone Windows executable,
 `emgteach-vX.Y.Z-windows-x64.exe`: no Python, no install, no administrator
-rights. It is built by GitHub Actions from the release's tag, not on anybody's
-computer, so it is exactly the code of that version.
+rights. It is built by GitHub Actions from the release's commit, not on
+anybody's computer, so it is exactly the code of that version — and, after
+3.8.0, it is the very file that was tried at the bench before the tag, not a
+second build.
 
 - **It is not signed.** Windows may show «Windows protected your PC»
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
@@ -216,7 +218,8 @@ computer, so it is exactly the code of that version.
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
   `gh attestation verify emgteach-v3.8.0-windows-x64.exe --repo aagisto-maker/emgteach`
-  confirms it came out of this repository's workflow, from that tag.
+  confirms it came out of this repository's workflow, from that version's
+  commit.
 
 The executable is not part of the Zenodo record, which archives the source
 code of the tag. The recipe to build it yourself is in

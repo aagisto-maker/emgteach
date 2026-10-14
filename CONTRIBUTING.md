@@ -123,6 +123,39 @@ The generated `docs/*.pdf` are git-ignored; regenerate them after editing the
 4. Open a pull request describing the change and how you verified it. Link
    the issue it closes.
 
+## Releasing a version
+
+The release publishes the Windows executable that was tried at the bench, not
+a new build: PyInstaller does not reproduce a file byte for byte, so two builds
+of the same commit differ (`.github/workflows/build-windows-exe.yml`).
+
+1. Prepare the version on `main`: the version in `pyproject.toml`,
+   `src/emgteach/__init__.py`, `CITATION.cff` and `.zenodo.json`, the
+   `CHANGELOG.md` heading with its date, and `docs/RELEASE_NOTES_vX.Y.Z.md`.
+2. Run the workflow on that commit: *Actions → Build Windows exe → Run
+   workflow*, on `main`. The run builds `emgteach.exe` and
+   `diagnostico_bitalino.exe`, self-tests both and attests where they were
+   built. Note its number.
+3. Try that run's executable at the bench (artifact `emgteach-windows-exe`),
+   and note its SHA-256.
+4. If it is good, tag **that same commit** and push the tag:
+   `git tag -a vX.Y.Z -m "emgteach X.Y.Z" <commit>` and
+   `git push origin vX.Y.Z`. If anything has to change, it is a new commit:
+   back to step 2.
+5. The tag's run builds nothing. It finds the latest successful manual run on
+   the tag's commit, verifies the attestation of its executable (this
+   workflow, this repository, this commit), checks that the executable says
+   the tag's version, and creates a **draft** release with the notes, the
+   run's number, the SHA-256 and `emgteach-vX.Y.Z-windows-x64.exe`. Without
+   such a run it fails and creates nothing: run the workflow on the commit
+   (step 2) and re-run the failed job.
+6. Download the draft's executable and check that its SHA-256 is the one noted
+   in step 3, and that `gh attestation verify emgteach-vX.Y.Z-windows-x64.exe
+   --repo aagisto-maker/emgteach` passes. Put it through VirusTotal, then
+   publish the draft by hand: publishing is what Zenodo archives.
+7. Afterwards, the version DOI that Zenodo assigns goes into `CITATION.cff`
+   (the previous one to the history comment).
+
 ## Code and language conventions
 
 - **Code, comments and docstrings are written in English** (the developer
