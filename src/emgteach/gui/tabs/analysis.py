@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 import matplotlib
 
@@ -274,7 +275,7 @@ class AnalysisTab(QWidget):
         # Accelerometer channel of the loaded file (name + placement), if any.
         self._acc_channel_name: str | None = None
         self._acc_placement: str = "unknown"
-        self._last_edf_dir: str = self._settings.value("analisis/last_dir", ".")
+        self._last_edf_dir: str = cast(str, self._settings.value("analisis/last_dir", "."))
 
         self._duracion_total: float = 60.0
         self._markers: list[tuple[float, str]] = []

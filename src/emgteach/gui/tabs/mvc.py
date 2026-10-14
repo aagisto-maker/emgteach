@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 import matplotlib
 
@@ -135,7 +136,7 @@ class MvcTab(QWidget):
         self._settings = settings
         self._worker: MvcWorker | None = None
         self._last_result: dict | None = None
-        self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
+        self._last_edf_dir: str = cast(str, self._settings.value("cvm/last_edf_dir", "."))
         # Recording mode and fine-control flag, and whether the explanatory
         # entry screen has already been shown in this session (once per
         # student, reset by "New session").
