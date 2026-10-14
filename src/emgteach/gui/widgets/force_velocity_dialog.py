@@ -164,6 +164,7 @@ class ForceVelocityDialog(QDialog):
         table and the chart by load show, so the three say the same thing.
         """
         filas = self._rows
+        assert filas is not None    # only called when the table's rows were given
         self._fs = 0.0
         self._load_markers = []
         self._windows = [(0, 0)] * len(filas)
@@ -299,7 +300,9 @@ class ForceVelocityDialog(QDialog):
         for i in range(self._table.rowCount()):
             item = self._table.item(i, 2)
             try:
-                loads.append(float(item.text().replace(",", ".")))
+                # No item: float("") fails like the missing text did.
+                texto = item.text() if item is not None else ""
+                loads.append(float(texto.replace(",", ".")))
             except (ValueError, AttributeError):
                 loads.append(float("nan"))
         return np.asarray(loads, dtype=np.float64)

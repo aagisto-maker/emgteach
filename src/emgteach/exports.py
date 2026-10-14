@@ -180,6 +180,7 @@ def write_analysis_csv(
         for i, (t, rms, mdf) in enumerate(zip(t_seg, rms_seg, mdf_seg, strict=False)):
             fila = [num(t, ".4f"), num(rms, ".6f"), num(mdf, ".4f")]
             if con_segunda:
+                assert rms_seg_2 is not None and mdf_seg_2 is not None   # con_segunda
                 fila += [num(rms_seg_2[i], ".6f"), num(mdf_seg_2[i], ".4f")]
             writer.writerow(fila)
 

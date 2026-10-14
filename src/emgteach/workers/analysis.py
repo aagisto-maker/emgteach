@@ -1114,7 +1114,7 @@ class AnalysisWorker(QThread):
             # Read on the recording phase uncut (env_fase_1/2, above) when the
             # analysed span is not that phase: a maximum of the phase, not of
             # the fragments or the window chosen.
-            for ref, env, name in (
+            for ref, env, musculo in (
                 (result.get("mvc_ref"),
                  env_fase_1 if env_fase_1 is not None else result.get("emg_envelope"),
                  self._channel_name),
@@ -1139,7 +1139,7 @@ class AnalysisWorker(QThread):
                 # and the student saw an axis running past 100 % with no
                 # number to hang it on. The figure goes in the summary; the
                 # limit decides only whether it becomes a warning.
-                result.setdefault("task_peak_pct", {})[name] = pico
+                result.setdefault("task_peak_pct", {})[musculo] = pico
                 if pico > self._profile.mvc_implausible_pct:
                     result["mvc_implausible"] = max(
                         pico, result.get("mvc_implausible", 0.0))
@@ -1148,7 +1148,7 @@ class AnalysisWorker(QThread):
                         "{share:.0f} % of the recording above {limit:.0f} %. "
                         "The calibration did not capture a maximum — the task "
                         "beat it — so every percentage here is too high."
-                    ).format(name=name, peak=pico,
+                    ).format(name=musculo, peak=pico,
                              limit=self._profile.mvc_implausible_pct,
                              share=100.0 * float(np.mean(
                                  pct > self._profile.mvc_implausible_pct))))

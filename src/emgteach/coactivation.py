@@ -192,8 +192,9 @@ def propose_labels(
     the program cannot, which is the same division of labour as everywhere
     else in this practical.
     """
+    nombres: dict[int | None, str] = {1: name_1, 2: name_2}
     return [
-        {1: name_1, 2: name_2}.get(
+        nombres.get(
             dominant_muscle(env_1, env_2, fs, w, t0=t0,
                             ref_1=ref_1, ref_2=ref_2, both_ratio=both_ratio),
             both_label,

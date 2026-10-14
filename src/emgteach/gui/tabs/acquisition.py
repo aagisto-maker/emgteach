@@ -3919,6 +3919,7 @@ class AcquisitionTab(QWidget):
             return
 
         self._prep_timer.stop()
+        assert self._worker is not None     # the countdown runs while recording
         self._worker.add_marker(rec_start_marker())
         # The recording phase starts from rest — the countdown was rest by
         # construction. The onset detector measures its threshold again
@@ -5180,7 +5181,7 @@ class AcquisitionTab(QWidget):
         defaults when a measure is missing, and never shrinks below them so a
         weak calibration cannot hide the signal.
         """
-        refs = [self._mvc_ref[c] for c in channels if self._mvc_ref[c]]
+        refs = [r for c in channels if (r := self._mvc_ref[c])]
         raw_peaks = [self._mvc_raw_peak[c] for c in channels
                      if self._mvc_raw_peak[c] > 0]
 

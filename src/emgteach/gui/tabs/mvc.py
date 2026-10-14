@@ -1352,8 +1352,9 @@ class MvcTab(QWidget):
         # Clear previous widgets
         while self._y_scale_sidebar_layout.count():
             item = self._y_scale_sidebar_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget:
+                widget.deleteLater()
 
         labels_panel = [f"P{i + 1}" for i in range(len(self._axes_list))]
         for panel_idx, ax in enumerate(self._axes_list):

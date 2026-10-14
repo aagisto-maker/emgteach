@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import (
     QLibraryInfo,
@@ -884,7 +885,7 @@ def main(app: QApplication | None = None, guardia=None) -> None:
     install_crash_log()
     _install_qt_message_filter()
     if app is None:
-        app = QApplication.instance() or QApplication(sys.argv)
+        app = cast(QApplication, QApplication.instance() or QApplication(sys.argv))
     app.setApplicationName("EMG Bioinstrumentacion")
     app.setOrganizationName("Bioinstrumentacion")
 

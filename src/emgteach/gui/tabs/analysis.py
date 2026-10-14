@@ -2097,6 +2097,7 @@ class AnalysisTab(QWidget):
         """Push the analysis metrics to the student followers."""
         if not self._broadcast_on():
             return
+        assert self._broadcast is not None      # _broadcast_on() says so
         self._broadcast.broadcast({
             "t": "results",
             "file": Path(str(r.get("edf_path", ""))).name,
@@ -2118,6 +2119,7 @@ class AnalysisTab(QWidget):
         """Register a file for download and tell the followers it is ready."""
         if not self._broadcast_on():
             return
+        assert self._broadcast is not None      # _broadcast_on() says so
         self._broadcast.register_download(path, data, content_type, filename)
         self._broadcast.broadcast(
             {"t": "download", "kind": kind, "url": path, "name": filename}
@@ -3030,8 +3032,9 @@ class AnalysisTab(QWidget):
     def _rebuild_y_sidebar(self, selected: list[int]) -> None:
         while self._y_scale_sidebar_layout.count():
             item = self._y_scale_sidebar_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget:
+                widget.deleteLater()
 
         for panel_idx, ax in zip(selected, self._axes_list):
             slot = QWidget()
