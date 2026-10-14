@@ -20,6 +20,37 @@ import pytest
 from emgteach import diagnostics, station
 
 
+@pytest.fixture(autouse=True)
+def board_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The diagnostic's clock advances with the frames read, as the board's
+    own clock would, not with the runner's.
+
+    The diagnostic measures the rate as frames over wall-clock time. On the
+    CI's Windows with Python 3.10 a wait wakes up to some 15 ms late, and
+    with half a second of reading one late wake-up is enough to fall outside
+    the 5 % tolerance: «500 frames in 0.5 s: 949 Hz» (eegteach main, 13 Oct
+    2026), where the same code had passed in its pull request. What these
+    tests check is what the report says, not how punctual the runner is.
+    The subprocess test runs in its own interpreter and keeps the real clock;
+    it does not judge the rate.
+    """
+    from types import SimpleNamespace
+
+    from emgteach.devices.bitalino import BitalinoDevice
+
+    clock = SimpleNamespace(now=0.0)
+    monkeypatch.setattr(diagnostics, "time",
+                        SimpleNamespace(perf_counter=lambda: clock.now))
+    real_read = BitalinoDevice.read
+
+    def read(self, n):
+        frames = real_read(self, n)
+        clock.now += len(frames) / self.fs
+        return frames
+
+    monkeypatch.setattr(BitalinoDevice, "read", read)
+
+
 @pytest.fixture
 def no_bluetooth(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(diagnostics, "bluetooth_devices", lambda: [])
