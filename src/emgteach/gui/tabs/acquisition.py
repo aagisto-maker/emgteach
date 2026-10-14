@@ -3133,7 +3133,7 @@ class AcquisitionTab(QWidget):
         """Push a downsampled envelope + the live %MVC load to followers."""
         if not self._broadcast.is_running():
             return
-        env_out = []
+        env_out: list[list[float]] = []
         for c in range(self._n_channels):
             a = env[c] if c < len(env) else None
             if a is None or not len(a):

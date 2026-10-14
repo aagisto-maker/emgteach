@@ -166,10 +166,10 @@ class ForceVelocityDialog(QDialog):
         filas = self._rows
         assert filas is not None    # only called when the table's rows were given
         self._fs = 0.0
-        self._load_markers = []
+        self._load_markers: list[tuple[float, float]] = []
         self._windows = [(0, 0)] * len(filas)
         cargas = self._rows_loads or []
-        self._marker_loads = [
+        self._marker_loads: list[float] | list[float | None] | None = [
             float(cargas[i]) if i < len(cargas) and cargas[i] is not None else None
             for i in range(len(filas))
         ]

@@ -376,7 +376,8 @@ class MainWindow(QMainWindow):
         self._coach = CoachMark(self)
         #: A guided step emitted while another tab was on screen, waiting for
         #: the analysis tab to come forward.
-        self._paso_pendiente: tuple[str, str, object] | None = None
+        #: (title, body, control, tab) of a step emitted over another tab.
+        self._paso_pendiente: tuple[str, str, QWidget, QWidget] | None = None
         tabs.currentChanged.connect(self._cerrar_paso_guiado)
         tabs.currentChanged.connect(lambda _i: self._paso_guiado_pendiente())
         # And when whatever was on screen (the tour, a «?») closes, the step

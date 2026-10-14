@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TextIO
 
 from PySide6.QtCore import QMutex, QThread, Signal, Slot
 
@@ -178,7 +178,7 @@ class AcquisitionWorker(QThread):
         self._rearm_onsets = False
         # The marks' mirror on disk, open while a recording is (see
         # emgteach.recovery). Guarded by the markers' mutex.
-        self._sidecar = None
+        self._sidecar: TextIO | None = None
 
     # -- public control ------------------------------------------------------
 

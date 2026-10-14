@@ -548,7 +548,7 @@ class AnalysisWorker(QThread):
                 # The kept fragments in the concatenated timeline, with
                 # their names: these are the contractions the table gets,
                 # one row each, numbered as the editor numbered them.
-                fragmentos_concat: list[Segment] = []
+                fragmentos_concat = []
                 cargas_por_fragmento = markers_by_span(
                     fv_loads, [(a, b) for (_i0, _i1, a, b, _n) in bounds])
                 offset = 0.0
