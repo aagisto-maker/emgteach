@@ -74,7 +74,7 @@ abstract: >-
   mid-recording stops it at once; nothing computed changes.
 type: software
 version: 3.8.0
-date-released: "2026-10-10"
+date-released: "2026-10-14"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
