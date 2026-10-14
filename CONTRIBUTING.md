@@ -62,6 +62,35 @@ Tests are marked with `hardware` (needs a physical device), `gui` (needs a
 `QApplication`, via `pytest-qt`) and `slow`. The default CI run excludes
 `hardware`.
 
+## Comparing with the sibling apps
+
+emgteach, ecgteach and eegteach keep hand-made copies of the same modules:
+`devices/` (`base`, `bitalino`, `bitalino_sim`, `arduino`, `factory`),
+`broadcast`, `crash`, `recovery`, `difusion` and the `logger` and
+`help_button` widgets. Before each release, check how far this app's copies
+have drifted from its siblings':
+
+```bash
+# From the root of this repository, with the siblings cloned next to it
+python tools/comparar_hermanos.py ../ecgteach ../eegteach
+
+# One module only, with the whole diff
+python tools/comparar_hermanos.py ../ecgteach ../eegteach --modulo bitalino.py --completo
+```
+
+For each shared module it prints how many lines differ from each sibling and
+a trimmed diff, and then a summary table. Package names (`emgteach`, ...) and
+signal names (`EMG`, `ECG`, `EEG`) are normalised first, so a difference that
+is only the app's name does not count. That also hides a difference that is
+about the signal, such as which sensor gain a class falls back to:
+`--sin-normalizar-senal` keeps the signal names.
+
+The script only reads. It compares the files as they are on disk, and its
+header names the branch and commit it read in each repository, so bring each
+sibling to an up-to-date `main` first. It is not a pytest test and the CI
+does not run it. The list of shared modules is at the top of the script;
+keep it the same in the three copies.
+
 ## Documentation PDFs
 
 The manuals, lab guide, rubric and cheat sheet under `docs/` are written in
