@@ -99,10 +99,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from emgteach import fragments
 from emgteach.charts import COLOUR_1, COLOUR_2
-from emgteach.coactivation import _DOMINANCE, propose_labels
-from emgteach.dsp import process_offline
-from emgteach.force_velocity import marker_owners
+from emgteach.coactivation import propose_labels
+from emgteach.fragments import _K_CANDIDATE, _K_CANDIDATE_MIN, default_detection
+from emgteach.fragments import to_hundredths as _en_centesimas  # noqa: F401 (tests)
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.i18n import tr
@@ -113,7 +114,6 @@ from emgteach.selection import (
     activity_threshold,
     normalise_segments,
     split_fragment,
-    suggest_significant_segments,
     total_duration_s,
 )
 
@@ -160,59 +160,9 @@ def _estilo_boton(pulsado: tuple[str, str, str] | None = None) -> str:
         f" border: 1px solid {borde}; font-weight: bold; }}"
     )
 
-#: Candidates are looked for at this share of the sensitivity, and never
-#: below the floor, under which the resting noise itself clears the line.
-_K_CANDIDATE = 0.5
-_K_CANDIDATE_MIN = 1.0
-
-#: How far ahead of its cue a lift may start and still be that lift.
-_ANTICIPO_S = 0.5
-#: A piece that starts this close after the one a cue took is the same lift,
-#: split by the detector at a dip.
-_UNION_S = 0.1
-#: The small margin a proposed row keeps either side of its contraction,
-#: which runs from where the envelope leaves rest to where it returns to it
-#: — «rest» being the dotted line half the sensitivity draws, the one the
-#: candidates are found with. See _a_la_envolvente.
-_BORDE_MARGEN_S = 0.05
-
 #: How long after the last slider move the proposal is rebuilt. Long enough
 #: that dragging does not rebuild at every pixel, short enough to feel live.
 _DEBOUNCE_MS = 150
-
-
-def default_detection(k: float | None = None) -> dict[str, float]:
-    """The detection settings the dialogue opens on, co-activation rule included.
-
-    ``k`` is the practical's own sensitivity (see
-    :func:`emgteach.modes.mode_detection_k`); without it, the core default.
-    """
-    d = dict(DEFAULT_DETECTION)
-    d["both_ratio"] = float(_DOMINANCE)
-    if k is not None:
-        d["k"] = float(k)
-    return d
-
-
-def _en_centesimas(filas: list[Segment]) -> list[Segment]:
-    """Rows as the table holds them — hundredths of a second — and at least a
-    hundredth apart.
-
-    The detector's split pieces share their boundary sample, so two rows could
-    touch, and fragments that touch are merged before the analysis: the editor
-    showed a contraction more than the analysis measured, without a word.
-    Rounding the ends inward, and moving a touching start past the end before
-    it, keeps each row its own fragment.
-    """
-    out: list[Segment] = []
-    for f in sorted(filas, key=lambda s: s.start_s):
-        a = float(np.ceil(round(f.start_s * 100.0, 6))) / 100.0
-        b = float(np.floor(round(f.end_s * 100.0, 6))) / 100.0
-        if out and a <= out[-1].end_s:
-            a = round(out[-1].end_s + 0.01, 2)
-        if b > a:
-            out.append(Segment(a, b, f.score, f.reason, f.label))
-    return out
 
 
 class FragmentSelectionDialog(QDialog):
@@ -277,10 +227,11 @@ class FragmentSelectionDialog(QDialog):
 
         self._raw = np.asarray(raw, dtype=np.float64).ravel()
         self._fs = float(fs)
-        self._f_low = float(filter_kwargs.get("f_low", 20.0))
-        self._f_high = float(filter_kwargs.get("f_high", 450.0))
-        self._f_notch = float(filter_kwargs.get("f_notch", 50.0))
-        self._f_env = float(filter_kwargs.get("f_env", 5.0))
+        self._filtros = fragments.filters(filter_kwargs)
+        self._f_low = self._filtros["f_low"]
+        self._f_high = self._filtros["f_high"]
+        self._f_notch = self._filtros["f_notch"]
+        self._f_env = self._filtros["f_env"]
         self._full_duration = len(self._raw) / self._fs
         # The stretch this editor is allowed to work in. In a two-phase
         # session that is the recording phase: the calibration is signal
@@ -288,10 +239,7 @@ class FragmentSelectionDialog(QDialog):
         # and offered them as fragments of the task — which is the one
         # decision the application exists to take out of the operator's
         # hands, arriving back as a suggestion.
-        self._span = (
-            (max(0.0, float(span[0])), min(self._full_duration, float(span[1])))
-            if span else (0.0, self._full_duration)
-        )
+        self._span = fragments.span_within(span, self._full_duration)
         # Whether naming a fragment does anything here. A name is only read
         # by the co-activation table, which needs an agonist and an
         # antagonist; with a single muscle on screen there is no such table
@@ -373,19 +321,7 @@ class FragmentSelectionDialog(QDialog):
 
     def _envolvente(self, raw: np.ndarray | None):
         """The envelope of a channel, or None when there is no channel."""
-        if raw is None:
-            return None
-        try:
-            return process_offline(
-                raw,
-                self._fs,
-                f_low=self._f_low,
-                f_high=self._f_high,
-                f_notch=self._f_notch,
-                f_env=self._f_env,
-            )["emg_envelope"]
-        except Exception:  # pragma: no cover — very short/degenerate signal
-            return np.abs(raw)
+        return fragments.envelope(raw, self._fs, self._filtros)
 
     def _techo_de_la_senal(self) -> float:
         """The top of the preview, fixed for the life of the dialogue.
@@ -454,18 +390,10 @@ class FragmentSelectionDialog(QDialog):
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
-        from emgteach.io import read_edf_mne
-
-        edf = read_edf_mne(edf_path, channel_name)
-        raw_2 = None
-        if channel_name_2:
-            try:
-                raw_2 = read_edf_mne(edf_path, channel_name_2)["emg_raw"]
-            except Exception:  # pragma: no cover — channel gone from the file
-                raw_2 = None
+        raw, fs, raw_2 = fragments.read_channels(edf_path, channel_name, channel_name_2)
         return cls(
-            edf["emg_raw"],
-            float(edf["sfreq"]),
+            raw,
+            fs,
             filter_kwargs,
             segments=segments,
             labels=labels,
@@ -971,40 +899,10 @@ class FragmentSelectionDialog(QDialog):
     # -- actions -------------------------------------------------------------
 
     def _detectar(self, k: float) -> list[Segment]:
-        """What the detector finds at sensitivity ``k``, in the file's clock."""
-        a, b = self._span
-        i0, i1 = round(a * self._fs), round(b * self._fs)
-
-        def detecta(raw):
-            return suggest_significant_segments(
-                raw[i0:i1],
-                self._fs,
-                f_low=self._f_low,
-                f_high=self._f_high,
-                f_notch=self._f_notch,
-                f_env=self._f_env,
-                k=k,
-                min_duration_s=self._det["min_duration_s"],
-                merge_gap_s=self._det["merge_gap_s"],
-                prominence=self._det["prominence"],
-            )
-
-        # Back into the file's own clock: the worker crops by these numbers.
-        filas = [
-            Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
-            for x in detecta(self._raw)
-        ]
-        if self._raw_2 is not None:
-            # Both muscles, not just the one on display. The selection crops
-            # *both* channels, so proposing only the contractions of the
-            # channel that happens to be selected quietly decided which half
-            # of the session got analysed.
-            filas += [
-                Segment(a + x.start_s, a + x.end_s, x.score, x.reason, x.label)
-                for x in detecta(self._raw_2)
-            ]
-            filas = normalise_segments(filas, self._full_duration)
-        return _en_centesimas(filas)
+        """What the detector finds at sensitivity ``k``, in the file's clock
+        (:func:`emgteach.fragments.detect`)."""
+        return fragments.detect(self._raw, self._fs, self._filtros, self._det, k,
+                                self._span, self._raw_2)
 
     def _buscar_candidatos(self) -> None:
         """Where each envelope clears the line half the sensitivity draws.
@@ -1082,9 +980,8 @@ class FragmentSelectionDialog(QDialog):
         self._timer.stop()
         self._revisadas.clear()
         self._buscar_candidatos()
-        filas = self._detectar(self._det["k"])
-        filas = (self._por_levantamiento(filas) if self._lifts
-                 else self._a_la_envolvente(filas))
+        filas = fragments.fit_rows(self._detectar(self._det["k"]), self._lifts,
+                                   self._envs, self._fs, self._span, self._det)
         if self._naming:
             filas = [
                 Segment(f.start_s, f.end_s, f.score, f.reason, nombre)
@@ -1095,141 +992,20 @@ class FragmentSelectionDialog(QDialog):
         self._set_rows(filas)
 
     def _por_levantamiento(self, detectadas: list[Segment]) -> list[Segment]:
-        """One row per lift the wizard marked, and nothing else.
-
-        Each lift takes the contraction its marker announced; a lift whose
-        window the detector found nothing in is proposed as the window, to
-        be looked at rather than lost. What is left over stays a candidate.
-
-        The contraction is **cut to the lift's window**, from half a second
-        before the cue (``_ANTICIPO_S``: a lift can start a little ahead of
-        it) to the window's end. The detector joins the lift to whatever
-        the muscle did just before, and just before the cue it was picking
-        up the weight: on the bench one row began four seconds early.
-
-        And the other way round, the detector can **split** a lift at a dip:
-        in a rehearsal the first lift came out as 48.16–48.64 and
-        48.65–49.42 s, and the cue took the first half, a row of 0.48 s
-        where the others lasted 1.5 to 2. A piece starting less than
-        ``_UNION_S`` after the one the cue took, inside the same window and
-        claimed by no other cue, is joined to it before the row is cut.
-        """
-        duenos = marker_owners(
-            [a for a, _b in self._lifts],
-            [(f.start_s, f.end_s) for f in detectadas])
-        tomadas = {j for j in duenos if j is not None}
-        orden = sorted(range(len(detectadas)), key=lambda k: detectadas[k].start_s)
-        elegidas: list[Segment] = []
-        for (a, b), j in zip(self._lifts, duenos, strict=True):
-            if j is None:
-                elegidas.append(Segment(a, b, reason="marker"))
-                continue
-            f = detectadas[j]
-            fin_trozo = f.end_s
-            for k in orden:
-                g = detectadas[k]
-                if k == j or g.start_s < f.start_s:
-                    continue
-                if (k in tomadas or g.start_s - fin_trozo >= _UNION_S
-                        or g.start_s >= b):
-                    break
-                fin_trozo = max(fin_trozo, g.end_s)
-            elegidas.append(Segment(f.start_s, fin_trozo, f.score, f.reason, f.label))
-        # The edges by the envelope, and then the lift's own window.
-        filas = []
-        for (a, b), f in zip(self._lifts, self._a_la_envolvente(elegidas), strict=True):
-            ini, fin = max(f.start_s, a - _ANTICIPO_S), min(f.end_s, b)
-            filas.append(Segment(ini, fin, f.score, f.reason, f.label)
-                         if fin > ini else f)
-        return _en_centesimas(filas)
+        """One row per lift the wizard marked (:func:`emgteach.fragments.one_per_lift`)."""
+        return fragments.one_per_lift(detectadas, self._lifts, self._envs,
+                                      self._fs, self._span, self._det)
 
     def _reposo(self, env) -> float:
-        """The level a row's contraction is measured out to, for one envelope.
-
-        The line half the sensitivity draws, never above the detector's own.
-        """
-        a0, b0 = self._span
-        tramo = np.asarray(env[round(a0 * self._fs):round(b0 * self._fs)],
-                           dtype=np.float64)
-        k = self._det["k"]
-        _b, umbral = activity_threshold(tramo, k)
-        _b, reposo = activity_threshold(tramo, max(_K_CANDIDATE_MIN, k * _K_CANDIDATE))
-        return min(reposo, umbral)
+        """The level a row's contraction is measured out to, for one envelope
+        (:func:`emgteach.fragments.rest_level`)."""
+        return fragments.rest_level(env, self._fs, self._span, self._det["k"])
 
     def _a_la_envolvente(self, filas: list[Segment]) -> list[Segment]:
-        """Each row from where its contraction leaves rest to where it returns.
-
-        For every channel whose envelope clears the detector's line inside
-        the row — for as long as the detector asks of a contraction —, start
-        at the row's peak on that envelope and walk out on each side while
-        the envelope stays above rest. Rest is the line half the sensitivity
-        draws, dotted on the plot, the one the candidates are found with:
-        the detector's own line cuts the foot of the rise and the end of the
-        fall, which is what had to be widened by hand, and a share of the
-        peak was tried and rejected — on a strong contraction any share
-        above zero ended the row earlier than the detector did. The row is
-        the union over those
-        channels, plus ``_BORDE_MARGEN_S`` either side, and never reaches
-        into the row before or after it or out of the span. A row no
-        channel clears is left as it was, and so is a lift's window that
-        stands in for a contraction the detector did not find.
-
-        Walking from the peak, a row that held a contraction and the tail
-        of something else keeps the contraction; which is what a lift that
-        the detector had run into the next second needed.
-        """
-        if not filas:
-            return filas
-        a0, b0 = self._span
-        i0, i1 = round(a0 * self._fs), round(b0 * self._fs)
-        k = self._det["k"]
-        minimo = max(1, round(self._det["min_duration_s"] * self._fs))
-        canales = []
-        for env in self._envs:
-            tramo = np.asarray(env[i0:i1], dtype=np.float64)
-            _base, umbral = activity_threshold(tramo, k)
-            canales.append((env, umbral, self._reposo(env)))
-        orden = sorted(filas, key=lambda f: f.start_s)
-        salida: list[Segment] = []
-        for n, f in enumerate(orden):
-            antes = salida[-1].end_s if salida else a0
-            despues = orden[n + 1].start_s if n + 1 < len(orden) else b0
-            lo, hi = round(antes * self._fs), round(despues * self._fs) - 1
-            j0 = max(lo, round(f.start_s * self._fs))
-            j1 = min(hi + 1, round(f.end_s * self._fs))
-            ini = fin = None
-            # A lift's window proposed because nothing was detected in it
-            # has no contraction to fit, and is there to be looked at.
-            for env, umbral, reposo in ([] if f.reason == "marker" else canales):
-                if j1 <= j0:
-                    break
-                pico = j0 + int(np.argmax(env[j0:j1]))
-                if env[pico] <= umbral:
-                    continue
-                # Held over the line as long as the detector asks of a
-                # contraction: a flicker of noise over it is not one.
-                sobre_i = sobre_d = pico
-                while sobre_i > lo and env[sobre_i - 1] > umbral:
-                    sobre_i -= 1
-                while sobre_d < hi and env[sobre_d + 1] > umbral:
-                    sobre_d += 1
-                if sobre_d - sobre_i + 1 < minimo:
-                    continue
-                izq = pico
-                while izq > lo and env[izq - 1] > reposo:
-                    izq -= 1
-                der = pico
-                while der < hi and env[der + 1] > reposo:
-                    der += 1
-                ini = izq if ini is None else min(ini, izq)
-                fin = der if fin is None else max(fin, der)
-            if ini is None:
-                salida.append(f)
-                continue
-            a = max(antes, ini / self._fs - _BORDE_MARGEN_S)
-            b = min(despues, (fin + 1) / self._fs + _BORDE_MARGEN_S)
-            salida.append(Segment(a, b, f.score, f.reason, f.label) if b > a else f)
-        return _en_centesimas(salida)
+        """Each row from where its contraction leaves rest to where it returns
+        (:func:`emgteach.fragments.fit_to_envelope`)."""
+        return fragments.fit_to_envelope(filas, self._envs, self._fs, self._span,
+                                         self._det)
 
     def _promover(self, candidato: Segment) -> None:
         """Make a candidate a row, named like the rest, in its place in time."""

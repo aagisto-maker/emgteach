@@ -182,3 +182,20 @@ def test_the_module_does_not_bring_qt_in() -> None:
     assert run.stdout.splitlines()[0] == "1"
     line = next(ln for ln in run.stdout.splitlines() if ln.startswith("MODULES="))
     assert "PySide6" not in json.loads(line.removeprefix("MODULES="))
+
+
+@pytest.mark.gui
+@pytest.mark.parametrize("caso", list(ESPERADO))
+def test_the_editor_and_the_module_agree_exactly(qapp, caso: str) -> None:
+    """Not to the hundredth: the very same rows, since the editor calls the module."""
+    from emgteach.fragments import suggest_fragments
+    from emgteach.profiles import EMG_PROFILE
+
+    raw, fs, opciones = _entradas(caso)
+    filtros = dict(EMG_PROFILE.filter_kwargs()) if caso == "tres_maniobras" else FILTROS
+    del_modulo = [(f.start_s, f.end_s) for f in suggest_fragments(raw, fs, filtros, **opciones)]
+    dlg = _dialogo(caso)
+    try:
+        assert [(a, b) for a, b in dlg.selected_segments()] == del_modulo
+    finally:
+        dlg.deleteLater()
