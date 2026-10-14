@@ -90,14 +90,19 @@ on demand (*Actions → Build Windows exe → Run workflow*), on a pushed `exe-*
 tag and on pull requests that touch `packaging/`. The two executables are
 kept as a workflow artifact named `emgteach-windows-exe`.
 
-From v3.7.0 a version tag also prepares the release. The application is
-renamed `emgteach-vX.Y.Z-windows-x64.exe`, GitHub attests where it was built
-(`actions/attest-build-provenance`), and a **draft** release is created with
-`docs/RELEASE_NOTES_vX.Y.Z.md`, the executable's SHA-256 and the executable.
-The build fails if the executable does not say the tag's version. A draft is
+A manual run also has GitHub attest where both executables were built
+(`actions/attest-build-provenance`). After 3.8.0 a version tag does not build
+again: PyInstaller does not reproduce a file byte for byte, so a second build
+would publish an executable nobody tried. The release job takes the latest
+successful manual run on the tag's commit, verifies its attestation and that
+the executable says the tag's version, renames it
+`emgteach-vX.Y.Z-windows-x64.exe` and creates a **draft** release with
+`docs/RELEASE_NOTES_vX.Y.Z.md`, the run's number, the executable's SHA-256 and
+the executable. Without such a run it fails and creates nothing. A draft is
 not published, so Zenodo, which archives on publication, is not told until
 the executable has been through VirusTotal and the draft is published by
-hand. The diagnostic stays a workflow artifact.
+hand. The diagnostic stays a workflow artifact. The steps are in
+[`CONTRIBUTING.md`](../CONTRIBUTING.md#releasing-a-version).
 
 ## Run (tester machine)
 
