@@ -5,6 +5,16 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **The fragment editor's reading and proposal live in `emgteach.fragments`, without Qt.** `FragmentSelectionDialog` held both the reading of the EDF (`from_edf`) and the automatic suggestion (`_auto_suggest`, with `_por_levantamiento`, `_reposo` and `_a_la_envolvente`), so the proposal could only be had by opening a window. They are now functions over arrays in a module of their own — `read_channels`, `envelope`, `detect`, `rest_level`, `fit_to_envelope`, `one_per_lift`, `to_hundredths` and `suggest_fragments`, which proposes what the editor proposes on opening, without the names — and the editor calls them. Nothing it proposes changes. `tools/hoja_puesto.py` keeps its `QApplication`: it captures the application's own buttons and panels, and the editor's.
+
+### Tests
+
+- What the editor proposes is fixed, to the hundredth, in five cases: one muscle at two sensitivities, two muscles with a task span and names, three lifts (one split at a dip, one with nothing in its window) and a stray burst, and the author's recording of the three manoeuvres. The module gives the same rows, the editor and the module give exactly the same, and importing the module and making a proposal never loads PySide6.
+
 ## [3.8.0] — 2026-10-14
 
 **What the sister applications found, brought to emgteach.** The bench of
