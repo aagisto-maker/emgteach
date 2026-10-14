@@ -110,3 +110,75 @@ def test_the_editor_proposes_what_it_proposed(qapp, caso: str) -> None:
         assert _filas(dlg) == ESPERADO[caso]
     finally:
         dlg.deleteLater()
+
+
+# ---------------------------------------------------------------------------
+# The same proposals from emgteach.fragments, with no window
+# ---------------------------------------------------------------------------
+
+
+def _entradas(caso: str) -> tuple[np.ndarray, float, dict]:
+    """``(raw, fs, keyword arguments)`` of suggest_fragments for each case."""
+    if caso == "uno":
+        return UNO, FS, {}
+    if caso == "uno_k6":
+        return UNO, FS, {"detection": {"k": 6.0}}
+    if caso == "par":
+        return PAR_1, FS, {"raw_2": PAR_2, "span": (3.0, 16.0), "default_k": 4.4}
+    if caso == "levantamientos":
+        return LEVANTAMIENTOS, FS, {"lifts": VENTANAS}
+    from emgteach.force_velocity import parse_fv_load_markers
+    from emgteach.fragments import read_channels
+    from emgteach.io import edf_duration, read_edf_markers
+    from emgteach.modes import MODE_PAIR, mode_detection_k
+    from emgteach.phases import parse_phase_markers
+
+    marcas = read_edf_markers(str(EJEMPLO))
+    tramo = parse_phase_markers(marcas).rec_span(
+        edf_duration(str(EJEMPLO)), parse_fv_load_markers(marcas))
+    raw, fs, raw_2 = read_channels(str(EJEMPLO), "FCR", "ECR")
+    return raw, fs, {"raw_2": raw_2, "span": tramo,
+                     "default_k": mode_detection_k(MODE_PAIR)}
+
+
+@pytest.mark.parametrize("caso", list(ESPERADO))
+def test_the_module_proposes_the_same_rows(caso: str) -> None:
+    """The rows, without the names: naming is the editor's, after the proposal."""
+    from emgteach.fragments import suggest_fragments
+    from emgteach.profiles import EMG_PROFILE
+
+    raw, fs, opciones = _entradas(caso)
+    filtros = dict(EMG_PROFILE.filter_kwargs()) if caso == "tres_maniobras" else FILTROS
+    filas = suggest_fragments(raw, fs, filtros, **opciones)
+    assert [(round(f.start_s, 2), round(f.end_s, 2)) for f in filas] == [
+        (a, b) for a, b, _n in ESPERADO[caso]]
+
+
+def test_the_module_does_not_bring_qt_in() -> None:
+    """Imported in a fresh interpreter, and a proposal made, Qt is never loaded."""
+    import json
+    import os
+    import subprocess
+    import sys
+
+    import emgteach
+
+    src = str(Path(emgteach.__file__).resolve().parents[1])
+    code = (
+        "import json, sys\n"
+        "import numpy as np\n"
+        "from emgteach.fragments import suggest_fragments\n"
+        "rng = np.random.default_rng(0)\n"
+        "raw = rng.normal(0.0, 0.01, 5000)\n"
+        "raw[2000:3000] += 0.5 * np.sin(2 * np.pi * 90.0 * np.arange(1000) / 1000)\n"
+        "print(len(suggest_fragments(raw, 1000.0, {})))\n"
+        "print('MODULES=' + json.dumps(sorted({m.split('.')[0] for m in sys.modules})))\n"
+    )
+    paths = [src, os.environ.get("PYTHONPATH", "")]
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in paths if p)}
+    run = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True,
+                         text=True, encoding="utf-8", timeout=120)
+    assert run.returncode == 0, run.stdout + run.stderr
+    assert run.stdout.splitlines()[0] == "1"
+    line = next(ln for ln in run.stdout.splitlines() if ln.startswith("MODULES="))
+    assert "PySide6" not in json.loads(line.removeprefix("MODULES="))
