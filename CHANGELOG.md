@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 
 - What the editor proposes is fixed, to the hundredth, in five cases: one muscle at two sensitivities, two muscles with a task span and names, three lifts (one split at a dip, one with nothing in its window) and a stray burst, and the author's recording of the three manoeuvres. The module gives the same rows, the editor and the module give exactly the same, and importing the module and making a proposal never loads PySide6.
+- The simulated board's pacing test no longer fails on a slow runner. Ported from ecgteach, whose CI's Windows with Python 3.12 took 1.91 s (14 Oct 2026) over the 1.2 s of frames the test reads, against the 1.8 s it allowed, with the board on time: it keeps the schedule it started streaming with and catches up after a stall, so the delay was the runner's. The lower bound, which is what shows the frames come at the sampling rate and not all at once, stays at 0.9 s; the upper one is 5 s, enough to say the reading did not hang.
 
 ## [3.8.0] — 2026-10-14
 

@@ -85,8 +85,15 @@ def test_the_application_opens_reads_and_closes_it(name: str, kwargs: dict) -> N
         device.close()
     assert not device.is_connected
     assert data.shape == (1200, device.n_channels)
-    # Delivered at the real sampling rate, not all at once.
-    assert 0.9 < elapsed < 1.8, elapsed
+    # Delivered at the real sampling rate, not all at once: the board sends no
+    # frame before its own clock reaches it, so 1.2 s of data cannot arrive in
+    # much less. The upper bound is loose on purpose. The board keeps the
+    # schedule it started streaming with and catches up after a stall, so a
+    # reading that ends late is the runner being slow, not the board: the
+    # same test took 1.91 s on ecgteach's CI (Windows, Python 3.12, 14 Oct
+    # 2026), against the 1.8 s this used to allow. 5 s only says it did not
+    # hang.
+    assert 0.9 < elapsed < 5.0, elapsed
     kinds = device.channel_kinds()
     for i, kind in enumerate(kinds):
         lo, hi = device.channel_physical_ranges()[i]
