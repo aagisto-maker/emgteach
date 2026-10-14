@@ -35,12 +35,12 @@ import re
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-from typing import ClassVar, TextIO, cast
+from typing import Any, ClassVar, TextIO, cast
 
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QSettings, QStandardPaths, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut
+from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -1858,7 +1858,7 @@ class AcquisitionTab(QWidget):
         from emgteach.devices.arduino import ArduinoDevice
         from emgteach.devices.bitalino import BitalinoDevice
 
-        clase = BitalinoDevice if index == 0 else ArduinoDevice
+        clase: type[Any] = BitalinoDevice if index == 0 else ArduinoDevice
         try:
             gain = getattr(clase, "_GAIN_EMG", None) or clase._GAIN
             amp = clase._V_REF / 2.0 * 1000.0 / gain
@@ -3107,7 +3107,7 @@ class AcquisitionTab(QWidget):
         buf = io.BytesIO()
         segno.make(url, error="m").save(buf, kind="png", scale=scale, border=2)
         pix = QPixmap()
-        pix.loadFromData(buf.getvalue(), "PNG")
+        pix.loadFromData(buf.getvalue())  # the format is read from the data
         return pix
 
     @Slot(int)
@@ -5257,7 +5257,7 @@ class AcquisitionTab(QWidget):
         self._combo_zoom.blockSignals(False)
 
         # Disable factors whose resulting window would be < 0.5 s
-        model = self._combo_zoom.model()
+        model = cast(QStandardItemModel, self._combo_zoom.model())
         for i, f in enumerate(_ZOOM_FACTORS):
             n = MAX_POINTS // f
             item = model.item(i)

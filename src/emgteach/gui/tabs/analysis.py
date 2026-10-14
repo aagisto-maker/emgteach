@@ -31,7 +31,7 @@ except Exception:
     pass
 from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QButtonGroup,
@@ -106,7 +106,7 @@ class _SelectorEsquina(QWidget):
             b.setFixedHeight(18)
             b.setText(texto)
             b.setStyleSheet(_PILL_STYLE)
-            b.toggled.connect(lambda on, k=clave: on and self.cambiado.emit(k))
+            b.toggled.connect(lambda on, k=clave: self.cambiado.emit(k) if on else None)
             self._grupo.addButton(b)
             self._botones[clave] = b
             lay.addWidget(b)
@@ -2431,7 +2431,9 @@ class AnalysisTab(QWidget):
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
         self._y_twins = {}
-        self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)
+        # Deprecated in matplotlib and missing from its type stubs, but present
+        # in the pinned 3.9.2, where it sets the constrained layout's pads.
+        self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)  # type: ignore[attr-defined]
 
         # Map checked boxes (in teaching display order) back to their canonical
         # panel indices; the subplot order follows the display order.
@@ -3163,7 +3165,7 @@ class AnalysisTab(QWidget):
         self._combo_zoom.blockSignals(False)
 
     def _update_combo_items(self) -> None:
-        model = self._combo_zoom.model()
+        model = cast(QStandardItemModel, self._combo_zoom.model())
         for i, f in enumerate(_ZOOM_FACTORS):
             item = model.item(i)
             if item is None:

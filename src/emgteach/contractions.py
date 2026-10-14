@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -287,7 +288,7 @@ def contraction_table(
     if n == 0:
         return []
     total_s = n / fs
-    filtros = dict(
+    filtros: dict[str, Any] = dict(
         f_low=f_low, f_high=f_high, f_notch=f_notch, f_env=f_env,
         k=k, min_duration_s=min_duration_s, merge_gap_s=merge_gap_s,
         prominence=prominence,

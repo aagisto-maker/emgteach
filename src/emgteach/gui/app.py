@@ -895,7 +895,7 @@ def main(app: QApplication | None = None, guardia=None) -> None:
     language = resolve_startup_language(settings)
     set_language(language)
     # Kept on the application so it is not garbage-collected.
-    app._qt_translator = install_qt_translations(app, language)
+    app._qt_translator = install_qt_translations(app, language)  # type: ignore[attr-defined]
 
     splash = _make_splash()
     splash.show()

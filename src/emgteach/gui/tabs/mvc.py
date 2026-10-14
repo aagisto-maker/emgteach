@@ -41,6 +41,7 @@ except Exception:
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Slot
+from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -1504,7 +1505,7 @@ class MvcTab(QWidget):
         self._combo_zoom.setCurrentIndex(best_idx)
         self._combo_zoom.blockSignals(False)
 
-        model = self._combo_zoom.model()
+        model = cast(QStandardItemModel, self._combo_zoom.model())
         for i, f in enumerate(_ZOOM_FACTORS):
             item = model.item(i)
             if item:
