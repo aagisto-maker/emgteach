@@ -121,7 +121,14 @@ The generated `docs/*.pdf` are git-ignored; regenerate them after editing the
    `style(ui): ...`, `test(dsp): ...`, `ci: ...`.
 3. Add or update tests for any behaviour change, and update `CHANGELOG.md`
    under the `[Unreleased]` / next-version heading.
-4. Open a pull request describing the change and how you verified it. Link
+4. **Shared modules:** a fix to a module that ecgteach and eegteach also
+   keep a copy of (`devices/`: `base`, `bitalino`, `bitalino_sim`, `arduino`,
+   `factory`; `broadcast`, `crash`, `recovery`, `difusion`; the `logger` and
+   `help_button` widgets) is ported to the other two apps, or noted as
+   pending in this app's `CHANGELOG.md`: its entry names the module and the
+   app or apps it has not reached yet. A port says in its own entry which
+   app it comes from.
+5. Open a pull request describing the change and how you verified it. Link
    the issue it closes.
 
 ## Releasing a version
