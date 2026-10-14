@@ -375,6 +375,7 @@ def rep_values(
         cruce = None
         if ajeno is not None and ajeno.size:
             nivel = mvc_from_reps([ajeno], percentile, window_samples=ventana)
+            assert other_reference          # cruzados is only sliced with it
             cruce = 100.0 * nivel / float(other_reference)
         salida.append(RepValue(r.rep, float(valor), cruce))
     return tuple(salida)

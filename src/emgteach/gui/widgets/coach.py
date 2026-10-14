@@ -269,7 +269,9 @@ class CoachMark(QWidget):
 
     def _interior(self, ancho: int) -> int:
         """Width left for the labels inside a panel ``ancho`` wide."""
-        m = self._panel.layout().contentsMargins()
+        lay = self._panel.layout()
+        assert lay is not None      # the panel is built with its layout
+        m = lay.contentsMargins()
         frame = self._panel.contentsMargins()
         return ancho - frame.left() - frame.right() - m.left() - m.right()
 
@@ -310,6 +312,7 @@ class CoachMark(QWidget):
         about six.
         """
         lay = self._panel.layout()
+        assert lay is not None      # the panel is built with its layout
         m = lay.contentsMargins()
         # The styled border sits inside the panel but outside the layout, so
         # it has to be counted separately — leaving it out is what cost the

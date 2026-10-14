@@ -25,6 +25,7 @@ from __future__ import annotations
 import getpass
 import re
 import sys
+from typing import cast
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
@@ -124,7 +125,7 @@ def lanzar(nombre: str | None = None) -> int | None:
     install_crash_log()
     from PySide6.QtWidgets import QApplication
 
-    app = QApplication.instance() or QApplication(sys.argv)
+    app = cast(QApplication, QApplication.instance() or QApplication(sys.argv))
     if avisar_a_la_otra(nombre):
         cerrar_splash_de_arranque()
         return 0
@@ -132,4 +133,5 @@ def lanzar(nombre: str | None = None) -> int | None:
     guardia.escuchar()
     from emgteach.gui.app import main
 
-    return main(app=app, guardia=guardia)
+    main(app=app, guardia=guardia)  # runs the event loop and leaves through sys.exit
+    return None

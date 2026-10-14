@@ -76,9 +76,8 @@ jobs:
       - name: Lint with ruff
         run: ruff check .
 
-      - name: Type-check with mypy (non-blocking)
+      - name: Type-check with mypy
         run: mypy src/emgteach
-        continue-on-error: true
 
       - name: Run tests with coverage
         env:

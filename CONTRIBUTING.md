@@ -50,13 +50,14 @@ QT_QPA_PLATFORM=offscreen pytest -m "not hardware" -q
 # Lint
 ruff check .
 
-# Type check (advisory; not enforced in CI)
+# Type check (enforced in CI)
 mypy src/emgteach
 ```
 
-All pull requests must keep the test suite green and pass `ruff check`.
-`mypy` is run for guidance but is **not** blocking — there are known,
-pre-existing Qt/`QSettings` typing gaps in the GUI layer.
+All pull requests must keep the test suite green and pass `ruff check` and
+`mypy src/emgteach` with no errors; the CI fails on any of the three. A value
+read from `QSettings` is `object` to mypy: give it its type with
+`typing.cast`, as the tabs do.
 
 Tests are marked with `hardware` (needs a physical device), `gui` (needs a
 `QApplication`, via `pytest-qt`) and `slow`. The default CI run excludes

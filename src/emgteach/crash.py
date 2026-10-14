@@ -24,6 +24,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
+from typing import cast
 
 __all__ = ["install_crash_log", "log_path", "record_exception"]
 
@@ -99,7 +100,7 @@ def _hay_alguien_delante() -> bool:
     try:
         from PySide6.QtWidgets import QApplication
 
-        app = QApplication.instance()
+        app = cast("QApplication | None", QApplication.instance())
         if app is None:
             return False
         return any(w.isVisible() for w in app.topLevelWidgets())

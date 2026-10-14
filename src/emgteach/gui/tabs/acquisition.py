@@ -35,12 +35,12 @@ import re
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-from typing import ClassVar, TextIO
+from typing import Any, ClassVar, TextIO, cast
 
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QSettings, QStandardPaths, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut
+from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -604,7 +604,7 @@ class AcquisitionTab(QWidget):
         self._profile = EMG_PROFILE
 
         # Number of active channels (1 or 2), persisted in QSettings.
-        saved_n = int(self._settings.value("adquisicion/n_channels", 1))
+        saved_n = int(cast("int | str", self._settings.value("adquisicion/n_channels", 1)))
         self._n_channels = min(max(saved_n, 1), MAX_CHANNELS)
 
         # Per-channel ring buffers for the three signals (30 s at 1000 Hz).
@@ -618,9 +618,9 @@ class AcquisitionTab(QWidget):
         # Optional BITalino accelerometer (A4): a single extra raw channel,
         # kept out of the EMG channel machinery (load monitor, MVC wizard,
         # stacking) and shown in its own auto-scaled plot.
-        self._acc_enabled = self._settings.value(
+        self._acc_enabled = cast(bool, self._settings.value(
             "adquisicion/acc", False, type=bool
-        )
+        ))
         # Whether the channel-config controls are currently editable (idle, not
         # recording). Used together with the ACC placement to gate the channel
         # count (MMG placement forces a single muscle).
@@ -651,10 +651,10 @@ class AcquisitionTab(QWidget):
         # Live-load zone thresholds (% MVC). Default from the signal profile,
         # but adjustable in the UI once an MVC is calibrated and remembered
         # across sessions (QSettings). warning < danger is always enforced.
-        self._load_warning = float(self._settings.value(
-            "adquisicion/load_warning", self._profile.apda_warning_limit, type=float))
-        self._load_danger = float(self._settings.value(
-            "adquisicion/load_danger", self._profile.apda_danger_limit, type=float))
+        self._load_warning = float(cast(float, self._settings.value(
+            "adquisicion/load_warning", self._profile.apda_warning_limit, type=float)))
+        self._load_danger = float(cast(float, self._settings.value(
+            "adquisicion/load_danger", self._profile.apda_danger_limit, type=float)))
         if self._load_danger <= self._load_warning:
             self._load_danger = self._load_warning + 1.0
 
@@ -998,7 +998,7 @@ class AcquisitionTab(QWidget):
         self._combo_device_type = QComboBox()
         self._combo_device_type.addItem("BITalino (Bluetooth)")
         self._combo_device_type.addItem("Arduino + MyoWare 2.0 (USB)")
-        saved_type = int(self._settings.value("adquisicion/device_type", 0))
+        saved_type = int(cast("int | str", self._settings.value("adquisicion/device_type", 0)))
         self._combo_device_type.setCurrentIndex(saved_type)
         self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
         # In the practicals that can only be done with the BITalino the
@@ -1034,7 +1034,7 @@ class AcquisitionTab(QWidget):
         self._station_address = read_station_address()
         self._edit_mac.setText(
             self._station_address if self._station_address is not None
-            else self._settings.value("adquisicion/port", DEFAULT_BITALINO_ADDR)
+            else cast(str, self._settings.value("adquisicion/port", DEFAULT_BITALINO_ADDR))
         )
         if self._station_address is not None:
             # Said once the tab is up, where the operator reads.
@@ -1086,7 +1086,7 @@ class AcquisitionTab(QWidget):
         self._edit_dir = QLineEdit()
         self._edit_dir.setPlaceholderText(tr("EDF destination folder"))
         self._edit_dir.setText(
-            self._settings.value("adquisicion/save_dir", carpeta_por_defecto())
+            cast(str, self._settings.value("adquisicion/save_dir", carpeta_por_defecto()))
         )
         cfg_row2.addWidget(self._edit_dir, stretch=1)
         btn_dir = QPushButton(tr("Browse…"))
@@ -1141,7 +1141,7 @@ class AcquisitionTab(QWidget):
                     "used as the channel label in the EDF file)."
                 )
             )
-            stored = self._settings.value(f"adquisicion/label_{i}", "")
+            stored = cast(str, self._settings.value(f"adquisicion/label_{i}", ""))
             # A stored default is not a name the operator gave: the box
             # starts empty, with a hint of what goes in it. «EMG1» in the
             # practical whose whole point is telling two muscles apart was
@@ -1227,7 +1227,7 @@ class AcquisitionTab(QWidget):
         self._combo_acc_channel = QComboBox()
         for idx in range(6):
             self._combo_acc_channel.addItem(f"A{idx + 1}", idx)
-        saved_acc_ch = self._settings.value("adquisicion/acc_channel", _ACC_INPUT, type=int)
+        saved_acc_ch = cast(int, self._settings.value("adquisicion/acc_channel", _ACC_INPUT, type=int))
         self._combo_acc_channel.setCurrentIndex(
             saved_acc_ch if 0 <= saved_acc_ch < 6 else _ACC_INPUT
         )
@@ -1271,7 +1271,7 @@ class AcquisitionTab(QWidget):
             "a bench or a repeat — whatever tells this recording apart."
         ))
         self._edit_student_code.setText(
-            self._settings.value("adquisicion/student_code", "")
+            cast(str, self._settings.value("adquisicion/student_code", ""))
         )
         self._edit_student_code.textChanged.connect(
             lambda v: self._settings.setValue("adquisicion/student_code", v)
@@ -1454,7 +1454,7 @@ class AcquisitionTab(QWidget):
             )
         )
         self._chk_auto.setChecked(
-            self._settings.value("adquisicion/auto_detect", False, type=bool)
+            cast(bool, self._settings.value("adquisicion/auto_detect", False, type=bool))
         )
         self._chk_auto.toggled.connect(self._on_auto_toggled)
         auto_l.addWidget(self._chk_auto)
@@ -1470,9 +1470,9 @@ class AcquisitionTab(QWidget):
         self._spin_k.setRange(1.0, 10.0)
         self._spin_k.setSingleStep(0.5)
         self._spin_k.setValue(
-            self._settings.value(
+            cast(float, self._settings.value(
                 "adquisicion/onset_k", self._profile.onset_k, type=float
-            )
+            ))
         )
         self._spin_k.setFixedWidth(60)
         self._spin_k.setToolTip(
@@ -1858,7 +1858,7 @@ class AcquisitionTab(QWidget):
         from emgteach.devices.arduino import ArduinoDevice
         from emgteach.devices.bitalino import BitalinoDevice
 
-        clase = BitalinoDevice if index == 0 else ArduinoDevice
+        clase: type[Any] = BitalinoDevice if index == 0 else ArduinoDevice
         try:
             gain = getattr(clase, "_GAIN_EMG", None) or clase._GAIN
             amp = clase._V_REF / 2.0 * 1000.0 / gain
@@ -3107,7 +3107,7 @@ class AcquisitionTab(QWidget):
         buf = io.BytesIO()
         segno.make(url, error="m").save(buf, kind="png", scale=scale, border=2)
         pix = QPixmap()
-        pix.loadFromData(buf.getvalue(), "PNG")
+        pix.loadFromData(buf.getvalue())  # the format is read from the data
         return pix
 
     @Slot(int)
@@ -3133,7 +3133,7 @@ class AcquisitionTab(QWidget):
         """Push a downsampled envelope + the live %MVC load to followers."""
         if not self._broadcast.is_running():
             return
-        env_out = []
+        env_out: list[list[float]] = []
         for c in range(self._n_channels):
             a = env[c] if c < len(env) else None
             if a is None or not len(a):
@@ -3919,6 +3919,7 @@ class AcquisitionTab(QWidget):
             return
 
         self._prep_timer.stop()
+        assert self._worker is not None     # the countdown runs while recording
         self._worker.add_marker(rec_start_marker())
         # The recording phase starts from rest — the countdown was rest by
         # construction. The onset detector measures its threshold again
@@ -4451,10 +4452,11 @@ class AcquisitionTab(QWidget):
         placement = self._combo_acc_place.currentData()
         dlg = ForceVelocityPlanDialog(
             self, placement=placement,
-            loads=self._settings.value("adquisicion/fv_loads", "", type=str),
-            reps=self._settings.value("adquisicion/fv_reps", 0, type=int),
-            prep_s=self._settings.value("adquisicion/fv_prep_s", 0.0, type=float),
-            lift_s=self._settings.value("adquisicion/fv_window_s", 0.0, type=float),
+            loads=cast(str, self._settings.value("adquisicion/fv_loads", "", type=str)),
+            reps=cast(int, self._settings.value("adquisicion/fv_reps", 0, type=int)),
+            prep_s=cast(float, self._settings.value("adquisicion/fv_prep_s", 0.0, type=float)),
+            lift_s=cast(float, self._settings.value("adquisicion/fv_window_s", 0.0,
+                                                    type=float)),
         )
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return self._plan_fv_guardado() is not None
@@ -4515,17 +4517,17 @@ class AcquisitionTab(QWidget):
         preparation, seconds of lift — or ``None`` until one is set."""
         from emgteach.gui.widgets.force_velocity_plan_dialog import parse_loads
 
-        loads = parse_loads(self._settings.value("adquisicion/fv_loads", "", type=str))
+        loads = parse_loads(cast(str, self._settings.value("adquisicion/fv_loads", "", type=str)))
         if len(loads) < 2:
             return None
         return (
             loads,
-            max(1, int(self._settings.value(
-                "adquisicion/fv_reps", FV_REPS_DEF, type=int))),
-            float(self._settings.value(
-                "adquisicion/fv_prep_s", FV_PREP_DEF_S, type=float)),
-            float(self._settings.value(
-                "adquisicion/fv_window_s", FV_LIFT_DEF_S, type=float)),
+            max(1, int(cast(int, self._settings.value(
+                "adquisicion/fv_reps", FV_REPS_DEF, type=int)))),
+            float(cast(float, self._settings.value(
+                "adquisicion/fv_prep_s", FV_PREP_DEF_S, type=float))),
+            float(cast(float, self._settings.value(
+                "adquisicion/fv_window_s", FV_LIFT_DEF_S, type=float))),
         )
 
     def _lanzar_estudio_fv(self) -> None:
@@ -5179,7 +5181,7 @@ class AcquisitionTab(QWidget):
         defaults when a measure is missing, and never shrinks below them so a
         weak calibration cannot hide the signal.
         """
-        refs = [self._mvc_ref[c] for c in channels if self._mvc_ref[c]]
+        refs = [r for c in channels if (r := self._mvc_ref[c])]
         raw_peaks = [self._mvc_raw_peak[c] for c in channels
                      if self._mvc_raw_peak[c] > 0]
 
@@ -5255,7 +5257,7 @@ class AcquisitionTab(QWidget):
         self._combo_zoom.blockSignals(False)
 
         # Disable factors whose resulting window would be < 0.5 s
-        model = self._combo_zoom.model()
+        model = cast(QStandardItemModel, self._combo_zoom.model())
         for i, f in enumerate(_ZOOM_FACTORS):
             n = MAX_POINTS // f
             item = model.item(i)

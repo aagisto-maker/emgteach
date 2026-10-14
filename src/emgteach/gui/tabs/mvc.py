@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 import matplotlib
 
@@ -40,6 +41,7 @@ except Exception:
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Slot
+from PySide6.QtGui import QStandardItemModel
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -135,7 +137,7 @@ class MvcTab(QWidget):
         self._settings = settings
         self._worker: MvcWorker | None = None
         self._last_result: dict | None = None
-        self._last_edf_dir: str = self._settings.value("cvm/last_edf_dir", ".")
+        self._last_edf_dir: str = cast(str, self._settings.value("cvm/last_edf_dir", "."))
         # Recording mode and fine-control flag, and whether the explanatory
         # entry screen has already been shown in this session (once per
         # student, reset by "New session").
@@ -1351,8 +1353,9 @@ class MvcTab(QWidget):
         # Clear previous widgets
         while self._y_scale_sidebar_layout.count():
             item = self._y_scale_sidebar_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget:
+                widget.deleteLater()
 
         labels_panel = [f"P{i + 1}" for i in range(len(self._axes_list))]
         for panel_idx, ax in enumerate(self._axes_list):
@@ -1502,7 +1505,7 @@ class MvcTab(QWidget):
         self._combo_zoom.setCurrentIndex(best_idx)
         self._combo_zoom.blockSignals(False)
 
-        model = self._combo_zoom.model()
+        model = cast(QStandardItemModel, self._combo_zoom.model())
         for i, f in enumerate(_ZOOM_FACTORS):
             item = model.item(i)
             if item:

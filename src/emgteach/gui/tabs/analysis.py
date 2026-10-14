@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 import matplotlib
 
@@ -30,7 +31,7 @@ except Exception:
     pass
 from matplotlib.figure import Figure
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QButtonGroup,
@@ -105,7 +106,7 @@ class _SelectorEsquina(QWidget):
             b.setFixedHeight(18)
             b.setText(texto)
             b.setStyleSheet(_PILL_STYLE)
-            b.toggled.connect(lambda on, k=clave: on and self.cambiado.emit(k))
+            b.toggled.connect(lambda on, k=clave: self.cambiado.emit(k) if on else None)
             self._grupo.addButton(b)
             self._botones[clave] = b
             lay.addWidget(b)
@@ -274,7 +275,7 @@ class AnalysisTab(QWidget):
         # Accelerometer channel of the loaded file (name + placement), if any.
         self._acc_channel_name: str | None = None
         self._acc_placement: str = "unknown"
-        self._last_edf_dir: str = self._settings.value("analisis/last_dir", ".")
+        self._last_edf_dir: str = cast(str, self._settings.value("analisis/last_dir", "."))
 
         self._duracion_total: float = 60.0
         self._markers: list[tuple[float, str]] = []
@@ -2096,6 +2097,7 @@ class AnalysisTab(QWidget):
         """Push the analysis metrics to the student followers."""
         if not self._broadcast_on():
             return
+        assert self._broadcast is not None      # _broadcast_on() says so
         self._broadcast.broadcast({
             "t": "results",
             "file": Path(str(r.get("edf_path", ""))).name,
@@ -2117,6 +2119,7 @@ class AnalysisTab(QWidget):
         """Register a file for download and tell the followers it is ready."""
         if not self._broadcast_on():
             return
+        assert self._broadcast is not None      # _broadcast_on() says so
         self._broadcast.register_download(path, data, content_type, filename)
         self._broadcast.broadcast(
             {"t": "download", "kind": kind, "url": path, "name": filename}
@@ -2428,7 +2431,9 @@ class AnalysisTab(QWidget):
     def _dibujar_paneles(self, r: dict) -> None:
         self._fig.clear()
         self._y_twins = {}
-        self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)
+        # Deprecated in matplotlib and missing from its type stubs, but present
+        # in the pinned 3.9.2, where it sets the constrained layout's pads.
+        self._fig.set_constrained_layout_pads(hspace=0.12, h_pad=0.08)  # type: ignore[attr-defined]
 
         # Map checked boxes (in teaching display order) back to their canonical
         # panel indices; the subplot order follows the display order.
@@ -3029,8 +3034,9 @@ class AnalysisTab(QWidget):
     def _rebuild_y_sidebar(self, selected: list[int]) -> None:
         while self._y_scale_sidebar_layout.count():
             item = self._y_scale_sidebar_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget() if item is not None else None
+            if widget:
+                widget.deleteLater()
 
         for panel_idx, ax in zip(selected, self._axes_list):
             slot = QWidget()
@@ -3159,7 +3165,7 @@ class AnalysisTab(QWidget):
         self._combo_zoom.blockSignals(False)
 
     def _update_combo_items(self) -> None:
-        model = self._combo_zoom.model()
+        model = cast(QStandardItemModel, self._combo_zoom.model())
         for i, f in enumerate(_ZOOM_FACTORS):
             item = model.item(i)
             if item is None:

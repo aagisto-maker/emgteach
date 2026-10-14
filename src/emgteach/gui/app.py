@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import (
     QLibraryInfo,
@@ -375,7 +376,8 @@ class MainWindow(QMainWindow):
         self._coach = CoachMark(self)
         #: A guided step emitted while another tab was on screen, waiting for
         #: the analysis tab to come forward.
-        self._paso_pendiente: tuple[str, str, object] | None = None
+        #: (title, body, control, tab) of a step emitted over another tab.
+        self._paso_pendiente: tuple[str, str, QWidget, QWidget] | None = None
         tabs.currentChanged.connect(self._cerrar_paso_guiado)
         tabs.currentChanged.connect(lambda _i: self._paso_guiado_pendiente())
         # And when whatever was on screen (the tour, a «?») closes, the step
@@ -884,7 +886,7 @@ def main(app: QApplication | None = None, guardia=None) -> None:
     install_crash_log()
     _install_qt_message_filter()
     if app is None:
-        app = QApplication.instance() or QApplication(sys.argv)
+        app = cast(QApplication, QApplication.instance() or QApplication(sys.argv))
     app.setApplicationName("EMG Bioinstrumentacion")
     app.setOrganizationName("Bioinstrumentacion")
 
@@ -893,7 +895,7 @@ def main(app: QApplication | None = None, guardia=None) -> None:
     language = resolve_startup_language(settings)
     set_language(language)
     # Kept on the application so it is not garbage-collected.
-    app._qt_translator = install_qt_translations(app, language)
+    app._qt_translator = install_qt_translations(app, language)  # type: ignore[attr-defined]
 
     splash = _make_splash()
     splash.show()

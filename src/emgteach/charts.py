@@ -112,7 +112,7 @@ def draw_contraction_chart(
     if isinstance(view, str):
         if view not in CONTRACTION_VIEWS:
             raise ValueError(f"view must be one of {CONTRACTION_VIEWS}, not {view!r}")
-        paneles = ("series", "relation") if view == "both" else (view,)
+        paneles: tuple[str, ...] = ("series", "relation") if view == "both" else (view,)
     else:
         paneles = tuple(view)
         for p in paneles:

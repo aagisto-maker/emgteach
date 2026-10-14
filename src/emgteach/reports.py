@@ -564,6 +564,7 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
     picos = result.get("task_peak_pct", {}) or {}
     rows = [[tr("Muscle"), tr("Reference"), tr("Source"), tr("Task maximum")]]
     for name, ref, fuente, n_reps in refs:
+        assert ref is not None              # refs keeps only those with one
         pico = picos.get(name)
         rows.append([
             str(name), f"{float(ref):.3f} mV",

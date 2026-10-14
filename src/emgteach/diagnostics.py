@@ -337,7 +337,8 @@ def system_language() -> str:
     try:
         import ctypes
 
-        return "es" if ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x3FF == 0x0A else "en"
+        windll = ctypes.windll  # type: ignore[attr-defined,unused-ignore]
+        return "es" if windll.kernel32.GetUserDefaultUILanguage() & 0x3FF == 0x0A else "en"
     except Exception:
         import locale
 

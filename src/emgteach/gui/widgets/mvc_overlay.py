@@ -655,9 +655,9 @@ class MvcOverlay(QFrame):
         # which are the ones worth reading — run off the edges of the panel.
         if self._mode != "hidden" and self._subtitle:
             x, y, bw, bh = self.message_rect()
-            colour = _FG if self._mode == "done" else _MUTED
+            tinta = _FG if self._mode == "done" else _MUTED
             self._text(p, self._subtitle, x, y, bw, bh, self._SUB_PT,
-                       colour=colour, wrap=True,
+                       colour=tinta, wrap=True,
                        align=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         p.end()
 

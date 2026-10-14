@@ -32,6 +32,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TypedDict
 
 from emgteach.io import ChannelInfo
 
@@ -42,6 +43,14 @@ __all__ = [
     "SignalProfile",
     "get_profile",
 ]
+
+
+class ApdaLimits(TypedDict):
+    """The APDF recommended maxima (% MVC), as keyword arguments."""
+
+    static_limit: float
+    median_limit: float
+    peak_limit: float
 
 
 @dataclass(frozen=True)
@@ -301,7 +310,7 @@ class SignalProfile:
             "f_env": self.f_env,
         }
 
-    def apda_kwargs(self) -> dict[str, float]:
+    def apda_kwargs(self) -> ApdaLimits:
         """APDF recommended maxima (% MVC) as kwargs for
         :func:`emgteach.apda.compute_apdf`."""
         return {

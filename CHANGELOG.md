@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The release publishes the executable that was tried.** A manual run of *Build Windows exe* now attests where its two executables were built, and a version tag no longer builds again: PyInstaller does not reproduce a file byte for byte, so the tag's build was an executable nobody had tried. The release job takes the latest successful manual run on the tag's commit, verifies the attestation of its executable (this workflow, this repository, this commit) and that it says the tag's version, and creates the draft with that file, the run's number and its SHA-256; without such a run it fails and creates nothing. The procedure is in `CONTRIBUTING.md` («Releasing a version»).
 
+- **mypy is enforced.** The 87 type errors are gone — `QSettings` values cast to their type, values that could be `None` narrowed where the code already guaranteed them, missing annotations, and the Qt and library stubs — without changing what the application does, and the CI's mypy step now fails on any new one, as in ecgteach and eegteach.
+
 ### Tests
 
 - What the editor proposes is fixed, to the hundredth, in five cases: one muscle at two sensitivities, two muscles with a task span and names, three lifts (one split at a dip, one with nothing in its window) and a stray burst, and the author's recording of the three manoeuvres. The module gives the same rows, the editor and the module give exactly the same, and importing the module and making a proposal never loads PySide6.
