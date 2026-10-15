@@ -71,10 +71,13 @@ abstract: >-
   bench of the sister applications found in shared code: a phone that joins
   the broadcast late gets the report, the event log survives a crash, the
   default file name carries the seconds, and a file that disappears in
-  mid-recording stops it at once; nothing computed changes.
+  mid-recording stops it at once; nothing computed changes. Version 3.9.0
+  brings back marking by hand while recording: a label and a button, or the
+  M key, put a mark in the file at the moment it is pressed, and the
+  analysis draws those marks apart; nothing computed changes.
 type: software
-version: 3.8.0
-date-released: "2026-10-14"
+version: 3.9.0
+date-released: "2026-10-15"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

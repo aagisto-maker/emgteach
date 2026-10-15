@@ -24,7 +24,15 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.8.0 brings over what the bench of the sister applications,
+`emgteach` v3.9.0 brings back marking by hand while recording: beside the
+list of the last marks, a label to choose — contraction start, contraction
+end, fatigue, rest, other — and «Mark (M)», or the M key, put a mark in the
+EDF+ file and the event log at the moment it is pressed, and the analysis
+draws those marks apart, as a solid teal line with their label. It is
+optional, for experiments that need their own events marked. Nothing computed
+changes. See [`docs/RELEASE_NOTES_v3.9.0.md`](docs/RELEASE_NOTES_v3.9.0.md).
+
+v3.8.0 brings over what the bench of the sister applications,
 ecgteach and eegteach, found in code they share with emgteach: a phone that
 joins the classroom broadcast late now gets the report (a fault of the
 published 3.7.2), the event log is written line by line so a crash keeps it,
@@ -214,10 +222,10 @@ second build.
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
   información → Ejecutar de todos modos»).
 - **Check it is the published file**: the release notes give its SHA-256. In
-  PowerShell, `Get-FileHash .\emgteach-v3.8.0-windows-x64.exe -Algorithm SHA256`
+  PowerShell, `Get-FileHash .\emgteach-v3.9.0-windows-x64.exe -Algorithm SHA256`
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
-  `gh attestation verify emgteach-v3.8.0-windows-x64.exe --repo aagisto-maker/emgteach`
+  `gh attestation verify emgteach-v3.9.0-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that version's
   commit.
 
