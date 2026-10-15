@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Marking by hand while recording is back.** Beside the list of the last marks in the acquisition tab, a label to choose — «Contraction start», «Contraction end», «Fatigue», «Rest», «Other» — and «Mark», or the M key, put a mark at the moment it is pressed. Only while recording: from the first block of signal until the recording ends. It went in 3.0.0 (31 Aug 2026), for a feature nobody pressed in the tab where vertical space is worth the most; it is back for experiments that need their own events marked, and as in ecgteach and eegteach. It takes the row of the list, so the box is no taller, and there is no Delete button, no free-text dialog behind «Other» and no step in the tour. The mark goes the way every mark goes — an EDF+ annotation, the `.marcas.txt` mirror and a line in `.eventos.txt` — written in the language of the interface; the analysis draws manual marks apart, as a solid purple line with their label, and recognises them in either language. With the cursor in a text field the M is typed and does not mark. The labels and how to tell them are in `emgteach.manual_marks`, without Qt; the controls are `gui.widgets.manual_marker`, which the tab only places and tells when a recording runs. The manuals say it is optional and what it is for.
+
 ### Changed
+
+- **`crash.py` recognises the application as ecgteach and eegteach do**, with `isinstance(app, QApplication)`, which also leaves out a `QCoreApplication` with no window to show the notice in. The mypy fix had left `cast(...)` and `is None`. `tools/comparar_hermanos.py` goes from 19 lines apart to 14 in `crash.py`.
 
 - **The fragment editor's reading and proposal live in `emgteach.fragments`, without Qt.** `FragmentSelectionDialog` held both the reading of the EDF (`from_edf`) and the automatic suggestion (`_auto_suggest`, with `_por_levantamiento`, `_reposo` and `_a_la_envolvente`), so the proposal could only be had by opening a window. They are now functions over arrays in a module of their own — `read_channels`, `envelope`, `detect`, `rest_level`, `fit_to_envelope`, `one_per_lift`, `to_hundredths` and `suggest_fragments`, which proposes what the editor proposes on opening, without the names — and the editor calls them. Nothing it proposes changes. `tools/hoja_puesto.py` keeps its `QApplication`: it captures the application's own buttons and panels, and the editor's.
 
