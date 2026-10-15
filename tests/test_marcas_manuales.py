@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from PySide6.QtCore import QSettings, Qt
@@ -257,3 +258,28 @@ def test_marking_is_off_between_recordings(qapp, tab, tmp_path: Path) -> None:
     _pump(qapp, 200)
     assert not any(is_manual_mark(lbl) for _t, lbl in read_edf_markers(path))
 
+
+# ── In the analysis ────────────────────────────────────────────────────────
+
+def test_the_analysis_draws_manual_marks_apart(qapp) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from matplotlib.colors import to_hex
+    from matplotlib.figure import Figure
+
+    from emgteach.gui.tabs import analysis
+
+    fake = SimpleNamespace(_markers=[
+        (1.0, "Inicio (auto)"), (2.0, "REC start"), (3.0, "Fatiga"), (4.0, "Rest"),
+    ])
+    ax = Figure().add_subplot()
+    ax.set_xlim(0, 5)
+    analysis.AnalysisTab._dibujar_marcadores(fake, ax, 0.0, 5.0)
+    color_at = {line.get_xdata()[0]: to_hex(line.get_color()) for line in ax.lines}
+    manual = to_hex(analysis._COLOR_MARCA_MANUAL)
+    assert color_at[3.0] == manual and color_at[4.0] == manual
+    assert color_at[1.0] != manual and color_at[2.0] != manual
+    labels = {t.get_text() for t in ax.texts}
+    assert {"Fatiga", "Rest", "REC start"} <= labels
+    assert "Inicio (auto)" not in labels           # the onsets stay unlabelled

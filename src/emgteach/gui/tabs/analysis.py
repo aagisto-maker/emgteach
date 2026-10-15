@@ -224,6 +224,7 @@ from emgteach.io import (
     read_edf_markers,
     read_edf_metadata,
 )
+from emgteach.manual_marks import is_manual_mark
 from emgteach.modes import (
     DEFAULT_MODE,
     MODE_KINEMATICS,
@@ -251,6 +252,9 @@ from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
 from emgteach.tuning import DERIVED_PREFIX, build_tuned_edf, tuned_path
 from emgteach.workers import AnalysisWorker
+
+#: The marks made by hand while recording, apart from the application's orange.
+_COLOR_MARCA_MANUAL = "#7D3C98"
 
 
 class AnalysisTab(QWidget):
@@ -3012,12 +3016,18 @@ class AnalysisTab(QWidget):
         word. A thin line places the onset; what it was is in the legend of
         the phase markers, which do keep their text, since «REC start» or a
         named manoeuvre is information the line alone does not carry.
+
+        The marks the operator made by hand (:mod:`emgteach.manual_marks`)
+        are drawn apart from those the application wrote: a solid line in
+        another colour, with their label, in either language.
         """
         for t_mark, lbl_mark in self._markers:
             if not (inicio_s <= t_mark <= fin_s):
                 continue
             automatica = "(auto)" in str(lbl_mark)
-            ax.axvline(t_mark, color="#E67E22", linestyle="--",
+            manual = is_manual_mark(lbl_mark)
+            color = _COLOR_MARCA_MANUAL if manual else "#E67E22"
+            ax.axvline(t_mark, color=color, linestyle="-" if manual else "--",
                        linewidth=0.7 if automatica else 1.2,
                        alpha=0.45 if automatica else 0.8)
             if automatica:
@@ -3025,7 +3035,7 @@ class AnalysisTab(QWidget):
             txt = (lbl_mark[:15] + "…") if len(lbl_mark) > 15 else lbl_mark
             ax.text(t_mark, ax.get_ylim()[1], txt,
                     fontsize=7, rotation=90, va="top", ha="right",
-                    color="#E67E22")
+                    color=color)
 
     # ------------------------------------------------------------------
     # Per-panel vertical scale
