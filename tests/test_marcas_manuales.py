@@ -1,4 +1,4 @@
-"""Marking by hand while recording: the label, the «Mark» button and the M key.
+"""Marking by hand while recording: the label, the «Mark (M)» button and the M key.
 
 Gone in 3.0.0, back in 3.9.0 for experiments that need their own events
 marked, as in ecgteach and eegteach. A mark by hand goes the way every other
@@ -20,7 +20,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QPoint, QSettings, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -62,7 +62,7 @@ def test_the_five_labels_exist_in_both_languages() -> None:
     assert MANUAL_MARK_LABELS == tuple(_SPANISH)
     for english, spanish in _SPANISH.items():
         assert i18n._ES.get(english) == spanish, english
-    assert i18n._ES["Mark"] == "Marcar"           # the button: an infinitive
+    assert i18n._ES["Mark (M)"] == "Marcar (M)"   # the button: an infinitive, and its key
     assert MARK_KEY == "M"
 
 
@@ -283,3 +283,213 @@ def test_the_analysis_draws_manual_marks_apart(qapp) -> None:
     labels = {t.get_text() for t in ax.texts}
     assert {"Fatiga", "Rest", "REC start"} <= labels
     assert "Inicio (auto)" not in labels           # the onsets stay unlabelled
+
+
+def test_the_manual_colour_is_no_trace_s_colour() -> None:
+    """In panel 2 the normalised envelope was the purple the manual marks had
+    (bench of 15 October 2026): the marks were lost in it. No module that
+    draws a panel or a chart may use the manual marks' colour."""
+    import re
+
+    import emgteach
+    from emgteach.gui.tabs import analysis
+
+    manual = analysis._COLOR_MARCA_MANUAL.upper()
+    pkg = Path(emgteach.__file__).parent
+    for module in ("figures.py", "charts.py", "mvc.py", "panels.py"):
+        colours = {c.upper() for c in re.findall(r"#[0-9A-Fa-f]{6}\b",
+                                                 (pkg / module).read_text(encoding="utf-8"))}
+        assert manual not in colours, module
+    assert manual != "#E67E22"                     # the onsets and the phases
+
+
+# ── Out of a text field, back to the M ─────────────────────────────────────
+
+@pytest.fixture
+def shown_tab(qapp, tmp_path: Path):
+    """An acquisition tab on screen and active, marking as if recording, with
+    the marks it would send collected."""
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    settings = QSettings("emgteach-test", "marcas-foco")
+    settings.clear()
+    settings.setValue("app/mode", "single")
+    tab = AcquisitionTab(LoggerWidget(), settings)
+    tab.apply_mode("single", False)
+    tab.resize(1366, 768)
+    tab.show()
+    tab.activateWindow()
+    QTest.qWaitForWindowExposed(tab)
+    tab.marked = []
+    tab._marcador.marked.connect(tab.marked.append)
+    tab._marcador.set_recording(True)
+    yield tab
+    tab._marcador.set_recording(False)
+    tab.cleanup()
+    tab.close()
+    _pump(qapp, 50)
+
+
+def _type_in_the_identifier(qapp, tab) -> None:
+    field = tab._edit_student_code
+    assert field.isVisible() and field.isEnabled()
+    field.setFocus()
+    _until(qapp, field.hasFocus, 2.0, "the identifier to take the focus")
+    QTest.keyClicks(field, "mmm")
+    assert field.text() == "mmm" and tab.marked == []
+
+
+@pytest.mark.parametrize("way_out", [Qt.Key.Key_Return, Qt.Key.Key_Escape],
+                         ids=["Enter", "Esc"])
+def test_enter_or_esc_in_a_field_gives_the_m_back(qapp, shown_tab, way_out) -> None:
+    _type_in_the_identifier(qapp, shown_tab)
+    QTest.keyClick(shown_tab._edit_student_code, way_out)
+    _until(qapp, lambda: not shown_tab._edit_student_code.hasFocus(), 2.0,
+           "the field to let go of the focus")
+    QTest.keyClick(QApplication.focusWidget() or shown_tab, Qt.Key.Key_M)
+    assert len(shown_tab.marked) == 1
+    assert shown_tab._edit_student_code.text() == "mmm"
+
+
+def _plots_box(tab):
+    from PySide6.QtWidgets import QGroupBox
+
+    box = tab._plot_raw.parentWidget()
+    while not isinstance(box, QGroupBox):
+        box = box.parentWidget()
+    return box
+
+
+@pytest.mark.parametrize("where", ["plot", "plots box"])
+def test_a_click_in_the_live_plots_gives_the_m_back(qapp, shown_tab, where) -> None:
+    """The bench: «clicked on the live plot and the M still did not mark».
+
+    A click on the plot itself hands the focus to the plot, which takes it.
+    A click on what surrounds it — the box, its title, the legend — reached no
+    widget that takes the focus, so the field kept it: the tab takes it now.
+    """
+    _type_in_the_identifier(qapp, shown_tab)
+    if where == "plot":
+        target = shown_tab._plot_raw.viewport()
+        pos = target.rect().center()
+    else:
+        target = _plots_box(shown_tab)
+        assert target.focusPolicy() == Qt.FocusPolicy.NoFocus
+        pos = target.rect().topLeft() + QPoint(4, 4)
+        assert target.childAt(pos) is None, "the click must land on the box itself"
+    QTest.mouseClick(target, Qt.MouseButton.LeftButton, pos=pos)
+    _until(qapp, lambda: not shown_tab._edit_student_code.hasFocus(), 2.0,
+           "the field to let go of the focus")
+    QTest.keyClick(QApplication.focusWidget() or shown_tab, Qt.Key.Key_M)
+    assert len(shown_tab.marked) == 1
+    assert shown_tab._edit_student_code.text() == "mmm"
+
+def test_the_button_says_its_key(qapp) -> None:
+    from PySide6.QtWidgets import QWidget
+
+    from emgteach.gui.widgets.manual_marker import ManualMarker
+
+    owner = QWidget()
+    marker = ManualMarker(owner)
+    assert marker.button.text() == tr("Mark (M)")
+    previous = i18n.get_language()
+    i18n.set_language("es")
+    try:
+        assert tr("Mark (M)") == "Marcar (M)"
+    finally:
+        i18n.set_language(previous)
+    owner.deleteLater()
+
+
+def test_the_list_of_marks_shows_two_lines(qapp, shown_tab) -> None:
+    """With the marking beside it, a long line brought up the horizontal bar,
+    which took the second line (bench of 15 October 2026)."""
+    lst = shown_tab._list_markers
+    for i in range(2):
+        shown_tab._on_marker_added(10.0 + i, "Link: 12 frame(s) lost — " + "x" * 80)
+    _pump(qapp, 50)
+    assert lst.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    assert lst.count() == 2
+    second = lst.visualItemRect(lst.item(1))
+    assert second.bottom() <= lst.viewport().height(), (second, lst.viewport().height())
+
+
+# ── The live plot, during a recording ──────────────────────────────────────
+
+@pytest.fixture
+def recording(qapp, tab, tmp_path: Path):
+    """The tab on screen and active, recording the simulated board."""
+    tab.resize(1366, 768)
+    tab.show()
+    tab.activateWindow()
+    QTest.qWaitForWindowExposed(tab)
+    _start(qapp, tab, tmp_path / "grafica.edf")
+    _until(qapp, tab._marcador.is_recording, 5.0, "the marking to be offered")
+    tab.marked = []
+    tab._marcador.marked.connect(tab.marked.append)
+    yield tab
+    _stop(qapp, tab)
+    tab.close()
+
+
+def _manual_marks(tab) -> list[str]:
+    return [lbl for _t, lbl in tab._marker_events if is_manual_mark(lbl)]
+
+
+def test_a_click_inside_the_live_plot_while_recording_leaves_the_m_to_mark(
+    qapp, recording
+) -> None:
+    """The bench of 15 October 2026, step by step: recording, typing in the
+    test identifier, a click in the middle of the live plot, M. On Windows'
+    own platform the M then marked nothing; here, offscreen, the M got through
+    the plot either way, so what fails without the fix is the focus: the plot
+    no longer keeps it, the tab takes it."""
+    tab = recording
+    _type_in_the_identifier(qapp, tab)
+    plot = tab._plot_raw
+    QTest.mouseClick(plot.viewport(), Qt.MouseButton.LeftButton,
+                     pos=plot.viewport().rect().center())
+    _until(qapp, lambda: not tab._edit_student_code.hasFocus(), 2.0,
+           "the field to let go of the focus")
+    focus = QApplication.focusWidget()
+    assert focus not in (plot, plot.viewport()), "the live plot kept the focus"
+    QTest.keyClick(focus or tab, Qt.Key.Key_M)
+    _until(qapp, lambda: len(_manual_marks(tab)) == 1, 2.0, "the mark")
+    assert tab._edit_student_code.text() == "mmm"
+
+
+def test_an_m_that_reaches_the_live_plot_marks(qapp, recording) -> None:
+    """Should a platform hand the key press to the plot itself, bypassing the
+    shortcut, the plot passes it on as a mark."""
+    from PySide6.QtCore import QEvent
+    from PySide6.QtGui import QKeyEvent
+
+    tab = recording
+    # The shortcut off: the key press is what the plot gets, as on a platform
+    # where the shortcut does not take it first.
+    tab._marcador.shortcut.setEnabled(False)
+    press = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_M,
+                      Qt.KeyboardModifier.NoModifier, "m")
+    QApplication.sendEvent(tab._plot_env.viewport(), press)
+    _until(qapp, lambda: len(_manual_marks(tab)) == 1, 2.0, "the mark")
+    assert press.isAccepted()
+
+
+def test_the_live_plots_still_zoom_with_the_wheel(qapp, shown_tab) -> None:
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QWheelEvent
+
+    for plot in (shown_tab._plot_raw, shown_tab._plot_env):
+        assert plot.focusPolicy() == Qt.FocusPolicy.NoFocus
+        box = plot.getViewBox()
+        before = [list(r) for r in box.viewRange()]
+        viewport = plot.viewport()
+        centre = viewport.rect().center()
+        wheel = QWheelEvent(QPointF(centre), QPointF(viewport.mapToGlobal(centre)),
+                            QPoint(0, 0), QPoint(0, 120), Qt.MouseButton.NoButton,
+                            Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase,
+                            False)
+        QApplication.sendEvent(viewport, wheel)
+        qapp.processEvents()
+        assert [list(r) for r in box.viewRange()] != before, "the wheel no longer zooms"

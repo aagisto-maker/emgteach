@@ -382,15 +382,16 @@ con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
   con su explicación («umbral = reposo + k × ruido; lo habitual es 3»). Una *k*
   menor detecta esfuerzos más suaves y admite más falsas alarmas. (Significado en
   §5.6.)
-- **Marcado manual**, opcional: mientras se graba, el botón **Marcar** o la
+- **Marcado manual**, opcional: mientras se graba, el botón **Marcar (M)** o la
   tecla **M** ponen una marca con la etiqueta elegida al lado («Inicio
   contracción», «Fin contracción», «Fatiga», «Reposo», «Otro») en el instante en
   que se pulsa. Es para experimentos con eventos propios que la aplicación no
   puede saber; las prácticas no lo necesitan, porque las maniobras se reconocen
   después en el editor de fragmentos, que rellena solo qué músculo llevó cada
-  una. Con el cursor en un campo de texto la M se escribe y no marca. En el
-  análisis, las marcas manuales se dibujan en morado y con su etiqueta, aparte
-  de las que escribe la aplicación.
+  una. Con el cursor en un campo de texto la M se escribe y no marca; Intro, Esc
+  o un clic en cualquier otro sitio, también en la gráfica en vivo, devuelven la
+  M. En el análisis, las marcas manuales se dibujan en verde azulado y con su
+  etiqueta, aparte de las que escribe la aplicación.
 - Las marcas se dibujan en vivo sobre las gráficas y quedan registradas como
   **anotaciones** en el EDF, igual que las fases de la sesión (calentamiento,
   cada repetición de calibración, preparación, registro).

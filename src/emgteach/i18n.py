@@ -1049,7 +1049,7 @@ _ES = {
     "Contraction end": "Fin contracción",
     "Rest": "Reposo",
     "Other": "Otro",
-    "Mark": "Marcar",
+    "Mark (M)": "Marcar (M)",
     "Label of the next mark.": "Etiqueta de la próxima marca.",
     "Marks this moment of the recording with the selected label (key M). "
     "Only while recording.":

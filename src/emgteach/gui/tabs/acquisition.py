@@ -80,7 +80,11 @@ from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
-from emgteach.gui.widgets.manual_marker import ManualMarker
+from emgteach.gui.widgets.manual_marker import (
+    ManualMarker,
+    give_back_focus,
+    hand_the_m_over,
+)
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -872,6 +876,12 @@ class AcquisitionTab(QWidget):
         self._broadcast.clients_changed.connect(self._on_broadcast_clients)
 
         self._build_ui()
+        # Out of a text field and back to the M: Enter, Esc or a click
+        # anywhere else (see emgteach.gui.widgets.manual_marker).
+        give_back_focus(self)
+        # The live plots keep no focus, so a click in them leaves the M to
+        # the tab (bench of 15 October 2026, on Windows).
+        hand_the_m_over([self._plot_raw, self._plot_env, self._plot_acc], self._marcador)
 
     # ------------------------------------------------------------------
     # Log helpers — write to the local logger AND the shared one
@@ -1508,6 +1518,15 @@ class AcquisitionTab(QWidget):
             QAbstractItemView.SelectionMode.NoSelection
         )
         self._list_markers.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        # Two lines, not one and a scroll bar: since it shares its row with
+        # the marking, a long line no longer fit and the horizontal bar took
+        # the second line's place (bench of 15 October 2026). Long lines end
+        # in «…»; the whole list is in the recording.
+        self._list_markers.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._list_markers.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._list_markers.setTextElideMode(Qt.TextElideMode.ElideRight)
         self._list_markers.setToolTip(
             tr("The most recent marks. They all travel in the EDF.")
         )

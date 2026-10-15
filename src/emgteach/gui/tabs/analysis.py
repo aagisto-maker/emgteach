@@ -253,8 +253,11 @@ from emgteach.reports import build_session_report
 from emgteach.tuning import DERIVED_PREFIX, build_tuned_edf, tuned_path
 from emgteach.workers import AnalysisWorker
 
-#: The marks made by hand while recording, apart from the application's orange.
-_COLOR_MARCA_MANUAL = "#7D3C98"
+#: The marks made by hand while recording. Teal: a colour no trace of the
+#: panels uses — the purple of 3.9.0 was the normalised envelope's, and the
+#: marks disappeared into it in panel 2 (bench of 15 October 2026) — and apart
+#: from the orange of the onsets and the phases.
+_COLOR_MARCA_MANUAL = "#00897B"
 
 
 class AnalysisTab(QWidget):
