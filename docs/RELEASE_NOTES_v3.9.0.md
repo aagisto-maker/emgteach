@@ -70,7 +70,11 @@ in five cases.
 **At the bench**: with the simulated board, run #111 of *Build Windows exe*
 (15 October 2026): the M after Enter, Esc and a click, in the plot and out of
 it; «Mark (M)» whole at 100 % and 125 % scaling; manual marks teal in the
-analysis; two lines in the list. With the real board: _(added after the bench check)_.
+analysis; two lines in the list. With the real board, the executable
+released (manual run #112, 15 October 2026): the self-test; the simulated
+diagnosis (1000 Hz, no CRC errors, no frame lost); «About» saying 3.9.0; the
+notice on stopping read whole; and five marks, by the M and by the button, in
+the event log at the right times.
 
 ## The Windows executable
 
@@ -81,12 +85,17 @@ attests where it was built.
 
 - **It is not signed.** Windows may show «Windows protected your PC»: choose
   *More info → Run anyway*.
+- **Chrome may block the download as dangerous**: open Downloads and choose
+  Keep, or use another browser. The SHA-256 below tells you the file is the
+  one released.
 - **Its SHA-256** is at the end of these notes. In PowerShell,
   `Get-FileHash .\emgteach-v3.9.0-windows-x64.exe -Algorithm SHA256` has to
   print the same value.
 - **To check where it was built**:
   `gh attestation verify emgteach-v3.9.0-windows-x64.exe --repo aagisto-maker/emgteach`.
-- **VirusTotal**: _(link to the analysis, added when the draft is published)_.
+- **VirusTotal:** [scan of the executable](https://www.virustotal.com/gui/file/c3df3814d92c1aa761cdb94602c09448fc6d73006e56405941320b19bc0ee264).
+  The two detections (Bkav and McAfee's cloud reputation) are the usual false
+  positives for unsigned PyInstaller executables.
 
 The Zenodo record archives the source code of the tag, not the executable.
 
