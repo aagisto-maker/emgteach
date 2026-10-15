@@ -402,3 +402,14 @@ def test_the_button_says_its_key(qapp) -> None:
     owner.deleteLater()
 
 
+def test_the_list_of_marks_shows_two_lines(qapp, shown_tab) -> None:
+    """With the marking beside it, a long line brought up the horizontal bar,
+    which took the second line (bench of 15 October 2026)."""
+    lst = shown_tab._list_markers
+    for i in range(2):
+        shown_tab._on_marker_added(10.0 + i, "Link: 12 frame(s) lost — " + "x" * 80)
+    _pump(qapp, 50)
+    assert lst.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    assert lst.count() == 2
+    second = lst.visualItemRect(lst.item(1))
+    assert second.bottom() <= lst.viewport().height(), (second, lst.viewport().height())

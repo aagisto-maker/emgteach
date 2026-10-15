@@ -1511,6 +1511,15 @@ class AcquisitionTab(QWidget):
             QAbstractItemView.SelectionMode.NoSelection
         )
         self._list_markers.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        # Two lines, not one and a scroll bar: since it shares its row with
+        # the marking, a long line no longer fit and the horizontal bar took
+        # the second line's place (bench of 15 October 2026). Long lines end
+        # in «…»; the whole list is in the recording.
+        self._list_markers.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._list_markers.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._list_markers.setTextElideMode(Qt.TextElideMode.ElideRight)
         self._list_markers.setToolTip(
             tr("The most recent marks. They all travel in the EDF.")
         )
