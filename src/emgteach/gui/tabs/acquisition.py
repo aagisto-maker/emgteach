@@ -80,6 +80,7 @@ from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
+from emgteach.gui.widgets.manual_marker import ManualMarker
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -1422,18 +1423,14 @@ class AcquisitionTab(QWidget):
 
         # — Event markers —
         #
-        # Marking by hand during the recording is gone. It was never used:
-        # the recording runs faster than anyone can label it, and
-        # the honest place to name a stretch is afterwards, over a signal you
-        # can see. What is left is the detection the application does by
-        # itself — a checkbox and its threshold — and a short list of what it
-        # has found, so the operator can see it working without reading the
-        # log. With the box unticked no marks are written at all.
-        #
-        # The row that went: the preset label combo, the MARK button, the
-        # Delete button and the M shortcut. Four controls and a scrolling list
-        # for a feature nobody pressed, in the tab where vertical space is
-        # worth the most: it is the one with the live plots in it.
+        # Two rows: the detection the application does by itself — a
+        # checkbox and its threshold — and beside the short list of what has
+        # been marked, the marking by hand. That went in 3.0.0 for a feature
+        # nobody pressed, in the tab where vertical space is worth the most;
+        # it is back in 3.9.0 for experiments that need their own events
+        # marked, as in ecgteach and eegteach. It shares the list's row, so
+        # the box is no taller than before; there is no Delete button and no
+        # list to scroll, the two things that made it a table.
         grp_markers = QGroupBox(tr("Event markers"))
         add_help(grp_markers, "acq.markers")
         markers_outer = QVBoxLayout(grp_markers)
@@ -1512,9 +1509,16 @@ class AcquisitionTab(QWidget):
         )
         self._list_markers.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._list_markers.setToolTip(
-            tr("The most recent onsets detected. They all travel in the EDF.")
+            tr("The most recent marks. They all travel in the EDF.")
         )
-        markers_outer.addWidget(self._list_markers)
+        marks_row = QHBoxLayout()
+        marks_row.setSpacing(6)
+        marks_row.addWidget(self._list_markers, stretch=1)
+        # The label, «Mark» and the M key: emgteach.gui.widgets.manual_marker.
+        self._marcador = ManualMarker(self)
+        self._marcador.marked.connect(self._on_marca_manual)
+        marks_row.addWidget(self._marcador)
+        markers_outer.addLayout(marks_row)
         markers_outer.addStretch()
 
         row_actions.addWidget(grp_markers, stretch=1)
@@ -2567,6 +2571,10 @@ class AcquisitionTab(QWidget):
         if self._conexion_timer.isActive():
             self._conexion_timer.stop()
             self._lbl_estado.setText(tr("Status: recording…"))
+            # Marking by hand from the first block, not from the button:
+            # before it there is no recording for a mark to be in.
+            self._marcador.set_recording(True)
+            self._log(tr("Press M to mark quickly with the selected label."))
             # The real BITalino answered: the next recording needs it switched
             # off and on. Not the simulated board, and not the Arduino (USB
             # cable, no Bluetooth link; the bench saw it only on the BITalino).
@@ -5001,6 +5009,12 @@ class AcquisitionTab(QWidget):
 
 
 
+    @Slot(str)
+    def _on_marca_manual(self, etiqueta: str) -> None:
+        """A mark by hand: the worker writes it like any other, at its time."""
+        if self._worker is not None and self._worker.isRunning():
+            self._worker.add_marker(etiqueta)
+
     @Slot(float, str)
     def _on_marker_added(self, tiempo: float, etiqueta: str) -> None:
         # The marker is reflected in the "Event log" (log).
@@ -5062,6 +5076,7 @@ class AcquisitionTab(QWidget):
 
     def _restaurar_controles(self) -> None:
         self._marcar_si_no_respondio()
+        self._marcador.set_recording(False)
         self._btn_grabar.setChecked(False)
         self._btn_grabar.setText(tr("Start recording"))
         self._btn_conectar.setEnabled(True)
@@ -5545,11 +5560,9 @@ class AcquisitionTab(QWidget):
         # for, not a fine adjustment, so it is offered at every level.
         self._box_aula.setVisible(True)
 
-        # Offered at every level, and not as a fine adjustment: it is the only
-        # thing left in the Event markers box now that marking by hand is
-        # gone, and hiding it in the practicals would leave an empty box and a
-        # recording with no marks in it at all. Marks are not a refinement —
-        # the analysis finds each effort by them.
+        # Offered at every level, and not as a fine adjustment: hiding it in
+        # the practicals would leave a recording with no onsets in it at all.
+        # Marks are not a refinement — the analysis finds each effort by them.
         self._box_autoonset.setVisible(True)
         # Fine controls: the warning/danger thresholds, the onset sensitivity
         # k, and the four ways of moving the view by hand (Reset scales and

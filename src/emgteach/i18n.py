@@ -73,6 +73,17 @@ def tr(text: str) -> str:
     return text
 
 
+def in_every_language(text: str) -> tuple[str, ...]:
+    """*text* as each language writes it: the English key, then its Spanish.
+
+    For what is written into a file in the language of the moment and read
+    back later in whichever one the reader has chosen: a recording made in
+    Spanish is still recognised by an interface in English.
+    """
+    es = _ES.get(text, text)
+    return (text,) if es == text else (text, es)
+
+
 def resolve_startup_language(settings: Any = None) -> str:
     """Decide the start-up language.
 
@@ -1032,6 +1043,22 @@ _ES = {
         "La grabación se detuvo antes de que la placa respondiera; no se "
         "grabó nada.",
     "Event markers": "Marcadores de eventos",
+    # The manual marks (emgteach.manual_marks), written into the recording
+    # in the language of the moment.
+    "Contraction start": "Inicio contracción",
+    "Contraction end": "Fin contracción",
+    "Rest": "Reposo",
+    "Other": "Otro",
+    "Mark": "Marcar",
+    "Label of the next mark.": "Etiqueta de la próxima marca.",
+    "Marks this moment of the recording with the selected label (key M). "
+    "Only while recording.":
+        "Marca este momento de la grabación con la etiqueta seleccionada "
+        "(tecla M). Solo mientras se graba.",
+    "Press M to mark quickly with the selected label.":
+        "Pulse M para marcar rápidamente con la etiqueta seleccionada.",
+    "The most recent marks. They all travel in the EDF.":
+        "Las últimas marcas. Todas viajan dentro del EDF.",
     "Fatigue": "Fatiga",
     # The fragment editor's suggested manoeuvres (EMG_PROFILE.marker_presets).
     # They reach tr() as a variable, so the literal scan cannot see them;
@@ -1759,15 +1786,9 @@ _ES = {
     'The tuned recording cannot replace the one it comes from: tuning discards signal, so its source has to stay.': 'El registro afinado no puede sustituir a aquel del que sale: afinar descarta señal, así que su origen tiene que quedarse.',
     'Could not write the tuned recording: {err}': 'No se pudo escribir el registro afinado: {err}',
     'Tuned recording saved: {name} — {kept}/{total} calibration repetition(s), {secs:.1f} s of {full:.1f} s of the task. The original is untouched.': 'Registro afinado guardado: {name} — {kept}/{total} repetición(es) de calibración, {secs:.1f} s de {full:.1f} s de la tarea. El original queda intacto.',
-    'The most recent onsets detected. They all travel in the EDF.': 'Los últimos inicios detectados. Todos viajan dentro del EDF.',
-    'Marks are put on by themselves': 'Las marcas se ponen solas',
-    'With this ticked the application timestamps each contraction onset as it finds it — the threshold is the resting level plus k standard deviations, and k is the knob beside it. The marks travel inside the EDF, so each effort can be found again during the analysis. Unticked, nothing is written: marking by hand during a recording asks the operator to keep up with a signal that does not wait.': "Con esto marcado, la aplicación anota el instante de cada inicio de "
-        "contracción según lo encuentra: el umbral es el nivel de reposo más "
-        "k desviaciones típicas, y k es el mando de al lado. Las marcas "
-        "viajan dentro del EDF, así que cada esfuerzo se vuelve a encontrar "
-        "en el análisis. Sin marcar, no se escribe ninguna: marcar a mano "
-        "durante un registro es pedirle al operador que siga el ritmo de una "
-        "señal que no espera.",
+    'Marks: the onsets, and your own': 'Marcas: los inicios, y las suyas',
+    'With «Auto-onset» ticked the application timestamps each contraction onset as it finds it — the threshold is the resting level plus k standard deviations, and k is the knob beside it. Unticked, it writes none. Beside the list, «Mark» and the M key put a mark of your own, with the label chosen, at the moment of the recording you are in; they are optional, for experiments that need their own events marked. Every mark travels inside the EDF and is shown in the analysis.':
+        'Con «Auto-inicio» marcado, la aplicación anota el instante de cada inicio de contracción según lo encuentra: el umbral es el nivel de reposo más k desviaciones típicas, y k es el mando de al lado. Sin marcar, no anota ninguno. Junto a la lista, «Marcar» y la tecla M ponen una marca suya, con la etiqueta elegida, en el instante del registro en que está; son opcionales, para experimentos que necesitan marcar sus propios eventos. Todas las marcas viajan dentro del EDF y se ven en el análisis.',
     '2. Envelope (no calibration in this recording)': '2. Envolvente (este registro no trae calibración)',
     '3. Signal as % MVC — not available': '3. Señal en % CVM — no disponible',
     'Muscle load computed over the recording phase ({d:.2f} s of {full:.2f} s); the calibration and the pause are outside it.': 'Carga muscular calculada sobre la fase de registro ({d:.2f} s de {full:.2f} s); la calibración y la pausa quedan fuera.',
