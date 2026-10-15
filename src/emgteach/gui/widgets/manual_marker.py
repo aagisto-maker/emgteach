@@ -44,7 +44,9 @@ class ManualMarker(QWidget):
         self.combo.setToolTip(tr("Label of the next mark."))
         layout.addWidget(self.combo)
 
-        self.button = QPushButton(tr("Mark"))
+        # The key on the button itself: said once in the log when the
+        # recording starts, it scrolled out of sight before anyone needed it.
+        self.button = QPushButton(tr("Mark (M)"))
         self.button.setToolTip(tr(
             "Marks this moment of the recording with the selected label (key M). "
             "Only while recording."

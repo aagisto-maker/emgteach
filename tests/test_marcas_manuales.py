@@ -1,4 +1,4 @@
-"""Marking by hand while recording: the label, the «Mark» button and the M key.
+"""Marking by hand while recording: the label, the «Mark (M)» button and the M key.
 
 Gone in 3.0.0, back in 3.9.0 for experiments that need their own events
 marked, as in ecgteach and eegteach. A mark by hand goes the way every other
@@ -62,7 +62,7 @@ def test_the_five_labels_exist_in_both_languages() -> None:
     assert MANUAL_MARK_LABELS == tuple(_SPANISH)
     for english, spanish in _SPANISH.items():
         assert i18n._ES.get(english) == spanish, english
-    assert i18n._ES["Mark"] == "Marcar"           # the button: an infinitive
+    assert i18n._ES["Mark (M)"] == "Marcar (M)"   # the button: an infinitive, and its key
     assert MARK_KEY == "M"
 
 
@@ -366,4 +366,21 @@ def test_a_click_in_the_live_plots_gives_the_m_back(qapp, shown_tab, where) -> N
     QTest.keyClick(QApplication.focusWidget() or shown_tab, Qt.Key.Key_M)
     assert len(shown_tab.marked) == 1
     assert shown_tab._edit_student_code.text() == "mmm"
+
+def test_the_button_says_its_key(qapp) -> None:
+    from PySide6.QtWidgets import QWidget
+
+    from emgteach.gui.widgets.manual_marker import ManualMarker
+
+    owner = QWidget()
+    marker = ManualMarker(owner)
+    assert marker.button.text() == tr("Mark (M)")
+    previous = i18n.get_language()
+    i18n.set_language("es")
+    try:
+        assert tr("Mark (M)") == "Marcar (M)"
+    finally:
+        i18n.set_language(previous)
+    owner.deleteLater()
+
 
