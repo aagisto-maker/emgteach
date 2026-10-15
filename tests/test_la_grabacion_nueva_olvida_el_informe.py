@@ -132,13 +132,14 @@ global.requestAnimationFrame = () => {};
 let sock;
 global.WebSocket = class { constructor() { sock = this; } close() {} };
 new Function(script.replace("{{WS_PORT}}", "1"))();
-const frames = JSON.parse(fs.readFileSync(0, "utf8"));
+const frames = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
 const out = [];
 for (const f of frames) {
   sock.onmessage({ data: JSON.stringify(f) });
   out.push({ shown: els.results.style.display, metrics: els.resMetrics.innerHTML !== "", button: !!els.dl_report });
 }
-console.log(JSON.stringify(out));
+fs.writeFileSync(process.argv[4], JSON.stringify(out));
+process.exit(0);
 """
 
 
@@ -146,11 +147,21 @@ def _page(tmp_path: Path, frames: list[dict]) -> list[dict]:
     """What the page shows after each of *frames*."""
     harness = tmp_path / "pagina.js"
     harness.write_text(_BROWSER, encoding="utf-8")
-    out = subprocess.run(
-        ["node", str(harness), str(PAGE)], input=json.dumps(frames),
-        capture_output=True, text=True, encoding="utf-8", timeout=30, check=True,
-    )
-    return json.loads(out.stdout)
+    sent = tmp_path / "tramas.json"
+    sent.write_text(json.dumps(frames), encoding="utf-8")
+    shown = tmp_path / "pagina.json"
+    # Files, not pipes: on the Windows runners the read of node's stdout
+    # outlived node now and then (four times, 14-15 Oct 2026). With no pipe
+    # there is nothing for another process to hold open, and the wait is
+    # for node itself.
+    with open(tmp_path / "pagina.err", "w", encoding="utf-8") as err:
+        run = subprocess.run(
+            ["node", str(harness), str(PAGE), str(sent), str(shown)],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=err,
+            timeout=60, check=False,
+        )
+    assert run.returncode == 0, (tmp_path / "pagina.err").read_text(encoding="utf-8")
+    return json.loads(shown.read_text(encoding="utf-8"))
 
 
 _RESULTS = {"t": "results", "file": "a.edf", "mnf": 80.0, "mdf": 70.0, "mdf_slope": -0.1,
