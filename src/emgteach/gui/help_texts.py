@@ -83,15 +83,16 @@ _TEXTS = {
         ),
     ),
     "acq.markers": lambda: (
-        tr("Marks are put on by themselves"),
+        tr("Marks: the onsets, and your own"),
         tr(
-            "With this ticked the application timestamps each contraction "
-            "onset as it finds it — the threshold is the resting level plus "
-            "k standard deviations, and k is the knob beside it. The marks "
-            "travel inside the EDF, so each effort can be found again during "
-            "the analysis. Unticked, nothing is written: marking by hand "
-            "during a recording asks the operator to keep up with a signal "
-            "that does not wait."
+            "With «Auto-onset» ticked the application timestamps each "
+            "contraction onset as it finds it — the threshold is the resting "
+            "level plus k standard deviations, and k is the knob beside it. "
+            "Unticked, it writes none. Beside the list, «Mark» and the M key "
+            "put a mark of your own, with the label chosen, at the moment of "
+            "the recording you are in; they are optional, for experiments "
+            "that need their own events marked. Every mark travels inside the "
+            "EDF and is shown in the analysis."
         ),
     ),
     "acq.plots": lambda: (
