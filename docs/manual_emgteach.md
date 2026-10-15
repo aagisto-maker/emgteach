@@ -308,14 +308,15 @@ channels the raw plot is **stacked**, one lane per muscle, and the envelopes
   *k* sits beside it with its explanation («threshold = rest + k × noise; 3 is
   usual»). A smaller *k* catches lighter efforts and admits more false alarms
   (§5.6).
-- **Manual marking**, optional: while recording, the **Mark** button or the
+- **Manual marking**, optional: while recording, the **Mark (M)** button or the
   **M** key puts a mark with the label chosen beside it («Contraction start»,
   «Contraction end», «Fatigue», «Rest», «Other») at the moment it is pressed. It
   is for experiments with events of their own that the application cannot know
   about; the practicals do not need it, since manoeuvres are recognised
   afterwards in the fragment editor, which fills in which muscle led each one.
-  With the cursor in a text field the M is typed and does not mark. In the
-  analysis, manual marks are drawn in purple with their label, apart from those
+  With the cursor in a text field the M is typed and does not mark; Enter, Esc
+  or a click anywhere else, the live plot included, gives the M back. In the
+  analysis, manual marks are drawn in teal with their label, apart from those
   the application writes.
 - Markers are drawn live and stored as **EDF+ annotations**, like the phases of
   the session (warm-up, each calibration repetition, preparation, recording).
