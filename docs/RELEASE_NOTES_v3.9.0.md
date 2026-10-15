@@ -93,7 +93,9 @@ attests where it was built.
   print the same value.
 - **To check where it was built**:
   `gh attestation verify emgteach-v3.9.0-windows-x64.exe --repo aagisto-maker/emgteach`.
-- **VirusTotal**: _(link to the analysis, added when the draft is published)_.
+- **VirusTotal:** [scan of the executable](https://www.virustotal.com/gui/file/c3df3814d92c1aa761cdb94602c09448fc6d73006e56405941320b19bc0ee264).
+  The two detections (Bkav and McAfee's cloud reputation) are the usual false
+  positives for unsigned PyInstaller executables.
 
 The Zenodo record archives the source code of the tag, not the executable.
 
