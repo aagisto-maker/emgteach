@@ -80,7 +80,7 @@ from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
 from emgteach.gui.widgets.logger import LoggerWidget
-from emgteach.gui.widgets.manual_marker import ManualMarker
+from emgteach.gui.widgets.manual_marker import ManualMarker, give_back_focus
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -872,6 +872,9 @@ class AcquisitionTab(QWidget):
         self._broadcast.clients_changed.connect(self._on_broadcast_clients)
 
         self._build_ui()
+        # Out of a text field and back to the M: Enter, Esc or a click
+        # anywhere else (see emgteach.gui.widgets.manual_marker).
+        give_back_focus(self)
 
     # ------------------------------------------------------------------
     # Log helpers — write to the local logger AND the shared one

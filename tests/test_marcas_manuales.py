@@ -20,7 +20,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QPoint, QSettings, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -283,3 +283,87 @@ def test_the_analysis_draws_manual_marks_apart(qapp) -> None:
     labels = {t.get_text() for t in ax.texts}
     assert {"Fatiga", "Rest", "REC start"} <= labels
     assert "Inicio (auto)" not in labels           # the onsets stay unlabelled
+
+
+# ── Out of a text field, back to the M ─────────────────────────────────────
+
+@pytest.fixture
+def shown_tab(qapp, tmp_path: Path):
+    """An acquisition tab on screen and active, marking as if recording, with
+    the marks it would send collected."""
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+
+    settings = QSettings("emgteach-test", "marcas-foco")
+    settings.clear()
+    settings.setValue("app/mode", "single")
+    tab = AcquisitionTab(LoggerWidget(), settings)
+    tab.apply_mode("single", False)
+    tab.resize(1366, 768)
+    tab.show()
+    tab.activateWindow()
+    QTest.qWaitForWindowExposed(tab)
+    tab.marked = []
+    tab._marcador.marked.connect(tab.marked.append)
+    tab._marcador.set_recording(True)
+    yield tab
+    tab._marcador.set_recording(False)
+    tab.cleanup()
+    tab.close()
+    _pump(qapp, 50)
+
+
+def _type_in_the_identifier(qapp, tab) -> None:
+    field = tab._edit_student_code
+    assert field.isVisible() and field.isEnabled()
+    field.setFocus()
+    _until(qapp, field.hasFocus, 2.0, "the identifier to take the focus")
+    QTest.keyClicks(field, "mmm")
+    assert field.text() == "mmm" and tab.marked == []
+
+
+@pytest.mark.parametrize("way_out", [Qt.Key.Key_Return, Qt.Key.Key_Escape],
+                         ids=["Enter", "Esc"])
+def test_enter_or_esc_in_a_field_gives_the_m_back(qapp, shown_tab, way_out) -> None:
+    _type_in_the_identifier(qapp, shown_tab)
+    QTest.keyClick(shown_tab._edit_student_code, way_out)
+    _until(qapp, lambda: not shown_tab._edit_student_code.hasFocus(), 2.0,
+           "the field to let go of the focus")
+    QTest.keyClick(QApplication.focusWidget() or shown_tab, Qt.Key.Key_M)
+    assert len(shown_tab.marked) == 1
+    assert shown_tab._edit_student_code.text() == "mmm"
+
+
+def _plots_box(tab):
+    from PySide6.QtWidgets import QGroupBox
+
+    box = tab._plot_raw.parentWidget()
+    while not isinstance(box, QGroupBox):
+        box = box.parentWidget()
+    return box
+
+
+@pytest.mark.parametrize("where", ["plot", "plots box"])
+def test_a_click_in_the_live_plots_gives_the_m_back(qapp, shown_tab, where) -> None:
+    """The bench: «clicked on the live plot and the M still did not mark».
+
+    A click on the plot itself hands the focus to the plot, which takes it.
+    A click on what surrounds it — the box, its title, the legend — reached no
+    widget that takes the focus, so the field kept it: the tab takes it now.
+    """
+    _type_in_the_identifier(qapp, shown_tab)
+    if where == "plot":
+        target = shown_tab._plot_raw.viewport()
+        pos = target.rect().center()
+    else:
+        target = _plots_box(shown_tab)
+        assert target.focusPolicy() == Qt.FocusPolicy.NoFocus
+        pos = target.rect().topLeft() + QPoint(4, 4)
+        assert target.childAt(pos) is None, "the click must land on the box itself"
+    QTest.mouseClick(target, Qt.MouseButton.LeftButton, pos=pos)
+    _until(qapp, lambda: not shown_tab._edit_student_code.hasFocus(), 2.0,
+           "the field to let go of the focus")
+    QTest.keyClick(QApplication.focusWidget() or shown_tab, Qt.Key.Key_M)
+    assert len(shown_tab.marked) == 1
+    assert shown_tab._edit_student_code.text() == "mmm"
+
