@@ -1,9 +1,9 @@
 # emgteach 3.9.0 — marking by hand while recording, back
 
 A short release for experiments that need their own events marked. Marking by
-hand went in 3.0.0 (31 August 2026), for a feature nobody pressed in the tab
-where vertical space is worth the most; it is back, optional, as ecgteach and
-eegteach have it.
+hand was removed in 3.0.0 (5 September 2026): nobody used it, and it took
+height in the tab where height matters most. It is back, optional, as ecgteach
+and eegteach have it.
 
 **3.7.0 remains the version the article describes.** No analysis, no EDF
 format and no calculation changes. Recordings made with 3.8.0 and earlier open
@@ -29,10 +29,11 @@ and read as before.
   typed and does not mark. Enter or Esc in the field, or a click anywhere
   else in the tab, the live plot included, hands the focus back and the M
   marks again.
-- **The live plots take no focus of their own.** On Windows, after a click
-  in the plot, the M marked nothing; now an M that reaches the plot while
-  recording marks. Zoom, drag and the wheel are unchanged; pyqtgraph's
-  keyboard zoom (-, +, Backspace), never offered, is gone.
+- **The live plots take no focus of their own.** A click anywhere in the
+  tab that is not a text field — the plot, its frame, a label — gives the M
+  back, and an M that reaches the plot while recording marks. Zoom, drag and
+  the wheel are unchanged; pyqtgraph's keyboard zoom (-, +, Backspace), never
+  offered, is gone.
 - **The list of the last marks keeps its two lines**: a long one ends in «…»
   instead of bringing up a scroll bar that took the second line.
 - There is no Delete button, no free-text dialog behind «Other» and no step
@@ -60,17 +61,16 @@ and read as before.
 
 **By the automated suite**, 1478 tests, among them: the mark reaching the
 EDF+, the mirror and the event log; the M not marking while the cursor is in
-a text field, and marking again after Enter, Esc or a click in the tab or in
-the live plot (each checked to fail without its fix); an M that reaches the
-live plot marking; the wheel zoom still working; the analysis drawing manual
+a text field, and marking again after Enter, Esc or a click in the plots'
+frame (each of these three checked to fail without its fix) or in the live
+plot; an M that reaches the live plot marking; the wheel zoom still working; the analysis drawing manual
 marks in teal; and what the fragment editor proposes, fixed to the hundredth
 in five cases.
 
 **At the bench**: with the simulated board, run #111 of *Build Windows exe*
 (15 October 2026): the M after Enter, Esc and a click, in the plot and out of
 it; «Mark (M)» whole at 100 % and 125 % scaling; manual marks teal in the
-analysis; two lines in the list. With the real board: see the 3.9.0 bench
-list.
+analysis; two lines in the list. With the real board: _(added after the bench check)_.
 
 ## The Windows executable
 
