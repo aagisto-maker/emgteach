@@ -285,6 +285,24 @@ def test_the_analysis_draws_manual_marks_apart(qapp) -> None:
     assert "Inicio (auto)" not in labels           # the onsets stay unlabelled
 
 
+def test_the_manual_colour_is_no_trace_s_colour() -> None:
+    """In panel 2 the normalised envelope was the purple the manual marks had
+    (bench of 15 October 2026): the marks were lost in it. No module that
+    draws a panel or a chart may use the manual marks' colour."""
+    import re
+
+    import emgteach
+    from emgteach.gui.tabs import analysis
+
+    manual = analysis._COLOR_MARCA_MANUAL.upper()
+    pkg = Path(emgteach.__file__).parent
+    for module in ("figures.py", "charts.py", "mvc.py", "panels.py"):
+        colours = {c.upper() for c in re.findall(r"#[0-9A-Fa-f]{6}\b",
+                                                 (pkg / module).read_text(encoding="utf-8"))}
+        assert manual not in colours, module
+    assert manual != "#E67E22"                     # the onsets and the phases
+
+
 # ── Out of a text field, back to the M ─────────────────────────────────────
 
 @pytest.fixture
