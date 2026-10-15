@@ -413,3 +413,83 @@ def test_the_list_of_marks_shows_two_lines(qapp, shown_tab) -> None:
     assert lst.count() == 2
     second = lst.visualItemRect(lst.item(1))
     assert second.bottom() <= lst.viewport().height(), (second, lst.viewport().height())
+
+
+# ── The live plot, during a recording ──────────────────────────────────────
+
+@pytest.fixture
+def recording(qapp, tab, tmp_path: Path):
+    """The tab on screen and active, recording the simulated board."""
+    tab.resize(1366, 768)
+    tab.show()
+    tab.activateWindow()
+    QTest.qWaitForWindowExposed(tab)
+    _start(qapp, tab, tmp_path / "grafica.edf")
+    _until(qapp, tab._marcador.is_recording, 5.0, "the marking to be offered")
+    tab.marked = []
+    tab._marcador.marked.connect(tab.marked.append)
+    yield tab
+    _stop(qapp, tab)
+    tab.close()
+
+
+def _manual_marks(tab) -> list[str]:
+    return [lbl for _t, lbl in tab._marker_events if is_manual_mark(lbl)]
+
+
+def test_a_click_inside_the_live_plot_while_recording_leaves_the_m_to_mark(
+    qapp, recording
+) -> None:
+    """The bench of 15 October 2026, step by step: recording, typing in the
+    test identifier, a click in the middle of the live plot, M. On Windows'
+    own platform the M then marked nothing; here, offscreen, the M got through
+    the plot either way, so what fails without the fix is the focus: the plot
+    no longer keeps it, the tab takes it."""
+    tab = recording
+    _type_in_the_identifier(qapp, tab)
+    plot = tab._plot_raw
+    QTest.mouseClick(plot.viewport(), Qt.MouseButton.LeftButton,
+                     pos=plot.viewport().rect().center())
+    _until(qapp, lambda: not tab._edit_student_code.hasFocus(), 2.0,
+           "the field to let go of the focus")
+    focus = QApplication.focusWidget()
+    assert focus not in (plot, plot.viewport()), "the live plot kept the focus"
+    QTest.keyClick(focus or tab, Qt.Key.Key_M)
+    _until(qapp, lambda: len(_manual_marks(tab)) == 1, 2.0, "the mark")
+    assert tab._edit_student_code.text() == "mmm"
+
+
+def test_an_m_that_reaches_the_live_plot_marks(qapp, recording) -> None:
+    """Should a platform hand the key press to the plot itself, bypassing the
+    shortcut, the plot passes it on as a mark."""
+    from PySide6.QtCore import QEvent
+    from PySide6.QtGui import QKeyEvent
+
+    tab = recording
+    # The shortcut off: the key press is what the plot gets, as on a platform
+    # where the shortcut does not take it first.
+    tab._marcador.shortcut.setEnabled(False)
+    press = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_M,
+                      Qt.KeyboardModifier.NoModifier, "m")
+    QApplication.sendEvent(tab._plot_env.viewport(), press)
+    _until(qapp, lambda: len(_manual_marks(tab)) == 1, 2.0, "the mark")
+    assert press.isAccepted()
+
+
+def test_the_live_plots_still_zoom_with_the_wheel(qapp, shown_tab) -> None:
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QWheelEvent
+
+    for plot in (shown_tab._plot_raw, shown_tab._plot_env):
+        assert plot.focusPolicy() == Qt.FocusPolicy.NoFocus
+        box = plot.getViewBox()
+        before = [list(r) for r in box.viewRange()]
+        viewport = plot.viewport()
+        centre = viewport.rect().center()
+        wheel = QWheelEvent(QPointF(centre), QPointF(viewport.mapToGlobal(centre)),
+                            QPoint(0, 0), QPoint(0, 120), Qt.MouseButton.NoButton,
+                            Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase,
+                            False)
+        QApplication.sendEvent(viewport, wheel)
+        qapp.processEvents()
+        assert [list(r) for r in box.viewRange()] != before, "the wheel no longer zooms"

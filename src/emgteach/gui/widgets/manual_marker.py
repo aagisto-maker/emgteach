@@ -14,6 +14,13 @@ Enter or Esc in any text field of the tab, or a click anywhere in it that is
 not a text field (the live plots included), hand the focus back to the tab,
 and the M marks again. At the bench of 15 October 2026 the operator typed the
 test identifier, clicked on the live plot and the M still typed into the field.
+
+The live plots are the case apart (:func:`hand_the_m_over`). A click inside one
+gave it the focus — pyqtgraph makes its views StrongFocus — and on that bench,
+with Windows' own platform, the M then marked nothing. Offscreen, the M goes
+through the plot to the shortcut, so the cause could not be reproduced here;
+the plots take no focus now, so a click in them hands it to the tab, and a M
+that still reaches one of them marks all the same.
 """
 
 from __future__ import annotations
@@ -115,3 +122,48 @@ def give_back_focus(owner: QWidget) -> None:
     back = _FocusBack(owner)
     for field in owner.findChildren(QLineEdit):
         field.installEventFilter(back)
+
+
+class _MarkFromPlot(QObject):
+    """A plain M reaching a live plot marks, while recording.
+
+    The shortcut takes the M before the key press when it can; this is for a
+    platform where the plot gets it anyway. The key is consumed only when it
+    marks, so a plot outside a recording behaves as before.
+    """
+
+    def __init__(self, marker: ManualMarker) -> None:
+        super().__init__(marker)
+        self._marker = marker
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if (event.type() == QEvent.Type.KeyPress
+                and isinstance(event, QKeyEvent)
+                and event.key() == Qt.Key.Key_M
+                and event.modifiers() in (Qt.KeyboardModifier.NoModifier,
+                                          Qt.KeyboardModifier.ShiftModifier)
+                and self._marker.is_recording()):
+            self._marker.mark()
+            return True
+        return False
+
+
+def hand_the_m_over(plots: list[QWidget], marker: ManualMarker) -> None:
+    """Keep the live *plots* from holding the focus the M needs.
+
+    They take no focus of their own: a click in one goes to the first parent
+    that takes it — the tab, after :func:`give_back_focus` — and the shortcut
+    fires from there. Zoom, drag and the wheel are mouse events and do not
+    need the focus; what goes is pyqtgraph's keyboard zoom (-, +, Backspace),
+    which the application never offered. Should a M reach a plot all the
+    same, it marks (:class:`_MarkFromPlot`).
+    """
+    to_marker = _MarkFromPlot(marker)
+    for plot in plots:
+        widgets = [plot]
+        viewport = getattr(plot, "viewport", None)
+        if callable(viewport):
+            widgets.append(viewport())
+        for w in widgets:
+            w.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            w.installEventFilter(to_marker)
