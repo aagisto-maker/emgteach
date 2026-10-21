@@ -567,7 +567,7 @@ class MvcTab(QWidget):
         value_color = _OUT_COLOR if out else "#1a5276"
         return (
             f"<b>{label}</b> "
-            f"<span style='color:{value_color}'>{value:.0f} % MVC</span><br>"
+            f"<span style='color:{value_color}'>{value:.0f} {tr('% MVC')}</span><br>"
             f"<span style='color:#777777; font-size:10px'>"
             f"{tr('Normal range:')} ≤ {limit:.0f} % — {explanation}</span>"
         )

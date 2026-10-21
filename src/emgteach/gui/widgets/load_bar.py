@@ -51,6 +51,10 @@ class LoadBar(QWidget):
     def _x(self, v: float, w: int) -> int:
         return int(max(0.0, min(v, self._VMAX)) / self._VMAX * w)
 
+    def _text(self) -> str:
+        """The value the bar prints, in the unit of the interface's language."""
+        return f"{self._value:.0f} {tr('% MVC')}"
+
     def _colour(self) -> str:
         if self._value >= self._danger:
             return _RED
@@ -101,5 +105,5 @@ class LoadBar(QWidget):
         p.setFont(QFont("Arial", 8, QFont.Weight.Bold))
         p.drawText(self.rect().adjusted(4, 0, -4, 0),
                    Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
-                   f"{self._value:.0f} % MVC")
+                   self._text())
         p.end()

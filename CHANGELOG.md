@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The live view stops following the signal after a wheel zoom.** Zooming a live plot with the mouse wheel leaves it on the window it was zoomed to, and the signal runs on out of sight; the «A» autoscale button in the plot's corner brings it back. It happened in 3.8.0 too. To weigh: the view going back to following by itself, or a notice saying it no longer follows. Not for 3.9.0.
 
+### Fixed
+
+- **In Spanish the unit reads «% CVM», not «% MVC».** With the interface in Spanish (21 October 2026, 3.9.0, simulated board) the load bar of the acquisition tab wrote «43 % MVC», and the data panel of the normalisation tab «Activación media: 30 % MVC» and the same for the three load levels; the report's metrics table, the mean activation and the three levels, did the same. The unit was written straight into the text and did not go through the catalogue, which already had «% CVM». The four places now go through it; in English they still read «% MVC», and the numbers keep their format. The rest was checked: the panels' names, the phone page and the CSV were already translated, and «MVC ref» in the EDF annotation is part of the file format and stays the same in both languages.
+
 ### Tests
 
 - **The page's test talks to Node through files, not pipes.** On the Windows runners the read of `node`'s output outlived the 30 s of `test_the_open_page_clears_the_report_when_a_recording_starts` now and then: four of the last forty CI runs (14 and 15 October 2026, on `main` and on branches), always on Windows, always that test, while the other test that runs the page passed right after it. It was not the page keeping Node alive: its only timer is in `ws.onclose`, which the stand-in for the browser never calls. The frames now go to Node in a file and what the page shows comes back in another, Node exits when it has written it, the wait is for Node itself (60 s) and, if it fails, the test says what Node wrote on stderr.

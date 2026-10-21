@@ -1060,7 +1060,7 @@ def build_mvc_report(
 
     def _level_cell(lvl: Any) -> str:
         status = tr("exceeds limit") if lvl.exceeds else tr("within limit")
-        return f"{lvl.value:.0f} % MVC  (≤ {lvl.limit:.0f} %) — {status}"
+        return f"{lvl.value:.0f} {tr('% MVC')}  (≤ {lvl.limit:.0f} %) — {status}"
 
     story.append(PageBreak())
     story.append(Paragraph(tr("Metrics"), h2))
@@ -1076,7 +1076,7 @@ def build_mvc_report(
         ],
         [tr("Mean activation:"),
          "—" if result.get("mean_norm") is None
-         else f"{float(result['mean_norm']):.1f} % MVC"],
+         else f"{float(result['mean_norm']):.1f} {tr('% MVC')}"],
         [tr("Duration"), f"{duration:.1f} s"],
         [tr("Channel"), str(meta.get("channel") or result.get("channel_name") or "")],
     ]
