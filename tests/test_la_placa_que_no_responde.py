@@ -26,10 +26,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from emgteach.devices import AcquisitionDevice
 from emgteach.i18n import tr
+from emgteach.workers.acquisition import AcquisitionWorker
 
 
 class _Colgada(AcquisitionDevice):
@@ -90,8 +91,6 @@ def _esperar(condicion, que: str, segundos: float = 30.0) -> None:
 @pytest.mark.gui
 class TestAStopWhileOpeningSurvivesTheOpening:
     def test_the_thread_ends_without_recording(self, qapp, tmp_path: Path) -> None:
-        from emgteach.workers.acquisition import AcquisitionWorker
-
         placa = _Colgada()
         worker = AcquisitionWorker(device=placa, save_path=str(tmp_path / "x.edf"))
         datos, fin = [], []
@@ -308,6 +307,16 @@ def pestana_que_tarda(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     rapida.soltar.set()
     placas = [primera, rapida]
     monkeypatch.setattr(acq_mod, "create_device", lambda *a, **k: placas.pop(0))
+    # Every worker the tab makes, not only the one it points at: the retry
+    # replaces the first, and the teardown has to wait for both.
+    hilos: list[AcquisitionWorker] = []
+
+    class _Registrado(AcquisitionWorker):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            hilos.append(self)
+
+    monkeypatch.setattr(acq_mod, "AcquisitionWorker", _Registrado)
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName",
                         staticmethod(lambda *a, **k: (str(tmp_path / "a.edf"), "")))
     tab = AcquisitionTab(LoggerWidget(), settings)
@@ -318,13 +327,46 @@ def pestana_que_tarda(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     tab._btn_conectar.setChecked(True)
     tab._toggle_conexion()
     yield tab
+    # No recording may start from here on. «Retry» wires the old thread's
+    # end to _puerto_liberado, which starts the recording asked for; a test
+    # that failed before the port was let go left that wiring armed. The
+    # port let go below ended the old thread, monkeypatch then put the real
+    # QFileDialog back, and pytest-qt's processEvents at the end of the
+    # teardown started a recording on a tab already cleaned: a real «Save
+    # as» dialog nobody could close. The CI's Windows runner (15 Oct 2026,
+    # Python 3.10) sat like that for the job's thirty minutes after one «F»,
+    # with no stack dump, the dialog's event loop being alive. Reproduced
+    # here with a test that fails right after the retry.
+    tab._esperando_puerto = False
     primera.soltar.set()
-    if tab._aviso_conexion is not None:
-        tab._aviso_conexion.close()
+    # The box that said the board did not answer, should a test have left
+    # it open: _tras_aviso_conexion called straight, as test_retry does, does
+    # not close it, and a modal box left behind swallows the shortcuts of
+    # the tests that follow (test_marcas_manuales, on the CI of 22 Oct 2026).
+    for caja in tab.findChildren(QMessageBox):
+        caja.close()
     tab.cleanup()
-    for w in (getattr(tab, "_worker", None),):
-        if w is not None:
-            w.wait(5000)
+    vivos = []
+    for w in hilos:
+        if w.isRunning():
+            w.stop_forced()
+            if not w.wait(5000):
+                vivos.append(w)
+    if vivos:
+        # Kept alive on purpose: Qt aborts when Python drops a running
+        # QThread, and this message has to reach the report first.
+        _HILOS_HUERFANOS.extend(vivos)
+        estados = "; ".join(
+            f"worker {i}: opening={w.is_opening()} answered={w.placa_respondio()} "
+            f"streaming={w.is_streaming()} device={w._device.name}"
+            for i, w in enumerate(vivos))
+        raise AssertionError(
+            f"{len(vivos)} worker thread(s) still running after cleanup: {estados}")
+
+
+#: Worker threads a teardown could not stop, kept referenced so that Python
+#: never destroys a running QThread (see pestana_que_tarda).
+_HILOS_HUERFANOS: list = []
 
 
 @pytest.mark.gui
@@ -344,8 +386,6 @@ class TestTheWarningDoesNotFreezeTheWindow:
     def test_retry_waits_for_the_port_and_then_records(
         self, qapp, pestana_que_tarda
     ) -> None:
-        from PySide6.QtWidgets import QMessageBox
-
         tab = pestana_que_tarda
         _grabar(tab)
         _esperar(lambda: tab._aviso_conexion is not None,
