@@ -5639,6 +5639,13 @@ class AcquisitionTab(QWidget):
         self._render_timer.stop()
         self._load_timer.stop()
         self._broadcast.stop()
+        # A recording asked for with «Retry» while the port was still held
+        # starts by itself when the holding thread ends (_puerto_liberado).
+        # Not from here: should Windows let the port go during the wait
+        # below, that start would come after the window has closed, with a
+        # «Save as» dialog nobody asked for and a recording on a tab that is
+        # gone. Seen with a MainWindow under app.exec(), 22 October 2026.
+        self._esperando_puerto = False
         if self._worker and self._worker.isRunning():
             self._worker.stop_forced()
             self._worker.wait(5000)
