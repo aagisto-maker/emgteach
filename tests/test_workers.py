@@ -15,6 +15,7 @@ offscreen Qt platform set in ``conftest.py``.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import numpy as np
@@ -115,10 +116,13 @@ class _RestThenBurstDevice(AcquisitionDevice):
     starts.
     """
 
-    def __init__(self, fs: int = 1000, rest_s: float = 1.5) -> None:
+    def __init__(self, fs: int = 1000, rest_s: float = 1.5,
+                 read_delay_s: float = 0.0) -> None:
         self._fs = int(fs)
         self._cursor = 0
         self._rest_n = int(rest_s * fs)
+        #: Seconds each read takes, to stand in for a loaded runner.
+        self._read_delay_s = float(read_delay_s)
 
     @property
     def fs(self) -> float:
@@ -132,6 +136,8 @@ class _RestThenBurstDevice(AcquisitionDevice):
         pass
 
     def read(self, n_samples: int) -> np.ndarray:
+        if self._read_delay_s:
+            time.sleep(self._read_delay_s)
         n = int(n_samples)
         idx = self._cursor + np.arange(n)
         amp = np.where(idx < self._rest_n, 0.02, 0.5)
@@ -520,11 +526,26 @@ class TestAcquisitionWorker:
         # ...whereas the EMG channel is filtered, so its envelope differs from raw.
         assert not np.allclose(b["envelope"][0], b["raw_mv"][0])
 
+    @pytest.mark.parametrize("read_delay_s", [0.0, 0.15],
+                             ids=["board on time", "slow runner"])
     def test_auto_detection_writes_an_automatic_marker(
-        self, qapp: QCoreApplication, tmp_path: Path
+        self, qapp: QCoreApplication, tmp_path: Path, read_delay_s: float
     ) -> None:
-        """With auto_detect on, a contraction onset is written to the EDF."""
-        device = _RestThenBurstDevice(fs=1000, rest_s=1.5)
+        """With auto_detect on, a contraction onset is written to the EDF.
+
+        The worker is stopped once the board has delivered three seconds of
+        signal — the 1.5 s of rest, then enough burst for the detector, whose
+        baseline is the first second — and not after 2.5 s of the clock. The
+        worker paces itself (50 ms per block of 100 samples, about twice
+        real time), so 2.5 s of clock were about 16 blocks on a quiet
+        machine and fewer on a loaded one: on the CI's Windows runner with
+        Python 3.10 (22 Oct 2026) they were not enough, and the file held no
+        onset. The slow variant makes each read take 150 ms, as a loaded
+        runner would: with the clock, it got barely a second of signal and
+        failed every time; waiting for the samples, it passes.
+        """
+        fs = 1000
+        device = _RestThenBurstDevice(fs=fs, rest_s=1.5, read_delay_s=read_delay_s)
         worker = AcquisitionWorker(
             device=device,
             save_dir=str(tmp_path),
@@ -533,11 +554,19 @@ class TestAcquisitionWorker:
         )
         edf_paths: list[str] = []
         worker.finished_ok.connect(edf_paths.append)
+        delivered = {"n": 0, "stopped": False}
+
+        def stop_with_enough_signal(block: dict) -> None:
+            delivered["n"] += len(block["raw_mv"][0])
+            if delivered["n"] >= 3 * fs and not delivered["stopped"]:
+                delivered["stopped"] = True
+                worker.stop()
+
+        worker.data_ready.connect(stop_with_enough_signal)
         worker.start()
-        # Acquire well past the 1.5 s rest so the burst onset is detected.
-        QTimer.singleShot(2500, worker.stop)
-        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=12000)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=30000)
         worker.wait(12000)
+        assert delivered["n"] >= 3 * fs, f"only {delivered['n']} samples came"
 
         assert edf_paths and edf_paths[0], "Worker did not emit finished_ok"
         result = read_edf_pyedflib(edf_paths[0])
