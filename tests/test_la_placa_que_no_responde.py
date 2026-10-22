@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from emgteach.devices import AcquisitionDevice
 from emgteach.i18n import tr
@@ -339,8 +339,12 @@ def pestana_que_tarda(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     # here with a test that fails right after the retry.
     tab._esperando_puerto = False
     primera.soltar.set()
-    if tab._aviso_conexion is not None:
-        tab._aviso_conexion.close()
+    # The box that said the board did not answer, should a test have left
+    # it open: _tras_aviso_conexion called straight, as test_retry does, does
+    # not close it, and a modal box left behind swallows the shortcuts of
+    # the tests that follow (test_marcas_manuales, on the CI of 22 Oct 2026).
+    for caja in tab.findChildren(QMessageBox):
+        caja.close()
     tab.cleanup()
     vivos = []
     for w in hilos:
@@ -382,8 +386,6 @@ class TestTheWarningDoesNotFreezeTheWindow:
     def test_retry_waits_for_the_port_and_then_records(
         self, qapp, pestana_que_tarda
     ) -> None:
-        from PySide6.QtWidgets import QMessageBox
-
         tab = pestana_que_tarda
         _grabar(tab)
         _esperar(lambda: tab._aviso_conexion is not None,
