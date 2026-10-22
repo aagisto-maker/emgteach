@@ -575,13 +575,23 @@ class TestAcquisitionWorker:
             f"No automatic onset marker found; got {result['markers']}"
         )
 
+    @pytest.mark.parametrize("read_delay_s", [0.0, 0.15],
+                             ids=["board on time", "slow runner"])
     def test_manual_and_auto_markers_coexist_in_edf(
-        self, qapp: QCoreApplication, tmp_path: Path
+        self, qapp: QCoreApplication, tmp_path: Path, read_delay_s: float
     ) -> None:
         """Acceptance criterion: a session with both a manual marker and an
         automatic onset persists both to the EDF.
+
+        Stopped once the board has delivered three seconds of signal, not
+        after 2.5 s of the clock, as test_auto_detection_writes_an_automatic_marker
+        (#132): the automatic onset needs the 1.5 s of rest and enough of the
+        burst after it, and a loaded runner delivers fewer blocks in a fixed
+        time. The slow variant (150 ms per read) failed every time with the
+        clock.
         """
-        device = _RestThenBurstDevice(fs=1000, rest_s=1.5)
+        fs = 1000
+        device = _RestThenBurstDevice(fs=fs, rest_s=1.5, read_delay_s=read_delay_s)
         worker = AcquisitionWorker(
             device=device,
             save_dir=str(tmp_path),
@@ -591,18 +601,22 @@ class TestAcquisitionWorker:
         edf_paths: list[str] = []
         worker.finished_ok.connect(edf_paths.append)
 
-        added = {"done": False}
+        estado = {"done": False, "n": 0, "stopped": False}
 
-        def add_manual(_block: dict) -> None:
-            if not added["done"]:
-                added["done"] = True
+        def add_manual_and_stop_with_enough_signal(block: dict) -> None:
+            if not estado["done"]:
+                estado["done"] = True
                 worker.add_marker("fatiga aparente")
+            estado["n"] += len(block["raw_mv"][0])
+            if estado["n"] >= 3 * fs and not estado["stopped"]:
+                estado["stopped"] = True
+                worker.stop()
 
-        worker.data_ready.connect(add_manual)
+        worker.data_ready.connect(add_manual_and_stop_with_enough_signal)
         worker.start()
-        QTimer.singleShot(2500, worker.stop)
-        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=12000)
+        _wait_for_signal(qapp, worker.finished_ok, timeout_ms=30000)
         worker.wait(12000)
+        assert estado["n"] >= 3 * fs, f"only {estado['n']} samples came"
 
         assert edf_paths and edf_paths[0], "Worker did not emit finished_ok"
         result = read_edf_pyedflib(edf_paths[0])
