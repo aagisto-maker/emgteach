@@ -373,7 +373,9 @@ Con **dos canales**, la gráfica de la señal en bruto se muestra **apilada**
 (un "carril" por canal, con su color), mientras que la envolvente, al ser no
 negativa, se **superpone** para comparar directamente ambos músculos. La escala
 vertical de cada gráfica se ajusta con botones **▲▼**, y la **ventana temporal**
-con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón).
+con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón). La
+rueda sobre una gráfica fija cuántos segundos se ven, y la vista sigue avanzando
+con la señal; el botón **A** de la esquina devuelve la ventana entera.
 
 **Marcadores de eventos**
 - **Detección automática de inicio de contracción** (*Auto-inicio*), a la vista en
