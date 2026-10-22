@@ -2765,6 +2765,8 @@ class AcquisitionTab(QWidget):
             arr_acc = np.array(list(self._buf_acc))[-n:]
             self._curve_acc.setData(t, arr_acc)
 
+        self._seguir_la_senal(float(t[-1]))
+
         # Reposition the marker lines. Each event already carries the
         # second of the recording it happened at, which is now the axis's
         # own unit: it is drawn there, and the filter of what is on screen
@@ -2782,6 +2784,32 @@ class AcquisitionTab(QWidget):
                     line.show()
                 elif line.isVisible():
                     line.hide()
+
+    def _seguir_la_senal(self, fin: float) -> None:
+        """Slide a zoomed live plot so that its right edge is the last sample.
+
+        The live view has no X range of its own: it relies on pyqtgraph's
+        auto-range to follow the sliding window. A wheel zoom turns that
+        auto-range off (``scaleBy`` ends in ``setXRange``), and until 3.9.0
+        the axis then stayed where it was while the signal, whose seconds
+        advance, ran out of sight to the right, until «A» was pressed. The
+        width the wheel chose is kept — it is how many seconds are on
+        screen — and the window slides with the last sample, as an
+        oscilloscope's does; «A» gives the whole window back. A plot still
+        on auto-range is left to it.
+        """
+        plots = [self._plot_raw, self._plot_env]
+        if self._acc_enabled:
+            plots.append(self._plot_acc)
+        for pw in plots:
+            vb = pw.getViewBox()
+            if vb.autoRangeEnabled()[0]:
+                continue
+            x0, x1 = vb.viewRange()[0]
+            ancho = x1 - x0
+            if ancho <= 0 or abs(x1 - fin) < 0.5 / FS:
+                continue
+            vb.setXRange(fin - ancho, fin, padding=0)
 
     # ------------------------------------------------------------------
     # Review: the finished recording, on the plots that recorded it
