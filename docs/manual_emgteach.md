@@ -300,7 +300,9 @@ and leaves when the tab changes.
 **Live plots**: the **raw EMG signal** (mV, drawn to the device's own full scale)
 and the **envelope**; a third one for the **accelerometer** in kinematics. With two
 channels the raw plot is **stacked**, one lane per muscle, and the envelopes
-**overlaid**. Scales with ▲▼, time window with a zoom drop-down and ◀▶.
+**overlaid**. Scales with ▲▼, time window with a zoom drop-down and ◀▶. The wheel
+over a plot sets how many seconds are shown, and the view goes on following the
+signal; the **A** button in the corner gives the whole window back.
 
 **Event markers**
 - **Auto-onset**, visible in all three practicals: a contraction's onset is marked
