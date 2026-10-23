@@ -5,11 +5,9 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.9.1] — 2026-10-23
 
-### Pending
-
-- **The live view stops following the signal after a wheel zoom.** Zooming a live plot with the mouse wheel leaves it on the window it was zoomed to, and the signal runs on out of sight; the «A» autoscale button in the plot's corner brings it back. It happened in 3.8.0 too. To weigh: the view going back to following by itself, or a notice saying it no longer follows. Not for 3.9.0.
+**The live view keeps following the signal after a wheel zoom.** A patch of 3.9.0: the wheel now sets how many seconds the live plots show and the view goes on with the signal; closing the window while «Retry» waits for the board's port no longer starts a recording; and in Spanish the unit reads «% CVM». No analysis, no EDF format and no calculation changes; **3.7.0 stays the version the article describes**. See [`docs/RELEASE_NOTES_v3.9.1.md`](docs/RELEASE_NOTES_v3.9.1.md).
 
 ### Fixed
 
