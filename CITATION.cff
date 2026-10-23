@@ -74,10 +74,13 @@ abstract: >-
   mid-recording stops it at once; nothing computed changes. Version 3.9.0
   brings back marking by hand while recording: a label and a button, or the
   M key, put a mark in the file at the moment it is pressed, and the
-  analysis draws those marks apart; nothing computed changes.
+  analysis draws those marks apart; nothing computed changes. Patch 3.9.1
+  keeps the live view following the signal after a wheel zoom, starts no
+  recording when the window is closed while «Retry» waits for the port, and
+  writes «% CVM» in Spanish; nothing computed changes.
 type: software
-version: 3.9.0
-date-released: "2026-10-15"
+version: 3.9.1
+date-released: "2026-10-23"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

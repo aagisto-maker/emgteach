@@ -24,7 +24,14 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.9.0 brings back marking by hand while recording: beside the
+`emgteach` v3.9.1 is a patch of v3.9.0: the live view keeps following the
+signal after a wheel zoom — the wheel sets how many seconds are shown, and «A»
+gives the whole window back —, closing the window while «Retry» waits for the
+board's port no longer starts a recording with a «Save as» dialog nobody asked
+for, and in Spanish the unit reads «% CVM». Nothing computed changes. See
+[`docs/RELEASE_NOTES_v3.9.1.md`](docs/RELEASE_NOTES_v3.9.1.md).
+
+v3.9.0 brings back marking by hand while recording: beside the
 list of the last marks, a label to choose — contraction start, contraction
 end, fatigue, rest, other — and «Mark (M)», or the M key, put a mark in the
 EDF+ file and the event log at the moment it is pressed, and the analysis
@@ -222,10 +229,10 @@ second build.
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
   información → Ejecutar de todos modos»).
 - **Check it is the published file**: the release notes give its SHA-256. In
-  PowerShell, `Get-FileHash .\emgteach-v3.9.0-windows-x64.exe -Algorithm SHA256`
+  PowerShell, `Get-FileHash .\emgteach-v3.9.1-windows-x64.exe -Algorithm SHA256`
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
-  `gh attestation verify emgteach-v3.9.0-windows-x64.exe --repo aagisto-maker/emgteach`
+  `gh attestation verify emgteach-v3.9.1-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that version's
   commit.
 
