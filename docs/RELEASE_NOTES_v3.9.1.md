@@ -43,7 +43,10 @@ the port let go during the wait or after it; and «% CVM» in Spanish and
 
 **At the bench**: with the simulated board, manual run #114 of *Build Windows
 exe* (22 October 2026): the live view after a wheel zoom. With the real
-board: _(added after the bench check)_.
+board, the executable released (manual run #115, 23 October 2026): the
+self-test; the board's diagnosis (998 Hz, no CRC errors, no frame lost);
+«About» saying 3.9.1; the notice on stopping read whole; the live view after
+a wheel zoom and «A»; and «% CVM» in the load bar after calibrating.
 
 ## The Windows executable
 
@@ -62,7 +65,9 @@ attests where it was built.
   print the same value.
 - **To check where it was built**:
   `gh attestation verify emgteach-v3.9.1-windows-x64.exe --repo aagisto-maker/emgteach`.
-- **VirusTotal**: _(link to the analysis, added when the draft is published)_.
+- **VirusTotal:** [scan of the executable](https://www.virustotal.com/gui/file/53e0930d2985a2c37e19064903c078fcd9944d52a94f3dfa1609c6e13c5e4bdf).
+  The two detections (Bkav and McAfee's cloud reputation) are the usual false
+  positives for unsigned PyInstaller executables.
 
 The Zenodo record archives the source code of the tag, not the executable.
 
