@@ -12,6 +12,12 @@ están para que Ángel los ajuste.
 Las líneas citadas son las de `0c38423`; cualquier PR que se fusione antes las
 desplaza.
 
+**Aprobado el 24 de octubre con las decisiones del §10**, que mandan sobre lo
+que diga el resto del plan: las contracciones sucesivas **no** se hacen como
+sesión (§4.3 queda como registro de lo que se propuso y por qué se descartó),
+la fatiga gana una variante intermitente y el §4.3 lleva una corrección de
+fisiología.
+
 ---
 
 ## 0. Resumen
@@ -387,8 +393,17 @@ fase posterior, sin prometer una curva de velocidad.
 antebrazo, con el mismo guion). Objetivo docente: *relación ritmo–amplitud*
 —qué le pasa al pico de cada contracción y a la MDF cuando el ritmo se acelera—
 y la **relajación incompleta**: al acelerar, la envolvente no vuelve al reposo
-entre contracciones (el «nivel de reposo» entre pulsos sube), que es el
-correlato EMG de la suma temporal, y se mide en el mismo registro.
+entre contracciones (el «nivel de reposo» entre pulsos sube), y se mide en el
+mismo registro.
+
+> **Corregido el 24 de octubre** (la primera versión decía «correlato EMG de
+> la suma temporal», y es un error): la suma temporal es mecánica, la fusión
+> de las sacudidas en la fuerza; el EMG refleja la descarga de las
+> motoneuronas. Que la envolvente no vuelva a reposo entre pulsos rápidos se
+> debe sobre todo a que la relajación voluntaria no se completa, y podría
+> deberse también a la constante de tiempo del filtro de la envolvente, que
+> el §10.3 cuantifica: con el filtro de la aplicación es despreciable a 3,
+> 2 y 1.5 s.
 
 | # | Fase | s | Texto | Overlay | Marca |
 |---|---|---|---|---|---|
@@ -661,6 +676,113 @@ cada PR como manda `test_the_test_count_is_current`.
 4. Sucesivas: solo EMG isométrico (propuesta) o con mancuerna fija de 2 kg;
    los ritmos 3/2/1 s (§4.3).
 5. Fases 0 y 1 en una PR o en dos (§7); si adelantar el F‑V al runner (§6).
+
+---
+
+## 10. Decisiones de Ángel (24 de octubre) y lo que cambian
+
+1. **Tono**: casilla «Tono en cada cambio de fase» recordada entre
+   sesiones (`QSettings`), activada por defecto, como en ecgteach.
+2. **Gradación**: exige CVM calibrada; sin variante de niveles verbales.
+3. **Fatiga**: contracción **máxima, 30 s**, tope 45 s; el ejercicio 1c del
+   guion se actualiza. **Variante intermitente** dentro de la misma sesión
+   (segunda opción del desplegable): contracción máxima **5 s / reposo 1 s,
+   10 veces**, tono al empezar y al acabar cada contracción y cuenta atrás
+   visible. Medida: **RMS de cada contracción** (no el pico, que es el
+   arranque y no baja) y MDF por contracción, en tabla y barras. Pilotos de
+   Ángel (24 de octubre, músculo ya cansado): con 5/1 s el RMS bajó de
+   0.108 a 0.085 mV (−21 %), casi monótono en diez contracciones; con 5/2 s
+   y 5/5 s la caída fue irregular. Se confirma en el banco con la app.
+4. **Sucesivas: se quitan como sesión.** Piloto de Ángel con la placa real
+   (24 de octubre): a 3, 2 y 1.5 s el pico de la envolvente no cambia
+   (~0.20 mV) y vuelve a cero; solo un tren lo más rápido posible sube algo
+   los picos y deja el suelo algo por encima de cero, y sin control de
+   fuerza no es concluyente. Queda un **comentario al margen** en los
+   manuales (es/en), en la práctica de contracción simple, prudente, con la
+   cuantificación del filtro del §10.3.
+5. **PR**: cimientos y gradación por separado; el paso del F‑V al runner,
+   ahora no.
+
+### 10.1 Orden de entrega (una rama y una PR por punto, sin fusionar)
+
+0. El hallazgo de `_ofrecer_descargas`, aparte, con una prueba que falle sin
+   el arreglo.
+1. Cimientos: `sessions.py` sin Qt, `SessionRunner`, `cue.py`, desplegable,
+   destello, marcas y lector.
+2. Gradación: adquisición, análisis, PDF y móvil.
+3. Fatiga: máxima mantenida y variante intermitente; el comentario de las
+   contracciones seguidas en los manuales.
+4. Versión 3.10.0 y banco.
+
+Tras cada PR de la 2 y la 3, *Build Windows exe* a mano sobre la rama, con
+su SHA-256, para probarla con la placa simulada antes de fusionar.
+
+### 10.2 Las marcas, sin `RHYTHM`
+
+Quedan dos familias: `GRAD` y `HOLD`. La variante intermitente es `HOLD`
+con `mode=intermittent` en la cabecera y una fase por contracción:
+
+```
+HOLD start mode=sustained secs=30 v=1
+HOLD end
+
+HOLD start mode=intermittent reps=10 on=5 off=1 v=1
+HOLD rep start n=1   …   HOLD rep end n=1
+…
+HOLD end
+```
+
+### 10.3 Cuánto sube el «nivel entre pulsos» solo por el filtro
+
+Calculado el 24 de octubre con el filtro real de la envolvente (Butterworth
+de orden 2 a 5 Hz, `design_lowpass`; `sosfiltfilt` en el análisis,
+`dsp.py:298`, y causal en vivo, `dsp.py:228`), a 1000 Hz, sobre pulsos
+ideales de actividad (rectangulares, y ruido gaussiano rectificado con el
+mismo encendido), con reposo perfecto entre ellos. Nivel entre pulsos =
+mediana de la envolvente en el hueco, en % del pico medio; promedio de seis
+ciclos.
+
+| Período | Encendido / hueco | Pulso ideal: análisis / en vivo | Ruido rectificado: análisis / en vivo | Reposo inicial |
+|---|---|---|---|---|
+| 3 s | 1 / 2 s | 0.0 % / 0.0 % | 1.8 % / 1.7 % | 1.8 % |
+| 2 s | 1 / 1 s | 0.0 % / 0.0 % | 1.8 % / 1.7 % | 1.7 % |
+| 1.5 s | 0.75 / 0.75 s | 0.0 % / 0.0 % | 1.8 % / 1.8 % | 1.8 % |
+| 1.5 s | 0.5 / 1 s | 0.0 % / 0.0 % | 1.8 % / 1.8 % | 1.7 % |
+| 1 s | 0.5 / 0.5 s | −0.1 % / 0.0 % | 1.6 % / 1.7 % | 1.8 % |
+| 0.5 s | 0.25 / 0.25 s | 1.4 % / −0.3 % | 3.2 % / 1.5 % | 1.8 % |
+
+**Conclusión: a 3, 2 y 1.5 s el filtro no sube nada el nivel entre pulsos**
+(lo que queda es el propio nivel de reposo, igual que antes de empezar). Su
+constante de tiempo es de unas decenas de milisegundos y el hueco más corto
+de esos ritmos es de 0.75 s. Solo a dos o más contracciones por segundo
+empieza a notarse (1.4 % en el análisis a 0.5 s). Así que, si en un registro
+real el suelo entre pulsos sube a esos ritmos, **es del sujeto** (la
+relajación que no se completa), no del procesado; no hace falta cambiar de
+señal para medirlo. El cálculo está en el comentario al margen de los
+manuales; el script, en la PR de la fatiga como prueba.
+
+### 10.4 Anotado, sin implementar: la CVM por tren
+
+Idea de Ángel (24 de octubre): tomar como referencia el **pico de un tren
+de unas seis contracciones máximas rápidas**, para que el alumno no vea
+contracciones por encima del 100 % CVM. Se mantiene la calibración actual.
+
+- *A favor*: el tren se acerca más al pico que el alumno alcanza luego en la
+  tarea, y el «más del 100 %» desaparece o se reduce, que en clase confunde.
+- *Pegas*: no es la CVM de la literatura (isométrica sostenida, 3–5 s,
+  con la ventana de pico que ya usa la aplicación), así que los % CVM
+  dejarían de ser comparables con los rangos publicados (Jonsson, APDF) y
+  con los registros hechos hasta ahora; el pico de un tren es más ruidoso
+  (un único máximo instantáneo) y depende de la velocidad de cada alumno;
+  y un tren de máximos rápidos cansa antes de la tarea.
+- *Prueba comparativa necesaria antes de decidir*: los mismos sujetos, en
+  orden alternado y con descanso, con **tres máximas aisladas** (la
+  calibración actual) frente a **un tren de seis**; comparar la referencia
+  (cociente tren/aisladas y su dispersión entre sujetos), la repetibilidad
+  de cada una en dos días, y el % CVM que da cada una a la misma tarea
+  (gradación y APDF). Si el tren da referencias sistemáticamente mayores y
+  igual de repetibles, se podría ofrecer como alternativa marcada en el
+  fichero (`MVC ref … method=train`), nunca sustituyendo a la actual.
 
 ---
 
