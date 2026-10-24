@@ -39,6 +39,12 @@ from emgteach.force_velocity import (
     velocity_from_acc,
     windows_from_markers,
 )
+from emgteach.guided import (
+    gradation_steps,
+    hold_result,
+    intermittent_reps,
+    spans_in_analysis_time,
+)
 from emgteach.i18n import tr
 from emgteach.io import (
     list_edf_channels,
@@ -56,6 +62,7 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
+from emgteach.sessions import parse_session_markers
 
 
 def _cola_de_la_pausa(envelope, fs: float, phases, profile):
@@ -362,6 +369,29 @@ class AnalysisWorker(QThread):
         ventanas, _cargas = windows_from_markers(fv_loads, fs, n_samples)
         return [Segment(i0 / fs, i1 / fs) for i0, i1 in ventanas if i1 > i0] or None
 
+    @staticmethod
+    def _esfuerzo_mantenido(sesion) -> tuple[float, float] | None:
+        """The held effort of a sustained maximum, in file time: the span the
+        analysis takes by default, so its windows, its MDF line and its
+        verdict are the effort's and not the rests' around it."""
+        if (sesion is None or sesion.family != "HOLD"
+                or sesion.params.get("mode") != "sustained"):
+            return None
+        esfuerzos = sesion.spans_named("effort")
+        if not esfuerzos:
+            return None
+        return (esfuerzos[-1].start_s, esfuerzos[-1].end_s)
+
+    @staticmethod
+    def _tramos_de_sesion(sesion, piezas) -> list[Segment] | None:
+        """One segment per effort a guided session marked, in the analysed
+        signal's time; ``None`` without a session, so the next rule applies.
+        The contraction table trims each to the effort inside it."""
+        if sesion is None:
+            return None
+        return [Segment(a, b) for _t, a, b in
+                spans_in_analysis_time(sesion.spans, piezas) if b > a] or None
+
     def _resolve_segments(
         self, n_samples: int, fs: float, full_duration: float,
         default_span: tuple[float, float] | None = None,
@@ -435,6 +465,9 @@ class AnalysisWorker(QThread):
             # The shape of the session, read before anything is trimmed: the
             # calibration lies outside the analysed span on purpose.
             phases = parse_phase_markers(markers)
+            # A guided session of the one-muscle practical, if the file was
+            # recorded with one: its marks say where each effort was.
+            sesion = parse_session_markers(markers)
             # The loads of the guided force-velocity wizard, kept apart: the
             # contraction chart groups the efforts by them.
             fv_loads = parse_fv_load_markers(markers)
@@ -475,11 +508,19 @@ class AnalysisWorker(QThread):
             full_duration = float(times[-1])
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
-                default_span=phases.rec_span(full_duration, fv_loads),
+                default_span=(self._esfuerzo_mantenido(sesion)
+                              or phases.rec_span(full_duration, fv_loads)),
             )
             if bounds is None:
                 return  # error already emitted
             kept_segments = [(s, e) for (_, _, s, e, _lbl) in bounds]
+            # Where each kept piece of the file lands in the analysed signal:
+            # what moves a guided session's stretches into its time.
+            piezas: list[tuple[float, float, float]] = []
+            _off = 0.0
+            for (_i0, _i1, _a, _b, _lbl) in bounds:
+                piezas.append((_a, _b, _off))
+                _off += (_i1 - _i0) / fs
             fragmentos_concat: list[Segment] = []
             is_whole = (
                 len(bounds) == 1
@@ -848,6 +889,7 @@ class AnalysisWorker(QThread):
                 "channel_name": self._channel_name,
                 "markers": markers,
                 "fv_loads": fv_loads,
+                "guided_session": sesion,
                 # The detection settings the contractions are found with. Part
                 # of the result, not of the plumbing: the rows, and with them
                 # the co-activation windows, move with k.
@@ -1230,8 +1272,10 @@ class AnalysisWorker(QThread):
                     # lift of the guided wizard, from its load markers: the
                     # detector cut a lift with a weight into two, three or
                     # four windows, and the chart by load counted them all.
+                    # And in a guided session, one row per effort it marked.
                     segments=(fragmentos_concat if self._roi_segments
-                              else self._ventanas_de_carga(fv_loads, fs, len(emg_raw))),
+                              else self._tramos_de_sesion(sesion, piezas)
+                              or self._ventanas_de_carga(fv_loads, fs, len(emg_raw))),
                     # For the onset, a fast trace of the movement, not the
                     # smoothed envelope the panel draws (see
                     # movement_onset_signal).
@@ -1249,6 +1293,25 @@ class AnalysisWorker(QThread):
                     window_s=self._profile.mvc_peak_window_s,
                 )
                 result["contractions"] = filas
+                result["grad_steps"] = gradation_steps(
+                    sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],
+                    envelope=proc["emg_envelope"], mvc_ref=result.get("mvc_ref"),
+                    f_low=self._f_low, f_high=self._f_high,
+                )
+                if result["grad_steps"]:
+                    self.log.emit(tr("Gradation: {n} steps measured.").format(
+                        n=len(result["grad_steps"])))
+                result["reps"] = intermittent_reps(
+                    sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],
+                    f_low=self._f_low, f_high=self._f_high,
+                )
+                # The sustained maximum is the analysed span itself: its
+                # windows are the effort's (_esfuerzo_mantenido).
+                result["hold"] = (
+                    hold_result(result["t_seg"], result["mdf_seg"], result["rms_seg"],
+                                result.get("fat_active"), seg_len_s=self._seg_len_s)
+                    if self._esfuerzo_mantenido(sesion) and not self._roi_segments
+                    else None)
                 result["emd_ms_mean"] = mean_emd_ms(filas)
                 # The rule the rows were labelled under, so the chart can
                 # draw the same wedge the labels came from.
@@ -1261,6 +1324,9 @@ class AnalysisWorker(QThread):
             except Exception as exc:
                 result["contractions"] = []
                 result["emd_ms_mean"] = None
+                result["grad_steps"] = []
+                result["reps"] = []
+                result["hold"] = None
                 self.log.emit(
                     tr("The contraction table could not be built: {err}")
                     .format(err=exc)

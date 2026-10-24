@@ -46,6 +46,8 @@ from emgteach.charts import (
     COLOUR_2,
     draw_coactivation_chart,
     draw_contraction_chart,
+    draw_reps_chart,
+    draw_steps_chart,
 )
 from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
@@ -56,6 +58,7 @@ from emgteach.figures import (
     draw_raw_panel,
     draw_rms_panel,
 )
+from emgteach.guided import is_monotonic, reps_trend_pct
 from emgteach.i18n import tr
 from emgteach.modes import protocol_label
 from emgteach.mvc import (
@@ -537,6 +540,108 @@ def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -
     story.append(Spacer(1, 0.4 * cm))
 
 
+def _seccion_gradacion(story: list, result: Mapping[str, Any], h2, normal) -> None:
+    """The gradation, when the recording is one: the bars and their numbers.
+
+    The level held is the mean of the envelope over each step after its
+    first second (emgteach.guided); the tab shows the same bars and the same
+    two columns beside the contraction table.
+    """
+    pasos = result.get("grad_steps") or []
+    if not pasos:
+        return
+    story.append(Paragraph(tr("Guided session: gradation"), h2))
+    try:
+        story.append(Image(_render_chart(draw_steps_chart, pasos),
+                           width=16 * cm, height=6 * cm))
+        story.append(Spacer(1, 0.15 * cm))
+    except Exception:  # pragma: no cover — a chart must never sink the report
+        pass
+    rows = [[tr("Step"), tr("Asked (% MVC)"), tr("Held (% MVC)"), tr("Held (mV)"),
+             tr("RMS (mV)"), tr("MDF (Hz)")]]
+    for paso in pasos:
+        rows.append([
+            str(paso.k), f"{paso.target_pct:.0f}",
+            "" if paso.held_pct is None else f"{paso.held_pct:.0f}",
+            f"{paso.held_mv:.3f}", f"{paso.rms_mv:.3f}",
+            "" if paso.mdf_hz is None else f"{paso.mdf_hz:.0f}",
+        ])
+    story.append(_styled_table(rows, [1.6, 3.0, 3.0, 2.8, 2.8, 2.6]))
+    story.append(Spacer(1, 0.15 * cm))
+    story.append(Paragraph(
+        (tr("Each step held more than the one before.") if is_monotonic(pasos)
+         else tr("Not every step held more than the one before.")) + " " + tr(
+            "Held: the mean of the envelope over each step after its first "
+            "second, which is the reach and not the hold."), normal))
+    story.append(Spacer(1, 0.4 * cm))
+
+
+def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -> None:
+    """The fatigue sessions, when the recording is one of them.
+
+    Sustained: where the MDF and the RMS began and ended, how long each took
+    to fall 10 and 20 %, and panels 6 and 7 of the effort. Intermittent: the
+    RMS and MDF of each contraction, as bars and as a table.
+    """
+    hold = result.get("hold")
+    reps = result.get("reps") or []
+    if hold is None and not reps:
+        return
+    if hold is not None:
+        story.append(Paragraph(tr("Guided session: sustained maximum"), h2))
+        for idx in (5, 6):
+            try:
+                story.append(Image(_render_one_panel_figure(result, idx),
+                                   width=16 * cm, height=6.44 * cm))
+            except Exception:  # pragma: no cover — a panel must never sink the report
+                pass
+
+        def num(x, fmt):
+            return "" if x is None else format(x, fmt)
+
+        def cuando(t):
+            return tr("not reached") if t is None else f"{t:.0f} s"
+
+        rows = [[tr("Measure"), tr("First 5 s"), tr("Last 5 s"), tr("Change"),
+                 tr("−10 % at"), tr("−20 % at")],  # noqa: RUF001
+                [tr("MDF (Hz)"), num(hold.mdf_start_hz, ".0f"), num(hold.mdf_end_hz, ".0f"),
+                 num(hold.mdf_change_pct, "+.0f") + " %", cuando(hold.t_mdf_10),
+                 cuando(hold.t_mdf_20)],
+                [tr("RMS (mV)"), num(hold.rms_start_mv, ".3f"), num(hold.rms_end_mv, ".3f"),
+                 num(hold.rms_change_pct, "+.0f") + " %", cuando(hold.t_rms_10),
+                 cuando(hold.t_rms_20)]]
+        story.append(_styled_table(rows, [2.6, 2.6, 2.6, 2.4, 2.8, 2.8]))
+        story.append(Spacer(1, 0.15 * cm))
+        story.append(Paragraph(tr(
+            "Each value is the median of the one-second windows in which the "
+            "muscle was working; a fall counts once three windows in a row are "
+            "below the line."), normal))
+    if reps:
+        story.append(Paragraph(tr("Guided session: intermittent maximum"), h2))
+        try:
+            story.append(Image(_render_chart(draw_reps_chart, reps),
+                               width=16 * cm, height=6 * cm))
+            story.append(Spacer(1, 0.15 * cm))
+        except Exception:  # pragma: no cover — a chart must never sink the report
+            pass
+        primero = reps[0].rms_mv
+        rows = [[tr("Contraction"), tr("RMS (mV)"), tr("RMS (% of the first)"), tr("MDF (Hz)")]]
+        for r in reps:
+            rows.append([str(r.n), f"{r.rms_mv:.3f}",
+                         f"{100.0 * r.rms_mv / primero:.0f}" if primero else "",
+                         "" if r.mdf_hz is None else f"{r.mdf_hz:.0f}"])
+        story.append(_styled_table(rows, [3.2, 3.6, 4.6, 3.6]))
+        tendencia = reps_trend_pct(reps)
+        story.append(Spacer(1, 0.15 * cm))
+        story.append(Paragraph(tr(
+            "RMS over each contraction after its first second, not its peak: "
+            "the peak is the start of each contraction and does not fall.")
+            + ("" if tendencia is None else " " + tr(
+                "Trend: {pct:+.1f} % of the first per contraction.").format(pct=tendencia)),
+            normal))
+    story.append(Spacer(1, 0.4 * cm))
+
+
 def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> None:
     """The reference, and everything the application knows about it.
 
@@ -769,6 +874,8 @@ def build_session_report(
     # what the other muscle did during each effort. The report is what the
     # student hands in, so this is where it has to be.
     _seccion_calibracion(story, result, h2, normal)
+    _seccion_gradacion(story, result, h2, normal)
+    _seccion_fatiga_guiada(story, result, h2, normal)
     _seccion_contracciones(story, result, h2, normal)
 
     # Co-activation, when the recording can support it: two muscles, and an

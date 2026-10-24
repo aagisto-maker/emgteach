@@ -298,28 +298,38 @@ señal.
 **Objetivo.** Comprobar que la amplitud crece con la activación de forma monótona
 pero **no lineal**, y ver para qué sirve normalizar.
 
-**Procedimiento.**
-1. **Iniciar grabación** y pulsar **«Calibrar CVM»** de inmediato: el asistente
-   pide el calentamiento y los tres esfuerzos máximos (apartado 4). Después, las
-   **barras de carga** de la caja «Carga muscular» muestran el % CVM en vivo.
-2. Guiándose por la barra, hacer cuatro contracciones isométricas de 4 s contra la
-   mesa a **25, 50, 75 y 100 %** de la barra, con 5 s de reposo entre ellas.
-3. **Detener**. En Análisis, revisar las repeticiones de la calibración y, en los
-   fragmentos, dejar solo los cuatro escalones.
+**Procedimiento.** Con la sesión guiada **«Gradación»**.
+1. En la línea de «Calibrar CVM», elegir **«Gradación»** en el desplegable (abre
+   en «Grabación libre») y pulsar **Iniciar grabación**. La aplicación pide el
+   calentamiento y los tres esfuerzos máximos (apartado 4), cuenta 5 s y dirige
+   los escalones: cinco contracciones isométricas de 4 s contra la mesa, al
+   **20, 40, 60 y 80 % de la barra y al máximo**, con 6 s de reposo entre ellas.
+   Cada cambio de fase se anuncia con un tono y un destello; el panel muestra la
+   barra con la franja del escalón pedido.
+2. La grabación se **detiene sola** al terminar. En Análisis, revisar las
+   repeticiones de la calibración; los cinco escalones ya son las cinco filas de
+   la tabla, sin elegir fragmentos.
 
-**Datos a recoger.** De la tabla de contracciones:
+**Datos a recoger.** De la tabla de contracciones y de la vista **«Escalones»**:
 
-| Escalón pedido | RMS (mV) | Pico (% CVM) |
-|---|---|---|
-| 25 % | | |
-| 50 % | | |
-| 75 % | | |
-| 100 % | | |
+| Escalón pedido | Mantenido (% CVM) | RMS (mV) | MDF (Hz) |
+|---|---|---|---|
+| 20 % | | | |
+| 40 % | | | |
+| 60 % | | | |
+| 80 % | | | |
+| máximo | | | |
+
+«Mantenido» es la media de la envolvente en cada escalón tras su primer segundo,
+que es el de llegar al nivel y no el de mantenerlo.
 
 **Cuestiones.**
-- ¿Sube el RMS en cada escalón? ¿Se duplica del 25 al 50 %? ¿Y del 50 al 100 %?
-  Comente la forma de la relación y por qué la sEMG es un buen indicador de
-  activación y un mal dinamómetro.
+- ¿Sube el RMS en cada escalón? ¿Cómo de cerca del escalón pedido se quedó cada
+  uno, y cuál costó más mantener? La barra mide **activación**, no fuerza: ¿le
+  pareció que el 40 % de la barra era el 40 % de su fuerza? Comente por qué la
+  sEMG es un buen indicador de activación y un mal dinamómetro.
+- ¿Cambia la MDF de un escalón a otro? ¿Qué unidades motoras se suman al subir
+  la fuerza, y cómo afectaría eso al espectro?
 - Compare su RMS al 100 % con el de un compañero. ¿Quién «hace más fuerza»? ¿Por
   qué esa comparación no vale, y sí vale la columna de % CVM?
 - ¿Qué dice la ficha **«Máximo de la tarea»**? Si pasa del 100 %, ¿qué ocurrió en
@@ -331,17 +341,31 @@ pero **no lineal**, y ver para qué sirve normalizar.
 frecuencias bajas, y entender qué hace falta para poder afirmarla.
 
 **Fundamento.** Al sostener una contracción bajan el pH y la velocidad de
-conducción de las fibras; el espectro se comprime hacia abajo y **la MDF cae**. A
-la vez el RMS suele **subir**, porque se reclutan más unidades para mantener la
-fuerza. La prueba específica es la caída de la MDF, no la subida del RMS.
+conducción de las fibras; el espectro se comprime hacia abajo y **la MDF cae**.
+Lo que hace el RMS depende del esfuerzo: en una contracción **submáxima** suele
+**subir**, porque se reclutan más unidades para mantener la fuerza; en una
+**máxima** ya no quedan unidades que sumar, la fuerza no se sostiene y el RMS
+**baja**. La prueba específica es la caída de la MDF.
 
-**Procedimiento.**
-1. **Iniciar grabación**, **Calibrar CVM**, y después mantener una contracción
-   isométrica contra la mesa a un **50 %** de la barra **durante 30 a 60 s**, o
-   hasta no poder sostenerla. Reposo 5 s antes y después.
-2. **Detener**. En Análisis, revisar las repeticiones y, en los fragmentos,
-   dejar **solo la contracción mantenida**. Marcar el panel **7. MDF/tiempo**
-   (está en «Más paneles…»).
+**Procedimiento.** Con la sesión guiada **«Fatiga: máxima mantenida»**.
+1. Elegir la sesión en el desplegable de la línea de «Calibrar CVM» y pulsar
+   **Iniciar grabación** (la calibración es opcional: pulsar «Calibrar CVM»
+   antes, con «Grabación libre», si se quiere la barra en % CVM). Tras 5 s de
+   preparación y 5 s de reposo, una cuenta atrás de 3 s y **30 s de contracción
+   máxima isométrica** contra la mesa, antebrazo apoyado, sin peso en la mano.
+   **Respire durante el esfuerzo** (no aguante el aire) y, si duele, suelte.
+2. La grabación se **detiene sola**. En Análisis, el tramo analizado ya es la
+   contracción, y los paneles **6. RMS/ventana** y **7. MDF/tiempo** aparecen
+   marcados.
+
+**Variante intermitente** (**«Fatiga: máxima intermitente»**): diez contracciones
+máximas de **5 s con 1 s de reposo** entre ellas, con tono al empezar y al acabar
+cada una y la cuenta atrás en pantalla. Se mide el **RMS de cada contracción**
+tras su primer segundo, no su pico: el pico es el arranque de cada contracción y
+no baja. La vista **«Por contracción»** de la caja de contracciones lo dibuja.
+Con 1 s de reposo la caída es casi continua (en una prueba con el músculo ya
+cansado, un 21 % de la primera a la décima); con reposos más largos se vuelve
+irregular, porque el músculo se recupera.
 
 **Cómo decide la aplicación.** Ajusta una recta a la MDF de las ventanas de un
 segundo en que el músculo trabajaba. Dice **«Fatiga detectada»** si la pendiente
@@ -351,19 +375,21 @@ concluyente»** si la recta no ajusta, que es lo normal en una serie de
 contracciones breves. No concluyente no es «no»: es que el registro no responde a
 la pregunta.
 
-**Datos a recoger.**
+**Datos a recoger.** De la línea de resumen de la caja de contracciones y del
+informe:
 
-| Magnitud | Primeros 5 s | Últimos 5 s |
-|---|---|---|
-| MDF (Hz) (panel 7) | | |
-| RMS (mV) (panel 6, en «Más paneles…») | | |
+| Magnitud | Primeros 5 s | Últimos 5 s | Cambio | −10 % a los |
+|---|---|---|---|---|
+| MDF (Hz) (panel 7) | | | | |
+| RMS (mV) (panel 6) | | | | |
 
 Pendiente de la MDF: ____ Hz/s (R² = ____). Veredicto: ______________.
 
 **Cuestiones.**
-- ¿Bajó la MDF? ¿Cuánto en porcentaje? ¿Qué lo explica en las fibras?
-- ¿Subió el RMS al final? ¿Por qué lo haría el sistema nervioso? ¿Qué parte de
-  esa subida puede no ser reclutamiento?
+- ¿Bajó la MDF? ¿Cuánto en porcentaje, y a los cuántos segundos había caído un
+  10 %? ¿Qué lo explica en las fibras?
+- ¿Qué hizo el RMS? Compare con lo que esperaría en una contracción al 50 %:
+  ¿por qué en una máxima baja y en una submáxima suele subir?
 - Un compañero sostuvo 15 s y su veredicto es «no concluyente». ¿Está fatigado o
   no? ¿Qué le falta al registro?
 

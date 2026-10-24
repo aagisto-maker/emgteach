@@ -312,28 +312,38 @@ signal.
 **Objective.** Check that amplitude grows with activation monotonically but
 **not linearly**, and see what normalisation is for.
 
-**Procedure.**
-1. **Start recording** and press **«Calibrate MVC»** at once: the wizard asks for
-   the warm-up and the three maximal efforts (section 4). Afterwards the **load
-   bars** in the «Muscle load» box show % MVC live.
-2. Guided by the bar, make four 4 s isometric contractions against the table at
-   **25, 50, 75 and 100 %** of the bar, with 5 s of rest between them.
-3. **Stop**. In Analysis, review the calibration repetitions and, in the
-   fragments, keep only the four steps.
+**Procedure.** With the guided session **«Gradation»**.
+1. On the line of «Calibrate MVC», choose **«Gradation»** in the chooser (it opens
+   on «Free recording») and press **Start recording**. The application asks for
+   the warm-up and the three maximal efforts (section 4), counts 5 s and directs
+   the steps: five 4 s isometric contractions against the table, at **20, 40, 60
+   and 80 % of the bar and at the maximum**, with 6 s of rest between them. Every
+   phase change is announced with a tone and a flash; the panel shows the bar
+   with the band of the step asked for.
+2. The recording **stops by itself** at the end. In Analysis, review the
+   calibration repetitions; the five steps are already the five rows of the
+   table, with no fragments to choose.
 
-**Data to record.** From the contraction table:
+**Data to record.** From the contraction table and the **«Steps»** view:
 
-| Step asked for | RMS (mV) | Peak (% MVC) |
-|---|---|---|
-| 25 % | | |
-| 50 % | | |
-| 75 % | | |
-| 100 % | | |
+| Step asked for | Held (% MVC) | RMS (mV) | MDF (Hz) |
+|---|---|---|---|
+| 20 % | | | |
+| 40 % | | | |
+| 60 % | | | |
+| 80 % | | | |
+| maximum | | | |
+
+«Held» is the mean of the envelope over each step after its first second, which
+is the reach and not the hold.
 
 **Questions.**
-- Does the RMS rise at each step? Does it double from 25 to 50 %? And from 50 to
-  100 %? Comment on the shape of the relationship and on why sEMG is a good
+- Does the RMS rise at each step? How close to the step asked for did each one
+  stay, and which was hardest to hold? The bar measures **activation**, not force:
+  did 40 % of the bar feel like 40 % of your force? Comment on why sEMG is a good
   indicator of activation and a poor dynamometer.
+- Does the MDF change from one step to the next? Which motor units are added as
+  the force rises, and how would that affect the spectrum?
 - Compare your RMS at 100 % with a classmate's. Who "makes more force"? Why is
   that comparison invalid, while the % MVC column is valid?
 - What does the **«Task maximum»** card say? If it is above 100 %, what happened
@@ -345,17 +355,30 @@ signal.
 frequencies, and understand what it takes to be able to claim it.
 
 **Background.** Holding a contraction lowers the pH and the conduction velocity
-of the fibres; the spectrum compresses downwards and **the MDF falls**. At the
-same time the RMS usually **rises**, because more units are recruited to keep the
-force. The specific proof is the fall of the MDF, not the rise of the RMS.
+of the fibres; the spectrum compresses downwards and **the MDF falls**. What the
+RMS does depends on the effort: in a **submaximal** contraction it usually
+**rises**, because more units are recruited to keep the force; in a **maximal**
+one there are no units left to add, the force is not held and the RMS **falls**.
+The specific proof is the fall of the MDF.
 
-**Procedure.**
-1. **Start recording**, **Calibrate MVC**, then hold an isometric contraction
-   against the table at **50 %** of the bar **for 30 to 60 s**, or until it cannot
-   be held. 5 s of rest before and after.
-2. **Stop**. In Analysis, review the repetitions and, in the fragments, keep
-   **only the sustained contraction**. Tick panel **7. MDF/time** (in «More
-   panels…»).
+**Procedure.** With the guided session **«Fatigue: sustained maximum»**.
+1. Choose the session in the chooser on the line of «Calibrate MVC» and press
+   **Start recording** (the calibration is optional: press «Calibrate MVC» first,
+   with «Free recording», for the bar in % MVC). After 5 s of preparation and 5 s
+   of rest, a 3 s countdown and **30 s of maximal isometric contraction** against
+   the table, forearm resting, no weight in the hand. **Breathe during the
+   effort** (do not hold your breath) and, if it hurts, let go.
+2. The recording **stops by itself**. In Analysis the analysed span is already
+   the contraction, and panels **6. RMS/window** and **7. MDF/time** come ticked.
+
+**Intermittent variant** (**«Fatigue: intermittent maximum»**): ten maximal
+contractions of **5 s with 1 s of rest** between them, with a tone at the start
+and the end of each and the countdown on screen. What is measured is the **RMS
+of each contraction** after its first second, not its peak: the peak is the start
+of each contraction and does not fall. The **«Per contraction»** view of the
+contractions box draws it. With 1 s of rest the fall is almost steady (in a trial
+with the muscle already tired, 21 % from the first to the tenth); with longer
+rests it becomes irregular, because the muscle recovers.
 
 **How the application decides.** It fits a line to the MDF of the one-second
 windows in which the muscle was working. It says **«Fatigue detected»** if the
@@ -365,19 +388,21 @@ windows); **«Not detected»** if the MDF holds or rises with a line that fits; 
 brief contractions. Not conclusive is not "no": the recording does not answer the
 question.
 
-**Data to record.**
+**Data to record.** From the summary line of the contractions box and from the
+report:
 
-| Quantity | First 5 s | Last 5 s |
-|---|---|---|
-| MDF (Hz) (panel 7) | | |
-| RMS (mV) (panel 6, in «More panels…») | | |
+| Quantity | First 5 s | Last 5 s | Change | −10 % at |
+|---|---|---|---|---|
+| MDF (Hz) (panel 7) | | | | |
+| RMS (mV) (panel 6) | | | | |
 
 MDF slope: ____ Hz/s (R² = ____). Verdict: ______________.
 
 **Questions.**
-- Did the MDF fall? By what percentage? What explains it in the fibres?
-- Did the RMS rise at the end? Why would the nervous system do that? What part
-  of that rise may not be recruitment?
+- Did the MDF fall? By what percentage, and after how many seconds had it fallen
+  10 %? What explains it in the fibres?
+- What did the RMS do? Compare with what you would expect at 50 %: why does it
+  fall in a maximal contraction and usually rise in a submaximal one?
 - A classmate held for 15 s and got «not conclusive». Fatigued or not? What is
   the recording missing?
 

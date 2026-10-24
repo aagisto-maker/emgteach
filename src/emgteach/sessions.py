@@ -42,6 +42,8 @@ from dataclasses import dataclass, field, replace
 __all__ = [
     "EFFORT",
     "FAMILIES",
+    "GRADATION_STEPS_PCT",
+    "HOLD_MAX_S",
     "READY",
     "REST",
     "GuidedSession",
@@ -49,7 +51,10 @@ __all__ = [
     "SessionPhase",
     "SessionScript",
     "end_marker",
+    "gradation_script",
     "header_marker",
+    "hold_script",
+    "intermittent_script",
     "is_session_marker",
     "parse_session_markers",
     "span_end_marker",
@@ -133,7 +138,9 @@ class SessionPhase:
     end; empty for a phase that is not measured — the rests between efforts
     are the gaps between marks, as the rest between calibration efforts is.
     ``cue`` says whether its start is announced (tone and flash); a phase that
-    only continues the one before it is not.
+    only continues the one before it is not. ``fmt`` fills the ``{…}`` of the
+    title and the text once translated (``(("pct", 40),)``), so the catalogue
+    holds one entry for every step.
     """
 
     key: str
@@ -146,6 +153,7 @@ class SessionPhase:
     opens: str = ""
     closes: str = ""
     cue: bool = True
+    fmt: tuple[tuple[str, object], ...] = ()
     #: Start of this phase within the session, filled in by
     #: :meth:`SessionScript.timed`.
     start: float = 0.0
@@ -180,8 +188,9 @@ class SessionScript:
     header: str
     phases: tuple[SessionPhase, ...]
     needs_mvc: bool = False
-    #: One line for the tooltip of the session chooser.
+    #: One line for the tooltip of the session chooser, and what fills its ``{…}``.
     summary: str = ""
+    fmt: tuple[tuple[str, object], ...] = ()
 
     def __post_init__(self) -> None:
         if self.family not in FAMILIES:
@@ -206,6 +215,158 @@ class SessionScript:
         """The same script with every phase lasting *seconds*: for tests."""
         return replace(self, phases=tuple(
             replace(f, seconds=float(seconds)) for f in self.phases))
+
+
+# ---------------------------------------------------------------------------
+# The sessions
+# ---------------------------------------------------------------------------
+
+#: The gradation's targets, % MVC. Five and not four: with four (25, 50, 75,
+#: 100) the curve has three intervals; with five its bend can be seen.
+GRADATION_STEPS_PCT: tuple[int, ...] = (20, 40, 60, 80, 100)
+#: Seconds of each step, of the rest between steps, and of the rests that
+#: open and close the session (plan, §4.1).
+GRADATION_STEP_S = 4.0
+GRADATION_REST_S = 6.0
+GRADATION_EDGE_S = 5.0
+#: Half the width of the band each step aims at, % MVC.
+_GRADATION_BAND = 5.0
+
+
+def gradation_script() -> SessionScript:
+    """Contractions of growing strength, each held a few seconds.
+
+    The envelope grows with the force — monotonically, and not in proportion,
+    which is the lesson. The steps are asked for as a share of the bar, so the
+    session calibrates first (Ángel's decision of 24 October 2026: without
+    the bar the student cannot grade).
+    """
+    n = len(GRADATION_STEPS_PCT)
+    fases: list[SessionPhase] = [SessionPhase(
+        "rest_0", REST, GRADATION_EDGE_S, "Rest",
+        "Leave your hand loose on the table.")]
+    for k, pct in enumerate(GRADATION_STEPS_PCT, start=1):
+        maximo = pct >= 100
+        fases.append(SessionPhase(
+            f"step_{k}", EFFORT, GRADATION_STEP_S,
+            "Step {k} of {n}: maximum" if maximo else "Step {k} of {n}: {pct} %",
+            ("Squeeze your fist as hard as you can and hold it."
+             if maximo else "Squeeze your fist up to {pct} % of the bar and hold it there."),
+            level=pct / 100.0,
+            target_pct=(100.0 - 2 * _GRADATION_BAND, 100.0) if maximo
+            else (pct - _GRADATION_BAND, pct + _GRADATION_BAND),
+            opens=span_start_marker("GRAD", "step", k=k, pct=pct),
+            closes=span_end_marker("GRAD", "step", k=k),
+            fmt=(("k", k), ("n", n), ("pct", pct)),
+        ))
+        if k < n:
+            fases.append(SessionPhase(
+                f"rest_{k}", REST, GRADATION_REST_S, "Rest", "Let go and rest."))
+    fases.append(SessionPhase(
+        "rest_end", REST, GRADATION_EDGE_S, "Rest",
+        "Let go. The gradation is over: the recording stops on its own."))
+    return SessionScript(
+        key="gradacion", family="GRAD", title="Gradation", slug="gradacion",
+        header=header_marker("GRAD", steps=n), phases=tuple(fases), needs_mvc=True,
+        summary="Five contractions of growing strength, 20 to 100 % of the bar, "
+                "four seconds each with rest between them. Calibrates first.",
+    )
+
+
+#: The sustained maximum: 30 s by default and never more than 45 (Ángel's
+#: decision of 24 October 2026). With a maximal effort the MDF falls fast
+#: enough for its line to fit in thirty seconds; the practical guide's 50 %
+#: needed a minute and still came out inconclusive in some subjects.
+HOLD_DEFAULT_S = 30.0
+HOLD_MAX_S = 45.0
+_HOLD_BEFORE_S = 5.0
+_HOLD_COUNT_S = 3.0
+_HOLD_AFTER_S = 10.0
+
+
+def hold_script(seconds: float = HOLD_DEFAULT_S) -> SessionScript:
+    """One maximal contraction, held: the amplitude and the MDF fall.
+
+    Isometric, the forearm resting and the fist against the table, with no
+    weight in the hand. The text tells the student to breathe — a maximal
+    effort held with the breath held is a Valsalva — and to let go if it
+    hurts. The calibration is optional: without it the panel's bar is the
+    effort against the peak of this same contraction.
+    """
+    secs = float(seconds)
+    if not 0 < secs <= HOLD_MAX_S:
+        raise ValueError(f"A sustained maximum lasts at most {HOLD_MAX_S:g} s, not {secs:g}.")
+    fases = (
+        SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
+                     "Forearm on the table, fist closed without squeezing."),
+        SessionPhase("ready", READY, _HOLD_COUNT_S, "Squeeze as hard as you can at 0",
+                     "And keep it up for {secs:g} seconds.", fmt=(("secs", secs),)),
+        SessionPhase("effort", EFFORT, secs, "Maximum: keep it up",
+                     "Squeeze as hard as you can and keep it up. Breathe: do not "
+                     "hold your breath. If it hurts, let go.", level=1.0,
+                     opens=span_start_marker("HOLD", "effort", secs=secs),
+                     closes=span_end_marker("HOLD", "effort")),
+        SessionPhase("rest_end", REST, _HOLD_AFTER_S, "Rest",
+                     "Let go and let the hand drop. The recording stops on its own."),
+    )
+    return SessionScript(
+        key="fatiga", family="HOLD", title="Fatigue: sustained maximum", slug="fatiga",
+        header=header_marker("HOLD", mode="sustained", secs=secs), phases=fases,
+        summary="One maximal contraction held for {secs:g} s, with rest before "
+                "and after. The amplitude and the MDF fall as it is held.",
+        fmt=(("secs", secs),),
+    )
+
+
+#: The intermittent maximum: ten contractions of 5 s with 1 s between them.
+#: Ángel's pilots of 24 October 2026: with 5/1 s the RMS fell 21 % almost
+#: steadily over ten; with 5/2 s and 5/5 s the fall was irregular.
+INTERMITTENT_REPS = 10
+INTERMITTENT_ON_S = 5.0
+INTERMITTENT_OFF_S = 1.0
+
+
+def intermittent_script(reps: int = INTERMITTENT_REPS, on_s: float = INTERMITTENT_ON_S,
+                        off_s: float = INTERMITTENT_OFF_S) -> SessionScript:
+    """Maximal contractions with a short rest between them, timed by the app.
+
+    The measure is each contraction's RMS, not its peak: the peak is the
+    start of each contraction, and it does not fall. Tone at the start and
+    at the end of every contraction, and the seconds always on screen: timing
+    it by hand was what made the pilots hard.
+    """
+    n = int(reps)
+    fases: list[SessionPhase] = [
+        SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
+                     "Forearm on the table, fist closed without squeezing."),
+        SessionPhase("ready", READY, _HOLD_COUNT_S, "Squeeze as hard as you can at 0",
+                     "{n} contractions of {on:g} s, {off:g} s apart.",
+                     fmt=(("n", n), ("on", on_s), ("off", off_s))),
+    ]
+    for k in range(1, n + 1):
+        fases.append(SessionPhase(
+            f"rep_{k}", EFFORT, float(on_s), "Contraction {k} of {n}: maximum",
+            "Squeeze as hard as you can. Breathe.", level=1.0,
+            opens=span_start_marker("HOLD", "rep", n=k),
+            closes=span_end_marker("HOLD", "rep", n=k),
+            fmt=(("k", k), ("n", n)),
+        ))
+        if k < n:
+            fases.append(SessionPhase(
+                f"off_{k}", READY, float(off_s), "Let go", "The next one comes at 0."))
+    fases.append(SessionPhase(
+        "rest_end", REST, _HOLD_AFTER_S, "Rest",
+        "Let go and let the hand drop. The recording stops on its own."))
+    return SessionScript(
+        key="fatiga_intermitente", family="HOLD", title="Fatigue: intermittent maximum",
+        slug="fatiga_intermitente",
+        header=header_marker("HOLD", mode="intermittent", reps=n, on=float(on_s),
+                             off=float(off_s)),
+        phases=tuple(fases),
+        summary="{n} maximal contractions of {on:g} s with {off:g} s between them; "
+                "the RMS of each one falls as the muscle tires.",
+        fmt=(("n", n), ("on", on_s), ("off", off_s)),
+    )
 
 
 # ---------------------------------------------------------------------------
