@@ -217,6 +217,32 @@ class TestThePhonesGetTheReport:
         ana._ofrecer_descargas(ana._resultado_prueba)
         assert dif.descargas == []
 
+    def test_the_report_carries_the_panels_ticked_on_screen(
+        self, ana, monkeypatch
+    ) -> None:
+        """The boxes are in screen order (1. Raw, 2. Env. norm., 3. PSD, …)
+        and the report wants each panel's identifier. Until 3.9.1 the phones'
+        report was given the position of each ticked box, so «2. Env. norm.»
+        came out as the filtered and rectified signal."""
+        from emgteach.gui.tabs import analysis as mod
+
+        pedidos: list[list[int] | None] = []
+
+        def informe(out, r, meta, panels=None, time_range=None):
+            pedidos.append(panels)
+            Path(out).write_bytes(b"%PDF-1.4 prueba")
+
+        monkeypatch.setattr(mod, "build_session_report", informe)
+        monkeypatch.setattr(ana, "_broadcast", _Difusion())
+        marcados = {0, 3, 6}            # Raw, Env. norm. and MDF/time, by pid
+        for pid, chk in zip(ana._panel_pids, ana._chk_paneles, strict=True):
+            # Without redrawing: the result here is a stand-in with no signal.
+            chk.blockSignals(True)
+            chk.setChecked(pid in marcados)
+            chk.blockSignals(False)
+        ana._ofrecer_descargas(ana._resultado_prueba)
+        assert pedidos and sorted(pedidos[0] or []) == sorted(marcados)
+
     def test_a_result_already_replaced_is_not_offered(self, ana, monkeypatch) -> None:
         """Se prepara después de pintar los paneles; si para entonces ya hay
         otro análisis, el informe del anterior no se ofrece como si fuera el
