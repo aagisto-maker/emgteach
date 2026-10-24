@@ -440,6 +440,16 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   contracciones de 4 s de fuerza creciente, al **20, 40, 60 y 80 % de la barra y al
   máximo**, con 6 s de reposo entre ellas. El panel muestra la barra del músculo
   con la franja del escalón pedido.
+- **Fatiga: máxima mantenida** (48 s; la calibración es opcional): 5 s de reposo,
+  una cuenta atrás de 3 s, **30 s de contracción máxima** isométrica contra la mesa
+  y 10 s de reposo. El texto pide respirar (no aguantar el aire) y soltar si duele.
+  En Análisis, el tramo analizado es la contracción y los paneles 6 y 7 aparecen
+  marcados; la línea de resumen da la MDF y el RMS de los primeros y los últimos
+  5 s y a los cuántos segundos cayó la MDF un 10 %.
+- **Fatiga: máxima intermitente** (77 s): diez contracciones máximas de **5 s con
+  1 s de reposo**, con tono al empezar y al acabar cada una y la cuenta atrás en
+  pantalla. Se mide el **RMS de cada contracción** tras su primer segundo (no el
+  pico, que es el arranque y no baja) y su MDF: vista «Por contracción».
 - La casilla **«Tono»** se recuerda entre sesiones y viene marcada; al marcarla
   suena, para comprobar que se oye. Si un tono no puede sonar, el registro de
   eventos lo dice.
@@ -1035,8 +1045,9 @@ el acelerómetro y las medidas que se ofrecen después.
    escalones de esfuerzo, elegir antes la sesión guiada **«Gradación»** en el
    desplegable de la línea de «Calibrar CVM» (§4.3): *Iniciar grabación* calibra,
    cuenta 5 s, dirige los cinco escalones y se detiene sola. Para lo demás,
-   **«Grabación libre»** y *Iniciar grabación*. Si el ejercicio necesita % CVM
-   (fatiga, carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
+   **«Grabación libre»** y *Iniciar grabación*; para la fatiga, las sesiones
+   **«Fatiga: máxima mantenida»** o **«Fatiga: máxima intermitente»**. Si el
+   ejercicio necesita % CVM (carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
    calentamiento y las tres sacudidas máximas, breves y explosivas (para el
    flexor del antebrazo, con el puño cerrado).
    Después, la tarea; los inicios se marcan solos. *Detener grabación*.
@@ -1052,6 +1063,22 @@ el acelerómetro y las medidas que se ofrecen después.
    límites. Generar su informe.
 
 Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
+
+> **Al margen: contracciones muy seguidas.** Si se repiten contracciones breves
+> muy seguidas, lo más rápido posible, los picos de la envolvente pueden subir
+> algo y la envolvente puede no volver del todo a reposo entre una y otra. **No es
+> la *treppe*** (la «escalera»): la treppe es un fenómeno mecánico, de la fuerza,
+> que se ve al estimular el músculo eléctricamente; en el EMG voluntario apenas se
+> ve. Que la envolvente no baje a reposo entre contracciones rápidas se debe sobre
+> todo a que **la relajación voluntaria no llega a completarse**. El filtro de la
+> envolvente (5 Hz) no influye a los ritmos que se pueden seguir: calculado con
+> pulsos ideales, a una contracción cada 3, 2 o 1.5 s deja el hueco entre ellas en
+> el nivel de reposo, y solo empieza a notarse a dos o más contracciones por
+> segundo (un 1.4 % del pico a una cada 0.5 s). En las pruebas del 24 de octubre de
+> 2026, a 3, 2 y 1.5 s el pico no cambió (unos 0.20 mV) y la envolvente volvió a
+> cero; solo un tren lo más rápido posible subió algo los picos y dejó el suelo
+> algo por encima de cero, y sin controlar la fuerza no es concluyente. Por eso no
+> hay una sesión guiada para esto.
 
 ### 7.2 Contracción agonista / antagonista
 

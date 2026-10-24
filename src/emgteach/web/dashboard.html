@@ -112,6 +112,11 @@ const M = {
   mStep:             ["Step",                              "Escalón"],
   mStepMax:          ["max",                               "máx."],
   mHeldOf:           ["held, asked",                       "mantenido, pedido"],
+  mHoldMdf:          ["MDF, start → end",                  "MDF, inicio → final"],
+  mHoldRms:          ["RMS, start → end",                  "RMS, inicio → final"],
+  mHoldT10:          ["MDF −10 % at",                      "MDF −10 % a los"],
+  mNever:            ["not reached",                       "no se alcanza"],
+  mReps:             ["RMS per contraction",               "RMS de cada contracción"],
   dlReport:          ["⬇️ Download report (PDF)",          "⬇️ Descargar informe (PDF)"],
 };
 function t(k) { return (M[k] || ["", ""])[ES ? 1 : 0]; }
@@ -304,6 +309,16 @@ function showResults(m) {
     [t("mDur"), m.duration + " s"], [t("mFat"), `<b style="color:${fc}">${fat}</b>`],
   ];
   // The gradation, step by step: the level held against the one asked.
+  // The fatigue sessions: how much MDF and RMS fell, and when.
+  if (m.hold) {
+    const signo = (x) => x == null ? "—" : (x > 0 ? "+" : "") + x + " %";
+    items.push([t("mHoldMdf"), signo(m.hold.mdf)], [t("mHoldRms"), signo(m.hold.rms)],
+               [t("mHoldT10"), m.hold.t10 == null ? t("mNever") : m.hold.t10 + " s"]);
+  }
+  if ((m.reps || []).length) {
+    const r = m.reps, c = r[0] ? Math.round(100 * (r[r.length - 1] - r[0]) / r[0]) : 0;
+    items.push([t("mReps"), `${r[0]} → ${r[r.length - 1]} mV (${c > 0 ? "+" : ""}${c} %)`]);
+  }
   for (const [pedido, mantenido] of (m.steps || [])) {
     const nombre = pedido >= 100 ? t("mStepMax") : pedido + " %";
     items.push([`${t("mStep")} ${nombre}`,

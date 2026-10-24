@@ -143,6 +143,8 @@ from emgteach.sessions import (
     SessionPhase,
     SessionScript,
     gradation_script,
+    hold_script,
+    intermittent_script,
     parse_session_markers,
 )
 from emgteach.station import ADDRESS_FILE, read_station_address
@@ -609,6 +611,8 @@ _COMBO_ST = (
 #: (:mod:`emgteach.sessions`). The chooser is hidden while this is empty.
 GUIDED_SESSIONS: dict[str, Callable[[], SessionScript]] = {
     "gradacion": gradation_script,
+    "fatiga": hold_script,
+    "fatiga_intermitente": intermittent_script,
 }
 
 #: Where the «Tone» box is remembered between sessions. On by default, as in
@@ -803,6 +807,11 @@ class AcquisitionTab(QWidget):
         #: reference. The load bars show it, and so does the guide's box
         #: while it is floating over them.
         self._carga_inst = [0.0] * MAX_CHANNELS
+        #: The envelope this block, in mV, and the highest it has been in the
+        #: running effort of a guided session: what its panel's bar shows
+        #: when there is no calibration to give a % MVC.
+        self._env_inst = [0.0] * MAX_CHANNELS
+        self._sesion_pico = 0.0
         self._coact_fase = ""
         self._coact_elapsed = 0.0
         self._coact_timer = QTimer(self)
@@ -3643,6 +3652,8 @@ class AcquisitionTab(QWidget):
         """Per-block hook from _on_data_ready: feed the MVC wizard during a
         contraction window, otherwise update the live %MVC monitor."""
         n_ch = min(len(env), self._n_channels)
+        for c in range(n_ch):
+            self._env_inst[c] = float(np.mean(env[c])) if len(env[c]) else 0.0
         if self._mvc_active:
             if self._mvc_phase == "contract":
                 self._mvc_feed(env)
@@ -4130,7 +4141,8 @@ class AcquisitionTab(QWidget):
             script = construir()
             combo.addItem(tr(script.title), clave)
             if script.summary:
-                combo.setItemData(combo.count() - 1, tr(script.summary),
+                combo.setItemData(combo.count() - 1,
+                                  tr(script.summary).format(**dict(script.fmt)),
                                   Qt.ItemDataRole.ToolTipRole)
         combo.setCurrentIndex(0)
         combo.blockSignals(False)
@@ -4209,6 +4221,7 @@ class AcquisitionTab(QWidget):
         """A phase begins: announce it, and tell the simulated subject."""
         if fase.kind == EFFORT and fase.level:
             self._pedir_al_sujeto({0: float(fase.level)})
+            self._sesion_pico = 0.0
         else:
             # Rest is an instruction too: «do nothing», not the board's cycle.
             self._pedir_al_sujeto({})
@@ -4223,7 +4236,13 @@ class AcquisitionTab(QWidget):
         titulo = tr(fase.title).format(**campos)
         texto = tr(fase.text).format(**campos) if fase.text else ""
         cuenta = max(1, math.ceil(restante))
-        carga = self._carga_inst[0] / 100.0 if self._mvc_ref[0] else 0.0
+        if self._mvc_ref[0]:
+            carga = self._carga_inst[0] / 100.0
+        else:
+            # No calibration: the effort against the peak of this same
+            # contraction, which is what falls as a held maximum tires.
+            self._sesion_pico = max(self._sesion_pico, self._env_inst[0])
+            carga = self._env_inst[0] / self._sesion_pico if self._sesion_pico > 0 else 0.0
         if fase.kind == READY:
             self._mvc_overlay.show_ready(titulo, cuenta, texto, waiting=hecho)
             self._bcast_calib(True, "ready", titulo, texto, count=cuenta)

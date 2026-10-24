@@ -357,6 +357,17 @@ session.
   4 s contractions of growing strength, at **20, 40, 60 and 80 % of the bar and at
   the maximum**, with 6 s of rest between them. The panel shows the muscle's bar
   with the band of the step asked for.
+- **Fatigue: sustained maximum** (48 s; calibration optional): 5 s of rest, a 3 s
+  countdown, **30 s of maximal isometric contraction** against the table and 10 s
+  of rest. The text asks to breathe (not to hold the breath) and to let go if it
+  hurts. In Analysis the analysed span is the contraction and panels 6 and 7 come
+  ticked; the summary line gives the MDF and RMS of the first and last 5 s and
+  after how many seconds the MDF had fallen 10 %.
+- **Fatigue: intermittent maximum** (77 s): ten maximal contractions of **5 s with
+  1 s of rest**, with a tone at the start and the end of each and the countdown on
+  screen. What is measured is the **RMS of each contraction** after its first
+  second (not the peak, which is the start and does not fall) and its MDF: view
+  «Per contraction».
 - The **«Tone»** box is remembered between sessions and comes ticked; ticking it
   plays the tone, to check it can be heard. A tone that cannot sound is noted in
   the event log.
@@ -798,8 +809,10 @@ Each begins by **choosing the practical** in the top-right selector.
 1. Connect and type the test identifier. For the graded effort, choose the
    guided session **«Gradation»** first, in the chooser on the line of «Calibrate
    MVC» (§4.3): *Start recording* calibrates, counts 5 s, directs the five steps
-   and stops by itself. For the rest, **«Free recording»** and *Start recording*.
-   If the exercise needs % MVC (fatigue, load), press **«Calibrate MVC»** at once: warm-up
+   and stops by itself. For the rest, **«Free recording»** and *Start recording*;
+   for fatigue, the sessions **«Fatigue: sustained maximum»** or **«Fatigue:
+   intermittent maximum»**. If the exercise needs % MVC (load), press **«Calibrate
+   MVC»** at once: warm-up
    and three brief, explosive maximal jerks (for the forearm flexor, fist
    clenched). Then the task; onsets
    are marked by themselves. *Stop recording*.
@@ -812,6 +825,22 @@ Each begins by **choosing the practical** in the top-right selector.
 3. MVC normalisation receives the recording and computes on its own. With
    «Select fragments…» keep only the task, and read P10, P50 and P90 against their
    limits.
+
+> **A note on quick successive contractions.** When brief contractions follow
+> one another very quickly, as fast as possible, the envelope's peaks may rise a
+> little and the envelope may not quite return to rest between them. **It is not
+> the *treppe*** (the «staircase»): the treppe is a mechanical phenomenon, of
+> force, seen when the muscle is stimulated electrically; in voluntary EMG it is
+> hardly seen. That the envelope does not fall back to rest between quick
+> contractions is mostly because **voluntary relaxation is not completed**. The
+> envelope's filter (5 Hz) plays no part at rates that can be followed: worked out
+> with ideal pulses, at one contraction every 3, 2 or 1.5 s it leaves the gap
+> between them at the resting level, and it only begins to show at two or more
+> contractions a second (1.4 % of the peak at one every 0.5 s). In the trials of
+> 24 October 2026, at 3, 2 and 1.5 s the peak did not change (about 0.20 mV) and
+> the envelope returned to zero; only a train as fast as possible raised the peaks
+> a little and left the floor a little above zero, and without controlling the
+> force that is not conclusive. That is why there is no guided session for it.
 
 ### 7.2 Agonist / antagonist contraction (intermediate)
 

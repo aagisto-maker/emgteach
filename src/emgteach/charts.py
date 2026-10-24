@@ -636,3 +636,45 @@ def draw_steps_chart(fig, steps: Sequence[Any], *, small: bool = False) -> None:
         ax.legend(fontsize=fs - 1, frameon=False, loc="upper left")
     ax.set_title(tr("Gradation: level held per step"), fontsize=fs, pad=3)
     _quitar_marco(ax)
+
+
+def draw_reps_chart(fig, reps: Sequence[Any], *, small: bool = False) -> None:
+    """The intermittent maximum: the RMS of each contraction, in order.
+
+    ``reps`` are :class:`emgteach.guided.RepResult`. A bar per contraction
+    with its RMS — not its peak, which is the start of each contraction and
+    does not fall — and its MDF as points on an axis of its own. The title
+    says how much the last fell against the first.
+    """
+    fig.clear()
+    fs = 7 if small else 8
+    ax = fig.add_subplot(111)
+    if not reps:
+        ax.set_axis_off()
+        ax.text(0.5, 0.5, tr("No contractions"), ha="center", va="center",
+                fontsize=fs, color="#888888", transform=ax.transAxes)
+        return
+    x = np.arange(1, len(reps) + 1, dtype=float)
+    rms = np.array([r.rms_mv for r in reps])
+    ax.bar(x, rms, width=0.6, color=COLOUR_1, alpha=0.85, zorder=2)
+    if len(reps) >= _MIN_FOR_TREND:
+        ax.plot(x, np.polyval(np.polyfit(x, rms, 1), x), "--", color=COLOUR_1,
+                lw=0.8, alpha=0.7, zorder=3)
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(r.n) for r in reps], fontsize=fs - 1)
+    ax.set_xlabel(tr("Contraction"), fontsize=fs - 1)
+    ax.set_ylabel(tr("RMS (mV)"), color=COLOUR_1, fontsize=fs)
+    ax.tick_params(axis="y", labelsize=fs - 1)
+    ax.set_ylim(0, float(rms.max()) * 1.2 or 1.0)
+    mdf = [r.mdf_hz for r in reps]
+    if all(m is not None for m in mdf):
+        ax2 = ax.twinx()
+        ax2.plot(x, mdf, "o", color="#2E7D32", ms=3.5, zorder=4)
+        ax2.set_ylabel(tr("MDF (Hz)"), color="#2E7D32", fontsize=fs)
+        ax2.tick_params(axis="y", labelsize=fs - 1, colors="#2E7D32")
+        ax2.spines["top"].set_visible(False)
+    cambio = 100.0 * (rms[-1] - rms[0]) / rms[0] if rms[0] else 0.0
+    ax.set_title(tr("RMS of each contraction: last against first {pct:+.0f} %")
+                 .format(pct=cambio), fontsize=fs, pad=3)
+    ax.grid(axis="y", lw=0.4, alpha=0.4, zorder=0)
+    ax.spines["top"].set_visible(False)

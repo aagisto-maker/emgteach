@@ -39,7 +39,12 @@ from emgteach.force_velocity import (
     velocity_from_acc,
     windows_from_markers,
 )
-from emgteach.guided import gradation_steps, spans_in_analysis_time
+from emgteach.guided import (
+    gradation_steps,
+    hold_result,
+    intermittent_reps,
+    spans_in_analysis_time,
+)
 from emgteach.i18n import tr
 from emgteach.io import (
     list_edf_channels,
@@ -365,6 +370,19 @@ class AnalysisWorker(QThread):
         return [Segment(i0 / fs, i1 / fs) for i0, i1 in ventanas if i1 > i0] or None
 
     @staticmethod
+    def _esfuerzo_mantenido(sesion) -> tuple[float, float] | None:
+        """The held effort of a sustained maximum, in file time: the span the
+        analysis takes by default, so its windows, its MDF line and its
+        verdict are the effort's and not the rests' around it."""
+        if (sesion is None or sesion.family != "HOLD"
+                or sesion.params.get("mode") != "sustained"):
+            return None
+        esfuerzos = sesion.spans_named("effort")
+        if not esfuerzos:
+            return None
+        return (esfuerzos[-1].start_s, esfuerzos[-1].end_s)
+
+    @staticmethod
     def _tramos_de_sesion(sesion, piezas) -> list[Segment] | None:
         """One segment per effort a guided session marked, in the analysed
         signal's time; ``None`` without a session, so the next rule applies.
@@ -490,7 +508,8 @@ class AnalysisWorker(QThread):
             full_duration = float(times[-1])
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
-                default_span=phases.rec_span(full_duration, fv_loads),
+                default_span=(self._esfuerzo_mantenido(sesion)
+                              or phases.rec_span(full_duration, fv_loads)),
             )
             if bounds is None:
                 return  # error already emitted
@@ -1282,6 +1301,17 @@ class AnalysisWorker(QThread):
                 if result["grad_steps"]:
                     self.log.emit(tr("Gradation: {n} steps measured.").format(
                         n=len(result["grad_steps"])))
+                result["reps"] = intermittent_reps(
+                    sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],
+                    f_low=self._f_low, f_high=self._f_high,
+                )
+                # The sustained maximum is the analysed span itself: its
+                # windows are the effort's (_esfuerzo_mantenido).
+                result["hold"] = (
+                    hold_result(result["t_seg"], result["mdf_seg"], result["rms_seg"],
+                                result.get("fat_active"), seg_len_s=self._seg_len_s)
+                    if self._esfuerzo_mantenido(sesion) and not self._roi_segments
+                    else None)
                 result["emd_ms_mean"] = mean_emd_ms(filas)
                 # The rule the rows were labelled under, so the chart can
                 # draw the same wedge the labels came from.
@@ -1295,6 +1325,8 @@ class AnalysisWorker(QThread):
                 result["contractions"] = []
                 result["emd_ms_mean"] = None
                 result["grad_steps"] = []
+                result["reps"] = []
+                result["hold"] = None
                 self.log.emit(
                     tr("The contraction table could not be built: {err}")
                     .format(err=exc)

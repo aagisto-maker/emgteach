@@ -83,6 +83,18 @@ def _en_dos_lineas(texto: str) -> str:
     return texto.replace(" (", "\n(", 1)
 
 
+def _resumen_movil_mantenida(hold) -> dict | None:
+    """A sustained maximum for the phones: seconds, changes in %, the −10 % time."""
+    if hold is None:
+        return None
+
+    def redondo(x, n=0):
+        return None if x is None else round(float(x), n)
+
+    return {"secs": redondo(hold.seconds), "mdf": redondo(hold.mdf_change_pct),
+            "rms": redondo(hold.rms_change_pct), "t10": redondo(hold.t_mdf_10)}
+
+
 class _SelectorEsquina(QWidget):
     """Two or three small exclusive buttons on the title line of a group
     box, left of the «?», kept in the corner across resizes the way the
@@ -191,6 +203,7 @@ from emgteach.charts import (
     COLOUR_2,
     draw_coactivation_chart,
     draw_contraction_chart,
+    draw_reps_chart,
     draw_steps_chart,
 )
 from emgteach.contractions import load_of_each
@@ -215,7 +228,7 @@ from emgteach.gui.widgets.fragment_selection import (
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
-from emgteach.guided import is_monotonic
+from emgteach.guided import is_monotonic, reps_trend_pct
 from emgteach.i18n import tr
 from emgteach.io import (
     assess_edf_channels,
@@ -675,6 +688,9 @@ class AnalysisTab(QWidget):
         # Tick state of panels the current mode hides, keyed by display index,
         # so switching back to a mode that offers them restores the selection.
         self._hidden_panels_checked: dict[int, bool] = {}
+        #: Panels a guided session asks for by itself (a sustained maximum:
+        #: RMS and MDF by window), offered and ticked whatever the practical.
+        self._paneles_sesion: frozenset[int] = frozenset()
         # Set by apply_mode; initialised here because loading a file consults
         # the mode and may happen before the first apply_mode call.
         self._mode: str = DEFAULT_MODE
@@ -1057,7 +1073,7 @@ class AnalysisTab(QWidget):
         # offered (two muscles for the categories and the dominance, load
         # markers for the load), see _refresh_contractions.
         self._sel_contr = _SelectorEsquina(
-            self._box_contr, [("steps", tr("Steps")),
+            self._box_contr, [("steps", tr("Steps")), ("reps", tr("Per contraction")),
                               ("relation", tr("Relation")), ("category", tr("Category")),
                               ("dominance", tr("Who leads")), ("series", tr("Series")),
                               ("load", tr("By load")), ("table", tr("Table"))])
@@ -1071,6 +1087,8 @@ class AnalysisTab(QWidget):
         self._cargas_contr: list[float | None] = []
         #: The gradation's steps, when the recording is one (emgteach.guided).
         self._pasos_grad: list = []
+        #: The intermittent maximum's contractions, when it is one.
+        self._reps_fatiga: list = []
         #: Where the view choice is kept: one key for recordings with loads
         #: (the kinematics practical), another for the rest.
         self._clave_vista = "analysis/contr_view"
@@ -1942,7 +1960,9 @@ class AnalysisTab(QWidget):
         self._cargas_contr = load_of_each(filas, result.get("fv_loads") or [])
         con_cargas = any(c is not None for c in self._cargas_contr)
         self._pasos_grad = pasos
-        vistas = ["steps"] if pasos else []
+        reps = list(result.get("reps") or [])
+        self._reps_fatiga = reps
+        vistas = ["steps"] if pasos else (["reps"] if reps else [])
         vistas.append("relation")
         if dos:
             vistas += ["category", "dominance"]
@@ -1958,6 +1978,8 @@ class AnalysisTab(QWidget):
         # A gradation opens on its steps, and remembers its choice apart too.
         if pasos:
             self._clave_vista, defecto = "analysis/contr_view_grad", "steps"
+        elif reps:
+            self._clave_vista, defecto = "analysis/contr_view_reps", "reps"
         elif con_cargas:
             self._clave_vista, defecto = "analysis/contr_view_kin", "load"
         else:
@@ -1969,6 +1991,17 @@ class AnalysisTab(QWidget):
             resumen = tr("Gradation: {n} steps").format(n=len(pasos)) + "  ·  " + (
                 tr("each step above the last") if is_monotonic(pasos)
                 else tr("not every step above the last"))
+        elif reps:
+            resumen = tr("{n} contractions: RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)").format(
+                n=len(reps), a=reps[0].rms_mv, b=reps[-1].rms_mv,
+                pct=100.0 * (reps[-1].rms_mv - reps[0].rms_mv) / reps[0].rms_mv
+                if reps[0].rms_mv else 0.0)
+            tendencia = reps_trend_pct(reps)
+            if tendencia is not None:
+                resumen += "  ·  " + tr("trend {pct:+.1f} %/contr.").format(pct=tendencia)
+        hold = result.get("hold")
+        if hold is not None:
+            resumen = self._resumen_mantenida(hold)
         emd = result.get("emd_ms_mean")
         if emd is not None:
             resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
@@ -1996,8 +2029,11 @@ class AnalysisTab(QWidget):
 
     def _dibujar_contracciones(self) -> None:
         vista = self._sel_contr.vista()
-        if vista == "steps":
-            draw_steps_chart(self._fig_contr, self._pasos_grad, small=True)
+        if vista in ("steps", "reps"):
+            if vista == "steps":
+                draw_steps_chart(self._fig_contr, self._pasos_grad, small=True)
+            else:
+                draw_reps_chart(self._fig_contr, self._reps_fatiga, small=True)
             self._pedir_espacio(self._canvas_contr)
             self._canvas_contr.draw_idle()
             return
@@ -2062,6 +2098,7 @@ class AnalysisTab(QWidget):
     def _on_result(self, result: dict) -> None:
         self._last_result = result
         self._pendiente = False
+        self._aplicar_paneles_de_sesion(result)
         self._refresh_coactivation(result)
         self._refresh_contractions(result)
         self._set_controles_habilitados(True)
@@ -2153,7 +2190,11 @@ class AnalysisTab(QWidget):
             # The gradation's steps, [asked, held] in % MVC, when it has them.
             "steps": [[round(p.target_pct), round(p.held_pct)]
                       for p in (r.get("grad_steps") or []) if p.held_pct is not None],
+            # The fatigue sessions: where MDF and RMS went, and when.
+            "hold": _resumen_movil_mantenida(r.get("hold")),
+            "reps": [round(x.rms_mv, 3) for x in (r.get("reps") or [])],
         })
+
 
     def _bcast_download(self, kind: str, path: str, data: bytes,
                         content_type: str, filename: str) -> None:
@@ -3472,7 +3513,7 @@ class AnalysisTab(QWidget):
             propios = pid in (0, _OVERLAY_PID, 4, 6)
         else:
             propios = pid in _CORE_PIDS
-        if propios:
+        if propios or pid in self._paneles_sesion:
             return True
         if not self._mas_paneles:
             return False
@@ -3494,6 +3535,39 @@ class AnalysisTab(QWidget):
             tr("Fewer panels") if checked else tr("More panels…")
         )
         self._apply_panel_visibility(self._mode, self._advanced)
+
+    def _aplicar_paneles_de_sesion(self, result: dict) -> None:
+        """A sustained maximum opens on its fatigue: RMS and MDF by window.
+
+        Panels 6 and 7 are behind «More panels…» in the one-muscle
+        practical; for this session they are the result, so they are offered
+        and ticked with the rest. Any other recording gives them back.
+        """
+        quiere = frozenset({5, 6}) if result.get("hold") is not None else frozenset()
+        if quiere == self._paneles_sesion:
+            return
+        self._paneles_sesion = quiere
+        self._apply_panel_visibility(self._mode, self._advanced)
+        for pid, chk in zip(self._panel_pids, self._chk_paneles, strict=True):
+            if pid in quiere and chk.isEnabled() and not chk.isChecked():
+                chk.blockSignals(True)
+                chk.setChecked(True)
+                chk.blockSignals(False)
+
+    @staticmethod
+    def _resumen_mantenida(hold) -> str:
+        """The sustained maximum in one line: where MDF and RMS went, and when."""
+        partes = []
+        if hold.mdf_start_hz is not None and hold.mdf_end_hz is not None:
+            partes.append(tr("MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %)").format(
+                a=hold.mdf_start_hz, b=hold.mdf_end_hz, pct=hold.mdf_change_pct or 0.0))
+        if hold.rms_start_mv is not None and hold.rms_end_mv is not None:
+            partes.append(tr("RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)").format(
+                a=hold.rms_start_mv, b=hold.rms_end_mv, pct=hold.rms_change_pct or 0.0))
+        partes.append(
+            tr("MDF −10 % at {t:.0f} s").format(t=hold.t_mdf_10) if hold.t_mdf_10 is not None
+            else tr("MDF never fell 10 %"))
+        return tr("Sustained maximum, {s:.0f} s").format(s=hold.seconds) + "  ·  " + "  ·  ".join(partes)
 
     def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:
         """Hide the panels this practical does not use, and untick them.

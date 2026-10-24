@@ -355,17 +355,30 @@ is the reach and not the hold.
 frequencies, and understand what it takes to be able to claim it.
 
 **Background.** Holding a contraction lowers the pH and the conduction velocity
-of the fibres; the spectrum compresses downwards and **the MDF falls**. At the
-same time the RMS usually **rises**, because more units are recruited to keep the
-force. The specific proof is the fall of the MDF, not the rise of the RMS.
+of the fibres; the spectrum compresses downwards and **the MDF falls**. What the
+RMS does depends on the effort: in a **submaximal** contraction it usually
+**rises**, because more units are recruited to keep the force; in a **maximal**
+one there are no units left to add, the force is not held and the RMS **falls**.
+The specific proof is the fall of the MDF.
 
-**Procedure.**
-1. **Start recording**, **Calibrate MVC**, then hold an isometric contraction
-   against the table at **50 %** of the bar **for 30 to 60 s**, or until it cannot
-   be held. 5 s of rest before and after.
-2. **Stop**. In Analysis, review the repetitions and, in the fragments, keep
-   **only the sustained contraction**. Tick panel **7. MDF/time** (in «More
-   panels…»).
+**Procedure.** With the guided session **«Fatigue: sustained maximum»**.
+1. Choose the session in the chooser on the line of «Calibrate MVC» and press
+   **Start recording** (the calibration is optional: press «Calibrate MVC» first,
+   with «Free recording», for the bar in % MVC). After 5 s of preparation and 5 s
+   of rest, a 3 s countdown and **30 s of maximal isometric contraction** against
+   the table, forearm resting, no weight in the hand. **Breathe during the
+   effort** (do not hold your breath) and, if it hurts, let go.
+2. The recording **stops by itself**. In Analysis the analysed span is already
+   the contraction, and panels **6. RMS/window** and **7. MDF/time** come ticked.
+
+**Intermittent variant** (**«Fatigue: intermittent maximum»**): ten maximal
+contractions of **5 s with 1 s of rest** between them, with a tone at the start
+and the end of each and the countdown on screen. What is measured is the **RMS
+of each contraction** after its first second, not its peak: the peak is the start
+of each contraction and does not fall. The **«Per contraction»** view of the
+contractions box draws it. With 1 s of rest the fall is almost steady (in a trial
+with the muscle already tired, 21 % from the first to the tenth); with longer
+rests it becomes irregular, because the muscle recovers.
 
 **How the application decides.** It fits a line to the MDF of the one-second
 windows in which the muscle was working. It says **«Fatigue detected»** if the
@@ -375,19 +388,21 @@ windows); **«Not detected»** if the MDF holds or rises with a line that fits; 
 brief contractions. Not conclusive is not "no": the recording does not answer the
 question.
 
-**Data to record.**
+**Data to record.** From the summary line of the contractions box and from the
+report:
 
-| Quantity | First 5 s | Last 5 s |
-|---|---|---|
-| MDF (Hz) (panel 7) | | |
-| RMS (mV) (panel 6, in «More panels…») | | |
+| Quantity | First 5 s | Last 5 s | Change | −10 % at |
+|---|---|---|---|---|
+| MDF (Hz) (panel 7) | | | | |
+| RMS (mV) (panel 6) | | | | |
 
 MDF slope: ____ Hz/s (R² = ____). Verdict: ______________.
 
 **Questions.**
-- Did the MDF fall? By what percentage? What explains it in the fibres?
-- Did the RMS rise at the end? Why would the nervous system do that? What part
-  of that rise may not be recruitment?
+- Did the MDF fall? By what percentage, and after how many seconds had it fallen
+  10 %? What explains it in the fibres?
+- What did the RMS do? Compare with what you would expect at 50 %: why does it
+  fall in a maximal contraction and usually rise in a submaximal one?
 - A classmate held for 15 s and got «not conclusive». Fatigued or not? What is
   the recording missing?
 

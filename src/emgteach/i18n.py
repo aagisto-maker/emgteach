@@ -2463,6 +2463,80 @@ _ES = {
     '{name} {slope:+.2f} mV/contr.': '{name} {slope:+.2f} mV/contr.',
     'MDF {slope:+.1f} Hz/contr.': 'MDF {slope:+.1f} Hz/contr.',
     # Guided sessions of the one-muscle practical (24 Oct 2026).
+    'Fatigue: sustained maximum':
+        'Fatiga: máxima mantenida',
+    'Fatigue: intermittent maximum':
+        'Fatiga: máxima intermitente',
+    'Forearm on the table, fist closed without squeezing.':
+        'Antebrazo sobre la mesa, puño cerrado sin apretar.',
+    'Squeeze as hard as you can at 0':
+        'Apriete al máximo al llegar a 0',
+    'And keep it up for {secs:g} seconds.':
+        'Y manténgalo {secs:g} segundos.',
+    'Maximum: keep it up':
+        'Máximo: manténgalo',
+    'Squeeze as hard as you can and keep it up. Breathe: do not hold your breath. If it hurts, let go.':
+        'Apriete al máximo y manténgalo. Respire: no aguante el aire. Si le duele, suelte.',
+    'Let go and let the hand drop. The recording stops on its own.':
+        'Suelte y deje caer la mano. La grabación se detiene sola.',
+    'One maximal contraction held for {secs:g} s, with rest before and after. The amplitude and the MDF fall as it is held.':
+        'Una contracción máxima mantenida {secs:g} s, con reposo antes y después. La amplitud y la MDF caen mientras se mantiene.',
+    '{n} contractions of {on:g} s, {off:g} s apart.':
+        '{n} contracciones de {on:g} s, separadas {off:g} s.',
+    'Contraction {k} of {n}: maximum':
+        'Contracción {k} de {n}: máximo',
+    'Squeeze as hard as you can. Breathe.':
+        'Apriete al máximo. Respire.',
+    'Let go':
+        'Suelte',
+    'The next one comes at 0.':
+        'La siguiente, al llegar a 0.',
+    '{n} maximal contractions of {on:g} s with {off:g} s between them; the RMS of each one falls as the muscle tires.':
+        '{n} contracciones máximas de {on:g} s con {off:g} s entre ellas; el RMS de cada una cae a medida que el músculo se cansa.',
+    'Per contraction':
+        'Por contracción',
+    '{n} contractions: RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)':
+        '{n} contracciones: RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)',
+    'trend {pct:+.1f} %/contr.':
+        'tendencia {pct:+.1f} %/contr.',
+    'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %)':
+        'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %)',
+    'RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)':
+        'RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)',
+    'MDF −10 % at {t:.0f} s':
+        'MDF −10 % a los {t:.0f} s',
+    'MDF never fell 10 %':
+        'la MDF no llegó a caer un 10 %',
+    'Sustained maximum, {s:.0f} s':
+        'Máxima mantenida, {s:.0f} s',
+    'RMS of each contraction: last against first {pct:+.0f} %':
+        'RMS de cada contracción: la última frente a la primera {pct:+.0f} %',
+    'Guided session: sustained maximum':
+        'Sesión guiada: máxima mantenida',
+    'Guided session: intermittent maximum':
+        'Sesión guiada: máxima intermitente',
+    'not reached':
+        'no se alcanza',
+    'Measure':
+        'Medida',
+    'First 5 s':
+        'Primeros 5 s',
+    'Last 5 s':
+        'Últimos 5 s',
+    'Change':
+        'Cambio',
+    '−10 % at':
+        '−10 % a los',
+    '−20 % at':
+        '−20 % a los',
+    'Each value is the median of the one-second windows in which the muscle was working; a fall counts once three windows in a row are below the line.':
+        'Cada valor es la mediana de las ventanas de un segundo en que el músculo trabajaba; una caída cuenta cuando tres ventanas seguidas quedan por debajo de la línea.',
+    'RMS (% of the first)':
+        'RMS (% de la primera)',
+    'RMS over each contraction after its first second, not its peak: the peak is the start of each contraction and does not fall.':
+        'RMS de cada contracción tras su primer segundo, no su pico: el pico es el arranque de cada contracción y no baja.',
+    'Trend: {pct:+.1f} % of the first per contraction.':
+        'Tendencia: {pct:+.1f} % de la primera por contracción.',
     'In the one-muscle practical, the chooser beside the button offers guided sessions: chosen before recording, «Start recording» runs the whole session — the calibration if it needs one, a countdown, each phase announced with a tone and a flash — and stops at the end. «Free recording» is the usual way.':
         'En la práctica de un músculo, el desplegable junto al botón ofrece sesiones guiadas: elegida antes de grabar, «Iniciar grabación» lleva a cabo la sesión entera — la calibración si la necesita, una cuenta atrás, cada fase anunciada con un tono y un destello — y se detiene al terminar. «Grabación libre» es lo habitual.',
     'Gradation':
