@@ -2462,4 +2462,35 @@ _ES = {
     '{name} {slope:+.1f} %/contr.': '{name} {slope:+.1f} %/contr.',
     '{name} {slope:+.2f} mV/contr.': '{name} {slope:+.2f} mV/contr.',
     'MDF {slope:+.1f} Hz/contr.': 'MDF {slope:+.1f} Hz/contr.',
+    # Guided sessions of the one-muscle practical (24 Oct 2026).
+    'Choose a guided session before recording: «Start recording» then runs it — the calibration if it needs one, a countdown, and each phase announced and timed, with a tone and a flash — writes its phases into the file and stops the recording at the end. Esc stops the session and the recording goes on.':
+        'Elija una sesión guiada antes de grabar: «Iniciar grabación» la lleva a cabo — la calibración si la necesita, una cuenta atrás y cada fase anunciada y cronometrada, con un tono y un destello —, escribe sus fases en el fichero y detiene la grabación al terminar. Esc detiene la sesión y la grabación sigue.',
+    'Tone':
+        'Tono',
+    'A short tone at every phase change of a guided session, for a student watching their hand rather than the screen. Ticking it plays the tone, to check it can be heard.':
+        'Un tono breve en cada cambio de fase de una sesión guiada, para quien mira su mano y no la pantalla. Al marcarla suena el tono, para comprobar que se oye.',
+    'Free recording':
+        'Grabación libre',
+    'Guided session: {title}, {secs:.0f} s.':
+        'Sesión guiada: {title}, {secs:.0f} s.',
+    'The guided session starts when the count reaches 0.':
+        'La sesión guiada empieza cuando la cuenta llegue a 0.',
+    'The phase tone could not sound (no audio device?).':
+        'El tono de fase no ha podido sonar (¿no hay dispositivo de audio?).',
+    'A phase tone was dropped: the previous one was still sounding.':
+        'Se ha omitido un tono de fase: el anterior aún sonaba.',
+    'The audio device is not answering; the next tone sounds on its own.':
+        'El dispositivo de audio no responde; el siguiente tono suena por su cuenta.',
+    'Guided session started: {title}. Esc stops it.':
+        'Sesión guiada en marcha: {title}. Esc la detiene.',
+    '{title}: done':
+        '{title}: terminada',
+    'The recording stops on its own. In Analysis the phases are marked in the file.':
+        'La grabación se detiene sola. En Análisis, las fases están marcadas en el fichero.',
+    'Guided session finished: {title}.':
+        'Sesión guiada terminada: {title}.',
+    'Guided session stopped; the recording goes on.':
+        'Sesión guiada detenida; la grabación sigue.',
+    'Guided session stopped with the recording.':
+        'Sesión guiada detenida con la grabación.',
 }

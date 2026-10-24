@@ -5,6 +5,21 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **The foundations of the guided sessions of the one-muscle practical** (plan in `docs/PLAN-sesiones-contraccion-simple.md`). Nothing a student sees yet: the chooser stays hidden until the first session, the gradation, comes in its own change.
+  - **A chooser on the line of «Calibrate MVC»**, in the one-muscle practical only and taking no height, which opens on «Free recording»; and a «Tone» box beside it, remembered between sessions and on by default, which sounds the tone when ticked. With a session chosen, «Start recording» runs it: the calibration first if the session needs one, the five-second countdown (`PREP start`), the recording phase (`REC start`), and then each phase announced on the panel over the plots and on the phones, timed, with a tone and an amber flash of the panel's frame at every change; the recording stops by itself at the end, with the panel's five seconds, as in the other two practicals. Esc stops the session and the recording goes on; stopping the recording stops the session. The chooser cannot be changed while recording, and the proposed file name carries the session.
+  - **The marks are ASCII codes** in the idiom of the phase marks: `GRAD start steps=5 v=1`, `GRAD step start k=1 pct=20` / `GRAD step end k=1`, `GRAD end` (or `GRAD end stopped`). `emgteach.sessions` writes and reads them without Qt: only closed stretches count, a stretch cut short is dropped, `v=` versions the script. They are stripped where the phase marks are stripped, so they draw no line across the panels and open no co-activation window, and the review after recording shades the stretches a session measured.
+  - **The tone** is ecgteach's and eegteach's module, unchanged (`emgteach.cue`): a WAV made in memory and played on a thread of its own, never raising and never blocking; a tone that cannot sound leaves a line in the event log.
+  - **The clock is outside the acquisition tab** (`emgteach.gui.session_runner`): it reads a monotonic clock at every tick, so a late tick skips no mark, and the tab only connects its signals.
+  - **The simulated board's subject does what each phase asks**, so a session can be rehearsed and tested without hardware.
+
+### Changed
+
+- **The one-muscle practical can now end by itself**: with a guided session chosen, the recording stops when the session ends. A free recording records until the operator stops it, as before (revises the decision of 11 October 2026 in `DECISIONS.md`).
+
 ## [3.9.1] — 2026-10-23
 
 **The live view keeps following the signal after a wheel zoom.** A patch of 3.9.0: the wheel now sets how many seconds the live plots show and the view goes on with the signal; closing the window while «Retry» waits for the board's port no longer starts a recording; and in Spanish the unit reads «% CVM». No analysis, no EDF format and no calculation changes; **3.7.0 stays the version the article describes**. See [`docs/RELEASE_NOTES_v3.9.1.md`](docs/RELEASE_NOTES_v3.9.1.md).

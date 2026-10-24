@@ -30,9 +30,11 @@ The tab never blocks the UI: all acquisition runs in AcquisitionWorker (QThread)
 from __future__ import annotations
 
 import html
+import math
 import os
 import re
 from collections import deque
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any, ClassVar, TextIO, cast
@@ -62,7 +64,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emgteach import __version__
+from emgteach import __version__, cue
 from emgteach.apda import OnlineLoad
 from emgteach.broadcast import BroadcastServer, hay_red_utilizable
 from emgteach.charts import COLOUR_1, COLOUR_2
@@ -76,6 +78,7 @@ from emgteach.devices.bitalino_sim import is_simulated_address
 from emgteach.difusion import PORTS_FILE
 from emgteach.dsp import LiveQualityMonitor, process_offline
 from emgteach.gui.imagenes import imagen
+from emgteach.gui.session_runner import SessionRunner
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.load_bar import LoadBar
@@ -123,6 +126,7 @@ from emgteach.phases import (
     PREPARATION,
     RECORDING,
     WARMUP,
+    PhaseSpan,
     cal_end_marker,
     cal_start_marker,
     parse_phase_markers,
@@ -132,6 +136,14 @@ from emgteach.phases import (
     warmup_start_marker,
 )
 from emgteach.profiles import EMG_PROFILE
+from emgteach.sessions import (
+    EFFORT,
+    READY,
+    MeasuredSpan,
+    SessionPhase,
+    SessionScript,
+    parse_session_markers,
+)
 from emgteach.station import ADDRESS_FILE, read_station_address
 from emgteach.workers import AcquisitionWorker
 from emgteach.workers.acquisition import mensaje_fallo_guardado
@@ -450,7 +462,7 @@ DEFAULT_BITALINO_ADDR = "98:D3:91:FE:44:E4"
 MAX_ID_EN_NOMBRE = 24
 
 
-def nombre_por_defecto(codigo: str, sello: str) -> str:
+def nombre_por_defecto(codigo: str, sello: str, sesion: str = "") -> str:
     """The file name the save dialogue opens with.
 
     With the identifier typed into its box the recording still came out as
@@ -464,9 +476,14 @@ def nombre_por_defecto(codigo: str, sello: str) -> str:
     runs collapse, and the result is trimmed. An identifier that leaves
     nothing usable — punctuation only — falls back to the old name rather
     than to something unreadable.
+
+    *sesion* is the guided session's short name, when one was chosen, so a
+    gradation and a fatigue recorded in a row are told apart by their names.
     """
     limpio = re.sub(r"[^0-9A-Za-z_.-]+", "-", str(codigo)).strip("-._")
     limpio = limpio[:MAX_ID_EN_NOMBRE].strip("-._")
+    if sesion:
+        sello = f"{sesion}_{sello}"
     return f"{limpio}_{sello}.edf" if limpio else f"emg_{sello}.edf"
 
 
@@ -586,6 +603,18 @@ _COMBO_ST = (
     "QComboBox { font-size: 11px; padding: 1px 3px; min-width: 60px; max-width: 76px; }"
 )
 
+#: The guided sessions of the one-muscle practical, in the order the chooser
+#: offers them: key → the function that builds the script
+#: (:mod:`emgteach.sessions`). The chooser is hidden while this is empty.
+GUIDED_SESSIONS: dict[str, Callable[[], SessionScript]] = {}
+
+#: Where the «Tone» box is remembered between sessions. On by default, as in
+#: ecgteach: a box that has to be remembered is a box that gets forgotten.
+SESSION_TONE_KEY = "sesiones/tono"
+
+#: A stretch a guided session marked, as the review shades it.
+GUIDED = "guided"
+
 
 class AcquisitionTab(QWidget):
     #: Emitted with the path of the EDF just written. The other tabs pick it
@@ -599,6 +628,10 @@ class AcquisitionTab(QWidget):
     #: explains, which a tab cannot do to its siblings. Same signal, same
     #: panel and same rule as the analysis tab's.
     coach_step = Signal(str, str, object)
+
+    #: What became of a guided session's tone (:func:`emgteach.cue.set_tone_report`),
+    #: told from the tone's own thread and logged from this one.
+    _tono_informado = Signal(str, float)
 
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
@@ -726,6 +759,14 @@ class AcquisitionTab(QWidget):
         #: The kinematics session's second phase — the loads — waiting for
         #: the recording phase to begin (see _iniciar_grabacion).
         self._fv_flow_pending = False
+        #: The one-muscle practical's guided session chosen for this
+        #: recording, and whether it is still to start (it starts when the
+        #: recording phase begins, after the calibration if it needs one).
+        self._session_script: SessionScript | None = None
+        self._session_flow_pending = False
+        self._session_runner: SessionRunner | None = None
+        #: Why the running session is being stopped: «esc» or «stop».
+        self._session_motivo = ""
         #: Blocks of data seen while the flow was armed and could not start.
         #: The flow is a convenience; failing to run it must never leave the
         #: session with no way to calibrate at all.
@@ -766,6 +807,7 @@ class AcquisitionTab(QWidget):
         self._coact_timer.timeout.connect(self._coact_tick)
         self._prep_timer.setInterval(MVC_TICK_MS)
         self._prep_timer.timeout.connect(self._prep_tick)
+        self._tono_informado.connect(self._on_tono)
         # Floating guide drawn over the plots during the wizard.
         self._mvc_overlay = MvcOverlay(self)
 
@@ -2312,8 +2354,10 @@ class AcquisitionTab(QWidget):
             ).format(folder=falta, default=save_dir))
         # With the seconds (3.8.0, from ecgteach 0.4.0): two recordings in
         # the same minute proposed the same name.
+        self._session_script = self._sesion_elegida()
         default_name = nombre_por_defecto(
-            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M-%S}"
+            self._edit_student_code.text(), f"{datetime.now():%Y-%m-%d_%H-%M-%S}",
+            self._session_script.slug if self._session_script else "",
         )
         ruta, _ = QFileDialog.getSaveFileName(
             self, tr("Save EDF recording as…"),
@@ -2477,6 +2521,10 @@ class AcquisitionTab(QWidget):
         self._mvc_flow_pending = self._flow_needs_calibration()
         self._mvc_flow_tries = 0
         self._btn_calibrar.setEnabled(not self._mvc_flow_pending)
+        # The guided session, if one was chosen: it starts with the recording
+        # phase, after the calibration when it needs one (_prep_tick).
+        self._session_flow_pending = self._session_script is not None
+        self._combo_sesion.setEnabled(False)
         # The kinematics session's second phase, the loads, is armed with
         # the first: it fires once the recording phase begins (after the
         # calibration and its pause) or, with the maximum already
@@ -2505,6 +2553,10 @@ class AcquisitionTab(QWidget):
             refs=sum(1 for r in self._mvc_ref[: self._n_channels] if r),
             yes=self._mvc_flow_pending,
         ))
+        if self._session_script is not None:
+            self._log(tr("Guided session: {title}, {secs:.0f} s.").format(
+                title=tr(self._session_script.title),
+                secs=self._session_script.total_seconds))
         if self._mvc_flow_pending:
             # Those seconds are the whole reason the button used to be
             # pressed by hand: say what is happening in them.
@@ -2524,6 +2576,11 @@ class AcquisitionTab(QWidget):
         self._mvc_flow_pending = False
         self._mvc_flow_tries = 0
         self._fv_flow_pending = False
+        # A guided session stopped with the recording is stopped by
+        # _stop_load_monitor below, before the file closes, so its end mark
+        # gets in.
+        self._session_flow_pending = False
+        self._combo_sesion.setEnabled(True)
         # Calibrating needs a recording in progress, so the button follows
         # the recording rather than being left wherever the flow put it.
         self._btn_calibrar.setEnabled(False)
@@ -2623,6 +2680,14 @@ class AcquisitionTab(QWidget):
                 and not self._mvc_active and not self._fv_active
                 and not self._prep_timer.isActive()):
             self._lanzar_estudio_fv()
+        # A guided session that needs no calibration goes straight to the
+        # countdown, and from it to the recording phase, as the calibration
+        # would have handed over (_prep_tick launches it).
+        if (self._session_flow_pending and not self._mvc_flow_pending
+                and not self._mvc_active and not self._prep_timer.isActive()):
+            self._prep_aviso = tr(
+                "The guided session starts when the count reaches 0.")
+            self._mvc_enter_prep()
         if self._mvc_flow_pending and not self._mvc_active:
             self._iniciar_calibracion(auto_flow=True)
             if self._mvc_flow_pending:
@@ -2823,6 +2888,7 @@ class AcquisitionTab(QWidget):
         CALIBRATION: (230, 126, 34, 55),
         PREPARATION: (120, 160, 200, 40),
         RECORDING: (60, 160, 90, 40),
+        GUIDED: (142, 68, 173, 45),
     }
 
     def _mostrar_registro(self, edf_path: str) -> None:
@@ -2917,10 +2983,20 @@ class AcquisitionTab(QWidget):
             for line in pool:
                 line.hide()
 
+        marcas = señales[0].get("markers", [])
         tramos = phase_spans(
-            parse_phase_markers(señales[0].get("markers", [])),
+            parse_phase_markers(marcas),
             duracion, channel_names=dict(enumerate(nombres)),
         )
+        # And what a guided session measured: each effort it marked.
+        guiada = parse_session_markers(marcas)
+        if guiada is not None:
+            tramos = tuple(sorted(
+                (*tramos, *(
+                    PhaseSpan(max(0.0, t.start_s), min(duracion, t.end_s),
+                              GUIDED, self._etiqueta_tramo(t))
+                    for t in guiada.spans if t.end_s > 0 and t.start_s < duracion)),
+                key=lambda sp: sp.start_s))
         alto = 1.15 * pico_env if pico_env > 0 else 1.0
         # Two rows for the names, and a name is dropped rather than written
         # over its neighbour. A short stretch beside a long one — «get ready»
@@ -3256,6 +3332,35 @@ class AcquisitionTab(QWidget):
         # is genuinely submaximal, and a single attempt has nothing to fall
         # back on. The protocol said to tick it; the application now does.
         fila_sup.addWidget(self._btn_calibrar)
+
+        # The guided sessions of the one-muscle practical, on the line of
+        # «Calibrate MVC»: that line is half empty in this practical (the
+        # force-velocity box beside it is the kinematics practical's), so
+        # the chooser takes no height. «Free recording» is what it says when
+        # the tab opens: the guided sessions are an offer, not the norm.
+        self._combo_sesion = QComboBox()
+        self._combo_sesion.setToolTip(tr(
+            "Choose a guided session before recording: «Start recording» "
+            "then runs it — the calibration if it needs one, a countdown, and "
+            "each phase announced and timed, with a tone and a flash — writes "
+            "its phases into the file and stops the recording at the end. "
+            "Esc stops the session and the recording goes on."))
+        self._combo_sesion.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToContents)
+        fila_sup.addWidget(self._combo_sesion)
+        self._chk_tono = QCheckBox(tr("Tone"))
+        self._chk_tono.setToolTip(tr(
+            "A short tone at every phase change of a guided session, for a "
+            "student watching their hand rather than the screen. Ticking it "
+            "plays the tone, to check it can be heard."))
+        guardado = self._settings.value(SESSION_TONE_KEY, cue.DEFAULT_ENABLED)
+        # QSettings brings booleans back as «true»/«false» on some systems.
+        if isinstance(guardado, str):
+            guardado = guardado.strip().lower() in {"true", "1", "yes"}
+        self._chk_tono.setChecked(bool(guardado))
+        self._chk_tono.toggled.connect(self._on_tono_cambiado)
+        fila_sup.addWidget(self._chk_tono)
+        self._rellenar_sesiones()
 
         # Its own box, with its own «?». The guided flow is the kinematics
         # practical's whole procedure, not a detail of the load monitor, and
@@ -3887,10 +3992,9 @@ class AcquisitionTab(QWidget):
         the file it writes carries its own calibration and nothing that was
         measured with the electrodes as they were placed for another one.
         """
-        return (
-            mode_requires_calibration(self._mode)
-            and not any(self._mvc_ref[: self._n_channels])
-        )
+        quiere = mode_requires_calibration(self._mode) or bool(
+            self._session_script is not None and self._session_script.needs_mvc)
+        return quiere and not any(self._mvc_ref[: self._n_channels])
 
     def _instruct_device(self, channel_index: int, level: float | None,
                          *, repeat_s: float | None = None) -> None:
@@ -3999,8 +4103,183 @@ class AcquisitionTab(QWidget):
             "Recording phase started. Everything before this point — the "
             "calibration and this pause — stays out of the analysis."
         ))
+        if self._session_flow_pending:
+            self._lanzar_sesion()
+            return
         if self._fv_flow_pending:
             self._lanzar_estudio_fv()
+
+    # -- the guided sessions of the one-muscle practical ------------------------
+
+    def _rellenar_sesiones(self) -> None:
+        """Offer the guided sessions, in the one-muscle practical only.
+
+        Rebuilt with the practical: changing practical is changing sequence,
+        and a session chosen for another one must not ride along. Always back
+        to «Free recording», as ecgteach does when its tab opens — a session
+        left over from the last test is the state its bench tripped on.
+        """
+        combo = self._combo_sesion
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItem(tr("Free recording"), None)
+        for clave, construir in GUIDED_SESSIONS.items():
+            combo.addItem(tr(construir().title), clave)
+        combo.setCurrentIndex(0)
+        combo.blockSignals(False)
+        visible = self._mode == MODE_SINGLE and bool(GUIDED_SESSIONS)
+        combo.setVisible(visible)
+        self._chk_tono.setVisible(visible)
+
+    def _sesion_elegida(self) -> SessionScript | None:
+        """The script of the guided session chosen, or ``None`` for a free one."""
+        clave = self._combo_sesion.currentData()
+        if self._mode != MODE_SINGLE or clave not in GUIDED_SESSIONS:
+            return None
+        return GUIDED_SESSIONS[clave]()
+
+    @Slot(bool)
+    def _on_tono_cambiado(self, activo: bool) -> None:
+        """Remember the box, and sound the tone on the way on.
+
+        Ticking a box that promises a sound should make the sound: otherwise
+        the only way to learn whether this machine can be heard — the right
+        output, the volume up, not muted in the mixer — is to start a session
+        and hope (ecgteach, same box).
+        """
+        self._settings.setValue(SESSION_TONE_KEY, bool(activo))
+        if activo:
+            cue.beep()
+
+    @Slot(str, float)
+    def _on_tono(self, kind: str, seconds: float) -> None:
+        """A tone that did not sound leaves a line in the event log.
+
+        The executable has no console: without this, a silent phase change
+        left no trace of why (ecgteach, annex of 6 Oct 2026).
+        """
+        texto = {
+            "failed": tr("The phase tone could not sound (no audio device?)."),
+            "dropped": tr("A phase tone was dropped: the previous one was "
+                          "still sounding."),
+            "stuck": tr("The audio device is not answering; the next tone "
+                        "sounds on its own."),
+        }.get(kind)
+        if texto:
+            self._log(texto)
+
+    def _anunciar(self) -> None:
+        """A phase change: the flash for the eyes, the tone for the ears.
+
+        Together and from one place, as in ecgteach's and eegteach's guided
+        sessions: a phase change is one event.
+        """
+        self._mvc_overlay.flash()
+        if self._chk_tono.isChecked():
+            cue.beep()
+
+    def _lanzar_sesion(self) -> None:
+        """The recording phase has begun: the guided session takes over."""
+        self._session_flow_pending = False
+        script = self._session_script
+        if script is None or not (self._worker and self._worker.isRunning()):
+            return
+        runner = SessionRunner(script, self)
+        runner.marker.connect(self._write_phase_marker)
+        runner.phase_started.connect(self._sesion_fase)
+        runner.tick.connect(self._sesion_tick)
+        runner.finished.connect(self._sesion_fin)
+        self._session_runner = runner
+        self._session_motivo = ""
+        cue.set_tone_report(self._tono_informado.emit)
+        self._btn_cancelar_guia.setVisible(True)
+        self._log(tr("Guided session started: {title}. Esc stops it.").format(
+            title=tr(script.title)))
+        runner.start()
+
+    @Slot(object, int)
+    def _sesion_fase(self, fase: SessionPhase, _index: int) -> None:
+        """A phase begins: announce it, and tell the simulated subject."""
+        if fase.kind == EFFORT and fase.level:
+            self._pedir_al_sujeto({0: float(fase.level)})
+        else:
+            # Rest is an instruction too: «do nothing», not the board's cycle.
+            self._pedir_al_sujeto({})
+        self._mvc_info(tr(fase.title))
+        if fase.cue:
+            self._anunciar()
+
+    @Slot(object, float, float)
+    def _sesion_tick(self, fase: SessionPhase, restante: float, hecho: float) -> None:
+        """Every tick: the panel over the plots and the phones, in step."""
+        titulo, texto = tr(fase.title), tr(fase.text)
+        cuenta = max(1, math.ceil(restante))
+        carga = self._carga_inst[0] / 100.0 if self._mvc_ref[0] else 0.0
+        if fase.kind == READY:
+            self._mvc_overlay.show_ready(titulo, cuenta, texto, waiting=hecho)
+            self._bcast_calib(True, "ready", titulo, texto, count=cuenta)
+        elif fase.kind == EFFORT and fase.target_pct is not None:
+            lo, hi = fase.target_pct
+            self._mvc_overlay.show_phase(
+                f"{titulo} · {cuenta} s", texto, running=hecho,
+                loads=[(carga, _CHANNEL_COLORS[0])],
+                zone=(lo / 100.0, hi / 100.0))
+            self._bcast_calib(True, "contract", titulo, texto, secs=restante,
+                              progress=hecho, effort=min(1.0, carga))
+        elif fase.kind == EFFORT:
+            self._mvc_overlay.show_contract(titulo, cuenta, hecho, carga,
+                                            subtitle=texto)
+            self._bcast_calib(True, "contract", titulo, texto, secs=restante,
+                              progress=hecho, effort=min(1.0, carga))
+        else:
+            self._mvc_overlay.show_relax(texto)
+            self._bcast_calib(True, "rest", titulo, texto)
+        self._reposition_mvc_overlay()
+
+    @Slot(bool)
+    def _sesion_fin(self, completa: bool) -> None:
+        """The session is over: completed, stopped with Esc, or with the recording."""
+        runner, self._session_runner = self._session_runner, None
+        if runner is not None:
+            runner.deleteLater()
+        cue.set_tone_report(None)
+        self._btn_cancelar_guia.setVisible(False)
+        self._soltar_al_sujeto()
+        titulo = tr(self._session_script.title) if self._session_script else ""
+        if completa:
+            if self._chk_tono.isChecked():
+                cue.beep_end()
+            hecho = tr("{title}: done").format(title=titulo)
+            detalle = tr("The recording stops on its own. In Analysis the "
+                         "phases are marked in the file.")
+            self._mvc_overlay.show_done(hecho, detalle)
+            self._reposition_mvc_overlay()
+            self._bcast_calib(True, "done", hecho, detalle)
+            self._log(tr("Guided session finished: {title}.").format(title=titulo))
+            QTimer.singleShot(5000, self._sesion_cerrar_panel)
+            self._parar_al_terminar_sesion()
+            return
+        if not self._conservar_panel:
+            self._mvc_overlay.hide_overlay()
+            self._bcast_calib(False)
+        self._mvc_info("")
+        if self._session_motivo == "esc":
+            self._log(tr("Guided session stopped; the recording goes on."))
+        else:
+            self._log(tr("Guided session stopped with the recording."))
+
+    def _sesion_cerrar_panel(self) -> None:
+        """The finished session's panel goes once it has been seen."""
+        if self._session_runner is None and not self._mvc_active and not self._fv_active:
+            self._mvc_overlay.hide_overlay()
+
+    def _etiqueta_tramo(self, tramo: MeasuredSpan) -> str:
+        """The label of a stretch a session marked, for the review."""
+        pct = tramo.number("pct")
+        if pct:
+            return f"{pct:g} %"
+        numero = tramo.number("k") or tramo.number("n")
+        return f"{numero:g}" if numero else ""
 
     # -- the task, guided: the free manoeuvres and the one that joins them --
 
@@ -4463,8 +4742,15 @@ class AcquisitionTab(QWidget):
         recording stopped mid-calibration.
         """
         # Esc means «stop guiding me»: a kinematics session whose
-        # calibration is cancelled does not go on to cue the loads either.
+        # calibration is cancelled does not go on to cue the loads either,
+        # and a guided session whose calibration is cancelled does not start.
         self._fv_flow_pending = False
+        self._session_flow_pending = False
+        if self._session_runner is not None:
+            self._session_motivo = "esc"
+            self._session_runner.cancel()
+            self._btn_cancelar_guia.setVisible(False)
+            return
         if self._guia_fase in ("maniobras", "coact"):
             self._guia_cancelar()
             self._log(tr("Guided task cancelled; the recording goes on."))
@@ -4943,9 +5229,10 @@ class AcquisitionTab(QWidget):
         the recording stops by itself, and the event log says why. The panel
         that says the task is recorded stays its five seconds: the cancels
         the stop runs, now and when the thread ends, leave it alone
-        (_conservar_panel). The one-muscle
-        practical has no guided end and is never stopped here; «Cancel
-        guide» does not come here either.
+        (_conservar_panel). Since 24 Oct 2026 the one-muscle practical's
+        guided sessions end here too; a free recording has no guided end and
+        is never stopped here, and «Cancel guide» (Esc) does not come here
+        either.
         """
         if not self.is_recording():
             return
@@ -5044,6 +5331,11 @@ class AcquisitionTab(QWidget):
         self._load_timer.stop()
         self._mvc_cancel()
         self._fv_cancel()
+        # And the guided session, whichever way the recording ended: by
+        # «Stop», or by the board going away under it.
+        if self._session_runner is not None:
+            self._session_motivo = "stop"
+            self._session_runner.cancel()
         self._btn_calibrar.setEnabled(False)
         self._update_fv_button()
         self._set_thresholds_enabled(False)
@@ -5130,6 +5422,8 @@ class AcquisitionTab(QWidget):
         self._lbl_estado.setText(self._estado_en_reposo())
         self._set_auto_controls_enabled(True)
         self._stop_load_monitor()
+        self._session_flow_pending = False
+        self._combo_sesion.setEnabled(True)
         self._quality_monitor = None
         self._lbl_calidad.setVisible(False)
         self._lbl_calidad.setText("")
@@ -5586,6 +5880,8 @@ class AcquisitionTab(QWidget):
         # phase, run by the record button: a button for it beside the
         # sequence was the step nobody knew whether or when to take.
         self._btn_calibrar.setVisible(mode != MODE_KINEMATICS)
+        # The guided sessions are the one-muscle practical's.
+        self._rellenar_sesiones()
         # A different practical is a different sequence: whatever step was
         # offered belongs to the one being left.
         self._paso_mostrado = ""
@@ -5674,6 +5970,10 @@ class AcquisitionTab(QWidget):
         # «Save as» dialog nobody asked for and a recording on a tab that is
         # gone. Seen with a MainWindow under app.exec(), 22 October 2026.
         self._esperando_puerto = False
+        self._session_flow_pending = False
+        if self._session_runner is not None:
+            self._session_motivo = "stop"
+            self._session_runner.cancel()
         if self._worker and self._worker.isRunning():
             self._worker.stop_forced()
             self._worker.wait(5000)

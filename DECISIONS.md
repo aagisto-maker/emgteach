@@ -12,6 +12,48 @@ used.
 
 ---
 
+## 2026-10-24 — Guided sessions in the one-muscle practical: the foundations
+
+**Context.** Trials with other teachers: the practical students will do is
+mostly the one-muscle one, and the application left it raw — the exercises
+of the practical guide (steps of effort, a sustained contraction) were timed
+by the student with a stopwatch. ecgteach and eegteach run guided sessions:
+phases announced, timed, with a tone and a flash, marked in the file. The
+plan is `docs/PLAN-sesiones-contraccion-simple.md` (PR #136).
+
+**Options evaluated.** (a) Port ecgteach's and eegteach's
+`GuidedSessionDialog`, identical in both; (b) run the sessions with what
+emgteach already has: the session flow of the other two practicals (record →
+calibration → countdown → recording phase), the panel over the plots, the
+classroom broadcast, the phase marks.
+
+**Chosen: (b), with the sister applications' tone.** The dialog is a window
+over the window, and in this practical the student squeezes looking at the
+load bar it would cover; it writes its marks as translated text, where
+emgteach writes ASCII codes (`CAL`, `REC`); and it sends nothing to the
+phones. What is taken from them is the tone module, unchanged (`cue.py`, now
+the third identical copy, a candidate for the shared core), the flash at
+every change, and the box that remembers the tone, on by default.
+
+**The timing lives outside the tab.** The tab's other guided flows are state
+machines written inside it, which is why it has 5700 lines. This one is a
+Qt-free script (`sessions.py`: phases, marks, reader) and a clock
+(`gui/session_runner.py`) that says what happens; the tab only connects
+signals to what it already does.
+
+**Revised: the one-muscle practical now has a guided end.** The decision of
+11 October said it had none. With a guided session chosen the recording stops
+by itself when the session ends, as in the other two practicals; a free
+recording, which stays the norm and is what the chooser says when the tab
+opens, still records until the operator stops it.
+
+**Decided by Ángel on 24 October** (plan, §10): the tone box remembered and
+on by default; the gradation requires a calibrated MVC; the fatigue session
+is a maximal contraction of 30 s (cap 45 s), with an intermittent variant;
+the session of successive contractions is dropped.
+
+---
+
 ## 2026-10-10 — 3.8.0: what ecgteach and eegteach found, ported piece by piece
 
 **Context.** ecgteach and eegteach began as copies of emgteach's acquisition
