@@ -55,6 +55,7 @@ import numpy as np
 
 from emgteach.i18n import tr
 from emgteach.mvc import mvc_from_reps
+from emgteach.sessions import is_session_marker
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping, Sequence
@@ -148,13 +149,19 @@ def rec_start_marker() -> str:
 
 
 def is_phase_marker(description: str) -> bool:
-    """Whether an annotation is one of this module's, rather than a student's mark."""
+    """Whether an annotation is one of this module's, rather than a student's mark.
+
+    A guided session's marks (:mod:`emgteach.sessions`) count as phases too:
+    they describe the session, and like the calibration's they must neither
+    draw a line across every panel nor open a co-activation window.
+    """
     text = str(description)
     return bool(
         _CAL_RE.search(text)
         or _WARMUP_RE.search(text)
         or _PREP_RE.search(text)
         or _REC_RE.search(text)
+        or is_session_marker(text)
     )
 
 
