@@ -425,6 +425,25 @@ con la señal; el botón **A** de la esquina devuelve la ventana entera.
   hasta el 70 %, roja (fatiga) por encima; y los niveles **P10/P50/P90** en vivo.
   (Significado en §5.5.)
 
+**Sesiones guiadas** (solo en *Contracción de un músculo*). En la línea de
+«Calibrar CVM» hay un desplegable que se abre siempre en **«Grabación libre»**,
+que sigue siendo lo normal, y una casilla **«Tono»**. Elegida una sesión antes de
+grabar, «Iniciar grabación» la lleva a cabo entera: la calibración si la necesita,
+los 5 s de preparación y, ya dentro del registro, cada fase anunciada en el panel
+sobre las gráficas y en los móviles, cronometrada, con un **tono** y un **destello**
+ámbar del marco en cada cambio; al terminar, **la grabación se detiene sola**. Las
+fases medidas quedan escritas en el fichero como marcas (`GRAD step start k=1
+pct=20`…), y el análisis las lee solas. **Esc** detiene la sesión y la grabación
+sigue; detener la grabación detiene la sesión. Mientras se graba, el desplegable
+no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
+- **Gradación** (54 s más la calibración, que hace siempre antes): cinco
+  contracciones de 4 s de fuerza creciente, al **20, 40, 60 y 80 % de la barra y al
+  máximo**, con 6 s de reposo entre ellas. El panel muestra la barra del músculo
+  con la franja del escalón pedido.
+- La casilla **«Tono»** se recuerda entre sesiones y viene marcada; al marcarla
+  suena, para comprobar que se oye. Si un tono no puede sonar, el registro de
+  eventos lo dice.
+
 **El acelerómetro** (solo en cinemática muscular). Se registra como un canal más,
 en unidades `g` y sin calibrar. La caja de acelerómetro dice el cableado, **el
 músculo en A1 y el acelerómetro en A2**, que es una convención y no un ajuste: el
@@ -1012,9 +1031,12 @@ el acelerómetro y las medidas que se ofrecen después.
 ### 7.1 Contracción de un músculo
 
 1. **Práctica**: *Contracción de un músculo* (nivel básico).
-2. **Adquisición.** Conectar, escribir el identificador de prueba, *Iniciar
-   grabación*. Si el ejercicio necesita % CVM (escalones de esfuerzo, fatiga,
-   carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
+2. **Adquisición.** Conectar y escribir el identificador de prueba. Para los
+   escalones de esfuerzo, elegir antes la sesión guiada **«Gradación»** en el
+   desplegable de la línea de «Calibrar CVM» (§4.3): *Iniciar grabación* calibra,
+   cuenta 5 s, dirige los cinco escalones y se detiene sola. Para lo demás,
+   **«Grabación libre»** y *Iniciar grabación*. Si el ejercicio necesita % CVM
+   (fatiga, carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
    calentamiento y las tres sacudidas máximas, breves y explosivas (para el
    flexor del antebrazo, con el puño cerrado).
    Después, la tarea; los inicios se marcan solos. *Detener grabación*.

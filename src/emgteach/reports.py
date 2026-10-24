@@ -46,6 +46,7 @@ from emgteach.charts import (
     COLOUR_2,
     draw_coactivation_chart,
     draw_contraction_chart,
+    draw_steps_chart,
 )
 from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
@@ -56,6 +57,7 @@ from emgteach.figures import (
     draw_raw_panel,
     draw_rms_panel,
 )
+from emgteach.guided import is_monotonic
 from emgteach.i18n import tr
 from emgteach.modes import protocol_label
 from emgteach.mvc import (
@@ -537,6 +539,42 @@ def _seccion_contracciones(story: list, result: Mapping[str, Any], h2, normal) -
     story.append(Spacer(1, 0.4 * cm))
 
 
+def _seccion_gradacion(story: list, result: Mapping[str, Any], h2, normal) -> None:
+    """The gradation, when the recording is one: the bars and their numbers.
+
+    The level held is the mean of the envelope over each step after its
+    first second (emgteach.guided); the tab shows the same bars and the same
+    two columns beside the contraction table.
+    """
+    pasos = result.get("grad_steps") or []
+    if not pasos:
+        return
+    story.append(Paragraph(tr("Guided session: gradation"), h2))
+    try:
+        story.append(Image(_render_chart(draw_steps_chart, pasos),
+                           width=16 * cm, height=6 * cm))
+        story.append(Spacer(1, 0.15 * cm))
+    except Exception:  # pragma: no cover — a chart must never sink the report
+        pass
+    rows = [[tr("Step"), tr("Asked (% MVC)"), tr("Held (% MVC)"), tr("Held (mV)"),
+             tr("RMS (mV)"), tr("MDF (Hz)")]]
+    for paso in pasos:
+        rows.append([
+            str(paso.k), f"{paso.target_pct:.0f}",
+            "" if paso.held_pct is None else f"{paso.held_pct:.0f}",
+            f"{paso.held_mv:.3f}", f"{paso.rms_mv:.3f}",
+            "" if paso.mdf_hz is None else f"{paso.mdf_hz:.0f}",
+        ])
+    story.append(_styled_table(rows, [1.6, 3.0, 3.0, 2.8, 2.8, 2.6]))
+    story.append(Spacer(1, 0.15 * cm))
+    story.append(Paragraph(
+        (tr("Each step held more than the one before.") if is_monotonic(pasos)
+         else tr("Not every step held more than the one before.")) + " " + tr(
+            "Held: the mean of the envelope over each step after its first "
+            "second, which is the reach and not the hold."), normal))
+    story.append(Spacer(1, 0.4 * cm))
+
+
 def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> None:
     """The reference, and everything the application knows about it.
 
@@ -769,6 +807,7 @@ def build_session_report(
     # what the other muscle did during each effort. The report is what the
     # student hands in, so this is where it has to be.
     _seccion_calibracion(story, result, h2, normal)
+    _seccion_gradacion(story, result, h2, normal)
     _seccion_contracciones(story, result, h2, normal)
 
     # Co-activation, when the recording can support it: two muscles, and an

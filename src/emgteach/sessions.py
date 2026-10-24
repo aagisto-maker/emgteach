@@ -42,6 +42,7 @@ from dataclasses import dataclass, field, replace
 __all__ = [
     "EFFORT",
     "FAMILIES",
+    "GRADATION_STEPS_PCT",
     "READY",
     "REST",
     "GuidedSession",
@@ -49,6 +50,7 @@ __all__ = [
     "SessionPhase",
     "SessionScript",
     "end_marker",
+    "gradation_script",
     "header_marker",
     "is_session_marker",
     "parse_session_markers",
@@ -133,7 +135,9 @@ class SessionPhase:
     end; empty for a phase that is not measured — the rests between efforts
     are the gaps between marks, as the rest between calibration efforts is.
     ``cue`` says whether its start is announced (tone and flash); a phase that
-    only continues the one before it is not.
+    only continues the one before it is not. ``fmt`` fills the ``{…}`` of the
+    title and the text once translated (``(("pct", 40),)``), so the catalogue
+    holds one entry for every step.
     """
 
     key: str
@@ -146,6 +150,7 @@ class SessionPhase:
     opens: str = ""
     closes: str = ""
     cue: bool = True
+    fmt: tuple[tuple[str, object], ...] = ()
     #: Start of this phase within the session, filled in by
     #: :meth:`SessionScript.timed`.
     start: float = 0.0
@@ -206,6 +211,62 @@ class SessionScript:
         """The same script with every phase lasting *seconds*: for tests."""
         return replace(self, phases=tuple(
             replace(f, seconds=float(seconds)) for f in self.phases))
+
+
+# ---------------------------------------------------------------------------
+# The sessions
+# ---------------------------------------------------------------------------
+
+#: The gradation's targets, % MVC. Five and not four: with four (25, 50, 75,
+#: 100) the curve has three intervals; with five its bend can be seen.
+GRADATION_STEPS_PCT: tuple[int, ...] = (20, 40, 60, 80, 100)
+#: Seconds of each step, of the rest between steps, and of the rests that
+#: open and close the session (plan, §4.1).
+GRADATION_STEP_S = 4.0
+GRADATION_REST_S = 6.0
+GRADATION_EDGE_S = 5.0
+#: Half the width of the band each step aims at, % MVC.
+_GRADATION_BAND = 5.0
+
+
+def gradation_script() -> SessionScript:
+    """Contractions of growing strength, each held a few seconds.
+
+    The envelope grows with the force — monotonically, and not in proportion,
+    which is the lesson. The steps are asked for as a share of the bar, so the
+    session calibrates first (Ángel's decision of 24 October 2026: without
+    the bar the student cannot grade).
+    """
+    n = len(GRADATION_STEPS_PCT)
+    fases: list[SessionPhase] = [SessionPhase(
+        "rest_0", REST, GRADATION_EDGE_S, "Rest",
+        "Leave your hand loose on the table.")]
+    for k, pct in enumerate(GRADATION_STEPS_PCT, start=1):
+        maximo = pct >= 100
+        fases.append(SessionPhase(
+            f"step_{k}", EFFORT, GRADATION_STEP_S,
+            "Step {k} of {n}: maximum" if maximo else "Step {k} of {n}: {pct} %",
+            ("Squeeze your fist as hard as you can and hold it."
+             if maximo else "Squeeze your fist up to {pct} % of the bar and hold it there."),
+            level=pct / 100.0,
+            target_pct=(100.0 - 2 * _GRADATION_BAND, 100.0) if maximo
+            else (pct - _GRADATION_BAND, pct + _GRADATION_BAND),
+            opens=span_start_marker("GRAD", "step", k=k, pct=pct),
+            closes=span_end_marker("GRAD", "step", k=k),
+            fmt=(("k", k), ("n", n), ("pct", pct)),
+        ))
+        if k < n:
+            fases.append(SessionPhase(
+                f"rest_{k}", REST, GRADATION_REST_S, "Rest", "Let go and rest."))
+    fases.append(SessionPhase(
+        "rest_end", REST, GRADATION_EDGE_S, "Rest",
+        "Let go. The gradation is over: the recording stops on its own."))
+    return SessionScript(
+        key="gradacion", family="GRAD", title="Gradation", slug="gradacion",
+        header=header_marker("GRAD", steps=n), phases=tuple(fases), needs_mvc=True,
+        summary="Five contractions of growing strength, 20 to 100 % of the bar, "
+                "four seconds each with rest between them. Calibrates first.",
+    )
 
 
 # ---------------------------------------------------------------------------

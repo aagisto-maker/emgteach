@@ -142,6 +142,7 @@ from emgteach.sessions import (
     MeasuredSpan,
     SessionPhase,
     SessionScript,
+    gradation_script,
     parse_session_markers,
 )
 from emgteach.station import ADDRESS_FILE, read_station_address
@@ -606,7 +607,9 @@ _COMBO_ST = (
 #: The guided sessions of the one-muscle practical, in the order the chooser
 #: offers them: key → the function that builds the script
 #: (:mod:`emgteach.sessions`). The chooser is hidden while this is empty.
-GUIDED_SESSIONS: dict[str, Callable[[], SessionScript]] = {}
+GUIDED_SESSIONS: dict[str, Callable[[], SessionScript]] = {
+    "gradacion": gradation_script,
+}
 
 #: Where the «Tone» box is remembered between sessions. On by default, as in
 #: ecgteach: a box that has to be remembered is a box that gets forgotten.
@@ -4124,7 +4127,11 @@ class AcquisitionTab(QWidget):
         combo.clear()
         combo.addItem(tr("Free recording"), None)
         for clave, construir in GUIDED_SESSIONS.items():
-            combo.addItem(tr(construir().title), clave)
+            script = construir()
+            combo.addItem(tr(script.title), clave)
+            if script.summary:
+                combo.setItemData(combo.count() - 1, tr(script.summary),
+                                  Qt.ItemDataRole.ToolTipRole)
         combo.setCurrentIndex(0)
         combo.blockSignals(False)
         visible = self._mode == MODE_SINGLE and bool(GUIDED_SESSIONS)
@@ -4205,14 +4212,16 @@ class AcquisitionTab(QWidget):
         else:
             # Rest is an instruction too: «do nothing», not the board's cycle.
             self._pedir_al_sujeto({})
-        self._mvc_info(tr(fase.title))
+        self._mvc_info(tr(fase.title).format(**dict(fase.fmt)))
         if fase.cue:
             self._anunciar()
 
     @Slot(object, float, float)
     def _sesion_tick(self, fase: SessionPhase, restante: float, hecho: float) -> None:
         """Every tick: the panel over the plots and the phones, in step."""
-        titulo, texto = tr(fase.title), tr(fase.text)
+        campos = dict(fase.fmt)
+        titulo = tr(fase.title).format(**campos)
+        texto = tr(fase.text).format(**campos) if fase.text else ""
         cuenta = max(1, math.ceil(restante))
         carga = self._carga_inst[0] / 100.0 if self._mvc_ref[0] else 0.0
         if fase.kind == READY:

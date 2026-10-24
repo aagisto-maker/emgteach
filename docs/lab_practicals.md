@@ -312,28 +312,38 @@ signal.
 **Objective.** Check that amplitude grows with activation monotonically but
 **not linearly**, and see what normalisation is for.
 
-**Procedure.**
-1. **Start recording** and press **«Calibrate MVC»** at once: the wizard asks for
-   the warm-up and the three maximal efforts (section 4). Afterwards the **load
-   bars** in the «Muscle load» box show % MVC live.
-2. Guided by the bar, make four 4 s isometric contractions against the table at
-   **25, 50, 75 and 100 %** of the bar, with 5 s of rest between them.
-3. **Stop**. In Analysis, review the calibration repetitions and, in the
-   fragments, keep only the four steps.
+**Procedure.** With the guided session **«Gradation»**.
+1. On the line of «Calibrate MVC», choose **«Gradation»** in the chooser (it opens
+   on «Free recording») and press **Start recording**. The application asks for
+   the warm-up and the three maximal efforts (section 4), counts 5 s and directs
+   the steps: five 4 s isometric contractions against the table, at **20, 40, 60
+   and 80 % of the bar and at the maximum**, with 6 s of rest between them. Every
+   phase change is announced with a tone and a flash; the panel shows the bar
+   with the band of the step asked for.
+2. The recording **stops by itself** at the end. In Analysis, review the
+   calibration repetitions; the five steps are already the five rows of the
+   table, with no fragments to choose.
 
-**Data to record.** From the contraction table:
+**Data to record.** From the contraction table and the **«Steps»** view:
 
-| Step asked for | RMS (mV) | Peak (% MVC) |
-|---|---|---|
-| 25 % | | |
-| 50 % | | |
-| 75 % | | |
-| 100 % | | |
+| Step asked for | Held (% MVC) | RMS (mV) | MDF (Hz) |
+|---|---|---|---|
+| 20 % | | | |
+| 40 % | | | |
+| 60 % | | | |
+| 80 % | | | |
+| maximum | | | |
+
+«Held» is the mean of the envelope over each step after its first second, which
+is the reach and not the hold.
 
 **Questions.**
-- Does the RMS rise at each step? Does it double from 25 to 50 %? And from 50 to
-  100 %? Comment on the shape of the relationship and on why sEMG is a good
+- Does the RMS rise at each step? How close to the step asked for did each one
+  stay, and which was hardest to hold? The bar measures **activation**, not force:
+  did 40 % of the bar feel like 40 % of your force? Comment on why sEMG is a good
   indicator of activation and a poor dynamometer.
+- Does the MDF change from one step to the next? Which motor units are added as
+  the force rises, and how would that affect the spectrum?
 - Compare your RMS at 100 % with a classmate's. Who "makes more force"? Why is
   that comparison invalid, while the % MVC column is valid?
 - What does the **«Task maximum»** card say? If it is above 100 %, what happened

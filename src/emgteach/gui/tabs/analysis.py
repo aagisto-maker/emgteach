@@ -191,6 +191,7 @@ from emgteach.charts import (
     COLOUR_2,
     draw_coactivation_chart,
     draw_contraction_chart,
+    draw_steps_chart,
 )
 from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
@@ -214,6 +215,7 @@ from emgteach.gui.widgets.fragment_selection import (
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
+from emgteach.guided import is_monotonic
 from emgteach.i18n import tr
 from emgteach.io import (
     assess_edf_channels,
@@ -1055,7 +1057,8 @@ class AnalysisTab(QWidget):
         # offered (two muscles for the categories and the dominance, load
         # markers for the load), see _refresh_contractions.
         self._sel_contr = _SelectorEsquina(
-            self._box_contr, [("relation", tr("Relation")), ("category", tr("Category")),
+            self._box_contr, [("steps", tr("Steps")),
+                              ("relation", tr("Relation")), ("category", tr("Category")),
                               ("dominance", tr("Who leads")), ("series", tr("Series")),
                               ("load", tr("By load")), ("table", tr("Table"))])
         self._sel_contr.setToolTip(
@@ -1066,6 +1069,8 @@ class AnalysisTab(QWidget):
         self._filas_contr: list = []
         self._nombres_contr: tuple[str, str] = ("", "")
         self._cargas_contr: list[float | None] = []
+        #: The gradation's steps, when the recording is one (emgteach.guided).
+        self._pasos_grad: list = []
         #: Where the view choice is kept: one key for recordings with loads
         #: (the kinematics practical), another for the rest.
         self._clave_vista = "analysis/contr_view"
@@ -1882,12 +1887,18 @@ class AnalysisTab(QWidget):
             return
         dos = bool(result.get("channel_name_2"))
         con_emd = any(f.emd_ms is not None for f in filas)
+        # A gradation adds what each step asked and what was held, row by
+        # row: its rows are its steps (the session marked them).
+        pasos = list(result.get("grad_steps") or [])
+        con_pasos = bool(pasos) and len(pasos) == len(filas)
         cabeceras = [
             "#", tr("Start (s)"), tr("Duration (s)"), tr("Muscle"),
             tr("RMS (mV)"), tr("Peak (% MVC)"), tr("MDF (Hz)"),
         ]
         if con_emd:
             cabeceras.append(tr("EMD (ms)"))
+        if con_pasos:
+            cabeceras += [tr("Asked (% MVC)"), tr("Held (% MVC)")]
         self._tbl_contr.setColumnCount(len(cabeceras))
         self._tbl_contr.setHorizontalHeaderLabels(cabeceras)
         self._tbl_contr.setColumnHidden(3, not dos)
@@ -1901,6 +1912,10 @@ class AnalysisTab(QWidget):
             ]
             if con_emd:
                 celdas.append("—" if f.emd_ms is None else f"{f.emd_ms:.0f}")
+            if con_pasos:
+                paso = pasos[i]
+                celdas += [f"{paso.target_pct:.0f}",
+                           "—" if paso.held_pct is None else f"{paso.held_pct:.0f}"]
             for col, texto in enumerate(celdas):
                 item = QTableWidgetItem(texto)
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1926,7 +1941,9 @@ class AnalysisTab(QWidget):
         )
         self._cargas_contr = load_of_each(filas, result.get("fv_loads") or [])
         con_cargas = any(c is not None for c in self._cargas_contr)
-        vistas = ["relation"]
+        self._pasos_grad = pasos
+        vistas = ["steps"] if pasos else []
+        vistas.append("relation")
         if dos:
             vistas += ["category", "dominance"]
         vistas.append("series")
@@ -1938,11 +1955,20 @@ class AnalysisTab(QWidget):
         # and remembers its own choice apart from the other practicals':
         # amplitude against MDF is the fatigue practical's relation, and
         # opening a series of lifts on it explained nothing.
-        self._clave_vista = "analysis/contr_view_kin" if con_cargas else "analysis/contr_view"
-        self._sel_contr.set_vista(str(self._settings.value(
-            self._clave_vista, "load" if con_cargas else "relation")))
+        # A gradation opens on its steps, and remembers its choice apart too.
+        if pasos:
+            self._clave_vista, defecto = "analysis/contr_view_grad", "steps"
+        elif con_cargas:
+            self._clave_vista, defecto = "analysis/contr_view_kin", "load"
+        else:
+            self._clave_vista, defecto = "analysis/contr_view", "relation"
+        self._sel_contr.set_vista(str(self._settings.value(self._clave_vista, defecto)))
         self._dibujar_contracciones()
         resumen = tr("{n} contractions").format(n=len(filas))
+        if pasos:
+            resumen = tr("Gradation: {n} steps").format(n=len(pasos)) + "  ·  " + (
+                tr("each step above the last") if is_monotonic(pasos)
+                else tr("not every step above the last"))
         emd = result.get("emd_ms_mean")
         if emd is not None:
             resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
@@ -1970,6 +1996,11 @@ class AnalysisTab(QWidget):
 
     def _dibujar_contracciones(self) -> None:
         vista = self._sel_contr.vista()
+        if vista == "steps":
+            draw_steps_chart(self._fig_contr, self._pasos_grad, small=True)
+            self._pedir_espacio(self._canvas_contr)
+            self._canvas_contr.draw_idle()
+            return
         n1, n2 = self._nombres_contr
         panel = vista if vista != "table" else "relation"
         draw_contraction_chart(
@@ -2119,6 +2150,9 @@ class AnalysisTab(QWidget):
             "fatigue": {FATIGUE: -1, NO_FATIGUE: 1}.get(
                 r.get("fat_verdict", INCONCLUSIVE), 0
             ),
+            # The gradation's steps, [asked, held] in % MVC, when it has them.
+            "steps": [[round(p.target_pct), round(p.held_pct)]
+                      for p in (r.get("grad_steps") or []) if p.held_pct is not None],
         })
 
     def _bcast_download(self, kind: str, path: str, data: bytes,

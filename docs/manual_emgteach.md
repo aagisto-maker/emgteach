@@ -341,6 +341,26 @@ signal; the **A** button in the corner gives the whole window back.
   and its **colour zones**: green up to 40 %, amber (tiredness) up to 70 %, red
   (fatigue) above; and the live **P10/P50/P90** levels (§5.5).
 
+**Guided sessions** (*Single-muscle contraction* only). On the line of
+«Calibrate MVC» there is a chooser that always opens on **«Free recording»**,
+which stays the norm, and a **«Tone»** box. With a session chosen before
+recording, «Start recording» runs the whole of it: the calibration if it needs
+one, the 5 s of preparation and then, inside the recording, each phase announced
+on the panel over the plots and on the phones, timed, with a **tone** and an
+amber **flash** of the frame at every change; at the end **the recording stops by
+itself**. The measured phases are written into the file as marks (`GRAD step
+start k=1 pct=20`…), which the analysis reads by itself. **Esc** stops the session
+and the recording goes on; stopping the recording stops the session. While
+recording the chooser cannot be changed, and the proposed file name carries the
+session.
+- **Gradation** (54 s plus the calibration, which it always runs first): five
+  4 s contractions of growing strength, at **20, 40, 60 and 80 % of the bar and at
+  the maximum**, with 6 s of rest between them. The panel shows the muscle's bar
+  with the band of the step asked for.
+- The **«Tone»** box is remembered between sessions and comes ticked; ticking it
+  plays the tone, to check it can be heard. A tone that cannot sound is noted in
+  the event log.
+
 **The accelerometer** (kinematics only). Recorded as one more channel, in `g`,
 uncalibrated. Its box states the wiring — **muscle on A1, accelerometer on A2**,
 a convention rather than a setting: the input selector and the «find the ACC
@@ -775,8 +795,11 @@ Each begins by **choosing the practical** in the top-right selector.
 
 ### 7.1 Single-muscle contraction (basic)
 
-1. Connect, type the test identifier, *Start recording*. If the exercise needs %
-   MVC (graded effort, fatigue, load), press **«Calibrate MVC»** at once: warm-up
+1. Connect and type the test identifier. For the graded effort, choose the
+   guided session **«Gradation»** first, in the chooser on the line of «Calibrate
+   MVC» (§4.3): *Start recording* calibrates, counts 5 s, directs the five steps
+   and stops by itself. For the rest, **«Free recording»** and *Start recording*.
+   If the exercise needs % MVC (fatigue, load), press **«Calibrate MVC»** at once: warm-up
    and three brief, explosive maximal jerks (for the forearm flexor, fist
    clenched). Then the task; onsets
    are marked by themselves. *Stop recording*.

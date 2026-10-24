@@ -298,28 +298,38 @@ señal.
 **Objetivo.** Comprobar que la amplitud crece con la activación de forma monótona
 pero **no lineal**, y ver para qué sirve normalizar.
 
-**Procedimiento.**
-1. **Iniciar grabación** y pulsar **«Calibrar CVM»** de inmediato: el asistente
-   pide el calentamiento y los tres esfuerzos máximos (apartado 4). Después, las
-   **barras de carga** de la caja «Carga muscular» muestran el % CVM en vivo.
-2. Guiándose por la barra, hacer cuatro contracciones isométricas de 4 s contra la
-   mesa a **25, 50, 75 y 100 %** de la barra, con 5 s de reposo entre ellas.
-3. **Detener**. En Análisis, revisar las repeticiones de la calibración y, en los
-   fragmentos, dejar solo los cuatro escalones.
+**Procedimiento.** Con la sesión guiada **«Gradación»**.
+1. En la línea de «Calibrar CVM», elegir **«Gradación»** en el desplegable (abre
+   en «Grabación libre») y pulsar **Iniciar grabación**. La aplicación pide el
+   calentamiento y los tres esfuerzos máximos (apartado 4), cuenta 5 s y dirige
+   los escalones: cinco contracciones isométricas de 4 s contra la mesa, al
+   **20, 40, 60 y 80 % de la barra y al máximo**, con 6 s de reposo entre ellas.
+   Cada cambio de fase se anuncia con un tono y un destello; el panel muestra la
+   barra con la franja del escalón pedido.
+2. La grabación se **detiene sola** al terminar. En Análisis, revisar las
+   repeticiones de la calibración; los cinco escalones ya son las cinco filas de
+   la tabla, sin elegir fragmentos.
 
-**Datos a recoger.** De la tabla de contracciones:
+**Datos a recoger.** De la tabla de contracciones y de la vista **«Escalones»**:
 
-| Escalón pedido | RMS (mV) | Pico (% CVM) |
-|---|---|---|
-| 25 % | | |
-| 50 % | | |
-| 75 % | | |
-| 100 % | | |
+| Escalón pedido | Mantenido (% CVM) | RMS (mV) | MDF (Hz) |
+|---|---|---|---|
+| 20 % | | | |
+| 40 % | | | |
+| 60 % | | | |
+| 80 % | | | |
+| máximo | | | |
+
+«Mantenido» es la media de la envolvente en cada escalón tras su primer segundo,
+que es el de llegar al nivel y no el de mantenerlo.
 
 **Cuestiones.**
-- ¿Sube el RMS en cada escalón? ¿Se duplica del 25 al 50 %? ¿Y del 50 al 100 %?
-  Comente la forma de la relación y por qué la sEMG es un buen indicador de
-  activación y un mal dinamómetro.
+- ¿Sube el RMS en cada escalón? ¿Cómo de cerca del escalón pedido se quedó cada
+  uno, y cuál costó más mantener? La barra mide **activación**, no fuerza: ¿le
+  pareció que el 40 % de la barra era el 40 % de su fuerza? Comente por qué la
+  sEMG es un buen indicador de activación y un mal dinamómetro.
+- ¿Cambia la MDF de un escalón a otro? ¿Qué unidades motoras se suman al subir
+  la fuerza, y cómo afectaría eso al espectro?
 - Compare su RMS al 100 % con el de un compañero. ¿Quién «hace más fuerza»? ¿Por
   qué esa comparación no vale, y sí vale la columna de % CVM?
 - ¿Qué dice la ficha **«Máximo de la tarea»**? Si pasa del 100 %, ¿qué ocurrió en

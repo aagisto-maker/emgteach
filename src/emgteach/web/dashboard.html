@@ -109,6 +109,9 @@ const M = {
   fatDetected:       ["Detected",                          "Detectada"],
   fatNotDetected:    ["Not detected",                      "No detectada"],
   fatUndetermined:   ["Undetermined",                      "Indeterminada"],
+  mStep:             ["Step",                              "Escalón"],
+  mStepMax:          ["max",                               "máx."],
+  mHeldOf:           ["held, asked",                       "mantenido, pedido"],
   dlReport:          ["⬇️ Download report (PDF)",          "⬇️ Descargar informe (PDF)"],
 };
 function t(k) { return (M[k] || ["", ""])[ES ? 1 : 0]; }
@@ -300,6 +303,12 @@ function showResults(m) {
     [t("mRms"), m.rms + " mV"], [t("mIemg"), m.iemg + " mV·s"],
     [t("mDur"), m.duration + " s"], [t("mFat"), `<b style="color:${fc}">${fat}</b>`],
   ];
+  // The gradation, step by step: the level held against the one asked.
+  for (const [pedido, mantenido] of (m.steps || [])) {
+    const nombre = pedido >= 100 ? t("mStepMax") : pedido + " %";
+    items.push([`${t("mStep")} ${nombre}`,
+                `${mantenido} ${UNIT} <small>(${t("mHeldOf")} ${pedido})</small>`]);
+  }
   document.getElementById("resMetrics").innerHTML =
     items.map(([k, v]) => `<div class="m"><span>${k}</span><b>${v}</b></div>`).join("");
 }

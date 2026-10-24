@@ -111,7 +111,13 @@ _TEXTS = {
             "A maximal voluntary contraction is asked for, and it becomes the "
             "reference against which the live load bars and the measurements "
             "are expressed, making contractions easier to compare."
-        ) + " " + _protocolo_de_calibracion(),
+        ) + " " + _protocolo_de_calibracion() + " " + tr(
+            "In the one-muscle practical, the chooser beside the button "
+            "offers guided sessions: chosen before recording, «Start "
+            "recording» runs the whole session — the calibration if it needs "
+            "one, a countdown, each phase announced with a tone and a flash — "
+            "and stops at the end. «Free recording» is the usual way."
+        ),
     ),
     "acq.fv": lambda: (
         tr("The force-velocity study, step by step"),
