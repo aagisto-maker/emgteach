@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The one-muscle practical can now end by itself**: with a guided session chosen, the recording stops when the session ends. A free recording records until the operator stops it, as before (revises the decision of 11 October 2026 in `DECISIONS.md`).
 
+### Fixed
+
+- **The report the phones receive carries the panels ticked on screen.** The analysis tab's boxes are in screen order (1. Raw, 2. Env. norm., 3. PSD, 4. Filt.+rect., …) and the report wants each panel's identifier; the report made for the classroom broadcast was given the position of each ticked box instead, so «2. Env. norm.» came out as the filtered and rectified signal, «3. PSD» as the envelope against the RMS, and so on — in the report the phones download, not in the one saved by hand, which already translated them. Found reading the code on 24 October 2026, not reported from a classroom. A test ticks three panels and checks the report is asked for those three.
+
 ## [3.9.1] — 2026-10-23
 
 **The live view keeps following the signal after a wheel zoom.** A patch of 3.9.0: the wheel now sets how many seconds the live plots show and the view goes on with the signal; closing the window while «Retry» waits for the board's port no longer starts a recording; and in Spanish the unit reads «% CVM». No analysis, no EDF format and no calculation changes; **3.7.0 stays the version the article describes**. See [`docs/RELEASE_NOTES_v3.9.1.md`](docs/RELEASE_NOTES_v3.9.1.md).
