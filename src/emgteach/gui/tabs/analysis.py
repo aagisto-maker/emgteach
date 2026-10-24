@@ -2147,7 +2147,9 @@ class AnalysisTab(QWidget):
         import tempfile
 
         base = Path(str(r.get("edf_path", "")) or "sesion.edf").stem or "sesion"
-        paneles = [i for i, c in enumerate(self._chk_paneles) if c.isChecked()]
+        # The boxes are in screen order; the report wants each panel's pid.
+        paneles = [pid for pid, c in zip(self._panel_pids, self._chk_paneles, strict=True)
+                   if c.isChecked()]
         meta = self._report_meta()
         with tempfile.TemporaryDirectory() as tmp:
             pdf = Path(tmp) / f"{base}_informe.pdf"
