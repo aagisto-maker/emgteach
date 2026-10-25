@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **The splash screen and «About» read «Dr. Agis-Torres et al. UCM»**, without the dash.
+- **The two splash screens and «About» read «Dr. Agis-Torres et al. UCM»**, without the dash: the one the application draws and the picture the executable shows while it starts (`packaging/splash.png`, edited in its own lettering).
 - **The report the phones receive carries the panels ticked on screen.** The analysis tab's boxes are in screen order (1. Raw, 2. Env. norm., 3. PSD, 4. Filt.+rect., …) and the report wants each panel's identifier; the report made for the classroom broadcast was given the position of each ticked box instead, so «2. Env. norm.» came out as the filtered and rectified signal, «3. PSD» as the envelope against the RMS, and so on — in the report the phones download, not in the one saved by hand, which already translated them. Found reading the code on 24 October 2026, not reported from a classroom. A test ticks three panels and checks the report is asked for those three.
 
 ## [3.9.1] — 2026-10-23
