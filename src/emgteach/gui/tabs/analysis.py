@@ -2348,8 +2348,8 @@ class AnalysisTab(QWidget):
             self._lbl_pico.setToolTip(tr(
                 "The task went well past the reference: the calibration did "
                 "not capture a maximum, so every % MVC here is too high in the "
-                "same proportion. Calibrate again with a brief, explosive "
-                "maximal jerk, not a sustained push against something fixed."
+                "same proportion. Calibrate again with a brief, intense "
+                "maximal contraction, not a sustained push against something fixed."
             ))
         else:
             self._lbl_pico.setText(texto)

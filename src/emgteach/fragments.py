@@ -221,7 +221,7 @@ def fit_to_envelope(
     draws, dotted on the plot, the one the candidates are found with:
     the detector's own line cuts the foot of the rise and the end of the
     fall, which is what had to be widened by hand, and a share of the
-    peak was tried and rejected — on a strong contraction any share
+    peak was tried and rejected — on an intense contraction any share
     above zero ended the row earlier than the detector did. The row is
     the union over those
     channels, plus ``_BORDE_MARGEN_S`` either side, and never reaches

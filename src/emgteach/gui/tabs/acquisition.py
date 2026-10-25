@@ -3806,7 +3806,7 @@ class AcquisitionTab(QWidget):
                 # more thing to work out while about to move.
                 # Only the first time each muscle is asked. The calibration
                 # is the one counter-intuitive gesture of the practical — a
-                # brief explosive jerk, not a push you lean into — and a
+                # brief intense contraction, not a push you lean into — and a
                 # picture pays for itself once; by the second repetition it
                 # is a panel taller than it needs to be over the traces.
                 imagen("sacudida") if self._mvc_rep == 0 else None,
@@ -3847,12 +3847,12 @@ class AcquisitionTab(QWidget):
             progress = min(1.0, self._mvc_elapsed / dur)
             effort = (self._mvc_cur / self._mvc_peak) if self._mvc_peak > 0 else 0.0
             titulo = tr(
-                "Maximum, short and hard — {label}{rep}"
+                "Maximum, brief and intense — {label}{rep}"
             ).format(label=label, rep=rep)
             self._mvc_overlay.show_contract(titulo, secs_left, progress, effort)
             self._mvc_info(
                 tr(
-                    "{label}: one explosive jerk at maximal power!  ({s:.0f} s)  "
+                    "{label}: one intense contraction at maximal power!  ({s:.0f} s)  "
                     "peak {pk:.2f} mV"
                 ).format(label=label, s=secs_left, pk=self._mvc_peak)
             )
@@ -3971,7 +3971,7 @@ class AcquisitionTab(QWidget):
     def _mvc_gesto(self, c: int) -> str:
         """What the effort is, said while the count runs — in one line.
 
-        A brief, explosive maximal jerk, not a sustained push against
+        A brief, intense maximal contraction, not a sustained push against
         something fixed: a reference is only a yardstick if it recruits the
         muscle mass the task recruits, and a surface electrode sees the
         compartment beneath it rather than one muscle. The rule is the same
@@ -3994,7 +3994,7 @@ class AcquisitionTab(QWidget):
         name, so it gets the rule, which is the one thing true of any
         pair — the instruction never assumes a forearm.
         """
-        regla = tr("A brief, explosive jerk — not a sustained push.")
+        regla = tr("A brief, intense contraction — not a sustained push.")
         # A guided session names its gesture, and the calibration that opens
         # it says the same words: the reference is measured with the movement
         # the experiment asks for next.
@@ -4733,7 +4733,7 @@ class AcquisitionTab(QWidget):
                 # ends on the panel the operator is already looking at.
                 warning = tr(
                     "{muscles}: this is not a maximum. Calibrate again with a "
-                    "brief, explosive maximal jerk, not a sustained push "
+                    "brief, intense maximal contraction, not a sustained push "
                     "against something fixed."
                 ).format(muscles=" · ".join(weak))
                 self._prep_aviso = warning

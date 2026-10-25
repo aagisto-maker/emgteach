@@ -373,7 +373,7 @@ class MvcOverlay(QFrame):
         """An effort being made: the window in blue, the force in green.
 
         *subtitle* replaces the calibration's rule for an effort that is
-        not a maximal jerk — the loaded lift of the force-velocity study
+        not a maximal contraction — the loaded lift of the force-velocity study
         says which load and which repetition instead.
         """
         self._set_image(None)          # the effort is watched on the bar
@@ -667,7 +667,7 @@ class MvcOverlay(QFrame):
         return tr("Effort {pct:.0f} %").format(pct=self._effort * 100)
 
     def _hint_contract(self) -> str:
-        return tr("One explosive jerk at maximal power — brief, not held")
+        return tr("One intense contraction at maximal power — brief, not held")
 
     def _relax_word(self) -> str:
         return tr("Relax")

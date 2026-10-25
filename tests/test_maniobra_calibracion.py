@@ -1,4 +1,4 @@
-"""The calibration asks for a brief, explosive maximal jerk.
+"""The calibration asks for a brief, intense maximal contraction.
 
 A surface electrode on the forearm sees the compartment beneath it, and a
 reference is only a yardstick if it recruits the muscle mass the task
@@ -54,7 +54,7 @@ def test_another_pair_names_its_own_gesture_or_none() -> None:
     # And with no gesture to name, the rule — the one thing true of any
     # pair. The instruction never assumes a forearm.
     otro = _gesto(MODE_PAIR, 0, par=PAIR_OTHER).lower()
-    assert "jerk" in otro
+    assert "contraction" in otro
     for anatomia in ("wrist", "elbow", "fist", "forearm"):
         assert anatomia not in otro, otro
 
@@ -64,7 +64,7 @@ def test_the_other_practicals_give_the_general_rule(mode) -> None:
     """The single-muscle practical may be on the biceps, and the kinematics
     one always is: a wrist gesture would be the wrong instruction there."""
     texto = _gesto(mode, 0)
-    assert "jerk" in texto
+    assert "contraction" in texto
     assert "wrist" not in texto and "fist" not in texto
 
 

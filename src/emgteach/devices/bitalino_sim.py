@@ -174,7 +174,7 @@ class _SyntheticSubject:
         """What each muscle is doing at *t*: what was asked, or the cycle.
 
         While an effort is asked of one muscle the other is at rest: the
-        instruction of the calibration is a jerk of that muscle, and a
+        instruction of the calibration is a contraction of that muscle, and a
         maximum measured with the other one firing would be a maximum of
         something else. Nothing here touches the clock, so the cycle is
         where it was when the asking stops.

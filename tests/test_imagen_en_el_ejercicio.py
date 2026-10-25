@@ -7,7 +7,7 @@ is on screen is the calibration panel, and that panel could not show a
 picture: title, countdown, bars and text.
 
 So the figure existed, and was not there at the moment the student needs it,
-which is when the application asks for the jerk. Now the panel takes one, the
+which is when the application asks for the contraction. Now the panel takes one, the
 tab passes it where the gesture is asked for, and the pictures stop belonging
 to the tour: :func:`emgteach.gui.imagenes.imagen` is where both read them.
 """

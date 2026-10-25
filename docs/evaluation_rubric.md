@@ -44,7 +44,7 @@ Levels: **Insufficient (0–4)** · **Sufficient (5–6)** · **Good (7–8)** �
   included, when the exercise asked for the task.
 - **Sufficient.** Acceptable calibration (task below 150 %); repetitions and
   fragments accepted without review.
-- **Good.** Maximum made as a brief, explosive jerk with each muscle's gesture; weak
+- **Good.** Maximum made as a brief, intense contraction with each muscle's gesture; weak
   repetitions discarded
   with judgement; fragments limited to what the exercise asked for.
 - **Excellent.** In addition, the task maximum lies between 90 and 125 %, and the

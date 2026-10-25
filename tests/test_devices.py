@@ -1062,7 +1062,7 @@ class TestDeviceFactory:
 
 class TestDevicePhysicalRange:
     """Each backend reports its true full-scale (mV) for the EDF header, so
-    strong contractions are not silently clipped (Arduino spans ±12.5 mV,
+    intense contractions are not silently clipped (Arduino spans ±12.5 mV,
     well beyond the BITalino default ±3.3 mV)."""
 
     def test_arduino_full_scale_is_pm_12_5_mv(self) -> None:

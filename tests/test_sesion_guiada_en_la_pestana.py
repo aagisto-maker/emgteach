@@ -334,15 +334,15 @@ def test_the_review_shades_what_the_session_measured(qapp, tab, tmp_path: Path) 
 
 
 def test_the_calibration_names_the_sessions_gesture(tab) -> None:
-    """The calibration said «a brief, explosive jerk» and the session «squeeze
+    """The calibration said «a brief, intense contraction» and the session «squeeze
     your fist»: the same movement in two sets of words. With a session it is
     now said the session's way; without one, as before."""
     from emgteach.sessions import gradation_script
 
-    regla = tr("A brief, explosive jerk — not a sustained push.")
+    regla = tr("A brief, intense contraction — not a sustained push.")
     assert tab._mvc_gesto(0) == regla
     tab._session_script = gradation_script()
-    assert tab._mvc_gesto(0) == tr("Clench your fist: a brief, explosive jerk.")
+    assert tab._mvc_gesto(0) == tr("Close your fist: a brief, intense contraction.")
 
 
 def test_the_warm_up_speaks_of_one_muscle_when_there_is_one(qapp, tab) -> None:

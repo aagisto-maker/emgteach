@@ -62,7 +62,7 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 - Electrodos **desechables**, uno por persona; limpiar la piel con alcohol y dejar
   secar. No reutilizar electrodos entre sujetos.
 - Personas con lesiones cutáneas en la zona deben abstenerse.
-- Los esfuerzos máximos son contracciones breves y explosivas (1.5 s) que hace el
+- Los esfuerzos máximos son contracciones breves e intensas (1.5 s) que hace el
   sujeto solo, nunca contra otra persona. Quien note dolor articular, para.
 
 ---
@@ -134,10 +134,10 @@ sesión. La aplicación lo pide con un asistente que va escribiendo todo en el m
 fichero, sin parar la grabación:
 
 1. **Calentamiento (10 s).** Dos o tres contracciones suaves de cada músculo. La
-   primera contracción máxima de una sesión nunca es la más fuerte, y esto lo
+   primera contracción máxima de una sesión nunca es la más intensa, y esto lo
    corrige en parte.
 2. **Tres esfuerzos máximos breves**, de 1.5 s cada uno, con cuenta atrás de
-   3 s y 2 s de descanso entre ellos. La pantalla dice «¡Máximo, breve y fuerte!».
+   3 s y 2 s de descanso entre ellos. La pantalla dice «¡Máximo, breve e intenso!».
 3. Con dos músculos, lo mismo para el segundo.
 4. En la práctica del par, después viene una **preparación** de 5 s y empieza el
    **registro** de la tarea. En las otras dos prácticas la calibración se lanza
@@ -156,7 +156,7 @@ pasaba: 135 % de «máximo» en un registro.
 >   cerrando el puño con toda la fuerza.**
 > - **Extensor (ECR, canal 2): contracción en extensión de muñeca a la máxima
 >   potencia, con la mano abierta y los dedos extendidos a tope.**
-> - **Breve y explosiva**, dentro de los 1.5 s de la cuenta: no un empuje
+> - **Breve e intensa**, dentro de los 1.5 s de la cuenta: no un empuje
 >   sostenido contra algo fijo. Una repetición que salga floja no vale; la
 >   aplicación permite descartarla después.
 > - **Por qué esta maniobra.** Un electrodo de superficie en el antebrazo no ve un
@@ -273,7 +273,7 @@ señal.
 
 **Procedimiento.**
 1. **Iniciar grabación**. Secuencia: 5 s de reposo, contracción suave 4 s, reposo
-   5 s, contracción fuerte 4 s, reposo 5 s. La aplicación marca sola el inicio de
+   5 s, contracción intensa 4 s, reposo 5 s. La aplicación marca sola el inicio de
    cada contracción (**Auto-inicio**, umbral = reposo + k × ruido, con k = 3).
 2. **Detener**. Pasar a **Análisis** y aceptar los fragmentos que propone.
 
@@ -282,14 +282,14 @@ señal.
 | Contracción | Duración (s) | RMS (mV) | MDF (Hz) |
 |---|---|---|---|
 | suave | | | |
-| fuerte | | | |
+| intensa | | | |
 
 **Cuestiones.**
 - ¿Por qué la señal en bruto es positiva y negativa y la envolvente solo
   positiva? ¿Qué hace la rectificación?
 - En el panel 3, el espectro gris es la señal antes del filtro y el azul después.
   ¿Qué ha desaparecido? ¿A qué frecuencia estaba? ¿Y por debajo de 20 Hz?
-- El RMS de la contracción fuerte, ¿es mayor que el de la suave? ¿Cuántas veces?
+- El RMS de la contracción intensa, ¿es mayor que el de la suave? ¿Cuántas veces?
   ¿Qué dos mecanismos nerviosos explican que crezca la amplitud?
 - ¿Coinciden los inicios automáticos con lo que se ve en la envolvente?
 
@@ -515,7 +515,7 @@ por extender la muñeca.
      mano, mejor, porque además cuantifica el esfuerzo. **Con el puño cerrado
      en vacío no sale**: sin nada sobre lo que cerrar la mano, el extensor apenas se activa
      (en el banco, un 4 % de su referencia) y la presa no da índice.
-   - «Cierre la mano sobre la pelota con una contracción fuerte y manténgala» **8 s**, firme pero submáximo,
+   - «Cierre la mano sobre la pelota con una contracción intensa y manténgala» **8 s**, firme pero submáximo,
      guiándose por la barra de carga hacia el 50–60 %. **Nunca «extienda la
      muñeca»**: los extensores tienen que entrar solos. La aplicación guía esos
      ocho segundos con su reloj y enseña las dos barras de carga dentro del
@@ -627,7 +627,7 @@ artificial y cada sujeto la interpreta a su manera, así que el número del índ
 compara con el de esa misma persona, no con el del par del antebrazo.
 
 **La referencia se pide igual, con el gesto de este par.** El asistente pide una
-contracción breve y explosiva del movimiento que hace cada músculo (apartado 4): una
+contracción breve e intensa del movimiento que hace cada músculo (apartado 4): una
 flexión de codo a la máxima potencia para el bíceps, una extensión para el tríceps.
 La regla es la de siempre —la referencia solo sirve de vara de medir si recluta la
 misma masa muscular que la tarea—, y con este par el gesto es el propio del codo.
@@ -691,7 +691,7 @@ y el EMG la activación.
    recorre el procedimiento entero sin hardware, que es opcional y merece una
    pasada antes de que nadie sostenga un peso. Y **«Iniciar grabación»** lleva
    la sesión sola: pide el nombre del archivo, **calibra primero el máximo**
-   (calentamiento y tres contracciones máximas, breves y explosivas), anuncia
+   (calentamiento y tres contracciones máximas, breves e intensas), anuncia
    el estudio y, para cada carga, pide las
    repeticiones de **una elevación rápida**, cada una con su cuenta atrás y
    marcada en el fichero con su carga. Debajo del cuadro van **dos filas de

@@ -724,7 +724,7 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
             "The task exceeds the reference by a wide margin: the calibration "
             "did not capture a maximum, so every percentage in this report is "
             "too high in the same proportion. Calibrate again with a brief, "
-            "explosive maximal jerk, not a sustained push against something "
+            "intense maximal contraction, not a sustained push against something "
             "fixed."
         ), normal))
 

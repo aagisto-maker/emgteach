@@ -111,7 +111,7 @@ class TestTheTabFollowsIt:
         assert "elbow flexion" in codo and "wrist" not in codo
         _elegir(tab, PAIR_OTHER)
         otro = tab._mvc_gesto(0).lower()
-        assert "jerk" in otro, "sin gesto que nombrar, la regla"
+        assert "contraction" in otro, "sin gesto que nombrar, la regla"
         for anatomia in ("wrist", "elbow", "forearm", "fist"):
             assert anatomia not in otro, otro
 

@@ -128,7 +128,7 @@ El orden importa, porque la aplicación depende de él.
 2. **Calibre la CVM de los dos músculos, con la grabación en marcha.** Sin las
    dos referencias el panel 9 se queda en milivoltios y no hay índice.
 
-   > ⚠️ **Una contracción breve y explosiva, no un empuje contra algo fijo.** Es el
+   > ⚠️ **Una contracción breve e intensa, no un empuje contra algo fijo.** Es el
    > error que más estropea la práctica, y no se nota hasta el análisis.
    >
    > - **Canal 1 (flexores):** contracción en flexión de muñeca a la máxima
@@ -173,7 +173,7 @@ El orden importa, porque la aplicación depende de él.
    > por debajo de ese reposo.
    >
    > **Comprobación inmediata:** después de calibrar, pida una contracción
-   > fuerte cualquiera. Si la barra de carga en vivo pasa de 100 %, la
+   > intensa cualquiera. Si la barra de carga en vivo pasa de 100 %, la
    > calibración no fue máxima — repítala.
 3. **Haga las tres maniobras seguidas y siempre en este orden**: varias
    flexiones de muñeca, varias extensiones, y una presa firme mantenida unos

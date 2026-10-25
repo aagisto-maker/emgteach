@@ -32,7 +32,7 @@ se recalcula.* Fondo de escala BITalino ±1635 µV.
   o **F12**. Guarda la ventana en la carpeta de los registros, sin preguntar.
 - **Calibración**: 10 s de calentamiento; por músculo, **3 esfuerzos máximos
   breves** (1.5 s). Referencia = el punto más alto de la envolvente en los tres.
-- **El máximo es una contracción breve y explosiva a la máxima potencia, no un
+- **El máximo es una contracción breve e intensa a la máxima potencia, no un
   empuje contra algo fijo.** FCR: contracción en flexión de muñeca **cerrando el
   puño** con toda la fuerza. ECR: contracción en extensión de muñeca con **la mano
   abierta y los dedos extendidos** a tope.
@@ -87,7 +87,7 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
 - **Sin señal / línea plana** → contacto de electrodos, referencia, canal correcto.
 - **Ruido a 50 Hz** → mejorar contacto; alejar cargadores y cables.
 - **«no fue un máximo»** (en rojo, Máximo de la tarea) → recalibrar: una contracción
-  breve y explosiva por esfuerzo, puño cerrado para el flexor, mano abierta para
+  breve e intensa por esfuerzo, puño cerrado para el flexor, mano abierta para
   el extensor.
 - **La tabla de coactivación dice «no se informa»** → en una flexión o extensión
   limpia es lo correcto; hace falta una **presa** para que dé número.

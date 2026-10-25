@@ -175,7 +175,7 @@ class TestTheCalibrationIsThreeBriefMaxima:
         A maximum performed in mid-air is submaximal by construction — the
         force-velocity relationship this application teaches in another
         practical — so the instruction has to keep saying that the effort
-        is a jerk and **not** a push leaned into. Said in one line now,
+        is a contraction and **not** a push leaned into. Said in one line now,
         because it is read in the three seconds before the effort: the
         words changed, the thing they have to say did not.
         """
@@ -186,7 +186,7 @@ class TestTheCalibrationIsThreeBriefMaxima:
             adq._mvc_elapsed = 0.5
             adq._mvc_tick()
             texto = adq._mvc_overlay._subtitle.lower()
-            assert "jerk" in texto or "contracción breve" in texto, texto
+            assert "contraction" in texto or "contracción breve" in texto, texto
             assert "push" in texto or "empuje" in texto, texto
             assert "not a sustained" in texto or "no un empuje" in texto, texto
         finally:

@@ -28,8 +28,8 @@ ANATOMIA = re.compile(
 )
 #: What every calibration instruction has to say before any of that.
 PRINCIPIO = {
-    "en": "brief, explosive jerk",
-    "es": "Contracción breve y explosiva",
+    "en": "brief, intense contraction",
+    "es": "Contracción breve e intensa",
 }
 
 
@@ -41,7 +41,7 @@ def _la_regla() -> list[tuple[str, str]]:
     even by accident — it is a separate sentence, said after.
     """
     claves = [k for k in i18n._ES
-              if k.startswith("A brief, explosive jerk")]
+              if k.startswith("A brief, intense contraction")]
     assert len(claves) == 1, claves
     return [("en", claves[0]), ("es", i18n._ES[claves[0]])]
 

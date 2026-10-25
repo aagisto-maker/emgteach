@@ -401,7 +401,7 @@ con la señal; el botón **A** de la esquina devuelve la ventana entera.
 **Carga muscular (CVM en vivo)**
 - **La calibración es un asistente**, y siempre el mismo: 10 s de calentamiento
   con dos o tres contracciones suaves y, por músculo, **tres esfuerzos máximos
-  breves** de 1.5 s («¡Máximo, breve y fuerte!»), cada uno con su cuenta atrás
+  breves** de 1.5 s («¡Máximo, breve e intenso!»), cada uno con su cuenta atrás
   y sus 2 s de descanso. Las tres contracciones mantenidas de 4 s que había
   antes se quitaron el 5 de septiembre de 2026: medida la referencia sobre el
   pico de 0.2 s que se usaba entonces, una contracción breve da el mismo número y cuesta
@@ -606,7 +606,7 @@ Expresa la señal como **porcentaje de la CVM** y evalúa la **carga muscular**.
 
 **Panel de entrada.** La primera vez que se abre la pestaña en cada ejecución de la
 aplicación, recibe con una explicación de qué es una contracción voluntaria
-máxima, por qué es una contracción breve y explosiva y no un empuje contra algo
+máxima, por qué es una contracción breve e intensa y no un empuje contra algo
 fijo, y por qué la referencia está
 dentro del propio registro. Se cierra con **«Entendido, continuar»** y no vuelve
 hasta que se reinicie la aplicación: «Nueva sesión» no lo resucita.
@@ -748,7 +748,7 @@ sesiones.
 > del principio, y superaban la referencia con la calibración bien hecha (135 %
 > en el banco).
 >
-> **Cómo se hace un máximo que lo sea.** Una contracción breve y explosiva, a la
+> **Cómo se hace un máximo que lo sea.** Una contracción breve e intensa, a la
 > máxima potencia, del movimiento propio del músculo, no un empuje sostenido
 > contra algo fijo. Para el flexor, contracción en flexión de muñeca **cerrando el
 > puño con toda la fuerza**; para el extensor, contracción en extensión de muñeca
@@ -1062,7 +1062,7 @@ el acelerómetro y las medidas que se ofrecen después.
    **«Fatiga por contracción mantenida»** o **«Fatiga por contracciones
    intermitentes»**. Si el
    ejercicio necesita % CVM (carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
-   calentamiento y las tres contracciones máximas, breves y explosivas (para el
+   calentamiento y las tres contracciones máximas, breves e intensas (para el
    flexor del antebrazo, con el puño cerrado).
    Después, la tarea; los inicios se marcan solos. *Detener grabación*.
 3. **Análisis.** Se analiza solo. Seguir los dos cuadros guiados: revisar las
@@ -1104,7 +1104,7 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
    registro pasa a dos canales y la caja del dispositivo dice «BITalino».
 2. **Adquisición.** Se etiquetan los dos músculos en el orden de los canales (FCR
    en A1, ECR en A2). Al pulsar *Iniciar grabación*, el asistente calibra los dos
-   músculos (una contracción breve y explosiva cada uno: puño cerrado para el flexor,
+   músculos (una contracción breve e intensa cada uno: puño cerrado para el flexor,
    mano abierta y dedos extendidos para el extensor), mide la separación entre
    canales, y tras 5 s de preparación abre el
    registro. La señal en bruto se dibuja apilada, un carril por músculo, y las
@@ -1148,7 +1148,7 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 
 1. Conectar e **Iniciar grabación**.
 2. Pulsar **Calibrar CVM** y seguir al asistente: calentamiento y tres
-   contracciones máximas, breves y explosivas.
+   contracciones máximas, breves e intensas.
 3. Realizar la tarea observando las **barras de carga**: si entran en naranja
    (cansancio, más del 40 %) o rojo (fatiga, más del 70 %), conviene intervenir
    (pausa, cambio de postura). Si una contracción cualquiera pasa del 100 %, la
@@ -1227,7 +1227,7 @@ que detener la grabación y pulsar de nuevo **«Guía»**.
 **«Máximo de la tarea: … no fue un máximo», en rojo.** El registro pasa del 150 %
 de la referencia: la calibración no fue una contracción máxima y todos los
 porcentajes están altos en la misma proporción. Repetirla con una contracción breve
-y explosiva por esfuerzo, puño cerrado para el flexor y mano abierta para el
+e intensa por esfuerzo, puño cerrado para el flexor y mano abierta para el
 extensor; y revisar en «Repeticiones de la
 calibración…» si alguna repetición floja está bajando la referencia (§5.1).
 

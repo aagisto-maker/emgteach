@@ -131,8 +131,8 @@ _ES = {
     "Wrist extension, hand open": "Extensión de muñeca, mano abierta",
     "Elbow flexion": "Flexión de codo",
     "Elbow extension": "Extensión de codo",
-    "Squeeze the ball hard and hold it": "Cierre la mano sobre la pelota con una contracción fuerte y manténgala",
-    "Tighten both muscles at once and hold":
+    "Close your hand on the ball with an intense contraction and hold it": "Cierre la mano sobre la pelota con una contracción intensa y manténgala",
+    "Contract both muscles at once and hold":
         "Contraiga los dos músculos a la vez y manténgalo",
     "Work both muscles at once and hold":
         "Trabaje los dos músculos a la vez y manténgalo",
@@ -152,8 +152,8 @@ _ES = {
         "Grabación detenida automáticamente: sesión terminada.",
     "Guided task cancelled; the recording goes on.":
         "Tarea guiada cancelada; la grabación sigue.",
-    "A brief, explosive jerk — not a sustained push.":
-        "Contracción breve y explosiva, no un empuje sostenido.",
+    "A brief, intense contraction — not a sustained push.":
+        "Contracción breve e intensa, no un empuje sostenido.",
     "Two or three easy contractions of each muscle.":
         "Dos o tres contracciones suaves de cada músculo.",
     "Which pair of muscles this practical is being run on. It changes what "
@@ -215,8 +215,8 @@ _ES = {
         "un músculo puede usar el Arduino; las otras dos necesitan el "
         "segundo canal de la placa o su acelerómetro, así que lo fijan y el "
         "selector no aparece.",
-    "Maximum, short and hard — {label}{rep}":
-        "¡Máximo, breve y fuerte! — {label}{rep}",
+    "Maximum, brief and intense — {label}{rep}":
+        "¡Máximo, breve e intenso! — {label}{rep}",
     "e.g. bench 3, attempt 2": "p. ej. mesa 3, intento 2",
     "Goes into the EDF header and the report. One student, a pair, a bench "
     "or a repeat — whatever tells this recording apart.":
@@ -253,12 +253,12 @@ _ES = {
     "Each row is one contraction the application found on its own, the same "
     "ones the fragment editor proposes. With two muscles, the row belongs to "
     "the one that led it; «Co-activation» means both worked at once, and the "
-    "numbers are the stronger one's.":
+    "numbers are the more active one's.":
         "Cada fila es una contracción que la aplicación ha encontrado por sí "
         "misma, las mismas que propone el editor de fragmentos. Con dos "
         "músculos, la fila es del que la lideró; «Coactivación» significa "
         "que los dos trabajaron a la vez, y los números son los del más "
-        "fuerte.",
+        "activo.",
     "RMS": "RMS",
     "mean amplitude of the filtered signal over the contraction. Rest is a "
     "few hundredths of a millivolt; a firm effort with surface electrodes is "
@@ -328,7 +328,7 @@ _ES = {
         "carga y el análisis.",
     "After {warm} s of warm-up, {n} brief maximal efforts of {dur} s are "
     "recorded for each muscle, each announced {cue} s ahead and followed by "
-    "{rest} s of rest. Each effort is one brief, explosive maximal jerk, "
+    "{rest} s of rest. Each effort is one brief, intense maximal contraction, "
     "not a sustained push against something fixed. The reference is the "
     "highest point the envelope reaches across the repetitions kept, so it "
     "is a maximum the task cannot exceed; a repetition that came out weak "
@@ -336,7 +336,7 @@ _ES = {
         "Tras {warm} s de calentamiento se graban {n} esfuerzos máximos "
         "breves de {dur} s por músculo, cada uno anunciado con {cue} s de "
         "antelación y seguido de {rest} s de descanso. Cada esfuerzo es una "
-        "contracción breve y explosiva a la máxima potencia, no un empuje "
+        "contracción breve e intensa a la máxima potencia, no un empuje "
         "sostenido contra algo fijo. La referencia es el "
         "punto más alto que alcanza la envolvente en las repeticiones que se "
         "conservan, de modo que es un máximo que la tarea no puede superar; "
@@ -497,12 +497,12 @@ _ES = {
         "No concluyente (la tendencia no ajusta, R²={r2:.2f})",
     "The task went well past the reference: the calibration did not capture "
     "a maximum, so every % MVC here is too high in the same proportion. "
-    "Calibrate again with a brief, explosive maximal jerk, not a sustained "
+    "Calibrate again with a brief, intense maximal contraction, not a sustained "
     "push against something fixed.":
         "La tarea superó con mucho la referencia: la calibración no recogió "
         "un máximo, así que todos los % CVM de aquí están inflados en la "
-        "misma proporción. Vuelva a calibrar con una contracción breve y "
-        "explosiva a la máxima potencia, no con un empuje sostenido contra "
+        "misma proporción. Vuelva a calibrar con una contracción breve e "
+        "intensa a la máxima potencia, no con un empuje sostenido contra "
         "algo fijo.",
     "As a muscle fatigues, its action potentials slow down and the EMG "
     "spectrum shifts towards lower frequencies. The median frequency (MDF) "
@@ -549,12 +549,12 @@ _ES = {
     "{pct:.0f} % MVC (envelope peak)": "{pct:.0f} % CVM (pico de la envolvente)",
     "The task exceeds the reference by a wide margin: the calibration did "
     "not capture a maximum, so every percentage in this report is too high "
-    "in the same proportion. Calibrate again with a brief, explosive "
-    "maximal jerk, not a sustained push against something fixed.":
+    "in the same proportion. Calibrate again with a brief, intense "
+    "maximal contraction, not a sustained push against something fixed.":
         "La tarea supera la referencia con mucho margen: la calibración no "
         "recogió un máximo, así que todos los porcentajes de este informe "
         "están inflados en la misma proporción. Vuelva a calibrar con una "
-        "contracción breve y explosiva a la máxima potencia, no con un empuje "
+        "contracción breve e intensa a la máxima potencia, no con un empuje "
         "sostenido contra algo fijo.",
     "Repetition": "Repetición",
     "Other muscle during it": "El otro músculo mientras tanto",
@@ -1139,15 +1139,15 @@ _ES = {
     "{summary}\nYou can start recording.": "{summary}\nYa se puede empezar a grabar.",
     "Calibration failed": "Calibración fallida",
     "No signal — check the electrodes.": "Sin señal — conviene revisar los electrodos.",
-    "{label}: one explosive jerk at maximal power!  ({s:.0f} s)  "
+    "{label}: one intense contraction at maximal power!  ({s:.0f} s)  "
     "peak {pk:.2f} mV":
-        "{label}: ¡una contracción explosiva a la máxima potencia!  ({s:.0f} s)  "
+        "{label}: ¡una contracción intensa a la máxima potencia!  ({s:.0f} s)  "
         "pico {pk:.2f} mV",
     "Relax…": "Relaje…",
     "Relax": "Relaje",
     "Effort {pct:.0f} %": "Esfuerzo {pct:.0f} %",
-    "One explosive jerk at maximal power — brief, not held":
-        "Contracción explosiva al máximo: breve, no sostenida",
+    "One intense contraction at maximal power — brief, not held":
+        "Contracción intensa al máximo: breve, no sostenida",
     "MVC ready — {summary}. You can start recording.":
         "CVM lista — {summary}. Ya se puede empezar a grabar.",
     "MVC calibrated: {summary}": "CVM calibrada: {summary}",
@@ -1395,14 +1395,14 @@ _ES = {
     "Filtered + rectified EMG signal":
         "Señal EMG filtrada + rectificada",
     "rectified, every oscillation counts upwards: the taller the trace, the "
-    "stronger the activation":
+    "more intense the activation":
         "rectificada, cada oscilación cuenta hacia arriba: cuanto más alta "
-        "la traza, más fuerte la activación",
+        "la traza, más intensa la activación",
     "EMG signal envelope":
         "Envolvente de la señal EMG",
-    "the higher the curve, the stronger the activation; the two lines are "
+    "the higher the curve, the more intense the activation; the two lines are "
     "two ways of measuring it":
-        "cuanto más alta la curva, más fuerte la activación; las dos líneas "
+        "cuanto más alta la curva, más intensa la activación; las dos líneas "
         "son dos formas de medirla",
     "RMS amplitude over time":
         "Amplitud RMS en el tiempo",
@@ -1965,9 +1965,9 @@ _ES = {
     'Get ready to record': 'Prepárese para grabar',
     'Warm up first': "Calentamiento previo",
     'Warming up: {n}': 'Calentando: {n}',
-    'Two or three easy contractions of each muscle. The first maximal effort of a session is never the strongest one.':
+    'Two or three easy contractions of each muscle. The first maximal effort of a session is never the most intense one.':
         "Dos o tres contracciones suaves de cada músculo. El primer esfuerzo "
-        "máximo de una sesión nunca es el más fuerte.",
+        "máximo de una sesión nunca es el más intenso.",
     'The recording ended before the preparation phase could start, so this file has no recording phase marked.':
         "El registro terminó antes de que pudiera empezar la fase de "
         "preparación, así que este archivo no lleva marcada la fase de "
@@ -1981,12 +1981,12 @@ _ES = {
         'Empieza la fase de registro. Todo lo anterior —la calibración y esta pausa— queda fuera del análisis.',
     "A reference is only a yardstick if it recruits the same muscle mass as "
     "the task, and a surface electrode does not see one muscle but the "
-    "compartment beneath it. So the reference is a brief, explosive maximal "
-    "jerk of the movement the muscle makes, not a sustained push against "
+    "compartment beneath it. So the reference is a brief, intense maximal "
+    "contraction of the movement the muscle makes, not a sustained push against "
     "something fixed: a push has to be braced, which switches on the "
     "antagonist as well. On the forearm — the pair of the practical guide — "
-    "the flexor's is a jerk of wrist flexion with the fist clenched with all "
-    "one's strength, and the extensor's a jerk of wrist extension with the "
+    "the flexor's is a contraction of wrist flexion with the fist clenched with all "
+    "one's strength, and the extensor's a contraction of wrist extension with the "
     "hand open and the fingers stretched out as far as they go: the task "
     "includes a grip, and clenching the fist brings in the finger flexors of "
     "the same compartment, which a push of the wrist leaves out. With "
@@ -1995,7 +1995,7 @@ _ES = {
         "Una referencia solo sirve de vara de medir si recluta la misma masa "
         "muscular que la tarea, y un electrodo de superficie no ve un "
         "músculo, sino el compartimento que tiene debajo. Por eso la "
-        "referencia es una contracción breve y explosiva, a la máxima potencia, "
+        "referencia es una contracción breve e intensa, a la máxima potencia, "
         "del movimiento que hace el músculo, y no un empuje sostenido contra "
         "algo fijo: el empuje obliga a fijar el miembro, lo que enciende "
         "además al antagonista. En el antebrazo, que es el par del guion de "
@@ -2007,8 +2007,8 @@ _ES = {
         "muñeca deja fuera. Con otro par —bíceps y tríceps, por ejemplo— el "
         "gesto es el propio de ese par, elegido con la misma regla.",
     'Calibration too weak': 'Calibración demasiado floja',
-    '{muscles}: this is not a maximum. Calibrate again with a brief, explosive maximal jerk, not a sustained push against something fixed.': "{muscles}: esto no es un máximo. Calibre de nuevo con una "
-        "contracción breve y explosiva a la máxima potencia, no con un empuje "
+    '{muscles}: this is not a maximum. Calibrate again with a brief, intense maximal contraction, not a sustained push against something fixed.': "{muscles}: esto no es un máximo. Calibre de nuevo con una "
+        "contracción breve e intensa a la máxima potencia, no con un empuje "
         "sostenido contra algo fijo.",
     '⚠ «{name}»: the recording starts with the muscle already active, so no resting baseline could be measured and contraction onsets were not detected. Record a couple of quiet seconds before the first contraction.': '⚠ «{name}»: el registro empieza con el músculo ya activo, así que no se pudo medir una línea base de reposo y no se han detectado inicios de contracción. Grabe un par de segundos en reposo antes de la primera contracción.',
     '⚠ «{muscle}»: the calibration reached {ref:.3f} mV, only {ratio:.1f}× its resting level. That is not a maximal contraction — every % MVC from now on will be too high by that factor. Calibrate again.': '⚠ «{muscle}»: la calibración llegó a {ref:.3f} mV, solo {ratio:.1f}× su nivel de reposo. Eso no es una contracción máxima: a partir de ahora todos los % de CVM saldrán altos por ese mismo factor. Calibre de nuevo.',
@@ -2390,7 +2390,7 @@ _ES = {
     'for the recording.\n\n'
     'Third, «Start recording», in the box to the left. It runs the whole session on its own: '
     'it asks for the file name, calibrates the maximum first (a warm-up and three brief, '
-    'explosive maximal jerks), announces the study, and then cues '
+    'intense maximal contractions), announces the study, and then cues '
     'one quick lift for each repetition of each load, marking every one in the file with its '
     'load. There is no separate maximum without load in between: the calibration was the maximum. '
     '«Cancel guide (Esc)» stops the guidance at any moment and the recording goes on.\n\n'
@@ -2409,7 +2409,7 @@ _ES = {
         'nada: el plan se guarda para la grabación.\n\n'
         'Tercero, «Iniciar grabación», en la caja de la izquierda. Lleva la sesión entera '
         'sola: pide el nombre del archivo, calibra primero el máximo (un calentamiento y tres '
-        'contracciones máximas, breves y explosivas), anuncia el estudio y '
+        'contracciones máximas, breves e intensas), anuncia el estudio y '
         'después va pidiendo un levantamiento rápido por cada repetición de cada carga, '
         'marcando cada uno en el archivo con su carga. No hay otro máximo en vacío entre '
         'medias: la calibración ya lo fue. «Cancelar guía (Esc)» detiene la guía en cualquier '
@@ -2503,33 +2503,33 @@ _ES = {
         'Medido sobre un RMS móvil de 50 ms, no sobre la envolvente: a cuatro o cinco contracciones por segundo, el filtro de 5 Hz de la envolvente mantiene él solo el suelo entre un quinto y un tercio del pico. «La medida sola» es el suelo que deja la misma medida con una relajación perfecta al ritmo conseguido; lo que quede por encima es del sujeto, sobre todo una relajación que no llega a completarse. No es la treppe, un fenómeno mecánico de la estimulación eléctrica; y los picos son EMG, no fuerza.',
     'Quick repeated contractions':
         'Contracciones rápidas repetidas',
-    'Clench and release at 0':
+    'Contract and relax at 0':
         'Contraiga y relaje al llegar a 0',
     'As fast as you can, for {secs:g} seconds.':
         'Lo más rápido que pueda, durante {secs:g} segundos.',
-    'Clench and release, as fast as you can':
+    'Contract and relax, as fast as you can':
         'Contraiga y relaje, lo más rápido que pueda',
-    'Clench your fist hard and let it go completely, again and again, as fast as you can.':
-        'Cierre el puño con una contracción fuerte y relájelo del todo, una y otra vez, lo más rápido que pueda.',
-    'Clench and release the fist as fast as you can for {secs:g} s: do the peaks rise, and does the trace go back to rest between contractions?':
+    'Close your fist with an intense contraction and relax it completely, again and again, as fast as you can.':
+        'Cierre el puño con una contracción intensa y relájelo del todo, una y otra vez, lo más rápido que pueda.',
+    'Contractions of the fist, closing and relaxing it as fast as you can for {secs:g} s: do the peaks rise, and does the trace go back to rest between contractions?':
         'Contracciones del puño, cerrándolo y relajándolo lo más rápido posible durante {secs:g} s: ¿suben los picos, y vuelve la señal al reposo entre contracciones?',
     'Two or three easy contractions.':
         'Dos o tres contracciones suaves.',
-    'Clench your fist: a brief, explosive jerk.':
-        'Cierre el puño: una contracción breve y explosiva.',
+    'Close your fist: a brief, intense contraction.':
+        'Cierre el puño: una contracción breve e intensa.',
     'Fatigue: sustained contraction':
         'Fatiga por contracción mantenida',
     'Fatigue: intermittent contractions':
         'Fatiga por contracciones intermitentes',
-    'Forearm on the table, fist closed without squeezing.':
+    'Forearm on the table, fist closed without contracting.':
         'Antebrazo sobre la mesa, puño cerrado sin contraer.',
-    'Squeeze as hard as you can at 0':
+    'Maximal contraction at 0':
         'Contracción máxima al llegar a 0',
     'And keep it up for {secs:g} seconds.':
         'Y manténgalo {secs:g} segundos.',
     'Maximum: keep it up':
         'Máximo: manténgalo',
-    'Squeeze as hard as you can and keep it up. Breathe normally.':
+    'Contract as hard as you can and keep the contraction up. Breathe normally.':
         'Contraiga al máximo y mantenga la contracción. Respire normalmente.',
     'Let go and let the hand drop. The recording stops on its own.':
         'Suelte y deje caer la mano. La grabación se detiene sola.',
@@ -2539,7 +2539,7 @@ _ES = {
         '{n} contracciones de {on:g} s, separadas {off:g} s.',
     'Contraction {k} of {n}: maximum':
         'Contracción {k} de {n}: máximo',
-    'Squeeze as hard as you can. Breathe normally.':
+    'Contract as hard as you can. Breathe normally.':
         'Contraiga al máximo. Respire normalmente.',
     'Let go: {k} of {n} done':
         'Suelte: {k} de {n} hechas',
@@ -2603,9 +2603,9 @@ _ES = {
         'Escalón {k} de {n}: máximo',
     'Step {k} of {n}: {pct} %':
         'Escalón {k} de {n}: {pct} %',
-    'Squeeze your fist as hard as you can and hold it.':
+    'Close your fist with a maximal contraction and hold it.':
         'Cierre el puño con la máxima contracción y manténgala.',
-    'Squeeze your fist up to {pct} % of the bar and hold it there.':
+    'Close your fist with a contraction up to {pct} % of the bar and hold it there.':
         'Cierre el puño con una contracción hasta el {pct} % de la barra y manténgala ahí.',
     'Let go and rest.':
         'Suelte y descanse.',

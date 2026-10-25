@@ -65,7 +65,7 @@ By the end, students should be able to:
 - **Disposable** electrodes, one set per person; clean the skin with alcohol and
   let it dry. Do not reuse electrodes between subjects.
 - Subjects with skin lesions in the area should abstain.
-- Maximal efforts are brief, explosive jerks (1.5 s), made by the subject alone
+- Maximal efforts are brief, intense contractions (1.5 s), made by the subject alone
   and never against another person. Anyone who feels joint pain stops.
 
 ---
@@ -138,10 +138,10 @@ application asks for it with a wizard that writes everything into the same file,
 without stopping the recording:
 
 1. **Warm-up (10 s).** Two or three easy contractions of each muscle. The first
-   maximal contraction of a session is never the strongest one, and this corrects
+   maximal contraction of a session is never the most intense one, and this corrects
    that in part.
 2. **Three brief maximal efforts**, 1.5 s each, with a 3 s countdown and 2 s of
-   rest between them. The screen says «Maximum, short and hard!».
+   rest between them. The screen says «Maximum, brief and intense!».
 3. With two muscles, the same for the second one.
 4. In the pair practical a 5 s **preparation** follows and the **recording** of
    the task begins. In the other two practicals the calibration is launched with
@@ -169,11 +169,11 @@ recording.
 
 > **The manoeuvre of the maximum decides the practical.**
 >
-> - **Flexor (FCR, channel 1): a jerk of wrist flexion at maximal power,
+> - **Flexor (FCR, channel 1): a contraction of wrist flexion at maximal power,
 >   clenching the fist with all your strength.**
-> - **Extensor (ECR, channel 2): a jerk of wrist extension at maximal power,
+> - **Extensor (ECR, channel 2): a contraction of wrist extension at maximal power,
 >   with the hand open and the fingers stretched out as far as they go.**
-> - **Brief and explosive**, within the 1.5 s of the count: not a sustained push
+> - **Brief and intense**, within the 1.5 s of the count: not a sustained push
 >   against something fixed. A repetition that comes out weak is no good; the
 >   application lets you discard it afterwards.
 > - **Why this manoeuvre.** A surface electrode on the forearm does not see one
@@ -287,7 +287,7 @@ signal.
 
 **Procedure.**
 1. **Start recording**. Sequence: 5 s rest, light contraction 4 s, rest 5 s,
-   strong contraction 4 s, rest 5 s. The application marks each contraction's
+   intense contraction 4 s, rest 5 s. The application marks each contraction's
    onset by itself (**Auto-onset**, threshold = rest + k × noise, with k = 3).
 2. **Stop**. Go to **Analysis** and accept the fragments it proposes.
 
@@ -296,14 +296,14 @@ signal.
 | Contraction | Duration (s) | RMS (mV) | MDF (Hz) |
 |---|---|---|---|
 | light | | | |
-| strong | | | |
+| intense | | | |
 
 **Questions.**
 - Why is the raw signal positive and negative and the envelope positive only?
   What does rectification do?
 - In panel 3, the grey spectrum is the signal before the filter and the blue one
   after. What has gone? At which frequency was it? And below 20 Hz?
-- Is the RMS of the strong contraction larger than that of the light one? By how
+- Is the RMS of the intense contraction larger than that of the light one? By how
   many times? Which two nervous mechanisms explain the growing amplitude?
 - Do the automatic onsets agree with what the envelope shows?
 
@@ -499,7 +499,7 @@ they are not antagonists but stabilisers. It is also the mechanism of lateral
 epicondylitis, an injury of repeated gripping and not of extending the wrist.
 
 **Procedure.**
-1. **Start recording**. Calibrate both muscles as in section 4 (a jerk with the
+1. **Start recording**. Calibrate both muscles as in section 4 (a contraction with the
    fist clenched for the FCR, with the hand open for the ECR).
 2. In the recording, always in this order, with 2 s of stillness between
    manoeuvres: **six wrist flexions** (1 s each, free, with no resistance),
@@ -512,18 +512,18 @@ epicondylitis, an injury of repeated gripping and not of extending the wrist.
      wrist beyond the edge, in the air**. If the wrist rests on the table, the
      table does the stabilising, the extensor relaxes and the manoeuvre measures
      nothing.
-   - **Squeeze a tennis ball**, which is what the screen names; failing one,
+   - **Close the hand on a tennis ball**, which is what the screen names; failing one,
      something that does not deform and gives a repeatable posture, such as a
      rolled-up blood-pressure cuff or a tightly rolled towel. A hand
      dynamometer is better still, since it also quantifies the effort. **With
-     the fist closed on nothing it does not work**: with nothing to squeeze
-     the extensor barely comes in (4 % of its reference on the bench) and the
+     the fist closed on nothing it does not work**: with nothing to close the
+     hand on, the extensor barely comes in (4 % of its reference on the bench) and the
      grip gives no index.
-   - «Squeeze the ball hard and hold it» for **8 s**, firm but submaximal, guided
+   - «Close your hand on the ball with an intense contraction and hold it» for **8 s**, firm but submaximal, guided
      by the load bar towards 50–60 %. **Never say «extend the wrist»**: the
      extensors have to come in on their own. The application times those eight
      seconds and shows both load bars inside its own box, which is where to look
-     while squeezing.
+     while holding the contraction.
    - Repeating it gives more signal and still counts as one window, since
      consecutive rows with the same name are grouped; the wizard guides one.
    - It goes last, so its fatigue does not contaminate the flexions or the
@@ -569,7 +569,7 @@ not of the muscle.
 - During the flexions, what does the ECR do? If its row says «not reported», why
   is that the right answer and not a fault? And if it gives a low number, what
   does that say about how the wrist was held?
-- During the grip, who works? Explain why the wrist extensors contract hard when
+- During the grip, who works? Explain why the wrist extensors contract intensely when
   the hand closes although nobody extends anything, and what it has to do with
   lateral epicondylitis.
 - The channel separation during the maxima: is it below 25 %? Above 50 % the
@@ -635,7 +635,7 @@ and the EMG the activation.
    with no hardware, which is optional and worth one run before anyone holds
    a weight. Then **«Start recording»** runs the session by itself:
    it names the file, **calibrates the maximum first** (warm-up and three
-   brief, explosive maximal jerks), announces the study and,
+   brief, intense maximal contractions), announces the study and,
    for each load, cues the repetitions of **one quick lift**, each with its
    countdown and marked in the file with its load. Under the panel are **two
    rows of boxes**: above, the lifts of the load in hand; below, the whole
@@ -722,7 +722,7 @@ grey under the summary cards and in the «?» of the tables.
 | Task effort | 20–80 % MVC | a typical submaximal effort; > 100 % sustained says the calibration was not maximal |
 | Task maximum with a sound calibration | 90–125 % MVC | recorded sessions with a correct calibration; the application warns in red from 150 % |
 | Antagonist co-activation | 5–10 % MVC in light efforts; 25–35 % in maxima | triceps during maximal elbow flexion ≈ 26 %; finger extensor during wrist flexion at 75 % ≈ 15 % |
-| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported», or low (≈ 30 %) if the antagonist passes the floor; firm grip squeezing the ball: clearly higher | the index measures shared activity; in a clean flexion the antagonist stays below the 4.5 % floor |
+| Co-activation index (Falconer-Winter) | reciprocal movement: «not reported», or low (≈ 30 %) if the antagonist passes the floor; firm grip closing the hand on the ball: clearly higher | the index measures shared activity; in a clean flexion the antagonist stays below the 4.5 % floor |
 | Channel separation (cross-talk) | ≤ 20–25 % of its own reference | measured with well-placed electrodes; > 50 %, «channels not separated» |
 | Static load (P10) | ≤ 2–5 % MVC (the application uses 5) | Jonsson 1978, 1982 |
 | Median load (P50) | ≤ 10–14 % MVC (the application uses 14) | Jonsson 1978, 1982 |

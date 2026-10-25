@@ -233,7 +233,7 @@ class SessionScript:
 #: calibration that precedes it asks for the same gesture (Ángel, 25 Oct 2026:
 #: the calibration said «a brief, explosive jerk» and the session «squeeze
 #: your fist», and the student did not know they were the same movement).
-_FIST = "Clench your fist: a brief, explosive jerk."
+_FIST = "Close your fist: a brief, intense contraction."
 
 #: The gradation's targets, % MVC. Five and not four: with four (25, 50, 75,
 #: 100) the curve has three intervals; with five its bend can be seen.
@@ -264,8 +264,8 @@ def gradation_script() -> SessionScript:
         fases.append(SessionPhase(
             f"step_{k}", EFFORT, GRADATION_STEP_S,
             "Step {k} of {n}: maximum" if maximo else "Step {k} of {n}: {pct} %",
-            ("Squeeze your fist as hard as you can and hold it."
-             if maximo else "Squeeze your fist up to {pct} % of the bar and hold it there."),
+            ("Close your fist with a maximal contraction and hold it."
+             if maximo else "Close your fist with a contraction up to {pct} % of the bar and hold it there."),
             level=pct / 100.0,
             target_pct=(100.0 - 2 * _GRADATION_BAND, 100.0) if maximo
             else (pct - _GRADATION_BAND, pct + _GRADATION_BAND),
@@ -312,11 +312,11 @@ def hold_script(seconds: float = HOLD_DEFAULT_S) -> SessionScript:
         raise ValueError(f"A sustained maximum lasts at most {HOLD_MAX_S:g} s, not {secs:g}.")
     fases = (
         SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
-                     "Forearm on the table, fist closed without squeezing."),
-        SessionPhase("ready", READY, _HOLD_COUNT_S, "Squeeze as hard as you can at 0",
+                     "Forearm on the table, fist closed without contracting."),
+        SessionPhase("ready", READY, _HOLD_COUNT_S, "Maximal contraction at 0",
                      "And keep it up for {secs:g} seconds.", fmt=(("secs", secs),)),
         SessionPhase("effort", EFFORT, secs, "Maximum: keep it up",
-                     "Squeeze as hard as you can and keep it up. Breathe normally.",
+                     "Contract as hard as you can and keep the contraction up. Breathe normally.",
                      level=1.0,
                      opens=span_start_marker("HOLD", "effort", secs=secs),
                      closes=span_end_marker("HOLD", "effort")),
@@ -354,15 +354,15 @@ def intermittent_script(reps: int = INTERMITTENT_REPS, on_s: float = INTERMITTEN
     n = int(reps)
     fases: list[SessionPhase] = [
         SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
-                     "Forearm on the table, fist closed without squeezing."),
-        SessionPhase("ready", READY, _HOLD_COUNT_S, "Squeeze as hard as you can at 0",
+                     "Forearm on the table, fist closed without contracting."),
+        SessionPhase("ready", READY, _HOLD_COUNT_S, "Maximal contraction at 0",
                      "{n} contractions of {on:g} s, {off:g} s apart.",
                      fmt=(("n", n), ("on", on_s), ("off", off_s))),
     ]
     for k in range(1, n + 1):
         fases.append(SessionPhase(
             f"rep_{k}", EFFORT, float(on_s), "Contraction {k} of {n}: maximum",
-            "Squeeze as hard as you can. Breathe normally.", level=1.0,
+            "Contract as hard as you can. Breathe normally.", level=1.0,
             opens=span_start_marker("HOLD", "rep", n=k),
             closes=span_end_marker("HOLD", "rep", n=k),
             fmt=(("k", k), ("n", n)),
@@ -409,12 +409,12 @@ def rapid_script(seconds: float = RAPID_DEFAULT_S) -> SessionScript:
     secs = float(seconds)
     fases = (
         SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
-                     "Forearm on the table, fist closed without squeezing."),
-        SessionPhase("ready", READY, _HOLD_COUNT_S, "Clench and release at 0",
+                     "Forearm on the table, fist closed without contracting."),
+        SessionPhase("ready", READY, _HOLD_COUNT_S, "Contract and relax at 0",
                      "As fast as you can, for {secs:g} seconds.", fmt=(("secs", secs),)),
-        SessionPhase("train", EFFORT, secs, "Clench and release, as fast as you can",
-                     "Clench your fist hard and let it go completely, again and "
-                     "again, as fast as you can.", level=1.0,
+        SessionPhase("train", EFFORT, secs, "Contract and relax, as fast as you can",
+                     "Close your fist with an intense contraction and relax it "
+                     "completely, again and again, as fast as you can.", level=1.0,
                      repeat_s=_RAPID_SIM_REPEAT_S,
                      opens=span_start_marker("FAST", "train", secs=secs),
                      closes=span_end_marker("FAST", "train")),
@@ -424,7 +424,7 @@ def rapid_script(seconds: float = RAPID_DEFAULT_S) -> SessionScript:
     return SessionScript(
         key="rapidas", family="FAST", title="Quick repeated contractions", slug="rapidas",
         header=header_marker("FAST", secs=secs), phases=fases,
-        summary="Clench and release the fist as fast as you can for {secs:g} s: "
+        summary="Contractions of the fist, closing and relaxing it as fast as you can for {secs:g} s: "
                 "do the peaks rise, and does the trace go back to rest between "
                 "contractions?",
         fmt=(("secs", secs),), gesture=_FIST,
