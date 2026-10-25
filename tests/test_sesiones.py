@@ -162,8 +162,10 @@ def test_the_session_marks_are_dropped_with_the_phase_marks() -> None:
     assert strip_phase_markers(marcas) == [(12.0, "Fatigue")]
 
 
-def test_the_families_are_the_two_sessions() -> None:
-    assert FAMILIES == ("GRAD", "HOLD")
+def test_the_families_are_the_sessions() -> None:
+    """One family of marks per kind of session: graded contractions, fatigue,
+    quick contractions."""
+    assert FAMILIES == ("GRAD", "HOLD", "FAST")
 
 
 # ── The script ────────────────────────────────────────────────────────────
