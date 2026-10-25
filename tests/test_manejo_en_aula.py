@@ -981,7 +981,7 @@ class TestTheCalibrationHelpDescribesTheProtocolTheCodeRuns:
         # sustained push, so it has to name the jerk instead.
         for viejo in ("six", "squeez", "held", "seis", "mantenid"):
             assert viejo not in cuerpo.lower(), viejo
-        assert ("jerk" if idioma == "en" else "sacudida") in cuerpo.lower()
+        assert ("jerk" if idioma == "en" else "contracción breve") in cuerpo.lower()
 
     def test_no_help_text_counts_six_maximal_efforts(self) -> None:
         from emgteach.gui.help_texts import keys, text

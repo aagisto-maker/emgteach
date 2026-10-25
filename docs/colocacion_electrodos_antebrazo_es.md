@@ -86,7 +86,7 @@ fisiología es idéntica y cualquier diferencia entre los canales es del aparato
 se registró con las dos referencias puestas, sin la de un sensor, sin la del otro
 y con un latiguillo sin conductor de referencia, todo sin despegar un electrodo.
 El cociente entre los dos canales se quedó entre **1.21 y 1.33** en los cuatro
-montajes, que es lo que se mueve de una sacudida a otra dentro de un mismo
+montajes, que es lo que se mueve de una contracción a otra dentro de un mismo
 registro, y el suelo de ruido fue el mismo en los cuatro, 0.004 mV. **Los dos
 sensores comparten la masa de la placa, y con eso basta**: una segunda referencia
 no aporta nada, y una referencia menos es una conexión menos que equivocar.
@@ -128,12 +128,12 @@ El orden importa, porque la aplicación depende de él.
 2. **Calibre la CVM de los dos músculos, con la grabación en marcha.** Sin las
    dos referencias el panel 9 se queda en milivoltios y no hay índice.
 
-   > ⚠️ **Una sacudida breve y explosiva, no un empuje contra algo fijo.** Es el
+   > ⚠️ **Una contracción breve y explosiva, no un empuje contra algo fijo.** Es el
    > error que más estropea la práctica, y no se nota hasta el análisis.
    >
-   > - **Canal 1 (flexores):** sacudida de flexión de muñeca a la máxima
+   > - **Canal 1 (flexores):** contracción en flexión de muñeca a la máxima
    >   potencia, **cerrando el puño con toda la fuerza**.
-   > - **Canal 2 (extensores):** sacudida de extensión de muñeca a la máxima
+   > - **Canal 2 (extensores):** contracción en extensión de muñeca a la máxima
    >   potencia, **con la mano abierta y los dedos extendidos a tope**.
    >
    > **Por qué esta maniobra.** Un electrodo de superficie en el antebrazo no ve
@@ -228,7 +228,7 @@ El orden importa, porque la aplicación depende de él.
 
 Lo que debe salir: flexión y extensión con **«no se informa»** —no hay
 coactivación que medir en un movimiento recíproco— o, si el antagonista pasa del
-suelo, con un índice bajo; y la presa, apretando la pelota, claramente más alta. Que las dos primeras filas no den número **es parte de la demostración**.
+suelo, con un índice bajo; y la presa, cerrando la mano sobre la pelota, claramente más alta. Que las dos primeras filas no den número **es parte de la demostración**.
 
 > **La última ventana se cierra donde acaba el esfuerzo, no donde se paró el
 > registro.** Cada ventana marcada la cierra la marca siguiente; la última no

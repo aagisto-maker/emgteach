@@ -186,7 +186,7 @@ class TestTheCalibrationIsThreeBriefMaxima:
             adq._mvc_elapsed = 0.5
             adq._mvc_tick()
             texto = adq._mvc_overlay._subtitle.lower()
-            assert "jerk" in texto or "sacudida" in texto, texto
+            assert "jerk" in texto or "contracción breve" in texto, texto
             assert "push" in texto or "empuje" in texto, texto
             assert "not a sustained" in texto or "no un empuje" in texto, texto
         finally:

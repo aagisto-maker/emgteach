@@ -29,7 +29,7 @@ ANATOMIA = re.compile(
 #: What every calibration instruction has to say before any of that.
 PRINCIPIO = {
     "en": "brief, explosive jerk",
-    "es": "Sacudida breve y explosiva",
+    "es": "Contracción breve y explosiva",
 }
 
 

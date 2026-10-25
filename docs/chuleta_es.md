@@ -32,9 +32,9 @@ se recalcula.* Fondo de escala BITalino ±1635 µV.
   o **F12**. Guarda la ventana en la carpeta de los registros, sin preguntar.
 - **Calibración**: 10 s de calentamiento; por músculo, **3 esfuerzos máximos
   breves** (1.5 s). Referencia = el punto más alto de la envolvente en los tres.
-- **El máximo es una sacudida breve y explosiva a la máxima potencia, no un
-  empuje contra algo fijo.** FCR: sacudida de flexión de muñeca **cerrando el
-  puño** con toda la fuerza. ECR: sacudida de extensión de muñeca con **la mano
+- **El máximo es una contracción breve y explosiva a la máxima potencia, no un
+  empuje contra algo fijo.** FCR: contracción en flexión de muñeca **cerrando el
+  puño** con toda la fuerza. ECR: contracción en extensión de muñeca con **la mano
   abierta y los dedos extendidos** a tope.
 - **Auto-inicio** marca solo cada contracción (umbral = reposo + k × ruido, k = 3).
 - **Barras de carga** tras calibrar: 🟢 hasta 40 % · 🟠 hasta 70 % · 🔴 más.
@@ -86,13 +86,13 @@ solo la tarea (sin la calibración). Panel de datos: P10 / P50 / P90 y su límit
 ### Problemas rápidos
 - **Sin señal / línea plana** → contacto de electrodos, referencia, canal correcto.
 - **Ruido a 50 Hz** → mejorar contacto; alejar cargadores y cables.
-- **«no fue un máximo»** (en rojo, Máximo de la tarea) → recalibrar: una sacudida
+- **«no fue un máximo»** (en rojo, Máximo de la tarea) → recalibrar: una contracción
   breve y explosiva por esfuerzo, puño cerrado para el flexor, mano abierta para
   el extensor.
 - **La tabla de coactivación dice «no se informa»** → en una flexión o extensión
   limpia es lo correcto; hace falta una **presa** para que dé número.
 - **La presa no coactiva** → se ha hecho con el puño cerrado en vacío: hay que
-  **apretar la pelota**. O la muñeca está apoyada en la mesa. Tiene que quedar
+  **cerrar la mano sobre la pelota**. O la muñeca está apoyada en la mesa. Tiene que quedar
   **en el aire, fuera del borde**: apoyada, el tablero estabiliza y el extensor
   afloja. Y nunca se pide «extienda la muñeca»: los extensores entran solos.
 - **«Canales sin separar»** → separar los pares hacia el borde cubital y dorsal;

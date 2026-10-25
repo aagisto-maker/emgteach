@@ -62,7 +62,7 @@ Al terminar las prácticas, el alumnado debe ser capaz de:
 - Electrodos **desechables**, uno por persona; limpiar la piel con alcohol y dejar
   secar. No reutilizar electrodos entre sujetos.
 - Personas con lesiones cutáneas en la zona deben abstenerse.
-- Los esfuerzos máximos son sacudidas breves y explosivas (1.5 s) que hace el
+- Los esfuerzos máximos son contracciones breves y explosivas (1.5 s) que hace el
   sujeto solo, nunca contra otra persona. Quien note dolor articular, para.
 
 ---
@@ -152,9 +152,9 @@ pasaba: 135 % de «máximo» en un registro.
 
 > **La maniobra del máximo es lo que decide la práctica.**
 >
-> - **Flexor (FCR, canal 1): sacudida de flexión de muñeca a la máxima potencia,
+> - **Flexor (FCR, canal 1): contracción en flexión de muñeca a la máxima potencia,
 >   cerrando el puño con toda la fuerza.**
-> - **Extensor (ECR, canal 2): sacudida de extensión de muñeca a la máxima
+> - **Extensor (ECR, canal 2): contracción en extensión de muñeca a la máxima
 >   potencia, con la mano abierta y los dedos extendidos a tope.**
 > - **Breve y explosiva**, dentro de los 1.5 s de la cuenta: no un empuje
 >   sostenido contra algo fijo. Una repetición que salga floja no vale; la
@@ -394,7 +394,7 @@ Pendiente de la MDF: ____ Hz/s (R² = ____). Veredicto: ______________.
   no? ¿Qué le falta al registro?
 
 **Después: contracciones rápidas repetidas** (sesión **«Contracciones rápidas
-repetidas»**). Tras la intermitente, 10 s apretando y soltando el puño lo más
+repetidas»**). Tras la intermitente, 10 s de contracciones del puño, cerrándolo y relajándolo lo más
 rápido posible. En la vista **«Tren»**: el ritmo conseguido, cuánto suben los picos
 del primer al último tercio, y el suelo entre contracciones en % del pico, junto al
 que dejaría la medida sola a ese ritmo.
@@ -486,7 +486,7 @@ por extender la muñeca.
 
 **Procedimiento.**
 1. **Iniciar grabación**. Calibrar los dos músculos como dice el apartado 4 (una
-   sacudida con el puño cerrado para el FCR, con la mano abierta para el ECR).
+   contracción con el puño cerrado para el FCR, con la mano abierta para el ECR).
 2. **La aplicación guía también esta parte**: pide las seis de un músculo, las
    seis del otro y la presa, con una fila de casillas —una por contracción,
    del color que ese músculo tiene en las gráficas— que se van llenando según
@@ -509,17 +509,17 @@ por extender la muñeca.
      arriba, y **la muñeca fuera del borde, en el aire**. Si la muñeca descansa
      sobre la mesa, el tablero hace de estabilizador, el extensor afloja y la
      maniobra no mide nada.
-   - **Apretar una pelota de tenis**, que es lo que nombra la pantalla; si
+   - **Cerrar la mano sobre una pelota de tenis**, que es lo que nombra la pantalla; si
      no hay, algo que no se deforme y dé una postura repetible, como un
      manguito de tensión enrollado o una toalla apretada. Con dinamómetro de
      mano, mejor, porque además cuantifica el esfuerzo. **Con el puño cerrado
-     en vacío no sale**: sin nada que apretar, el extensor apenas se activa
+     en vacío no sale**: sin nada sobre lo que cerrar la mano, el extensor apenas se activa
      (en el banco, un 4 % de su referencia) y la presa no da índice.
-   - «Apriete la pelota con fuerza y manténgala» **8 s**, firme pero submáximo,
+   - «Cierre la mano sobre la pelota con una contracción fuerte y manténgala» **8 s**, firme pero submáximo,
      guiándose por la barra de carga hacia el 50–60 %. **Nunca «extienda la
      muñeca»**: los extensores tienen que entrar solos. La aplicación guía esos
      ocho segundos con su reloj y enseña las dos barras de carga dentro del
-     propio cuadro, que es donde hay que mirar mientras se aprieta.
+     propio cuadro, que es donde hay que mirar mientras se mantiene la contracción.
    - Repetirla da más señal y sigue contando como una sola ventana, porque las
      filas seguidas con el mismo nombre se agrupan; el asistente guía una.
    - Va la última, para que su fatiga no contamine las flexiones ni las
@@ -619,7 +619,7 @@ modo que ninguno de los dos músculos tenga que sostener el miembro.
 
 **Las maniobras, por si se compara con el antebrazo.** Seis flexiones de codo
 contra resistencia suave, seis extensiones y, en lugar de la presa, una
-**cocontracción**: «apriete el codo como si quisiera doblarlo y estirarlo a la vez,
+**cocontracción**: «contraiga el codo como si quisiera doblarlo y estirarlo a la vez,
 sin moverlo», tres segundos. La presa no existe en este par, y esa es la diferencia
 importante: en el antebrazo la presa es una tarea real que enciende los dos
 músculos sola; aquí hay que pedir la cocontracción, que es una instrucción
@@ -627,7 +627,7 @@ artificial y cada sujeto la interpreta a su manera, así que el número del índ
 compara con el de esa misma persona, no con el del par del antebrazo.
 
 **La referencia se pide igual, con el gesto de este par.** El asistente pide una
-sacudida breve y explosiva del movimiento que hace cada músculo (apartado 4): una
+contracción breve y explosiva del movimiento que hace cada músculo (apartado 4): una
 flexión de codo a la máxima potencia para el bíceps, una extensión para el tríceps.
 La regla es la de siempre —la referencia solo sirve de vara de medir si recluta la
 misma masa muscular que la tarea—, y con este par el gesto es el propio del codo.
@@ -640,7 +640,7 @@ comportarse igual:
 |---|---|---|
 | Canales no separados | el callado llega al 50 % de su propia referencia durante el máximo del otro | menos diafonía (están en caras opuestas y más separados): si salta, lo más probable es que un electrodo esté mal puesto |
 | Suelo del índice | 4.5 % CVM de media en la ventana | la cocontracción debería superarlo con holgura; una extensión limpia no |
-| Máximo poco creíble | la tarea pasa del 125 % de la referencia | si salta, la sacudida de referencia no fue máxima: repítala antes de dar por bueno el % CVM |
+| Máximo poco creíble | la tarea pasa del 125 % de la referencia | si salta, la contracción de referencia no fue máxima: repítala antes de dar por bueno el % CVM |
 
 Conviene hacer **un registro de prueba por par nuevo** antes de usarlo con el
 grupo, mirar esos tres avisos y anotar en el cuaderno del puesto los valores que
@@ -691,7 +691,7 @@ y el EMG la activación.
    recorre el procedimiento entero sin hardware, que es opcional y merece una
    pasada antes de que nadie sostenga un peso. Y **«Iniciar grabación»** lleva
    la sesión sola: pide el nombre del archivo, **calibra primero el máximo**
-   (calentamiento y tres sacudidas máximas, breves y explosivas), anuncia
+   (calentamiento y tres contracciones máximas, breves y explosivas), anuncia
    el estudio y, para cada carga, pide las
    repeticiones de **una elevación rápida**, cada una con su cuenta atrás y
    marcada en el fichero con su carga. Debajo del cuadro van **dos filas de
@@ -780,7 +780,7 @@ aparecen en gris bajo las fichas del resumen y en los «?» de las tablas.
 | Esfuerzo de tarea | 20–80 % CVM | un esfuerzo submáximo típico; > 100 % sostenido dice que la calibración no fue máxima |
 | Máximo de la tarea con buena calibración | 90–125 % CVM | sesiones de banco con calibración correcta; la aplicación avisa en rojo a partir del 150 % |
 | Coactivación del antagonista | 5–10 % CVM en esfuerzos suaves; 25–35 % en máximos | tríceps durante la flexión máxima del codo ≈ 26 %; extensor de los dedos durante la flexión de muñeca al 75 % ≈ 15 % |
-| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa», o bajo (≈ 30 %) si el antagonista pasa del suelo; presa firme apretando la pelota: claramente más alto | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4.5 % |
+| Índice de coactivación (Falconer-Winter) | movimiento recíproco: «no se informa», o bajo (≈ 30 %) si el antagonista pasa del suelo; presa firme cerrando la mano sobre la pelota: claramente más alto | el índice mide actividad compartida; en una flexión limpia el antagonista no llega al suelo del 4.5 % |
 | Separación entre canales (diafonía) | ≤ 20–25 % de la propia referencia | banco con electrodos bien situados; > 50 %, «canales sin separar» |
 | Carga estática (P10) | ≤ 2–5 % CVM (la aplicación usa 5) | Jonsson 1978, 1982 |
 | Carga mediana (P50) | ≤ 10–14 % CVM (la aplicación usa 14) | Jonsson 1978, 1982 |

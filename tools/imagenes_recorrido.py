@@ -202,9 +202,9 @@ TEXTOS = {
         "calent": "Calentamiento\n{warm} s\n2 o 3 contracciones\nsuaves de cada músculo",
         "fcr": "FCR\n{n} esfuerzos máximos\nde {dur} s",
         "ecr": "ECR\n{n} esfuerzos máximos\nde {dur} s",
-        "cada": "Cada esfuerzo: aviso de {cue} s  →  una sacudida breve y explosiva en los {dur} s de la cuenta  →  descanso de {rest} s",
-        "gesto_fcr": "Cuando pone FCR\nsacudida de flexión de\nmuñeca a máxima potencia,\npuño cerrado con toda la fuerza",
-        "gesto_ecr": "Cuando pone ECR\nsacudida de extensión de\nmuñeca a máxima potencia,\nmano abierta, dedos a tope",
+        "cada": "Cada esfuerzo: aviso de {cue} s  →  una contracción breve y explosiva en los {dur} s de la cuenta  →  descanso de {rest} s",
+        "gesto_fcr": "Cuando pone FCR\ncontracción en flexión de\nmuñeca a máxima potencia,\npuño cerrado con toda la fuerza",
+        "gesto_ecr": "Cuando pone ECR\ncontracción en extensión de\nmuñeca a máxima potencia,\nmano abierta, dedos a tope",
     },
     "en": {
         "electrodos": "Where the electrodes go",
