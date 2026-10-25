@@ -366,8 +366,8 @@ The specific proof is the fall of the MDF.
    **Start recording** (the calibration is optional: press «Calibrate MVC» first,
    with «Free recording», for the bar in % MVC). After 5 s of preparation and 5 s
    of rest, a 3 s countdown and **10 s of maximal isometric contraction** against
-   the table, forearm resting, no weight in the hand. **Breathe during the
-   effort** (do not hold your breath) and, if it hurts, let go.
+   the table, forearm resting, no weight in the hand. **Breathe normally
+   during the effort.**
 2. The recording **stops by itself**. In Analysis the analysed span is already
    the contraction, and panels **6. RMS/window** and **7. MDF/time** come ticked.
 

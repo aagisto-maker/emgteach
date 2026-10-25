@@ -444,8 +444,7 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   sesión: cerrar el puño con una contracción.
 - **Fatiga por contracción mantenida** (28 s; la calibración es opcional): 5 s de
   reposo, una cuenta atrás de 3 s, **10 s de contracción máxima** isométrica contra
-  la mesa y 10 s de reposo. El texto pide respirar (no aguantar el aire) y soltar si
-  duele. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7
+  la mesa y 10 s de reposo. El texto pide respirar normalmente. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7
   aparecen marcados; la línea de resumen da la MDF y el RMS del inicio y del final
   (el primer y el último cuarto de la contracción) y a los cuántos segundos cayó la
   MDF un 10 %.

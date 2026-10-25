@@ -359,8 +359,7 @@ session.
   session's own gesture: clenching the fist.
 - **Fatigue: sustained contraction** (28 s; calibration optional): 5 s of rest, a
   3 s countdown, **10 s of maximal isometric contraction** against the table and
-  10 s of rest. The text asks to breathe (not to hold the breath) and to let go if
-  it hurts. In Analysis the analysed span is the contraction and panels 6 and 7
+  10 s of rest. The text asks to breathe normally. In Analysis the analysed span is the contraction and panels 6 and 7
   come ticked; the summary line gives the MDF and RMS of its start and end (the
   first and last quarter of the contraction) and after how many seconds the MDF
   had fallen 10 %.

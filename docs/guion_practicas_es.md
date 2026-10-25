@@ -353,7 +353,7 @@ Lo que hace el RMS depende del esfuerzo: en una contracción **submáxima** suel
    antes, con «Grabación libre», si se quiere la barra en % CVM). Tras 5 s de
    preparación y 5 s de reposo, una cuenta atrás de 3 s y **10 s de contracción
    máxima isométrica** contra la mesa, antebrazo apoyado, sin peso en la mano.
-   **Respire durante el esfuerzo** (no aguante el aire) y, si duele, suelte.
+   **Respire normalmente durante el esfuerzo.**
 2. La grabación se **detiene sola**. En Análisis, el tramo analizado ya es la
    contracción, y los paneles **6. RMS/ventana** y **7. MDF/tiempo** aparecen
    marcados.

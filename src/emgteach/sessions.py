@@ -302,9 +302,9 @@ def hold_script(seconds: float = HOLD_DEFAULT_S) -> SessionScript:
     """One maximal contraction, held: the amplitude and the MDF fall.
 
     Isometric, the forearm resting and the fist against the table, with no
-    weight in the hand. The text tells the student to breathe — a maximal
-    effort held with the breath held is a Valsalva — and to let go if it
-    hurts. The calibration is optional: without it the panel's bar is the
+    weight in the hand. The text tells the student to breathe normally — a
+    maximal effort held with the breath held is a Valsalva; whoever feels pain
+    lets go without being told. The calibration is optional: without it the panel's bar is the
     effort against the peak of this same contraction.
     """
     secs = float(seconds)
@@ -316,8 +316,8 @@ def hold_script(seconds: float = HOLD_DEFAULT_S) -> SessionScript:
         SessionPhase("ready", READY, _HOLD_COUNT_S, "Squeeze as hard as you can at 0",
                      "And keep it up for {secs:g} seconds.", fmt=(("secs", secs),)),
         SessionPhase("effort", EFFORT, secs, "Maximum: keep it up",
-                     "Squeeze as hard as you can and keep it up. Breathe: do not "
-                     "hold your breath. If it hurts, let go.", level=1.0,
+                     "Squeeze as hard as you can and keep it up. Breathe normally.",
+                     level=1.0,
                      opens=span_start_marker("HOLD", "effort", secs=secs),
                      closes=span_end_marker("HOLD", "effort")),
         SessionPhase("rest_end", REST, _HOLD_AFTER_S, "Rest",
@@ -362,7 +362,7 @@ def intermittent_script(reps: int = INTERMITTENT_REPS, on_s: float = INTERMITTEN
     for k in range(1, n + 1):
         fases.append(SessionPhase(
             f"rep_{k}", EFFORT, float(on_s), "Contraction {k} of {n}: maximum",
-            "Squeeze as hard as you can. Breathe.", level=1.0,
+            "Squeeze as hard as you can. Breathe normally.", level=1.0,
             opens=span_start_marker("HOLD", "rep", n=k),
             closes=span_end_marker("HOLD", "rep", n=k),
             fmt=(("k", k), ("n", n)),

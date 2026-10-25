@@ -2529,8 +2529,8 @@ _ES = {
         'Y manténgalo {secs:g} segundos.',
     'Maximum: keep it up':
         'Máximo: manténgalo',
-    'Squeeze as hard as you can and keep it up. Breathe: do not hold your breath. If it hurts, let go.':
-        'Contraiga al máximo y mantenga la contracción. Respire: no aguante el aire. Si le duele, suelte.',
+    'Squeeze as hard as you can and keep it up. Breathe normally.':
+        'Contraiga al máximo y mantenga la contracción. Respire normalmente.',
     'Let go and let the hand drop. The recording stops on its own.':
         'Suelte y deje caer la mano. La grabación se detiene sola.',
     'One maximal contraction held for {secs:g} s, with rest before and after. The amplitude and the MDF fall as it is held.':
@@ -2539,8 +2539,8 @@ _ES = {
         '{n} contracciones de {on:g} s, separadas {off:g} s.',
     'Contraction {k} of {n}: maximum':
         'Contracción {k} de {n}: máximo',
-    'Squeeze as hard as you can. Breathe.':
-        'Contraiga al máximo. Respire.',
+    'Squeeze as hard as you can. Breathe normally.':
+        'Contraiga al máximo. Respire normalmente.',
     'Let go: {k} of {n} done':
         'Suelte: {k} de {n} hechas',
     'The next one comes at 0.':
