@@ -333,10 +333,11 @@ def hold_script(seconds: float = HOLD_DEFAULT_S) -> SessionScript:
     )
 
 
-#: The intermittent maximum: ten contractions of 5 s with 1 s between them.
+#: The intermittent maximum: six contractions of 5 s with 1 s between them.
+#: Ten at first; six after Ángel tried it (25 Oct 2026): enough to see the fall.
 #: Ángel's pilots of 24 October 2026: with 5/1 s the RMS fell 21 % almost
 #: steadily over ten; with 5/2 s and 5/5 s the fall was irregular.
-INTERMITTENT_REPS = 10
+INTERMITTENT_REPS = 6
 INTERMITTENT_ON_S = 5.0
 INTERMITTENT_OFF_S = 1.0
 

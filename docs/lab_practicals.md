@@ -371,13 +371,14 @@ The specific proof is the fall of the MDF.
 2. The recording **stops by itself**. In Analysis the analysed span is already
    the contraction, and panels **6. RMS/window** and **7. MDF/time** come ticked.
 
-**Intermittent variant** (**«Fatigue: intermittent contractions»**): ten maximal
+**Intermittent variant** (**«Fatigue: intermittent contractions»**): six maximal
 contractions of **5 s with 1 s of rest** between them, with a tone at the start
 and the end of each and the countdown on screen. What is measured is the **RMS
 of each contraction** after its first second, not its peak: the peak is the start
 of each contraction and does not fall. The **«Per contraction»** view of the
 contractions box draws it. With 1 s of rest the fall is almost steady (in a trial
-with the muscle already tired, 21 % from the first to the tenth); with longer
+with the muscle already tired and ten contractions, 21 % from the first to the
+tenth); with longer
 rests it becomes irregular, because the muscle recovers.
 
 **How the application decides.** It fits a line to the MDF of the one-second

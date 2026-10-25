@@ -72,15 +72,16 @@ def test_it_is_preceded_by_a_countdown_and_says_to_breathe() -> None:
     assert "Breathe" in next(f for f in g.phases if f.kind == EFFORT).text
 
 
-def test_the_intermittent_maximum_is_ten_of_five_seconds_one_apart() -> None:
+def test_the_intermittent_maximum_is_six_of_five_seconds_one_apart() -> None:
+    """Ten at first; six after Ángel tried it (25 Oct 2026)."""
     g = intermittent_script()
     esfuerzos = [f for f in g.phases if f.kind == EFFORT]
     pausas = [f for f in g.phases if f.key.startswith("off_")]
-    assert len(esfuerzos) == 10 and all(f.seconds == 5.0 for f in esfuerzos)
-    assert len(pausas) == 9 and all(f.seconds == 1.0 and f.kind == READY for f in pausas)
+    assert len(esfuerzos) == 6 and all(f.seconds == 5.0 for f in esfuerzos)
+    assert len(pausas) == 5 and all(f.seconds == 1.0 and f.kind == READY for f in pausas)
     assert [f.opens for f in esfuerzos][:2] == ["HOLD rep start n=1", "HOLD rep start n=2"]
-    assert g.header == "HOLD start mode=intermittent reps=10 on=5 off=1 v=1"
-    assert g.total_seconds == 5 + 3 + 50 + 9 + 10
+    assert g.header == "HOLD start mode=intermittent reps=6 on=5 off=1 v=1"
+    assert g.total_seconds == 5 + 3 + 30 + 5 + 10
 
 
 def test_a_tone_at_the_start_and_at_the_end_of_every_contraction() -> None:
@@ -178,12 +179,12 @@ def _intermitente(t0: float = 0.0, *, caida: float = 0.21):
 def test_each_contraction_is_its_rms_after_the_first_second() -> None:
     sesion, filt, _m = _intermitente()
     reps = intermittent_reps(sesion, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=filt)
-    assert [r.n for r in reps] == list(range(1, 11))
+    assert [r.n for r in reps] == list(range(1, 7))
     assert reps[0].rms_mv == pytest.approx(0.108, rel=0.05)
     assert reps[-1].rms_mv == pytest.approx(0.085, rel=0.05)
     assert change_pct(reps[0].rms_mv, reps[-1].rms_mv) == pytest.approx(-21, abs=4)
     assert all(r.mdf_hz is not None for r in reps)
-    assert reps_trend_pct(reps) == pytest.approx(-21 / 9, abs=0.8)
+    assert reps_trend_pct(reps) == pytest.approx(-21 / 5, abs=1.2)
 
 
 def test_only_an_intermittent_session_has_contractions() -> None:
@@ -306,7 +307,7 @@ def test_the_sustained_maximum_is_analysed_on_the_effort_alone(qapp, tmp_path: P
 def test_the_intermittent_maximum_is_analysed_by_contraction(qapp, tmp_path: Path) -> None:
     _s, filt, marcas = _intermitente(t0=REC_S)
     r = _analizar(qapp, _edf(tmp_path / "inter.edf", marcas, filt))
-    assert len(r["reps"]) == 10 and len(r["contractions"]) == 10
+    assert len(r["reps"]) == 6 and len(r["contractions"]) == 6
     assert change_pct(r["reps"][0].rms_mv, r["reps"][-1].rms_mv) == pytest.approx(-21, abs=6)
     assert r["hold"] is None
 
@@ -341,7 +342,7 @@ def test_the_report_and_the_phones_carry_the_fatigue(qapp, tmp_path: Path) -> No
         if r["hold"] is not None:
             assert m["hold"]["mdf"] < -20 and m["hold"]["t10"] is not None
         else:
-            assert len(m["reps"]) == 10
+            assert len(m["reps"]) == 6
 
 
 @pytest.mark.gui
@@ -394,7 +395,7 @@ def test_a_fatigue_session_recorded_with_the_simulated_board(
     if clave == "fatiga":
         assert [t.name for t in sesion.spans] == ["effort"]
     else:
-        assert [t.number("n") for t in sesion.spans] == list(range(1, 11))
+        assert [t.number("n") for t in sesion.spans] == list(range(1, 7))
     anunciadas = sum(1 for f in corta.phases if f.cue)
     # The countdown before the recording phase, every announced phase, the end.
     assert oidos == ["phase"] * (1 + anunciadas) + ["end"]

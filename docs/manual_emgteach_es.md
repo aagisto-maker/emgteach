@@ -449,7 +449,7 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   aparecen marcados; la línea de resumen da la MDF y el RMS del inicio y del final
   (el primer y el último cuarto de la contracción) y a los cuántos segundos cayó la
   MDF un 10 %.
-- **Fatiga por contracciones intermitentes** (77 s): diez contracciones máximas de **5 s con
+- **Fatiga por contracciones intermitentes** (53 s): seis contracciones máximas de **5 s con
   1 s de reposo**, con tono al empezar y al acabar cada una y la cuenta atrás en
   pantalla. Se mide el **RMS de cada contracción** tras su primer segundo (no el
   pico, que es el arranque y no baja) y su MDF: vista «Por contracción».
