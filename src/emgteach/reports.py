@@ -550,7 +550,7 @@ def _seccion_gradacion(story: list, result: Mapping[str, Any], h2, normal) -> No
     pasos = result.get("grad_steps") or []
     if not pasos:
         return
-    story.append(Paragraph(tr("Guided session: gradation"), h2))
+    story.append(Paragraph(tr("Guided session: graded contractions"), h2))
     try:
         story.append(Image(_render_chart(draw_steps_chart, pasos),
                            width=16 * cm, height=6 * cm))
@@ -588,7 +588,7 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
     if hold is None and not reps:
         return
     if hold is not None:
-        story.append(Paragraph(tr("Guided session: sustained maximum"), h2))
+        story.append(Paragraph(tr("Guided session: fatigue by sustained contraction"), h2))
         for idx in (5, 6):
             try:
                 story.append(Image(_render_one_panel_figure(result, idx),
@@ -602,7 +602,7 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
         def cuando(t):
             return tr("not reached") if t is None else f"{t:.0f} s"
 
-        rows = [[tr("Measure"), tr("First 5 s"), tr("Last 5 s"), tr("Change"),
+        rows = [[tr("Measure"), tr("Start"), tr("End"), tr("Change"),
                  tr("−10 % at"), tr("−20 % at")],  # noqa: RUF001
                 [tr("MDF (Hz)"), num(hold.mdf_start_hz, ".0f"), num(hold.mdf_end_hz, ".0f"),
                  num(hold.mdf_change_pct, "+.0f") + " %", cuando(hold.t_mdf_10),
@@ -613,11 +613,12 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
         story.append(_styled_table(rows, [2.6, 2.6, 2.6, 2.4, 2.8, 2.8]))
         story.append(Spacer(1, 0.15 * cm))
         story.append(Paragraph(tr(
-            "Each value is the median of the one-second windows in which the "
-            "muscle was working; a fall counts once three windows in a row are "
-            "below the line."), normal))
+            "Start and end: the median of the one-second windows of the first and "
+            "the last quarter of the contraction (at most 5 s) in which the muscle "
+            "was working; a fall counts once three windows in a row are below "
+            "the line."), normal))
     if reps:
-        story.append(Paragraph(tr("Guided session: intermittent maximum"), h2))
+        story.append(Paragraph(tr("Guided session: fatigue by intermittent contractions"), h2))
         try:
             story.append(Image(_render_chart(draw_reps_chart, reps),
                                width=16 * cm, height=6 * cm))

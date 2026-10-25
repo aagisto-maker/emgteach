@@ -52,7 +52,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QFrame
 
@@ -66,13 +66,6 @@ _PEAK = QColor(241, 196, 15)       # amber (peak marker)
 _OK = QColor(46, 204, 113)
 _MUTED = QColor(190, 190, 200)
 _STEP_EMPTY = QColor(38, 38, 48)   # the box before its action is done
-_FLASH = QColor(232, 163, 23)      # the frame, while a phase change is announced
-
-#: How long the frame stays lit when a guided session changes phase. The
-#: guided sessions of ecgteach and eegteach light their instruction for the
-#: same 900 ms: a label that quietly rewrites itself is not noticed by
-#: someone watching their hand.
-FLASH_MS = 900
 
 _WRAP_TOP = int(
     Qt.AlignmentFlag.AlignHCenter
@@ -165,12 +158,6 @@ class MvcOverlay(QFrame):
         #: ``(fraction, colour)`` per muscle, and the band being aimed for.
         self._loads: list[tuple[float, tuple[int, int, int]]] = []
         self._zone: tuple[float, float] | None = None
-        #: The frame is lit: a phase change being announced (:meth:`flash`).
-        self._flash_on = False
-        self._flash_timer = QTimer(self)
-        self._flash_timer.setSingleShot(True)
-        self._flash_timer.setInterval(FLASH_MS)
-        self._flash_timer.timeout.connect(self._end_flash)
         self.resize(self._W, self._H)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.hide()
@@ -457,24 +444,6 @@ class MvcOverlay(QFrame):
         self._mode = "hidden"
         self.hide()
 
-    def flash(self) -> None:
-        """Light the frame for :data:`FLASH_MS`: a phase has just changed.
-
-        Restarted, not stacked, when phases change faster than that, so the
-        last change is the one that turns it off.
-        """
-        self._flash_on = True
-        self._flash_timer.start()
-        self.update()
-
-    def _end_flash(self) -> None:
-        self._flash_on = False
-        self.update()
-
-    @property
-    def is_flashing(self) -> bool:
-        return self._flash_on
-
     # -- sizing --------------------------------------------------------------
 
     def _present(self) -> None:
@@ -625,11 +594,6 @@ class MvcOverlay(QFrame):
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(_BG)
         p.drawRoundedRect(0, 0, w, h, 16, 16)
-        if self._flash_on:
-            p.setPen(QPen(_FLASH, 6))
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRoundedRect(3, 3, w - 6, h - 6, 14, 14)
-            p.setPen(Qt.PenStyle.NoPen)
 
         # Everything below the title shifts by what the title grew.
         d = self._title_extra()

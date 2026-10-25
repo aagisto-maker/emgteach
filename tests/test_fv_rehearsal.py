@@ -129,6 +129,9 @@ class TestItMatchesTheRealWizard:
             def _pedir_al_sujeto(self, *a, **k): pass
             def _soltar_al_sujeto(self, *a, **k): pass
             def _fv_compute_mvc(self): pass
+            # The optional tone at each phase change (25 Oct 2026): a sound
+            # card is not here either.
+            def _tono(self, *a, **k): pass
 
             def _fv_begin_contract(self, kg):
                 self._fv_phase = "contract"

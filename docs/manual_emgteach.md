@@ -346,31 +346,35 @@ signal; the **A** button in the corner gives the whole window back.
 which stays the norm, and a **«Tone»** box. With a session chosen before
 recording, «Start recording» runs the whole of it: the calibration if it needs
 one, the 5 s of preparation and then, inside the recording, each phase announced
-on the panel over the plots and on the phones, timed, with a **tone** and an
-amber **flash** of the frame at every change; at the end **the recording stops by
-itself**. The measured phases are written into the file as marks (`GRAD step
+on the panel over the plots and on the phones, timed, with a row of boxes that
+fill as the contractions are done; at the end **the recording stops by itself**. The measured phases are written into the file as marks (`GRAD step
 start k=1 pct=20`…), which the analysis reads by itself. **Esc** stops the session
 and the recording goes on; stopping the recording stops the session. While
 recording the chooser cannot be changed, and the proposed file name carries the
 session.
-- **Gradation** (54 s plus the calibration, which it always runs first): five
-  4 s contractions of growing strength, at **20, 40, 60 and 80 % of the bar and at
-  the maximum**, with 6 s of rest between them. The panel shows the muscle's bar
-  with the band of the step asked for.
-- **Fatigue: sustained maximum** (48 s; calibration optional): 5 s of rest, a 3 s
-  countdown, **30 s of maximal isometric contraction** against the table and 10 s
-  of rest. The text asks to breathe (not to hold the breath) and to let go if it
-  hurts. In Analysis the analysed span is the contraction and panels 6 and 7 come
-  ticked; the summary line gives the MDF and RMS of the first and last 5 s and
-  after how many seconds the MDF had fallen 10 %.
-- **Fatigue: intermittent maximum** (77 s): ten maximal contractions of **5 s with
+- **Graded contractions** (54 s plus the calibration, which it always runs
+  first): five 4 s contractions of growing strength, at **20, 40, 60 and 80 % of the
+  bar and at the maximum**, with 6 s of rest between them. The panel shows the
+  muscle's bar with the band of the step asked for. The calibration asks for the
+  session's own gesture: clenching the fist.
+- **Fatigue: sustained contraction** (28 s; calibration optional): 5 s of rest, a
+  3 s countdown, **10 s of maximal isometric contraction** against the table and
+  10 s of rest. The text asks to breathe (not to hold the breath) and to let go if
+  it hurts. In Analysis the analysed span is the contraction and panels 6 and 7
+  come ticked; the summary line gives the MDF and RMS of its start and end (the
+  first and last quarter of the contraction) and after how many seconds the MDF
+  had fallen 10 %.
+- **Fatigue: intermittent contractions** (53 s): six maximal contractions of **5 s with
   1 s of rest**, with a tone at the start and the end of each and the countdown on
   screen. What is measured is the **RMS of each contraction** after its first
   second (not the peak, which is the start and does not fall) and its MDF: view
   «Per contraction».
-- The **«Tone»** box is remembered between sessions and comes ticked; ticking it
-  plays the tone, to check it can be heard. A tone that cannot sound is noted in
-  the event log.
+- The **«Tone»** box, in every practical, announces with a short tone every phase
+  change of every guided flow: the calibration, the countdown, the pair's guided
+  task, the force-velocity loads and the guided sessions; and the end with two
+  falling notes. It is remembered between sessions and comes ticked; ticking it
+  plays the tone, to check it can be heard. A tone that cannot sound during a
+  session is noted in the event log.
 
 **The accelerometer** (kinematics only). Recorded as one more channel, in `g`,
 uncalibrated. Its box states the wiring — **muscle on A1, accelerometer on A2**,
@@ -807,11 +811,11 @@ Each begins by **choosing the practical** in the top-right selector.
 ### 7.1 Single-muscle contraction (basic)
 
 1. Connect and type the test identifier. For the graded effort, choose the
-   guided session **«Gradation»** first, in the chooser on the line of «Calibrate
+   guided session **«Graded contractions»** first, in the chooser on the line of «Calibrate
    MVC» (§4.3): *Start recording* calibrates, counts 5 s, directs the five steps
    and stops by itself. For the rest, **«Free recording»** and *Start recording*;
-   for fatigue, the sessions **«Fatigue: sustained maximum»** or **«Fatigue:
-   intermittent maximum»**. If the exercise needs % MVC (load), press **«Calibrate
+   for fatigue, the sessions **«Fatigue: sustained contraction»** or **«Fatigue:
+   intermittent contractions»**. If the exercise needs % MVC (load), press **«Calibrate
    MVC»** at once: warm-up
    and three brief, explosive maximal jerks (for the forearm flexor, fist
    clenched). Then the task; onsets

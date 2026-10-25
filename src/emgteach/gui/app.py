@@ -100,7 +100,7 @@ def _make_splash() -> QSplashScreen:
     p.setPen(QColor(220, 220, 220))
     author_rect = px.rect().adjusted(0, 152, 0, 0)
     p.drawText(author_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-               "Dr. Agis-Torres et al. — UCM")
+               "Dr. Agis-Torres et al. UCM")
 
     p.end()
 
@@ -588,7 +588,7 @@ class MainWindow(QMainWindow):
             tr("About EMG Bioinstrumentation"),
             f"<b>{tr('EMG Bioinstrumentation')}</b><br>"
             f"{tr('Version')} {__version__}<br><br>"
-            "Dr. Agis-Torres et al. — UCM<br>"
+            "Dr. Agis-Torres et al. UCM<br>"
             f"{tr('Department of Physiology. Faculty of Pharmacy. UCM')}",
         )
 

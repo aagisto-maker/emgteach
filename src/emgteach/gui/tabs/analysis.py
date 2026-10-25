@@ -1988,7 +1988,7 @@ class AnalysisTab(QWidget):
         self._dibujar_contracciones()
         resumen = tr("{n} contractions").format(n=len(filas))
         if pasos:
-            resumen = tr("Gradation: {n} steps").format(n=len(pasos)) + "  ·  " + (
+            resumen = tr("Graded contractions: {n} steps").format(n=len(pasos)) + "  ·  " + (
                 tr("each step above the last") if is_monotonic(pasos)
                 else tr("not every step above the last"))
         elif reps:
@@ -3569,7 +3569,8 @@ class AnalysisTab(QWidget):
         partes.append(
             tr("MDF −10 % at {t:.0f} s").format(t=hold.t_mdf_10) if hold.t_mdf_10 is not None
             else tr("MDF never fell 10 %"))
-        return tr("Sustained maximum, {s:.0f} s").format(s=hold.seconds) + "  ·  " + "  ·  ".join(partes)
+        return (tr("Sustained contraction, {s:.0f} s").format(s=hold.seconds) + "  ·  "
+                + "  ·  ".join(partes))
 
     def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:
         """Hide the panels this practical does not use, and untick them.

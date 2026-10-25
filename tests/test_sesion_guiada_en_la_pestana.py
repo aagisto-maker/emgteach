@@ -125,7 +125,10 @@ def test_the_chooser_opens_on_free_recording(tab) -> None:
 def test_only_the_one_muscle_practical_offers_it(tab) -> None:
     _choose(tab, "prueba")
     tab.apply_mode("pair", False)
-    assert tab._combo_sesion.isHidden() and tab._chk_tono.isHidden()
+    assert tab._combo_sesion.isHidden()
+    # The tone is every practical's: the calibration and the guided task
+    # are announced with it too (Ángel, 25 Oct 2026).
+    assert not tab._chk_tono.isHidden()
     tab.apply_mode("single", False)
     assert not tab._combo_sesion.isHidden()
     # Changing practical is changing sequence: back to a free recording.
@@ -137,7 +140,7 @@ def test_with_no_session_written_yet_nothing_is_offered(qapp, tab, monkeypatch) 
 
     monkeypatch.setattr(acq_mod, "GUIDED_SESSIONS", {})
     tab.apply_mode("single", False)
-    assert tab._combo_sesion.isHidden() and tab._chk_tono.isHidden()
+    assert tab._combo_sesion.isHidden() and not tab._chk_tono.isHidden()
 
 
 def test_it_takes_no_height(qapp, tab) -> None:
@@ -191,10 +194,14 @@ def test_a_session_runs_marks_its_phases_and_stops_the_recording(
     assert not tab._combo_sesion.isEnabled()        # chosen before, not during
     assert tab.pedido_nombre.startswith("emg_prueba_")
     _until(qapp, lambda: tab._session_runner is not None, 8.0, "the session to start")
-    assert tab._mvc_overlay.is_flashing
+    # One box per measured effort, none done yet.
+    assert tab._mvc_overlay.steps_done() == [False, False]
     total = CUENTA_S + 5 * FASE_S
     _until(qapp, lambda: not tab.is_recording(), total + 10.0,
            "the recording to stop at the end of the session")
+    # The panel stays its five seconds with every effort's box filled: the
+    # count of what was done (Ángel, 25 Oct 2026).
+    assert tab._mvc_overlay.steps_done() == [True, True]
     _until(qapp, lambda: tab._eventos is None, 5.0, "the event log to be saved")
     assert tab._combo_sesion.isEnabled()
 
@@ -219,9 +226,9 @@ def test_a_session_runs_marks_its_phases_and_stops_the_recording(
     assert sesion.end_s is not None
     assert sesion.end_s - sesion.start_s == pytest.approx(5 * FASE_S, abs=0.3)
 
-    # A tone at the four announced phases (the last rest only continues),
-    # then the end.
-    assert tonos == ["phase"] * 4 + ["end"]
+    # A tone at the countdown, at the four announced phases (the last rest
+    # only continues), then the end.
+    assert tonos == ["phase"] * 5 + ["end"]
     from emgteach.gui.tabs.acquisition import events_path
     eventos = events_path(path).read_text(encoding="utf-8")
     assert tr("Guided session finished: {title}.").format(title=tr("Test session")) in eventos
@@ -321,3 +328,46 @@ def test_the_review_shades_what_the_session_measured(qapp, tab, tmp_path: Path) 
                if pw is tab._plot_env and isinstance(it, pg.LinearRegionItem)
                and it.brush.color().getRgb() == color]
     assert len(sombras) == 2
+
+
+# ── After Ángel's trial of 25 October 2026 ──────────────────────────────────
+
+
+def test_the_calibration_names_the_sessions_gesture(tab) -> None:
+    """The calibration said «a brief, explosive jerk» and the session «squeeze
+    your fist»: the same movement in two sets of words. With a session it is
+    now said the session's way; without one, as before."""
+    from emgteach.sessions import gradation_script
+
+    regla = tr("A brief, explosive jerk — not a sustained push.")
+    assert tab._mvc_gesto(0) == regla
+    tab._session_script = gradation_script()
+    assert tab._mvc_gesto(0) == tr("Clench your fist: a brief, explosive jerk.")
+
+
+def test_the_warm_up_speaks_of_one_muscle_when_there_is_one(qapp, tab) -> None:
+    tab._mvc_active = True
+    tab._mvc_enter_warmup()
+    tab._mvc_tick()
+    assert tab._mvc_overlay._subtitle == tr("Two or three easy contractions.")
+    tab._mvc_cancel()
+
+
+@pytest.mark.parametrize("marcada", [True, False])
+def test_the_calibration_is_announced_with_the_tone_when_ticked(qapp, tab, tonos, marcada) -> None:
+    """The tone is every guided flow's, not the sessions' alone."""
+    tab._chk_tono.blockSignals(True)
+    tab._chk_tono.setChecked(marcada)
+    tab._chk_tono.blockSignals(False)
+    tonos.clear()
+    tab._mvc_active = True
+    tab._mvc_enter_warmup()
+    tab._mvc_enter_ready()
+    assert tonos == (["phase", "phase"] if marcada else [])
+    tab._mvc_cancel()
+
+
+def test_there_is_no_flash_any_more() -> None:
+    from emgteach.gui.widgets.mvc_overlay import MvcOverlay
+
+    assert not hasattr(MvcOverlay, "flash")

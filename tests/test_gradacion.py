@@ -63,7 +63,8 @@ def test_five_steps_from_twenty_to_the_maximum() -> None:
 def test_it_calibrates_first_and_lasts_under_a_minute() -> None:
     """Ángel's decision of 24 October: without the bar there is no grading."""
     g = gradation_script()
-    assert g.needs_mvc and g.family == "GRAD" and g.slug == "gradacion"
+    assert g.needs_mvc and g.family == "GRAD" and g.slug == "graduales"
+    assert g.title == "Graded contractions" and _ES[g.title] == "Contracciones graduales"
     assert g.total_seconds == 54.0
 
 
@@ -305,7 +306,7 @@ def test_the_report_has_the_gradation_and_the_phones_get_its_steps(
     pdf = tmp_path / "grad.pdf"
     build_session_report(pdf, r, meta={})
     texto = _pdf_text(pdf)
-    assert tr("Guided session: gradation") in texto
+    assert tr("Guided session: graded contractions") in texto
     assert tr("Each step held more than the one before.") in texto
 
     from tests.test_manejo_en_aula import _Difusion
