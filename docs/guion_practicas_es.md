@@ -358,13 +358,13 @@ Lo que hace el RMS depende del esfuerzo: en una contracción **submáxima** suel
    contracción, y los paneles **6. RMS/ventana** y **7. MDF/tiempo** aparecen
    marcados.
 
-**Variante intermitente** (**«Fatiga por contracciones intermitentes»**): diez contracciones
+**Variante intermitente** (**«Fatiga por contracciones intermitentes»**): seis contracciones
 máximas de **5 s con 1 s de reposo** entre ellas, con tono al empezar y al acabar
 cada una y la cuenta atrás en pantalla. Se mide el **RMS de cada contracción**
 tras su primer segundo, no su pico: el pico es el arranque de cada contracción y
 no baja. La vista **«Por contracción»** de la caja de contracciones lo dibuja.
 Con 1 s de reposo la caída es casi continua (en una prueba con el músculo ya
-cansado, un 21 % de la primera a la décima); con reposos más largos se vuelve
+cansado y diez contracciones, un 21 % de la primera a la décima); con reposos más largos se vuelve
 irregular, porque el músculo se recupera.
 
 **Cómo decide la aplicación.** Ajusta una recta a la MDF de las ventanas de un

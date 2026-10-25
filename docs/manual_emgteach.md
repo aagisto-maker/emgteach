@@ -364,7 +364,7 @@ session.
   come ticked; the summary line gives the MDF and RMS of its start and end (the
   first and last quarter of the contraction) and after how many seconds the MDF
   had fallen 10 %.
-- **Fatigue: intermittent contractions** (77 s): ten maximal contractions of **5 s with
+- **Fatigue: intermittent contractions** (53 s): six maximal contractions of **5 s with
   1 s of rest**, with a tone at the start and the end of each and the countdown on
   screen. What is measured is the **RMS of each contraction** after its first
   second (not the peak, which is the start and does not fall) and its MDF: view
