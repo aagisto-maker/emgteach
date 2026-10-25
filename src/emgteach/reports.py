@@ -48,6 +48,7 @@ from emgteach.charts import (
     draw_contraction_chart,
     draw_reps_chart,
     draw_steps_chart,
+    draw_train_chart,
 )
 from emgteach.contractions import load_of_each
 from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
@@ -643,6 +644,44 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
     story.append(Spacer(1, 0.4 * cm))
 
 
+def _seccion_rapidas(story: list, result: Mapping[str, Any], h2, normal) -> None:
+    """The quick contractions: the trace with its peaks and floor, and what
+    of the floor is the measure's and what is the subject's."""
+    tren = result.get("train")
+    if tren is None:
+        return
+    story.append(Paragraph(tr("Guided session: quick repeated contractions"), h2))
+    try:
+        story.append(Image(_render_chart(draw_train_chart, tren), width=16 * cm, height=6 * cm))
+        story.append(Spacer(1, 0.15 * cm))
+    except Exception:  # pragma: no cover — a chart must never sink the report
+        pass
+
+    def num(x, fmt):
+        return "" if x is None else format(x, fmt)
+
+    rows = [[tr("Measure"), tr("Value")],
+            [tr("Contractions"), str(tren.n)],
+            [tr("Rate (per second)"), num(tren.rate_hz, ".1f")],
+            [tr("Peaks, last third against the first"), num(tren.peak_change_pct, "+.0f") + " %"],
+            [tr("Floor, first third (% of the peak)"), num(tren.floor_start_pct, ".0f")],
+            [tr("Floor, last third (% of the peak)"), num(tren.floor_end_pct, ".0f")],
+            [tr("Floor the measure alone leaves at this rate (% of the peak)"),
+             num(tren.processing_floor_pct, ".0f")],
+            [tr("Rest before the train (mV)"), num(tren.rest_mv, ".3f")]]
+    story.append(_styled_table(rows, [11.0, 4.0]))
+    story.append(Spacer(1, 0.15 * cm))
+    story.append(Paragraph(tr(
+        "Measured on a 50 ms moving RMS, not on the envelope: at four or five "
+        "contractions a second the envelope's 5 Hz filter alone keeps the floor "
+        "at a fifth to a third of the peak. «The measure alone» is the floor the "
+        "same measure leaves with a perfect relaxation at the rate achieved; "
+        "what is above it is the subject's, mostly a relaxation not completed. "
+        "This is not the treppe, a mechanical phenomenon of electrical "
+        "stimulation; and the peaks are EMG, not force."), normal))
+    story.append(Spacer(1, 0.4 * cm))
+
+
 def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> None:
     """The reference, and everything the application knows about it.
 
@@ -685,7 +724,7 @@ def _seccion_calibracion(story: list, result: Mapping[str, Any], h2, normal) -> 
             "The task exceeds the reference by a wide margin: the calibration "
             "did not capture a maximum, so every percentage in this report is "
             "too high in the same proportion. Calibrate again with a brief, "
-            "explosive maximal jerk, not a sustained push against something "
+            "intense maximal contraction, not a sustained push against something "
             "fixed."
         ), normal))
 
@@ -877,6 +916,7 @@ def build_session_report(
     _seccion_calibracion(story, result, h2, normal)
     _seccion_gradacion(story, result, h2, normal)
     _seccion_fatiga_guiada(story, result, h2, normal)
+    _seccion_rapidas(story, result, h2, normal)
     _seccion_contracciones(story, result, h2, normal)
 
     # Co-activation, when the recording can support it: two muscles, and an

@@ -43,6 +43,7 @@ from emgteach.guided import (
     gradation_steps,
     hold_result,
     intermittent_reps,
+    rapid_train,
     spans_in_analysis_time,
 )
 from emgteach.i18n import tr
@@ -383,6 +384,17 @@ class AnalysisWorker(QThread):
         return (esfuerzos[-1].start_s, esfuerzos[-1].end_s)
 
     @staticmethod
+    def _tren_rapido(sesion) -> tuple[float, float] | None:
+        """The train of quick contractions and the three seconds of rest
+        before it, in file time: the rest is what the floor is compared with."""
+        if sesion is None or sesion.family != "FAST":
+            return None
+        trenes = sesion.spans_named("train")
+        if not trenes:
+            return None
+        return (max(0.0, trenes[-1].start_s - 3.0), trenes[-1].end_s)
+
+    @staticmethod
     def _tramos_de_sesion(sesion, piezas) -> list[Segment] | None:
         """One segment per effort a guided session marked, in the analysed
         signal's time; ``None`` without a session, so the next rule applies.
@@ -509,6 +521,7 @@ class AnalysisWorker(QThread):
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
                 default_span=(self._esfuerzo_mantenido(sesion)
+                              or self._tren_rapido(sesion)
                               or phases.rec_span(full_duration, fv_loads)),
             )
             if bounds is None:
@@ -1301,6 +1314,8 @@ class AnalysisWorker(QThread):
                 if result["grad_steps"]:
                     self.log.emit(tr("Graded contractions: {n} steps measured.").format(
                         n=len(result["grad_steps"])))
+                result["train"] = rapid_train(
+                    sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
                 result["reps"] = intermittent_reps(
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],
                     f_low=self._f_low, f_high=self._f_high,
@@ -1327,6 +1342,7 @@ class AnalysisWorker(QThread):
                 result["grad_steps"] = []
                 result["reps"] = []
                 result["hold"] = None
+                result["train"] = None
                 self.log.emit(
                     tr("The contraction table could not be built: {err}")
                     .format(err=exc)

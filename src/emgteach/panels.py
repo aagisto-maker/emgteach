@@ -87,13 +87,13 @@ PANELS: tuple[Panel, ...] = (
         pid=1, number=4, label="Filt.+rect.", long_name="Filtered + rectified",
         name="Filtered + rectified EMG signal",
         reading="rectified, every oscillation counts upwards: the taller the "
-                "trace, the stronger the activation",
+                "trace, the more intense the activation",
         tooltip="Band-pass filtered (20-450 Hz) and rectified signal.",
     ),
     Panel(
         pid=2, number=5, label="Env. vs RMS", long_name="Envelope vs RMS",
         name="EMG signal envelope",
-        reading="the higher the curve, the stronger the activation; the two "
+        reading="the higher the curve, the more intense the activation; the two "
                 "lines are two ways of measuring it",
         tooltip="Linear envelope vs the RMS envelope of the signal.",
     ),

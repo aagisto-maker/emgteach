@@ -181,8 +181,8 @@ def pair_coactivation_cue(pair: str) -> str:
     the ball, which is what the practical guide puts on the bench.
     """
     return {
-        PAIR_FOREARM: tr("Squeeze the ball hard and hold it"),
-        PAIR_ARM: tr("Tighten both muscles at once and hold"),
+        PAIR_FOREARM: tr("Close your hand on the ball with an intense contraction and hold it"),
+        PAIR_ARM: tr("Contract both muscles at once and hold"),
         PAIR_OTHER: tr("Work both muscles at once and hold"),
     }[normalise_pair(pair)]
 

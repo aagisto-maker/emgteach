@@ -95,6 +95,32 @@ def _resumen_movil_mantenida(hold) -> dict | None:
             "rms": redondo(hold.rms_change_pct), "t10": redondo(hold.t_mdf_10)}
 
 
+def _resumen_tren(tren) -> str:
+    """The quick contractions in one line: how many, the peaks, the floor,
+    and how much of the floor the measure itself leaves at that rate."""
+    partes = [tr("{n} contractions, {rate:.1f}/s").format(n=tren.n, rate=tren.rate_hz)]
+    if tren.peak_change_pct is not None:
+        partes.append(tr("peaks {pct:+.0f} %").format(pct=tren.peak_change_pct))
+    if tren.floor_start_pct is not None and tren.floor_end_pct is not None:
+        partes.append(tr("floor {a:.0f} → {b:.0f} % of the peak").format(
+            a=tren.floor_start_pct, b=tren.floor_end_pct))
+    partes.append(tr("the measure alone leaves {pct:.0f} %").format(
+        pct=tren.processing_floor_pct))
+    return tr("Quick contractions") + "  ·  " + "  ·  ".join(partes)
+
+
+def _resumen_movil_tren(tren) -> dict | None:
+    """The quick contractions for the phones."""
+    if tren is None:
+        return None
+
+    def redondo(x, n=0):
+        return None if x is None else round(float(x), n)
+
+    return {"n": tren.n, "rate": redondo(tren.rate_hz, 1), "peaks": redondo(tren.peak_change_pct),
+            "floor": redondo(tren.floor_end_pct), "proc": redondo(tren.processing_floor_pct)}
+
+
 class _SelectorEsquina(QWidget):
     """Two or three small exclusive buttons on the title line of a group
     box, left of the «?», kept in the corner across resizes the way the
@@ -205,6 +231,7 @@ from emgteach.charts import (
     draw_contraction_chart,
     draw_reps_chart,
     draw_steps_chart,
+    draw_train_chart,
 )
 from emgteach.contractions import load_of_each
 from emgteach.exports import write_analysis_csv
@@ -1074,6 +1101,7 @@ class AnalysisTab(QWidget):
         # markers for the load), see _refresh_contractions.
         self._sel_contr = _SelectorEsquina(
             self._box_contr, [("steps", tr("Steps")), ("reps", tr("Per contraction")),
+                              ("train", tr("Train")),
                               ("relation", tr("Relation")), ("category", tr("Category")),
                               ("dominance", tr("Who leads")), ("series", tr("Series")),
                               ("load", tr("By load")), ("table", tr("Table"))])
@@ -1089,6 +1117,8 @@ class AnalysisTab(QWidget):
         self._pasos_grad: list = []
         #: The intermittent maximum's contractions, when it is one.
         self._reps_fatiga: list = []
+        #: The quick contractions' train, when it is one.
+        self._tren = None
         #: Where the view choice is kept: one key for recordings with loads
         #: (the kinematics practical), another for the rest.
         self._clave_vista = "analysis/contr_view"
@@ -1962,7 +1992,10 @@ class AnalysisTab(QWidget):
         self._pasos_grad = pasos
         reps = list(result.get("reps") or [])
         self._reps_fatiga = reps
-        vistas = ["steps"] if pasos else (["reps"] if reps else [])
+        tren = result.get("train")
+        self._tren = tren
+        vistas = (["steps"] if pasos else ["reps"] if reps
+                  else ["train"] if tren is not None else [])
         vistas.append("relation")
         if dos:
             vistas += ["category", "dominance"]
@@ -1980,6 +2013,8 @@ class AnalysisTab(QWidget):
             self._clave_vista, defecto = "analysis/contr_view_grad", "steps"
         elif reps:
             self._clave_vista, defecto = "analysis/contr_view_reps", "reps"
+        elif tren is not None:
+            self._clave_vista, defecto = "analysis/contr_view_train", "train"
         elif con_cargas:
             self._clave_vista, defecto = "analysis/contr_view_kin", "load"
         else:
@@ -2002,6 +2037,8 @@ class AnalysisTab(QWidget):
         hold = result.get("hold")
         if hold is not None:
             resumen = self._resumen_mantenida(hold)
+        if tren is not None:
+            resumen = _resumen_tren(tren)
         emd = result.get("emd_ms_mean")
         if emd is not None:
             resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
@@ -2029,11 +2066,13 @@ class AnalysisTab(QWidget):
 
     def _dibujar_contracciones(self) -> None:
         vista = self._sel_contr.vista()
-        if vista in ("steps", "reps"):
+        if vista in ("steps", "reps", "train"):
             if vista == "steps":
                 draw_steps_chart(self._fig_contr, self._pasos_grad, small=True)
-            else:
+            elif vista == "reps":
                 draw_reps_chart(self._fig_contr, self._reps_fatiga, small=True)
+            else:
+                draw_train_chart(self._fig_contr, self._tren, small=True)
             self._pedir_espacio(self._canvas_contr)
             self._canvas_contr.draw_idle()
             return
@@ -2193,6 +2232,7 @@ class AnalysisTab(QWidget):
             # The fatigue sessions: where MDF and RMS went, and when.
             "hold": _resumen_movil_mantenida(r.get("hold")),
             "reps": [round(x.rms_mv, 3) for x in (r.get("reps") or [])],
+            "train": _resumen_movil_tren(r.get("train")),
         })
 
 
@@ -2308,8 +2348,8 @@ class AnalysisTab(QWidget):
             self._lbl_pico.setToolTip(tr(
                 "The task went well past the reference: the calibration did "
                 "not capture a maximum, so every % MVC here is too high in the "
-                "same proportion. Calibrate again with a brief, explosive "
-                "maximal jerk, not a sustained push against something fixed."
+                "same proportion. Calibrate again with a brief, intense "
+                "maximal contraction, not a sustained push against something fixed."
             ))
         else:
             self._lbl_pico.setText(texto)

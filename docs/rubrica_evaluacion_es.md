@@ -44,7 +44,7 @@ Niveles: **Insuficiente (0–4)** · **Suficiente (5–6)** · **Notable (7–8)
   cuando el ejercicio pedía la tarea.
 - **Suficiente.** Calibración aceptable (tarea por debajo del 150 %); repeticiones
   y fragmentos aceptados sin revisar.
-- **Notable.** Máximo hecho como una sacudida breve y explosiva, con el gesto de
+- **Notable.** Máximo hecho como una contracción breve e intensa, con el gesto de
   cada músculo; repeticiones flojas
   descartadas con criterio; fragmentos limitados a lo que el ejercicio pedía.
 - **Sobresaliente.** Además, el máximo de la tarea queda entre el 90 y el 125 %, y

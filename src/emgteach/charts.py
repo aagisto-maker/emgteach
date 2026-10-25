@@ -678,3 +678,46 @@ def draw_reps_chart(fig, reps: Sequence[Any], *, small: bool = False) -> None:
                  .format(pct=cambio), fontsize=fs, pad=3)
     ax.grid(axis="y", lw=0.4, alpha=0.4, zorder=0)
     ax.spines["top"].set_visible(False)
+
+
+def draw_train_chart(fig, train: Any, *, small: bool = False) -> None:
+    """The quick contractions: the 50 ms RMS, its peaks and its floor.
+
+    ``train`` is :class:`emgteach.guided.TrainResult`. The trace over the
+    train, a dot on each peak and a line through the floors between them,
+    and the rest level before the train as a dashed line. The title says how
+    much the peaks rose and how far above rest the floor stayed, and how much
+    of that floor the measure itself leaves at this rate.
+    """
+    fig.clear()
+    fs = 7 if small else 8
+    ax = fig.add_subplot(111)
+    if train is None or not train.peaks_mv:
+        ax.set_axis_off()
+        ax.text(0.5, 0.5, tr("No contractions"), ha="center", va="center",
+                fontsize=fs, color="#888888", transform=ax.transAxes)
+        return
+    ax.plot(train.t, train.rms, color=COLOUR_1, lw=0.7, zorder=2)
+    ax.plot(train.peak_times, train.peaks_mv, "o", color=COLOUR_1, ms=3, zorder=3,
+            label=tr("Peaks"))
+    if train.floors_mv:
+        centros = [0.5 * (a + b) for a, b in zip(train.peak_times, train.peak_times[1:],
+                                                   strict=False)][: len(train.floors_mv)]
+        ax.plot(centros, train.floors_mv, "s-", color="#2E7D32", ms=2.5, lw=0.8,
+                zorder=3, label=tr("Floor"))
+    if train.rest_mv is not None:
+        ax.axhline(train.rest_mv, color="#888888", ls="--", lw=0.8, zorder=1,
+                   label=tr("Rest"))
+    ax.set_xlabel(tr("Time in the train (s)"), fontsize=fs - 1)
+    ax.set_ylabel(tr("RMS 50 ms (mV)"), fontsize=fs)
+    ax.tick_params(labelsize=fs - 1)
+    ax.legend(fontsize=fs - 1, frameon=False, loc="upper right", ncol=3)
+    partes = [tr("{n} contractions, {rate:.1f}/s").format(n=train.n, rate=train.rate_hz)]
+    if train.peak_change_pct is not None:
+        partes.append(tr("peaks {pct:+.0f} %").format(pct=train.peak_change_pct))
+    if train.floor_end_pct is not None:
+        partes.append(tr("floor {pct:.0f} % of the peak (the measure alone: {proc:.0f} %)")
+                      .format(pct=train.floor_end_pct, proc=train.processing_floor_pct))
+    ax.set_title("  ·  ".join(partes), fontsize=fs, pad=3)
+    ax.grid(axis="y", lw=0.4, alpha=0.4, zorder=0)
+    _quitar_marco(ax)

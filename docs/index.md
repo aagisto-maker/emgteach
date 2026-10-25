@@ -20,7 +20,7 @@ fixes what is recorded and what the analysis offers:
   MAC address.
 - **Placing the electrodes** — [`colocacion_electrodos_antebrazo_es.md`](colocacion_electrodos_antebrazo_es.md)
   (Spanish): the forearm pair, measured from the bony landmarks, and the
-  manoeuvre of the maximum, a brief and explosive jerk.
+  manoeuvre of the maximum, a brief and intense contraction.
 - **Citing emgteach** — [`CITATION.cff`](https://github.com/aagisto-maker/emgteach/blob/main/CITATION.cff).
 
 ## User manual

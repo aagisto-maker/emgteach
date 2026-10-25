@@ -63,7 +63,7 @@ of an unexpected error. Nothing computed changes. See
 
 v3.7.0 is **the version the article describes**, and the one the
 November practicals run on. The guided session goes on into the task, with a
-row of boxes that maps each phase and a grip made squeezing a ball; the
+row of boxes that maps each phase and a grip made closing the hand on a ball; the
 fragment editor proposes each row from where its contraction leaves rest to
 where it returns, and one row per lift the force-velocity wizard marked; the
 pair practical names its pair, with one reference electrode on the olecranon;
@@ -112,8 +112,8 @@ analysis band. **A recording reanalysed with 3.2.0 gives % MVC figures
 different from those of 3.1.2.** See
 [`docs/RELEASE_NOTES_v3.2.0.md`](docs/RELEASE_NOTES_v3.2.0.md).
 
-v3.1.2 changed what the calibration asks for: a **brief, explosive
-maximal jerk** of each muscle's own movement — in the agonist/antagonist
+v3.1.2 changed what the calibration asks for: a **brief, intense
+maximal contraction** of each muscle's own movement — in the agonist/antagonist
 practical, wrist flexion with the fist clenched for the flexor and wrist
 extension with the hand open for the extensor — instead of a sustained push
 against something fixed. Nothing that is computed changes. See
@@ -173,7 +173,7 @@ executable.
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **1635 tests** passing on Linux and Windows across Python
+test suite of **1648 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 

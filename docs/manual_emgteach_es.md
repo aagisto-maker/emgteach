@@ -401,10 +401,10 @@ con la señal; el botón **A** de la esquina devuelve la ventana entera.
 **Carga muscular (CVM en vivo)**
 - **La calibración es un asistente**, y siempre el mismo: 10 s de calentamiento
   con dos o tres contracciones suaves y, por músculo, **tres esfuerzos máximos
-  breves** de 1.5 s («¡Máximo, breve y fuerte!»), cada uno con su cuenta atrás
+  breves** de 1.5 s («¡Máximo, breve e intenso!»), cada uno con su cuenta atrás
   y sus 2 s de descanso. Las tres contracciones mantenidas de 4 s que había
   antes se quitaron el 5 de septiembre de 2026: medida la referencia sobre el
-  pico de 0.2 s que se usaba entonces, una sacudida da el mismo número y cuesta
+  pico de 0.2 s que se usaba entonces, una contracción breve da el mismo número y cuesta
   la cuarta parte de fatiga.
   En la práctica del par lo lanza el propio botón de grabar, antes de la tarea,
   y después escribe 5 s de preparación y el inicio del registro; en las otras dos
@@ -441,11 +441,10 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   cinco contracciones de 4 s de fuerza creciente, al **20, 40, 60 y 80 % de la barra
   y al máximo**, con 6 s de reposo entre ellas. El panel muestra la barra del músculo
   con la franja del escalón pedido. La calibración pide el mismo gesto que la
-  sesión: apretar el puño.
+  sesión: cerrar el puño con una contracción.
 - **Fatiga por contracción mantenida** (28 s; la calibración es opcional): 5 s de
   reposo, una cuenta atrás de 3 s, **10 s de contracción máxima** isométrica contra
-  la mesa y 10 s de reposo. El texto pide respirar (no aguantar el aire) y soltar si
-  duele. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7
+  la mesa y 10 s de reposo. El texto pide respirar normalmente. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7
   aparecen marcados; la línea de resumen da la MDF y el RMS del inicio y del final
   (el primer y el último cuarto de la contracción) y a los cuántos segundos cayó la
   MDF un 10 %.
@@ -453,6 +452,14 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   1 s de reposo**, con tono al empezar y al acabar cada una y la cuenta atrás en
   pantalla. Se mide el **RMS de cada contracción** tras su primer segundo (no el
   pico, que es el arranque y no baja) y su MDF: vista «Por contracción».
+- **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
+  atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
+  las contracciones y su ritmo, y se siguen **los picos y el suelo entre ellas**
+  sobre un RMS móvil de 50 ms, no sobre la envolvente (a cuatro o cinco por
+  segundo, su filtro de 5 Hz mantiene él solo el suelo entre un quinto y un tercio
+  del pico). La línea de resumen y el informe dan, además, **el suelo que deja la
+  medida sola** a ese ritmo con una relajación perfecta: lo que quede por encima es
+  del sujeto. Vista «Tren». Véase la nota al margen del §7.1.
 - La casilla **«Tono»**, en todas las prácticas, anuncia con un tono breve cada
   cambio de fase de todos los asistentes: la calibración, la cuenta atrás, la
   tarea guiada del par, las cargas de fuerza-velocidad y las sesiones guiadas; y
@@ -599,7 +606,7 @@ Expresa la señal como **porcentaje de la CVM** y evalúa la **carga muscular**.
 
 **Panel de entrada.** La primera vez que se abre la pestaña en cada ejecución de la
 aplicación, recibe con una explicación de qué es una contracción voluntaria
-máxima, por qué es una sacudida breve y explosiva y no un empuje contra algo
+máxima, por qué es una contracción breve e intensa y no un empuje contra algo
 fijo, y por qué la referencia está
 dentro del propio registro. Se cierra con **«Entendido, continuar»** y no vuelve
 hasta que se reinicie la aplicación: «Nueva sesión» no lo resucita.
@@ -741,10 +748,10 @@ sesiones.
 > del principio, y superaban la referencia con la calibración bien hecha (135 %
 > en el banco).
 >
-> **Cómo se hace un máximo que lo sea.** Una sacudida breve y explosiva, a la
+> **Cómo se hace un máximo que lo sea.** Una contracción breve e intensa, a la
 > máxima potencia, del movimiento propio del músculo, no un empuje sostenido
-> contra algo fijo. Para el flexor, sacudida de flexión de muñeca **cerrando el
-> puño con toda la fuerza**; para el extensor, sacudida de extensión de muñeca
+> contra algo fijo. Para el flexor, contracción en flexión de muñeca **cerrando el
+> puño con toda la fuerza**; para el extensor, contracción en extensión de muñeca
 > **con la mano abierta y los dedos extendidos a tope**. Un electrodo de
 > superficie en el antebrazo no ve un músculo: ve el compartimento, con los
 > flexores o los extensores de los dedos debajo, y la referencia solo sirve de
@@ -761,7 +768,7 @@ sesiones.
 > «Repeticiones de la calibración…» y la referencia se recalcula.
 >
 > **Lo que las dos referencias no comparan: los dos canales.** La referencia de
-> cada canal se mide en su propio bloque de sacudidas, y una sacudida no es igual
+> cada canal se mide en su propio bloque de contracciones, y una contracción no es igual
 > a la siguiente, así que dividir una referencia entre la otra exagera lo
 > distinto que leen los dos canales. Con los dos pares sobre el mismo músculo, en
 > el banco, el cociente de las referencias salió 1.84 y el medido dentro de una
@@ -912,7 +919,7 @@ aprender, activa mucho los dos músculos y tiene lectura clínica inmediata.
 |---|---|---|
 | Flexiones | trabaja el flexor; el extensor, poco o nada | «no se informa», o un índice bajo (en torno al 30 %) si el extensor pasa del suelo del 4.5 % |
 | Extensiones | los papeles se intercambian | lo mismo |
-| Presa, apretando una pelota | los dos trabajan a la vez | claramente más alto que en las maniobras recíprocas |
+| Presa, cerrando la mano sobre una pelota | los dos trabajan a la vez | claramente más alto que en las maniobras recíprocas |
 | Alternancia rápida | los dos trabajan, pero por turnos | número bajo |
 
 > **De dónde salen estos límites.** El suelo del 4.5 %, el criterio de separación
@@ -1055,7 +1062,7 @@ el acelerómetro y las medidas que se ofrecen después.
    **«Fatiga por contracción mantenida»** o **«Fatiga por contracciones
    intermitentes»**. Si el
    ejercicio necesita % CVM (carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
-   calentamiento y las tres sacudidas máximas, breves y explosivas (para el
+   calentamiento y las tres contracciones máximas, breves e intensas (para el
    flexor del antebrazo, con el puño cerrado).
    Después, la tarea; los inicios se marcan solos. *Detener grabación*.
 3. **Análisis.** Se analiza solo. Seguir los dos cuadros guiados: revisar las
@@ -1084,8 +1091,12 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 > segundo (un 1.4 % del pico a una cada 0.5 s). En las pruebas del 24 de octubre de
 > 2026, a 3, 2 y 1.5 s el pico no cambió (unos 0.20 mV) y la envolvente volvió a
 > cero; solo un tren lo más rápido posible subió algo los picos y dejó el suelo
-> algo por encima de cero, y sin controlar la fuerza no es concluyente. Por eso no
-> hay una sesión guiada para esto.
+> algo por encima de cero. Ese tren es la sesión **«Contracciones rápidas
+> repetidas»** (§4.3). A esos ritmos el filtro sí cuenta: a cuatro o cinco
+> contracciones por segundo, la envolvente de 5 Hz deja ella sola el suelo entre un
+> quinto y un tercio del pico. Por eso la sesión mide sobre un RMS de 50 ms y da
+> aparte el suelo que deja la propia medida. Los picos son EMG, no fuerza: sin
+> controlar la fuerza, que suban algo no dice que el músculo haga más.
 
 ### 7.2 Contracción agonista / antagonista
 
@@ -1093,7 +1104,7 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
    registro pasa a dos canales y la caja del dispositivo dice «BITalino».
 2. **Adquisición.** Se etiquetan los dos músculos en el orden de los canales (FCR
    en A1, ECR en A2). Al pulsar *Iniciar grabación*, el asistente calibra los dos
-   músculos (una sacudida breve y explosiva cada uno: puño cerrado para el flexor,
+   músculos (una contracción breve e intensa cada uno: puño cerrado para el flexor,
    mano abierta y dedos extendidos para el extensor), mide la separación entre
    canales, y tras 5 s de preparación abre el
    registro. La señal en bruto se dibuja apilada, un carril por músculo, y las
@@ -1137,7 +1148,7 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 
 1. Conectar e **Iniciar grabación**.
 2. Pulsar **Calibrar CVM** y seguir al asistente: calentamiento y tres
-   sacudidas máximas, breves y explosivas.
+   contracciones máximas, breves e intensas.
 3. Realizar la tarea observando las **barras de carga**: si entran en naranja
    (cansancio, más del 40 %) o rojo (fatiga, más del 70 %), conviene intervenir
    (pausa, cambio de postura). Si una contracción cualquiera pasa del 100 %, la
@@ -1215,8 +1226,8 @@ que detener la grabación y pulsar de nuevo **«Guía»**.
 
 **«Máximo de la tarea: … no fue un máximo», en rojo.** El registro pasa del 150 %
 de la referencia: la calibración no fue una contracción máxima y todos los
-porcentajes están altos en la misma proporción. Repetirla con una sacudida breve
-y explosiva por esfuerzo, puño cerrado para el flexor y mano abierta para el
+porcentajes están altos en la misma proporción. Repetirla con una contracción breve
+e intensa por esfuerzo, puño cerrado para el flexor y mano abierta para el
 extensor; y revisar en «Repeticiones de la
 calibración…» si alguna repetición floja está bajando la referencia (§5.1).
 
@@ -1444,7 +1455,7 @@ graba. Desde una consola, `python -m emgteach.recovery <archivo>.edf` escribe
     resaltado.
 17. La banda inferior de Análisis con sus tres cuadros: coactivación,
     contracciones y resumen en fichas, con un «Máximo de la tarea» en rojo.
-18. El asistente de calibración en una sacudida breve, con la barra de esfuerzo.
+18. El asistente de calibración en una contracción breve, con la barra de esfuerzo.
 19. La tabla de contracciones de un registro del par, con la columna «Músculo».
 
 > **Sugerencia de tono para el manual:** combinar instrucciones prácticas ("cómo

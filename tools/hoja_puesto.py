@@ -68,8 +68,8 @@ TEXTOS = {
             "con la placa encendida · en «Identificador de prueba», un código, "
             "nunca el nombre",
             "calentamiento: {warm}{nbsp}s, 2 o 3 contracciones suaves",
-            "{n} {por} FCR · {n} {por} ECR · una sacudida explosiva en los {dur}{nbsp}s de cada aviso",
-            "{f} flexiones · {e} extensiones · {p} presa de {presa}{nbsp}s apretando la pelota · 2{nbsp}s quieto entre maniobras",
+            "{n} {por} FCR · {n} {por} ECR · una contracción breve e intensa en los {dur}{nbsp}s de cada aviso",
+            "{f} flexiones · {e} extensiones · {p} presa de {presa}{nbsp}s cerrando la mano sobre la pelota · 2{nbsp}s quieto entre maniobras",
             "la línea amarilla dice el paso; al final, el informe PDF",
         ],
         # Under the six panels, the width of the page: neither fits in a
@@ -95,8 +95,8 @@ TEXTOS = {
             "with the board switched on · in «Test identifier», a code, never "
             "a name",
             "warm-up: {warm}{nbsp}s, two or three easy contractions",
-            "{n} {por} FCR · {n} {por} ECR · one explosive jerk in the {dur}{nbsp}s of each cue",
-            "{f} flexions · {e} extensions · {p} grip of {presa}{nbsp}s squeezing the ball · 2{nbsp}s still in between",
+            "{n} {por} FCR · {n} {por} ECR · one brief, intense contraction in the {dur}{nbsp}s of each cue",
+            "{f} flexions · {e} extensions · {p} grip of {presa}{nbsp}s closing the hand on the ball · 2{nbsp}s still in between",
             "the yellow line says the step; last, the PDF report",
         ],
         "avisos": [
@@ -170,7 +170,7 @@ def capturas(idioma: str, carpeta: Path) -> dict[str, Path]:
     ov.show_ready(
         tr("Warm up first"), int(EMG_PROFILE.warmup_s),
         tr("Two or three easy contractions of each muscle. The first "
-           "maximal effort of a session is never the strongest one."),
+           "maximal effort of a session is never the most intense one."),
     )
     app.processEvents()
     guardar("calentamiento", ov.grab())

@@ -336,14 +336,23 @@ def test_a_gradation_recorded_with_the_simulated_board_is_analysed_by_steps(
 ) -> None:
     """The whole way: the chooser, the countdown, the five steps asked of the
     simulated subject, the automatic stop, the analysis. Shortened (0.8 s a
-    phase) and without the calibration, which has its own tests: so the
-    level is in millivolts, and each step above the last."""
+    phase, 1.6 s a step) and without the calibration, which has its own
+    tests: so the level is in millivolts, and each step above the last.
+
+    The steps are twice the rest because the mark is written at the samples
+    the worker has received and the subject changes at the ones the board
+    has made: on a loaded runner the change lands up to some tenths of a
+    second after its mark (CI, Windows, 25 Oct 2026: step 3 below step 2
+    with 0.8 s steps). The level is held from half the step on, so 1.6 s
+    leaves 0.8 s for that lag."""
     from emgteach.gui.tabs import acquisition as acq_mod
     from tests.test_marcas_manuales import _until
     from tests.test_sesion_guiada_en_la_pestana import _choose, _record
 
     pestana = request.getfixturevalue("tab")
     corta = dataclasses.replace(gradation_script().with_seconds(0.8), needs_mvc=False)
+    corta = dataclasses.replace(corta, phases=tuple(
+        dataclasses.replace(f, seconds=1.6) if f.kind == EFFORT else f for f in corta.phases))
     monkeypatch.setitem(acq_mod.GUIDED_SESSIONS, "gradacion", lambda: corta)
     pestana._rellenar_sesiones()
     _choose(pestana, "gradacion")

@@ -96,7 +96,7 @@ def test_a_tone_at_the_start_and_at_the_end_of_every_contraction() -> None:
 def test_both_are_offered_in_the_chooser() -> None:
     from emgteach.gui.tabs.acquisition import GUIDED_SESSIONS
 
-    assert list(GUIDED_SESSIONS) == ["gradacion", "fatiga", "fatiga_intermitente"]
+    assert list(GUIDED_SESSIONS)[:3] == ["gradacion", "fatiga", "fatiga_intermitente"]
 
 
 def test_every_word_of_both_is_in_spanish() -> None:

@@ -326,7 +326,7 @@ signal; the **A** button in the corner gives the whole window back.
 **Muscle load (live MVC)**
 - **The calibration is a wizard**, always the same: 10 s of warm-up with two or
   three easy contractions; per muscle, **three brief maximal efforts** of 1.5 s
-  («Maximum, short and hard — FCR»), each announced by a 3 s countdown and
+  («Maximum, brief and intense — FCR»), each announced by a 3 s countdown and
   followed by 2 s of rest. In the pair practical the
   record button itself launches it before the task and then writes 5 s of
   preparation and the start of the recording; in the other two it is launched
@@ -359,8 +359,7 @@ session.
   session's own gesture: clenching the fist.
 - **Fatigue: sustained contraction** (28 s; calibration optional): 5 s of rest, a
   3 s countdown, **10 s of maximal isometric contraction** against the table and
-  10 s of rest. The text asks to breathe (not to hold the breath) and to let go if
-  it hurts. In Analysis the analysed span is the contraction and panels 6 and 7
+  10 s of rest. The text asks to breathe normally. In Analysis the analysed span is the contraction and panels 6 and 7
   come ticked; the summary line gives the MDF and RMS of its start and end (the
   first and last quarter of the contraction) and after how many seconds the MDF
   had fallen 10 %.
@@ -369,6 +368,14 @@ session.
   screen. What is measured is the **RMS of each contraction** after its first
   second (not the peak, which is the start and does not fall) and its MDF: view
   «Per contraction».
+- **Quick repeated contractions** (28 s): after 5 s of rest and the countdown,
+  **10 s of contractions of the fist, closing and relaxing it as fast as possible**. The
+  contractions and their rate are counted, and **the peaks and the floor between
+  them** are followed on a 50 ms moving RMS, not on the envelope (at four or five a
+  second its 5 Hz filter alone keeps the floor at a fifth to a third of the peak).
+  The summary line and the report also give **the floor the measure alone leaves**
+  at that rate with a perfect relaxation: what is above it is the subject's. View
+  «Train». See the note in §7.1.
 - The **«Tone»** box, in every practical, announces with a short tone every phase
   change of every guided flow: the calibration, the countdown, the pair's guided
   task, the force-velocity loads and the guided sessions; and the end with two
@@ -492,7 +499,7 @@ table and a reproducible footer (version and date).
 
 **Entry panel.** The first time the tab is opened in each run of the application,
 it greets with an explanation of what a maximum voluntary contraction is, why it
-is a brief, explosive jerk rather than a push against something fixed, and why
+is a brief, intense contraction rather than a push against something fixed, and why
 the reference is inside the recording. Closed with **«Understood, continue»**; «New session» does not bring it
 back.
 
@@ -563,10 +570,10 @@ millivolts depend on skin impedance, electrode position and anatomy.
 > beat the reference with the calibration correctly made (135 % on one
 > recording).
 >
-> **How a maximum is made that is one.** A brief, explosive maximal jerk of the
+> **How a maximum is made that is one.** A brief, intense maximal contraction of the
 > muscle's own movement, not a sustained push against something fixed. For the
-> flexor, a jerk of wrist flexion **clenching the fist with all one's strength**;
-> for the extensor, a jerk of wrist extension **with the hand open and the fingers
+> flexor, a contraction of wrist flexion **clenching the fist with all one's strength**;
+> for the extensor, a contraction of wrist extension **with the hand open and the fingers
 > stretched out as far as they go**. A surface electrode on the forearm does not
 > see one muscle but the compartment beneath it, with the finger flexors or
 > extensors in it, and the reference is only a yardstick if it recruits the same
@@ -581,7 +588,7 @@ millivolts depend on skin impedance, electrode position and anatomy.
 > discarded in «Calibration repetitions…» and the reference is recomputed.
 >
 > **What the two references do not compare: the two channels.** Each channel's
-> reference is measured in its own block of jerks, and no jerk is the same as the
+> reference is measured in its own block of contractions, and no contraction is the same as the
 > next, so dividing one reference by the other exaggerates how differently the
 > two channels read. With both pairs over the same muscle, on the bench, the
 > ratio of the references came out at 1.84 and the one measured within the same
@@ -691,7 +698,7 @@ and it has an immediate clinical reading.
 |---|---|---|
 | Flexions | the flexor works; the extensor little or not at all | «not reported», or a low index (around 30 %) if the extensor passes the 4.5 % floor |
 | Extensions | the roles swap | the same |
-| Grip, squeezing a ball | both work at once | clearly higher than in the reciprocal manoeuvres |
+| Grip, closing the hand on a ball | both work at once | clearly higher than in the reciprocal manoeuvres |
 | Fast alternation | both work, but by turns | a low number |
 
 > **Where these limits come from.** The 4.5 % floor, the channel-separation
@@ -817,7 +824,7 @@ Each begins by **choosing the practical** in the top-right selector.
    for fatigue, the sessions **«Fatigue: sustained contraction»** or **«Fatigue:
    intermittent contractions»**. If the exercise needs % MVC (load), press **«Calibrate
    MVC»** at once: warm-up
-   and three brief, explosive maximal jerks (for the forearm flexor, fist
+   and three brief, intense maximal contractions (for the forearm flexor, fist
    clenched). Then the task; onsets
    are marked by themselves. *Stop recording*.
 2. Analysis runs on its own. Follow the two guided boxes: review the
@@ -843,14 +850,18 @@ Each begins by **choosing the practical** in the top-right selector.
 > contractions a second (1.4 % of the peak at one every 0.5 s). In the trials of
 > 24 October 2026, at 3, 2 and 1.5 s the peak did not change (about 0.20 mV) and
 > the envelope returned to zero; only a train as fast as possible raised the peaks
-> a little and left the floor a little above zero, and without controlling the
-> force that is not conclusive. That is why there is no guided session for it.
+> a little and left the floor a little above zero. That train is the session
+> **«Quick repeated contractions»** (§4.3). At those rates the filter does count:
+> at four or five contractions a second the 5 Hz envelope alone leaves the floor at
+> a fifth to a third of the peak. So the session measures on a 50 ms RMS and gives
+> apart the floor the measure itself leaves. The peaks are EMG, not force: without
+> controlling the force, a small rise does not say the muscle does more.
 
 ### 7.2 Agonist / antagonist contraction (intermediate)
 
 1. Two channels; the device box says «BITalino». Label the two muscles in channel
    order (FCR on A1, ECR on A2). On *Start recording* the wizard calibrates both
-   muscles (a brief, explosive jerk each: fist clenched for the flexor, hand open
+   muscles (a brief, intense contraction each: fist clenched for the flexor, hand open
    and fingers stretched out for the extensor),
    measures the channel separation and, after 5 s of preparation, opens the
    recording. Manoeuvres: flexions, extensions and a grip.
@@ -938,7 +949,7 @@ box says the same.
 
 **«Task maximum: … not a maximum», in red.** The recording exceeds 150 % of the
 reference: the calibration was not a maximal contraction and every percentage is
-high in the same proportion. Repeat it with one brief, explosive jerk per effort,
+high in the same proportion. Repeat it with one brief, intense contraction per effort,
 fist clenched for the flexor and hand open for the extensor; and check in
 «Calibration repetitions…» whether a weak
 repetition is lowering the reference (§5.1).

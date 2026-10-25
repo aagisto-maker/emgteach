@@ -23,7 +23,7 @@ neutral — the co-activation floor, the cross-talk share and the ranges
 of the calibration checks were measured on the pair of the practical
 guide, the forearm's FCR and ECR, on this bench. Another pair (biceps
 and triceps, say) has its own resting level, its own cross-talk and its
-own relation between the reference jerk and the task, so these are
+own relation between the reference contraction and the task, so these are
 defaults to check rather than constants of the method. Each comment
 below says what was measured and on what.
 """

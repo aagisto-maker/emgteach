@@ -977,11 +977,11 @@ class TestTheCalibrationHelpDescribesTheProtocolTheCodeRuns:
         # The reference has no window: it is the envelope's highest point.
         assert ("highest point" if idioma == "en" else "punto más alto") in cuerpo
         # The words of the protocols it replaced: six efforts, some of them
-        # held. The manoeuvre is now a jerk, and the help says it is not a
-        # sustained push, so it has to name the jerk instead.
+        # held. The manoeuvre is now a contraction, and the help says it is not a
+        # sustained push, so it has to name the contraction instead.
         for viejo in ("six", "squeez", "held", "seis", "mantenid"):
             assert viejo not in cuerpo.lower(), viejo
-        assert ("jerk" if idioma == "en" else "sacudida") in cuerpo.lower()
+        assert ("contraction" if idioma == "en" else "contracción breve") in cuerpo.lower()
 
     def test_no_help_text_counts_six_maximal_efforts(self) -> None:
         from emgteach.gui.help_texts import keys, text

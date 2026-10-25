@@ -31,14 +31,14 @@ def _mensajes() -> list[tuple[str, str]]:
     musculos = "FCR · ECR"
     return [
         ("ready", tr(
-            "When the count reaches 0: one brief, explosive maximal jerk of "
+            "When the count reaches 0: one brief, intense maximal contraction of "
             "wrist extension, with the hand open and the fingers stretched "
-            "out as far as they go. A jerk, not a sustained push against "
+            "out as far as they go. A contraction, not a sustained push against "
             "something fixed."
         )),
         ("ready", tr(
             "Two or three easy contractions of each muscle. The first "
-            "maximal effort of a session is never the strongest one."
+            "maximal effort of a session is never the most intense one."
         )),
         ("ready", tr(
             "The recording starts when the count reaches 0. "
@@ -48,7 +48,7 @@ def _mensajes() -> list[tuple[str, str]]:
         ("relax", tr("Next muscle: {label}").format(label="ECR")),
         ("done", tr(
             "{muscles}: this is not a maximum. Calibrate again with a "
-            "brief, explosive maximal jerk, not a sustained push "
+            "brief, intense maximal contraction, not a sustained push "
             "against something fixed."
         ).format(muscles=musculos)),
         ("done", tr(
@@ -59,7 +59,7 @@ def _mensajes() -> list[tuple[str, str]]:
         ("done", tr("{summary}\nYou can start recording.").format(
             summary="FCR: 0.08 mV · ECR: 0.34 mV")),
         ("done", tr("No signal — check the electrodes.")),
-        ("contract", tr("One explosive jerk at maximal power — brief, not held")),
+        ("contract", tr("One intense contraction at maximal power — brief, not held")),
     ]
 
 
@@ -204,7 +204,7 @@ def _titulos() -> list[tuple[str, str]]:
     return [
         ("ready", tr("Warm up first")),
         ("ready", tr("Get ready — {label}{rep}").format(label=label, rep=rep)),
-        ("contract", tr("Maximum, short and hard — {label}{rep}").format(
+        ("contract", tr("Maximum, brief and intense — {label}{rep}").format(
             label=label, rep=rep)),
         ("contract", tr("Contract at maximum! (no load)")),
         ("done", tr("Channels not separated")),
