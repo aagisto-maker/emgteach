@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     )
     from emgteach.workers import AcquisitionWorker, AnalysisWorker, MvcWorker
 
-__version__ = "3.9.1"
+__version__ = "3.10.0"
 
 #: Where each export lives. Nothing is imported until it is first asked for:
 #: ``import emgteach`` runs before any of its submodules is imported, so an

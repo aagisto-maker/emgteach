@@ -77,10 +77,15 @@ abstract: >-
   analysis draws those marks apart; nothing computed changes. Patch 3.9.1
   keeps the live view following the signal after a wheel zoom, starts no
   recording when the window is closed while «Retry» waits for the port, and
-  writes «% CVM» in Spanish; nothing computed changes.
+  writes «% CVM» in Spanish; nothing computed changes. Version 3.10.0
+  guides four sessions of the one-muscle practical — graded contractions,
+  fatigue by a sustained and by intermittent contractions, and quick
+  repeated contractions — timed, marked in the file and analysed by their
+  own spans, with an optional tone at every phase change of every guided
+  flow; nothing computed changes for a free recording.
 type: software
-version: 3.9.1
-date-released: "2026-10-23"
+version: 3.10.0
+date-released: "2026-10-25"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"

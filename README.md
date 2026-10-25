@@ -24,7 +24,19 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.9.1 is a patch of v3.9.0: the live view keeps following the
+`emgteach` v3.10.0 guides four sessions of the one-muscle practical, chosen
+beside «Calibrate MVC»: **graded contractions** (five steps from 20 to 100 %
+of the bar, after a calibration), **fatigue by a sustained contraction** (a
+10 s maximum) and **by intermittent contractions** (six of 5 s with 1 s of
+rest), and **quick repeated contractions** (10 s as fast as possible). The
+application times each phase, marks it in the EDF+ file and stops the
+recording at the end; the analysis takes the session's own spans, with a view,
+a section of the report and a summary for the phones. An optional tone
+announces every phase change of every guided flow, and the instructions say
+«contraction» and «intense». Nothing computed changes for a free recording.
+See [`docs/RELEASE_NOTES_v3.10.0.md`](docs/RELEASE_NOTES_v3.10.0.md).
+
+v3.9.1 is a patch of v3.9.0: the live view keeps following the
 signal after a wheel zoom — the wheel sets how many seconds are shown, and «A»
 gives the whole window back —, closing the window while «Retry» waits for the
 board's port no longer starts a recording with a «Save as» dialog nobody asked
@@ -229,10 +241,10 @@ second build.
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
   información → Ejecutar de todos modos»).
 - **Check it is the published file**: the release notes give its SHA-256. In
-  PowerShell, `Get-FileHash .\emgteach-v3.9.1-windows-x64.exe -Algorithm SHA256`
+  PowerShell, `Get-FileHash .\emgteach-v3.10.0-windows-x64.exe -Algorithm SHA256`
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
-  `gh attestation verify emgteach-v3.9.1-windows-x64.exe --repo aagisto-maker/emgteach`
+  `gh attestation verify emgteach-v3.10.0-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that version's
   commit.
 
