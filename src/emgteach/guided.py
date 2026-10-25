@@ -5,7 +5,8 @@ was; this module turns those stretches into the numbers the analysis tab, the
 report and the phones show. Qt-free, like the rest of the analytic core.
 
 The fatigue, sustained: from the analysis' sliding windows over the effort,
-the MDF and the RMS of its first and last five seconds and the seconds until
+the MDF and the RMS of its start and its end (a quarter of it, at most five
+seconds) and the seconds until
 each fell 10 and 20 %. Intermittent: one row per contraction, its RMS after
 the first second (the peak is the start of each contraction and does not
 fall) and its MDF.
@@ -147,7 +148,10 @@ def is_monotonic(steps: Sequence[StepResult]) -> bool:
 # The fatigue: a sustained maximum, and an intermittent one
 # ---------------------------------------------------------------------------
 
-#: Seconds at each end of a sustained maximum compared with each other.
+#: Seconds at each end of a sustained maximum compared with each other, at
+#: most: a quarter of the effort when it is shorter than twenty seconds, so
+#: the ten-second maximum compares its first and last 2.5 s and not the same
+#: windows twice.
 EDGE_S = 5.0
 
 
@@ -225,8 +229,9 @@ def hold_result(t_seg, mdf_seg, rms_seg, active=None, *,
         if m.size == t.size and m.any():
             t, mdf, rms = t[m], mdf[m], rms[m]
     dur = float(t[-1] + 0.5 * seg_len_s)
-    ini = t <= t[0] + edge_s
-    fin = t >= t[-1] - edge_s
+    borde = min(float(edge_s), dur / 4.0)
+    ini = t <= t[0] + borde
+    fin = t >= t[-1] - borde
 
     def media(x, sel):
         return float(np.median(x[sel])) if sel.any() else None

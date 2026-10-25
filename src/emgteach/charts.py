@@ -634,7 +634,7 @@ def draw_steps_chart(fig, steps: Sequence[Any], *, small: bool = False) -> None:
     ax.grid(axis="y", lw=0.4, alpha=0.4, zorder=0)
     if use_pct:
         ax.legend(fontsize=fs - 1, frameon=False, loc="upper left")
-    ax.set_title(tr("Gradation: level held per step"), fontsize=fs, pad=3)
+    ax.set_title(tr("Graded contractions: level held per step"), fontsize=fs, pad=3)
     _quitar_marco(ax)
 
 

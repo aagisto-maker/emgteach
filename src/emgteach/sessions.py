@@ -3,7 +3,7 @@
 The pair practical and the kinematics practical already guide their task; the
 one-muscle practical, the one students do most, left it to the student and a
 stopwatch. A guided session is a fixed sequence of phases — announced, timed,
-with a tone and a flash at every change — whose measured stretches are written
+with an optional tone at every change — whose measured stretches are written
 into the recording as EDF+ annotations, so the file analyses itself afterwards.
 It is the idea of ecgteach's and eegteach's guided sessions with emgteach's
 own vocabulary: the prompts go to the panel over the plots and to the phones,
@@ -137,7 +137,7 @@ class SessionPhase:
     ``opens`` and ``closes`` are the marks written at the phase's start and
     end; empty for a phase that is not measured — the rests between efforts
     are the gaps between marks, as the rest between calibration efforts is.
-    ``cue`` says whether its start is announced (tone and flash); a phase that
+    ``cue`` says whether its start is announced (with the tone); a phase that
     only continues the one before it is not. ``fmt`` fills the ``{…}`` of the
     title and the text once translated (``(("pct", 40),)``), so the catalogue
     holds one entry for every step.
@@ -191,6 +191,10 @@ class SessionScript:
     #: One line for the tooltip of the session chooser, and what fills its ``{…}``.
     summary: str = ""
     fmt: tuple[tuple[str, object], ...] = ()
+    #: The gesture the session's efforts are made with, said to the student
+    #: by the calibration too: the reference is measured with the movement
+    #: the experiment then asks for, and the two say it in the same words.
+    gesture: str = ""
 
     def __post_init__(self) -> None:
         if self.family not in FAMILIES:
@@ -220,6 +224,12 @@ class SessionScript:
 # ---------------------------------------------------------------------------
 # The sessions
 # ---------------------------------------------------------------------------
+
+#: Every session of the one-muscle practical is made with the fist, and the
+#: calibration that precedes it asks for the same gesture (Ángel, 25 Oct 2026:
+#: the calibration said «a brief, explosive jerk» and the session «squeeze
+#: your fist», and the student did not know they were the same movement).
+_FIST = "Clench your fist: a brief, explosive jerk."
 
 #: The gradation's targets, % MVC. Five and not four: with four (25, 50, 75,
 #: 100) the curve has three intervals; with five its bend can be seen.
@@ -264,20 +274,20 @@ def gradation_script() -> SessionScript:
                 f"rest_{k}", REST, GRADATION_REST_S, "Rest", "Let go and rest."))
     fases.append(SessionPhase(
         "rest_end", REST, GRADATION_EDGE_S, "Rest",
-        "Let go. The gradation is over: the recording stops on its own."))
+        "Let go. That was the last one: the recording stops on its own."))
     return SessionScript(
-        key="gradacion", family="GRAD", title="Gradation", slug="gradacion",
+        key="gradacion", family="GRAD", title="Graded contractions", slug="graduales",
         header=header_marker("GRAD", steps=n), phases=tuple(fases), needs_mvc=True,
         summary="Five contractions of growing strength, 20 to 100 % of the bar, "
                 "four seconds each with rest between them. Calibrates first.",
+        gesture=_FIST,
     )
 
 
-#: The sustained maximum: 30 s by default and never more than 45 (Ángel's
-#: decision of 24 October 2026). With a maximal effort the MDF falls fast
-#: enough for its line to fit in thirty seconds; the practical guide's 50 %
-#: needed a minute and still came out inconclusive in some subjects.
-HOLD_DEFAULT_S = 30.0
+#: The sustained maximum: 10 s by default and never more than 45. Ángel's
+#: decision of 24 October 2026 was 30 s; on the 25th, after trying it, 10 s:
+#: with a maximal effort the fall is seen in ten, and thirty are long.
+HOLD_DEFAULT_S = 10.0
 HOLD_MAX_S = 45.0
 _HOLD_BEFORE_S = 5.0
 _HOLD_COUNT_S = 3.0
@@ -310,11 +320,12 @@ def hold_script(seconds: float = HOLD_DEFAULT_S) -> SessionScript:
                      "Let go and let the hand drop. The recording stops on its own."),
     )
     return SessionScript(
-        key="fatiga", family="HOLD", title="Fatigue: sustained maximum", slug="fatiga",
+        key="fatiga", family="HOLD", title="Fatigue: sustained contraction",
+        slug="fatiga_mantenida",
         header=header_marker("HOLD", mode="sustained", secs=secs), phases=fases,
         summary="One maximal contraction held for {secs:g} s, with rest before "
                 "and after. The amplitude and the MDF fall as it is held.",
-        fmt=(("secs", secs),),
+        fmt=(("secs", secs),), gesture=_FIST,
     )
 
 
@@ -353,19 +364,21 @@ def intermittent_script(reps: int = INTERMITTENT_REPS, on_s: float = INTERMITTEN
         ))
         if k < n:
             fases.append(SessionPhase(
-                f"off_{k}", READY, float(off_s), "Let go", "The next one comes at 0."))
+                f"off_{k}", READY, float(off_s), "Let go: {k} of {n} done",
+                "The next one comes at 0.", fmt=(("k", k), ("n", n))))
     fases.append(SessionPhase(
         "rest_end", REST, _HOLD_AFTER_S, "Rest",
         "Let go and let the hand drop. The recording stops on its own."))
     return SessionScript(
-        key="fatiga_intermitente", family="HOLD", title="Fatigue: intermittent maximum",
+        key="fatiga_intermitente", family="HOLD",
+        title="Fatigue: intermittent contractions",
         slug="fatiga_intermitente",
         header=header_marker("HOLD", mode="intermittent", reps=n, on=float(on_s),
                              off=float(off_s)),
         phases=tuple(fases),
         summary="{n} maximal contractions of {on:g} s with {off:g} s between them; "
                 "the RMS of each one falls as the muscle tires.",
-        fmt=(("n", n), ("on", on_s), ("off", off_s)),
+        fmt=(("n", n), ("on", on_s), ("off", off_s)), gesture=_FIST,
     )
 
 

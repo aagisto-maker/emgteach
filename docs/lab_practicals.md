@@ -312,13 +312,13 @@ signal.
 **Objective.** Check that amplitude grows with activation monotonically but
 **not linearly**, and see what normalisation is for.
 
-**Procedure.** With the guided session **«Gradation»**.
-1. On the line of «Calibrate MVC», choose **«Gradation»** in the chooser (it opens
+**Procedure.** With the guided session **«Graded contractions»**.
+1. On the line of «Calibrate MVC», choose **«Graded contractions»** in the chooser (it opens
    on «Free recording») and press **Start recording**. The application asks for
    the warm-up and the three maximal efforts (section 4), counts 5 s and directs
    the steps: five 4 s isometric contractions against the table, at **20, 40, 60
    and 80 % of the bar and at the maximum**, with 6 s of rest between them. Every
-   phase change is announced with a tone and a flash; the panel shows the bar
+   phase change is announced with a tone («Tone» box); the panel shows the bar
    with the band of the step asked for.
 2. The recording **stops by itself** at the end. In Analysis, review the
    calibration repetitions; the five steps are already the five rows of the
@@ -361,17 +361,17 @@ RMS does depends on the effort: in a **submaximal** contraction it usually
 one there are no units left to add, the force is not held and the RMS **falls**.
 The specific proof is the fall of the MDF.
 
-**Procedure.** With the guided session **«Fatigue: sustained maximum»**.
+**Procedure.** With the guided session **«Fatigue: sustained contraction»**.
 1. Choose the session in the chooser on the line of «Calibrate MVC» and press
    **Start recording** (the calibration is optional: press «Calibrate MVC» first,
    with «Free recording», for the bar in % MVC). After 5 s of preparation and 5 s
-   of rest, a 3 s countdown and **30 s of maximal isometric contraction** against
+   of rest, a 3 s countdown and **10 s of maximal isometric contraction** against
    the table, forearm resting, no weight in the hand. **Breathe during the
    effort** (do not hold your breath) and, if it hurts, let go.
 2. The recording **stops by itself**. In Analysis the analysed span is already
    the contraction, and panels **6. RMS/window** and **7. MDF/time** come ticked.
 
-**Intermittent variant** (**«Fatigue: intermittent maximum»**): ten maximal
+**Intermittent variant** (**«Fatigue: intermittent contractions»**): ten maximal
 contractions of **5 s with 1 s of rest** between them, with a tone at the start
 and the end of each and the countdown on screen. What is measured is the **RMS
 of each contraction** after its first second, not its peak: the peak is the start
@@ -391,7 +391,7 @@ question.
 **Data to record.** From the summary line of the contractions box and from the
 report:
 
-| Quantity | First 5 s | Last 5 s | Change | −10 % at |
+| Quantity | Start | End | Change | −10 % at |
 |---|---|---|---|---|
 | MDF (Hz) (panel 7) | | | | |
 | RMS (mV) (panel 6) | | | | |

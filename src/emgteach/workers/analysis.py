@@ -1299,7 +1299,7 @@ class AnalysisWorker(QThread):
                     f_low=self._f_low, f_high=self._f_high,
                 )
                 if result["grad_steps"]:
-                    self.log.emit(tr("Gradation: {n} steps measured.").format(
+                    self.log.emit(tr("Graded contractions: {n} steps measured.").format(
                         n=len(result["grad_steps"])))
                 result["reps"] = intermittent_reps(
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],

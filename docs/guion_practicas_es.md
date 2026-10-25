@@ -298,13 +298,13 @@ señal.
 **Objetivo.** Comprobar que la amplitud crece con la activación de forma monótona
 pero **no lineal**, y ver para qué sirve normalizar.
 
-**Procedimiento.** Con la sesión guiada **«Gradación»**.
-1. En la línea de «Calibrar CVM», elegir **«Gradación»** en el desplegable (abre
+**Procedimiento.** Con la sesión guiada **«Contracciones graduales»**.
+1. En la línea de «Calibrar CVM», elegir **«Contracciones graduales»** en el desplegable (abre
    en «Grabación libre») y pulsar **Iniciar grabación**. La aplicación pide el
    calentamiento y los tres esfuerzos máximos (apartado 4), cuenta 5 s y dirige
    los escalones: cinco contracciones isométricas de 4 s contra la mesa, al
    **20, 40, 60 y 80 % de la barra y al máximo**, con 6 s de reposo entre ellas.
-   Cada cambio de fase se anuncia con un tono y un destello; el panel muestra la
+   Cada cambio de fase se anuncia con un tono (casilla «Tono»); el panel muestra la
    barra con la franja del escalón pedido.
 2. La grabación se **detiene sola** al terminar. En Análisis, revisar las
    repeticiones de la calibración; los cinco escalones ya son las cinco filas de
@@ -347,18 +347,18 @@ Lo que hace el RMS depende del esfuerzo: en una contracción **submáxima** suel
 **máxima** ya no quedan unidades que sumar, la fuerza no se sostiene y el RMS
 **baja**. La prueba específica es la caída de la MDF.
 
-**Procedimiento.** Con la sesión guiada **«Fatiga: máxima mantenida»**.
+**Procedimiento.** Con la sesión guiada **«Fatiga por contracción mantenida»**.
 1. Elegir la sesión en el desplegable de la línea de «Calibrar CVM» y pulsar
    **Iniciar grabación** (la calibración es opcional: pulsar «Calibrar CVM»
    antes, con «Grabación libre», si se quiere la barra en % CVM). Tras 5 s de
-   preparación y 5 s de reposo, una cuenta atrás de 3 s y **30 s de contracción
+   preparación y 5 s de reposo, una cuenta atrás de 3 s y **10 s de contracción
    máxima isométrica** contra la mesa, antebrazo apoyado, sin peso en la mano.
    **Respire durante el esfuerzo** (no aguante el aire) y, si duele, suelte.
 2. La grabación se **detiene sola**. En Análisis, el tramo analizado ya es la
    contracción, y los paneles **6. RMS/ventana** y **7. MDF/tiempo** aparecen
    marcados.
 
-**Variante intermitente** (**«Fatiga: máxima intermitente»**): diez contracciones
+**Variante intermitente** (**«Fatiga por contracciones intermitentes»**): diez contracciones
 máximas de **5 s con 1 s de reposo** entre ellas, con tono al empezar y al acabar
 cada una y la cuenta atrás en pantalla. Se mide el **RMS de cada contracción**
 tras su primer segundo, no su pico: el pico es el arranque de cada contracción y
@@ -378,7 +378,7 @@ la pregunta.
 **Datos a recoger.** De la línea de resumen de la caja de contracciones y del
 informe:
 
-| Magnitud | Primeros 5 s | Últimos 5 s | Cambio | −10 % a los |
+| Magnitud | Inicio | Final | Cambio | −10 % a los |
 |---|---|---|---|---|
 | MDF (Hz) (panel 7) | | | | |
 | RMS (mV) (panel 6) | | | | |

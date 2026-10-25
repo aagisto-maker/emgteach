@@ -115,7 +115,7 @@ _TEXTS = {
             "In the one-muscle practical, the chooser beside the button "
             "offers guided sessions: chosen before recording, «Start "
             "recording» runs the whole session — the calibration if it needs "
-            "one, a countdown, each phase announced with a tone and a flash — "
+            "one, a countdown, each phase announced and timed — "
             "and stops at the end. «Free recording» is the usual way."
         ),
     ),

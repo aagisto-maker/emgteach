@@ -48,15 +48,19 @@ FS = 1000
 # ── The scripts ─────────────────────────────────────────────────────────────
 
 
-def test_the_sustained_maximum_is_thirty_seconds_and_never_more_than_45() -> None:
+def test_the_sustained_contraction_is_ten_seconds_and_never_more_than_45() -> None:
+    """Ángel, 25 Oct 2026, after trying 30 s: with a maximal effort the fall
+    is seen in ten."""
     g = hold_script()
     esfuerzo = [f for f in g.phases if f.kind == EFFORT]
-    assert len(esfuerzo) == 1 and esfuerzo[0].seconds == 30.0 and esfuerzo[0].level == 1.0
-    assert esfuerzo[0].opens == "HOLD effort start secs=30"
+    assert len(esfuerzo) == 1 and esfuerzo[0].seconds == 10.0 and esfuerzo[0].level == 1.0
+    assert esfuerzo[0].opens == "HOLD effort start secs=10"
     assert esfuerzo[0].closes == "HOLD effort end"
-    assert g.header == "HOLD start mode=sustained secs=30 v=1"
+    assert g.header == "HOLD start mode=sustained secs=10 v=1"
     assert not g.needs_mvc and g.family == "HOLD"
-    assert hold_script(45.0).total_seconds == g.total_seconds + 15.0
+    assert _ES[g.title] == "Fatiga por contracción mantenida"
+    assert _ES[intermittent_script().title] == "Fatiga por contracciones intermitentes"
+    assert hold_script(45.0).total_seconds == g.total_seconds + 35.0
     assert HOLD_MAX_S == 45.0
     with pytest.raises(ValueError):
         hold_script(46.0)
@@ -246,11 +250,12 @@ def _edf(path: Path, marcas, senal: np.ndarray) -> str:
 
 
 def _sostenida_edf(path: Path) -> str:
-    """Rest, a 30 s maximum whose spectrum slides down and whose amplitude
+    """Rest, a 30 s maximum (the session allows up to 45) whose spectrum slides
+    down and whose amplitude
     falls a third, and rest. Broadband noise, a high band giving way to a low
     one: a pure tone sweeping down crosses the mains notch's harmonics and
     its RMS dips there."""
-    g = hold_script()
+    g = hold_script(30.0)
     marcas = [(REC_S, g.header)]
     for f in g.timed():
         if f.opens:
@@ -314,9 +319,9 @@ def test_the_report_and_the_phones_carry_the_fatigue(qapp, tmp_path: Path) -> No
     from tests.test_manejo_en_aula import _Difusion
 
     for edf, titulo in (
-        (_sostenida_edf(tmp_path / "s.edf"), "Guided session: sustained maximum"),
+        (_sostenida_edf(tmp_path / "s.edf"), "Guided session: fatigue by sustained contraction"),
         (_edf(tmp_path / "i.edf", _intermitente(t0=REC_S)[2], _intermitente(t0=REC_S)[1]),
-         "Guided session: intermittent maximum"),
+         "Guided session: fatigue by intermittent contractions"),
     ):
         r = _analizar(qapp, edf)
         pdf = tmp_path / (Path(edf).stem + ".pdf")
@@ -391,7 +396,8 @@ def test_a_fatigue_session_recorded_with_the_simulated_board(
     else:
         assert [t.number("n") for t in sesion.spans] == list(range(1, 11))
     anunciadas = sum(1 for f in corta.phases if f.cue)
-    assert oidos == ["phase"] * anunciadas + ["end"]
+    # The countdown before the recording phase, every announced phase, the end.
+    assert oidos == ["phase"] * (1 + anunciadas) + ["end"]
 
 
 def test_the_shortened_script_keeps_its_marks() -> None:

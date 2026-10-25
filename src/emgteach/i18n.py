@@ -2463,10 +2463,14 @@ _ES = {
     '{name} {slope:+.2f} mV/contr.': '{name} {slope:+.2f} mV/contr.',
     'MDF {slope:+.1f} Hz/contr.': 'MDF {slope:+.1f} Hz/contr.',
     # Guided sessions of the one-muscle practical (24 Oct 2026).
-    'Fatigue: sustained maximum':
-        'Fatiga: máxima mantenida',
-    'Fatigue: intermittent maximum':
-        'Fatiga: máxima intermitente',
+    'Two or three easy contractions.':
+        'Dos o tres contracciones suaves.',
+    'Clench your fist: a brief, explosive jerk.':
+        'Apriete el puño: una sacudida breve y explosiva.',
+    'Fatigue: sustained contraction':
+        'Fatiga por contracción mantenida',
+    'Fatigue: intermittent contractions':
+        'Fatiga por contracciones intermitentes',
     'Forearm on the table, fist closed without squeezing.':
         'Antebrazo sobre la mesa, puño cerrado sin apretar.',
     'Squeeze as hard as you can at 0':
@@ -2487,8 +2491,8 @@ _ES = {
         'Contracción {k} de {n}: máximo',
     'Squeeze as hard as you can. Breathe.':
         'Apriete al máximo. Respire.',
-    'Let go':
-        'Suelte',
+    'Let go: {k} of {n} done':
+        'Suelte: {k} de {n} hechas',
     'The next one comes at 0.':
         'La siguiente, al llegar a 0.',
     '{n} maximal contractions of {on:g} s with {off:g} s between them; the RMS of each one falls as the muscle tires.':
@@ -2507,40 +2511,40 @@ _ES = {
         'MDF −10 % a los {t:.0f} s',
     'MDF never fell 10 %':
         'la MDF no llegó a caer un 10 %',
-    'Sustained maximum, {s:.0f} s':
-        'Máxima mantenida, {s:.0f} s',
+    'Sustained contraction, {s:.0f} s':
+        'Contracción mantenida, {s:.0f} s',
     'RMS of each contraction: last against first {pct:+.0f} %':
         'RMS de cada contracción: la última frente a la primera {pct:+.0f} %',
-    'Guided session: sustained maximum':
-        'Sesión guiada: máxima mantenida',
-    'Guided session: intermittent maximum':
-        'Sesión guiada: máxima intermitente',
+    'Guided session: fatigue by sustained contraction':
+        'Sesión guiada: fatiga por contracción mantenida',
+    'Guided session: fatigue by intermittent contractions':
+        'Sesión guiada: fatiga por contracciones intermitentes',
     'not reached':
         'no se alcanza',
     'Measure':
         'Medida',
-    'First 5 s':
-        'Primeros 5 s',
-    'Last 5 s':
-        'Últimos 5 s',
+    'Start':
+        'Inicio',
+    'End':
+        'Final',
     'Change':
         'Cambio',
     '−10 % at':
         '−10 % a los',
     '−20 % at':
         '−20 % a los',
-    'Each value is the median of the one-second windows in which the muscle was working; a fall counts once three windows in a row are below the line.':
-        'Cada valor es la mediana de las ventanas de un segundo en que el músculo trabajaba; una caída cuenta cuando tres ventanas seguidas quedan por debajo de la línea.',
+    'Start and end: the median of the one-second windows of the first and the last quarter of the contraction (at most 5 s) in which the muscle was working; a fall counts once three windows in a row are below the line.':
+        'Inicio y final: la mediana de las ventanas de un segundo del primer y el último cuarto de la contracción (como mucho 5 s) en que el músculo trabajaba; una caída cuenta cuando tres ventanas seguidas quedan por debajo de la línea.',
     'RMS (% of the first)':
         'RMS (% de la primera)',
     'RMS over each contraction after its first second, not its peak: the peak is the start of each contraction and does not fall.':
         'RMS de cada contracción tras su primer segundo, no su pico: el pico es el arranque de cada contracción y no baja.',
     'Trend: {pct:+.1f} % of the first per contraction.':
         'Tendencia: {pct:+.1f} % de la primera por contracción.',
-    'In the one-muscle practical, the chooser beside the button offers guided sessions: chosen before recording, «Start recording» runs the whole session — the calibration if it needs one, a countdown, each phase announced with a tone and a flash — and stops at the end. «Free recording» is the usual way.':
-        'En la práctica de un músculo, el desplegable junto al botón ofrece sesiones guiadas: elegida antes de grabar, «Iniciar grabación» lleva a cabo la sesión entera — la calibración si la necesita, una cuenta atrás, cada fase anunciada con un tono y un destello — y se detiene al terminar. «Grabación libre» es lo habitual.',
-    'Gradation':
-        'Gradación',
+    'In the one-muscle practical, the chooser beside the button offers guided sessions: chosen before recording, «Start recording» runs the whole session — the calibration if it needs one, a countdown, each phase announced and timed — and stops at the end. «Free recording» is the usual way.':
+        'En la práctica de un músculo, el desplegable junto al botón ofrece sesiones guiadas: elegida antes de grabar, «Iniciar grabación» lleva a cabo la sesión entera — la calibración si la necesita, una cuenta atrás, cada fase anunciada y cronometrada — y se detiene al terminar. «Grabación libre» es lo habitual.',
+    'Graded contractions':
+        'Contracciones graduales',
     'Five contractions of growing strength, 20 to 100 % of the bar, four seconds each with rest between them. Calibrates first.':
         'Cinco contracciones de fuerza creciente, del 20 al 100 % de la barra, de cuatro segundos cada una y con reposo entre ellas. Calibra antes.',
     'Leave your hand loose on the table.':
@@ -2555,10 +2559,10 @@ _ES = {
         'Apriete el puño hasta el {pct} % de la barra y manténgalo ahí.',
     'Let go and rest.':
         'Suelte y descanse.',
-    'Let go. The gradation is over: the recording stops on its own.':
-        'Suelte. La gradación ha terminado: la grabación se detiene sola.',
-    'Gradation: {n} steps measured.':
-        'Gradación: {n} escalones medidos.',
+    'Let go. That was the last one: the recording stops on its own.':
+        'Suelte. Era la última: la grabación se detiene sola.',
+    'Graded contractions: {n} steps measured.':
+        'Contracciones graduales: {n} escalones medidos.',
     'Steps':
         'Escalones',
     'Asked (% MVC)':
@@ -2567,8 +2571,8 @@ _ES = {
         'Mantenido (% CVM)',
     'Held (mV)':
         'Mantenido (mV)',
-    'Gradation: {n} steps':
-        'Gradación: {n} escalones',
+    'Graded contractions: {n} steps':
+        'Contracciones graduales: {n} escalones',
     'each step above the last':
         'cada escalón por encima del anterior',
     'not every step above the last':
@@ -2587,10 +2591,10 @@ _ES = {
         'Nivel mantenido (% CVM)',
     'Level held (mV)':
         'Nivel mantenido (mV)',
-    'Gradation: level held per step':
-        'Gradación: nivel mantenido en cada escalón',
-    'Guided session: gradation':
-        'Sesión guiada: gradación',
+    'Graded contractions: level held per step':
+        'Contracciones graduales: nivel mantenido en cada escalón',
+    'Guided session: graded contractions':
+        'Sesión guiada: contracciones graduales',
     'Step':
         'Escalón',
     'Each step held more than the one before.':
@@ -2599,12 +2603,12 @@ _ES = {
         'No todos los escalones mantuvieron más que el anterior.',
     'Held: the mean of the envelope over each step after its first second, which is the reach and not the hold.':
         'Mantenido: la media de la envolvente en cada escalón tras su primer segundo, que es el de llegar al nivel y no el de mantenerlo.',
-    'Choose a guided session before recording: «Start recording» then runs it — the calibration if it needs one, a countdown, and each phase announced and timed, with a tone and a flash — writes its phases into the file and stops the recording at the end. Esc stops the session and the recording goes on.':
-        'Elija una sesión guiada antes de grabar: «Iniciar grabación» la lleva a cabo — la calibración si la necesita, una cuenta atrás y cada fase anunciada y cronometrada, con un tono y un destello —, escribe sus fases en el fichero y detiene la grabación al terminar. Esc detiene la sesión y la grabación sigue.',
+    'Choose a guided session before recording: «Start recording» then runs it — the calibration if it needs one, a countdown, and each phase announced and timed — writes its phases into the file and stops the recording at the end. Esc stops the session and the recording goes on.':
+        'Elija una sesión guiada antes de grabar: «Iniciar grabación» la lleva a cabo — la calibración si la necesita, una cuenta atrás y cada fase anunciada y cronometrada —, escribe sus fases en el fichero y detiene la grabación al terminar. Esc detiene la sesión y la grabación sigue.',
     'Tone':
         'Tono',
-    'A short tone at every phase change of a guided session, for a student watching their hand rather than the screen. Ticking it plays the tone, to check it can be heard.':
-        'Un tono breve en cada cambio de fase de una sesión guiada, para quien mira su mano y no la pantalla. Al marcarla suena el tono, para comprobar que se oye.',
+    'A short tone at every phase change of the guided flows — the calibration, the countdown, the guided task and the guided sessions — for a student watching their hand rather than the screen. Ticking it plays the tone, to check it can be heard.':
+        'Un tono breve en cada cambio de fase de los asistentes — la calibración, la cuenta atrás, la tarea guiada y las sesiones guiadas —, para quien mira su mano y no la pantalla. Al marcarla suena el tono, para comprobar que se oye.',
     'Free recording':
         'Grabación libre',
     'Guided session: {title}, {secs:.0f} s.':

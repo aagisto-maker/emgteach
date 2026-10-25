@@ -772,6 +772,10 @@ class AcquisitionTab(QWidget):
         self._session_script: SessionScript | None = None
         self._session_flow_pending = False
         self._session_runner: SessionRunner | None = None
+        #: How many of the running session's measured efforts are done, and
+        #: whether the phase now running is one (the boxes of the panel).
+        self._sesion_hechas = 0
+        self._sesion_en_esfuerzo = False
         #: Why the running session is being stopped: «esc» or «stop».
         self._session_motivo = ""
         #: Blocks of data seen while the flow was armed and could not start.
@@ -3354,17 +3358,18 @@ class AcquisitionTab(QWidget):
         self._combo_sesion.setToolTip(tr(
             "Choose a guided session before recording: «Start recording» "
             "then runs it — the calibration if it needs one, a countdown, and "
-            "each phase announced and timed, with a tone and a flash — writes "
-            "its phases into the file and stops the recording at the end. "
-            "Esc stops the session and the recording goes on."))
+            "each phase announced and timed — writes its phases into the file "
+            "and stops the recording at the end. Esc stops the session and the "
+            "recording goes on."))
         self._combo_sesion.setSizeAdjustPolicy(
             QComboBox.SizeAdjustPolicy.AdjustToContents)
         fila_sup.addWidget(self._combo_sesion)
         self._chk_tono = QCheckBox(tr("Tone"))
         self._chk_tono.setToolTip(tr(
-            "A short tone at every phase change of a guided session, for a "
-            "student watching their hand rather than the screen. Ticking it "
-            "plays the tone, to check it can be heard."))
+            "A short tone at every phase change of the guided flows — the "
+            "calibration, the countdown, the guided task and the guided "
+            "sessions — for a student watching their hand rather than the "
+            "screen. Ticking it plays the tone, to check it can be heard."))
         guardado = self._settings.value(SESSION_TONE_KEY, cue.DEFAULT_ENABLED)
         # QSettings brings booleans back as «true»/«false» on some systems.
         if isinstance(guardado, str):
@@ -3732,6 +3737,7 @@ class AcquisitionTab(QWidget):
         acquisition never stops, and the file stays continuous.
         """
         self._mvc_phase = "warmup"
+        self._tono()
         self._mvc_elapsed = 0.0
         # Sin mapa hasta que haya algo que contar, y a cero por si esta es
         # la segunda calibración de la sesión.
@@ -3745,6 +3751,7 @@ class AcquisitionTab(QWidget):
 
     def _mvc_enter_ready(self) -> None:
         self._mvc_phase = "ready"
+        self._tono()
         self._mvc_elapsed = 0.0
         self._mvc_cur_buf = []
         self._mvc_cross_buf = {}
@@ -3765,7 +3772,10 @@ class AcquisitionTab(QWidget):
             # One line while something is being done; the why of it — that
             # the first maximal effort of a session is never the strongest —
             # is in the tour, the guide and the manual, where there is time.
-            detalle = tr("Two or three easy contractions of each muscle.")
+            # One muscle or two, said as it is (Ángel, 25 Oct 2026: «of each
+            # muscle» with one muscle on the board).
+            detalle = (tr("Two or three easy contractions.") if self._n_channels == 1
+                       else tr("Two or three easy contractions of each muscle."))
             # The picture of what is coming, where there is most time to
             # look at it: ten seconds with nothing to do but warm up.
             self._mvc_overlay.show_ready(
@@ -3810,6 +3820,7 @@ class AcquisitionTab(QWidget):
             )
             if self._mvc_elapsed >= total_cuenta:
                 self._mvc_phase = "contract"
+                self._tono()
                 self._mvc_elapsed = 0.0
                 self._mvc_cur_buf = []
                 self._mvc_cross_buf = {}
@@ -3942,6 +3953,7 @@ class AcquisitionTab(QWidget):
         self._mvc_rep += 1
         if self._mvc_rep < self._mvc_reps:
             self._mvc_phase = "rest"          # rest, then repeat this muscle
+            self._tono()
             self._mvc_elapsed = 0.0
             return
         self._mvc_compute_muscle(self._mvc_muscle)
@@ -3949,6 +3961,7 @@ class AcquisitionTab(QWidget):
         if self._mvc_muscle + 1 < self._n_channels:
             self._mvc_muscle += 1             # rest, then next muscle
             self._mvc_phase = "rest"
+            self._tono()
             self._mvc_elapsed = 0.0
         else:
             self._mvc_finish_all()
@@ -3980,6 +3993,12 @@ class AcquisitionTab(QWidget):
         pair — the instruction never assumes a forearm.
         """
         regla = tr("A brief, explosive jerk — not a sustained push.")
+        # A guided session names its gesture, and the calibration that opens
+        # it says the same words: the reference is measured with the movement
+        # the experiment asks for next.
+        script = self._session_script
+        if self._mode == MODE_SINGLE and script is not None and script.gesture:
+            return tr(script.gesture)
         if self._mode != MODE_PAIR or c not in (0, 1):
             return regla
         return pair_calibration_cue(self._par, c) or regla
@@ -4070,6 +4089,7 @@ class AcquisitionTab(QWidget):
             self._bcast_calib(False)
             return
         self._worker.add_marker(prep_start_marker())
+        self._tono()
         self._prep_elapsed = 0.0
         self._prep_timer.start()
 
@@ -4146,9 +4166,7 @@ class AcquisitionTab(QWidget):
                                   Qt.ItemDataRole.ToolTipRole)
         combo.setCurrentIndex(0)
         combo.blockSignals(False)
-        visible = self._mode == MODE_SINGLE and bool(GUIDED_SESSIONS)
-        combo.setVisible(visible)
-        self._chk_tono.setVisible(visible)
+        combo.setVisible(self._mode == MODE_SINGLE and bool(GUIDED_SESSIONS))
 
     def _sesion_elegida(self) -> SessionScript | None:
         """The script of the guided session chosen, or ``None`` for a free one."""
@@ -4187,14 +4205,20 @@ class AcquisitionTab(QWidget):
         if texto:
             self._log(texto)
 
-    def _anunciar(self) -> None:
-        """A phase change: the flash for the eyes, the tone for the ears.
+    def _tono(self, *, final: bool = False) -> None:
+        """A phase change of any guided flow, said with a tone if the box is ticked.
 
-        Together and from one place, as in ecgteach's and eegteach's guided
-        sessions: a phase change is one event.
+        The calibration, the countdown to the recording, the pair's task,
+        the force-velocity loads and the guided sessions alike (Ángel, 25 Oct
+        2026: the tone in every experiment of the application). *final* is
+        the end of a whole guided task: two falling notes, so that «finished»
+        is not heard as «next».
         """
-        self._mvc_overlay.flash()
-        if self._chk_tono.isChecked():
+        if not self._chk_tono.isChecked():
+            return
+        if final:
+            cue.beep_end()
+        else:
             cue.beep()
 
     def _lanzar_sesion(self) -> None:
@@ -4210,6 +4234,12 @@ class AcquisitionTab(QWidget):
         runner.finished.connect(self._sesion_fin)
         self._session_runner = runner
         self._session_motivo = ""
+        # One box per measured effort, filled as each is done: the count of
+        # what has been done, which the seconds left do not say.
+        self._sesion_hechas = 0
+        self._sesion_en_esfuerzo = False
+        self._mvc_overlay.set_steps(
+            [_CHANNEL_COLORS[0]] * sum(1 for f in script.phases if f.opens))
         cue.set_tone_report(self._tono_informado.emit)
         self._btn_cancelar_guia.setVisible(True)
         self._log(tr("Guided session started: {title}. Esc stops it.").format(
@@ -4219,6 +4249,10 @@ class AcquisitionTab(QWidget):
     @Slot(object, int)
     def _sesion_fase(self, fase: SessionPhase, _index: int) -> None:
         """A phase begins: announce it, and tell the simulated subject."""
+        if self._sesion_en_esfuerzo:
+            self._mvc_overlay.mark_step(self._sesion_hechas)
+            self._sesion_hechas += 1
+        self._sesion_en_esfuerzo = bool(fase.opens)
         if fase.kind == EFFORT and fase.level:
             self._pedir_al_sujeto({0: float(fase.level)})
             self._sesion_pico = 0.0
@@ -4227,7 +4261,7 @@ class AcquisitionTab(QWidget):
             self._pedir_al_sujeto({})
         self._mvc_info(tr(fase.title).format(**dict(fase.fmt)))
         if fase.cue:
-            self._anunciar()
+            self._tono()
 
     @Slot(object, float, float)
     def _sesion_tick(self, fase: SessionPhase, restante: float, hecho: float) -> None:
@@ -4275,8 +4309,9 @@ class AcquisitionTab(QWidget):
         self._soltar_al_sujeto()
         titulo = tr(self._session_script.title) if self._session_script else ""
         if completa:
-            if self._chk_tono.isChecked():
-                cue.beep_end()
+            self._tono(final=True)
+            if self._sesion_en_esfuerzo:
+                self._mvc_overlay.mark_step(self._sesion_hechas)
             hecho = tr("{title}: done").format(title=titulo)
             detalle = tr("The recording stops on its own. In Analysis the "
                          "phases are marked in the file.")
@@ -4288,6 +4323,7 @@ class AcquisitionTab(QWidget):
             self._parar_al_terminar_sesion()
             return
         if not self._conservar_panel:
+            self._mvc_overlay.set_steps([])
             self._mvc_overlay.hide_overlay()
             self._bcast_calib(False)
         self._mvc_info("")
@@ -4299,6 +4335,7 @@ class AcquisitionTab(QWidget):
     def _sesion_cerrar_panel(self) -> None:
         """The finished session's panel goes once it has been seen."""
         if self._session_runner is None and not self._mvc_active and not self._fv_active:
+            self._mvc_overlay.set_steps([])
             self._mvc_overlay.hide_overlay()
 
     def _etiqueta_tramo(self, tramo: MeasuredSpan) -> str:
@@ -4312,6 +4349,7 @@ class AcquisitionTab(QWidget):
     # -- the task, guided: the free manoeuvres and the one that joins them --
 
     def _guia_maniobras(self, grupo: int) -> None:
+        self._tono()
         """Ask for one muscle's share of the free manoeuvres.
 
         The application names the **muscle**, never the manoeuvre: the guide
@@ -4506,6 +4544,7 @@ class AcquisitionTab(QWidget):
         self._btn_paso_hecho.setVisible(False)
         self._coact_rep = 0
         self._coact_fase = "ready"
+        self._tono()
         self._coact_elapsed = 0.0
         self._coact_timer.start()
         self._coact_tick()
@@ -4527,6 +4566,7 @@ class AcquisitionTab(QWidget):
                 if self._coact_rep == 0:
                     self._guia_mapa("coact")   # the hold is what fills it
                 self._coact_fase = "hold"
+                self._tono()
                 self._coact_elapsed = 0.0
                 # Both at once: this is the manoeuvre the co-activation
                 # index is computed from, and the one the old instruction
@@ -4555,10 +4595,12 @@ class AcquisitionTab(QWidget):
                     self._guia_fin()
                     return
                 self._coact_fase = "rest"
+                self._tono()
         elif self._coact_fase == "rest":
             self._mvc_overlay.show_relax(tr("Next one in a moment"))
             if self._coact_elapsed >= COACT_REST_S:
                 self._coact_fase = "ready"
+                self._tono()
                 self._coact_elapsed = 0.0
         if recolocar:
             # Each step of this phase is a different height, and the box is
@@ -4567,6 +4609,7 @@ class AcquisitionTab(QWidget):
 
     def _guia_fin(self) -> None:
         """The session has asked for everything it asks for."""
+        self._tono(final=True)
         self._coact_timer.stop()
         self._soltar_al_sujeto()
         self._coact_fase = ""
@@ -4962,6 +5005,7 @@ class AcquisitionTab(QWidget):
         self._update_fv_button()          # disabled while the wizard runs
         self._reposition_mvc_overlay()
         self._fv_phase = "mvc_ready" if con_maximo else "intro"
+        self._tono()
         self._fv_elapsed = 0.0
         if not con_maximo:
             self._log(tr(
@@ -5054,6 +5098,7 @@ class AcquisitionTab(QWidget):
             if self._fv_elapsed >= FV_INTRO_S:
                 self._fv_mapa()
                 self._fv_phase = "ready"
+                self._tono()
                 self._fv_elapsed = 0.0
         elif self._fv_phase == "mvc_ready":
             count = max(1, int(np.ceil(MVC_READY_S - self._fv_elapsed)))
@@ -5067,6 +5112,7 @@ class AcquisitionTab(QWidget):
             )
             if self._fv_elapsed >= MVC_READY_S:
                 self._fv_phase = "mvc_contract"
+                self._tono()
                 self._fv_elapsed = 0.0
                 self._fv_mvc_buf = []
                 self._fv_mvc_peak = 0.0
@@ -5087,6 +5133,7 @@ class AcquisitionTab(QWidget):
             if self._fv_elapsed >= mvc_hold_s:
                 self._fv_compute_mvc()
                 self._fv_phase = "mvc_rest"
+                self._tono()
                 self._fv_elapsed = 0.0
         elif self._fv_phase == "mvc_rest":
             self._mvc_overlay.show_relax(
@@ -5096,6 +5143,7 @@ class AcquisitionTab(QWidget):
             if self._fv_elapsed >= FV_MVC_TO_LOADS_REST_S:
                 self._fv_mapa()
                 self._fv_phase = "ready"
+                self._tono()
                 self._fv_elapsed = 0.0
         elif self._fv_phase == "ready":
             self._fv_fila_de_esta_carga()
@@ -5142,6 +5190,7 @@ class AcquisitionTab(QWidget):
             self._fv_info(tr("Relax…"))
             if self._fv_elapsed >= MVC_REST_S:
                 self._fv_phase = "ready"
+                self._tono()
                 self._fv_elapsed = 0.0
 
     def _fv_compute_mvc(self) -> None:
@@ -5164,6 +5213,7 @@ class AcquisitionTab(QWidget):
     def _fv_begin_contract(self, kg: float) -> None:
         """Enter a contraction window and mark it in the EDF with its load."""
         self._fv_phase = "contract"
+        self._tono()
         self._fv_elapsed = 0.0
         from emgteach.force_velocity import fv_load_marker
 
@@ -5184,6 +5234,7 @@ class AcquisitionTab(QWidget):
         self._fv_rep += 1
         if self._fv_rep < self._fv_reps:
             self._fv_phase = "rest"           # rest, then another rep, same load
+            self._tono()
             self._fv_elapsed = 0.0
             return
         self._fv_rep = 0
@@ -5196,6 +5247,7 @@ class AcquisitionTab(QWidget):
             # It stays up through the rest and becomes the next load's when
             # that load's countdown begins.
             self._fv_phase = "rest"           # rest, then the next load
+            self._tono()
             self._fv_elapsed = 0.0
         else:
             self._fv_finish_all()
@@ -5221,6 +5273,7 @@ class AcquisitionTab(QWidget):
         self._soltar_al_sujeto()
         self._fv_active = False
         self._fv_phase = "done"
+        self._tono(final=True)
         self._btn_cancelar_guia.setVisible(False)
         if self._worker and self._worker.isRunning():
             self._btn_grabar.setEnabled(True)
