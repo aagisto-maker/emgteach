@@ -393,6 +393,16 @@ Pendiente de la MDF: ____ Hz/s (R² = ____). Veredicto: ______________.
 - Un compañero sostuvo 15 s y su veredicto es «no concluyente». ¿Está fatigado o
   no? ¿Qué le falta al registro?
 
+**Después: contracciones rápidas repetidas** (sesión **«Contracciones rápidas
+repetidas»**). Tras la intermitente, 10 s apretando y soltando el puño lo más
+rápido posible. En la vista **«Tren»**: el ritmo conseguido, cuánto suben los picos
+del primer al último tercio, y el suelo entre contracciones en % del pico, junto al
+que dejaría la medida sola a ese ritmo.
+- ¿Subieron los picos? ¿Quedó el suelo por encima del de la medida sola? ¿Qué
+  parte de ese suelo es del procesado y qué parte de usted?
+- ¿Es esto la *treppe*? ¿Por qué no se puede afirmar que el músculo haga más
+  fuerza a partir del EMG?
+
 ### Ejercicio 1d · La carga de una tarea (método de Jonsson)
 
 **Objetivo.** Expresar una tarea en % CVM y describir su carga con tres niveles.

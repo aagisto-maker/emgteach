@@ -197,8 +197,12 @@ class _SyntheticSubject:
                 continue
             # One contraction of about a second per period, ramped like
             # the cycle's so the onset detector sees the same edge it
-            # would see on a real one.
-            fuera.append(level * _ramp(t % repeat_s, 0.0, _BURST_S, _RAMP_S))
+            # would see on a real one; asked faster than one every two
+            # seconds, half the period, with its edges in proportion, so
+            # a train of quick contractions is a train and not a hold.
+            burst = min(_BURST_S, 0.5 * repeat_s)
+            fuera.append(level * _ramp(t % repeat_s, 0.0, burst,
+                                       min(_RAMP_S, 0.25 * burst)))
         return (fuera[0], fuera[1])
 
     def sample(self, t: float, fs: float, channels: list[int]) -> list[int]:

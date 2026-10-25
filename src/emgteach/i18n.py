@@ -2463,6 +2463,56 @@ _ES = {
     '{name} {slope:+.2f} mV/contr.': '{name} {slope:+.2f} mV/contr.',
     'MDF {slope:+.1f} Hz/contr.': 'MDF {slope:+.1f} Hz/contr.',
     # Guided sessions of the one-muscle practical (24 Oct 2026).
+    'floor {a:.0f} → {b:.0f} % of the peak':
+        'suelo {a:.0f} → {b:.0f} % del pico',
+    'the measure alone leaves {pct:.0f} %':
+        'la medida sola deja un {pct:.0f} %',
+    'Quick contractions':
+        'Contracciones rápidas',
+    'Train':
+        'Tren',
+    'Peaks':
+        'Picos',
+    'Floor':
+        'Suelo',
+    'Time in the train (s)':
+        'Tiempo en el tren (s)',
+    'RMS 50 ms (mV)':
+        'RMS 50 ms (mV)',
+    '{n} contractions, {rate:.1f}/s':
+        '{n} contracciones, {rate:.1f}/s',
+    'peaks {pct:+.0f} %':
+        'picos {pct:+.0f} %',
+    'floor {pct:.0f} % of the peak (the measure alone: {proc:.0f} %)':
+        'suelo {pct:.0f} % del pico (la medida sola: {proc:.0f} %)',
+    'Guided session: quick repeated contractions':
+        'Sesión guiada: contracciones rápidas repetidas',
+    'Rate (per second)':
+        'Ritmo (por segundo)',
+    'Peaks, last third against the first':
+        'Picos, último tercio frente al primero',
+    'Floor, first third (% of the peak)':
+        'Suelo, primer tercio (% del pico)',
+    'Floor, last third (% of the peak)':
+        'Suelo, último tercio (% del pico)',
+    'Floor the measure alone leaves at this rate (% of the peak)':
+        'Suelo que deja la medida sola a este ritmo (% del pico)',
+    'Rest before the train (mV)':
+        'Reposo antes del tren (mV)',
+    "Measured on a 50 ms moving RMS, not on the envelope: at four or five contractions a second the envelope's 5 Hz filter alone keeps the floor at a fifth to a third of the peak. «The measure alone» is the floor the same measure leaves with a perfect relaxation at the rate achieved; what is above it is the subject's, mostly a relaxation not completed. This is not the treppe, a mechanical phenomenon of electrical stimulation; and the peaks are EMG, not force.":
+        'Medido sobre un RMS móvil de 50 ms, no sobre la envolvente: a cuatro o cinco contracciones por segundo, el filtro de 5 Hz de la envolvente mantiene él solo el suelo entre un quinto y un tercio del pico. «La medida sola» es el suelo que deja la misma medida con una relajación perfecta al ritmo conseguido; lo que quede por encima es del sujeto, sobre todo una relajación que no llega a completarse. No es la treppe, un fenómeno mecánico de la estimulación eléctrica; y los picos son EMG, no fuerza.',
+    'Quick repeated contractions':
+        'Contracciones rápidas repetidas',
+    'Clench and release at 0':
+        'Apriete y suelte al llegar a 0',
+    'As fast as you can, for {secs:g} seconds.':
+        'Lo más rápido que pueda, durante {secs:g} segundos.',
+    'Clench and release, as fast as you can':
+        'Apriete y suelte, lo más rápido que pueda',
+    'Clench your fist hard and let it go completely, again and again, as fast as you can.':
+        'Apriete fuerte el puño y suéltelo del todo, una y otra vez, lo más rápido que pueda.',
+    'Clench and release the fist as fast as you can for {secs:g} s: do the peaks rise, and does the trace go back to rest between contractions?':
+        'Apretar y soltar el puño lo más rápido posible durante {secs:g} s: ¿suben los picos, y vuelve la señal al reposo entre contracciones?',
     'Two or three easy contractions.':
         'Dos o tres contracciones suaves.',
     'Clench your fist: a brief, explosive jerk.':

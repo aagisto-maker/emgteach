@@ -57,6 +57,7 @@ __all__ = [
     "intermittent_script",
     "is_session_marker",
     "parse_session_markers",
+    "rapid_script",
     "span_end_marker",
     "span_start_marker",
 ]
@@ -72,7 +73,7 @@ _KINDS = (READY, EFFORT, REST)
 
 #: The families of session marks. One per guided session; a new session adds
 #: its family here so the analysis and the review recognise its marks.
-FAMILIES: tuple[str, ...] = ("GRAD", "HOLD")
+FAMILIES: tuple[str, ...] = ("GRAD", "HOLD", "FAST")
 
 _FAMILY = "|".join(FAMILIES)
 #: ``GRAD start …`` / ``GRAD end …`` — the session itself.
@@ -154,6 +155,9 @@ class SessionPhase:
     closes: str = ""
     cue: bool = True
     fmt: tuple[tuple[str, object], ...] = ()
+    #: For the simulated subject: an effort made of contractions this many
+    #: seconds apart, rather than held.
+    repeat_s: float | None = None
     #: Start of this phase within the session, filled in by
     #: :meth:`SessionScript.timed`.
     start: float = 0.0
@@ -379,6 +383,50 @@ def intermittent_script(reps: int = INTERMITTENT_REPS, on_s: float = INTERMITTEN
         summary="{n} maximal contractions of {on:g} s with {off:g} s between them; "
                 "the RMS of each one falls as the muscle tires.",
         fmt=(("n", n), ("on", on_s), ("off", off_s)), gesture=_FIST,
+    )
+
+
+#: The quick contractions: ten seconds of clenching and releasing the fist as
+#: fast as the student can (Ángel, 25 Oct 2026, after his pilot: at one every
+#: 3, 2 or 1.5 s nothing changed; only a train as fast as possible raised the
+#: peaks a little and left the floor above rest).
+RAPID_DEFAULT_S = 10.0
+#: The simulated subject's pace, four a second.
+_RAPID_SIM_REPEAT_S = 0.25
+
+
+def rapid_script(seconds: float = RAPID_DEFAULT_S) -> SessionScript:
+    """Quick contractions, repeated as fast as possible: the peaks and the floor.
+
+    Not the *treppe*, which is mechanical and seen with electrical
+    stimulation; in voluntary EMG what may be seen is that the peaks rise a
+    little and that the envelope does not return to rest between
+    contractions, because the relaxation is not completed — and, at four or
+    five a second, because of the processing, which the analysis measures
+    apart (:func:`emgteach.guided.rapid_train`).
+    """
+    secs = float(seconds)
+    fases = (
+        SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
+                     "Forearm on the table, fist closed without squeezing."),
+        SessionPhase("ready", READY, _HOLD_COUNT_S, "Clench and release at 0",
+                     "As fast as you can, for {secs:g} seconds.", fmt=(("secs", secs),)),
+        SessionPhase("train", EFFORT, secs, "Clench and release, as fast as you can",
+                     "Clench your fist hard and let it go completely, again and "
+                     "again, as fast as you can.", level=1.0,
+                     repeat_s=_RAPID_SIM_REPEAT_S,
+                     opens=span_start_marker("FAST", "train", secs=secs),
+                     closes=span_end_marker("FAST", "train")),
+        SessionPhase("rest_end", REST, _HOLD_AFTER_S, "Rest",
+                     "Let go and let the hand drop. The recording stops on its own."),
+    )
+    return SessionScript(
+        key="rapidas", family="FAST", title="Quick repeated contractions", slug="rapidas",
+        header=header_marker("FAST", secs=secs), phases=fases,
+        summary="Clench and release the fist as fast as you can for {secs:g} s: "
+                "do the peaks rise, and does the trace go back to rest between "
+                "contractions?",
+        fmt=(("secs", secs),), gesture=_FIST,
     )
 
 

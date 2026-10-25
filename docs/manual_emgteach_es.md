@@ -453,6 +453,14 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   1 s de reposo**, con tono al empezar y al acabar cada una y la cuenta atrás en
   pantalla. Se mide el **RMS de cada contracción** tras su primer segundo (no el
   pico, que es el arranque y no baja) y su MDF: vista «Por contracción».
+- **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
+  atrás, **10 s apretando y soltando el puño lo más rápido posible**. Se cuentan
+  las contracciones y su ritmo, y se siguen **los picos y el suelo entre ellas**
+  sobre un RMS móvil de 50 ms, no sobre la envolvente (a cuatro o cinco por
+  segundo, su filtro de 5 Hz mantiene él solo el suelo entre un quinto y un tercio
+  del pico). La línea de resumen y el informe dan, además, **el suelo que deja la
+  medida sola** a ese ritmo con una relajación perfecta: lo que quede por encima es
+  del sujeto. Vista «Tren». Véase la nota al margen del §7.1.
 - La casilla **«Tono»**, en todas las prácticas, anuncia con un tono breve cada
   cambio de fase de todos los asistentes: la calibración, la cuenta atrás, la
   tarea guiada del par, las cargas de fuerza-velocidad y las sesiones guiadas; y
@@ -1084,8 +1092,12 @@ Los ejercicios 1a a 1d del guion de prácticas siguen este flujo.
 > segundo (un 1.4 % del pico a una cada 0.5 s). En las pruebas del 24 de octubre de
 > 2026, a 3, 2 y 1.5 s el pico no cambió (unos 0.20 mV) y la envolvente volvió a
 > cero; solo un tren lo más rápido posible subió algo los picos y dejó el suelo
-> algo por encima de cero, y sin controlar la fuerza no es concluyente. Por eso no
-> hay una sesión guiada para esto.
+> algo por encima de cero. Ese tren es la sesión **«Contracciones rápidas
+> repetidas»** (§4.3). A esos ritmos el filtro sí cuenta: a cuatro o cinco
+> contracciones por segundo, la envolvente de 5 Hz deja ella sola el suelo entre un
+> quinto y un tercio del pico. Por eso la sesión mide sobre un RMS de 50 ms y da
+> aparte el suelo que deja la propia medida. Los picos son EMG, no fuerza: sin
+> controlar la fuerza, que suban algo no dice que el músculo haga más.
 
 ### 7.2 Contracción agonista / antagonista
 

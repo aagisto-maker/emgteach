@@ -33,14 +33,18 @@ from emgteach.sessions import GuidedSession, MeasuredSpan
 __all__ = [
     "EDGE_S",
     "SETTLE_S",
+    "TRAIN_RMS_MS",
     "HoldResult",
     "RepResult",
     "StepResult",
+    "TrainResult",
     "change_pct",
     "gradation_steps",
     "hold_result",
     "intermittent_reps",
     "is_monotonic",
+    "processing_floor_pct",
+    "rapid_train",
     "reps_trend_pct",
     "spans_in_analysis_time",
     "time_to_decline",
@@ -297,3 +301,155 @@ def reps_trend_pct(reps: Sequence[RepResult]) -> float | None:
     x = np.arange(len(reps), dtype=np.float64)
     y = 100.0 * np.array([r.rms_mv for r in reps]) / reps[0].rms_mv
     return float(np.polyfit(x, y, 1)[0])
+
+
+# ---------------------------------------------------------------------------
+# The quick contractions: the peaks and the floor between them
+# ---------------------------------------------------------------------------
+
+#: The moving RMS the train is measured on, ms. Not the analysis' envelope:
+#: at four or five contractions a second its 5 Hz filter alone keeps the
+#: floor at a fifth to a third of the peak (worked out with ideal pulses);
+#: a 50 ms RMS keeps it near a tenth, and the rest of what is seen is the
+#: subject's. What the processing contributes at the rate achieved is
+#: measured and given apart (:func:`processing_floor_pct`).
+TRAIN_RMS_MS = 50.0
+
+
+def _moving_rms(x, fs: float, window_ms: float):
+    x = np.asarray(x, dtype=np.float64)
+    w = max(1, round(window_ms / 1000.0 * fs))
+    return np.sqrt(np.convolve(x ** 2, np.ones(w) / w, mode="same"))
+
+
+def _peaks_and_floors(s, fs: float):
+    """Each contraction's peak, and the floor between it and the next.
+
+    A contraction is a peak of *s* standing out by a third of the train's
+    range, at least 0.12 s from the next (more than eight a second is not a
+    voluntary rhythm). The floor is the lowest fifth of the trace between
+    two peaks: not its minimum, which on a noisy trace is a sample, not a
+    level.
+    """
+    from scipy.signal import find_peaks
+
+    s = np.asarray(s, dtype=np.float64)
+    if s.size < 3:
+        return np.array([], int), np.array([]), np.array([])
+    rango = float(np.percentile(s, 95) - np.percentile(s, 5))
+    picos, _ = find_peaks(s, distance=max(1, round(0.12 * fs)),
+                          prominence=max(1e-12, rango / 3.0))
+    suelos = np.array([float(np.percentile(s[a:b], 20))
+                       for a, b in itertools.pairwise(picos) if b > a + 1])
+    return picos, s[picos], suelos
+
+
+def processing_floor_pct(rate_hz: float, fs: float = 1000.0,
+                         window_ms: float = TRAIN_RMS_MS, seed: int = 0) -> float:
+    """The floor, in % of the peak, that the measure itself leaves between
+    contractions at *rate_hz*, with a perfect relaxation: noise switched on
+    for half of each period and off for the other half, measured as a train
+    is. What a recording shows above this is the subject's.
+    """
+    if rate_hz <= 0:
+        return 0.0
+    rng = np.random.default_rng(seed)
+    periodo = 1.0 / float(rate_hz)
+    n = round(12 * periodo * fs)
+    t = np.arange(n) / fs
+    activa = (t % periodo) < 0.5 * periodo
+    x = rng.normal(0.0, 1.0, n) * np.where(activa, 1.0, 0.0)
+    # Through the same filters the recording goes through: their ringing at
+    # each switch is part of what the measure leaves in the gaps.
+    from emgteach.dsp import process_offline
+
+    s = _moving_rms(process_offline(x, fs)["emg_filtered"], fs, window_ms)
+    i0 = round(2 * periodo * fs)
+    _p, alturas, suelos = _peaks_and_floors(s[i0:], fs)
+    if not alturas.size or not suelos.size:
+        return 0.0
+    return 100.0 * float(np.mean(suelos)) / float(np.mean(alturas))
+
+
+@dataclass(frozen=True)
+class TrainResult:
+    """The quick contractions: how fast, and what the peaks and the floor did."""
+
+    seconds: float
+    n: int
+    rate_hz: float
+    #: The trace measured (moving RMS), from the start of the train, and the
+    #: time and height of each peak.
+    t: tuple[float, ...]
+    rms: tuple[float, ...]
+    peak_times: tuple[float, ...]
+    peaks_mv: tuple[float, ...]
+    #: The floor between consecutive peaks, mV.
+    floors_mv: tuple[float, ...]
+    #: The trace at rest before the train, mV.
+    rest_mv: float | None
+    #: The last third of the peaks against the first third, %.
+    peak_change_pct: float | None
+    #: The floor as % of the peaks, in the first and the last third.
+    floor_start_pct: float | None
+    floor_end_pct: float | None
+    #: What the measure alone leaves at this rate, % of the peak.
+    processing_floor_pct: float
+
+
+def _tercios(v):
+    v = np.asarray(v, dtype=np.float64)
+    k = max(1, v.size // 3)
+    return float(np.mean(v[:k])), float(np.mean(v[-k:]))
+
+
+def rapid_train(
+    session: GuidedSession | None,
+    kept: Sequence[tuple[float, float, float]],
+    *,
+    fs: float,
+    emg_filtered,
+    window_ms: float = TRAIN_RMS_MS,
+    rest_s: float = 2.0,
+) -> TrainResult | None:
+    """The train of quick contractions, measured; ``None`` without one."""
+    if session is None or session.family != "FAST" or fs <= 0:
+        return None
+    tramos = spans_in_analysis_time(session.spans_named("train"), kept)
+    if not tramos:
+        return None
+    _tramo, a, b = tramos[-1]
+    filt = np.asarray(emg_filtered, dtype=np.float64)
+    s_todo = _moving_rms(filt, fs, window_ms)
+    i0 = max(0, min(round(a * fs), s_todo.size))
+    i1 = max(i0, min(round(b * fs), s_todo.size))
+    if i1 - i0 < round(0.5 * fs):
+        return None
+    s = s_todo[i0:i1]
+    r0 = max(0, i0 - round(rest_s * fs))
+    reposo = float(np.median(s_todo[r0:i0])) if i0 - r0 > 10 else None
+    picos, alturas, suelos = _peaks_and_floors(s, fs)
+    dur = (i1 - i0) / fs
+    n = int(alturas.size)
+    ritmo = (n - 1) / ((picos[-1] - picos[0]) / fs) if n >= 2 and picos[-1] > picos[0] else 0.0
+    cambio = suelo_ini = suelo_fin = None
+    if n >= 3:
+        ini, fin = _tercios(alturas)
+        cambio = change_pct(ini, fin)
+    if suelos.size >= 3 and n >= 3:
+        s_ini, s_fin = _tercios(suelos)
+        p_ini, p_fin = _tercios(alturas)
+        suelo_ini = 100.0 * s_ini / p_ini if p_ini else None
+        suelo_fin = 100.0 * s_fin / p_fin if p_fin else None
+    paso = max(1, round(0.005 * fs))           # the trace at 200 Hz is plenty to draw
+    return TrainResult(
+        seconds=dur, n=n, rate_hz=float(ritmo),
+        t=tuple(float(x) for x in np.arange(0, s.size, paso) / fs),
+        rms=tuple(float(x) for x in s[::paso]),
+        peak_times=tuple(float(x) for x in picos / fs),
+        peaks_mv=tuple(float(x) for x in alturas),
+        floors_mv=tuple(float(x) for x in suelos),
+        rest_mv=reposo, peak_change_pct=cambio,
+        floor_start_pct=suelo_ini, floor_end_pct=suelo_fin,
+        processing_floor_pct=processing_floor_pct(ritmo, fs, window_ms) if ritmo else 0.0,
+    )

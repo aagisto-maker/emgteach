@@ -146,6 +146,7 @@ from emgteach.sessions import (
     hold_script,
     intermittent_script,
     parse_session_markers,
+    rapid_script,
 )
 from emgteach.station import ADDRESS_FILE, read_station_address
 from emgteach.workers import AcquisitionWorker
@@ -613,6 +614,7 @@ GUIDED_SESSIONS: dict[str, Callable[[], SessionScript]] = {
     "gradacion": gradation_script,
     "fatiga": hold_script,
     "fatiga_intermitente": intermittent_script,
+    "rapidas": rapid_script,
 }
 
 #: Where the «Tone» box is remembered between sessions. On by default, as in
@@ -4254,7 +4256,7 @@ class AcquisitionTab(QWidget):
             self._sesion_hechas += 1
         self._sesion_en_esfuerzo = bool(fase.opens)
         if fase.kind == EFFORT and fase.level:
-            self._pedir_al_sujeto({0: float(fase.level)})
+            self._pedir_al_sujeto({0: float(fase.level)}, repeat_s=fase.repeat_s)
             self._sesion_pico = 0.0
         else:
             # Rest is an instruction too: «do nothing», not the board's cycle.

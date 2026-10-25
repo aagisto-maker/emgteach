@@ -369,6 +369,14 @@ session.
   screen. What is measured is the **RMS of each contraction** after its first
   second (not the peak, which is the start and does not fall) and its MDF: view
   «Per contraction».
+- **Quick repeated contractions** (28 s): after 5 s of rest and the countdown,
+  **10 s of clenching and releasing the fist as fast as possible**. The
+  contractions and their rate are counted, and **the peaks and the floor between
+  them** are followed on a 50 ms moving RMS, not on the envelope (at four or five a
+  second its 5 Hz filter alone keeps the floor at a fifth to a third of the peak).
+  The summary line and the report also give **the floor the measure alone leaves**
+  at that rate with a perfect relaxation: what is above it is the subject's. View
+  «Train». See the note in §7.1.
 - The **«Tone»** box, in every practical, announces with a short tone every phase
   change of every guided flow: the calibration, the countdown, the pair's guided
   task, the force-velocity loads and the guided sessions; and the end with two
@@ -843,8 +851,12 @@ Each begins by **choosing the practical** in the top-right selector.
 > contractions a second (1.4 % of the peak at one every 0.5 s). In the trials of
 > 24 October 2026, at 3, 2 and 1.5 s the peak did not change (about 0.20 mV) and
 > the envelope returned to zero; only a train as fast as possible raised the peaks
-> a little and left the floor a little above zero, and without controlling the
-> force that is not conclusive. That is why there is no guided session for it.
+> a little and left the floor a little above zero. That train is the session
+> **«Quick repeated contractions»** (§4.3). At those rates the filter does count:
+> at four or five contractions a second the 5 Hz envelope alone leaves the floor at
+> a fifth to a third of the peak. So the session measures on a 50 ms RMS and gives
+> apart the floor the measure itself leaves. The peaks are EMG, not force: without
+> controlling the force, a small rise does not say the muscle does more.
 
 ### 7.2 Agonist / antagonist contraction (intermediate)
 

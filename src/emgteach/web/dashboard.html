@@ -117,6 +117,10 @@ const M = {
   mHoldT10:          ["MDF −10 % at",                      "MDF −10 % a los"],
   mNever:            ["not reached",                       "no se alcanza"],
   mReps:             ["RMS per contraction",               "RMS de cada contracción"],
+  mTrain:            ["Quick contractions",                "Contracciones rápidas"],
+  mTrainPeaks:       ["Peaks, first → last third",         "Picos, primer → último tercio"],
+  mTrainFloor:       ["Floor between them",                "Suelo entre ellas"],
+  mOfPeak:           ["of the peak; the measure alone",    "del pico; la medida sola"],
   dlReport:          ["⬇️ Download report (PDF)",          "⬇️ Descargar informe (PDF)"],
 };
 function t(k) { return (M[k] || ["", ""])[ES ? 1 : 0]; }
@@ -314,6 +318,12 @@ function showResults(m) {
     const signo = (x) => x == null ? "—" : (x > 0 ? "+" : "") + x + " %";
     items.push([t("mHoldMdf"), signo(m.hold.mdf)], [t("mHoldRms"), signo(m.hold.rms)],
                [t("mHoldT10"), m.hold.t10 == null ? t("mNever") : m.hold.t10 + " s"]);
+  }
+  if (m.train) {
+    const tr_ = m.train;
+    items.push([t("mTrain"), `${tr_.n} · ${tr_.rate}/s`]);
+    if (tr_.peaks != null) items.push([t("mTrainPeaks"), (tr_.peaks > 0 ? "+" : "") + tr_.peaks + " %"]);
+    if (tr_.floor != null) items.push([t("mTrainFloor"), `${tr_.floor} % <small>(${t("mOfPeak")} ${tr_.proc} %)</small>`]);
   }
   if ((m.reps || []).length) {
     const r = m.reps, c = r[0] ? Math.round(100 * (r[r.length - 1] - r[0]) / r[0]) : 0;

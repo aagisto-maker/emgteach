@@ -406,6 +406,16 @@ MDF slope: ____ Hz/s (R² = ____). Verdict: ______________.
 - A classmate held for 15 s and got «not conclusive». Fatigued or not? What is
   the recording missing?
 
+**Then: quick repeated contractions** (session **«Quick repeated contractions»**).
+After the intermittent ones, 10 s of clenching and releasing the fist as fast as
+possible. In the **«Train»** view: the rate achieved, how much the peaks rise from
+the first to the last third, and the floor between contractions in % of the peak,
+beside the one the measure alone would leave at that rate.
+- Did the peaks rise? Did the floor stay above the measure's own? Which part of
+  that floor is the processing's and which is yours?
+- Is this the *treppe*? Why can it not be said from the EMG that the muscle makes
+  more force?
+
 ### Exercise 1d · The load of a task (Jonsson's method)
 
 **Objective.** Express a task in % MVC and describe its load with three levels.
