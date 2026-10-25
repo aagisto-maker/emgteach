@@ -3996,7 +3996,7 @@ class AcquisitionTab(QWidget):
         # A guided session names its gesture, and the calibration that opens
         # it says the same words: the reference is measured with the movement
         # the experiment asks for next.
-        script = self._session_script
+        script = getattr(self, "_session_script", None)
         if self._mode == MODE_SINGLE and script is not None and script.gesture:
             return tr(script.gesture)
         if self._mode != MODE_PAIR or c not in (0, 1):
