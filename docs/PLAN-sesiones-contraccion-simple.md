@@ -1094,9 +1094,45 @@ del 60 %, la vista lo avisa en lugar de desaparecer.
 Menor: los botones del editor que se pulsan pasan a negrita, y «Descartar»
 perdía la primera letra; ahora miden lo que pide el texto en negrita.
 
-**Para la 3.10.1** (Ángel, no ahora):
-- gradación con pico de arranque: texto «Suba despacio hasta la marca (1-2 s) y
-  manténgala», objetivo en rampa en la barra y nivel medido desde +1.5 s;
-- fatiga: la línea dice «MDF −10 % a los 74 s» con el veredicto «bajó menos de
-  un 10 %»: marcar el −10 % solo si lo alcanza la recta o se mantiene;
-- guion 1c: un peso que no se pueda sostener más de 60-90 s.
+Lo que Ángel deja para la 3.10.1 está en el §15.
+
+## 15. Próxima versión: 3.10.1
+
+Publicada la 3.10.0 el 26 de octubre (etiqueta en `464e64a`, DOI
+10.5281/zenodo.23675472). Ángel deja para la 3.10.1 cuatro puntos. **Se
+propone antes de implementar**: lo que sigue a cada uno es la propuesta,
+pendiente de su decisión.
+
+1. **Gradación: subir despacio hasta la marca.** En el banco, cada escalón
+   arrancaba con un pico breve por encima de lo pedido (en el `_17-25-09`, la
+   meseta 24/28/48/50/72 % frente a picos mucho más altos al empezar).
+   - *Texto* de cada escalón: «Suba despacio hasta la marca (1-2 s) y
+     manténgala.» / «Rise slowly to the mark (1-2 s) and hold it there.»
+   - *Objetivo en rampa*: en la barra en vivo, la franja del escalón sube de 0
+     a la pedida en 1.5 s desde el aviso, y desde ahí se queda fija.
+   - *Nivel medido desde +1.5 s* tras el inicio de la contracción
+     (`guided.SETTLE_S` de 1.0 a 1.5 s, solo en la gradación); el final sigue
+     igual (`RELEASE_S`).
+   - Manuales, guiones (ejercicio 1b) y la imagen de la calibración, si la
+     cita.
+2. **Fatiga: el −10 % coherente con el veredicto.** Hoy la línea puede decir
+   «MDF −10 % a los 74 s» (mediana móvil de 5 s) con el veredicto «bajó menos de
+   un 10 %» (la recta). Propuesta: el −10 % se lee **en la recta**, el instante
+   en que la recta cae al 90 % de su inicio, si ocurre dentro de lo sostenido;
+   si no, «la MDF no llegó a caer un 10 %». Así la marca de la vista, la línea
+   y el veredicto salen de la misma medida. (La otra opción, que la mediana
+   móvil se mantenga por debajo hasta el final, deja dos medidas distintas.)
+3. **Tren: la fila propuesta hasta el final de la última contracción.** La
+   franja más el margen de 1.5 s dice dónde puede **empezar** una contracción
+   del tren; la fila (`guided.train_span`) y la medida (`guided.rapid_train`)
+   acabarían donde termina la última que empieza dentro, aunque termine
+   después del margen (como mucho hasta el final de la sesión). Hoy las dos
+   cortan en el margen y la última contracción sale partida.
+4. **Guion 1c: el peso.** «Un peso que no pueda sostener más de 60-90 s» en
+   lugar de «que pueda sostener entre uno y dos minutos», en los dos guiones y
+   en los manuales, para que la fatiga llegue dentro de la sesión.
+
+Aparte, de la CI de la etiqueta: la prueba de «Reintentar»
+(`tests/test_la_placa_que_no_responde.py`) pidió 0.5 s y midió 0.64 s una vez
+en Windows con Python 3.12; pasó al relanzarla. Propuesta: el mismo margen que
+se dio a las pruebas con la placa simulada.
