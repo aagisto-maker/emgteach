@@ -187,6 +187,46 @@ def test_a_train_in_the_fragment_round_it_is_counted_whole() -> None:
     assert tren.rate_hz == pytest.approx(3.0, abs=0.15)
 
 
+def test_the_train_s_window_is_from_its_first_contraction_to_its_last() -> None:
+    """What the fragment editor proposes for a train, as one row (the bench
+    with exe #139, B2): its detector made one row per contraction."""
+    from emgteach.guided import train_span
+
+    sesion, senal, _m = _tren_sintetico(tarde=(0.4, 0.5), rate=3.0)
+    env = process_offline(senal, FS)["emg_envelope"]
+    tramo = sesion.spans_named("train")[0]
+    ventana = train_span(sesion, env, FS)
+    assert ventana is not None
+    assert ventana[0] == pytest.approx(tramo.start_s + 0.4, abs=0.3)
+    assert ventana[1] == pytest.approx(tramo.end_s + 0.5, abs=0.3)
+    assert train_span(None, env, FS) is None
+
+
+def test_fragments_chosen_one_per_contraction_keep_the_train() -> None:
+    """The bench with exe #139, B2: «Select fragments» proposed one fragment
+    per contraction, no one of them 60 % of the train, and the «Train» view
+    vanished. The train is read from the first fragment to the last inside
+    it, on the recording — glued, they would keep no rest between them."""
+    from emgteach.guided import fragments_hull
+
+    sesion, senal, _m = _tren_sintetico(tarde=(0.4, 0.5), rate=3.0)
+    tramo = sesion.spans_named("train")[0]
+    t0 = tramo.start_s + 0.4
+    una_por_contraccion = [(t0 + k / 3.0 - 0.05, t0 + k / 3.0 + 0.25) for k in range(30)]
+    casco = fragments_hull(sesion, una_por_contraccion, "train")
+    assert casco is not None
+    assert casco[0] == pytest.approx(t0 - 0.05, abs=0.01)
+    filt = process_offline(senal, FS)["emg_filtered"]
+    tren = rapid_train(sesion, [(casco[0], casco[1], casco[0])], fs=FS, emg_filtered=filt)
+    assert tren is not None
+    assert tren.n == pytest.approx(30, abs=1)
+    assert tren.rate_hz == pytest.approx(3.0, abs=0.15)
+    # The rest before the train is the recording's, not a fragment's edge.
+    assert tren.rest_mv is not None and tren.rest_mv < 0.02
+    # Half the train is not the train.
+    assert fragments_hull(sesion, una_por_contraccion[:12], "train") is None
+
+
 def test_a_full_relaxation_leaves_only_the_measures_floor() -> None:
     sesion, senal, _m = _tren_sintetico(suelo=0.0, crecen=0.0)
     filt = process_offline(senal, FS)["emg_filtered"]
@@ -294,6 +334,77 @@ def test_with_the_fragment_round_the_train_the_view_stays(qapp, tmp_path: Path) 
     assert salida
     tren = salida[0]["train"]
     assert tren is not None and tren.n == pytest.approx(31, abs=1)
+
+
+@pytest.mark.gui
+def test_fragments_one_per_contraction_in_the_worker(qapp, tmp_path: Path) -> None:
+    """B2 with exe #139 in the worker: the fragments the detector proposes,
+    one per contraction, and the train is measured; half of them, and the
+    view says why there is none; and the window the editor proposes."""
+    from matplotlib.figure import Figure
+
+    from emgteach.charts import draw_train_chart
+    from emgteach.io import list_edf_emg_channels
+    from emgteach.workers import AnalysisWorker
+    from tests.test_fatiga_guiada import _edf
+
+    sesion, senal, marcas = _tren_sintetico(t0=REC_S, tarde=(0.4, 0.5), rate=3.0)
+    edf = _edf(tmp_path / "rapidas.edf", marcas, senal)
+    tramo = sesion.spans_named("train")[0]
+    t0 = tramo.start_s + 0.4
+    trocitos = [(t0 + k / 3.0 - 0.05, t0 + k / 3.0 + 0.25) for k in range(30)]
+
+    def analizar(fragmentos):
+        worker = AnalysisWorker(edf_path=edf, channel_name=list_edf_emg_channels(edf)[0],
+                                roi_segments=fragmentos)
+        salida: list[dict] = []
+        worker.result_ready.connect(salida.append)
+        worker.start()
+        worker.wait(120000)
+        qapp.processEvents()
+        assert salida
+        return salida[0]
+
+    r = analizar(trocitos)
+    assert r["train"] is not None and r["train"].n == pytest.approx(30, abs=1)
+    assert r["train_piece"] is not None and r["train_note"] is None
+    assert r["train_span"][0] == pytest.approx(t0, abs=0.3)
+
+    r = analizar(trocitos[:12])
+    assert r["train"] is None and r["train_note"]
+    fig = Figure()
+    draw_train_chart(fig, None, note=r["train_note"])
+    assert fig.axes[0].texts[0].get_text() == r["train_note"]
+
+
+@pytest.mark.gui
+def test_the_editor_proposes_the_train_as_one_row(qapp) -> None:
+    from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+
+    _s, senal, _m = _tren_sintetico(tarde=(0.4, 0.5), rate=3.0)
+    filtros = {"f_low": 20.0, "f_high": 450.0, "f_notch": 50.0, "f_env": 5.0}
+    dlg = FragmentSelectionDialog(senal, FS, filtros, naming=False,
+                                  session_window=(13.1, 24.3))
+    assert dlg.selected_segments() == [pytest.approx((13.1, 24.3))]
+    dlg.deleteLater()
+
+
+@pytest.mark.gui
+def test_a_pressed_button_has_room_for_its_bold_text(qapp) -> None:
+    """The bench with exe #139: «Descartar» lost its first letter when
+    pressed, the text turning bold in a button sized for the regular."""
+    from PySide6.QtGui import QFontMetrics
+
+    from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+
+    _s, senal, _m = _tren_sintetico()
+    filtros = {"f_low": 20.0, "f_high": 450.0, "f_notch": 50.0, "f_env": 5.0}
+    dlg = FragmentSelectionDialog(senal, FS, filtros, naming=False)
+    for boton in (dlg._btn_eliminar, dlg._btn_mantener):
+        negrita = boton.font()
+        negrita.setBold(True)
+        assert boton.minimumWidth() >= QFontMetrics(negrita).horizontalAdvance(boton.text()) + 24
+    dlg.deleteLater()
 
 
 @pytest.mark.gui

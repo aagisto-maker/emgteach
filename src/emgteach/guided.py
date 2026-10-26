@@ -56,6 +56,7 @@ __all__ = [
     "change_pct",
     "effort_ratio",
     "fatigue_unmeasured",
+    "fragments_hull",
     "gradation_reference_text",
     "gradation_steps",
     "is_monotonic",
@@ -70,6 +71,7 @@ __all__ = [
     "rest_level",
     "spans_in_analysis_time",
     "time_to_decline",
+    "train_span",
     "weak_signal_warning",
 ]
 
@@ -557,6 +559,48 @@ def weak_signal_warning(ratio: float | None) -> str | None:
         return None
     return tr("Weak signal: the effort barely exceeds the rest (×{x:.1f}). Check the "  # noqa: RUF001
               "electrodes' contact or use a heavier weight.").format(x=ratio)
+
+
+def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float, float] | None:
+    """The train of quick contractions in file time: from its first
+    contraction to its last, inside its marks run on by :data:`MARGIN_S`.
+
+    What the fragment editor proposes for it, as one row. Its detector made
+    one row per contraction, and the train glued out of them had lost the
+    rests between them — its floor and its rate (the bench with exe #139).
+    The activity is found above the rest of the 3 s before the cue.
+    """
+    if session is None or session.family != "FAST" or fs <= 0:
+        return None
+    ventanas = measured_windows(session, [(0.0, float("inf"), 0.0)], ("train",))
+    if not ventanas:
+        return None
+    tramo, a, b = ventanas[-1]
+    env = np.asarray(envelope, dtype=np.float64)
+    r0, r1 = max(0, round((tramo.start_s - 3.0) * fs)), max(0, round(tramo.start_s * fs))
+    reposo = float(np.median(env[r0:r1])) if r1 - r0 > 10 else resting_level(env)
+    on, off = _contraccion(env - reposo, fs, a, b)
+    return (on, off) if off > on else None
+
+
+def fragments_hull(session: GuidedSession | None, pieces: Sequence[tuple[float, float]],
+                   name: str) -> tuple[float, float] | None:
+    """From the first to the last chosen fragment inside a stretch's window,
+    in file time, if that covers :data:`_MIN_KEPT` of its marked length.
+
+    A train is measured over that stretch of the recording, not over the
+    fragments glued: chosen one per contraction they keep no rest between
+    them, and the floor and the rate are what is measured there.
+    """
+    if session is None:
+        return None
+    for tramo, a, b in measured_windows(session, [(0.0, float("inf"), 0.0)], (name,)):
+        dentro = [(max(a, x), min(b, y)) for x, y in pieces if min(b, y) > max(a, x)]
+        if not dentro:
+            return None
+        ini, fin = min(x for x, _ in dentro), max(y for _, y in dentro)
+        return (ini, fin) if fin - ini >= _MIN_KEPT * tramo.duration_s - 1e-9 else None
+    return None
 
 
 def rest_level(session: GuidedSession | None, envelope, fs: float) -> float | None:

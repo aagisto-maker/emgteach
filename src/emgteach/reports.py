@@ -675,9 +675,14 @@ def _seccion_rapidas(story: list, result: Mapping[str, Any], h2, normal) -> None
     """The quick contractions: the trace with its peaks and floor, and what
     of the floor is the measure's and what is the subject's."""
     tren = result.get("train")
-    if tren is None:
+    nota = result.get("train_note")
+    if tren is None and not nota:
         return
     story.append(Paragraph(tr("Guided session: quick repeated contractions"), h2))
+    if tren is None:
+        story.append(Paragraph(nota, normal))
+        story.append(Spacer(1, 0.4 * cm))
+        return
     try:
         story.append(Image(_render_chart(draw_train_chart, tren), width=16 * cm, height=6 * cm))
         story.append(Spacer(1, 0.15 * cm))
