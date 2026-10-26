@@ -43,8 +43,8 @@ from emgteach.guided import (
     gradation_steps,
     hold_result,
     intermittent_reps,
+    measured_windows,
     rapid_train,
-    spans_in_analysis_time,
 )
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -397,12 +397,14 @@ class AnalysisWorker(QThread):
     @staticmethod
     def _tramos_de_sesion(sesion, piezas) -> list[Segment] | None:
         """One segment per effort a guided session marked, in the analysed
-        signal's time; ``None`` without a session, so the next rule applies.
-        The contraction table trims each to the effort inside it."""
+        signal's time, run on past its end (guided.measured_windows): the
+        subject lets go after the cue, not on it. ``None`` without a session,
+        so the next rule applies. The contraction table trims each to the
+        effort inside it."""
         if sesion is None:
             return None
         return [Segment(a, b) for _t, a, b in
-                spans_in_analysis_time(sesion.spans, piezas) if b > a] or None
+                measured_windows(sesion, piezas) if b > a] or None
 
     def _resolve_segments(
         self, n_samples: int, fs: float, full_duration: float,
@@ -1318,6 +1320,7 @@ class AnalysisWorker(QThread):
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
                 result["reps"] = intermittent_reps(
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],
+                    envelope=proc["emg_envelope"],
                     f_low=self._f_low, f_high=self._f_high,
                 )
                 # The sustained maximum is the analysed span itself: its

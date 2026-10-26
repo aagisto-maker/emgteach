@@ -356,7 +356,10 @@ session.
   first): five 4 s contractions of growing strength, at **20, 40, 60 and 80 % of the
   bar and at the maximum**, with 6 s of rest between them. The panel shows the
   muscle's bar with the band of the step asked for. The calibration asks for the
-  session's own gesture: clenching the fist.
+  session's own gesture: clenching the fist. In Analysis each step is the
+  contraction begun after its cue and followed up to 1.5 s past its end — one
+  begins and lets go some tenths of a second late —, and its level is the mean
+  of the envelope over that contraction's plateau.
 - **Fatigue: sustained contraction** (28 s; calibration optional): 5 s of rest, a
   3 s countdown, **10 s of maximal isometric contraction** against the table and
   10 s of rest. The text asks to breathe normally. In Analysis the analysed span is the contraction and panels 6 and 7
@@ -365,7 +368,7 @@ session.
   had fallen 10 %.
 - **Fatigue: intermittent contractions** (53 s): six maximal contractions of **5 s with
   1 s of rest**, with a tone at the start and the end of each and the countdown on
-  screen. What is measured is the **RMS of each contraction** after its first
+  screen. What is measured is the **RMS of each contraction** over its plateau, after its first
   second (not the peak, which is the start and does not fall) and its MDF: view
   «Per contraction».
 - **Quick repeated contractions** (28 s): after 5 s of rest and the countdown,

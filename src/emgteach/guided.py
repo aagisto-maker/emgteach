@@ -13,10 +13,17 @@ fall) and its MDF.
 
 The gradation: one row per step, with the target the student was asked for,
 the level they held, its RMS and its MDF. **The level held is the mean of the
-envelope over the step after its first second**: the first second is the
-reaching for the level, not the holding of it, and a peak would be the
-overshoot of that reach. In % MVC, which the gradation always has — it
-calibrates first.
+envelope over the plateau of the step's contraction**: after its first second,
+which is the reaching for the level, not the holding of it (a peak would be
+the overshoot of that reach), and before its letting go. In % MVC, which the
+gradation always has — it calibrates first.
+
+**A step, a contraction or a train is the activity found inside its marks,
+run on past their end** (:data:`MARGIN_S`). The marks are the cues; the
+subject begins some tenths of a second after the one that opens a stretch
+and lets go up to a second after the one that closes it (Ángel's bench with
+the board, 26 October 2026). Measured on the marks alone, each step took rest
+at its start and lost its end, and the train lost its last two contractions.
 """
 
 from __future__ import annotations
@@ -27,11 +34,16 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from emgteach.coactivation import resting_level
+from emgteach.contractions import trim_to_effort
 from emgteach.dsp import compute_psd_mnf_mdf
+from emgteach.selection import Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
 
 __all__ = [
     "EDGE_S",
+    "MARGIN_S",
+    "RELEASE_S",
     "SETTLE_S",
     "TRAIN_RMS_MS",
     "HoldResult",
@@ -43,6 +55,7 @@ __all__ = [
     "hold_result",
     "intermittent_reps",
     "is_monotonic",
+    "measured_windows",
     "processing_floor_pct",
     "rapid_train",
     "reps_trend_pct",
@@ -52,6 +65,24 @@ __all__ = [
 
 #: Seconds at the start of each step left out of its level: the reach.
 SETTLE_S = 1.0
+
+#: Seconds after the mark that closes a step, a contraction or the train that
+#: still belong to it: the subject lets go after the cue, not on it. Never
+#: into the next stretch, nor past the session's end.
+MARGIN_S = 1.5
+
+#: Seconds at the end of a contraction left out of its level, at most: the
+#: letting go.
+RELEASE_S = 0.5
+
+#: Seconds kept clear before the next stretch's mark: a zero-phase envelope
+#: rises a tenth of a second before the contraction it draws, and the next
+#: contraction's rise is not this one's letting go.
+_GUARDA_S = 0.25
+
+#: The stretches run on past their marks. Not the sustained maximum's effort:
+#: its analysed span is the effort, and its protocol is being revised.
+_CON_MARGEN = frozenset({"step", "rep", "train"})
 
 #: Shorter than this, a stretch has too few cycles of anything for an MDF.
 _MIN_S_FOR_MDF = 0.25
@@ -78,6 +109,68 @@ def spans_in_analysis_time(
     return out
 
 
+def measured_windows(
+    session: GuidedSession | None,
+    kept: Sequence[tuple[float, float, float]],
+    names: Iterable[str] | None = None,
+    *,
+    margin_s: float = MARGIN_S,
+) -> list[tuple[MeasuredSpan, float, float]]:
+    """The session's stretches in the analysed signal's time, each run on
+    past its end by *margin_s* — never into the next stretch nor past the
+    session's end — so the contraction a cue asked for is inside it whole.
+
+    What the contraction table and the guided measures look inside: the
+    activity found in a window (:func:`emgteach.contractions.trim_to_effort`)
+    is the step, the contraction or the train.
+    """
+    if session is None:
+        return []
+    tramos = sorted(session.spans, key=lambda t: t.start_s)
+    nombres = None if names is None else set(names)
+    fin = session.end_s
+    out = []
+    for i, t in enumerate(tramos):
+        if nombres is not None and t.name not in nombres:
+            continue
+        for _tramo, a, b in spans_in_analysis_time([t], kept):
+            if t.name in _CON_MARGEN:
+                hasta = t.end_s + float(margin_s)
+                if i + 1 < len(tramos):
+                    hasta = min(hasta, tramos[i + 1].start_s - _GUARDA_S)
+                if fin is not None:
+                    hasta = min(hasta, fin)
+                # Nor past the piece of the file the analysis kept it in.
+                pieza = next(p for p in kept
+                             if p[0] - 1e-9 <= t.start_s and t.end_s <= p[1] + 1e-9)
+                hasta = min(hasta, pieza[1])
+                b = a + max(t.duration_s, hasta - t.start_s)
+                t = MeasuredSpan(t.name, t.start_s, t.start_s + (b - a), t.params)
+            out.append((t, a, b))
+    return out
+
+
+def _actividad(envelope) -> np.ndarray:
+    """The envelope above its rest: what an effort is found on, as the
+    contraction table finds it."""
+    env = np.asarray(envelope, dtype=np.float64)
+    return env - resting_level(env) if env.size else env
+
+
+def _contraccion(actividad: np.ndarray, fs: float, a: float, b: float) -> tuple[float, float]:
+    """The contraction inside ``[a, b]``: from the first sample above a fifth
+    of its peak activity to the last, as in the contraction table."""
+    seg = trim_to_effort(Segment(a, b), fs, actividad)
+    return seg.start_s, seg.end_s
+
+
+def _meseta(on: float, off: float, settle_s: float) -> tuple[float, float]:
+    """The plateau of a contraction: without its reach nor its letting go,
+    and never less than its middle half."""
+    dur = max(0.0, off - on)
+    return on + min(float(settle_s), 0.5 * dur), off - min(RELEASE_S, 0.25 * dur)
+
+
 @dataclass(frozen=True)
 class StepResult:
     """One step of the gradation."""
@@ -85,10 +178,10 @@ class StepResult:
     k: int
     #: What the student was asked for, % MVC.
     target_pct: float
-    #: The step in the analysed signal's time.
+    #: The step's contraction in the analysed signal's time.
     start_s: float
     end_s: float
-    #: Mean envelope over the step after its first second, in mV and % MVC.
+    #: Mean envelope over the contraction's plateau, in mV and % MVC.
     held_mv: float
     held_pct: float | None
     #: RMS of the filtered signal over the same stretch, mV.
@@ -117,12 +210,13 @@ def gradation_steps(
         return []
     filt = np.asarray(emg_filtered, dtype=np.float64)
     env = np.asarray(envelope, dtype=np.float64)
+    actividad = _actividad(env)
     pasos: list[StepResult] = []
-    for tramo, a, b in spans_in_analysis_time(session.spans_named("step"), kept):
-        # The reach is left out, but never the whole step.
-        a_hold = a + min(float(settle_s), 0.5 * (b - a))
-        i0 = max(0, min(round(a_hold * fs), env.size))
-        i1 = max(i0, min(round(b * fs), env.size))
+    for tramo, a, b in measured_windows(session, kept, ("step",)):
+        a, b = _contraccion(actividad, fs, a, b)
+        m0, m1 = _meseta(a, b, settle_s)
+        i0 = max(0, min(round(m0 * fs), env.size))
+        i1 = max(i0, min(round(m1 * fs), env.size))
         if i1 - i0 < 2:
             continue
         nivel = float(np.mean(env[i0:i1]))
@@ -256,8 +350,8 @@ class RepResult:
     n: int
     start_s: float
     end_s: float
-    #: RMS of the filtered signal over the contraction after its first
-    #: second — not its peak, which is the start and does not fall.
+    #: RMS of the filtered signal over the contraction's plateau, after its
+    #: first second — not its peak, which is the start and does not fall.
     rms_mv: float
     mdf_hz: float | None
 
@@ -268,20 +362,28 @@ def intermittent_reps(
     *,
     fs: float,
     emg_filtered,
+    envelope=None,
     f_low: float = 20.0,
     f_high: float = 450.0,
     settle_s: float = SETTLE_S,
 ) -> list[RepResult]:
-    """The intermittent maximum's contractions, measured; empty otherwise."""
+    """The intermittent maximum's contractions, measured; empty otherwise.
+
+    Each is the contraction found inside its marks run on past their end, on
+    *envelope* (a 100 ms moving RMS of the signal without one).
+    """
     if (session is None or session.family != "HOLD"
             or session.params.get("mode") != "intermittent" or fs <= 0):
         return []
     filt = np.asarray(emg_filtered, dtype=np.float64)
+    actividad = _actividad(envelope if envelope is not None
+                           else _moving_rms(filt, fs, 100.0))
     reps: list[RepResult] = []
-    for tramo, a, b in spans_in_analysis_time(session.spans_named("rep"), kept):
-        a_hold = a + min(float(settle_s), 0.5 * (b - a))
-        i0 = max(0, min(round(a_hold * fs), filt.size))
-        i1 = max(i0, min(round(b * fs), filt.size))
+    for tramo, a, b in measured_windows(session, kept, ("rep",)):
+        a, b = _contraccion(actividad, fs, a, b)
+        m0, m1 = _meseta(a, b, settle_s)
+        i0 = max(0, min(round(m0 * fs), filt.size))
+        i1 = max(i0, min(round(m1 * fs), filt.size))
         if i1 - i0 < 2:
             continue
         trozo = filt[i0:i1]

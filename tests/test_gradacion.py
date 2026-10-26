@@ -132,14 +132,16 @@ def _sesion_sintetica(t0: float = 0.0):
     return sesion
 
 
-def _senales(niveles_por_paso, *, alcance: float = 0.0, t0: float = 0.0):
+def _senales(niveles_por_paso, *, alcance: float = 0.0, t0: float = 0.0,
+             tarde: tuple[float, float] = (0.0, 0.0)):
     """An envelope with each step at its level, and a filtered signal whose
-    RMS is that level, for a 60 s recording starting at *t0*."""
+    RMS is that level, for a 60 s recording starting at *t0*. With *tarde*,
+    the subject begins and lets go that many seconds after each cue."""
     n = int((t0 + 60.0) * FS)
     env = np.full(n, 0.01)
     for k, nivel in enumerate(niveles_por_paso):
-        a = int((t0 + 5.0 + k * 10.0) * FS)
-        env[a: a + 4 * FS] = nivel
+        a = int((t0 + 5.0 + k * 10.0 + tarde[0]) * FS)
+        env[a: a + int((4.0 - tarde[0] + tarde[1]) * FS)] = nivel
         if alcance:
             # The reach: an overshoot in the first second, which the level
             # held must leave out.
@@ -179,6 +181,42 @@ def test_the_steps_are_found_in_the_analysed_signals_time() -> None:
                             emg_filtered=filt, envelope=env, mvc_ref=1.0)
     assert [round(p.held_pct) for p in pasos] == [20, 40, 60, 80, 100]
     assert pasos[0].start_s == pytest.approx(5.0)
+
+
+def test_a_late_subject_is_measured_on_the_contraction_not_on_the_cues() -> None:
+    """Ángel's bench with the board, 26 October 2026: the subject begins some
+    tenths of a second after the cue and lets go up to a second after the
+    end. Each step is the contraction found inside its marks run on past
+    their end, and its level the plateau of that contraction: no rest at its
+    start, and its end not lost."""
+    niveles = [0.2, 0.4, 0.6, 0.8, 1.0]
+    env, filt = _senales(niveles, tarde=(0.4, 0.8))
+    pasos = gradation_steps(_sesion_sintetica(), [(0.0, 60.0, 0.0)], fs=FS,
+                            emg_filtered=filt, envelope=env, mvc_ref=1.0)
+    for k, (p, nivel) in enumerate(zip(pasos, niveles, strict=True)):
+        assert p.start_s == pytest.approx(5.4 + 10.0 * k, abs=0.01)
+        assert p.end_s == pytest.approx(9.8 + 10.0 * k, abs=0.01)
+        assert p.held_mv == pytest.approx(nivel, rel=1e-6)
+
+
+def test_the_margin_never_reaches_the_next_stretch() -> None:
+    from emgteach.guided import MARGIN_S, measured_windows
+
+    sesion = _sesion_sintetica()
+    ventanas = measured_windows(sesion, [(0.0, 60.0, 0.0)], ("step",))
+    assert [round(b - a, 6) for _t, a, b in ventanas] == [4.0 + MARGIN_S] * 5
+    # Two stretches one second apart: the first stops short of the second.
+    juntas = parse_session_markers([
+        (0.0, "HOLD start mode=intermittent v=1"),
+        (1.0, "HOLD rep start n=1"), (6.0, "HOLD rep end n=1"),
+        (7.0, "HOLD rep start n=2"), (12.0, "HOLD rep end n=2"),
+        (12.5, "HOLD end")])
+    (_t1, a1, b1), (_t2, _a2, b2) = measured_windows(juntas, [(0.0, 20.0, 0.0)])
+    assert a1 == 1.0 and b1 == pytest.approx(6.75)
+    # Nor past the session's end, nor past the piece the analysis kept.
+    assert b2 == pytest.approx(12.5)
+    (_t, a, b), = measured_windows(juntas, [(6.5, 13.0, 0.0)])
+    assert (a, b) == (pytest.approx(0.5), pytest.approx(6.0))
 
 
 def test_a_step_across_a_cut_is_left_out() -> None:
@@ -365,3 +403,44 @@ def test_a_gradation_recorded_with_the_simulated_board_is_analysed_by_steps(
     pasos = r["grad_steps"]
     assert len(pasos) == 5 and len(r["contractions"]) == 5
     assert is_monotonic(pasos), [p.held_mv for p in pasos]
+
+
+@pytest.mark.gui
+def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
+    qapp, request, tmp_path: Path, monkeypatch
+) -> None:
+    """Ángel's bench with the board (26 October 2026), rehearsed: a subject
+    who begins 0.4 s after each cue and lets go 0.8 s after its end. Each
+    step, and each row of the table, is the whole contraction — begun after
+    its mark and run on past its end — and not the stretch between the cues."""
+    from emgteach.devices.bitalino_sim import _SyntheticSubject
+    from emgteach.gui.tabs import acquisition as acq_mod
+    from tests.test_marcas_manuales import _until
+    from tests.test_sesion_guiada_en_la_pestana import _choose, _record
+
+    monkeypatch.setattr(_SyntheticSubject, "reaction_s", 0.4)
+    monkeypatch.setattr(_SyntheticSubject, "release_s", 0.8)
+    pestana = request.getfixturevalue("tab")
+    corta = dataclasses.replace(gradation_script().with_seconds(2.0), needs_mvc=False)
+    monkeypatch.setitem(acq_mod.GUIDED_SESSIONS, "gradacion", lambda: corta)
+    pestana._rellenar_sesiones()
+    _choose(pestana, "gradacion")
+    path = tmp_path / "grad_tarde.edf"
+    _record(qapp, pestana, path)
+    _until(qapp, lambda: not pestana.is_recording(), 0.5 + corta.total_seconds + 10.0,
+           "the gradation to end")
+    _until(qapp, lambda: pestana._eventos is None, 5.0, "the event log")
+    r = _analizar(qapp, str(path))
+    pasos, filas = r["grad_steps"], r["contractions"]
+    assert len(pasos) == 5 and len(filas) == 5
+    assert is_monotonic(pasos), [p.held_mv for p in pasos]
+    marcas = r["guided_session"].spans_named("step")
+    for p, fila, marca in zip(pasos, filas, marcas, strict=True):
+        inicio = p.start_s + r["roi_start_s"] - marca.start_s
+        fin = p.end_s + r["roi_start_s"] - marca.end_s
+        # Begun after its cue, and run on past its end: the 0.4 and 0.8 s
+        # of the subject, plus whatever the board and the worker add.
+        assert 0.2 < inicio < 1.2, inicio
+        assert 0.4 < fin < 1.5, fin
+        assert fila.start_s == pytest.approx(p.start_s, abs=0.15)
+        assert fila.end_s == pytest.approx(p.end_s, abs=0.15)

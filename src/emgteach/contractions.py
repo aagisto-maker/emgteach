@@ -122,7 +122,7 @@ def _movement_after(
     return (i_emg + int(idx[0])) / fs
 
 
-def _recortar_al_esfuerzo(
+def trim_to_effort(
     seg: Segment, fs: float, actividad: np.ndarray,
 ) -> Segment:
     """The stretch of ``seg`` in which the effort was made: from the first
@@ -304,7 +304,7 @@ def contraction_table(
         actividad = env - resting_level(env)
         if env2 is not None:
             actividad = np.maximum(actividad, env2 - resting_level(env2))
-        segs = [_recortar_al_esfuerzo(s, fs, actividad)
+        segs = [trim_to_effort(s, fs, actividad)
                 for s in segments if s.end_s > s.start_s]
     else:
         segs = [s for s in suggest_significant_segments(raw, fs, **filtros)
@@ -425,4 +425,4 @@ def mean_emd_ms(rows: list[Contraction]) -> float | None:
     return float(np.mean(valores)) if valores else None
 
 
-__all__ = ["Contraction", "Segment", "contraction_table", "mean_emd_ms"]
+__all__ = ["Contraction", "Segment", "contraction_table", "mean_emd_ms", "trim_to_effort"]

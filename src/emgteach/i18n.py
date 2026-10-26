@@ -2587,8 +2587,8 @@ _ES = {
         'Inicio y final: la mediana de las ventanas de un segundo del primer y el último cuarto de la contracción (como mucho 5 s) en que el músculo trabajaba; una caída cuenta cuando tres ventanas seguidas quedan por debajo de la línea.',
     'RMS (% of the first)':
         'RMS (% de la primera)',
-    'RMS over each contraction after its first second, not its peak: the peak is the start of each contraction and does not fall.':
-        'RMS de cada contracción tras su primer segundo, no su pico: el pico es el arranque de cada contracción y no baja.',
+    'RMS over the plateau of each contraction, after its first second, not its peak: the peak is the start of each contraction and does not fall.':
+        'RMS en la meseta de cada contracción, tras su primer segundo, no su pico: el pico es el arranque de cada contracción y no baja.',
     'Trend: {pct:+.1f} % of the first per contraction.':
         'Tendencia: {pct:+.1f} % de la primera por contracción.',
     'In the one-muscle practical, the chooser beside the button offers guided sessions: chosen before recording, «Start recording» runs the whole session — the calibration if it needs one, a countdown, each phase announced and timed — and stops at the end. «Free recording» is the usual way.':
@@ -2651,8 +2651,8 @@ _ES = {
         'Cada escalón mantuvo más que el anterior.',
     'Not every step held more than the one before.':
         'No todos los escalones mantuvieron más que el anterior.',
-    'Held: the mean of the envelope over each step after its first second, which is the reach and not the hold.':
-        'Mantenido: la media de la envolvente en cada escalón tras su primer segundo, que es el de llegar al nivel y no el de mantenerlo.',
+    "Held: the mean of the envelope over the plateau of each step's contraction, after its first second (the reach) and before its letting go. Each step is the contraction begun after its cue and followed past its end: the subject begins and lets go late.":
+        "Mantenido: la media de la envolvente en la meseta de la contracción de cada escalón, tras su primer segundo (el de llegar al nivel) y antes de soltar. Cada escalón es la contracción que empieza tras su aviso, seguida más allá de su final: el sujeto empieza y suelta con retraso.",
     'Choose a guided session before recording: «Start recording» then runs it — the calibration if it needs one, a countdown, and each phase announced and timed — writes its phases into the file and stops the recording at the end. Esc stops the session and the recording goes on.':
         'Elija una sesión guiada antes de grabar: «Iniciar grabación» la lleva a cabo — la calibración si la necesita, una cuenta atrás y cada fase anunciada y cronometrada —, escribe sus fases en el fichero y detiene la grabación al terminar. Esc detiene la sesión y la grabación sigue.',
     'Tone':

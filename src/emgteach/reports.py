@@ -572,8 +572,10 @@ def _seccion_gradacion(story: list, result: Mapping[str, Any], h2, normal) -> No
     story.append(Paragraph(
         (tr("Each step held more than the one before.") if is_monotonic(pasos)
          else tr("Not every step held more than the one before.")) + " " + tr(
-            "Held: the mean of the envelope over each step after its first "
-            "second, which is the reach and not the hold."), normal))
+            "Held: the mean of the envelope over the plateau of each step's "
+            "contraction, after its first second (the reach) and before its "
+            "letting go. Each step is the contraction begun after its cue and "
+            "followed past its end: the subject begins and lets go late."), normal))
     story.append(Spacer(1, 0.4 * cm))
 
 
@@ -636,7 +638,7 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
         tendencia = reps_trend_pct(reps)
         story.append(Spacer(1, 0.15 * cm))
         story.append(Paragraph(tr(
-            "RMS over each contraction after its first second, not its peak: "
+            "RMS over the plateau of each contraction, after its first second, not its peak: "
             "the peak is the start of each contraction and does not fall.")
             + ("" if tendencia is None else " " + tr(
                 "Trend: {pct:+.1f} % of the first per contraction.").format(pct=tendencia)),
