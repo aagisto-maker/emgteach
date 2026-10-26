@@ -796,3 +796,77 @@ sí los convierte, 2966, y el resto de la pestaña usa `self._panel_pids[i]`,
 reciben los móviles lleva paneles equivocados: la casilla «2. Env. norm.»
 sale como filtrada + rectificada. Comprobado en el código; no probado en la
 aplicación. Arreglo de una línea, aparte de este plan.
+
+## 11. Banco de la 3.10.0 con la placa real (26 de octubre)
+
+Exe de la ejecución manual #133. Corregido en la rama `banco-3.10.0`: los
+escalones, las contracciones intermitentes y el tren son la actividad dentro
+de sus marcas seguida 1.5 s más allá de su final (§11.1); el registro afinado
+conserva la sesión; la referencia de la gradación es la mayor entre la CVM y
+el máximo de la sesión; y el tren no da veredicto de fatiga.
+
+### 11.1 Pico frente a media (punto 4: propuesta, sin implementar)
+
+La CVM es **el pico de la envolvente** (`mvc_peak_window_s = 0`, desde la
+3.2.0), y el «mantenido» de un escalón es **una media** sobre su meseta. Un
+nivel medio no llega al pico de la misma envolvente aunque la intensidad sea
+la misma: el pico es un máximo del ruido de la envolvente, no un nivel.
+Medido con ruido gaussiano por los mismos filtros (20 repeticiones;
+calibración de 1.5 s y contracción mantenida a la misma amplitud):
+
+| | referencia = pico | referencia = mejor media de 0.5 s |
+|---|---|---|
+| mantenido / referencia, análisis (fase cero) | **87 %** | 95 % |
+| barra en vivo (bloque de 100 ms / referencia en vivo) | **85 %** | 96 % |
+
+Es decir: con la referencia en el pico, mantener exactamente la intensidad de
+la calibración se lee como 85–87 %, y el «100 %» de la barra es inalcanzable
+sosteniendo. Eso, más la parte del punto 1 (el reposo del principio dentro
+del escalón), explica el 17/27/42/60/69 frente a 20/40/60/80/100. La envolvente
+en vivo (causal, filtros de orden 2) sale un 10 % por encima de la del
+análisis (fase cero) tanto en el pico como en la meseta, así que entre las dos
+el cociente se compensa.
+
+Propuesta, de menor a mayor alcance:
+
+- **A (recomendada para la 3.10.0): solo en la gradación**, la CVM de la
+  calibración que la abre y todo lo que la compara (la barra en vivo de los
+  escalones, el mantenido, la referencia de la sesión del punto 3, la columna
+  «Pico» de la tabla y el máximo de la tarea) con la **mejor media de 0.5 s**.
+  Igual con igual, y las demás prácticas no cambian.
+- **B: en toda la aplicación**, `mvc_peak_window_s = 0.5` por defecto. Todos
+  los % CVM suben un ~9 % (pico/media de 0.5 s en una calibración breve), y se
+  deshace la decisión de la 3.2.0 (referencia = punto más alto): un registro
+  reanalizado daría otros porcentajes, lo que exige nota de versión.
+
+### 11.2 Fatiga: fallos anotados, sin implementar (el protocolo va a cambiar)
+
+Ángel probará bíceps con carga fija (codo a 90°, 3–5 kg, 60–90 s); en las tres
+pruebas con el flexor del antebrazo la MDF quedó plana (pendientes ≤ ±0.2 Hz/s,
+R² ≤ 0.07) y la RMS del máximo cayó a un tercio en 4–5 s y luego meseta
+(pérdida de esfuerzo, no fatiga). Valen para cualquier protocolo:
+
+7. **El resumen propio de la sesión mantenida no aparece** (MDF y RMS de
+   inicio y final, segundos hasta −10 % de la MDF), solo el genérico.
+   Hipótesis a comprobar: `result["hold"]` solo se calcula sin fragmentos
+   elegidos (`not self._roi_segments` en `workers/analysis.py`); tras
+   «Seleccionar fragmentos» queda en `None`. Si la sesión se paró antes de
+   su marca de fin, también falta el tramo del esfuerzo.
+8. **Una contracción sostenida se parte en trozos**: en
+   `m_2026-10-26_10-17-16.edf` (una de ~60 s, grabación libre) la tabla da
+   cinco (2.0, 3.5, 24.2, 36.5 y 47.0 s, varias de menos de 1 s). El
+   detector (`selection.suggest_significant_segments`: umbral de k·DE sobre
+   el reposo, prominencia 0.25 del pico, une huecos de menos de 0.3 s) corta
+   cuando la meseta, a un tercio del pico inicial, cruza el umbral relativo.
+   Necesita histéresis (umbral de salida por debajo del de entrada) o una
+   duración mínima de reposo para cortar.
+9. **«sin calibrar» en la barra tras una sesión que sí calibró**: cada
+   grabación nueva vacía el monitor de carga (`_reset_load_monitor` al
+   empezar a grabar, en `gui/tabs/acquisition.py`), así que una grabación
+   libre después de la sesión calibrada no tiene CVM ni barra. Es la decisión
+   de «cada registro se calibra a sí mismo» de la 3.8.0; si la grabación libre
+   debe poder usar la CVM de la sesión anterior del mismo alumno, hay que
+   decidir cuándo caduca (otro alumno, otro músculo, electrodos movidos).
+   Comprobar también qué cabecera dice «sin calibrar»: si es la del análisis
+   de ese archivo, ver si la anotación `MVC ref ch=1` se lee con el índice de
+   canal correcto.
