@@ -73,7 +73,9 @@ made with 3.9.1 and earlier open and read as before.
   gradation measures its maximum as the highest mean over half a second**, as
   the level held is a mean: on the envelope's peak, a step held at the
   calibration's own intensity read 85-87 %, so the bar's 100 % could not be
-  held. Measured alike, the bench's gradation read 22/36/59/81 % for the
+  held. With fragments chosen round each contraction, a step or the train
+  is measured over the part of it they keep (it was dropped when they left
+  its cue out, and the «Steps» or «Train» view lost it). Measured alike, the bench's gradation read 22/36/59/81 % for the
   20/40/60/80 asked (it read 17/27/42/60). Its calibration, its live bar and
   its analysis use it; the other practicals keep the peak. A maximal step
   above the calibration is said, in the view and the report. The tuned
@@ -88,7 +90,7 @@ made with 3.9.1 and earlier open and read as before.
 
 ## How it was tested
 
-**By the automated suite**, 1674 tests, among them: each session's script,
+**By the automated suite**, 1684 tests, among them: each session's script,
 its marks and its Spanish; the clock that crosses every phase even when a
 tick is late; each session recorded with the simulated board, whose subject
 does what each phase asks, and analysed by its spans; the levels held by the

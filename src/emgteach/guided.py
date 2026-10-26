@@ -55,6 +55,7 @@ __all__ = [
     "Trend",
     "change_pct",
     "effort_ratio",
+    "fatigue_unmeasured",
     "gradation_reference_text",
     "gradation_steps",
     "is_monotonic",
@@ -92,6 +93,11 @@ _GUARDA_S = 0.25
 #: The stretches run on past their marks. Not the sustained maximum's effort:
 #: its analysed span is the effort, and its protocol is being revised.
 _CON_MARGEN = frozenset({"step", "train"})
+
+#: The share of a stretch's marked length the chosen fragments must keep of
+#: it for it to be measured (measured_windows): a fragment round the
+#: contraction keeps nearly all of it, one cut across it about half.
+_MIN_KEPT = 0.6
 
 #: Shorter than this, a stretch has too few cycles of anything for an MDF.
 _MIN_S_FOR_MDF = 0.25
@@ -132,6 +138,14 @@ def measured_windows(
     What the contraction table and the guided measures look inside: the
     activity found in a window (:func:`emgteach.contractions.trim_to_effort`)
     is the step, the contraction or the train.
+
+    With fragments chosen, each stretch is measured in the piece that keeps
+    most of it, over the part that piece keeps, if that is at least
+    :data:`_MIN_KEPT` of its marked length. Not only when its marks are both
+    inside: a fragment chosen round a contraction leaves out the cue that
+    opened it, some tenths of a second of rest before, and every step was
+    then left out (Ángel's bench, 26 October 2026: five fragments, one per
+    step, and «1 step»). Half a step is still not a step.
     """
     if session is None:
         return []
@@ -142,21 +156,44 @@ def measured_windows(
     for i, t in enumerate(tramos):
         if nombres is not None and t.name not in nombres:
             continue
-        for _tramo, a, b in spans_in_analysis_time([t], kept):
-            if t.name in _CON_MARGEN:
-                hasta = t.end_s + float(margin_s)
-                if i + 1 < len(tramos):
-                    hasta = min(hasta, tramos[i + 1].start_s - _GUARDA_S)
-                if fin is not None:
-                    hasta = min(hasta, fin)
-                # Nor past the piece of the file the analysis kept it in.
-                pieza = next(p for p in kept
-                             if p[0] - 1e-9 <= t.start_s and t.end_s <= p[1] + 1e-9)
-                hasta = min(hasta, pieza[1])
-                b = a + max(t.duration_s, hasta - t.start_s)
-                t = MeasuredSpan(t.name, t.start_s, t.start_s + (b - a), t.params)
-            out.append((t, a, b))
+        hasta = t.end_s
+        if t.name in _CON_MARGEN:
+            hasta = t.end_s + float(margin_s)
+            if i + 1 < len(tramos):
+                hasta = min(hasta, tramos[i + 1].start_s - _GUARDA_S)
+            if fin is not None:
+                hasta = min(hasta, fin)
+            hasta = max(hasta, t.end_s)
+        mejor = None
+        for x, y, offset in kept:
+            ini, fin_p = max(t.start_s, x), min(hasta, y)
+            if fin_p > ini and (mejor is None or fin_p - ini > mejor[1] - mejor[0]):
+                mejor = (ini, fin_p, x, offset)
+        if mejor is None or mejor[1] - mejor[0] < _MIN_KEPT * t.duration_s - 1e-9:
+            continue
+        ini, fin_p, x, offset = mejor
+        out.append((MeasuredSpan(t.name, ini, fin_p, t.params),
+                    offset + ini - x, offset + fin_p - x))
     return out
+
+
+def fatigue_unmeasured(result) -> str | None:
+    """Why the summary gives no fatigue verdict for this analysis, or ``None``.
+
+    The verdict on the summary card, the report and the phones comes from
+    the same measure as the session's view, or is not given: over a train of
+    quick contractions nothing is held, and a fixed load whose chosen
+    fragments keep less than 3 s of it cannot be read — the general fit over
+    the pieces glued together said «Fatigue: detected (MDF -27 %)» over
+    4.6 s while the view said it could not measure (the final bench, B3).
+    """
+    from emgteach.i18n import tr
+
+    if not mdf_trend_applies(result.get("guided_session")):
+        return tr("Not measured (quick contractions: nothing held)")
+    if result.get("load_note"):
+        return tr("Not measured (the chosen fragments keep less than 3 s of the held load)")
+    return None
 
 
 def mdf_trend_applies(session: GuidedSession | None) -> bool:

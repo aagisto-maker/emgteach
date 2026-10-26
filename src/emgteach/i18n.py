@@ -997,6 +997,7 @@ _ES = {
     "1 (single sensor)": "1 (un sensor)",
     "2 (agonist / antagonist)": "2 (agonista / antagonista)",
     "Labels:": "Etiquetas:",
+    "Muscle:": "Músculo:",
     "Name of this channel's muscle/sensor (max. 16 characters; "
     "used as the channel label in the EDF file).":
         "Nombre del músculo/sensor de este canal (máx. 16 caracteres; "
@@ -2575,6 +2576,8 @@ _ES = {
         'Se eligieron fragmentos: la carga se lee en el trozo más largo de ella que conservan, {a:.1f}–{b:.1f} s del registro.',
     "Weak signal: the effort barely exceeds the rest (×{x:.1f}). Check the electrodes' contact or use a heavier weight.":
         'Señal débil: el esfuerzo apenas supera el reposo (×{x:.1f}). Revise el contacto de los electrodos o use un peso mayor.',
+    'Not measured (the chosen fragments keep less than 3 s of the held load)':
+        'No se mide (los fragmentos elegidos conservan menos de 3 s de la carga sostenida)',
     'MDF over time':
         'MDF en el tiempo',
     'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %, R² {r2:.2f})':

@@ -296,9 +296,9 @@ from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.guided import (
     REST_WARN_MV,
+    fatigue_unmeasured,
     gradation_reference_text,
     is_monotonic,
-    mdf_trend_applies,
     weak_signal_warning,
 )
 from emgteach.i18n import tr
@@ -1460,6 +1460,9 @@ class AnalysisTab(QWidget):
                 # whatever the detector found: a lift before the first cue
                 # or after the last one is not one the study asked for.
                 lifts=self._levantamientos_marcados(path),
+                # A fixed load is proposed as the one window its analysis
+                # reads, not as the detector's pieces (the final bench, B3).
+                held=(self._last_result or {}).get("load_span"),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -2265,9 +2268,9 @@ class AnalysisTab(QWidget):
             "file": Path(str(r.get("edf_path", ""))).name,
             "mnf": round(float(r.get("mnf", 0.0)), 1),
             "mdf": round(float(r.get("mdf", 0.0)), 1),
-            # Not over a train of quick contractions (guided.mdf_trend_applies).
+            # Not where the summary gives no verdict (guided.fatigue_unmeasured).
             "mdf_slope": (round(float(r.get("mdf_slope", 0.0)), 2)
-                          if mdf_trend_applies(r.get("guided_session")) else None),
+                          if fatigue_unmeasured(r) is None else None),
             "rms": round(float(r.get("rms_global", 0.0)), 3),
             "iemg": round(float(r.get("iemg", 0.0)), 1),
             "duration": round(float(r.get("duration", 0.0)), 1),
@@ -2275,7 +2278,7 @@ class AnalysisTab(QWidget):
             # phones already speak: -1 fatigue, +1 none, 0 not conclusive.
             "fatigue": ({FATIGUE: -1, NO_FATIGUE: 1}.get(
                 r.get("fat_verdict", INCONCLUSIVE), 0
-            ) if mdf_trend_applies(r.get("guided_session")) else None),
+            ) if fatigue_unmeasured(r) is None else None),
             # The gradation's steps, [asked, held] in % MVC, when it has them.
             "steps": [[round(p.target_pct), round(p.held_pct)]
                       for p in (r.get("grad_steps") or []) if p.held_pct is not None],
@@ -2351,12 +2354,13 @@ class AnalysisTab(QWidget):
 
         decline = r.get("fat_pct_decline", 0.0)
         veredicto = r.get("fat_verdict", INCONCLUSIVE)
-        if not mdf_trend_applies(r.get("guided_session")):
-            # Ten seconds of quick contractions: no trend to fit, and the
-            # train's own numbers are in its view and its summary line.
+        motivo = fatigue_unmeasured(r)
+        if motivo is not None:
+            # Ten seconds of quick contractions, or a fixed load the chosen
+            # fragments do not keep: no verdict but the view's, and the
+            # view's own numbers are in it and its summary line.
             self._lbl_pendiente.setText("—")
-            self._lbl_fatiga.setText(_en_dos_lineas(
-                tr("Not measured (quick contractions: nothing held)")))
+            self._lbl_fatiga.setText(_en_dos_lineas(motivo))
             self._lbl_fatiga.setStyleSheet(
                 "font-size: 12px; font-weight: 600; color: #666666;")
             return

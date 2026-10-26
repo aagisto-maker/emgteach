@@ -470,6 +470,109 @@ def test_fragments_outside_the_load_leave_a_note(qapp, tmp_path: Path) -> None:
     assert "None of the chosen fragments" in _pdf_text(pdf).replace("\n", " ")
 
 
+#: Pieces of the load under a second each, as the default detection of
+#: «Select fragments» cut it at the final bench (B3): 4.8 s in all, none 3 s.
+_TROCITOS = [(22.0 + 3.0 * k, 22.8 + 3.0 * k) for k in range(6)]
+
+
+@pytest.mark.gui
+def test_with_the_load_unread_the_summary_gives_no_verdict(qapp, main_window,
+                                                          tmp_path: Path) -> None:
+    """The final bench, B3 point 7: the view said none of the fragments kept
+    3 s of the load, and the summary card «Fatigue: detected (MDF -27 %)»,
+    from the general fit over the pieces glued together. The card, the
+    report and the phones now give the view's measure or none."""
+    from emgteach.gui.tabs.analysis import AnalysisTab
+    from emgteach.guided import fatigue_unmeasured
+    from emgteach.reports import build_session_report
+    from tests.test_informes_y_csv import _pdf_text
+    from tests.test_manejo_en_aula import _Difusion
+
+    r = _analizar_fragmentos(qapp, _carga_edf(tmp_path / "t.edf"), _TROCITOS)
+    assert r["load"] is None and r["load_note"]
+    motivo = fatigue_unmeasured(r)
+    assert motivo == tr("Not measured (the chosen fragments keep less than 3 s "
+                        "of the held load)")
+
+    ana = main_window._tab_ana
+    ana._actualizar_resumen(r)
+    assert ana._lbl_pendiente.text() == "—"
+    assert ana._lbl_fatiga.text().replace("\n", " ") == motivo
+
+    pdf = tmp_path / "t.pdf"
+    build_session_report(pdf, r, meta={})
+    texto = _pdf_text(pdf).replace("\n", " ")
+    assert "Not measured" in texto and "Yes —" not in texto
+
+    dif = _Difusion()
+
+    class _Tab:
+        _broadcast = dif
+
+        def _broadcast_on(self) -> bool:
+            return True
+
+    AnalysisTab._bcast_results(_Tab(), r)       # type: ignore[arg-type]
+    assert dif.mensajes[-1]["fatigue"] is None and dif.mensajes[-1]["mdf_slope"] is None
+
+
+@pytest.mark.gui
+def test_the_load_chosen_in_two_pieces_is_read_on_the_longer(qapp, tmp_path: Path) -> None:
+    """The final bench, B3: one fragment over the whole load kept the view;
+    the load chosen in two pieces is read on the longer, not on both glued,
+    and the summary's verdict is that one's."""
+    from emgteach.guided import fatigue_unmeasured
+
+    r = _analizar_fragmentos(qapp, _carga_edf(tmp_path / "d.edf"),
+                             [(20.5, 33.0), (34.0, 55.0)])
+    carga = r["load"]
+    assert carga is not None and r["load_piece"] == pytest.approx((34.0, 55.0))
+    assert carga.seconds == pytest.approx(21.0, abs=0.1)
+    assert fatigue_unmeasured(r) is None
+    assert r["fat_verdict"] == carga.verdict
+
+
+@pytest.mark.gui
+def test_the_fragment_editor_proposes_the_load_as_one_row(qapp, tmp_path: Path) -> None:
+    """The final bench, B3 point 6: the detector's threshold followed the
+    peak of picking up the weight, stood above the load's plateau, and cut
+    the load into a dozen pieces of under a second. The editor now opens on
+    the one window the analysis reads, and «Start over» goes back to it."""
+    from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+
+    r = _analizar(qapp, _carga_edf(tmp_path / "e.edf"))
+    ventana = r["load_span"]
+    assert ventana is not None
+    assert ventana[0] == pytest.approx(REC_S + 8.0 + 0.5 + LOAD_SKIP_S, abs=0.2)
+
+    # A pick-up peak four times the plateau, and a plateau that wavers.
+    n = 80 * FS
+    t = np.arange(n) / FS
+    rng = np.random.default_rng(6)
+    amp = np.where((t >= 10.0) & (t < 70.0), 0.25 * (1 + 0.3 * np.sin(2 * np.pi * 0.7 * t)),
+                   0.01)
+    amp[(t >= 10.0) & (t < 10.6)] = 1.0
+    raw = rng.normal(0.0, 1.0, n) * amp
+    filtros = {"f_low": 20.0, "f_high": 450.0, "f_notch": 50.0, "f_env": 5.0}
+    dlg = FragmentSelectionDialog(raw, FS, filtros, naming=False, held=(12.6, 70.0))
+    assert dlg.selected_segments() == [pytest.approx((12.6, 70.0))]
+    dlg._set_rows([])
+    dlg._proponer()                                 # «Start over»
+    assert dlg.selected_segments() == [pytest.approx((12.6, 70.0))]
+    dlg.deleteLater()
+
+
+@pytest.mark.gui
+def test_one_muscle_names_its_box_muscle(tab) -> None:  # noqa: F811
+    """«Labels:» left a student writing the muscle in the test identifier,
+    and the channel kept the previous recording's name (the final bench)."""
+    assert tab._lbl_labels.text() == tr("Muscle:")
+    tab.apply_mode("pair", False)
+    assert tab._lbl_labels.text() == tr("Labels:")
+    tab.apply_mode("single", False)
+    assert tab._lbl_labels.text() == tr("Muscle:")
+
+
 @pytest.mark.gui
 def test_a_weak_load_is_warned_in_the_analysis(qapp, tmp_path: Path) -> None:
     """A load whose envelope barely rises over the rest, as the bench's bad

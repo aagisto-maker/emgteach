@@ -61,6 +61,7 @@ from emgteach.figures import (
 )
 from emgteach.guided import (
     REST_WARN_MV,
+    fatigue_unmeasured,
     gradation_reference_text,
     is_monotonic,
     mdf_trend_applies,
@@ -928,7 +929,10 @@ def build_session_report(
         _por_musculo("iEMG", "iemg", "{:.3f} mV·s"),
     ]
     if mdf_trend_applies(result.get("guided_session")):
-        metrics.append([tr("Fatigue evidence"), _fatigue_text(result)]
+        # A fixed load the chosen fragments do not keep is not measured, and
+        # the row says so rather than give the general fit's verdict.
+        motivo = fatigue_unmeasured(result)
+        metrics.append([tr("Fatigue evidence"), motivo or _fatigue_text(result)]
                        + ([_fatigue_text(result, "_2")] if dos else []))
     story.append(_styled_table(metrics, [5.0, 6.0, 6.0] if dos else [5.0, 12.0],
                                spans=spans))

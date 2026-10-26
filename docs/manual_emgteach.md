@@ -393,7 +393,8 @@ session.
   fallen 10 % and the RMS in grey. Panels 6 and 7 come ticked. With fragments
   chosen the view stays: the load is read on the longest piece of it they keep
   (at least 3 s; never two pieces glued), and the view says so; if none keeps
-  that much, it says that instead.
+  that much, it says that instead, and the summary card gives no verdict.
+  «Select fragments» proposes the window of the load that is analysed.
 - **Quick repeated contractions** (28 s): after 5 s of rest and the countdown,
   **10 s of contractions of the fist, closing and relaxing it as fast as possible**. The
   contractions and their rate are counted — up to 1.5 s past the end mark, since one

@@ -479,7 +479,8 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   y el RMS en gris. Los paneles 6 y 7 aparecen marcados. Si se eligen fragmentos,
   la vista sigue: la carga se lee en el trozo más largo de ella que conservan (al
   menos 3 s; nunca dos trozos pegados), y la vista lo dice; si ninguno conserva
-  tanto, lo avisa.
+  tanto, lo avisa, y la ficha de resumen no da veredicto. «Seleccionar
+  fragmentos» propone como fragmento la ventana de la carga que se analiza.
 - **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
   atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
   las contracciones y su ritmo —hasta 1.5 s después de la marca del final, porque
