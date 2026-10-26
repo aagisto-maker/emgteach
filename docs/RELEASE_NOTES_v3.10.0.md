@@ -56,6 +56,17 @@ made with 3.9.1 and earlier open and read as before.
   for the session's own gesture, and with one muscle the warm-up asks for
   «two or three easy contractions», not «of each muscle». The pictures of the
   calibration and the station sheets with them.
+- **What the bench with the board changed (26 October 2026).** The subject
+  begins some tenths of a second after a cue and lets go up to a second after
+  the end, so each step, intermittent contraction and train is now **the
+  activity inside its marks run on 1.5 s past their end**, and a step's level
+  the plateau of that contraction (measured between the marks, the steps took
+  rest and lost their end, and the train lost its last two contractions). **The
+  gradation's reference is the larger of the MVC and the session's own
+  maximum**, so no step passes 100 % (the maximal step had come out at 127 %;
+  the calibration's contractions are brief), and the view and the report say
+  which. The tuned recording keeps the session and its view, and the train of
+  quick contractions gives no fatigue verdict.
 - **The report the phones receive carries the panels ticked on screen.** It
   was given the position of each ticked box instead of the panel, so
   «2. Env. norm.» came out as the filtered and rectified signal, and so on —
@@ -65,7 +76,7 @@ made with 3.9.1 and earlier open and read as before.
 
 ## How it was tested
 
-**By the automated suite**, 1648 tests, among them: each session's script,
+**By the automated suite**, 1658 tests, among them: each session's script,
 its marks and its Spanish; the clock that crosses every phase even when a
 tick is late; each session recorded with the simulated board, whose subject
 does what each phase asks, and analysed by its spans; the levels held by the
@@ -79,7 +90,10 @@ the phones receive carrying the panels ticked.
 **At the bench**: with the simulated board, manual runs #119 to #130 of
 *Build Windows exe* (24–25 October 2026): the four sessions, the boxes, the
 tone, the calibration's gesture and the words of the instructions. With the
-real board: _(added after the bench check)_.
+real board, manual run #133 (26 October 2026): the self-test; the board's
+diagnosis (999 Hz, no CRC errors, no frame lost); «About» saying 3.10.0; the
+calibration, the gradation and the quick contractions, whose findings are the
+first item above. _(The bench of the executable released is added after it.)_
 
 ## The Windows executable
 
