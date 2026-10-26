@@ -25,7 +25,7 @@ from emgteach.guided import (
     spans_in_analysis_time,
 )
 from emgteach.i18n import _ES, tr
-from emgteach.io import BufferedEdfWriter, ChannelInfo
+from emgteach.io import BufferedEdfWriter, ChannelInfo, read_edf_markers
 from emgteach.mvc import mvc_ref_marker
 from emgteach.phases import cal_end_marker, cal_start_marker, prep_start_marker, rec_start_marker
 from emgteach.sessions import (
@@ -444,3 +444,38 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
         assert 0.4 < fin < 1.5, fin
         assert fila.start_s == pytest.approx(p.start_s, abs=0.15)
         assert fila.end_s == pytest.approx(p.end_s, abs=0.15)
+
+
+# ── The tuned recording keeps the session ──────────────────────────────────
+
+
+@pytest.mark.gui
+def test_a_tuned_gradation_keeps_its_steps_and_their_view(qapp, tmp_path: Path) -> None:
+    """Ángel's bench, 26 October 2026: after «Select fragments» and «Save
+    tuned EDF», the «_tuned» file had lost the session — no «Steps» view, no
+    level asked or held — because each step's start mark is its cue, in the
+    rest the fragments leave out. The marks are written again round the kept
+    fragments, and the tuned file reopens with its five steps."""
+    from emgteach.tuning import build_tuned_edf
+
+    origen = _gradacion_edf(tmp_path / "grad.edf")
+    # The fragments the editor proposes: round each contraction, with its
+    # rise and its fall — a little rest before it and after it.
+    fragmentos = [(REC_S + 4.5 + 10.0 * k, REC_S + 9.8 + 10.0 * k) for k in range(5)]
+    afinado = tmp_path / "grad_tuned.edf"
+    build_tuned_edf(origen, afinado, fragments=fragmentos)
+
+    sesion = parse_session_markers(read_edf_markers(afinado))
+    assert sesion is not None and sesion.family == "GRAD" and sesion.completed
+    assert [t.number("pct") for t in sesion.spans_named("step")] == [20, 40, 60, 80, 100]
+
+    r = _analizar(qapp, str(afinado))
+    pasos = r["grad_steps"]
+    assert [p.target_pct for p in pasos] == [20, 40, 60, 80, 100]
+    assert len(r["contractions"]) == 5
+    for p in pasos:
+        assert p.held_pct == pytest.approx(p.target_pct, abs=6.0)
+    # Reopened, the tuned file tunes again the same way.
+    otra = tmp_path / "grad_tuned_2.edf"
+    build_tuned_edf(afinado, otra)
+    assert parse_session_markers(read_edf_markers(otra)).spans == sesion.spans
