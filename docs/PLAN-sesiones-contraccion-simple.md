@@ -903,3 +903,26 @@ Analizadas con el código de `main` (el exe #133) y con el de la rama:
   rama, la regla de los tramos sigue la actividad (en la primera, el primer
   escalón empieza 0.9 s después de su aviso), y el registro afinado de la
   segunda a sus cinco contracciones se reabre con la sesión entera.
+- **La gradación del banco** (`m_graduales_2026-10-26_09-48-16.edf`, con su
+  `_tuned` hecho con el exe #133, que conserva las repeticiones 1 y 3 de la
+  calibración: CVM 0.322 mV). Con `main` salen exactamente las cifras del
+  informe: mantenido 17/27/42/60/69 %, picos 33/60/68/81/111 % y máximo de la
+  tarea 127 %. El `_tuned` del #133 perdió las marcas de inicio de los cinco
+  escalones (quedan solo los finales), así que se abre sin sesión: el punto 2,
+  confirmado. Afinado con la rama, se reabre con sus cinco escalones.
+  Mantenido (mV): 0.052, 0.087, 0.142, 0.196, 0.199, medido con la rama
+  sobre la contracción (que empieza 0.7-1.0 s tras cada aviso). Según la
+  referencia:
+
+  | referencia | 20 | 40 | 60 | 80 | 100 |
+  |---|---|---|---|---|---|
+  | `main`: CVM pico (0.322), mantenido entre marcas | 17 | 27 | 42 | 60 | 69 |
+  | rama (punto 3): máx(CVM, sesión) en pico (0.410) | 13 | 21 | 35 | 48 | 49 |
+  | propuesta A: CVM mejor media de 0.5 s (0.241) | **22** | **36** | **59** | **81** | 83 |
+  | A + punto 3: máx(CVM, sesión) en 0.5 s (0.306) | 17 | 29 | 46 | 64 | 65 |
+
+  Medidos igual con igual (A), los cuatro primeros escalones son los pedidos:
+  el sujeto siguió la barra. El escalón máximo sí pasó la calibración, con las
+  dos medidas (pico 127 %, media de 0.5 s 127 %): la referencia de la sesión
+  del punto 3 lo recoge, pero baja todos los demás a la vez. Hay que decidir
+  si el punto 3 se queda con A o solo limita la columna «Pico».
