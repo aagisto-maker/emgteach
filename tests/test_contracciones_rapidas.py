@@ -171,6 +171,22 @@ def test_a_late_subject_s_last_contractions_are_counted() -> None:
     assert tren.seconds == pytest.approx(10.1, abs=0.3)
 
 
+def test_a_train_in_the_fragment_round_it_is_counted_whole() -> None:
+    """The final bench (B2): with fragments chosen, the «Train» view vanished.
+    The fragment proposed for a train is its activity, which begins some
+    tenths after the cue, and a stretch counted only with its cue inside a
+    fragment. Measured over the part the fragment keeps, the train is whole."""
+    sesion, senal, _m = _tren_sintetico(tarde=(0.4, 0.5), rate=3.0)
+    filt = process_offline(senal, FS)["emg_filtered"]
+    tramo = sesion.spans_named("train")[0]
+    a, b = tramo.start_s + 0.4, tramo.end_s + 0.6
+    trozo = filt[round(a * FS):round(b * FS)]
+    tren = rapid_train(sesion, [(a, b, 0.0)], fs=FS, emg_filtered=trozo)
+    assert tren is not None
+    assert tren.n == pytest.approx(31, abs=1)
+    assert tren.rate_hz == pytest.approx(3.0, abs=0.15)
+
+
 def test_a_full_relaxation_leaves_only_the_measures_floor() -> None:
     sesion, senal, _m = _tren_sintetico(suelo=0.0, crecen=0.0)
     filt = process_offline(senal, FS)["emg_filtered"]
@@ -255,6 +271,29 @@ def test_a_recorded_train_is_analysed_reported_and_sent(qapp, tmp_path: Path) ->
     m = dif.mensajes[-1]["train"]
     assert m["n"] == tren.n and m["proc"] is not None
     assert dif.mensajes[-1]["mdf_slope"] is None and dif.mensajes[-1]["fatigue"] is None
+
+
+@pytest.mark.gui
+def test_with_the_fragment_round_the_train_the_view_stays(qapp, tmp_path: Path) -> None:
+    """B2 in the worker: the fragment the editor proposes for the train — its
+    activity, from after the cue — and the train is measured in it."""
+    from emgteach.io import list_edf_emg_channels
+    from emgteach.workers import AnalysisWorker
+    from tests.test_fatiga_guiada import _edf
+
+    sesion, senal, marcas = _tren_sintetico(t0=REC_S, tarde=(0.4, 0.5), rate=3.0)
+    edf = _edf(tmp_path / "rapidas.edf", marcas, senal)
+    tramo = sesion.spans_named("train")[0]
+    worker = AnalysisWorker(edf_path=edf, channel_name=list_edf_emg_channels(edf)[0],
+                            roi_segments=[(tramo.start_s + 0.4, tramo.end_s + 0.6)])
+    salida: list[dict] = []
+    worker.result_ready.connect(salida.append)
+    worker.start()
+    worker.wait(120000)
+    qapp.processEvents()
+    assert salida
+    tren = salida[0]["train"]
+    assert tren is not None and tren.n == pytest.approx(31, abs=1)
 
 
 @pytest.mark.gui

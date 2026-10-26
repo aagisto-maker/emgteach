@@ -1036,3 +1036,19 @@ dentro.
 pegados, el primero en `REC start`, 0.7-0.8 s entre uno y otro) se reabre con
 sus cinco escalones también antes de la corrección; el fallo era solo el de
 los fragmentos elegidos. El afinado no se cambia.
+
+**B2, punto 4: con fragmentos elegidos, la vista «Tren» desaparecía.** La
+misma causa: la tabla de contracciones da una sola fila para el tren, su
+actividad, y el fragmento que propone empieza tras el aviso (en
+`m_rapidas_2026-10-26_10-38-41.edf`, 14.2 s frente a 13.8). Con `main`, ningún
+tren; con la corrección, 30 contracciones a 2.9/s, como sin fragmentos. La
+solución es común: los escalones y el tren pasan por `guided.measured_windows`
+y la carga fija por `guided.load_piece` (#148), las dos con «la parte que
+conservan los fragmentos». Una prueba para cada vista.
+
+**B2, punto 5: el nombre del canal.** No es un arrastre: son dos campos. El
+nombre del músculo es la casilla de «Etiquetas:» (fila de canales); es la
+etiqueta del canal en el EDF y lo que muestra Análisis, y se recuerda entre
+sesiones. El «Identificador de prueba:» (fila de la difusión) da el nombre del
+archivo y el campo de sujeto/registro de la cabecera. Ángel escribió
+«antebrazo» en el identificador; el músculo siguió siendo «biceps».
