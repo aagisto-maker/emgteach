@@ -55,6 +55,7 @@ __all__ = [
     "hold_result",
     "intermittent_reps",
     "is_monotonic",
+    "mdf_trend_applies",
     "measured_windows",
     "processing_floor_pct",
     "rapid_train",
@@ -148,6 +149,15 @@ def measured_windows(
                 t = MeasuredSpan(t.name, t.start_s, t.start_s + (b - a), t.params)
             out.append((t, a, b))
     return out
+
+
+def mdf_trend_applies(session: GuidedSession | None) -> bool:
+    """Whether the MDF's trend over the analysed span can say anything about
+    fatigue: not over a train of quick contractions, ten seconds of brief
+    ones with no contraction held for the trend to show (Ángel's bench,
+    26 October 2026: «Fatigue: not conclusive» beside the train's own
+    numbers)."""
+    return session is None or session.family != "FAST"
 
 
 def _actividad(envelope) -> np.ndarray:

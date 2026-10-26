@@ -59,7 +59,7 @@ from emgteach.figures import (
     draw_raw_panel,
     draw_rms_panel,
 )
-from emgteach.guided import is_monotonic, reps_trend_pct
+from emgteach.guided import is_monotonic, mdf_trend_applies, reps_trend_pct
 from emgteach.i18n import tr
 from emgteach.modes import protocol_label
 from emgteach.mvc import (
@@ -902,9 +902,10 @@ def build_session_report(
         _por_musculo(tr("Mean frequency (MNF)"), "mnf", "{:.1f} Hz"),
         _por_musculo(tr("Median frequency (MDF)"), "mdf", "{:.1f} Hz"),
         _por_musculo("iEMG", "iemg", "{:.3f} mV·s"),
-        [tr("Fatigue evidence"), _fatigue_text(result)]
-        + ([_fatigue_text(result, "_2")] if dos else []),
     ]
+    if mdf_trend_applies(result.get("guided_session")):
+        metrics.append([tr("Fatigue evidence"), _fatigue_text(result)]
+                       + ([_fatigue_text(result, "_2")] if dos else []))
     story.append(_styled_table(metrics, [5.0, 6.0, 6.0] if dos else [5.0, 12.0],
                                spans=spans))
     story.append(Spacer(1, 0.4 * cm))

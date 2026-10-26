@@ -187,6 +187,16 @@ def test_only_a_train_is_a_train() -> None:
     assert rapid_train(None, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=senal) is None
 
 
+def test_the_mdf_trend_says_nothing_over_a_train() -> None:
+    from emgteach.guided import mdf_trend_applies
+
+    sesion, _s, _m = _tren_sintetico()
+    assert not mdf_trend_applies(sesion)
+    assert mdf_trend_applies(None)
+    assert mdf_trend_applies(parse_session_markers(
+        [(0.0, "HOLD start mode=sustained v=1"), (1.0, "HOLD end")]))
+
+
 def test_the_chart_draws() -> None:
     from matplotlib.figure import Figure
 
@@ -227,7 +237,11 @@ def test_a_recorded_train_is_analysed_reported_and_sent(qapp, tmp_path: Path) ->
 
     pdf = tmp_path / "rapidas.pdf"
     build_session_report(pdf, r, meta={})
-    assert tr("Guided session: quick repeated contractions") in _pdf_text(pdf)
+    texto = _pdf_text(pdf)
+    assert tr("Guided session: quick repeated contractions") in texto
+    # Ten seconds of brief contractions: no fatigue verdict, no MDF slope
+    # (Ángel's bench, 26 October 2026).
+    assert tr("Fatigue evidence") not in texto
 
     dif = _Difusion()
 
@@ -240,6 +254,7 @@ def test_a_recorded_train_is_analysed_reported_and_sent(qapp, tmp_path: Path) ->
     AnalysisTab._bcast_results(_Tab(), r)       # type: ignore[arg-type]
     m = dif.mensajes[-1]["train"]
     assert m["n"] == tren.n and m["proc"] is not None
+    assert dif.mensajes[-1]["mdf_slope"] is None and dif.mensajes[-1]["fatigue"] is None
 
 
 @pytest.mark.gui

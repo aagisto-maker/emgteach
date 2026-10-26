@@ -255,7 +255,7 @@ from emgteach.gui.widgets.fragment_selection import (
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
-from emgteach.guided import is_monotonic, reps_trend_pct
+from emgteach.guided import is_monotonic, mdf_trend_applies, reps_trend_pct
 from emgteach.i18n import tr
 from emgteach.io import (
     assess_edf_channels,
@@ -2217,15 +2217,17 @@ class AnalysisTab(QWidget):
             "file": Path(str(r.get("edf_path", ""))).name,
             "mnf": round(float(r.get("mnf", 0.0)), 1),
             "mdf": round(float(r.get("mdf", 0.0)), 1),
-            "mdf_slope": round(float(r.get("mdf_slope", 0.0)), 2),
+            # Not over a train of quick contractions (guided.mdf_trend_applies).
+            "mdf_slope": (round(float(r.get("mdf_slope", 0.0)), 2)
+                          if mdf_trend_applies(r.get("guided_session")) else None),
             "rms": round(float(r.get("rms_global", 0.0)), 3),
             "iemg": round(float(r.get("iemg", 0.0)), 1),
             "duration": round(float(r.get("duration", 0.0)), 1),
             # Same three states as the summary label, in the wire format the
             # phones already speak: -1 fatigue, +1 none, 0 not conclusive.
-            "fatigue": {FATIGUE: -1, NO_FATIGUE: 1}.get(
+            "fatigue": ({FATIGUE: -1, NO_FATIGUE: 1}.get(
                 r.get("fat_verdict", INCONCLUSIVE), 0
-            ),
+            ) if mdf_trend_applies(r.get("guided_session")) else None),
             # The gradation's steps, [asked, held] in % MVC, when it has them.
             "steps": [[round(p.target_pct), round(p.held_pct)]
                       for p in (r.get("grad_steps") or []) if p.held_pct is not None],
@@ -2302,6 +2304,15 @@ class AnalysisTab(QWidget):
 
         decline = r.get("fat_pct_decline", 0.0)
         veredicto = r.get("fat_verdict", INCONCLUSIVE)
+        if not mdf_trend_applies(r.get("guided_session")):
+            # Ten seconds of quick contractions: no trend to fit, and the
+            # train's own numbers are in its view and its summary line.
+            self._lbl_pendiente.setText("—")
+            self._lbl_fatiga.setText(_en_dos_lineas(
+                tr("Not measured (quick contractions: nothing held)")))
+            self._lbl_fatiga.setStyleSheet(
+                "font-size: 12px; font-weight: 600; color: #666666;")
+            return
         if veredicto == FATIGUE:
             texto = tr("Detected (MDF −{decline:.1f} %)").format(decline=decline)
             color = "#B0243A"
