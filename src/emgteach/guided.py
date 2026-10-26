@@ -4,12 +4,11 @@ The session marks (:mod:`emgteach.sessions`) say where each measured stretch
 was; this module turns those stretches into the numbers the analysis tab, the
 report and the phones show. Qt-free, like the rest of the analytic core.
 
-The fatigue, sustained: from the analysis' sliding windows over the effort,
-the MDF and the RMS of its start and its end (a quarter of it, at most five
-seconds) and the seconds until
-each fell 10 and 20 %. Intermittent: one row per contraction, its RMS after
-the first second (the peak is the start of each contraction and does not
-fall) and its MDF.
+The fatigue: a fixed load held with the biceps, read in the spectrum. MDF and
+MNF in windows of a second against time, with their straight lines, the
+seconds until the MDF fell 10 %, and the RMS beside them: fatigue lowers the
+frequency, and under a submaximal load the amplitude may hold or rise (the
+bench's biceps, 26 October 2026: MDF down 16 % in 90 s, RMS flat).
 
 The gradation: one row per step, with the target the student was asked for,
 the level they held, its RMS and its MDF. **The level held is the mean of the
@@ -41,26 +40,28 @@ from emgteach.selection import Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
 
 __all__ = [
-    "EDGE_S",
+    "LOAD_SKIP_S",
     "MARGIN_S",
     "RELEASE_S",
+    "REST_WARN_MV",
     "SETTLE_S",
     "TRAIN_RMS_MS",
-    "HoldResult",
-    "RepResult",
+    "LoadResult",
     "StepResult",
     "TrainResult",
+    "Trend",
     "change_pct",
     "gradation_reference_text",
     "gradation_steps",
-    "hold_result",
-    "intermittent_reps",
     "is_monotonic",
+    "load_fatigue",
+    "load_span",
+    "load_verdict",
     "mdf_trend_applies",
     "measured_windows",
     "processing_floor_pct",
     "rapid_train",
-    "reps_trend_pct",
+    "rest_level",
     "spans_in_analysis_time",
     "time_to_decline",
 ]
@@ -84,7 +85,7 @@ _GUARDA_S = 0.25
 
 #: The stretches run on past their marks. Not the sustained maximum's effort:
 #: its analysed span is the effort, and its protocol is being revised.
-_CON_MARGEN = frozenset({"step", "rep", "train"})
+_CON_MARGEN = frozenset({"step", "train"})
 
 #: Shorter than this, a stretch has too few cycles of anything for an MDF.
 _MIN_S_FOR_MDF = 0.25
@@ -273,24 +274,37 @@ def is_monotonic(steps: Sequence[StepResult]) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# The fatigue: a sustained maximum, and an intermittent one
+# The fatigue: a fixed load held, read in the spectrum
 # ---------------------------------------------------------------------------
 
-#: Seconds at each end of a sustained maximum compared with each other, at
-#: most: a quarter of the effort when it is shorter than twenty seconds, so
-#: the ten-second maximum compares its first and last 2.5 s and not the same
-#: windows twice.
-EDGE_S = 5.0
+#: The analysis of a held load starts this long after the activity does:
+#: picking up the weight is not the contraction that tires.
+LOAD_SKIP_S = 2.0
+#: The windows the spectrum is followed with: 1 s, every half second (the
+#: analysis' own segments), and the means over 5 s that the view draws.
+LOAD_WIN_S = 1.0
+LOAD_STEP_S = 0.5
+LOAD_BLOCK_S = 5.0
+#: Fatigue is a significant fall of the MDF (its slope's p below this) of at
+#: least this much, % of where its line begins. Not an R² threshold: on the
+#: bench's biceps (26 October 2026) the MDF fell 16 % in 90 s with p ~ 1e-8
+#: and an R² of 0.3 — a real fall under a spectrum's own scatter.
+LOAD_MAX_P = 0.01
+LOAD_MIN_FALL_PCT = 10.0
+#: A rest above this before the effort, mV, says the electrodes' contact is
+#: poor (the bench's biceps rested at 0.028 mV).
+REST_WARN_MV = 0.01
 
 
-def time_to_decline(t, values, pct: float, *, base_n: int = 3) -> float | None:
+def time_to_decline(t, values, pct: float, *, base_n: int = 3,
+                    span: int = 3) -> float | None:
     """When *values* first fell *pct* per cent below where they began.
 
     Where they began is the median of the first *base_n* values; a value
-    counts once the median of it and the two before it is below the line,
-    so a single low window — a breath, a shift of the grip — does not end the
-    count. In the units of *t*, from its first value; ``None`` if the fall
-    never comes.
+    counts once the median of it and the *span* - 1 before it is below the
+    line, so a single low window — a breath, a shift of the grip — does not
+    end the count. In the units of *t*, from its first value; ``None`` if the
+    fall never comes.
     """
     tt = np.asarray(t, dtype=np.float64)
     v = np.asarray(values, dtype=np.float64)
@@ -301,7 +315,7 @@ def time_to_decline(t, values, pct: float, *, base_n: int = 3) -> float | None:
         return None
     linea = base * (1.0 - float(pct) / 100.0)
     for i in range(base_n, v.size):
-        if float(np.median(v[max(0, i - 2): i + 1])) < linea:
+        if float(np.median(v[max(0, i - span + 1): i + 1])) < linea:
             return float(tt[i] - tt[0])
     return None
 
@@ -314,125 +328,154 @@ def change_pct(first: float | None, last: float | None) -> float | None:
 
 
 @dataclass(frozen=True)
-class HoldResult:
-    """A sustained maximum, from its windows: how much it fell, and when."""
+class Trend:
+    """A straight line through a measure against time, and how well it fits."""
 
-    seconds: float
-    mdf_start_hz: float | None
-    mdf_end_hz: float | None
-    rms_start_mv: float | None
-    rms_end_mv: float | None
-    #: Seconds from the start of the effort until the MDF (or the RMS) had
-    #: fallen 10 and 20 % below where it began; ``None`` if it did not.
-    t_mdf_10: float | None
-    t_mdf_20: float | None
-    t_rms_10: float | None
-    t_rms_20: float | None
+    slope: float
+    #: The line at the first and the last window.
+    start: float
+    end: float
+    r2: float
+    p: float
 
     @property
-    def mdf_change_pct(self) -> float | None:
-        return change_pct(self.mdf_start_hz, self.mdf_end_hz)
-
-    @property
-    def rms_change_pct(self) -> float | None:
-        return change_pct(self.rms_start_mv, self.rms_end_mv)
+    def change_pct(self) -> float | None:
+        return change_pct(self.start, self.end)
 
 
-def hold_result(t_seg, mdf_seg, rms_seg, active=None, *,
-                seg_len_s: float = 1.0, edge_s: float = EDGE_S) -> HoldResult | None:
-    """The sustained maximum's numbers, from the analysis' sliding windows.
+def _trend(t, v) -> Trend | None:
+    from scipy.stats import linregress
 
-    *t_seg* are the windows' starts, in seconds from the start of the effort
-    (the analysed span is the effort); each window is placed at its centre.
-    Windows where the muscle had let go (*active* false) are left out: the
-    MDF of silence is not a measurement.
-    """
-    t = np.asarray(t_seg, dtype=np.float64) + 0.5 * float(seg_len_s)
-    mdf = np.asarray(mdf_seg, dtype=np.float64)
-    rms = np.asarray(rms_seg, dtype=np.float64)
-    if t.size < 2 or mdf.size != t.size or rms.size != t.size:
+    t = np.asarray(t, dtype=np.float64)
+    v = np.asarray(v, dtype=np.float64)
+    if t.size < 3 or np.ptp(t) <= 0:
         return None
-    if active is not None:
-        m = np.asarray(active, dtype=bool)
-        if m.size == t.size and m.any():
-            t, mdf, rms = t[m], mdf[m], rms[m]
-    dur = float(t[-1] + 0.5 * seg_len_s)
-    borde = min(float(edge_s), dur / 4.0)
-    ini = t <= t[0] + borde
-    fin = t >= t[-1] - borde
-
-    def media(x, sel):
-        return float(np.median(x[sel])) if sel.any() else None
-
-    return HoldResult(
-        seconds=dur,
-        mdf_start_hz=media(mdf, ini), mdf_end_hz=media(mdf, fin),
-        rms_start_mv=media(rms, ini), rms_end_mv=media(rms, fin),
-        t_mdf_10=time_to_decline(t, mdf, 10.0), t_mdf_20=time_to_decline(t, mdf, 20.0),
-        t_rms_10=time_to_decline(t, rms, 10.0), t_rms_20=time_to_decline(t, rms, 20.0),
-    )
+    r = linregress(t, v)
+    return Trend(slope=float(r.slope), start=float(r.intercept + r.slope * t[0]),
+                 end=float(r.intercept + r.slope * t[-1]),
+                 r2=float(r.rvalue ** 2), p=float(r.pvalue))
 
 
 @dataclass(frozen=True)
-class RepResult:
-    """One contraction of the intermittent maximum."""
+class LoadResult:
+    """A fixed load held: what the spectrum and the amplitude did."""
 
-    n: int
-    start_s: float
-    end_s: float
-    #: RMS of the filtered signal over the contraction's plateau, after its
-    #: first second — not its peak, which is the start and does not fall.
-    rms_mv: float
-    mdf_hz: float | None
+    seconds: float
+    #: Each window's centre, from the start of the analysed span, and its
+    #: MDF, MNF (Hz) and RMS (mV).
+    t: tuple[float, ...]
+    mdf: tuple[float, ...]
+    mnf: tuple[float, ...]
+    rms: tuple[float, ...]
+    #: The means over 5 s, as the view draws them.
+    block_t: tuple[float, ...]
+    block_mdf: tuple[float, ...]
+    block_mnf: tuple[float, ...]
+    mdf_trend: Trend | None
+    mnf_trend: Trend | None
+    rms_trend: Trend | None
+    #: Seconds until the MDF had fallen 10 % (a 5 s running median against
+    #: its first 5 s); ``None`` if it did not.
+    t_mdf_10: float | None
+    #: emgteach.fatigue's FATIGUE, NO_FATIGUE or INCONCLUSIVE.
+    verdict: str
 
 
-def intermittent_reps(
-    session: GuidedSession | None,
-    kept: Sequence[tuple[float, float, float]],
-    *,
-    fs: float,
-    emg_filtered,
-    envelope=None,
-    f_low: float = 20.0,
-    f_high: float = 450.0,
-    settle_s: float = SETTLE_S,
-) -> list[RepResult]:
-    """The intermittent maximum's contractions, measured; empty otherwise.
+def load_verdict(trend: Trend | None, n: int) -> str:
+    """Fatigue when the MDF fell significantly and by at least a tenth."""
+    from emgteach.fatigue import FATIGUE, INCONCLUSIVE, NO_FATIGUE
 
-    Each is the contraction found inside its marks run on past their end, on
-    *envelope* (a 100 ms moving RMS of the signal without one).
+    if trend is None or n < 10 or not np.isfinite(trend.p):
+        return INCONCLUSIVE
+    if trend.p >= LOAD_MAX_P:
+        return INCONCLUSIVE
+    caida = trend.change_pct
+    if trend.slope < 0 and caida is not None and caida <= -LOAD_MIN_FALL_PCT:
+        return FATIGUE
+    return NO_FATIGUE
+
+
+def load_fatigue(emg_filtered, fs: float, *, f_low: float = 20.0,
+                 f_high: float = 450.0) -> LoadResult | None:
+    """The held load's spectrum and amplitude, window by window, and their lines.
+
+    *emg_filtered* is the analysed span, which for the load session is the
+    held contraction (:func:`load_span`). MDF and MNF of each window over the
+    analysis band, its RMS; a straight line through each against time; the
+    seconds until the MDF fell 10 %; and the verdict (:func:`load_verdict`).
     """
-    if (session is None or session.family != "HOLD"
-            or session.params.get("mode") != "intermittent" or fs <= 0):
-        return []
-    filt = np.asarray(emg_filtered, dtype=np.float64)
-    actividad = _actividad(envelope if envelope is not None
-                           else _moving_rms(filt, fs, 100.0))
-    reps: list[RepResult] = []
-    for tramo, a, b in measured_windows(session, kept, ("rep",)):
-        a, b = _contraccion(actividad, fs, a, b)
-        m0, m1 = _meseta(a, b, settle_s)
-        i0 = max(0, min(round(m0 * fs), filt.size))
-        i1 = max(i0, min(round(m1 * fs), filt.size))
-        if i1 - i0 < 2:
-            continue
-        trozo = filt[i0:i1]
-        mdf = None
-        if (i1 - i0) / fs >= _MIN_S_FOR_MDF:
-            mdf = float(compute_psd_mnf_mdf(trozo, fs, f_low=f_low, f_high=f_high)["mdf"])
-        n = tramo.number("n")
-        reps.append(RepResult(int(n) if n else len(reps) + 1, a, b,
-                              float(np.sqrt(np.mean(trozo ** 2))), mdf))
-    return reps
-
-
-def reps_trend_pct(reps: Sequence[RepResult]) -> float | None:
-    """The RMS's straight-line trend, in % of the first contraction per contraction."""
-    if len(reps) < 3 or not reps[0].rms_mv:
+    x = np.asarray(emg_filtered, dtype=np.float64)
+    if fs <= 0:
         return None
-    x = np.arange(len(reps), dtype=np.float64)
-    y = 100.0 * np.array([r.rms_mv for r in reps]) / reps[0].rms_mv
-    return float(np.polyfit(x, y, 1)[0])
+    w = round(LOAD_WIN_S * fs)
+    paso = max(1, round(LOAD_STEP_S * fs))
+    if x.size < w * 3:
+        return None
+    t, mdf, mnf, rms = [], [], [], []
+    for i0 in range(0, x.size - w + 1, paso):
+        trozo = x[i0:i0 + w]
+        r = compute_psd_mnf_mdf(trozo, fs, f_low=f_low, f_high=f_high)
+        t.append((i0 + w / 2) / fs)
+        mdf.append(float(r["mdf"]))
+        mnf.append(float(r["mnf"]))
+        rms.append(float(np.sqrt(np.mean(trozo ** 2))))
+    tt = np.array(t)
+    bloque = max(1, round(LOAD_BLOCK_S / LOAD_STEP_S))
+    bloques = range(0, tt.size - bloque + 1, bloque)
+    por_tramo = round(LOAD_BLOCK_S / LOAD_STEP_S)
+    tendencia = _trend(tt, mdf)
+    return LoadResult(
+        seconds=x.size / fs,
+        t=tuple(t), mdf=tuple(mdf), mnf=tuple(mnf), rms=tuple(rms),
+        block_t=tuple(float(np.mean(tt[i:i + bloque])) for i in bloques),
+        block_mdf=tuple(float(np.mean(mdf[i:i + bloque])) for i in bloques),
+        block_mnf=tuple(float(np.mean(mnf[i:i + bloque])) for i in bloques),
+        mdf_trend=tendencia, mnf_trend=_trend(tt, mnf), rms_trend=_trend(tt, rms),
+        t_mdf_10=time_to_decline(tt, mdf, 10.0, base_n=por_tramo, span=por_tramo),
+        verdict=load_verdict(tendencia, tt.size),
+    )
+
+
+def load_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float, float] | None:
+    """The held contraction of a load session, in file time.
+
+    From :data:`LOAD_SKIP_S` after the activity begins — the student picks
+    the weight up on the cue, and that is not the contraction that tires — to
+    where the activity falls or the effort's mark ends it, whichever comes
+    first. The activity is found as the contraction table finds it, above the
+    rest the session measured before the effort.
+    """
+    if session is None or session.family != "HOLD" or session.params.get("mode") != "load":
+        return None
+    esfuerzos = session.spans_named("effort")
+    if not esfuerzos or fs <= 0:
+        return None
+    esfuerzo = esfuerzos[-1]
+    env = np.asarray(envelope, dtype=np.float64)
+    reposos = session.spans_named("rest")
+    if reposos:
+        r0 = max(0, round(reposos[-1].start_s * fs))
+        r1 = min(env.size, round(reposos[-1].end_s * fs))
+        reposo = float(np.median(env[r0:r1])) if r1 > r0 else resting_level(env)
+    else:
+        reposo = resting_level(env)
+    a0 = max(0.0, esfuerzo.start_s - 3.0)          # the countdown, when one picks it up early
+    on, off = _contraccion(env - reposo, fs, a0, esfuerzo.end_s)
+    a, b = on + LOAD_SKIP_S, min(off, esfuerzo.end_s)
+    return (a, b) if b - a >= 3 * LOAD_WIN_S else None
+
+
+def rest_level(session: GuidedSession | None, envelope, fs: float) -> float | None:
+    """The envelope's median over the rest a session measured, mV."""
+    if session is None or fs <= 0:
+        return None
+    reposos = session.spans_named("rest")
+    if not reposos:
+        return None
+    env = np.asarray(envelope, dtype=np.float64)
+    r0 = max(0, round(reposos[-1].start_s * fs))
+    r1 = min(env.size, round(reposos[-1].end_s * fs))
+    return float(np.median(env[r0:r1])) if r1 > r0 else None
 
 
 # ---------------------------------------------------------------------------

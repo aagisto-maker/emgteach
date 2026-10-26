@@ -208,10 +208,10 @@ def test_the_margin_never_reaches_the_next_stretch() -> None:
     assert [round(b - a, 6) for _t, a, b in ventanas] == [4.0 + MARGIN_S] * 5
     # Two stretches one second apart: the first stops short of the second.
     juntas = parse_session_markers([
-        (0.0, "HOLD start mode=intermittent v=1"),
-        (1.0, "HOLD rep start n=1"), (6.0, "HOLD rep end n=1"),
-        (7.0, "HOLD rep start n=2"), (12.0, "HOLD rep end n=2"),
-        (12.5, "HOLD end")])
+        (0.0, "GRAD start steps=2 v=1"),
+        (1.0, "GRAD step start k=1 pct=20"), (6.0, "GRAD step end k=1"),
+        (7.0, "GRAD step start k=2 pct=40"), (12.0, "GRAD step end k=2"),
+        (12.5, "GRAD end")])
     (_t1, a1, b1), (_t2, _a2, b2) = measured_windows(juntas, [(0.0, 20.0, 0.0)])
     assert a1 == 1.0 and b1 == pytest.approx(6.75)
     # Nor past the session's end, nor past the piece the analysis kept.
@@ -547,12 +547,12 @@ def test_only_the_gradation_calibrates_with_a_window() -> None:
     from emgteach.gui.tabs.acquisition import AcquisitionTab
     from emgteach.modes import MODE_PAIR, MODE_SINGLE
     from emgteach.profiles import EMG_PROFILE
-    from emgteach.sessions import GRAD_MVC_WINDOW_S, hold_script
+    from emgteach.sessions import GRAD_MVC_WINDOW_S, load_script
 
     perfil = EMG_PROFILE
     for modo, guion, esperado in (
         (MODE_SINGLE, gradation_script(), GRAD_MVC_WINDOW_S),
-        (MODE_SINGLE, hold_script(), perfil.mvc_peak_window_s),
+        (MODE_SINGLE, load_script(), perfil.mvc_peak_window_s),
         (MODE_SINGLE, None, perfil.mvc_peak_window_s),
         (MODE_PAIR, gradation_script(), perfil.mvc_peak_window_s),
     ):

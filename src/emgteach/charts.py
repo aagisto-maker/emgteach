@@ -642,46 +642,64 @@ def draw_steps_chart(fig, steps: Sequence[Any], *, small: bool = False,
     _quitar_marco(ax)
 
 
-def draw_reps_chart(fig, reps: Sequence[Any], *, small: bool = False) -> None:
-    """The intermittent maximum: the RMS of each contraction, in order.
+def draw_load_chart(fig, load: Any, *, small: bool = False) -> None:
+    """A fixed load held: the MDF and MNF against time, and the RMS in grey.
 
-    ``reps`` are :class:`emgteach.guided.RepResult`. A bar per contraction
-    with its RMS — not its peak, which is the start of each contraction and
-    does not fall — and its MDF as points on an axis of its own. The title
-    says how much the last fell against the first.
+    ``load`` is :class:`emgteach.guided.LoadResult`. Each 1 s window as a
+    faint point, the means over 5 s as the marked line, the straight line
+    through the MDF, and the RMS on an axis of its own in grey: fatigue moves
+    the spectrum down, while the amplitude may hold or even rise as more
+    units are recruited to keep the load up. A dotted line marks when the
+    MDF had fallen 10 %. The title gives the MDF's line, its R² and its p.
     """
     fig.clear()
     fs = 7 if small else 8
     ax = fig.add_subplot(111)
-    if not reps:
+    if load is None or not load.t:
         ax.set_axis_off()
-        ax.text(0.5, 0.5, tr("No contractions"), ha="center", va="center",
+        ax.text(0.5, 0.5, tr("No held contraction"), ha="center", va="center",
                 fontsize=fs, color="#888888", transform=ax.transAxes)
         return
-    x = np.arange(1, len(reps) + 1, dtype=float)
-    rms = np.array([r.rms_mv for r in reps])
-    ax.bar(x, rms, width=0.6, color=COLOUR_1, alpha=0.85, zorder=2)
-    if len(reps) >= _MIN_FOR_TREND:
-        ax.plot(x, np.polyval(np.polyfit(x, rms, 1), x), "--", color=COLOUR_1,
-                lw=0.8, alpha=0.7, zorder=3)
-    ax.set_xticks(x)
-    ax.set_xticklabels([str(r.n) for r in reps], fontsize=fs - 1)
-    ax.set_xlabel(tr("Contraction"), fontsize=fs - 1)
-    ax.set_ylabel(tr("RMS (mV)"), color=COLOUR_1, fontsize=fs)
-    ax.tick_params(axis="y", labelsize=fs - 1)
-    ax.set_ylim(0, float(rms.max()) * 1.2 or 1.0)
-    mdf = [r.mdf_hz for r in reps]
-    if all(m is not None for m in mdf):
-        ax2 = ax.twinx()
-        ax2.plot(x, mdf, "o", color="#2E7D32", ms=3.5, zorder=4)
-        ax2.set_ylabel(tr("MDF (Hz)"), color="#2E7D32", fontsize=fs)
-        ax2.tick_params(axis="y", labelsize=fs - 1, colors="#2E7D32")
-        ax2.spines["top"].set_visible(False)
-    cambio = 100.0 * (rms[-1] - rms[0]) / rms[0] if rms[0] else 0.0
-    ax.set_title(tr("RMS of each contraction: last against first {pct:+.0f} %")
-                 .format(pct=cambio), fontsize=fs, pad=3)
-    ax.grid(axis="y", lw=0.4, alpha=0.4, zorder=0)
+    t = np.asarray(load.t)
+    gris = "#9E9E9E"
+    ax2 = ax.twinx()
+    ax2.plot(t, load.rms, color=gris, lw=0.6, alpha=0.8, zorder=1)
+    ax2.set_ylabel(tr("RMS (mV)"), color=gris, fontsize=fs)
+    ax2.tick_params(axis="y", labelsize=fs - 1, colors=gris)
+    ax2.set_ylim(0, max(load.rms) * 1.4 or 1.0)
+    ax2.spines["top"].set_visible(False)
+    ax.set_zorder(ax2.get_zorder() + 1)
+    ax.patch.set_visible(False)
+    verde = "#2E7D32"
+    ax.plot(t, load.mdf, ".", color=COLOUR_1, ms=2, alpha=0.35)
+    ax.plot(t, load.mnf, ".", color=verde, ms=2, alpha=0.25)
+    ax.plot(load.block_t, load.block_mdf, "o-", color=COLOUR_1, ms=3, lw=1.0,
+            label=tr("MDF"))
+    ax.plot(load.block_t, load.block_mnf, "s-", color=verde, ms=2.5, lw=0.8,
+            label=tr("MNF"))
+    tend = load.mdf_trend
+    if tend is not None:
+        ax.plot([t[0], t[-1]], [tend.start, tend.end], "--", color=COLOUR_1, lw=0.9)
+    if load.t_mdf_10 is not None:
+        x10 = t[0] + load.t_mdf_10
+        ax.axvline(x10, color="#555555", lw=0.7, ls=":")
+        ax.text(x10, 0.02, " " + tr("MDF −10 %"), transform=ax.get_xaxis_transform(),  # noqa: RUF001
+                fontsize=fs - 2, color="#555555", ha="left", va="bottom")
+    ax.set_xlabel(tr("Time held (s)"), fontsize=fs - 1)
+    ax.set_ylabel(tr("Frequency (Hz)"), fontsize=fs)
+    ax.tick_params(labelsize=fs - 1)
+    ax.legend(fontsize=fs - 1, frameon=False, loc="upper right", ncol=2)
+    if tend is not None:
+        ax.set_title(tr("MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %) · R² {r2:.2f} · p {p}")
+                     .format(a=tend.start, b=tend.end, pct=tend.change_pct or 0.0,
+                             r2=tend.r2, p=_p_texto(tend.p)), fontsize=fs, pad=3)
+    ax.grid(axis="y", lw=0.4, alpha=0.4)
     ax.spines["top"].set_visible(False)
+
+
+def _p_texto(p: float) -> str:
+    """A p value as it is read: below 0.001 is just that."""
+    return "< 0.001" if p < 0.001 else f"= {p:.3f}"
 
 
 def draw_train_chart(fig, train: Any, *, small: bool = False) -> None:

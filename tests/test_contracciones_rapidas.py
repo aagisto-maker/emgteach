@@ -56,7 +56,7 @@ def test_ten_seconds_as_fast_as_possible_with_the_fist() -> None:
 def test_it_is_offered_after_the_fatigue() -> None:
     from emgteach.gui.tabs.acquisition import GUIDED_SESSIONS
 
-    assert list(GUIDED_SESSIONS)[-2:] == ["fatiga_intermitente", "rapidas"]
+    assert list(GUIDED_SESSIONS)[-2:] == ["fatiga", "rapidas"]
 
 
 def test_every_word_is_in_spanish() -> None:

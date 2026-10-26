@@ -44,10 +44,11 @@ from emgteach.force_velocity import (
 from emgteach.guided import (
     MARGIN_S,
     gradation_steps,
-    hold_result,
-    intermittent_reps,
+    load_fatigue,
+    load_span,
     measured_windows,
     rapid_train,
+    rest_level,
 )
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -373,18 +374,22 @@ class AnalysisWorker(QThread):
         ventanas, _cargas = windows_from_markers(fv_loads, fs, n_samples)
         return [Segment(i0 / fs, i1 / fs) for i0, i1 in ventanas if i1 > i0] or None
 
-    @staticmethod
-    def _esfuerzo_mantenido(sesion) -> tuple[float, float] | None:
-        """The held effort of a sustained maximum, in file time: the span the
+    def _carga_sostenida(self, sesion, emg_raw, fs: float) -> tuple[float, float] | None:
+        """The held load of a fatigue session, in file time: the span the
         analysis takes by default, so its windows, its MDF line and its
-        verdict are the effort's and not the rests' around it."""
+        verdict are the held contraction's (guided.load_span) and not the
+        rests' around it, nor the picking up of the weight. One extra pass of
+        the DSP over the whole file, only for that session."""
         if (sesion is None or sesion.family != "HOLD"
-                or sesion.params.get("mode") != "sustained"):
+                or sesion.params.get("mode") != "load"):
             return None
-        esfuerzos = sesion.spans_named("effort")
-        if not esfuerzos:
-            return None
-        return (esfuerzos[-1].start_s, esfuerzos[-1].end_s)
+        env = process_offline(
+            emg_raw, fs, f_low=self._f_low, f_high=self._f_high,
+            f_notch=self._f_notch, f_env=self._f_env,
+            rms_window_ms=self._rms_window_ms,
+        )["emg_envelope"]
+        self._reposo_sesion = rest_level(sesion, env, fs)
+        return load_span(sesion, env, fs)
 
     @staticmethod
     def _tren_rapido(sesion) -> tuple[float, float] | None:
@@ -412,8 +417,8 @@ class AnalysisWorker(QThread):
         effort inside it."""
         if sesion is None:
             return None
-        return [Segment(a, b) for _t, a, b in
-                measured_windows(sesion, piezas) if b > a] or None
+        return [Segment(a, b) for t, a, b in measured_windows(sesion, piezas)
+                if b > a and t.name != "rest"] or None
 
     def _resolve_segments(
         self, n_samples: int, fs: float, full_duration: float,
@@ -536,9 +541,11 @@ class AnalysisWorker(QThread):
             # in discarded fragments are dropped). The kept windows are recorded
             # in the result so the report states them explicitly.
             full_duration = float(times[-1])
+            self._reposo_sesion = None
+            tramo_carga = self._carga_sostenida(sesion, emg_raw, fs)
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
-                default_span=(self._esfuerzo_mantenido(sesion)
+                default_span=(tramo_carga
                               or self._tren_rapido(sesion)
                               or phases.rec_span(full_duration, fv_loads)),
             )
@@ -1334,18 +1341,23 @@ class AnalysisWorker(QThread):
                         n=len(result["grad_steps"])))
                 result["train"] = rapid_train(
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
-                result["reps"] = intermittent_reps(
-                    sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],
-                    envelope=proc["emg_envelope"],
-                    f_low=self._f_low, f_high=self._f_high,
-                )
-                # The sustained maximum is the analysed span itself: its
-                # windows are the effort's (_esfuerzo_mantenido).
-                result["hold"] = (
-                    hold_result(result["t_seg"], result["mdf_seg"], result["rms_seg"],
-                                result.get("fat_active"), seg_len_s=self._seg_len_s)
-                    if self._esfuerzo_mantenido(sesion) and not self._roi_segments
-                    else None)
+                # The held load is the analysed span itself (_carga_sostenida):
+                # its spectrum window by window, its lines and its verdict,
+                # which is the summary's too.
+                result["load"] = (
+                    load_fatigue(proc["emg_filtered"], fs,
+                                 f_low=self._f_low, f_high=self._f_high)
+                    if tramo_carga and not self._roi_segments else None)
+                result["rest_mv"] = self._reposo_sesion
+                carga = result["load"]
+                if carga is not None and carga.mdf_trend is not None:
+                    # The summary card and the report read the held load's
+                    # line, not the general fit over the windows at work.
+                    tend = carga.mdf_trend
+                    result["fat_verdict"] = carga.verdict
+                    result["mdf_slope"] = tend.slope
+                    result["fat_r_squared"] = tend.r2
+                    result["fat_pct_decline"] = -(tend.change_pct or 0.0)
                 result["emd_ms_mean"] = mean_emd_ms(filas)
                 # The rule the rows were labelled under, so the chart can
                 # draw the same wedge the labels came from.
@@ -1359,8 +1371,8 @@ class AnalysisWorker(QThread):
                 result["contractions"] = []
                 result["emd_ms_mean"] = None
                 result["grad_steps"] = []
-                result["reps"] = []
-                result["hold"] = None
+                result["load"] = None
+                result["rest_mv"] = None
                 result["train"] = None
                 self.log.emit(
                     tr("The contraction table could not be built: {err}")

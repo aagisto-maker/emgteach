@@ -138,6 +138,14 @@ class _SyntheticSubject:
     #: by the tests that check what the analysis makes of a late subject.
     reaction_s: float = 0.0
     release_s: float = 0.0
+    #: How a held contraction tires: its spectrum falls towards lower
+    #: frequencies with the seconds it has been held, as a real muscle's
+    #: MDF does (the bench's biceps: down 16-20 % in 90 s), so the fatigue
+    #: session can be rehearsed without hardware. The signal is coloured by
+    #: a first-order filter whose coefficient rises to this, with this time
+    #: constant; a contraction of a few seconds barely changes.
+    fatigue_rho: float = 0.3
+    fatigue_tau_s: float = 60.0
 
     def __init__(self, acc_channel: int | None, seed: int | None) -> None:
         self.acc_channel = acc_channel
@@ -154,6 +162,10 @@ class _SyntheticSubject:
         #: ``{muscle: (what was asked before, from when the new applies)}``
         #: while a late subject has not yet done what it was last asked.
         self._late: dict[int, tuple[tuple[float, float | None] | None, float]] = {}
+        #: When each muscle began what it was last asked, in the signal's
+        #: time, and the last value of its coloured signal.
+        self._since: dict[int, float] = {}
+        self._color = [0.0, 0.0]
 
     def instruct(self, channel_index: int, level: float | None,
                  *, repeat_s: float | None = None, at_s: float | None = None) -> None:
@@ -178,6 +190,12 @@ class _SyntheticSubject:
         c = int(channel_index)
         pedido = dict(self._asked)
         antes = pedido.get(c)
+        if at_s is not None:
+            desde = dict(self._since)
+            desde[c] = float(at_s)
+            self._since = desde
+        else:
+            self._since = {k: v for k, v in self._since.items() if k != c}
         if level is None:
             pedido.pop(c, None)
         else:
@@ -234,6 +252,16 @@ class _SyntheticSubject:
                                        min(_RAMP_S, 0.25 * burst)))
         return (fuera[0], fuera[1])
 
+    def _tiring(self, muscle: int, t: float) -> float:
+        """How far this muscle's spectrum has fallen at *t*: nothing at rest,
+        nor in the cycle or a train, and rising while a level is held."""
+        pedido = self._asked.get(muscle)
+        desde = self._since.get(muscle)
+        if (pedido is None or desde is None or pedido[0] <= 0.0
+                or pedido[1] is not None or t <= desde):
+            return 0.0
+        return self.fatigue_rho * (1.0 - math.exp(-(t - desde) / self.fatigue_tau_s))
+
     def sample(self, t: float, fs: float, channels: list[int]) -> list[int]:
         """ADC counts for the enabled *channels*, in ascending order."""
         a1, a2 = self.activation(t)
@@ -255,7 +283,14 @@ class _SyntheticSubject:
             k = emg.index(c)
             level = (a1, a2)[k] if k < 2 else 0.0
             mv_sd = _REST_MV + (_MAX_MV[k] if k < 2 else 0.0) * level
-            out.append(mv_to_adc(gauss(0.0, mv_sd)))
+            rho = self._tiring(k, t) if k < 2 else 0.0
+            if rho > 0.0:
+                # The same white noise, coloured: unit variance kept, power
+                # moved down the spectrum as the contraction is held.
+                self._color[k] = rho * self._color[k] + math.sqrt(1.0 - rho * rho) * gauss(0.0, 1.0)
+                out.append(mv_to_adc(mv_sd * self._color[k]))
+            else:
+                out.append(mv_to_adc(gauss(0.0, mv_sd)))
         return out
 
 

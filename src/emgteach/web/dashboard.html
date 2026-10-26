@@ -112,11 +112,11 @@ const M = {
   mStep:             ["Step",                              "Escalón"],
   mStepMax:          ["max",                               "máx."],
   mHeldOf:           ["held, asked",                       "mantenido, pedido"],
-  mHoldMdf:          ["MDF, start → end",                  "MDF, inicio → final"],
-  mHoldRms:          ["RMS, start → end",                  "RMS, inicio → final"],
-  mHoldT10:          ["MDF −10 % at",                      "MDF −10 % a los"],
+  mLoadMdf:          ["MDF, start → end of its line",      "MDF, inicio → final de su recta"],
+  mLoadR2:           ["MDF line, R²",                      "Recta de la MDF, R²"],
+  mLoadRms:          ["RMS, start → end of its line",      "RMS, inicio → final de su recta"],
+  mLoadT10:          ["MDF −10 % at",                      "MDF −10 % a los"],
   mNever:            ["not reached",                       "no se alcanza"],
-  mReps:             ["RMS per contraction",               "RMS de cada contracción"],
   mTrain:            ["Quick contractions",                "Contracciones rápidas"],
   mTrainPeaks:       ["Peaks, first → last third",         "Picos, primer → último tercio"],
   mTrainFloor:       ["Floor between them",                "Suelo entre ellas"],
@@ -316,21 +316,19 @@ function showResults(m) {
     ...(m.fatigue == null ? [] : [[t("mFat"), `<b style="color:${fc}">${fat}</b>`]]),
   ];
   // The gradation, step by step: the level held against the one asked.
-  // The fatigue sessions: how much MDF and RMS fell, and when.
-  if (m.hold) {
+  // The fixed load held: how much MDF and RMS fell, and when.
+  if (m.load) {
     const signo = (x) => x == null ? "—" : (x > 0 ? "+" : "") + x + " %";
-    items.push([t("mHoldMdf"), signo(m.hold.mdf)], [t("mHoldRms"), signo(m.hold.rms)],
-               [t("mHoldT10"), m.hold.t10 == null ? t("mNever") : m.hold.t10 + " s"]);
+    items.push([t("mLoadMdf"), signo(m.load.mdf)]);
+    if (m.load.r2 != null) items.push([t("mLoadR2"), m.load.r2]);
+    items.push([t("mLoadRms"), signo(m.load.rms)],
+               [t("mLoadT10"), m.load.t10 == null ? t("mNever") : m.load.t10 + " s"]);
   }
   if (m.train) {
     const tr_ = m.train;
     items.push([t("mTrain"), `${tr_.n} · ${tr_.rate}/s`]);
     if (tr_.peaks != null) items.push([t("mTrainPeaks"), (tr_.peaks > 0 ? "+" : "") + tr_.peaks + " %"]);
     if (tr_.floor != null) items.push([t("mTrainFloor"), `${tr_.floor} % <small>(${t("mOfPeak")} ${tr_.proc} %)</small>`]);
-  }
-  if ((m.reps || []).length) {
-    const r = m.reps, c = r[0] ? Math.round(100 * (r[r.length - 1] - r[0]) / r[0]) : 0;
-    items.push([t("mReps"), `${r[0]} → ${r[r.length - 1]} mV (${c > 0 ? "+" : ""}${c} %)`]);
   }
   for (const [pedido, mantenido] of (m.steps || [])) {
     const nombre = pedido >= 100 ? t("mStepMax") : pedido + " %";
