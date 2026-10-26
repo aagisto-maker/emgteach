@@ -1019,8 +1019,20 @@ la parte que conserva, si es al menos el 60 % de su duración marcada
 (`guided.measured_windows`). Con esos fragmentos sale 22/36/59/79/82 %, como sin
 ellos (22/36/59/81/83).
 
-**La hipótesis del afinado pegado no se confirma** con este archivo: el
-`_tuned` de esos cinco fragmentos (escalones pegados, el primero en `REC start`,
-0.6 s entre uno y otro) se reabre con sus cinco escalones y los mismos niveles,
-también antes de la corrección. Falta comprobarlo con los dos EDF de B1
-(`biceps_graduales_2026-10-26_17-25-09.edf` y su `_tuned`).
+**Confirmado con los EDF de B1** (`biceps_graduales_2026-10-26_17-25-09.edf`
+y su `_tuned`, abiertos con permiso de Ángel). Los cinco fragmentos, rehechos
+desde el `_tuned` (sus 22.9 s y la posición de cada «Inicio (auto)»), empiezan
+en 45.62, 56.09, 65.93, 75.68 y 85.58 s: los cuatro primeros, 0.1-0.6 s
+después de su aviso; el quinto, 0.02 s antes del suyo, el único con su marca
+dentro.
+
+| | `main` (a465ddb) | con la corrección |
+|---|---|---|
+| original, sin fragmentos | 28 / 28 / 47 / 50 / 72 | igual |
+| original, los 5 fragmentos | solo el 100 %: 72 | 31 / 28 / 47 / 50 / 72 |
+| `_tuned`, reabierto | 31 / 28 / 47 / 50 / 72 | igual |
+
+**La hipótesis del afinado pegado no se confirma**: el `_tuned` (escalones
+pegados, el primero en `REC start`, 0.7-0.8 s entre uno y otro) se reabre con
+sus cinco escalones también antes de la corrección; el fallo era solo el de
+los fragmentos elegidos. El afinado no se cambia.
