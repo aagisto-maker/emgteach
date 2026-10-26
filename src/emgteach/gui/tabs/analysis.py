@@ -255,7 +255,12 @@ from emgteach.gui.widgets.fragment_selection import (
 from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
-from emgteach.guided import is_monotonic, mdf_trend_applies, reps_trend_pct
+from emgteach.guided import (
+    gradation_reference_text,
+    is_monotonic,
+    mdf_trend_applies,
+    reps_trend_pct,
+)
 from emgteach.i18n import tr
 from emgteach.io import (
     assess_edf_channels,
@@ -1990,6 +1995,7 @@ class AnalysisTab(QWidget):
         self._cargas_contr = load_of_each(filas, result.get("fv_loads") or [])
         con_cargas = any(c is not None for c in self._cargas_contr)
         self._pasos_grad = pasos
+        self._ref_grad = gradation_reference_text(result)
         reps = list(result.get("reps") or [])
         self._reps_fatiga = reps
         tren = result.get("train")
@@ -2068,7 +2074,8 @@ class AnalysisTab(QWidget):
         vista = self._sel_contr.vista()
         if vista in ("steps", "reps", "train"):
             if vista == "steps":
-                draw_steps_chart(self._fig_contr, self._pasos_grad, small=True)
+                draw_steps_chart(self._fig_contr, self._pasos_grad, small=True,
+                                 reference=getattr(self, "_ref_grad", None))
             elif vista == "reps":
                 draw_reps_chart(self._fig_contr, self._reps_fatiga, small=True)
             else:

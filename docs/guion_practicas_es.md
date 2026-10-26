@@ -323,7 +323,8 @@ pero **no lineal**, y ver para qué sirve normalizar.
 «Mantenido» es la media de la envolvente en la meseta de la contracción de cada
 escalón, tras su primer segundo (el de llegar al nivel) y antes de soltar. Cada
 escalón es la contracción que empieza tras su aviso, seguida hasta 1.5 s más allá
-de su final: se empieza y se suelta con unas décimas de retraso.
+de su final: se empieza y se suelta con unas décimas de retraso. Si el escalón
+máximo pasa de la CVM, la referencia es el máximo de la sesión, y la vista lo dice.
 
 **Cuestiones.**
 - ¿Sube el RMS en cada escalón? ¿Cómo de cerca del escalón pedido se quedó cada

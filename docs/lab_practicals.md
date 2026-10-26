@@ -337,7 +337,8 @@ signal.
 «Held» is the mean of the envelope over the plateau of each step's contraction,
 after its first second (the reach) and before its letting go. Each step is the
 contraction begun after its cue and followed up to 1.5 s past its end: one
-begins and lets go some tenths of a second late.
+begins and lets go some tenths of a second late. If the maximal step passes the
+MVC, the reference is the session's maximum, and the view says so.
 
 **Questions.**
 - Does the RMS rise at each step? How close to the step asked for did each one

@@ -2501,6 +2501,12 @@ _ES = {
         'Reposo antes del tren (mV)',
     "Measured on a 50 ms moving RMS, not on the envelope: at four or five contractions a second the envelope's 5 Hz filter alone keeps the floor at a fifth to a third of the peak. «The measure alone» is the floor the same measure leaves with a perfect relaxation at the rate achieved; what is above it is the subject's, mostly a relaxation not completed. This is not the treppe, a mechanical phenomenon of electrical stimulation; and the peaks are EMG, not force.":
         'Medido sobre un RMS móvil de 50 ms, no sobre la envolvente: a cuatro o cinco contracciones por segundo, el filtro de 5 Hz de la envolvente mantiene él solo el suelo entre un quinto y un tercio del pico. «La medida sola» es el suelo que deja la misma medida con una relajación perfecta al ritmo conseguido; lo que quede por encima es del sujeto, sobre todo una relajación que no llega a completarse. No es la treppe, un fenómeno mecánico de la estimulación eléctrica; y los picos son EMG, no fuerza.',
+    "Reference: the session's maximum ({ref:.3f} mV), above the MVC ({mvc:.3f} mV)":
+        "Referencia: el máximo de la sesión ({ref:.3f} mV), por encima de la CVM ({mvc:.3f} mV)",
+    'Reference: the MVC ({mvc:.3f} mV)':
+        'Referencia: la CVM ({mvc:.3f} mV)',
+    "Graded contractions: a step went above the MVC, so the reference is the session's maximum, {ref:.3f} mV (MVC {mvc:.3f} mV).":
+        "Contracciones graduales: un escalón pasó de la CVM, así que la referencia es el máximo de la sesión, {ref:.3f} mV (CVM {mvc:.3f} mV).",
     'Not measured (quick contractions: nothing held)':
         'No se mide (contracciones rápidas: nada mantenido)',
     'Quick repeated contractions':

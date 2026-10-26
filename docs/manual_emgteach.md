@@ -359,7 +359,13 @@ session.
   session's own gesture: clenching the fist. In Analysis each step is the
   contraction begun after its cue and followed up to 1.5 s past its end — one
   begins and lets go some tenths of a second late —, and its level is the mean
-  of the envelope over that contraction's plateau.
+  of the envelope over that contraction's plateau. **The reference is the
+  larger of the MVC and the session's own maximum**, measured as the MVC is: the
+  calibration's contractions are brief and a step lasts four seconds, so the
+  maximal step can pass the MVC (127 % on the bench); then the percentages are
+  of the session's maximum, so no step passes 100 %, and the «Steps» view and
+  the report say which reference it is. The calibration and the other
+  practicals keep the MVC.
 - **Fatigue: sustained contraction** (28 s; calibration optional): 5 s of rest, a
   3 s countdown, **10 s of maximal isometric contraction** against the table and
   10 s of rest. The text asks to breathe normally. In Analysis the analysed span is the contraction and panels 6 and 7
