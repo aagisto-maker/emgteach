@@ -264,9 +264,11 @@ CAL_REPS = [(2.0, 5.0), (8.0, 11.0), (14.0, 17.0)]
 REC_S = 22.0
 
 
-def _gradacion_edf(path: Path) -> str:
+def _gradacion_edf(path: Path, *, ruido: bool = False, maximo: float = 1.0) -> str:
     """A one-muscle session: three maximal efforts at amplitude 1, the
-    countdown, and the gradation at 20…100 % of it."""
+    countdown, and the gradation at 20…100 % of it — its maximal step at
+    *maximo*. With *ruido*, the signal is noise and not a sine: an envelope
+    with the ripple of a real one, whose peak stands above its mean."""
     n = int((REC_S + 60.0) * FS)
     t = np.arange(n) / FS
     amp = np.full(n, 0.01)
@@ -274,8 +276,12 @@ def _gradacion_edf(path: Path) -> str:
         amp[int(a * FS): int(b * FS)] = 1.0
     sesion = _sesion_sintetica(t0=REC_S)
     for tramo in sesion.spans:
-        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = (tramo.number("pct") or 0) / 100
-    senal = np.sin(2 * np.pi * 80 * t) * amp
+        pct = tramo.number("pct") or 0
+        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = (
+            maximo if pct >= 100 else pct / 100)
+    portadora = (np.random.default_rng(8).normal(0.0, 0.35, n) if ruido
+                 else np.sin(2 * np.pi * 80 * t))
+    senal = portadora * amp
     with BufferedEdfWriter(str(path), channels=[
             ChannelInfo("FCR", dimension="mV", sample_frequency=FS)]) as w:
         w.add_samples(senal)
@@ -479,3 +485,69 @@ def test_a_tuned_gradation_keeps_its_steps_and_their_view(qapp, tmp_path: Path) 
     otra = tmp_path / "grad_tuned_2.edf"
     build_tuned_edf(afinado, otra)
     assert parse_session_markers(read_edf_markers(otra)).spans == sesion.spans
+
+
+# ── The gradation's maximum, measured like the level held ────────────────
+
+
+@pytest.mark.gui
+def test_the_gradation_measures_its_maximum_as_a_half_second_mean(
+    qapp, tmp_path: Path
+) -> None:
+    """Ángel's bench, 26 October 2026: with the maximum on the envelope's
+    peak, a step held at the calibration's own intensity read 85-87 %, so the
+    bar's 100 % could not be held. In the gradation the maximum is the
+    highest mean over half a second, like the level held: on a noisy
+    envelope each step reads what it was asked for."""
+    from emgteach.dsp import process_offline
+    from emgteach.io import read_edf_mne
+    from emgteach.mvc import mvc_peak_hold
+    from emgteach.sessions import GRAD_MVC_WINDOW_S
+
+    edf = _gradacion_edf(tmp_path / "grad_ruido.edf", ruido=True)
+    r = _analizar(qapp, edf)
+    datos = read_edf_mne(edf, "FCR")
+    env = process_offline(datos["emg_raw"], FS)["emg_envelope"]
+    ventana = round(GRAD_MVC_WINDOW_S * FS)
+    medias = [mvc_peak_hold(env[int(a * FS): int(b * FS)], ventana) for a, b in CAL_REPS]
+    picos = [float(env[int(a * FS): int(b * FS)].max()) for a, b in CAL_REPS]
+    assert r["mvc_ref"] == pytest.approx(max(medias), rel=0.01)
+    assert max(picos) > 1.05 * r["mvc_ref"]           # the peak would be another number
+    for p in r["grad_steps"]:
+        assert p.held_pct == pytest.approx(p.target_pct, abs=6.0), (p.target_pct, p.held_pct)
+
+
+@pytest.mark.gui
+def test_a_maximal_step_above_the_calibration_is_said(qapp, tmp_path: Path) -> None:
+    """The reference stays the MVC; a maximal step above it is told, in the
+    view and the report, not hidden."""
+    from emgteach.guided import gradation_reference_text
+    from emgteach.reports import build_session_report
+    from tests.test_informes_y_csv import _pdf_text
+
+    r = _analizar(qapp, _gradacion_edf(tmp_path / "grad127.edf", ruido=True, maximo=1.27))
+    assert r["grad_steps"][-1].held_pct == pytest.approx(127.0, abs=8.0)
+    texto = gradation_reference_text(r)
+    assert texto is not None and "0.5 s" in texto and "went above" in texto
+    pdf = tmp_path / "grad127.pdf"
+    build_session_report(pdf, r, meta={})
+    assert "went above the calibration" in _pdf_text(pdf).replace("\n", " ")
+
+
+def test_only_the_gradation_calibrates_with_a_window() -> None:
+    from types import SimpleNamespace
+
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.modes import MODE_PAIR, MODE_SINGLE
+    from emgteach.profiles import EMG_PROFILE
+    from emgteach.sessions import GRAD_MVC_WINDOW_S, hold_script
+
+    perfil = EMG_PROFILE
+    for modo, guion, esperado in (
+        (MODE_SINGLE, gradation_script(), GRAD_MVC_WINDOW_S),
+        (MODE_SINGLE, hold_script(), perfil.mvc_peak_window_s),
+        (MODE_SINGLE, None, perfil.mvc_peak_window_s),
+        (MODE_PAIR, gradation_script(), perfil.mvc_peak_window_s),
+    ):
+        pestana = SimpleNamespace(_mode=modo, _session_script=guion, _profile=perfil)
+        assert AcquisitionTab._ventana_cvm_s(pestana) == esperado    # type: ignore[arg-type]

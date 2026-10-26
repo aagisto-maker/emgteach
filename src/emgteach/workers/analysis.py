@@ -8,6 +8,8 @@ all plots.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
 from PySide6.QtCore import QThread, Signal
 from scipy.integrate import trapezoid
@@ -64,7 +66,7 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
-from emgteach.sessions import parse_session_markers
+from emgteach.sessions import GRAD_MVC_WINDOW_S, parse_session_markers
 
 
 def _cola_de_la_pausa(envelope, fs: float, phases, profile):
@@ -489,6 +491,13 @@ class AnalysisWorker(QThread):
             # A guided session of the one-muscle practical, if the file was
             # recorded with one: its marks say where each effort was.
             sesion = parse_session_markers(markers)
+            # The gradation measures its maximum, its task maximum and its rows
+            # as the highest mean over half a second, like the level its steps
+            # hold (sessions.GRAD_MVC_WINDOW_S); the other practicals keep the
+            # profile's peak.
+            if sesion is not None and sesion.family == "GRAD":
+                self._profile = replace(self._profile,
+                                        mvc_peak_window_s=GRAD_MVC_WINDOW_S)
             # The loads of the guided force-velocity wizard, kept apart: the
             # contraction chart groups the efforts by them.
             fv_loads = parse_fv_load_markers(markers)

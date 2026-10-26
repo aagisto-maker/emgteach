@@ -444,7 +444,13 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   sesión: cerrar el puño con una contracción. En Análisis cada escalón es la
   contracción que empieza tras su aviso, seguida hasta 1.5 s más allá de su final
   —se empieza y se suelta con unas décimas de retraso—, y su nivel es la media de
-  la envolvente en la meseta de esa contracción.
+  la envolvente en la meseta de esa contracción. **El máximo de la gradación es
+  la mayor media en medio segundo**, no el pico de la envolvente: el nivel
+  mantenido es una media, y una media no llega nunca al pico de la misma
+  envolvente (mantenida la intensidad de la calibración, se leía un 85-87 %). Así
+  lo miden su calibración, su barra en vivo y su análisis; las demás prácticas
+  siguen con el pico. Si el escalón máximo pasa de la calibración, la vista
+  «Escalones» y el informe lo dicen.
 - **Fatiga por contracción mantenida** (28 s; la calibración es opcional): 5 s de
   reposo, una cuenta atrás de 3 s, **10 s de contracción máxima** isométrica contra
   la mesa y 10 s de reposo. El texto pide respirar normalmente. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7

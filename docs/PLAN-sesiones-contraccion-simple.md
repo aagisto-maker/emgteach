@@ -805,7 +805,9 @@ de sus marcas seguida 1.5 s más allá de su final (§11.1); el registro afinado
 conserva la sesión; la referencia de la gradación es la mayor entre la CVM y
 el máximo de la sesión; y el tren no da veredicto de fatiga.
 
-### 11.1 Pico frente a media (punto 4: propuesta, sin implementar)
+### 11.1 Pico frente a media (punto 4)
+
+**Decisión de Ángel (26 de octubre): la propuesta A, solo en la gradación, y sin el punto 3** (la referencia = máx(CVM, sesión) se revierte: bajaba todos los escalones a la vez). Implementado: `sessions.GRAD_MVC_WINDOW_S`; si el escalón máximo pasa de la calibración, la vista y el informe lo dicen.
 
 La CVM es **el pico de la envolvente** (`mvc_peak_window_s = 0`, desde la
 3.2.0), y el «mantenido» de un escalón es **una media** sobre su meseta. Un

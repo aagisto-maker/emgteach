@@ -62,11 +62,15 @@ made with 3.9.1 and earlier open and read as before.
   activity inside its marks run on 1.5 s past their end**, and a step's level
   the plateau of that contraction (measured between the marks, the steps took
   rest and lost their end, and the train lost its last two contractions). **The
-  gradation's reference is the larger of the MVC and the session's own
-  maximum**, so no step passes 100 % (the maximal step had come out at 127 %;
-  the calibration's contractions are brief), and the view and the report say
-  which. The tuned recording keeps the session and its view, and the train of
-  quick contractions gives no fatigue verdict.
+  gradation measures its maximum as the highest mean over half a second**, as
+  the level held is a mean: on the envelope's peak, a step held at the
+  calibration's own intensity read 85-87 %, so the bar's 100 % could not be
+  held. Measured alike, the bench's gradation read 22/36/59/81 % for the
+  20/40/60/80 asked (it read 17/27/42/60). Its calibration, its live bar and
+  its analysis use it; the other practicals keep the peak. A maximal step
+  above the calibration is said, in the view and the report. The tuned
+  recording keeps the session and its view, and the train of quick
+  contractions gives no fatigue verdict.
 - **The report the phones receive carries the panels ticked on screen.** It
   was given the position of each ticked box instead of the panel, so
   «2. Env. norm.» came out as the filtered and rectified signal, and so on —
@@ -76,7 +80,7 @@ made with 3.9.1 and earlier open and read as before.
 
 ## How it was tested
 
-**By the automated suite**, 1658 tests, among them: each session's script,
+**By the automated suite**, 1659 tests, among them: each session's script,
 its marks and its Spanish; the clock that crosses every phase even when a
 tick is late; each session recorded with the simulated board, whose subject
 does what each phase asks, and analysed by its spans; the levels held by the

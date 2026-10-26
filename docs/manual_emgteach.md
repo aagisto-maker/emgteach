@@ -359,7 +359,12 @@ session.
   session's own gesture: clenching the fist. In Analysis each step is the
   contraction begun after its cue and followed up to 1.5 s past its end — one
   begins and lets go some tenths of a second late —, and its level is the mean
-  of the envelope over that contraction's plateau.
+  of the envelope over that contraction's plateau. **The gradation's maximum is
+  the highest mean over half a second**, not the envelope's peak: the level held
+  is a mean, and a mean never reaches a peak of the same envelope (held at the
+  calibration's own intensity it read 85-87 %). Its calibration, its live bar and
+  its analysis measure it so; the other practicals keep the peak. A maximal step
+  above the calibration is said in the «Steps» view and the report.
 - **Fatigue: sustained contraction** (28 s; calibration optional): 5 s of rest, a
   3 s countdown, **10 s of maximal isometric contraction** against the table and
   10 s of rest. The text asks to breathe normally. In Analysis the analysed span is the contraction and panels 6 and 7

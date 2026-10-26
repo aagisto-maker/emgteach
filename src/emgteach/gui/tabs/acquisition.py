@@ -4005,8 +4005,17 @@ class AcquisitionTab(QWidget):
             return regla
         return pair_calibration_cue(self._par, c) or regla
 
+    def _ventana_cvm_s(self) -> float:
+        """The window the maximum is measured with: the guided session's own
+        when it has one (the gradation's half second, sessions.
+        GRAD_MVC_WINDOW_S), else the profile's peak."""
+        script = getattr(self, "_session_script", None)
+        if self._mode == MODE_SINGLE and script is not None and script.mvc_window_s:
+            return float(script.mvc_window_s)
+        return float(self._profile.mvc_peak_window_s)
+
     def _mvc_compute_muscle(self, c: int) -> None:
-        window = max(1, round(self._profile.mvc_peak_window_s * FS))
+        window = max(1, round(self._ventana_cvm_s() * FS))
         ref = mvc_from_reps(
             self._mvc_capture[c], self._profile.mvc_percentile,
             window_samples=window,

@@ -337,7 +337,9 @@ signal.
 «Held» is the mean of the envelope over the plateau of each step's contraction,
 after its first second (the reach) and before its letting go. Each step is the
 contraction begun after its cue and followed up to 1.5 s past its end: one
-begins and lets go some tenths of a second late.
+begins and lets go some tenths of a second late. The gradation's MVC is the
+highest half-second mean of the calibration, not its peak, as the level held is
+a mean too.
 
 **Questions.**
 - Does the RMS rise at each step? How close to the step asked for did each one

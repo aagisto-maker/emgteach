@@ -51,6 +51,7 @@ __all__ = [
     "StepResult",
     "TrainResult",
     "change_pct",
+    "gradation_reference_text",
     "gradation_steps",
     "hold_result",
     "intermittent_reps",
@@ -244,6 +245,25 @@ def gradation_steps(
             rms_mv=rms, mdf_hz=mdf,
         ))
     return pasos
+
+
+def gradation_reference_text(result) -> str | None:
+    """What the gradation's percentages are of, for the view and the report —
+    and, when the maximal step went above the calibration, that it did;
+    ``None`` without a gradation measured in per cent."""
+    from emgteach.i18n import tr
+    from emgteach.sessions import GRAD_MVC_WINDOW_S
+
+    ref = result.get("mvc_ref")
+    if not result.get("grad_steps") or not ref:
+        return None
+    texto = tr("Reference: the MVC, its highest mean over {w:g} s ({mvc:.3f} mV), "
+               "as the level held is a mean.").format(w=GRAD_MVC_WINDOW_S, mvc=ref)
+    pico = (result.get("task_peak_pct") or {}).get(result.get("channel_name"))
+    if pico is not None and pico > 100.0:
+        texto += " " + tr("The maximal step went above the calibration: {pct:.0f} %.").format(
+            pct=pico)
+    return texto
 
 
 def is_monotonic(steps: Sequence[StepResult]) -> bool:
