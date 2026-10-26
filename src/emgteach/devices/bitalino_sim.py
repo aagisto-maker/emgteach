@@ -132,6 +132,13 @@ def _ramp(t: float, start: float, end: float, ramp: float) -> float:
 class _SyntheticSubject:
     """Two muscles on the first two EMG inputs enabled, and an accelerometer."""
 
+    #: Seconds a real subject takes to begin what the screen asks, and to let
+    #: go when it asks to stop (Ángel's bench, 26 October 2026: 0.3 to 0.5 s,
+    #: and 0.5 to 1 s). Nought here — the subject obeys on the sample — and set
+    #: by the tests that check what the analysis makes of a late subject.
+    reaction_s: float = 0.0
+    release_s: float = 0.0
+
     def __init__(self, acc_channel: int | None, seed: int | None) -> None:
         self.acc_channel = acc_channel
         self._rng = random.Random(seed)
@@ -144,10 +151,16 @@ class _SyntheticSubject:
         #: the worker's, so one assignment and no state in between to
         #: catch half done.
         self._asked: dict[int, tuple[float, float | None]] = {}
+        #: ``{muscle: (what was asked before, from when the new applies)}``
+        #: while a late subject has not yet done what it was last asked.
+        self._late: dict[int, tuple[tuple[float, float | None] | None, float]] = {}
 
     def instruct(self, channel_index: int, level: float | None,
-                 *, repeat_s: float | None = None) -> None:
+                 *, repeat_s: float | None = None, at_s: float | None = None) -> None:
         """Ask this muscle for *level*, or stop asking it with ``None``.
+
+        *at_s* is the signal's time when it is asked; with it, a subject with
+        a :attr:`reaction_s` or a :attr:`release_s` does it that much later.
 
         ``0.0`` is an instruction like any other — «do nothing» — and
         ``None`` is the absence of one, which gives this muscle back to
@@ -162,12 +175,19 @@ class _SyntheticSubject:
         then shows the six contractions the screen is asking for instead
         of the one every twelve seconds the cycle happens to give.
         """
+        c = int(channel_index)
         pedido = dict(self._asked)
+        antes = pedido.get(c)
         if level is None:
-            pedido.pop(int(channel_index), None)
+            pedido.pop(c, None)
         else:
-            pedido[int(channel_index)] = (
-                float(level), None if repeat_s is None else float(repeat_s))
+            pedido[c] = (float(level), None if repeat_s is None else float(repeat_s))
+        if at_s is not None and (self.reaction_s or self.release_s):
+            nivel_antes = antes[0] if antes else 0.0
+            sube = level is not None and float(level) > nivel_antes
+            tarde = dict(self._late)
+            tarde[c] = (antes, float(at_s) + (self.reaction_s if sube else self.release_s))
+            self._late = tarde
         self._asked = pedido
 
     def activation(self, t: float) -> tuple[float, float]:
@@ -180,6 +200,15 @@ class _SyntheticSubject:
         where it was when the asking stops.
         """
         asked = self._asked
+        late = self._late
+        if late:
+            asked = dict(asked)
+            for c, (antes, desde) in late.items():
+                if t < desde:
+                    if antes is None:
+                        asked.pop(c, None)
+                    else:
+                        asked[c] = antes
         phase = t % CYCLE_S
         ciclo = [0.0, 0.0]
         for start, end, l1, l2 in _CYCLE:
@@ -260,8 +289,10 @@ class SimulatedBitalinoPort:
 
     def instruct(self, channel_index: int, level: float | None,
                  *, repeat_s: float | None = None) -> None:
-        """Pass the application's instruction on to the synthetic subject."""
-        self._subject.instruct(channel_index, level, repeat_s=repeat_s)
+        """Pass the application's instruction on to the synthetic subject,
+        with the signal's time it is given at."""
+        self._subject.instruct(channel_index, level, repeat_s=repeat_s,
+                               at_s=self._sent / self._fs if self._fs else None)
 
     # -- the commands
     def write(self, data: bytes) -> int:

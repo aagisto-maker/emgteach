@@ -308,9 +308,12 @@ function showResults(m) {
   const fc = m.fatigue < 0 ? "var(--dang)" : m.fatigue > 0 ? "var(--ok)" : "#c9a227";
   const items = [
     [t("mFile"), m.file || "—"], [t("mMnf"), m.mnf + " Hz"],
-    [t("mMdf"), m.mdf + " Hz"], [t("mSlope"), m.mdf_slope + " Hz/s"],
+    [t("mMdf"), m.mdf + " Hz"],
+    // No slope and no verdict over a train of quick contractions: nothing held.
+    ...(m.mdf_slope == null ? [] : [[t("mSlope"), m.mdf_slope + " Hz/s"]]),
     [t("mRms"), m.rms + " mV"], [t("mIemg"), m.iemg + " mV·s"],
-    [t("mDur"), m.duration + " s"], [t("mFat"), `<b style="color:${fc}">${fat}</b>`],
+    [t("mDur"), m.duration + " s"],
+    ...(m.fatigue == null ? [] : [[t("mFat"), `<b style="color:${fc}">${fat}</b>`]]),
   ];
   // The gradation, step by step: the level held against the one asked.
   // The fatigue sessions: how much MDF and RMS fell, and when.

@@ -115,9 +115,10 @@ def test_the_measures_floor_grows_with_the_rate() -> None:
 
 
 def _tren_sintetico(t0: float = 0.0, *, rate: float = 4.0, crecen: float = 0.10,
-                    suelo: float = 0.25):
+                    suelo: float = 0.25, tarde: tuple[float, float] = (0.0, 0.0)):
     """Rest, then 10 s of contractions at *rate* whose amplitude grows by
-    *crecen* and whose relaxation leaves *suelo* of it between them."""
+    *crecen* and whose relaxation leaves *suelo* of it between them. With
+    *tarde*, the subject begins and stops that many seconds after the cues."""
     g = rapid_script()
     marcas = [(t0, g.header)]
     for f in g.timed():
@@ -131,9 +132,10 @@ def _tren_sintetico(t0: float = 0.0, *, rate: float = 4.0, crecen: float = 0.10,
     tramo = sesion.spans_named("train")[0]
     n = int((t0 + g.total_seconds + 1) * FS)
     t = np.arange(n) / FS
-    dentro = (t >= tramo.start_s) & (t < tramo.end_s)
-    frac = np.clip((t - tramo.start_s) / (tramo.end_s - tramo.start_s), 0, 1)
-    activa = ((t - tramo.start_s) % (1 / rate)) < 0.5 / rate
+    ini, fin = tramo.start_s + tarde[0], tramo.end_s + tarde[1]
+    dentro = (t >= ini) & (t < fin)
+    frac = np.clip((t - ini) / (fin - ini), 0, 1)
+    activa = ((t - ini) % (1 / rate)) < 0.5 / rate
     amp = 0.3 * (1 + crecen * frac)
     nivel = np.where(dentro, np.where(activa, amp, suelo * amp), 0.004)
     rng = np.random.default_rng(4)
@@ -154,6 +156,21 @@ def test_the_train_counts_its_contractions_and_their_rate() -> None:
     assert tren.rest_mv is not None and tren.rest_mv < 0.02
 
 
+def test_a_late_subject_s_last_contractions_are_counted() -> None:
+    """Ángel's bench, 26 October 2026: begun 0.4 s after the cue and stopped
+    0.5 s after the end, the train had 30 contractions and the view counted
+    28. The train is the activity inside its marks run on past their end."""
+    sesion, senal, _m = _tren_sintetico(tarde=(0.4, 0.5), rate=3.0)
+    filt = process_offline(senal, FS)["emg_filtered"]
+    tren = rapid_train(sesion, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=filt)
+    assert tren is not None
+    # 10.1 s at three a second: 31 contractions, the last after the end mark.
+    assert tren.n == 31
+    fin = sesion.spans_named("train")[0].end_s - sesion.spans_named("train")[0].start_s
+    assert tren.peak_times[-1] > fin
+    assert tren.seconds == pytest.approx(10.1, abs=0.3)
+
+
 def test_a_full_relaxation_leaves_only_the_measures_floor() -> None:
     sesion, senal, _m = _tren_sintetico(suelo=0.0, crecen=0.0)
     filt = process_offline(senal, FS)["emg_filtered"]
@@ -168,6 +185,16 @@ def test_only_a_train_is_a_train() -> None:
     hold = parse_session_markers([(0.0, "HOLD start mode=sustained v=1"), (1.0, "HOLD end")])
     assert rapid_train(hold, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=senal) is None
     assert rapid_train(None, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=senal) is None
+
+
+def test_the_mdf_trend_says_nothing_over_a_train() -> None:
+    from emgteach.guided import mdf_trend_applies
+
+    sesion, _s, _m = _tren_sintetico()
+    assert not mdf_trend_applies(sesion)
+    assert mdf_trend_applies(None)
+    assert mdf_trend_applies(parse_session_markers(
+        [(0.0, "HOLD start mode=sustained v=1"), (1.0, "HOLD end")]))
 
 
 def test_the_chart_draws() -> None:
@@ -204,12 +231,17 @@ def test_a_recorded_train_is_analysed_reported_and_sent(qapp, tmp_path: Path) ->
     r = _analizar(qapp, _edf(tmp_path / "rapidas.edf", marcas, senal))
     tren = r["train"]
     assert tren is not None and tren.n == pytest.approx(40, abs=3)
-    # The analysed span is the train and the rest just before it.
-    assert r["roi_end_s"] - r["roi_start_s"] == pytest.approx(13.0, abs=0.1)
+    # The analysed span is the train, the rest just before it and the 1.5 s
+    # after its end mark where a late subject is still contracting.
+    assert r["roi_end_s"] - r["roi_start_s"] == pytest.approx(14.5, abs=0.1)
 
     pdf = tmp_path / "rapidas.pdf"
     build_session_report(pdf, r, meta={})
-    assert tr("Guided session: quick repeated contractions") in _pdf_text(pdf)
+    texto = _pdf_text(pdf)
+    assert tr("Guided session: quick repeated contractions") in texto
+    # Ten seconds of brief contractions: no fatigue verdict, no MDF slope
+    # (Ángel's bench, 26 October 2026).
+    assert tr("Fatigue evidence") not in texto
 
     dif = _Difusion()
 
@@ -222,6 +254,7 @@ def test_a_recorded_train_is_analysed_reported_and_sent(qapp, tmp_path: Path) ->
     AnalysisTab._bcast_results(_Tab(), r)       # type: ignore[arg-type]
     m = dif.mensajes[-1]["train"]
     assert m["n"] == tren.n and m["proc"] is not None
+    assert dif.mensajes[-1]["mdf_slope"] is None and dif.mensajes[-1]["fatigue"] is None
 
 
 @pytest.mark.gui
@@ -251,3 +284,38 @@ def test_a_train_recorded_with_the_simulated_board(qapp, request, tmp_path: Path
     assert sesion is not None and sesion.completed and sesion.family == "FAST"
     r = _analizar(qapp, str(path))
     assert r["train"] is not None and r["train"].n >= 5
+
+
+@pytest.mark.gui
+def test_a_late_subject_on_the_simulated_board_keeps_its_last_contractions(
+        qapp, request, tmp_path: Path, monkeypatch) -> None:
+    """The same, with a subject who begins 0.4 s late and stops 0.8 s late:
+    the contractions made after the end mark are the train's."""
+    from emgteach.devices.bitalino_sim import _SyntheticSubject
+    from emgteach.gui.tabs import acquisition as acq_mod
+    from emgteach.io import read_edf_markers
+    from tests.test_gradacion import _analizar
+    from tests.test_marcas_manuales import _until
+    from tests.test_sesion_guiada_en_la_pestana import _choose, _record
+
+    monkeypatch.setattr(_SyntheticSubject, "reaction_s", 0.4)
+    monkeypatch.setattr(_SyntheticSubject, "release_s", 0.8)
+    pestana = request.getfixturevalue("tab")
+    corta = dataclasses.replace(rapid_script(2.0).with_seconds(2.0))
+    monkeypatch.setitem(acq_mod.GUIDED_SESSIONS, "rapidas", lambda: corta)
+    pestana._rellenar_sesiones()
+    _choose(pestana, "rapidas")
+    path = tmp_path / "rapidas_tarde.edf"
+    _record(qapp, pestana, path)
+    _until(qapp, lambda: not pestana.is_recording(), 0.5 + corta.total_seconds + 10.0,
+           "the session to end")
+    _until(qapp, lambda: pestana._eventos is None, 5.0, "the event log")
+    sesion = parse_session_markers(read_edf_markers(path))
+    assert sesion is not None
+    tramo = sesion.spans_named("train")[0]
+    tren = _analizar(qapp, str(path))["train"]
+    assert tren is not None
+    # Four a second from 0.4 s after the cue to 0.8 s after the end: about
+    # ten, three of them after the end mark.
+    assert tren.n >= 9, tren.n
+    assert tren.peak_times[-1] > tramo.duration_s

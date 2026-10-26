@@ -43,6 +43,7 @@ __all__ = [
     "EFFORT",
     "FAMILIES",
     "GRADATION_STEPS_PCT",
+    "GRAD_MVC_WINDOW_S",
     "HOLD_MAX_S",
     "READY",
     "REST",
@@ -199,6 +200,10 @@ class SessionScript:
     #: by the calibration too: the reference is measured with the movement
     #: the experiment then asks for, and the two say it in the same words.
     gesture: str = ""
+    #: Seconds of the window the calibration that opens this session measures
+    #: its maximum with (the highest mean over it), when not the profile's
+    #: peak; ``None`` keeps the profile's.
+    mvc_window_s: float | None = None
 
     def __post_init__(self) -> None:
         if self.family not in FAMILIES:
@@ -238,6 +243,16 @@ _FIST = "Close your fist: a brief, intense contraction."
 #: The gradation's targets, % MVC. Five and not four: with four (25, 50, 75,
 #: 100) the curve has three intervals; with five its bend can be seen.
 GRADATION_STEPS_PCT: tuple[int, ...] = (20, 40, 60, 80, 100)
+
+#: The gradation's maximum is the highest mean over half a second, not the
+#: envelope's peak (Ángel's decision after the bench of 26 October 2026): the
+#: level held in a step is a mean, and a mean never reaches a peak of the same
+#: envelope — held at the calibration's own intensity it read 85-87 %, so the
+#: bar's 100 % could not be held. Measured alike, the four first steps of the
+#: bench's gradation read 22/36/59/81 % of the 20/40/60/80 asked. The live bar
+#: of the gradation, its calibration and its analysis use it; every other
+#: practical keeps the peak.
+GRAD_MVC_WINDOW_S = 0.5
 #: Seconds of each step, of the rest between steps, and of the rests that
 #: open and close the session (plan, §4.1).
 GRADATION_STEP_S = 4.0
@@ -284,7 +299,7 @@ def gradation_script() -> SessionScript:
         header=header_marker("GRAD", steps=n), phases=tuple(fases), needs_mvc=True,
         summary="Five contractions of growing strength, 20 to 100 % of the bar, "
                 "four seconds each with rest between them. Calibrates first.",
-        gesture=_FIST,
+        gesture=_FIST, mvc_window_s=GRAD_MVC_WINDOW_S,
     )
 
 

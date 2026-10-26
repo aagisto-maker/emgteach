@@ -334,8 +334,12 @@ signal.
 | 80 % | | | |
 | maximum | | | |
 
-«Held» is the mean of the envelope over each step after its first second, which
-is the reach and not the hold.
+«Held» is the mean of the envelope over the plateau of each step's contraction,
+after its first second (the reach) and before its letting go. Each step is the
+contraction begun after its cue and followed up to 1.5 s past its end: one
+begins and lets go some tenths of a second late. The gradation's MVC is the
+highest half-second mean of the calibration, not its peak, as the level held is
+a mean too.
 
 **Questions.**
 - Does the RMS rise at each step? How close to the step asked for did each one
@@ -374,7 +378,7 @@ The specific proof is the fall of the MDF.
 **Intermittent variant** (**«Fatigue: intermittent contractions»**): six maximal
 contractions of **5 s with 1 s of rest** between them, with a tone at the start
 and the end of each and the countdown on screen. What is measured is the **RMS
-of each contraction** after its first second, not its peak: the peak is the start
+of each contraction** over its plateau, after its first second, not its peak: the peak is the start
 of each contraction and does not fall. The **«Per contraction»** view of the
 contractions box draws it. With 1 s of rest the fall is almost steady (in a trial
 with the muscle already tired and ten contractions, 21 % from the first to the

@@ -8,6 +8,8 @@ all plots.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
 from PySide6.QtCore import QThread, Signal
 from scipy.integrate import trapezoid
@@ -40,11 +42,12 @@ from emgteach.force_velocity import (
     windows_from_markers,
 )
 from emgteach.guided import (
+    MARGIN_S,
     gradation_steps,
     hold_result,
     intermittent_reps,
+    measured_windows,
     rapid_train,
-    spans_in_analysis_time,
 )
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -63,7 +66,7 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE, SignalProfile
 from emgteach.selection import Segment, normalise_segments, total_duration_s
-from emgteach.sessions import parse_session_markers
+from emgteach.sessions import GRAD_MVC_WINDOW_S, parse_session_markers
 
 
 def _cola_de_la_pausa(envelope, fs: float, phases, profile):
@@ -386,23 +389,31 @@ class AnalysisWorker(QThread):
     @staticmethod
     def _tren_rapido(sesion) -> tuple[float, float] | None:
         """The train of quick contractions and the three seconds of rest
-        before it, in file time: the rest is what the floor is compared with."""
+        before it, in file time: the rest is what the floor is compared with.
+        Run on past its end mark (guided.measured_windows), where the
+        subject is still making the contractions the cue to stop was late
+        for."""
         if sesion is None or sesion.family != "FAST":
             return None
         trenes = sesion.spans_named("train")
         if not trenes:
             return None
-        return (max(0.0, trenes[-1].start_s - 3.0), trenes[-1].end_s)
+        fin = trenes[-1].end_s + MARGIN_S
+        if sesion.end_s is not None:
+            fin = min(fin, sesion.end_s)
+        return (max(0.0, trenes[-1].start_s - 3.0), max(trenes[-1].end_s, fin))
 
     @staticmethod
     def _tramos_de_sesion(sesion, piezas) -> list[Segment] | None:
         """One segment per effort a guided session marked, in the analysed
-        signal's time; ``None`` without a session, so the next rule applies.
-        The contraction table trims each to the effort inside it."""
+        signal's time, run on past its end (guided.measured_windows): the
+        subject lets go after the cue, not on it. ``None`` without a session,
+        so the next rule applies. The contraction table trims each to the
+        effort inside it."""
         if sesion is None:
             return None
         return [Segment(a, b) for _t, a, b in
-                spans_in_analysis_time(sesion.spans, piezas) if b > a] or None
+                measured_windows(sesion, piezas) if b > a] or None
 
     def _resolve_segments(
         self, n_samples: int, fs: float, full_duration: float,
@@ -480,6 +491,13 @@ class AnalysisWorker(QThread):
             # A guided session of the one-muscle practical, if the file was
             # recorded with one: its marks say where each effort was.
             sesion = parse_session_markers(markers)
+            # The gradation measures its maximum, its task maximum and its rows
+            # as the highest mean over half a second, like the level its steps
+            # hold (sessions.GRAD_MVC_WINDOW_S); the other practicals keep the
+            # profile's peak.
+            if sesion is not None and sesion.family == "GRAD":
+                self._profile = replace(self._profile,
+                                        mvc_peak_window_s=GRAD_MVC_WINDOW_S)
             # The loads of the guided force-velocity wizard, kept apart: the
             # contraction chart groups the efforts by them.
             fv_loads = parse_fv_load_markers(markers)
@@ -1318,6 +1336,7 @@ class AnalysisWorker(QThread):
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
                 result["reps"] = intermittent_reps(
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"],
+                    envelope=proc["emg_envelope"],
                     f_low=self._f_low, f_high=self._f_high,
                 )
                 # The sustained maximum is the analysed span itself: its

@@ -152,9 +152,11 @@ def test_change_in_per_cent() -> None:
 # ── The intermittent maximum, contraction by contraction ────────────────────
 
 
-def _intermitente(t0: float = 0.0, *, caida: float = 0.21):
+def _intermitente(t0: float = 0.0, *, caida: float = 0.21,
+                  tarde: tuple[float, float] = (0.0, 0.0)):
     """The marks of a run starting at *t0*, and a signal whose contractions
-    open on a peak that does not fall, then hold a level that does."""
+    open on a peak that does not fall, then hold a level that does. With
+    *tarde*, the subject begins and lets go that many seconds after each cue."""
     g = intermittent_script()
     marcas = [(t0, g.header)]
     for f in g.timed():
@@ -169,7 +171,7 @@ def _intermitente(t0: float = 0.0, *, caida: float = 0.21):
     amp = np.full(n, 0.005)
     tramos = sesion.spans_named("rep")
     for k, tramo in enumerate(tramos):
-        a, b = int(tramo.start_s * FS), int(tramo.end_s * FS)
+        a, b = int((tramo.start_s + tarde[0]) * FS), int((tramo.end_s + tarde[1]) * FS)
         amp[a:b] = 0.108 * (1.0 - caida * k / (len(tramos) - 1))
         amp[a: a + int(0.3 * FS)] = 0.25             # the peak of the start
     rng = np.random.default_rng(5)
@@ -185,6 +187,21 @@ def test_each_contraction_is_its_rms_after_the_first_second() -> None:
     assert change_pct(reps[0].rms_mv, reps[-1].rms_mv) == pytest.approx(-21, abs=4)
     assert all(r.mdf_hz is not None for r in reps)
     assert reps_trend_pct(reps) == pytest.approx(-21 / 5, abs=1.2)
+
+
+def test_a_late_subject_s_contractions_are_whole() -> None:
+    """Begun 0.4 s after each cue and let go 0.6 s after its end, in the one
+    second between them: each is the contraction, not the stretch between
+    the cues, and its RMS is its plateau's."""
+    sesion, filt, _m = _intermitente(tarde=(0.4, 0.6))
+    reps = intermittent_reps(sesion, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=filt)
+    marcas = sesion.spans_named("rep")
+    assert len(reps) == 6
+    for r, marca in zip(reps, marcas, strict=True):
+        assert r.start_s - marca.start_s == pytest.approx(0.4, abs=0.1)
+        assert r.end_s - marca.end_s == pytest.approx(0.6, abs=0.1)
+    assert reps[0].rms_mv == pytest.approx(0.108, rel=0.05)
+    assert reps[-1].rms_mv == pytest.approx(0.085, rel=0.05)
 
 
 def test_only_an_intermittent_session_has_contractions() -> None:

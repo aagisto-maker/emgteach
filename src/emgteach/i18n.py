@@ -2501,6 +2501,12 @@ _ES = {
         'Reposo antes del tren (mV)',
     "Measured on a 50 ms moving RMS, not on the envelope: at four or five contractions a second the envelope's 5 Hz filter alone keeps the floor at a fifth to a third of the peak. «The measure alone» is the floor the same measure leaves with a perfect relaxation at the rate achieved; what is above it is the subject's, mostly a relaxation not completed. This is not the treppe, a mechanical phenomenon of electrical stimulation; and the peaks are EMG, not force.":
         'Medido sobre un RMS móvil de 50 ms, no sobre la envolvente: a cuatro o cinco contracciones por segundo, el filtro de 5 Hz de la envolvente mantiene él solo el suelo entre un quinto y un tercio del pico. «La medida sola» es el suelo que deja la misma medida con una relajación perfecta al ritmo conseguido; lo que quede por encima es del sujeto, sobre todo una relajación que no llega a completarse. No es la treppe, un fenómeno mecánico de la estimulación eléctrica; y los picos son EMG, no fuerza.',
+    "Reference: the MVC, its highest mean over {w:g} s ({mvc:.3f} mV), as the level held is a mean.":
+        "Referencia: la CVM, su mayor media en {w:g} s ({mvc:.3f} mV), porque el nivel mantenido es una media.",
+    'The maximal step went above the calibration: {pct:.0f} %.':
+        'El escalón máximo pasó de la calibración: {pct:.0f} %.',
+    'Not measured (quick contractions: nothing held)':
+        'No se mide (contracciones rápidas: nada mantenido)',
     'Quick repeated contractions':
         'Contracciones rápidas repetidas',
     'Contract and relax at 0':
@@ -2587,8 +2593,8 @@ _ES = {
         'Inicio y final: la mediana de las ventanas de un segundo del primer y el último cuarto de la contracción (como mucho 5 s) en que el músculo trabajaba; una caída cuenta cuando tres ventanas seguidas quedan por debajo de la línea.',
     'RMS (% of the first)':
         'RMS (% de la primera)',
-    'RMS over each contraction after its first second, not its peak: the peak is the start of each contraction and does not fall.':
-        'RMS de cada contracción tras su primer segundo, no su pico: el pico es el arranque de cada contracción y no baja.',
+    'RMS over the plateau of each contraction, after its first second, not its peak: the peak is the start of each contraction and does not fall.':
+        'RMS en la meseta de cada contracción, tras su primer segundo, no su pico: el pico es el arranque de cada contracción y no baja.',
     'Trend: {pct:+.1f} % of the first per contraction.':
         'Tendencia: {pct:+.1f} % de la primera por contracción.',
     'In the one-muscle practical, the chooser beside the button offers guided sessions: chosen before recording, «Start recording» runs the whole session — the calibration if it needs one, a countdown, each phase announced and timed — and stops at the end. «Free recording» is the usual way.':
@@ -2651,8 +2657,8 @@ _ES = {
         'Cada escalón mantuvo más que el anterior.',
     'Not every step held more than the one before.':
         'No todos los escalones mantuvieron más que el anterior.',
-    'Held: the mean of the envelope over each step after its first second, which is the reach and not the hold.':
-        'Mantenido: la media de la envolvente en cada escalón tras su primer segundo, que es el de llegar al nivel y no el de mantenerlo.',
+    "Held: the mean of the envelope over the plateau of each step's contraction, after its first second (the reach) and before its letting go. Each step is the contraction begun after its cue and followed past its end: the subject begins and lets go late.":
+        "Mantenido: la media de la envolvente en la meseta de la contracción de cada escalón, tras su primer segundo (el de llegar al nivel) y antes de soltar. Cada escalón es la contracción que empieza tras su aviso, seguida más allá de su final: el sujeto empieza y suelta con retraso.",
     'Choose a guided session before recording: «Start recording» then runs it — the calibration if it needs one, a countdown, and each phase announced and timed — writes its phases into the file and stops the recording at the end. Esc stops the session and the recording goes on.':
         'Elija una sesión guiada antes de grabar: «Iniciar grabación» la lleva a cabo — la calibración si la necesita, una cuenta atrás y cada fase anunciada y cronometrada —, escribe sus fases en el fichero y detiene la grabación al terminar. Esc detiene la sesión y la grabación sigue.',
     'Tone':

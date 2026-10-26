@@ -441,7 +441,16 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   cinco contracciones de 4 s de fuerza creciente, al **20, 40, 60 y 80 % de la barra
   y al máximo**, con 6 s de reposo entre ellas. El panel muestra la barra del músculo
   con la franja del escalón pedido. La calibración pide el mismo gesto que la
-  sesión: cerrar el puño con una contracción.
+  sesión: cerrar el puño con una contracción. En Análisis cada escalón es la
+  contracción que empieza tras su aviso, seguida hasta 1.5 s más allá de su final
+  —se empieza y se suelta con unas décimas de retraso—, y su nivel es la media de
+  la envolvente en la meseta de esa contracción. **El máximo de la gradación es
+  la mayor media en medio segundo**, no el pico de la envolvente: el nivel
+  mantenido es una media, y una media no llega nunca al pico de la misma
+  envolvente (mantenida la intensidad de la calibración, se leía un 85-87 %). Así
+  lo miden su calibración, su barra en vivo y su análisis; las demás prácticas
+  siguen con el pico. Si el escalón máximo pasa de la calibración, la vista
+  «Escalones» y el informe lo dicen.
 - **Fatiga por contracción mantenida** (28 s; la calibración es opcional): 5 s de
   reposo, una cuenta atrás de 3 s, **10 s de contracción máxima** isométrica contra
   la mesa y 10 s de reposo. El texto pide respirar normalmente. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7
@@ -450,11 +459,12 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   MDF un 10 %.
 - **Fatiga por contracciones intermitentes** (53 s): seis contracciones máximas de **5 s con
   1 s de reposo**, con tono al empezar y al acabar cada una y la cuenta atrás en
-  pantalla. Se mide el **RMS de cada contracción** tras su primer segundo (no el
+  pantalla. Se mide el **RMS de cada contracción** en su meseta, tras su primer segundo (no el
   pico, que es el arranque y no baja) y su MDF: vista «Por contracción».
 - **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
   atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
-  las contracciones y su ritmo, y se siguen **los picos y el suelo entre ellas**
+  las contracciones y su ritmo —hasta 1.5 s después de la marca del final, porque
+  se para unas décimas después del aviso—, y se siguen **los picos y el suelo entre ellas**
   sobre un RMS móvil de 50 ms, no sobre la envolvente (a cuatro o cinco por
   segundo, su filtro de 5 Hz mantiene él solo el suelo entre un quinto y un tercio
   del pico). La línea de resumen y el informe dan, además, **el suelo que deja la

@@ -796,3 +796,135 @@ sí los convierte, 2966, y el resto de la pestaña usa `self._panel_pids[i]`,
 reciben los móviles lleva paneles equivocados: la casilla «2. Env. norm.»
 sale como filtrada + rectificada. Comprobado en el código; no probado en la
 aplicación. Arreglo de una línea, aparte de este plan.
+
+## 11. Banco de la 3.10.0 con la placa real (26 de octubre)
+
+Exe de la ejecución manual #133. Corregido en la rama `banco-3.10.0`: los
+escalones, las contracciones intermitentes y el tren son la actividad dentro
+de sus marcas seguida 1.5 s más allá de su final (§11.1); el registro afinado
+conserva la sesión; la referencia de la gradación es la mayor entre la CVM y
+el máximo de la sesión; y el tren no da veredicto de fatiga.
+
+### 11.1 Pico frente a media (punto 4)
+
+**Decisión de Ángel (26 de octubre): la propuesta A, solo en la gradación, y sin el punto 3** (la referencia = máx(CVM, sesión) se revierte: bajaba todos los escalones a la vez). Implementado: `sessions.GRAD_MVC_WINDOW_S`; si el escalón máximo pasa de la calibración, la vista y el informe lo dicen.
+
+La CVM es **el pico de la envolvente** (`mvc_peak_window_s = 0`, desde la
+3.2.0), y el «mantenido» de un escalón es **una media** sobre su meseta. Un
+nivel medio no llega al pico de la misma envolvente aunque la intensidad sea
+la misma: el pico es un máximo del ruido de la envolvente, no un nivel.
+Medido con ruido gaussiano por los mismos filtros (20 repeticiones;
+calibración de 1.5 s y contracción mantenida a la misma amplitud):
+
+| | referencia = pico | referencia = mejor media de 0.5 s |
+|---|---|---|
+| mantenido / referencia, análisis (fase cero) | **87 %** | 95 % |
+| barra en vivo (bloque de 100 ms / referencia en vivo) | **85 %** | 96 % |
+
+Es decir: con la referencia en el pico, mantener exactamente la intensidad de
+la calibración se lee como 85–87 %, y el «100 %» de la barra es inalcanzable
+sosteniendo. Eso, más la parte del punto 1 (el reposo del principio dentro
+del escalón), explica el 17/27/42/60/69 frente a 20/40/60/80/100. La envolvente
+en vivo (causal, filtros de orden 2) sale un 10 % por encima de la del
+análisis (fase cero) tanto en el pico como en la meseta, así que entre las dos
+el cociente se compensa.
+
+Propuesta, de menor a mayor alcance:
+
+- **A (recomendada para la 3.10.0): solo en la gradación**, la CVM de la
+  calibración que la abre y todo lo que la compara (la barra en vivo de los
+  escalones, el mantenido, la referencia de la sesión del punto 3, la columna
+  «Pico» de la tabla y el máximo de la tarea) con la **mejor media de 0.5 s**.
+  Igual con igual, y las demás prácticas no cambian.
+- **B: en toda la aplicación**, `mvc_peak_window_s = 0.5` por defecto. Todos
+  los % CVM suben un ~9 % (pico/media de 0.5 s en una calibración breve), y se
+  deshace la decisión de la 3.2.0 (referencia = punto más alto): un registro
+  reanalizado daría otros porcentajes, lo que exige nota de versión.
+
+### 11.2 Fatiga: fallos anotados, sin implementar (el protocolo va a cambiar)
+
+Ángel probará bíceps con carga fija (codo a 90°, 3–5 kg, 60–90 s); en las tres
+pruebas con el flexor del antebrazo la MDF quedó plana (pendientes ≤ ±0.2 Hz/s,
+R² ≤ 0.07) y la RMS del máximo cayó a un tercio en 4–5 s y luego meseta
+(pérdida de esfuerzo, no fatiga). Valen para cualquier protocolo:
+
+7. **El resumen propio de la sesión mantenida no aparece** (MDF y RMS de
+   inicio y final, segundos hasta −10 % de la MDF), solo el genérico.
+   Hipótesis a comprobar: `result["hold"]` solo se calcula sin fragmentos
+   elegidos (`not self._roi_segments` en `workers/analysis.py`); tras
+   «Seleccionar fragmentos» queda en `None`. Si la sesión se paró antes de
+   su marca de fin, también falta el tramo del esfuerzo.
+8. **Una contracción sostenida se parte en trozos**: en
+   `m_2026-10-26_10-17-16.edf` (una de ~60 s, grabación libre) la tabla da
+   cinco (2.0, 3.5, 24.2, 36.5 y 47.0 s, varias de menos de 1 s). El
+   detector (`selection.suggest_significant_segments`: umbral de k·DE sobre
+   el reposo, prominencia 0.25 del pico, une huecos de menos de 0.3 s) corta
+   cuando la meseta, a un tercio del pico inicial, cruza el umbral relativo.
+   Necesita histéresis (umbral de salida por debajo del de entrada) o una
+   duración mínima de reposo para cortar. **Comprobado en el archivo** (con
+   permiso de Ángel): el reposo verdadero es de 0.004 mV y solo dura los
+   primeros 2 s y los últimos 2 s; la meseta, a ~0.07 mV, ocupa 50 de los 63 s.
+   El detector estima la línea de base sobre el 40 % más tranquilo de la
+   envolvente y `resting_level` sobre su percentil 10 (0.050 mV), así que los
+   dos toman **la meseta por reposo**: solo los picos que sobresalen de ella
+   salen como contracciones. La raíz es la estimación del reposo cuando el
+   reposo es corto; el arreglo, tomarlo del tramo tranquilo más largo (o de la
+   pausa de preparación, como ya hace la tabla con `_cola_de_la_pausa`).
+9. **«sin calibrar» en la barra tras una sesión que sí calibró**: cada
+   grabación nueva vacía el monitor de carga (`_reset_load_monitor` al
+   empezar a grabar, en `gui/tabs/acquisition.py`), así que una grabación
+   libre después de la sesión calibrada no tiene CVM ni barra. Es la decisión
+   de «cada registro se calibra a sí mismo» de la 3.8.0; si la grabación libre
+   debe poder usar la CVM de la sesión anterior del mismo alumno, hay que
+   decidir cuándo caduca (otro alumno, otro músculo, electrodos movidos).
+   Comprobado en los archivos: la grabación libre `m_2026-10-26_10-17-16.edf`
+   no lleva calibración ni anotación `MVC ref` (la de 0.4146 mV está en la
+   gradación `m_graduales_2026-10-26_10-31-36.edf`, cuyo análisis sí la usa,
+   recalculada de sus tres repeticiones: 0.397 mV), así que «sin calibrar» es
+   lo que esa grabación tiene; lo que falta es poder llevar la CVM de la
+   sesión anterior a la grabación libre.
+
+### 11.3 Lo que dicen las grabaciones del banco (con permiso de Ángel)
+
+Analizadas con el código de `main` (el exe #133) y con el de la rama:
+
+- **Tren rápido** (`m_rapidas_2026-10-26_10-38-41.edf`): 28 contracciones con
+  `main`, **30** con la rama; la última, a 10.36 s del aviso (la franja dura
+  10 s). Ritmo 2.9/s; suelo entre contracciones un 9-10 % del pico, lo mismo
+  que deja la medida sola: relajación completa.
+- **Las dos grabaciones con la sesión de gradación**
+  (`m_graduales_2026-10-26_10-25-29.edf` y `_10-31-36.edf`) **no son
+  gradaciones, sino dos de las pruebas de fatiga** hechas con su barra (lo
+  aclara la conversación del banco): un máximo sostenido de unos 47 s (la
+  envolvente cae de 0.3 a 0.1 mV desde el primer escalón hasta el final) y un
+  ~45 % de la CVM mantenido unos 36 s (estable en 0.17-0.20 mV entre los 47 y
+  los 83 s, MDF plana). Por eso entre las franjas no hay reposo y el nivel no
+  sube. **La gradación del informe del banco (17/27/42/60/69 % mantenido;
+  33/60/68/81/127 % de pico) no está entre estos archivos**: hace falta su EDF
+  para comprobar los puntos 1 y 3 con datos reales. Lo que sí muestran: con la
+  rama, la regla de los tramos sigue la actividad (en la primera, el primer
+  escalón empieza 0.9 s después de su aviso), y el registro afinado de la
+  segunda a sus cinco contracciones se reabre con la sesión entera.
+- **La gradación del banco** (`m_graduales_2026-10-26_09-48-16.edf`, con su
+  `_tuned` hecho con el exe #133, que conserva las repeticiones 1 y 3 de la
+  calibración: CVM 0.322 mV). Con `main` salen exactamente las cifras del
+  informe: mantenido 17/27/42/60/69 %, picos 33/60/68/81/111 % y máximo de la
+  tarea 127 %. El `_tuned` del #133 perdió las marcas de inicio de los cinco
+  escalones (quedan solo los finales), así que se abre sin sesión: el punto 2,
+  confirmado. Afinado con la rama, se reabre con sus cinco escalones.
+  Mantenido (mV): 0.052, 0.087, 0.142, 0.196, 0.199, medido con la rama
+  sobre la contracción (que empieza 0.7-1.0 s tras cada aviso). Según la
+  referencia:
+
+  | referencia | 20 | 40 | 60 | 80 | 100 |
+  |---|---|---|---|---|---|
+  | `main`: CVM pico (0.322), mantenido entre marcas | 17 | 27 | 42 | 60 | 69 |
+  | rama (punto 3): máx(CVM, sesión) en pico (0.410) | 13 | 21 | 35 | 48 | 49 |
+  | propuesta A: CVM mejor media de 0.5 s (0.241) | **22** | **36** | **59** | **81** | 83 |
+  | A + punto 3: máx(CVM, sesión) en 0.5 s (0.306) | 17 | 29 | 46 | 64 | 65 |
+
+  Medidos igual con igual (A), los cuatro primeros escalones son los pedidos:
+  el sujeto siguió la barra. El escalón máximo sí pasó la calibración, con las
+  dos medidas (pico 127 %, media de 0.5 s 127 %): la referencia de la sesión
+  del punto 3 lo recoge, pero baja todos los demás a la vez. Hay que decidir
+  si el punto 3 se queda con A o solo limita la columna «Pico».

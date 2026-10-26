@@ -20,6 +20,9 @@ traceability rather than convenience:
   of the repetitions that were kept; the discarded ones lose their ``CAL``
   annotations, so reopening the file recomputes exactly the reference that was
   on screen.
+* **So does a guided session.** Its marks are written again around the kept
+  fragments (:func:`_sesion_por_tramo`), so the derived file reopens with its
+  steps, its contractions or its train, and with their view.
 
 What is trimmed is the **recording phase only**. Everything up to ``REC start``
 is copied through untouched — the calibration has to stay whole, or the
@@ -41,6 +44,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from emgteach.force_velocity import parse_fv_load_markers
+from emgteach.guided import measured_windows
 from emgteach.i18n import tr
 from emgteach.io import (
     MAX_ANNOTATION_BYTES,
@@ -54,6 +58,14 @@ from emgteach.phases import (
     cal_end_marker,
     cal_start_marker,
     parse_phase_markers,
+)
+from emgteach.sessions import (
+    GuidedSession,
+    end_marker,
+    is_session_marker,
+    parse_session_markers,
+    span_end_marker,
+    span_start_marker,
 )
 
 if TYPE_CHECKING:
@@ -212,10 +224,13 @@ def _reetiquetar(
         fuera.add(cal_end_marker(canal, rep))
 
     cargas = parse_fv_load_markers(markers)
+    sesion = parse_session_markers(markers)
     salida: list[tuple[float, str]] = []
     for t, texto in markers:
         if str(texto) in fuera:
             continue
+        if sesion is not None and is_session_marker(str(texto)):
+            continue                       # re-issued round the fragments, below
         if parse_fv_load_markers([(t, texto)]) and t > rec_start_s:
             continue                       # re-issued per fragment, below
         if t <= rec_start_s:
@@ -229,7 +244,67 @@ def _reetiquetar(
         if desplazado is not None:
             salida.append((desplazado, str(texto)))
     salida.extend(_cargas_por_tramo(cargas, tramos, rec_start_s))
+    if sesion is not None:
+        salida.extend(_sesion_por_tramo(markers, sesion, tramos, rec_start_s))
     return sorted(salida, key=lambda m: m[0])
+
+
+#: Seconds between two session marks written at what would be the same
+#: instant once the gaps are closed up: an end and the next start read in
+#: the wrong order close nothing.
+_SEPARA_S = 0.002
+
+
+def _sesion_por_tramo(
+    markers: Sequence[tuple[float, str]],
+    sesion: GuidedSession,
+    tramos: Sequence[tuple[float, float]],
+    rec_start_s: float,
+) -> list[tuple[float, str]]:
+    """The guided session's marks, written again round the kept fragments.
+
+    The editor proposes fragments round each contraction, and a step's start
+    mark is its cue, in the rest just before the contraction: under the
+    general rule every start was dropped and the derived file reopened with
+    no session — no «Steps» view, no level asked or held (Ángel's bench,
+    26 October 2026). Each stretch is written instead over the kept time it
+    covers, run on past its end as the analysis runs it
+    (:func:`emgteach.guided.measured_windows`); a stretch with nothing kept
+    is left out, and the session's own start and end frame what is left.
+    """
+    familia = sesion.family
+    cabeceras = [str(texto) for t, texto in markers
+                 if str(texto).startswith(f"{familia} start")
+                 and float(t) <= sesion.start_s + 1e-9]
+    if not cabeceras:
+        return []
+    salida = [(min(sesion.start_s, rec_start_s), cabeceras[-1])]
+    previo = salida[0][0]
+    fin_total = rec_start_s + sum(b - a for a, b in tramos)
+    fines = {(t.name, t.start_s): t.end_s for t in sesion.spans}
+    for tramo, a, b in measured_windows(sesion, [(0.0, float("inf"), 0.0)]):
+        partes = [(max(a, x), min(b, y)) for x, y in tramos if min(b, y) > max(a, x)]
+        if not partes:
+            continue
+        # Its own marks where they were kept, so a file tuned again comes
+        # out the same; else the edges of what was kept of it.
+        ini = (_en_tiempo_recortado(a, tramos, rec_start_s)
+               or _en_tiempo_recortado(partes[0][0], tramos, rec_start_s))
+        fin = (_en_tiempo_recortado(fines[(tramo.name, tramo.start_s)], tramos, rec_start_s)
+               or _en_tiempo_recortado(partes[-1][1] - 1e-9, tramos, rec_start_s))
+        if ini is None or fin is None:
+            continue
+        ini = max(ini, previo + _SEPARA_S)
+        if fin <= ini:
+            continue
+        cierre = {k: tramo.params[k] for k in ("k", "n") if k in tramo.params}
+        salida.append((ini, span_start_marker(familia, tramo.name, **tramo.params)))
+        salida.append((fin, span_end_marker(familia, tramo.name, **cierre)))
+        previo = fin
+    if sesion.end_s is not None:
+        salida.append((max(fin_total, previo + _SEPARA_S),
+                       end_marker(familia, stopped=not sesion.completed)))
+    return salida
 
 
 def _cargas_por_tramo(
