@@ -1003,3 +1003,24 @@ análisis; **reposo alto a 0.03 mV**, solo como comprobación gruesa; el pico de
 
 De §11.2 sigue abierto el 8 (el detector parte una contracción larga en trozos si el
 reposo es corto; el tramo de la carga no depende de él, la tabla sí) y el 9.
+
+## 13. Banco final de la 3.10.0 (exe #138, a465ddb)
+
+**B1: con fragmentos elegidos, la vista «Escalones» mostraba 1 escalón.** Ángel
+eligió cinco fragmentos, uno por escalón, cada uno ceñido a su contracción.
+Reproducido con la gradación del banco de la mañana
+(`m_graduales_2026-10-26_09-48-16.edf`): con fragmentos de la marca + 0.8 s al
+final + 0.6 s salían **0 escalones**; con fragmentos que contienen las marcas,
+los 5. La causa: un escalón solo contaba con sus dos marcas dentro de un mismo
+fragmento (`guided.spans_in_analysis_time`), y el sujeto empieza unas décimas
+después del aviso, así que un fragmento ceñido a la contracción deja fuera la
+marca de inicio. Ahora cada tramo se mide en el fragmento que más lo cubre, sobre
+la parte que conserva, si es al menos el 60 % de su duración marcada
+(`guided.measured_windows`). Con esos fragmentos sale 22/36/59/79/82 %, como sin
+ellos (22/36/59/81/83).
+
+**La hipótesis del afinado pegado no se confirma** con este archivo: el
+`_tuned` de esos cinco fragmentos (escalones pegados, el primero en `REC start`,
+0.6 s entre uno y otro) se reabre con sus cinco escalones y los mismos niveles,
+también antes de la corrección. Falta comprobarlo con los dos EDF de B1
+(`biceps_graduales_2026-10-26_17-25-09.edf` y su `_tuned`).

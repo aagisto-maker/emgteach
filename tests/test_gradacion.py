@@ -220,6 +220,38 @@ def test_the_margin_never_reaches_the_next_stretch() -> None:
     assert (a, b) == (pytest.approx(0.5), pytest.approx(6.0))
 
 
+def test_fragments_round_the_contractions_keep_every_step() -> None:
+    """Ángel's bench, 26 October 2026 (B1): five fragments, one per step, each
+    round its contraction — begun some tenths after the cue — and the view
+    said «1 step»: a step counted only with both its marks inside a fragment.
+    Now each is measured over the part of it the fragment keeps."""
+    from emgteach.guided import MARGIN_S, measured_windows
+
+    sesion = _sesion_sintetica()
+    piezas, off = [], 0.0
+    for k in range(5):
+        a, b = 5.0 + 10.0 * k + 0.8, 9.0 + 10.0 * k + 0.6
+        piezas.append((a, b, off))
+        off += b - a
+    ventanas = measured_windows(sesion, piezas, ("step",))
+    assert [t.number("k") for t, _a, _b in ventanas] == [1, 2, 3, 4, 5]
+    for (t, a, b), (x, y, o) in zip(ventanas, piezas, strict=True):
+        assert (t.start_s, t.end_s) == (pytest.approx(x), pytest.approx(y))
+        assert (a, b) == (pytest.approx(o), pytest.approx(o + y - x))
+    # Without fragments, nothing moves: the cue and the margin past the end.
+    entero = measured_windows(sesion, [(0.0, 60.0, 0.0)], ("step",))
+    assert [round(b - a, 6) for _t, a, b in entero] == [4.0 + MARGIN_S] * 5
+
+
+def test_half_a_step_is_still_not_a_step() -> None:
+    from emgteach.guided import measured_windows
+
+    sesion = _sesion_sintetica()
+    # The first step cut at its middle, the second kept whole.
+    ventanas = measured_windows(sesion, [(5.0, 7.0, 0.0), (15.0, 19.5, 2.0)], ("step",))
+    assert [t.number("k") for t, _a, _b in ventanas] == [2]
+
+
 def test_a_step_across_a_cut_is_left_out() -> None:
     tramo = MeasuredSpan("step", 10.0, 14.0, {"k": "1"})
     assert spans_in_analysis_time([tramo], [(0.0, 12.0, 0.0), (13.0, 30.0, 12.0)]) == []
@@ -492,6 +524,60 @@ def test_a_tuned_gradation_keeps_its_steps_and_their_view(qapp, tmp_path: Path) 
     otra = tmp_path / "grad_tuned_2.edf"
     build_tuned_edf(afinado, otra)
     assert parse_session_markers(read_edf_markers(otra)).spans == sesion.spans
+
+
+def _analizar_fragmentos(qapp, edf: str, fragmentos) -> dict:
+    from emgteach.io import list_edf_emg_channels
+    from emgteach.workers import AnalysisWorker
+
+    worker = AnalysisWorker(edf_path=edf, channel_name=list_edf_emg_channels(edf)[0],
+                            roi_segments=fragmentos)
+    salida: list[dict] = []
+    errores: list[str] = []
+    worker.result_ready.connect(salida.append)
+    worker.error.connect(errores.append)
+    worker.start()
+    worker.wait(120000)
+    qapp.processEvents()
+    assert salida, f"the worker gave no result: {errores}"
+    return salida[0]
+
+
+#: Fragments round each contraction and nothing more, as Ángel chose them at
+#: the bench (B1): from inside the step to just past its end, the cue left out.
+_CENIDOS = [(REC_S + 5.6 + 10.0 * k, REC_S + 9.4 + 10.0 * k) for k in range(5)]
+
+
+@pytest.mark.gui
+def test_fragments_chosen_round_the_contractions_keep_the_five_steps(
+    qapp, tmp_path: Path
+) -> None:
+    r = _analizar_fragmentos(qapp, _gradacion_edf(tmp_path / "g.edf"), _CENIDOS)
+    pasos = r["grad_steps"]
+    assert [p.target_pct for p in pasos] == [20, 40, 60, 80, 100]
+    for p in pasos:
+        assert p.held_pct == pytest.approx(p.target_pct, abs=6.0)
+    assert is_monotonic(pasos)
+
+
+@pytest.mark.gui
+def test_a_gradation_tuned_round_the_contractions_reopens_with_five_steps(
+    qapp, tmp_path: Path
+) -> None:
+    """The «_tuned» of those fragments: its steps end up next to one another,
+    the first at «REC start», with a few tenths between them — and it still
+    reads five, at their levels."""
+    from emgteach.tuning import build_tuned_edf
+
+    afinado = tmp_path / "g_tuned.edf"
+    build_tuned_edf(_gradacion_edf(tmp_path / "g.edf"), afinado, fragments=_CENIDOS)
+    sesion = parse_session_markers(read_edf_markers(afinado))
+    assert sesion is not None and len(sesion.spans_named("step")) == 5
+    r = _analizar(qapp, str(afinado))
+    pasos = r["grad_steps"]
+    assert [p.target_pct for p in pasos] == [20, 40, 60, 80, 100]
+    for p in pasos:
+        assert p.held_pct == pytest.approx(p.target_pct, abs=6.0)
 
 
 # ── The gradation's maximum, measured like the level held ────────────────
