@@ -514,10 +514,18 @@ def rapid_train(
     window_ms: float = TRAIN_RMS_MS,
     rest_s: float = 2.0,
 ) -> TrainResult | None:
-    """The train of quick contractions, measured; ``None`` without one."""
+    """The train of quick contractions, measured; ``None`` without one.
+
+    The train is the activity inside its marks run on past their end
+    (:func:`measured_windows`): the subject stops some tenths of a second
+    after the cue, and the contractions made meanwhile are the train's —
+    measured between the marks, the bench of 26 October 2026 counted 28 of
+    its 30. Its duration is the activity's, from its first contraction to
+    its last.
+    """
     if session is None or session.family != "FAST" or fs <= 0:
         return None
-    tramos = spans_in_analysis_time(session.spans_named("train"), kept)
+    tramos = measured_windows(session, kept, ("train",))
     if not tramos:
         return None
     _tramo, a, b = tramos[-1]
@@ -531,7 +539,8 @@ def rapid_train(
     r0 = max(0, i0 - round(rest_s * fs))
     reposo = float(np.median(s_todo[r0:i0])) if i0 - r0 > 10 else None
     picos, alturas, suelos = _peaks_and_floors(s, fs)
-    dur = (i1 - i0) / fs
+    activo = trim_to_effort(Segment(0.0, s.size / fs), fs, s - (reposo or 0.0))
+    dur = activo.end_s - activo.start_s
     n = int(alturas.size)
     ritmo = (n - 1) / ((picos[-1] - picos[0]) / fs) if n >= 2 and picos[-1] > picos[0] else 0.0
     cambio = suelo_ini = suelo_fin = None

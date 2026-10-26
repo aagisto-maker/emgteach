@@ -457,7 +457,8 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   pico, que es el arranque y no baja) y su MDF: vista «Por contracción».
 - **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
   atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
-  las contracciones y su ritmo, y se siguen **los picos y el suelo entre ellas**
+  las contracciones y su ritmo —hasta 1.5 s después de la marca del final, porque
+  se para unas décimas después del aviso—, y se siguen **los picos y el suelo entre ellas**
   sobre un RMS móvil de 50 ms, no sobre la envolvente (a cuatro o cinco por
   segundo, su filtro de 5 Hz mantiene él solo el suelo entre un quinto y un tercio
   del pico). La línea de resumen y el informe dan, además, **el suelo que deja la

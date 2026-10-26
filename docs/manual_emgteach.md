@@ -373,7 +373,8 @@ session.
   «Per contraction».
 - **Quick repeated contractions** (28 s): after 5 s of rest and the countdown,
   **10 s of contractions of the fist, closing and relaxing it as fast as possible**. The
-  contractions and their rate are counted, and **the peaks and the floor between
+  contractions and their rate are counted — up to 1.5 s past the end mark, since one
+  stops some tenths of a second after the cue —, and **the peaks and the floor between
   them** are followed on a 50 ms moving RMS, not on the envelope (at four or five a
   second its 5 Hz filter alone keeps the floor at a fifth to a third of the peak).
   The summary line and the report also give **the floor the measure alone leaves**
