@@ -928,3 +928,52 @@ Analizadas con el código de `main` (el exe #133) y con el de la rama:
   dos medidas (pico 127 %, media de 0.5 s 127 %): la referencia de la sesión
   del punto 3 lo recoge, pero baja todos los demás a la vez. Hay que decidir
   si el punto 3 se queda con A o solo limita la columna «Pico».
+
+## 12. La fatiga con carga fija (26 de octubre, tarde)
+
+Ángel probó el bíceps con un peso fijo, el codo a 90° y unos 90 s, en una
+grabación libre (`biceps_2026-10-26_12-21-27.edf`, abierta con su permiso).
+Lo que mostró:
+
+- **La MDF cae y el RMS no.** Del 2.º segundo tras empezar la actividad hasta
+  que cae, la recta de la MDF va de 79 a 66 Hz (−17 %) con p ≈ 4·10⁻¹⁷ y un R²
+  de solo 0.32; la MNF baja con ella; el RMS se queda en 0.09-0.10 mV
+  (p = 0.09). La MDF cae un 10 % hacia los 22 s.
+- **El R² no sirve de umbral.** El espectro de una ventana de 1 s tiene una
+  dispersión propia grande: con un R² ≥ 0.30 como condición, una caída real
+  quedaría en el límite. Lo que dice que la caída es real es la significación
+  de la pendiente sobre 170 ventanas.
+- **El reposo salió alto** (0.028 mV de mediana): contacto de los electrodos
+  dudoso, aunque el espectro siga siendo legible.
+
+Decisiones de Ángel («barra para final anticipado y lo demás que propones»):
+
+1. **Una sola sesión de fatiga**, «Fatiga: bíceps con carga fija»: 5 s de
+   reposo medido, 3 s de cuenta atrás para coger el peso, **90 s** sostenido
+   (como mucho 180) y 5 s para dejarlo. Se quitan la contracción máxima
+   mantenida y las contracciones intermitentes: con el flexor del antebrazo
+   la MDF quedó plana y lo que cayó fue el esfuerzo (§11.2).
+2. **La barra espaciadora termina el esfuerzo antes de tiempo** (y un botón
+   «No puedo más (Espacio)»). La marca de su final lleva `early`; la sesión
+   pasa al último reposo y las fases siguientes conservan su duración.
+3. **Sin barra durante el esfuerzo**: la carga es fija, no un nivel que
+   alcanzar.
+4. **Veredicto**: fatiga si la pendiente de la MDF es significativa
+   (p < 0.01) y su recta cae al menos un 10 %; no concluyente si no es
+   significativa o hay menos de 10 ventanas.
+5. **Tramo analizado**: de 2 s después de que empiece la actividad hasta que
+   cae o termina la marca del esfuerzo.
+6. **Vista propia**, «MDF en el tiempo»: MDF y MNF en ventanas de 1 s cada
+   0.5 s, sus medias en 5 s, la recta, R², p, cambio, el momento del −10 % y el
+   RMS en gris. Informe con la gráfica y la tabla; móviles con el cambio de MDF
+   y RMS, R² y el −10 %.
+7. **Textos**: la fatiga baja la frecuencia; la amplitud puede mantenerse o
+   subir.
+8. **Aviso de reposo alto**, por encima de 0.01 mV.
+9. **El sujeto simulado se fatiga** mientras sostiene un nivel, para ensayar
+   la sesión sin placa.
+
+De §11.2 sigue abierto: el punto 7 en su forma general (la vista de la carga,
+como antes el resumen de la mantenida, solo se calcula sin fragmentos
+elegidos), el 8 (el detector parte una contracción larga en trozos si el
+reposo es corto; el tramo de la carga no depende de él, la tabla sí) y el 9.

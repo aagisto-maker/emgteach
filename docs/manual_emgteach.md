@@ -365,17 +365,25 @@ session.
   calibration's own intensity it read 85-87 %). Its calibration, its live bar and
   its analysis measure it so; the other practicals keep the peak. A maximal step
   above the calibration is said in the «Steps» view and the report.
-- **Fatigue: sustained contraction** (28 s; calibration optional): 5 s of rest, a
-  3 s countdown, **10 s of maximal isometric contraction** against the table and
-  10 s of rest. The text asks to breathe normally. In Analysis the analysed span is the contraction and panels 6 and 7
-  come ticked; the summary line gives the MDF and RMS of its start and end (the
-  first and last quarter of the contraction) and after how many seconds the MDF
-  had fallen 10 %.
-- **Fatigue: intermittent contractions** (53 s): six maximal contractions of **5 s with
-  1 s of rest**, with a tone at the start and the end of each and the countdown on
-  screen. What is measured is the **RMS of each contraction** over its plateau, after its first
-  second (not the peak, which is the start and does not fall) and its MDF: view
-  «Per contraction».
+- **Fatigue: biceps with a fixed load** (103 s at most; no calibration): 5 s of
+  rest with the arm relaxed along the body, a 3 s countdown to pick up the
+  weight, **the weight held with the elbow at 90° for 90 s** and 5 s to put it
+  down. There is no bar during the effort (the load is fixed, not a level to
+  reach): the panel gives the seconds left. The text asks to breathe normally.
+  **The space bar, or the button «I can't go on (Space)», ends the effort
+  early**; the mark of its end says so and the session goes on to its last rest.
+  If the rest at the start is above 0.01 mV, the panel and the event log warn
+  that the electrodes' contact is poor.
+  In Analysis the analysed span begins **2 s after the activity begins**
+  (picking up the weight is not the contraction that tires) and ends where the
+  activity falls or the effort's mark ends. MDF and MNF are computed in 1 s
+  windows every 0.5 s, with the RMS, and a line through each (slope, R², p and
+  change). **There is fatigue when the MDF falls significantly (p < 0.01) and
+  its line drops at least 10 %**; no R² is required, since the spectrum has a
+  large scatter of its own (on the bench the biceps' MDF fell 16-20 % in 90 s
+  with an R² of only 0.3, while the RMS held or rose). View **«MDF over
+  time»**: the windows, their means over 5 s, the MDF's line, when it had
+  fallen 10 % and the RMS in grey. Panels 6 and 7 come ticked.
 - **Quick repeated contractions** (28 s): after 5 s of rest and the countdown,
   **10 s of contractions of the fist, closing and relaxing it as fast as possible**. The
   contractions and their rate are counted — up to 1.5 s past the end mark, since one
@@ -640,6 +648,10 @@ spectrum shifts towards lower frequencies: **MNF and MDF decrease over time**.
   - **Not conclusive**: the line does not fit (R² < 0.30), or fewer than four
     windows. The norm in a series of brief contractions: the recording does not
     answer the question, which is not the same as answering "no".
+  - In the guided session **«Fatigue: biceps with a fixed load»** (§4.3) the
+    criterion is another: a **significant** fall of the MDF (p < 0.01) of at
+    least 10 %, with no R² required. With a fixed load held for a minute or
+    more, the fall is real even when the spectrum's scatter leaves R² low.
 - Fatigue only means something on a **sustained** contraction of some tens of
   seconds. Mixing rest and effort manufactures a slope from nothing (the MDF of
   rest is the amplifier's, very high), which is why the fit excludes quiet
@@ -830,8 +842,7 @@ Each begins by **choosing the practical** in the top-right selector.
    guided session **«Graded contractions»** first, in the chooser on the line of «Calibrate
    MVC» (§4.3): *Start recording* calibrates, counts 5 s, directs the five steps
    and stops by itself. For the rest, **«Free recording»** and *Start recording*;
-   for fatigue, the sessions **«Fatigue: sustained contraction»** or **«Fatigue:
-   intermittent contractions»**. If the exercise needs % MVC (load), press **«Calibrate
+   for fatigue, the session **«Fatigue: biceps with a fixed load»**. If the exercise needs % MVC (load), press **«Calibrate
    MVC»** at once: warm-up
    and three brief, intense maximal contractions (for the forearm flexor, fist
    clenched). Then the task; onsets

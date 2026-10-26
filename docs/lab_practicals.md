@@ -353,67 +353,72 @@ a mean too.
 - What does the **«Task maximum»** card say? If it is above 100 %, what happened
   in the calibration?
 
-### Exercise 1c · Sustained contraction: the signature of fatigue
+### Exercise 1c · A fixed load: the signature of fatigue
 
 **Objective.** Detect fatigue from the shift of the spectrum towards lower
 frequencies, and understand what it takes to be able to claim it.
 
 **Background.** Holding a contraction lowers the pH and the conduction velocity
-of the fibres; the spectrum compresses downwards and **the MDF falls**. What the
-RMS does depends on the effort: in a **submaximal** contraction it usually
-**rises**, because more units are recruited to keep the force; in a **maximal**
-one there are no units left to add, the force is not held and the RMS **falls**.
-The specific proof is the fall of the MDF.
+of the fibres, and the motor units fire more in step; the spectrum compresses
+downwards and **the MDF falls**. What the RMS does depends on the effort: with a
+**submaximal** load it holds or **rises**, because more units are recruited to
+keep the same weight up; in a **maximal** contraction there are no units left
+to add and the RMS **falls**. The specific proof of fatigue is the fall of the
+MDF, not of the amplitude.
 
-**Procedure.** With the guided session **«Fatigue: sustained contraction»**.
+**Procedure.** With the guided session **«Fatigue: biceps with a fixed load»**.
+Electrodes over the belly of the **biceps brachii**, on the line from the
+acromion to the cubital fossa, a third of the way from the fossa; the
+reference over the olecranon or the clavicle. A fixed weight you can hold for
+one to two minutes (a dumbbell, a full bottle).
 1. Choose the session in the chooser on the line of «Calibrate MVC» and press
-   **Start recording** (the calibration is optional: press «Calibrate MVC» first,
-   with «Free recording», for the bar in % MVC). After 5 s of preparation and 5 s
-   of rest, a 3 s countdown and **10 s of maximal isometric contraction** against
-   the table, forearm resting, no weight in the hand. **Breathe normally
-   during the effort.**
-2. The recording **stops by itself**. In Analysis the analysed span is already
-   the contraction, and panels **6. RMS/window** and **7. MDF/time** come ticked.
+   **Start recording**; no calibration is needed. After 5 s of preparation,
+   **5 s of rest** with the arm relaxed along the body and without the weight
+   (the application warns if that rest comes out high: the electrodes' contact
+   is poor), a 3 s countdown to **pick up the weight** and hold it **with the
+   elbow at 90°**, the arm against the body, for **90 s**. There is no bar
+   during the effort: the load is fixed. **Breathe normally during the
+   effort.**
+2. **If you cannot go on, press the space bar** (or «I can't go on
+   (Space)»): the effort ends there and the session goes on to putting the
+   weight down. The recording **stops by itself**.
+3. In Analysis the analysed span begins 2 s after the activity begins
+   (picking up the weight is not the contraction that tires) and ends where the
+   activity falls. The contractions box opens on the **«MDF over time»** view,
+   and panels **6. RMS/window** and **7. MDF/time** come ticked.
 
-**Intermittent variant** (**«Fatigue: intermittent contractions»**): six maximal
-contractions of **5 s with 1 s of rest** between them, with a tone at the start
-and the end of each and the countdown on screen. What is measured is the **RMS
-of each contraction** over its plateau, after its first second, not its peak: the peak is the start
-of each contraction and does not fall. The **«Per contraction»** view of the
-contractions box draws it. With 1 s of rest the fall is almost steady (in a trial
-with the muscle already tired and ten contractions, 21 % from the first to the
-tenth); with longer
-rests it becomes irregular, because the muscle recovers.
-
-**How the application decides.** It fits a line to the MDF of the one-second
-windows in which the muscle was working. It says **«Fatigue detected»** if the
-slope is negative and the line explains something (R² ≥ 0.30, at least four
-windows); **«Not detected»** if the MDF holds or rises with a line that fits; and
-**«Not conclusive»** if the line does not fit, which is the norm in a series of
-brief contractions. Not conclusive is not "no": the recording does not answer the
-question.
+**How the application decides.** It computes the MDF and the MNF in 1 s
+windows every 0.5 s and fits a line to each against time. It says **«Fatigue
+detected»** if the MDF's line falls **significantly** (p < 0.01) and by at least
+**10 %**; **«Not detected»** if it is significant but falls less or rises; and
+**«Not conclusive»** if it is not significant or the effort was too short. No
+minimum R² is required: each window's spectrum has a large scatter of its own,
+and on the bench the biceps' MDF fell 16-20 % in 90 s with an R² of only 0.3.
 
 **Data to record.** From the summary line of the contractions box and from the
-report:
+report's table:
 
-| Quantity | Start | End | Change | −10 % at |
-|---|---|---|---|---|
-| MDF (Hz) (panel 7) | | | | |
-| RMS (mV) (panel 6) | | | | |
+| Quantity | Start | End | Change | Slope per minute | R² | p |
+|---|---|---|---|---|---|---|
+| MDF (Hz) | | | | | | |
+| MNF (Hz) | | | | | | |
+| RMS (mV) | | | | | | |
 
-MDF slope: ____ Hz/s (R² = ____). Verdict: ______________.
+Time held: ____ s. MDF −10 % at ____ s. Verdict: ______________.
 
 **Questions.**
 - Did the MDF fall? By what percentage, and after how many seconds had it fallen
   10 %? What explains it in the fibres?
-- What did the RMS do? Compare with what you would expect at 50 %: why does it
-  fall in a maximal contraction and usually rise in a submaximal one?
-- A classmate held for 15 s and got «not conclusive». Fatigued or not? What is
-  the recording missing?
+- What did the RMS do? Why does it hold or rise with a submaximal load, and
+  what would you expect in a maximal contraction?
+- Why does the application look at the significance (p) and not at R²? What
+  does an R² of 0.3 with a p of 10⁻⁸ mean?
+- A classmate pressed the space bar at 20 s and got «not conclusive». Fatigued
+  or not? What is the recording missing?
 
-**Then: quick repeated contractions** (session **«Quick repeated contractions»**).
-After the intermittent ones, 10 s of clenching and releasing the fist as fast as
-possible. In the **«Train»** view: the rate achieved, how much the peaks rise from
+**Then: quick repeated contractions** (session **«Quick repeated contractions»**),
+with the electrodes back on the forearm flexor: 10 s of clenching and releasing
+the fist as fast as possible. In the **«Train»** view: the rate achieved, how much the peaks rise from
 the first to the last third, and the floor between contractions in % of the peak,
 beside the one the measure alone would leave at that rate.
 - Did the peaks rise? Did the floor stay above the measure's own? Which part of

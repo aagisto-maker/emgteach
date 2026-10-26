@@ -24,11 +24,12 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.10.0 guides four sessions of the one-muscle practical, chosen
+`emgteach` v3.10.0 guides three sessions of the one-muscle practical, chosen
 beside «Calibrate MVC»: **graded contractions** (five steps from 20 to 100 %
-of the bar, after a calibration), **fatigue by a sustained contraction** (a
-10 s maximum) and **by intermittent contractions** (six of 5 s with 1 s of
-rest), and **quick repeated contractions** (10 s as fast as possible). The
+of the bar, after a calibration), **fatigue with a fixed load** (a weight
+held with the biceps, elbow at 90°, for 90 s or until the space bar ends it,
+read in the fall of the MDF), and **quick repeated contractions** (10 s as
+fast as possible). The
 application times each phase, marks it in the EDF+ file and stops the
 recording at the end; the analysis takes the session's own spans, with a view,
 a section of the report and a summary for the phones. An optional tone
@@ -185,7 +186,7 @@ executable.
 The package ships a Qt-free analytic core (io, dsp, fatigue, mvc, apda,
 coactivation, phases, force_velocity, fv_rehearsal, profiles, selection, exports,
 reports, i18n, modes), a Qt layer (workers + three-tab PySide6 GUI), and a
-test suite of **1659 tests** passing on Linux and Windows across Python
+test suite of **1667 tests** passing on Linux and Windows across Python
 3.10–3.12. See
 [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
