@@ -55,6 +55,7 @@ __all__ = [
     "Trend",
     "change_pct",
     "effort_ratio",
+    "fatigue_unmeasured",
     "gradation_reference_text",
     "gradation_steps",
     "is_monotonic",
@@ -174,6 +175,25 @@ def measured_windows(
         out.append((MeasuredSpan(t.name, ini, fin_p, t.params),
                     offset + ini - x, offset + fin_p - x))
     return out
+
+
+def fatigue_unmeasured(result) -> str | None:
+    """Why the summary gives no fatigue verdict for this analysis, or ``None``.
+
+    The verdict on the summary card, the report and the phones comes from
+    the same measure as the session's view, or is not given: over a train of
+    quick contractions nothing is held, and a fixed load whose chosen
+    fragments keep less than 3 s of it cannot be read — the general fit over
+    the pieces glued together said «Fatigue: detected (MDF -27 %)» over
+    4.6 s while the view said it could not measure (the final bench, B3).
+    """
+    from emgteach.i18n import tr
+
+    if not mdf_trend_applies(result.get("guided_session")):
+        return tr("Not measured (quick contractions: nothing held)")
+    if result.get("load_note"):
+        return tr("Not measured (the chosen fragments keep less than 3 s of the held load)")
+    return None
 
 
 def mdf_trend_applies(session: GuidedSession | None) -> bool:

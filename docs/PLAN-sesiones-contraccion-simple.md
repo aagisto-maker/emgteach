@@ -1052,3 +1052,16 @@ etiqueta del canal en el EDF y lo que muestra Análisis, y se recuerda entre
 sesiones. El «Identificador de prueba:» (fila de la difusión) da el nombre del
 archivo y el campo de sujeto/registro de la cabecera. Ángel escribió
 «antebrazo» en el identificador; el músculo siguió siendo «biceps».
+
+**B3, fatiga del bíceps: bien**, también con un fragmento sobre toda la carga.
+Prueba añadida: la carga elegida en dos trozos se lee en el más largo.
+
+**B3, punto 7: la ficha contradecía a la vista.** Con los fragmentos que
+propone por defecto «Seleccionar fragmentos» (trozos de menos de un segundo), la
+vista decía que ninguno conservaba 3 s de la carga y la ficha daba «Fatiga:
+Detectada (MDF −27.4 %)», del ajuste general sobre los trozos pegados
+(reproducido: −13.8 Hz/s con seis trozos de 0.8 s). La ficha, el informe y los
+móviles dan ahora «No se mide (…)», como en el tren (`guided.fatigue_unmeasured`).
+
+**B3, punto 6: los fragmentos por defecto de la carga.** Propuesta a Ángel,
+pendiente de su respuesta.

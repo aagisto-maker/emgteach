@@ -470,6 +470,68 @@ def test_fragments_outside_the_load_leave_a_note(qapp, tmp_path: Path) -> None:
     assert "None of the chosen fragments" in _pdf_text(pdf).replace("\n", " ")
 
 
+#: Pieces of the load under a second each, as the default detection of
+#: «Select fragments» cut it at the final bench (B3): 4.8 s in all, none 3 s.
+_TROCITOS = [(22.0 + 3.0 * k, 22.8 + 3.0 * k) for k in range(6)]
+
+
+@pytest.mark.gui
+def test_with_the_load_unread_the_summary_gives_no_verdict(qapp, main_window,
+                                                          tmp_path: Path) -> None:
+    """The final bench, B3 point 7: the view said none of the fragments kept
+    3 s of the load, and the summary card «Fatigue: detected (MDF -27 %)»,
+    from the general fit over the pieces glued together. The card, the
+    report and the phones now give the view's measure or none."""
+    from emgteach.gui.tabs.analysis import AnalysisTab
+    from emgteach.guided import fatigue_unmeasured
+    from emgteach.reports import build_session_report
+    from tests.test_informes_y_csv import _pdf_text
+    from tests.test_manejo_en_aula import _Difusion
+
+    r = _analizar_fragmentos(qapp, _carga_edf(tmp_path / "t.edf"), _TROCITOS)
+    assert r["load"] is None and r["load_note"]
+    motivo = fatigue_unmeasured(r)
+    assert motivo == tr("Not measured (the chosen fragments keep less than 3 s "
+                        "of the held load)")
+
+    ana = main_window._tab_ana
+    ana._actualizar_resumen(r)
+    assert ana._lbl_pendiente.text() == "—"
+    assert ana._lbl_fatiga.text().replace("\n", " ") == motivo
+
+    pdf = tmp_path / "t.pdf"
+    build_session_report(pdf, r, meta={})
+    texto = _pdf_text(pdf).replace("\n", " ")
+    assert "Not measured" in texto and "Yes —" not in texto
+
+    dif = _Difusion()
+
+    class _Tab:
+        _broadcast = dif
+
+        def _broadcast_on(self) -> bool:
+            return True
+
+    AnalysisTab._bcast_results(_Tab(), r)       # type: ignore[arg-type]
+    assert dif.mensajes[-1]["fatigue"] is None and dif.mensajes[-1]["mdf_slope"] is None
+
+
+@pytest.mark.gui
+def test_the_load_chosen_in_two_pieces_is_read_on_the_longer(qapp, tmp_path: Path) -> None:
+    """The final bench, B3: one fragment over the whole load kept the view;
+    the load chosen in two pieces is read on the longer, not on both glued,
+    and the summary's verdict is that one's."""
+    from emgteach.guided import fatigue_unmeasured
+
+    r = _analizar_fragmentos(qapp, _carga_edf(tmp_path / "d.edf"),
+                             [(20.5, 33.0), (34.0, 55.0)])
+    carga = r["load"]
+    assert carga is not None and r["load_piece"] == pytest.approx((34.0, 55.0))
+    assert carga.seconds == pytest.approx(21.0, abs=0.1)
+    assert fatigue_unmeasured(r) is None
+    assert r["fat_verdict"] == carga.verdict
+
+
 @pytest.mark.gui
 def test_a_weak_load_is_warned_in_the_analysis(qapp, tmp_path: Path) -> None:
     """A load whose envelope barely rises over the rest, as the bench's bad
