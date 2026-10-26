@@ -859,7 +859,15 @@ R² ≤ 0.07) y la RMS del máximo cayó a un tercio en 4–5 s y luego meseta
    el reposo, prominencia 0.25 del pico, une huecos de menos de 0.3 s) corta
    cuando la meseta, a un tercio del pico inicial, cruza el umbral relativo.
    Necesita histéresis (umbral de salida por debajo del de entrada) o una
-   duración mínima de reposo para cortar.
+   duración mínima de reposo para cortar. **Comprobado en el archivo** (con
+   permiso de Ángel): el reposo verdadero es de 0.004 mV y solo dura los
+   primeros 2 s y los últimos 2 s; la meseta, a ~0.07 mV, ocupa 50 de los 63 s.
+   El detector estima la línea de base sobre el 40 % más tranquilo de la
+   envolvente y `resting_level` sobre su percentil 10 (0.050 mV), así que los
+   dos toman **la meseta por reposo**: solo los picos que sobresalen de ella
+   salen como contracciones. La raíz es la estimación del reposo cuando el
+   reposo es corto; el arreglo, tomarlo del tramo tranquilo más largo (o de la
+   pausa de preparación, como ya hace la tabla con `_cola_de_la_pausa`).
 9. **«sin calibrar» en la barra tras una sesión que sí calibró**: cada
    grabación nueva vacía el monitor de carga (`_reset_load_monitor` al
    empezar a grabar, en `gui/tabs/acquisition.py`), así que una grabación
@@ -867,6 +875,29 @@ R² ≤ 0.07) y la RMS del máximo cayó a un tercio en 4–5 s y luego meseta
    de «cada registro se calibra a sí mismo» de la 3.8.0; si la grabación libre
    debe poder usar la CVM de la sesión anterior del mismo alumno, hay que
    decidir cuándo caduca (otro alumno, otro músculo, electrodos movidos).
-   Comprobar también qué cabecera dice «sin calibrar»: si es la del análisis
-   de ese archivo, ver si la anotación `MVC ref ch=1` se lee con el índice de
-   canal correcto.
+   Comprobado en los archivos: la grabación libre `m_2026-10-26_10-17-16.edf`
+   no lleva calibración ni anotación `MVC ref` (la de 0.4146 mV está en la
+   gradación `m_graduales_2026-10-26_10-31-36.edf`, cuyo análisis sí la usa,
+   recalculada de sus tres repeticiones: 0.397 mV), así que «sin calibrar» es
+   lo que esa grabación tiene; lo que falta es poder llevar la CVM de la
+   sesión anterior a la grabación libre.
+
+### 11.3 Lo que dicen las grabaciones del banco (con permiso de Ángel)
+
+Analizadas con el código de `main` (el exe #133) y con el de la rama:
+
+- **Tren rápido** (`m_rapidas_2026-10-26_10-38-41.edf`): 28 contracciones con
+  `main`, **30** con la rama; la última, a 10.36 s del aviso (la franja dura
+  10 s). Ritmo 2.9/s; suelo entre contracciones un 9-10 % del pico, lo mismo
+  que deja la medida sola: relajación completa.
+- **Gradaciones** (`m_graduales_2026-10-26_10-25-29.edf` y `_10-31-36.edf`):
+  **el sujeto no relaja entre escalones** desde el primero. Entre las franjas
+  la envolvente se queda en 0.10-0.20 mV (el reposo verdadero, antes de la
+  sesión, es de 0.004 mV), así que los «escalones» no se distinguen de los
+  descansos y el nivel no sube: con la rama, mantenido 33/29/34/23/18 % y
+  43/40/39/40/28 % de la CVM. Ninguno de los dos da los 17/27/42/60/69 del
+  informe del banco. La regla de los tramos funciona —cada escalón empieza
+  0.9 s después de su aviso en el primer archivo—, pero sin reposo entre
+  ellos la contracción llega hasta el final del margen. Conviene repetir la
+  gradación soltando del todo en cada descanso; el panel dice «Suelte y
+  descanse».
