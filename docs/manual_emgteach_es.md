@@ -451,8 +451,11 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   lo miden su calibración, su barra en vivo y su análisis; las demás prácticas
   siguen con el pico. Si el escalón máximo pasa de la calibración, la vista
   «Escalones» y el informe lo dicen.
-- **Fatiga: bíceps con carga fija** (103 s como mucho; sin calibración): 5 s de
-  reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
+- **Fatiga: bíceps con carga fija** (103 s como mucho; sin calibración).
+  Electrodos sobre el bíceps braquial, en la línea entre el acromion medial y la
+  fosa del codo, a 1/3 desde la fosa del codo (SENIAM), en el sentido de las
+  fibras y a unos 2 cm uno de otro; referencia sobre hueso (olécranon o muñeca).
+  5 s de reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
   coger el peso, **el peso sostenido con el codo a 90° durante 90 s** y 5 s para
   dejarlo. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
   alcanzar): el panel da los segundos que quedan. El texto pide respirar
@@ -469,7 +472,10 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   dispersión propia (en el banco, el bíceps bajó la MDF un 16-20 % en 90 s con un R²
   de solo 0.3, mientras el RMS se mantenía o subía). Vista **«MDF en el tiempo»**:
   las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que cayó un 10 %
-  y el RMS en gris. Los paneles 6 y 7 aparecen marcados.
+  y el RMS en gris. Los paneles 6 y 7 aparecen marcados. Si se eligen fragmentos,
+  la vista sigue: la carga se lee en el trozo más largo de ella que conservan (al
+  menos 3 s; nunca dos trozos pegados), y la vista lo dice; si ninguno conserva
+  tanto, lo avisa.
 - **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
   atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
   las contracciones y su ritmo —hasta 1.5 s después de la marca del final, porque

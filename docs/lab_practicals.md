@@ -367,9 +367,10 @@ to add and the RMS **falls**. The specific proof of fatigue is the fall of the
 MDF, not of the amplitude.
 
 **Procedure.** With the guided session **«Fatigue: biceps with a fixed load»**.
-Electrodes over the belly of the **biceps brachii**, on the line from the
-acromion to the cubital fossa, a third of the way from the fossa; the
-reference over the olecranon or the clavicle. A fixed weight you can hold for
+Electrodes over the **biceps brachii**, on the line between the medial acromion
+and the cubital fossa, **at 1/3 of that line from the cubital fossa** (SENIAM),
+aligned with the fibres and about 2 cm apart; the reference over bone
+(olecranon or wrist). A fixed weight you can hold for
 one to two minutes (a dumbbell, a full bottle).
 1. Choose the session in the chooser on the line of «Calibrate MVC» and press
    **Start recording**; no calibration is needed. After 5 s of preparation,

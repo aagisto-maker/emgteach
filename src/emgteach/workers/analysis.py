@@ -45,6 +45,7 @@ from emgteach.guided import (
     MARGIN_S,
     gradation_steps,
     load_fatigue,
+    load_piece,
     load_span,
     measured_windows,
     rapid_train,
@@ -383,11 +384,15 @@ class AnalysisWorker(QThread):
         if (sesion is None or sesion.family != "HOLD"
                 or sesion.params.get("mode") != "load"):
             return None
-        env = process_offline(
+        todo = process_offline(
             emg_raw, fs, f_low=self._f_low, f_high=self._f_high,
             f_notch=self._f_notch, f_env=self._f_env,
             rms_window_ms=self._rms_window_ms,
-        )["emg_envelope"]
+        )
+        env = todo["emg_envelope"]
+        # Kept for chosen fragments: the load is then read on the piece of it
+        # they keep, out of the whole file's filtered signal (no cut edges).
+        self._filtrado_sesion: np.ndarray | None = todo["emg_filtered"]
         self._reposo_sesion = rest_level(sesion, env, fs)
         return load_span(sesion, env, fs)
 
@@ -542,6 +547,7 @@ class AnalysisWorker(QThread):
             # in the result so the report states them explicitly.
             full_duration = float(times[-1])
             self._reposo_sesion = None
+            self._filtrado_sesion = None
             tramo_carga = self._carga_sostenida(sesion, emg_raw, fs)
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
@@ -1343,11 +1349,28 @@ class AnalysisWorker(QThread):
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
                 # The held load is the analysed span itself (_carga_sostenida):
                 # its spectrum window by window, its lines and its verdict,
-                # which is the summary's too.
-                result["load"] = (
-                    load_fatigue(proc["emg_filtered"], fs,
-                                 f_low=self._f_low, f_high=self._f_high)
-                    if tramo_carga and not self._roi_segments else None)
+                # which is the summary's too. With fragments chosen, the
+                # longest piece of the load they keep (guided.load_piece),
+                # said in the view; with none, a note instead of nothing.
+                result["load"] = None
+                result["load_piece"] = None
+                result["load_note"] = None
+                if tramo_carga and not self._roi_segments:
+                    result["load"] = load_fatigue(
+                        proc["emg_filtered"], fs, f_low=self._f_low, f_high=self._f_high)
+                elif tramo_carga and self._filtrado_sesion is not None:
+                    filtrado = self._filtrado_sesion
+                    trozo = load_piece(tramo_carga, [(b[2], b[3]) for b in bounds])
+                    if trozo is None:
+                        result["load_note"] = tr(
+                            "None of the chosen fragments keeps 3 s of the held load: "
+                            "choose one inside it, or the whole recording, to see the "
+                            "MDF over time.")
+                    else:
+                        result["load"] = load_fatigue(
+                            filtrado[round(trozo[0] * fs):round(trozo[1] * fs)], fs,
+                            f_low=self._f_low, f_high=self._f_high)
+                        result["load_piece"] = trozo
                 result["rest_mv"] = self._reposo_sesion
                 carga = result["load"]
                 if carga is not None and carga.mdf_trend is not None:
@@ -1372,6 +1395,8 @@ class AnalysisWorker(QThread):
                 result["emd_ms_mean"] = None
                 result["grad_steps"] = []
                 result["load"] = None
+                result["load_piece"] = None
+                result["load_note"] = None
                 result["rest_mv"] = None
                 result["train"] = None
                 self.log.emit(

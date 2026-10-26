@@ -29,6 +29,7 @@ from emgteach.guided import (
     Trend,
     change_pct,
     load_fatigue,
+    load_piece,
     load_span,
     load_verdict,
     rest_level,
@@ -255,6 +256,17 @@ def test_no_span_outside_a_load_session() -> None:
     assert rest_level(otra, env, FS) is None
 
 
+def test_with_fragments_the_load_is_their_longest_piece_of_it() -> None:
+    """Ángel, 26 October 2026: a student who tunes the fragments must not
+    lose the view the practical is about. The longest stretch a fragment
+    keeps of the load, if it is three windows long; never two glued."""
+    carga = (20.0, 60.0)
+    assert load_piece(carga, [(0.0, 25.0), (30.0, 50.0), (55.0, 70.0)]) == (30.0, 50.0)
+    assert load_piece(carga, [(0.0, 90.0)]) == carga
+    assert load_piece(carga, [(0.0, 22.0), (58.0, 70.0)]) is None
+    assert load_piece(None, [(0.0, 90.0)]) is None
+
+
 def test_the_chart_draws() -> None:
     from matplotlib.figure import Figure
 
@@ -385,6 +397,60 @@ def test_the_load_is_analysed_on_the_held_contraction(qapp, tmp_path: Path) -> N
     assert r["grad_steps"] == []
 
 
+def _analizar_fragmentos(qapp, edf: str, fragmentos) -> dict:
+    from emgteach.io import list_edf_emg_channels
+    from emgteach.workers import AnalysisWorker
+
+    worker = AnalysisWorker(edf_path=edf, channel_name=list_edf_emg_channels(edf)[0],
+                            roi_segments=fragmentos)
+    salida: list[dict] = []
+    errores: list[str] = []
+    worker.result_ready.connect(salida.append)
+    worker.error.connect(errores.append)
+    worker.start()
+    worker.wait(120000)
+    qapp.processEvents()
+    assert salida, f"the worker gave no result: {errores}"
+    return salida[0]
+
+
+@pytest.mark.gui
+def test_chosen_fragments_keep_the_view_on_the_longest_piece(qapp, tmp_path: Path) -> None:
+    """The load runs from 20.5 s to 55 s of the file; of the two fragments,
+    the second keeps 20 s of it and is the one read, and the view says so."""
+    from matplotlib.figure import Figure
+
+    from emgteach.charts import draw_load_chart
+
+    r = _analizar_fragmentos(qapp, _carga_edf(tmp_path / "f.edf"), [(5.0, 25.0), (30.0, 50.0)])
+    carga = r["load"]
+    assert carga is not None and r["load_note"] is None
+    assert r["load_piece"] == pytest.approx((30.0, 50.0))
+    assert carga.seconds == pytest.approx(20.0, abs=0.1)
+    assert carga.mdf_trend.change_pct < 0
+    fig = Figure()
+    draw_load_chart(fig, carga, piece=r["load_piece"])
+    assert "30.0" in fig.axes[0].get_xlabel()
+
+
+@pytest.mark.gui
+def test_fragments_outside_the_load_leave_a_note(qapp, tmp_path: Path) -> None:
+    from matplotlib.figure import Figure
+
+    from emgteach.charts import draw_load_chart
+    from emgteach.reports import build_session_report
+    from tests.test_informes_y_csv import _pdf_text
+
+    r = _analizar_fragmentos(qapp, _carga_edf(tmp_path / "n.edf"), [(1.0, 15.0)])
+    assert r["load"] is None and r["load_note"]
+    fig = Figure()
+    draw_load_chart(fig, None, note=r["load_note"])
+    assert fig.axes[0].texts[0].get_text() == r["load_note"]
+    pdf = tmp_path / "n.pdf"
+    build_session_report(pdf, r, meta={})
+    assert "None of the chosen fragments" in _pdf_text(pdf).replace("\n", " ")
+
+
 @pytest.mark.gui
 def test_the_report_and_the_phones_carry_the_load(qapp, tmp_path: Path) -> None:
     from emgteach.gui.tabs.analysis import AnalysisTab
@@ -510,7 +576,12 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
     assert sesion is not None and sesion.completed
     esfuerzo = sesion.spans_named("effort")[-1]
     assert esfuerzo.end_s - esfuerzo.start_s == pytest.approx(1.0, abs=0.5)
-    assert sesion.end_s - esfuerzo.end_s == pytest.approx(corta.phases[-1].seconds, abs=0.3)
+    # The last rest still comes: at least its length after the early end. Not
+    # much more is asked, since the marks are written at the samples the
+    # worker has received and on a loaded runner they land late (CI, Windows,
+    # Python 3.10, 26 October 2026: 0.7 s for a rest of 0.4).
+    reposo = corta.phases[-1].seconds
+    assert reposo - 0.15 <= sesion.end_s - esfuerzo.end_s <= reposo + 1.5
 
 
 @pytest.mark.gui

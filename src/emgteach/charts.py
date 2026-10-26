@@ -642,7 +642,9 @@ def draw_steps_chart(fig, steps: Sequence[Any], *, small: bool = False,
     _quitar_marco(ax)
 
 
-def draw_load_chart(fig, load: Any, *, small: bool = False) -> None:
+def draw_load_chart(fig, load: Any, *, small: bool = False,
+                    piece: tuple[float, float] | None = None,
+                    note: str | None = None) -> None:
     """A fixed load held: the MDF and MNF against time, and the RMS in grey.
 
     ``load`` is :class:`emgteach.guided.LoadResult`. Each 1 s window as a
@@ -651,14 +653,17 @@ def draw_load_chart(fig, load: Any, *, small: bool = False) -> None:
     the spectrum down, while the amplitude may hold or even rise as more
     units are recruited to keep the load up. A dotted line marks when the
     MDF had fallen 10 %. The title gives the MDF's line, its R² and its p.
+    With fragments chosen, *piece* is the stretch of the recording the load
+    was read on, said under the axis; with no load, *note* says why.
     """
     fig.clear()
     fs = 7 if small else 8
     ax = fig.add_subplot(111)
     if load is None or not load.t:
         ax.set_axis_off()
-        ax.text(0.5, 0.5, tr("No held contraction"), ha="center", va="center",
-                fontsize=fs, color="#888888", transform=ax.transAxes)
+        ax.text(0.5, 0.5, note or tr("No held contraction"), ha="center", va="center",
+                fontsize=fs, color="#8A5A00" if note else "#888888",
+                transform=ax.transAxes, wrap=True)
         return
     t = np.asarray(load.t)
     gris = "#9E9E9E"
@@ -685,7 +690,11 @@ def draw_load_chart(fig, load: Any, *, small: bool = False) -> None:
         ax.axvline(x10, color="#555555", lw=0.7, ls=":")
         ax.text(x10, 0.02, " " + tr("MDF −10 %"), transform=ax.get_xaxis_transform(),  # noqa: RUF001
                 fontsize=fs - 2, color="#555555", ha="left", va="bottom")
-    ax.set_xlabel(tr("Time held (s)"), fontsize=fs - 1)
+    ax.set_xlabel(
+        tr("Time held (s)") if piece is None
+        else tr("Time held (s), in the fragment {a:.1f}–{b:.1f} s of the recording").format(  # noqa: RUF001
+            a=piece[0], b=piece[1]),
+        fontsize=fs - 1)
     ax.set_ylabel(tr("Frequency (Hz)"), fontsize=fs)
     ax.tick_params(labelsize=fs - 1)
     ax.legend(fontsize=fs - 1, frameon=False, loc="upper right", ncol=2)

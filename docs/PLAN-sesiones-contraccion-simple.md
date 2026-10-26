@@ -973,7 +973,12 @@ Decisiones de Ángel («barra para final anticipado y lo demás que propones»):
 9. **El sujeto simulado se fatiga** mientras sostiene un nivel, para ensayar
    la sesión sin placa.
 
-De §11.2 sigue abierto: el punto 7 en su forma general (la vista de la carga,
-como antes el resumen de la mantenida, solo se calcula sin fragmentos
-elegidos), el 8 (el detector parte una contracción larga en trozos si el
+Correcciones de Ángel sobre la #146 (26 de octubre, tarde): la colocación del
+bíceps dice desde qué extremo (1/3 desde la fosa del codo, SENIAM), y **con
+fragmentos elegidos la vista de la carga sigue** (el punto 7 de §11.2): se lee
+en el trozo más largo de la carga que conservan los fragmentos, y si ninguno
+conserva 3 s, la vista y el informe lo avisan. El umbral del aviso de reposo
+queda pendiente de su decisión, con las cifras de los dos registros del bíceps.
+
+De §11.2 sigue abierto el 8 (el detector parte una contracción larga en trozos si el
 reposo es corto; el tramo de la carga no depende de él, la tabla sí) y el 9.

@@ -2565,6 +2565,14 @@ _ES = {
         'No — la MDF cambia un {pct:+.0f} % (p {p}): menos de un 10 % de caída',
     "Not conclusive — the MDF's fall is not significant (p {p}). Fatigue needs a load held long enough for the trend to show.":
         'No concluyente — la caída de la MDF no es significativa (p {p}). La fatiga necesita una carga sostenida el tiempo suficiente para que la tendencia se vea.',
+    'None of the chosen fragments keeps 3 s of the held load: choose one inside it, or the whole recording, to see the MDF over time.':
+        'Ninguno de los fragmentos elegidos conserva 3 s de la carga sostenida: elija uno dentro de ella, o el registro entero, para ver la MDF en el tiempo.',
+    'Time held (s), in the fragment {a:.1f}–{b:.1f} s of the recording':
+        'Tiempo sostenido (s), en el fragmento {a:.1f}–{b:.1f} s del registro',
+    'in the fragment {a:.1f}–{b:.1f} s':
+        'en el fragmento {a:.1f}–{b:.1f} s',
+    'Fragments were chosen: the load is read on the longest piece of it they keep, {a:.1f}–{b:.1f} s of the recording.':
+        'Se eligieron fragmentos: la carga se lee en el trozo más largo de ella que conservan, {a:.1f}–{b:.1f} s del registro.',
     'MDF over time':
         'MDF en el tiempo',
     'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %, R² {r2:.2f})':
