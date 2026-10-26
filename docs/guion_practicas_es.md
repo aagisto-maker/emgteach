@@ -339,67 +339,74 @@ porque el mantenido también es una media.
 - ¿Qué dice la ficha **«Máximo de la tarea»**? Si pasa del 100 %, ¿qué ocurrió en
   la calibración?
 
-### Ejercicio 1c · Contracción mantenida: la firma de la fatiga
+### Ejercicio 1c · Una carga fija: la firma de la fatiga
 
 **Objetivo.** Detectar la fatiga por el desplazamiento del espectro hacia
 frecuencias bajas, y entender qué hace falta para poder afirmarla.
 
 **Fundamento.** Al sostener una contracción bajan el pH y la velocidad de
-conducción de las fibras; el espectro se comprime hacia abajo y **la MDF cae**.
-Lo que hace el RMS depende del esfuerzo: en una contracción **submáxima** suele
-**subir**, porque se reclutan más unidades para mantener la fuerza; en una
-**máxima** ya no quedan unidades que sumar, la fuerza no se sostiene y el RMS
-**baja**. La prueba específica es la caída de la MDF.
+conducción de las fibras, y las unidades motoras descargan más sincronizadas;
+el espectro se comprime hacia abajo y **la MDF cae**. Lo que hace el RMS depende
+del esfuerzo: con una carga **submáxima** se mantiene o **sube**, porque se
+reclutan más unidades para sostener el mismo peso; en una contracción **máxima**
+ya no quedan unidades que sumar y el RMS **baja**. La prueba específica de la
+fatiga es la caída de la MDF, no la de la amplitud.
 
-**Procedimiento.** Con la sesión guiada **«Fatiga por contracción mantenida»**.
+**Procedimiento.** Con la sesión guiada **«Fatiga: bíceps con carga fija»**.
+Electrodos sobre el vientre del **bíceps braquial**, en la línea que va del
+acromion a la fosa del codo, a un tercio de la distancia desde la fosa; la
+referencia, sobre el olécranon o la clavícula. Un peso fijo que pueda sostener
+entre uno y dos minutos (una mancuerna, una botella llena).
 1. Elegir la sesión en el desplegable de la línea de «Calibrar CVM» y pulsar
-   **Iniciar grabación** (la calibración es opcional: pulsar «Calibrar CVM»
-   antes, con «Grabación libre», si se quiere la barra en % CVM). Tras 5 s de
-   preparación y 5 s de reposo, una cuenta atrás de 3 s y **10 s de contracción
-   máxima isométrica** contra la mesa, antebrazo apoyado, sin peso en la mano.
+   **Iniciar grabación**; no hace falta calibrar. Tras 5 s de preparación,
+   **5 s de reposo** con el brazo relajado a lo largo del cuerpo y sin el peso
+   (la aplicación avisa si ese reposo sale alto: el contacto de los electrodos
+   es malo), una cuenta atrás de 3 s para **coger el peso** y sostenerlo **con
+   el codo a 90°**, el brazo pegado al cuerpo, durante **90 s**. Durante el
+   esfuerzo no hay barra: la carga es fija.
    **Respire normalmente durante el esfuerzo.**
-2. La grabación se **detiene sola**. En Análisis, el tramo analizado ya es la
-   contracción, y los paneles **6. RMS/ventana** y **7. MDF/tiempo** aparecen
+2. **Si no puede más, pulse la barra espaciadora** (o «No puedo más
+   (Espacio)»): el esfuerzo termina en ese momento y la sesión pasa a dejar el
+   peso. La grabación se **detiene sola**.
+3. En Análisis, el tramo analizado empieza 2 s después de que empiece la
+   actividad (coger el peso no es la contracción que fatiga) y acaba donde la
+   actividad cae. La caja de contracciones abre en la vista **«MDF en el
+   tiempo»**, y los paneles **6. RMS/ventana** y **7. MDF/tiempo** aparecen
    marcados.
 
-**Variante intermitente** (**«Fatiga por contracciones intermitentes»**): seis contracciones
-máximas de **5 s con 1 s de reposo** entre ellas, con tono al empezar y al acabar
-cada una y la cuenta atrás en pantalla. Se mide el **RMS de cada contracción**
-en su meseta, tras su primer segundo, no su pico: el pico es el arranque de cada contracción y
-no baja. La vista **«Por contracción»** de la caja de contracciones lo dibuja.
-Con 1 s de reposo la caída es casi continua (en una prueba con el músculo ya
-cansado y diez contracciones, un 21 % de la primera a la décima); con reposos más largos se vuelve
-irregular, porque el músculo se recupera.
+**Cómo decide la aplicación.** Calcula la MDF y la MNF en ventanas de 1 s cada
+0.5 s y ajusta una recta a cada una frente al tiempo. Dice **«Fatiga
+detectada»** si la recta de la MDF baja de forma **significativa** (p < 0.01) y
+al menos un **10 %**; **«No detectada»** si es significativa pero baja menos o
+sube; y **«No concluyente»** si no es significativa o el esfuerzo fue demasiado
+corto. No se exige un R² mínimo: el espectro de cada ventana tiene mucha
+dispersión propia, y en el banco el bíceps bajó la MDF un 16-20 % en 90 s con un
+R² de solo 0.3.
 
-**Cómo decide la aplicación.** Ajusta una recta a la MDF de las ventanas de un
-segundo en que el músculo trabajaba. Dice **«Fatiga detectada»** si la pendiente
-es negativa y la recta explica algo (R² ≥ 0.30, al menos cuatro ventanas);
-**«No detectada»** si la MDF se mantiene o sube con una recta que ajusta; y **«No
-concluyente»** si la recta no ajusta, que es lo normal en una serie de
-contracciones breves. No concluyente no es «no»: es que el registro no responde a
-la pregunta.
+**Datos a recoger.** De la línea de resumen de la caja de contracciones y de la
+tabla del informe:
 
-**Datos a recoger.** De la línea de resumen de la caja de contracciones y del
-informe:
+| Magnitud | Inicio | Final | Cambio | Pendiente por minuto | R² | p |
+|---|---|---|---|---|---|---|
+| MDF (Hz) | | | | | | |
+| MNF (Hz) | | | | | | |
+| RMS (mV) | | | | | | |
 
-| Magnitud | Inicio | Final | Cambio | −10 % a los |
-|---|---|---|---|---|
-| MDF (Hz) (panel 7) | | | | |
-| RMS (mV) (panel 6) | | | | |
-
-Pendiente de la MDF: ____ Hz/s (R² = ____). Veredicto: ______________.
+Tiempo sostenido: ____ s. MDF −10 % a los ____ s. Veredicto: ______________.
 
 **Cuestiones.**
 - ¿Bajó la MDF? ¿Cuánto en porcentaje, y a los cuántos segundos había caído un
   10 %? ¿Qué lo explica en las fibras?
-- ¿Qué hizo el RMS? Compare con lo que esperaría en una contracción al 50 %:
-  ¿por qué en una máxima baja y en una submáxima suele subir?
-- Un compañero sostuvo 15 s y su veredicto es «no concluyente». ¿Está fatigado o
-  no? ¿Qué le falta al registro?
+- ¿Qué hizo el RMS? ¿Por qué con una carga submáxima se mantiene o sube, y qué
+  esperaría en una contracción máxima?
+- ¿Por qué la aplicación mira la significación (p) y no el R²? ¿Qué significa un
+  R² de 0.3 con una p de 10⁻⁸?
+- Un compañero pulsó la barra a los 20 s y su veredicto es «no concluyente».
+  ¿Está fatigado o no? ¿Qué le falta al registro?
 
 **Después: contracciones rápidas repetidas** (sesión **«Contracciones rápidas
-repetidas»**). Tras la intermitente, 10 s de contracciones del puño, cerrándolo y relajándolo lo más
-rápido posible. En la vista **«Tren»**: el ritmo conseguido, cuánto suben los picos
+repetidas»**), con los electrodos de nuevo en el flexor del antebrazo: 10 s de
+contracciones del puño, cerrándolo y relajándolo lo más rápido posible. En la vista **«Tren»**: el ritmo conseguido, cuánto suben los picos
 del primer al último tercio, y el suelo entre contracciones en % del pico, junto al
 que dejaría la medida sola a ese ritmo.
 - ¿Subieron los picos? ¿Quedó el suelo por encima del de la medida sola? ¿Qué

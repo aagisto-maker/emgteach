@@ -2523,60 +2523,82 @@ _ES = {
         'Dos o tres contracciones suaves.',
     'Close your fist: a brief, intense contraction.':
         'Cierre el puño: una contracción breve e intensa.',
-    'Fatigue: sustained contraction':
-        'Fatiga por contracción mantenida',
-    'Fatigue: intermittent contractions':
-        'Fatiga por contracciones intermitentes',
+    'Fatigue: biceps with a fixed load':
+        'Fatiga: bíceps con carga fija',
+    'Arm relaxed along the body, without the weight.':
+        'Brazo relajado a lo largo del cuerpo, sin el peso.',
+    'Pick up the weight at 0':
+        'Coja el peso al llegar a 0',
+    'Elbow at 90°, the arm against the body.':
+        'Codo a 90°, el brazo pegado al cuerpo.',
+    'Hold the weight':
+        'Mantenga el peso',
+    'Keep the elbow at 90°. Breathe normally. Space, when you cannot go on.':
+        'Mantenga el codo a 90°. Respire normalmente. Pulse Espacio cuando no pueda más.',
+    'Put the weight down':
+        'Deje el peso',
+    'The recording stops on its own.':
+        'La grabación se detiene sola.',
+    'A fixed weight held with the elbow at 90° for {secs:g} s, or until you cannot go on. Fatigue lowers the frequency of the signal; its amplitude may hold or rise.':
+        'Un peso fijo sostenido con el codo a 90° durante {secs:g} s, o hasta que no pueda más. La fatiga baja la frecuencia de la señal; su amplitud puede mantenerse o subir.',
+    'Elbow at 90°, a fixed weight in the hand.':
+        'Codo a 90°, un peso fijo en la mano.',
+    "I can't go on (Space)":
+        'No puedo más (Espacio)',
+    'End the held effort now; the session goes on to its last rest.':
+        'Terminar ahora el esfuerzo mantenido; la sesión pasa a su último reposo.',
+    "High rest ({mv:.3f} mV): check the electrodes' contact.":
+        'Reposo alto ({mv:.3f} mV): compruebe el contacto de los electrodos.',
+    'Effort ended early: the student could not go on.':
+        'Esfuerzo terminado antes de tiempo: el estudiante no podía más.',
+    'Fixed load held {s:.0f} s':
+        'Carga fija sostenida {s:.0f} s',
+    'MDF −10 %':
+        'MDF −10 %',
+    'Not detected (MDF fell less than 10 %)':
+        'No detectada (la MDF bajó menos de un 10 %)',
+    'Not conclusive (MDF fall not significant, p = {p:.2f})':
+        'No concluyente (caída de la MDF no significativa, p = {p:.2f})',
+    'Yes — MDF falls {pct:.0f} % in {s:.0f} s (p {p}, R²={r2:.2f})':
+        'Sí — la MDF baja un {pct:.0f} % en {s:.0f} s (p {p}, R²={r2:.2f})',
+    'No — MDF changes {pct:+.0f} % (p {p}): less than a 10 % fall':
+        'No — la MDF cambia un {pct:+.0f} % (p {p}): menos de un 10 % de caída',
+    "Not conclusive — the MDF's fall is not significant (p {p}). Fatigue needs a load held long enough for the trend to show.":
+        'No concluyente — la caída de la MDF no es significativa (p {p}). La fatiga necesita una carga sostenida el tiempo suficiente para que la tendencia se vea.',
+    'MDF over time':
+        'MDF en el tiempo',
+    'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %, R² {r2:.2f})':
+        'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %, R² {r2:.2f})',
+    'No held contraction':
+        'Sin contracción mantenida',
+    'MNF':
+        'MNF',
+    'Time held (s)':
+        'Tiempo sostenido (s)',
+    'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %) · R² {r2:.2f} · p {p}':
+        'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %) · R² {r2:.2f} · p {p}',
+    'Guided session: fatigue with a fixed load':
+        'Sesión guiada: fatiga con carga fija',
+    'Slope per minute':
+        'Pendiente por minuto',
+    'R²':
+        'R²',
+    'p':
+        'p',
+    'Held {s:.0f} s, from 2 s after the activity began to when it fell. MDF and MNF of each 1 s window every 0.5 s; the line is fitted to all of them, and the chart draws their means over 5 s. Start and end are the line\'s.':
+        'Sostenida {s:.0f} s, desde 2 s después de empezar la actividad hasta que cayó. MDF y MNF de cada ventana de 1 s cada 0.5 s; la recta se ajusta a todas ellas, y la gráfica dibuja sus medias en 5 s. El inicio y el final son los de la recta.',
+    'Fatigue moves the spectrum down: the conduction velocity of the fibres falls and the units fire more in step, so MDF and MNF fall. The amplitude may hold or even rise, as more motor units are recruited to keep the same load. It counts as fatigue when the MDF\'s slope is significant (p < 0.01) and its line falls at least 10 %.':
+        'La fatiga desplaza el espectro hacia abajo: la velocidad de conducción de las fibras cae y las unidades descargan más sincronizadas, así que la MDF y la MNF bajan. La amplitud puede mantenerse o incluso subir, porque se reclutan más unidades motoras para sostener la misma carga. Cuenta como fatiga cuando la pendiente de la MDF es significativa (p < 0.01) y su recta cae al menos un 10 %.',
     'Forearm on the table, fist closed without contracting.':
         'Antebrazo sobre la mesa, puño cerrado sin contraer.',
-    'Maximal contraction at 0':
-        'Contracción máxima al llegar a 0',
-    'And keep it up for {secs:g} seconds.':
-        'Y manténgalo {secs:g} segundos.',
-    'Maximum: keep it up':
-        'Máximo: manténgalo',
-    'Contract as hard as you can and keep the contraction up. Breathe normally.':
-        'Contraiga al máximo y mantenga la contracción. Respire normalmente.',
     'Let go and let the hand drop. The recording stops on its own.':
         'Suelte y deje caer la mano. La grabación se detiene sola.',
-    'One maximal contraction held for {secs:g} s, with rest before and after. The amplitude and the MDF fall as it is held.':
-        'Una contracción máxima mantenida {secs:g} s, con reposo antes y después. La amplitud y la MDF caen mientras se mantiene.',
-    '{n} contractions of {on:g} s, {off:g} s apart.':
-        '{n} contracciones de {on:g} s, separadas {off:g} s.',
-    'Contraction {k} of {n}: maximum':
-        'Contracción {k} de {n}: máximo',
-    'Contract as hard as you can. Breathe normally.':
-        'Contraiga al máximo. Respire normalmente.',
-    'Let go: {k} of {n} done':
-        'Suelte: {k} de {n} hechas',
-    'The next one comes at 0.':
-        'La siguiente, al llegar a 0.',
-    '{n} maximal contractions of {on:g} s with {off:g} s between them; the RMS of each one falls as the muscle tires.':
-        '{n} contracciones máximas de {on:g} s con {off:g} s entre ellas; el RMS de cada una cae a medida que el músculo se cansa.',
-    'Per contraction':
-        'Por contracción',
-    '{n} contractions: RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)':
-        '{n} contracciones: RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)',
-    'trend {pct:+.1f} %/contr.':
-        'tendencia {pct:+.1f} %/contr.',
-    'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %)':
-        'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %)',
     'RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)':
         'RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)',
     'MDF −10 % at {t:.0f} s':
         'MDF −10 % a los {t:.0f} s',
     'MDF never fell 10 %':
         'la MDF no llegó a caer un 10 %',
-    'Sustained contraction, {s:.0f} s':
-        'Contracción mantenida, {s:.0f} s',
-    'RMS of each contraction: last against first {pct:+.0f} %':
-        'RMS de cada contracción: la última frente a la primera {pct:+.0f} %',
-    'Guided session: fatigue by sustained contraction':
-        'Sesión guiada: fatiga por contracción mantenida',
-    'Guided session: fatigue by intermittent contractions':
-        'Sesión guiada: fatiga por contracciones intermitentes',
-    'not reached':
-        'no se alcanza',
     'Measure':
         'Medida',
     'Start':
@@ -2585,18 +2607,6 @@ _ES = {
         'Final',
     'Change':
         'Cambio',
-    '−10 % at':
-        '−10 % a los',
-    '−20 % at':
-        '−20 % a los',
-    'Start and end: the median of the one-second windows of the first and the last quarter of the contraction (at most 5 s) in which the muscle was working; a fall counts once three windows in a row are below the line.':
-        'Inicio y final: la mediana de las ventanas de un segundo del primer y el último cuarto de la contracción (como mucho 5 s) en que el músculo trabajaba; una caída cuenta cuando tres ventanas seguidas quedan por debajo de la línea.',
-    'RMS (% of the first)':
-        'RMS (% de la primera)',
-    'RMS over the plateau of each contraction, after its first second, not its peak: the peak is the start of each contraction and does not fall.':
-        'RMS en la meseta de cada contracción, tras su primer segundo, no su pico: el pico es el arranque de cada contracción y no baja.',
-    'Trend: {pct:+.1f} % of the first per contraction.':
-        'Tendencia: {pct:+.1f} % de la primera por contracción.',
     'In the one-muscle practical, the chooser beside the button offers guided sessions: chosen before recording, «Start recording» runs the whole session — the calibration if it needs one, a countdown, each phase announced and timed — and stops at the end. «Free recording» is the usual way.':
         'En la práctica de un músculo, el desplegable junto al botón ofrece sesiones guiadas: elegida antes de grabar, «Iniciar grabación» lleva a cabo la sesión entera — la calibración si la necesita, una cuenta atrás, cada fase anunciada y cronometrada — y se detiene al terminar. «Grabación libre» es lo habitual.',
     'Graded contractions':

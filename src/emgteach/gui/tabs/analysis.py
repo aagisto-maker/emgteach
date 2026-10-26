@@ -83,16 +83,43 @@ def _en_dos_lineas(texto: str) -> str:
     return texto.replace(" (", "\n(", 1)
 
 
-def _resumen_movil_mantenida(hold) -> dict | None:
-    """A sustained maximum for the phones: seconds, changes in %, the −10 % time."""
-    if hold is None:
+def _resumen_carga(carga, reposo_mv: float | None) -> str:
+    """The fixed load in one line: the MDF's line, the RMS's, and when the
+    MDF had fallen 10 %; and a warning when the rest before was high."""
+    partes = []
+    tend = carga.mdf_trend
+    if tend is not None:
+        partes.append(tr("MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %, R² {r2:.2f})").format(
+            a=tend.start, b=tend.end, pct=tend.change_pct or 0.0, r2=tend.r2))
+    rms = carga.rms_trend
+    if rms is not None:
+        partes.append(tr("RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)").format(
+            a=rms.start, b=rms.end, pct=rms.change_pct or 0.0))
+    partes.append(
+        tr("MDF −10 % at {t:.0f} s").format(t=carga.t_mdf_10) if carga.t_mdf_10 is not None
+        else tr("MDF never fell 10 %"))
+    texto = (tr("Fixed load held {s:.0f} s").format(s=carga.seconds) + "  ·  "
+             + "  ·  ".join(partes))
+    if reposo_mv is not None and reposo_mv > REST_WARN_MV:
+        texto += "  ·  " + tr("High rest ({mv:.3f} mV): check the electrodes' contact.").format(
+            mv=reposo_mv)
+    return texto
+
+
+def _resumen_movil_carga(carga) -> dict | None:
+    """A fixed load for the phones: seconds, changes in %, the −10 % time."""
+    if carga is None:
         return None
 
     def redondo(x, n=0):
         return None if x is None else round(float(x), n)
 
-    return {"secs": redondo(hold.seconds), "mdf": redondo(hold.mdf_change_pct),
-            "rms": redondo(hold.rms_change_pct), "t10": redondo(hold.t_mdf_10)}
+    def cambio(tend):
+        return None if tend is None else redondo(tend.change_pct)
+
+    return {"secs": redondo(carga.seconds), "mdf": cambio(carga.mdf_trend),
+            "rms": cambio(carga.rms_trend), "t10": redondo(carga.t_mdf_10),
+            "r2": None if carga.mdf_trend is None else redondo(carga.mdf_trend.r2, 2)}
 
 
 def _resumen_tren(tren) -> str:
@@ -229,7 +256,7 @@ from emgteach.charts import (
     COLOUR_2,
     draw_coactivation_chart,
     draw_contraction_chart,
-    draw_reps_chart,
+    draw_load_chart,
     draw_steps_chart,
     draw_train_chart,
 )
@@ -256,10 +283,10 @@ from emgteach.gui.widgets.help_button import add_help
 from emgteach.gui.widgets.logger import LoggerWidget
 from emgteach.gui.widgets.time_range import TimeRangeSelector
 from emgteach.guided import (
+    REST_WARN_MV,
     gradation_reference_text,
     is_monotonic,
     mdf_trend_applies,
-    reps_trend_pct,
 )
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -1105,7 +1132,7 @@ class AnalysisTab(QWidget):
         # offered (two muscles for the categories and the dominance, load
         # markers for the load), see _refresh_contractions.
         self._sel_contr = _SelectorEsquina(
-            self._box_contr, [("steps", tr("Steps")), ("reps", tr("Per contraction")),
+            self._box_contr, [("steps", tr("Steps")), ("mdf_time", tr("MDF over time")),
                               ("train", tr("Train")),
                               ("relation", tr("Relation")), ("category", tr("Category")),
                               ("dominance", tr("Who leads")), ("series", tr("Series")),
@@ -1120,8 +1147,8 @@ class AnalysisTab(QWidget):
         self._cargas_contr: list[float | None] = []
         #: The gradation's steps, when the recording is one (emgteach.guided).
         self._pasos_grad: list = []
-        #: The intermittent maximum's contractions, when it is one.
-        self._reps_fatiga: list = []
+        #: The fixed load held, when the recording is one.
+        self._carga = None
         #: The quick contractions' train, when it is one.
         self._tren = None
         #: Where the view choice is kept: one key for recordings with loads
@@ -1996,11 +2023,11 @@ class AnalysisTab(QWidget):
         con_cargas = any(c is not None for c in self._cargas_contr)
         self._pasos_grad = pasos
         self._ref_grad = gradation_reference_text(result)
-        reps = list(result.get("reps") or [])
-        self._reps_fatiga = reps
+        carga = result.get("load")
+        self._carga = carga
         tren = result.get("train")
         self._tren = tren
-        vistas = (["steps"] if pasos else ["reps"] if reps
+        vistas = (["steps"] if pasos else ["mdf_time"] if carga is not None
                   else ["train"] if tren is not None else [])
         vistas.append("relation")
         if dos:
@@ -2017,8 +2044,8 @@ class AnalysisTab(QWidget):
         # A gradation opens on its steps, and remembers its choice apart too.
         if pasos:
             self._clave_vista, defecto = "analysis/contr_view_grad", "steps"
-        elif reps:
-            self._clave_vista, defecto = "analysis/contr_view_reps", "reps"
+        elif carga is not None:
+            self._clave_vista, defecto = "analysis/contr_view_load", "mdf_time"
         elif tren is not None:
             self._clave_vista, defecto = "analysis/contr_view_train", "train"
         elif con_cargas:
@@ -2032,17 +2059,8 @@ class AnalysisTab(QWidget):
             resumen = tr("Graded contractions: {n} steps").format(n=len(pasos)) + "  ·  " + (
                 tr("each step above the last") if is_monotonic(pasos)
                 else tr("not every step above the last"))
-        elif reps:
-            resumen = tr("{n} contractions: RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)").format(
-                n=len(reps), a=reps[0].rms_mv, b=reps[-1].rms_mv,
-                pct=100.0 * (reps[-1].rms_mv - reps[0].rms_mv) / reps[0].rms_mv
-                if reps[0].rms_mv else 0.0)
-            tendencia = reps_trend_pct(reps)
-            if tendencia is not None:
-                resumen += "  ·  " + tr("trend {pct:+.1f} %/contr.").format(pct=tendencia)
-        hold = result.get("hold")
-        if hold is not None:
-            resumen = self._resumen_mantenida(hold)
+        if carga is not None:
+            resumen = _resumen_carga(carga, result.get("rest_mv"))
         if tren is not None:
             resumen = _resumen_tren(tren)
         emd = result.get("emd_ms_mean")
@@ -2072,12 +2090,12 @@ class AnalysisTab(QWidget):
 
     def _dibujar_contracciones(self) -> None:
         vista = self._sel_contr.vista()
-        if vista in ("steps", "reps", "train"):
+        if vista in ("steps", "mdf_time", "train"):
             if vista == "steps":
                 draw_steps_chart(self._fig_contr, self._pasos_grad, small=True,
                                  reference=getattr(self, "_ref_grad", None))
-            elif vista == "reps":
-                draw_reps_chart(self._fig_contr, self._reps_fatiga, small=True)
+            elif vista == "mdf_time":
+                draw_load_chart(self._fig_contr, self._carga, small=True)
             else:
                 draw_train_chart(self._fig_contr, self._tren, small=True)
             self._pedir_espacio(self._canvas_contr)
@@ -2238,9 +2256,8 @@ class AnalysisTab(QWidget):
             # The gradation's steps, [asked, held] in % MVC, when it has them.
             "steps": [[round(p.target_pct), round(p.held_pct)]
                       for p in (r.get("grad_steps") or []) if p.held_pct is not None],
-            # The fatigue sessions: where MDF and RMS went, and when.
-            "hold": _resumen_movil_mantenida(r.get("hold")),
-            "reps": [round(x.rms_mv, 3) for x in (r.get("reps") or [])],
+            # The fixed load held: where MDF and RMS went, and when.
+            "load": _resumen_movil_carga(r.get("load")),
             "train": _resumen_movil_tren(r.get("train")),
         })
 
@@ -2320,9 +2337,20 @@ class AnalysisTab(QWidget):
             self._lbl_fatiga.setStyleSheet(
                 "font-size: 12px; font-weight: 600; color: #666666;")
             return
+        carga = r.get("load")
         if veredicto == FATIGUE:
             texto = tr("Detected (MDF −{decline:.1f} %)").format(decline=decline)
             color = "#B0243A"
+        elif carga is not None and carga.mdf_trend is not None:
+            # The held load is judged by the significance of its fall, not
+            # by R²: say which of the two conditions it missed.
+            if veredicto == NO_FATIGUE:
+                texto = tr("Not detected (MDF fell less than 10 %)")
+                color = "#1E7A3C"
+            else:
+                texto = tr("Not conclusive (MDF fall not significant, p = {p:.2f})").format(
+                    p=carga.mdf_trend.p)
+                color = "#8A5A00"
         elif veredicto == NO_FATIGUE:
             texto = tr("Not detected (MDF stable or rising)")
             color = "#1E7A3C"
@@ -3597,13 +3625,13 @@ class AnalysisTab(QWidget):
         self._apply_panel_visibility(self._mode, self._advanced)
 
     def _aplicar_paneles_de_sesion(self, result: dict) -> None:
-        """A sustained maximum opens on its fatigue: RMS and MDF by window.
+        """A fixed load held opens on its fatigue: RMS and MDF by window.
 
         Panels 6 and 7 are behind «More panels…» in the one-muscle
         practical; for this session they are the result, so they are offered
         and ticked with the rest. Any other recording gives them back.
         """
-        quiere = frozenset({5, 6}) if result.get("hold") is not None else frozenset()
+        quiere = frozenset({5, 6}) if result.get("load") is not None else frozenset()
         if quiere == self._paneles_sesion:
             return
         self._paneles_sesion = quiere
@@ -3613,22 +3641,6 @@ class AnalysisTab(QWidget):
                 chk.blockSignals(True)
                 chk.setChecked(True)
                 chk.blockSignals(False)
-
-    @staticmethod
-    def _resumen_mantenida(hold) -> str:
-        """The sustained maximum in one line: where MDF and RMS went, and when."""
-        partes = []
-        if hold.mdf_start_hz is not None and hold.mdf_end_hz is not None:
-            partes.append(tr("MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %)").format(
-                a=hold.mdf_start_hz, b=hold.mdf_end_hz, pct=hold.mdf_change_pct or 0.0))
-        if hold.rms_start_mv is not None and hold.rms_end_mv is not None:
-            partes.append(tr("RMS {a:.3f} → {b:.3f} mV ({pct:+.0f} %)").format(
-                a=hold.rms_start_mv, b=hold.rms_end_mv, pct=hold.rms_change_pct or 0.0))
-        partes.append(
-            tr("MDF −10 % at {t:.0f} s").format(t=hold.t_mdf_10) if hold.t_mdf_10 is not None
-            else tr("MDF never fell 10 %"))
-        return (tr("Sustained contraction, {s:.0f} s").format(s=hold.seconds) + "  ·  "
-                + "  ·  ".join(partes))
 
     def _apply_panel_visibility(self, mode: str, advanced: bool) -> None:
         """Hide the panels this practical does not use, and untick them.

@@ -44,7 +44,8 @@ __all__ = [
     "FAMILIES",
     "GRADATION_STEPS_PCT",
     "GRAD_MVC_WINDOW_S",
-    "HOLD_MAX_S",
+    "LOAD_DEFAULT_S",
+    "LOAD_MAX_S",
     "READY",
     "REST",
     "GuidedSession",
@@ -54,9 +55,8 @@ __all__ = [
     "end_marker",
     "gradation_script",
     "header_marker",
-    "hold_script",
-    "intermittent_script",
     "is_session_marker",
+    "load_script",
     "parse_session_markers",
     "rapid_script",
     "span_end_marker",
@@ -159,6 +159,15 @@ class SessionPhase:
     #: For the simulated subject: an effort made of contractions this many
     #: seconds apart, rather than held.
     repeat_s: float | None = None
+    #: An effort the student may end before its time, with the space bar or
+    #: a button («I can't go on»): its end mark then says ``early``.
+    early_stop: bool = False
+    #: Whether the panel shows the load bar during the phase. Not under a
+    #: fixed load: there is nothing on it to follow.
+    bar: bool = True
+    #: A rest whose level is checked: above guided.REST_WARN_MV the panel
+    #: says the electrodes' contact is poor.
+    check_rest: bool = False
     #: Start of this phase within the session, filled in by
     #: :meth:`SessionScript.timed`.
     start: float = 0.0
@@ -303,102 +312,58 @@ def gradation_script() -> SessionScript:
     )
 
 
-#: The sustained maximum: 10 s by default and never more than 45. Ángel's
-#: decision of 24 October 2026 was 30 s; on the 25th, after trying it, 10 s:
-#: with a maximal effort the fall is seen in ten, and thirty are long.
-HOLD_DEFAULT_S = 10.0
-HOLD_MAX_S = 45.0
-_HOLD_BEFORE_S = 5.0
-_HOLD_COUNT_S = 3.0
-_HOLD_AFTER_S = 10.0
+#: The fatigue session: a fixed load held with the biceps (Ángel's bench of
+#: 26 October 2026). The forearm's maximum, held for 10 to 60 s, left the MDF
+#: flat — the effort was lost before the muscle tired; a weight of 3 to 8 kg
+#: held with the elbow at 90° for 90 s brought the MDF down 16-20 % with the
+#: amplitude flat. 90 s, or until the student cannot go on.
+LOAD_DEFAULT_S = 90.0
+LOAD_MAX_S = 180.0
+_LOAD_REST_S = 5.0
+_LOAD_COUNT_S = 3.0
+_LOAD_AFTER_S = 5.0
+#: What the simulated subject is asked for under the load: a submaximal
+#: effort, which it holds while its spectrum falls.
+_LOAD_LEVEL = 0.4
 
 
-def hold_script(seconds: float = HOLD_DEFAULT_S) -> SessionScript:
-    """One maximal contraction, held: the amplitude and the MDF fall.
+def load_script(seconds: float = LOAD_DEFAULT_S) -> SessionScript:
+    """A fixed weight held with the biceps until it tires, or for *seconds*.
 
-    Isometric, the forearm resting and the fist against the table, with no
-    weight in the hand. The text tells the student to breathe normally — a
-    maximal effort held with the breath held is a Valsalva; whoever feels pain
-    lets go without being told. The calibration is optional: without it the panel's bar is the
-    effort against the peak of this same contraction.
+    Elbow at 90°, the arm against the body, a weight the student can hold for
+    a minute and a half. No calibration: the weight fixes the force, and the
+    fatigue is read in the spectrum, not against a maximum. The rest before
+    it is measured (a high rest says the contact is poor); the space bar, or
+    the panel's button, ends the effort early when the student cannot go on.
     """
     secs = float(seconds)
-    if not 0 < secs <= HOLD_MAX_S:
-        raise ValueError(f"A sustained maximum lasts at most {HOLD_MAX_S:g} s, not {secs:g}.")
+    if not 0 < secs <= LOAD_MAX_S:
+        raise ValueError(f"A held load lasts at most {LOAD_MAX_S:g} s, not {secs:g}.")
     fases = (
-        SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
-                     "Forearm on the table, fist closed without contracting."),
-        SessionPhase("ready", READY, _HOLD_COUNT_S, "Maximal contraction at 0",
-                     "And keep it up for {secs:g} seconds.", fmt=(("secs", secs),)),
-        SessionPhase("effort", EFFORT, secs, "Maximum: keep it up",
-                     "Contract as hard as you can and keep the contraction up. Breathe normally.",
-                     level=1.0,
+        SessionPhase("rest_0", REST, _LOAD_REST_S, "Rest",
+                     "Arm relaxed along the body, without the weight.",
+                     opens=span_start_marker("HOLD", "rest"),
+                     closes=span_end_marker("HOLD", "rest"), check_rest=True),
+        SessionPhase("ready", READY, _LOAD_COUNT_S, "Pick up the weight at 0",
+                     "Elbow at 90°, the arm against the body."),
+        SessionPhase("effort", EFFORT, secs, "Hold the weight",
+                     "Keep the elbow at 90°. Breathe normally. Space, when you "
+                     "cannot go on.", level=_LOAD_LEVEL,
                      opens=span_start_marker("HOLD", "effort", secs=secs),
-                     closes=span_end_marker("HOLD", "effort")),
-        SessionPhase("rest_end", REST, _HOLD_AFTER_S, "Rest",
-                     "Let go and let the hand drop. The recording stops on its own."),
+                     closes=span_end_marker("HOLD", "effort"),
+                     early_stop=True, bar=False),
+        SessionPhase("rest_end", REST, _LOAD_AFTER_S, "Put the weight down",
+                     "The recording stops on its own."),
     )
     return SessionScript(
-        key="fatiga", family="HOLD", title="Fatigue: sustained contraction",
-        slug="fatiga_mantenida",
-        header=header_marker("HOLD", mode="sustained", secs=secs), phases=fases,
-        summary="One maximal contraction held for {secs:g} s, with rest before "
-                "and after. The amplitude and the MDF fall as it is held.",
-        fmt=(("secs", secs),), gesture=_FIST,
-    )
-
-
-#: The intermittent maximum: six contractions of 5 s with 1 s between them.
-#: Ten at first; six after Ángel tried it (25 Oct 2026): enough to see the fall.
-#: Ángel's pilots of 24 October 2026: with 5/1 s the RMS fell 21 % almost
-#: steadily over ten; with 5/2 s and 5/5 s the fall was irregular.
-INTERMITTENT_REPS = 6
-INTERMITTENT_ON_S = 5.0
-INTERMITTENT_OFF_S = 1.0
-
-
-def intermittent_script(reps: int = INTERMITTENT_REPS, on_s: float = INTERMITTENT_ON_S,
-                        off_s: float = INTERMITTENT_OFF_S) -> SessionScript:
-    """Maximal contractions with a short rest between them, timed by the app.
-
-    The measure is each contraction's RMS, not its peak: the peak is the
-    start of each contraction, and it does not fall. Tone at the start and
-    at the end of every contraction, and the seconds always on screen: timing
-    it by hand was what made the pilots hard.
-    """
-    n = int(reps)
-    fases: list[SessionPhase] = [
-        SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
-                     "Forearm on the table, fist closed without contracting."),
-        SessionPhase("ready", READY, _HOLD_COUNT_S, "Maximal contraction at 0",
-                     "{n} contractions of {on:g} s, {off:g} s apart.",
-                     fmt=(("n", n), ("on", on_s), ("off", off_s))),
-    ]
-    for k in range(1, n + 1):
-        fases.append(SessionPhase(
-            f"rep_{k}", EFFORT, float(on_s), "Contraction {k} of {n}: maximum",
-            "Contract as hard as you can. Breathe normally.", level=1.0,
-            opens=span_start_marker("HOLD", "rep", n=k),
-            closes=span_end_marker("HOLD", "rep", n=k),
-            fmt=(("k", k), ("n", n)),
-        ))
-        if k < n:
-            fases.append(SessionPhase(
-                f"off_{k}", READY, float(off_s), "Let go: {k} of {n} done",
-                "The next one comes at 0.", fmt=(("k", k), ("n", n))))
-    fases.append(SessionPhase(
-        "rest_end", REST, _HOLD_AFTER_S, "Rest",
-        "Let go and let the hand drop. The recording stops on its own."))
-    return SessionScript(
-        key="fatiga_intermitente", family="HOLD",
-        title="Fatigue: intermittent contractions",
-        slug="fatiga_intermitente",
-        header=header_marker("HOLD", mode="intermittent", reps=n, on=float(on_s),
-                             off=float(off_s)),
-        phases=tuple(fases),
-        summary="{n} maximal contractions of {on:g} s with {off:g} s between them; "
-                "the RMS of each one falls as the muscle tires.",
-        fmt=(("n", n), ("on", on_s), ("off", off_s)), gesture=_FIST,
+        key="fatiga", family="HOLD", title="Fatigue: biceps with a fixed load",
+        slug="fatiga_biceps",
+        header=header_marker("HOLD", mode="load", secs=secs), phases=fases,
+        summary="A fixed weight held with the elbow at 90° for {secs:g} s, or "
+                "until you cannot go on. Fatigue lowers the frequency of the "
+                "signal; its amplitude may hold or rise.",
+        fmt=(("secs", secs),),
+        gesture="Elbow at 90°, a fixed weight in the hand.",
     )
 
 
@@ -407,6 +372,9 @@ def intermittent_script(reps: int = INTERMITTENT_REPS, on_s: float = INTERMITTEN
 #: 3, 2 or 1.5 s nothing changed; only a train as fast as possible raised the
 #: peaks a little and left the floor above rest).
 RAPID_DEFAULT_S = 10.0
+_RAPID_BEFORE_S = 5.0
+_RAPID_COUNT_S = 3.0
+_RAPID_AFTER_S = 10.0
 #: The simulated subject's pace, four a second.
 _RAPID_SIM_REPEAT_S = 0.25
 
@@ -423,9 +391,9 @@ def rapid_script(seconds: float = RAPID_DEFAULT_S) -> SessionScript:
     """
     secs = float(seconds)
     fases = (
-        SessionPhase("rest_0", REST, _HOLD_BEFORE_S, "Rest",
+        SessionPhase("rest_0", REST, _RAPID_BEFORE_S, "Rest",
                      "Forearm on the table, fist closed without contracting."),
-        SessionPhase("ready", READY, _HOLD_COUNT_S, "Contract and relax at 0",
+        SessionPhase("ready", READY, _RAPID_COUNT_S, "Contract and relax at 0",
                      "As fast as you can, for {secs:g} seconds.", fmt=(("secs", secs),)),
         SessionPhase("train", EFFORT, secs, "Contract and relax, as fast as you can",
                      "Close your fist with an intense contraction and relax it "
@@ -433,7 +401,7 @@ def rapid_script(seconds: float = RAPID_DEFAULT_S) -> SessionScript:
                      repeat_s=_RAPID_SIM_REPEAT_S,
                      opens=span_start_marker("FAST", "train", secs=secs),
                      closes=span_end_marker("FAST", "train")),
-        SessionPhase("rest_end", REST, _HOLD_AFTER_S, "Rest",
+        SessionPhase("rest_end", REST, _RAPID_AFTER_S, "Rest",
                      "Let go and let the hand drop. The recording stops on its own."),
     )
     return SessionScript(

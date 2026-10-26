@@ -1,6 +1,6 @@
 # emgteach 3.10.0 — guided sessions in the one-muscle practical
 
-Four sessions of the one-muscle practical that the application now runs by
+Three sessions of the one-muscle practical that the application now runs by
 itself: it times each phase, says on screen what to do, marks it in the file,
 stops the recording at the end, and the analysis takes the session's own
 spans.
@@ -12,7 +12,7 @@ made with 3.9.1 and earlier open and read as before.
 
 ## What changes
 
-- **Four guided sessions**, chosen beside «Calibrate MVC» in the one-muscle
+- **Three guided sessions**, chosen beside «Calibrate MVC» in the one-muscle
   practical; «Free recording» stays the default. With a session chosen,
   «Start recording» runs it: the calibration first if the session needs one,
   the five-second countdown, then each phase announced on the panel over the
@@ -24,14 +24,20 @@ made with 3.9.1 and earlier open and read as before.
     at the maximum, with 6 s of rest. In Analysis the steps are the rows of
     the contraction table, with what was asked and what was held, and a view
     «Steps».
-  - **Fatigue by a sustained contraction** (28 s; the calibration is
-    optional): a 10 s maximal contraction. The analysed span is the
-    contraction, panels 6 and 7 come ticked, and the summary gives the MDF
-    and RMS of its start and end and after how many seconds the MDF fell
-    10 %.
-  - **Fatigue by intermittent contractions** (53 s): six maximal contractions
-    of 5 s with 1 s of rest, measured by the RMS of each after its first
-    second, in a view «Per contraction».
+  - **Fatigue: biceps with a fixed load** (103 s at most; no calibration):
+    a measured rest, a countdown to pick up the weight, and the weight held
+    with the elbow at 90° for 90 s. There is no bar during the effort, and
+    **the space bar ends it early** when the student cannot go on. A rest
+    above 0.01 mV is warned: the electrodes' contact is poor. The analysis
+    reads the contraction from 2 s after it begins to its fall, follows the
+    MDF and MNF in 1 s windows and fits a line through them. **Fatigue is
+    the MDF falling significantly (p < 0.01) by at least 10 %**: on the
+    bench the biceps' MDF fell 16-20 % in 90 s with an R² of only 0.3, while
+    the RMS held or rose. It is shown in a view «MDF over time»: the
+    windows, their 5 s means, the line, the −10 % time and the RMS in grey.
+    It replaces the sustained maximum and the intermittent contractions
+    tried on 24 and 25 October. The simulated board's subject tires while
+    it holds, so the session can be rehearsed without hardware.
   - **Quick repeated contractions** (28 s): 10 s of contractions of the fist,
     closing and relaxing it as fast as possible. The contractions are counted
     with their rate, and the peaks and the floor between them followed on a
@@ -51,14 +57,14 @@ made with 3.9.1 and earlier open and read as before.
   said «jerk» or «squeeze» («sacudida» or «apretar» in Spanish), and
   «intense» where it said «explosive», «hard» or «strong»: «Close your fist:
   a brief, intense contraction.»; the warm-up reads «Warm up first» in
-  English and «Calentamiento previo» in Spanish; the sustained contraction
-  asks only to breathe normally. With a session chosen, the calibration asks
+  English and «Calentamiento previo» in Spanish; the held effort asks only
+  to breathe normally. With a session chosen, the calibration asks
   for the session's own gesture, and with one muscle the warm-up asks for
   «two or three easy contractions», not «of each muscle». The pictures of the
   calibration and the station sheets with them.
 - **What the bench with the board changed (26 October 2026).** The subject
   begins some tenths of a second after a cue and lets go up to a second after
-  the end, so each step, intermittent contraction and train is now **the
+  the end, so each step and train is now **the
   activity inside its marks run on 1.5 s past their end**, and a step's level
   the plateau of that contraction (measured between the marks, the steps took
   rest and lost their end, and the train lost its last two contractions). **The
@@ -80,12 +86,14 @@ made with 3.9.1 and earlier open and read as before.
 
 ## How it was tested
 
-**By the automated suite**, 1659 tests, among them: each session's script,
+**By the automated suite**, 1667 tests, among them: each session's script,
 its marks and its Spanish; the clock that crosses every phase even when a
 tick is late; each session recorded with the simulated board, whose subject
 does what each phase asks, and analysed by its spans; the levels held by the
-steps, the start and end of a sustained contraction and the time to a 10 %
-fall of the MDF, the RMS of each intermittent contraction; the train's count,
+steps; the held load's MDF line, its verdict on a synthetic spectrum that
+slides down at a constant amplitude, the span from 2 s after the activity to
+its fall, the early end with the space bar and the warning of a high rest;
+the simulated subject's spectrum falling while it holds; the train's count,
 rate, peaks and floor on synthetic trains, with the envelope leaving more
 floor than the 50 ms RMS at four and five a second; the tone sounding at each
 phase change with the box ticked and not at all without it; and the report
@@ -94,6 +102,8 @@ the phones receive carrying the panels ticked.
 **At the bench**: with the simulated board, manual runs #119 to #130 of
 *Build Windows exe* (24–25 October 2026): the four sessions, the boxes, the
 tone, the calibration's gesture and the words of the instructions. With the
+real board, a free recording of the biceps holding a fixed weight (26
+October 2026) set the fatigue session's criterion. With the
 real board, manual run #133 (26 October 2026): the self-test; the board's
 diagnosis (999 Hz, no CRC errors, no frame lost); «About» saying 3.10.0; the
 calibration, the gradation and the quick contractions, whose findings are the

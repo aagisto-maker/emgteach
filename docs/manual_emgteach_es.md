@@ -451,16 +451,25 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   lo miden su calibración, su barra en vivo y su análisis; las demás prácticas
   siguen con el pico. Si el escalón máximo pasa de la calibración, la vista
   «Escalones» y el informe lo dicen.
-- **Fatiga por contracción mantenida** (28 s; la calibración es opcional): 5 s de
-  reposo, una cuenta atrás de 3 s, **10 s de contracción máxima** isométrica contra
-  la mesa y 10 s de reposo. El texto pide respirar normalmente. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7
-  aparecen marcados; la línea de resumen da la MDF y el RMS del inicio y del final
-  (el primer y el último cuarto de la contracción) y a los cuántos segundos cayó la
-  MDF un 10 %.
-- **Fatiga por contracciones intermitentes** (53 s): seis contracciones máximas de **5 s con
-  1 s de reposo**, con tono al empezar y al acabar cada una y la cuenta atrás en
-  pantalla. Se mide el **RMS de cada contracción** en su meseta, tras su primer segundo (no el
-  pico, que es el arranque y no baja) y su MDF: vista «Por contracción».
+- **Fatiga: bíceps con carga fija** (103 s como mucho; sin calibración): 5 s de
+  reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
+  coger el peso, **el peso sostenido con el codo a 90° durante 90 s** y 5 s para
+  dejarlo. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
+  alcanzar): el panel da los segundos que quedan. El texto pide respirar
+  normalmente. **La barra espaciadora, o el botón «No puedo más (Espacio)», termina
+  el esfuerzo antes de tiempo**; la marca de su final lo dice y la sesión pasa al
+  último reposo. Si el reposo del principio supera 0.01 mV, el panel y el registro
+  de eventos avisan de que el contacto de los electrodos es malo.
+  En Análisis, el tramo analizado empieza **2 s después de que empiece la
+  actividad** (coger el peso no es la contracción que fatiga) y acaba donde la
+  actividad cae o termina la marca del esfuerzo. Se calculan la MDF y la MNF en
+  ventanas de 1 s cada 0.5 s y el RMS, con una recta por cada una (pendiente, R²,
+  p y cambio). **Hay fatiga cuando la MDF cae de forma significativa (p < 0.01) y su
+  recta baja al menos un 10 %**; el R² no se exige, porque el espectro tiene mucha
+  dispersión propia (en el banco, el bíceps bajó la MDF un 16-20 % en 90 s con un R²
+  de solo 0.3, mientras el RMS se mantenía o subía). Vista **«MDF en el tiempo»**:
+  las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que cayó un 10 %
+  y el RMS en gris. Los paneles 6 y 7 aparecen marcados.
 - **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
   atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
   las contracciones y su ritmo —hasta 1.5 s después de la marca del final, porque
@@ -829,6 +838,10 @@ disminuyen con el tiempo**.
   - **No concluyente**: la recta no ajusta (R² < 0.30), o hay menos de cuatro
     ventanas. Es lo normal en una serie de contracciones breves: el registro no
     responde a la pregunta, lo cual no es lo mismo que responder «no».
+  - En la sesión guiada **«Fatiga: bíceps con carga fija»** (§4.3) el criterio es
+    otro: una caída **significativa** de la MDF (p < 0.01) de al menos un 10 %,
+    sin exigir R². Con una carga fija sostenida un minuto o más, la caída es real
+    aunque la dispersión del espectro deje el R² bajo.
 - La fatiga solo tiene sentido sobre una contracción **mantenida** de algunas
   decenas de segundos. Mezclar reposo y esfuerzo fabrica una pendiente de la nada
   (la MDF del reposo es la del amplificador, muy alta): por eso el ajuste excluye
@@ -1068,9 +1081,8 @@ el acelerómetro y las medidas que se ofrecen después.
    escalones de esfuerzo, elegir antes la sesión guiada **«Contracciones graduales»** en el
    desplegable de la línea de «Calibrar CVM» (§4.3): *Iniciar grabación* calibra,
    cuenta 5 s, dirige los cinco escalones y se detiene sola. Para lo demás,
-   **«Grabación libre»** y *Iniciar grabación*; para la fatiga, las sesiones
-   **«Fatiga por contracción mantenida»** o **«Fatiga por contracciones
-   intermitentes»**. Si el
+   **«Grabación libre»** y *Iniciar grabación*; para la fatiga, la sesión
+   **«Fatiga: bíceps con carga fija»**. Si el
    ejercicio necesita % CVM (carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
    calentamiento y las tres contracciones máximas, breves e intensas (para el
    flexor del antebrazo, con el puño cerrado).

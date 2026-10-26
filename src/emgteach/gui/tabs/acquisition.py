@@ -89,6 +89,7 @@ from emgteach.gui.widgets.manual_marker import (
     hand_the_m_over,
 )
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
+from emgteach.guided import REST_WARN_MV
 from emgteach.i18n import tr
 from emgteach.io import (
     RecordingMetadata,
@@ -143,8 +144,7 @@ from emgteach.sessions import (
     SessionPhase,
     SessionScript,
     gradation_script,
-    hold_script,
-    intermittent_script,
+    load_script,
     parse_session_markers,
     rapid_script,
 )
@@ -612,8 +612,7 @@ _COMBO_ST = (
 #: (:mod:`emgteach.sessions`). The chooser is hidden while this is empty.
 GUIDED_SESSIONS: dict[str, Callable[[], SessionScript]] = {
     "gradacion": gradation_script,
-    "fatiga": hold_script,
-    "fatiga_intermitente": intermittent_script,
+    "fatiga": load_script,
     "rapidas": rapid_script,
 }
 
@@ -778,6 +777,7 @@ class AcquisitionTab(QWidget):
         #: whether the phase now running is one (the boxes of the panel).
         self._sesion_hechas = 0
         self._sesion_en_esfuerzo = False
+        self._sesion_reposo: list[float] = []
         #: Why the running session is being stopped: «esc» or «stop».
         self._session_motivo = ""
         #: Blocks of data seen while the flow was armed and could not start.
@@ -1449,6 +1449,14 @@ class AcquisitionTab(QWidget):
             tr("Go on now, without waiting for the count."))
         self._btn_paso_hecho.clicked.connect(self._paso_siguiente)
         ctrl_layout.addWidget(self._btn_paso_hecho)
+        # A held load the student cannot keep up any longer ends here, or
+        # with the space bar (sessions.SessionPhase.early_stop).
+        self._btn_no_puedo = QPushButton(tr("I can't go on (Space)"))
+        self._btn_no_puedo.setVisible(False)
+        self._btn_no_puedo.setToolTip(
+            tr("End the held effort now; the session goes on to its last rest."))
+        self._btn_no_puedo.clicked.connect(self._no_puedo_mas)
+        ctrl_layout.addWidget(self._btn_no_puedo)
         atajo_paso = QShortcut(QKeySequence(Qt.Key.Key_Space), self)
         atajo_paso.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         atajo_paso.activated.connect(self._paso_siguiente)
@@ -4250,7 +4258,9 @@ class AcquisitionTab(QWidget):
         self._sesion_hechas = 0
         self._sesion_en_esfuerzo = False
         self._mvc_overlay.set_steps(
-            [_CHANNEL_COLORS[0]] * sum(1 for f in script.phases if f.opens))
+            [_CHANNEL_COLORS[0]] * sum(1 for f in script.phases
+                                       if f.kind == EFFORT and f.opens))
+        self._sesion_reposo = []
         cue.set_tone_report(self._tono_informado.emit)
         self._btn_cancelar_guia.setVisible(True)
         self._log(tr("Guided session started: {title}. Esc stops it.").format(
@@ -4263,7 +4273,10 @@ class AcquisitionTab(QWidget):
         if self._sesion_en_esfuerzo:
             self._mvc_overlay.mark_step(self._sesion_hechas)
             self._sesion_hechas += 1
-        self._sesion_en_esfuerzo = bool(fase.opens)
+        self._sesion_en_esfuerzo = fase.kind == EFFORT and bool(fase.opens)
+        self._revisar_reposo()
+        # «I can't go on»: the button, and the space bar, while it may be pressed.
+        self._btn_no_puedo.setVisible(fase.early_stop)
         if fase.kind == EFFORT and fase.level:
             self._pedir_al_sujeto({0: float(fase.level)}, repeat_s=fase.repeat_s)
             self._sesion_pico = 0.0
@@ -4273,6 +4286,28 @@ class AcquisitionTab(QWidget):
         self._mvc_info(tr(fase.title).format(**dict(fase.fmt)))
         if fase.cue:
             self._tono()
+
+    def _revisar_reposo(self) -> None:
+        """The rest the session measured is over: was it a rest?
+
+        Above guided.REST_WARN_MV the electrodes' contact is poor (the bench's
+        biceps rested at 0.028 mV). Said on the panel's line and in the event
+        log; nothing stops — the spectrum is still worth reading.
+        """
+        muestras, self._sesion_reposo = getattr(self, "_sesion_reposo", []), []
+        if not muestras:
+            return
+        nivel = float(np.median(muestras))
+        if nivel > REST_WARN_MV:
+            aviso = tr("High rest ({mv:.3f} mV): check the electrodes' contact.").format(
+                mv=nivel)
+            self._mvc_info(aviso)
+            self._log("⚠ " + aviso)
+
+    def _no_puedo_mas(self) -> None:
+        """The student cannot go on: the held effort ends now."""
+        if self._session_runner is not None and self._session_runner.end_early():
+            self._log(tr("Effort ended early: the student could not go on."))
 
     @Slot(object, float, float)
     def _sesion_tick(self, fase: SessionPhase, restante: float, hecho: float) -> None:
@@ -4288,9 +4323,16 @@ class AcquisitionTab(QWidget):
             # contraction, which is what falls as a held maximum tires.
             self._sesion_pico = max(self._sesion_pico, self._env_inst[0])
             carga = self._env_inst[0] / self._sesion_pico if self._sesion_pico > 0 else 0.0
+        if fase.check_rest:
+            self._sesion_reposo.append(self._env_inst[0])
         if fase.kind == READY:
             self._mvc_overlay.show_ready(titulo, cuenta, texto, waiting=hecho)
             self._bcast_calib(True, "ready", titulo, texto, count=cuenta)
+        elif fase.kind == EFFORT and not fase.bar:
+            # A fixed load: nothing on a bar to follow, only the time.
+            self._mvc_overlay.show_phase(f"{titulo} · {cuenta} s", texto, running=hecho)
+            self._bcast_calib(True, "contract", titulo, texto, secs=restante,
+                              progress=hecho)
         elif fase.kind == EFFORT and fase.target_pct is not None:
             lo, hi = fase.target_pct
             self._mvc_overlay.show_phase(
@@ -4317,6 +4359,7 @@ class AcquisitionTab(QWidget):
             runner.deleteLater()
         cue.set_tone_report(None)
         self._btn_cancelar_guia.setVisible(False)
+        self._btn_no_puedo.setVisible(False)
         self._soltar_al_sujeto()
         titulo = tr(self._session_script.title) if self._session_script else ""
         if completa:
@@ -4536,6 +4579,9 @@ class AcquisitionTab(QWidget):
         asked for is a different thing, and :meth:`_guia_reposo` does it.
         This is the way out that has to exist either way.
         """
+        if self._session_runner is not None:
+            self._no_puedo_mas()
+            return
         if self._guia_fase != "maniobras":
             return
         if self._man_grupo + 1 < min(2, self._n_channels):

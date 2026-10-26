@@ -46,7 +46,7 @@ from emgteach.charts import (
     COLOUR_2,
     draw_coactivation_chart,
     draw_contraction_chart,
-    draw_reps_chart,
+    draw_load_chart,
     draw_steps_chart,
     draw_train_chart,
 )
@@ -60,10 +60,10 @@ from emgteach.figures import (
     draw_rms_panel,
 )
 from emgteach.guided import (
+    REST_WARN_MV,
     gradation_reference_text,
     is_monotonic,
     mdf_trend_applies,
-    reps_trend_pct,
 )
 from emgteach.i18n import tr
 from emgteach.modes import protocol_label
@@ -137,6 +137,20 @@ def _fatigue_text(result: Mapping[str, Any], suffix: str = "") -> str:
     r2 = float(result.get("fat_r_squared" + suffix, 0.0))
     decline = float(result.get("fat_pct_decline" + suffix, 0.0))
     verdict = result.get("fat_verdict" + suffix, INCONCLUSIVE)
+    carga = result.get("load") if not suffix else None
+    if carga is not None and carga.mdf_trend is not None:
+        # The held load is judged by the significance of the MDF's fall and
+        # its size, not by R² (guided.load_verdict).
+        tend = carga.mdf_trend
+        p = "< 0.001" if tend.p < 0.001 else f"= {tend.p:.3f}"
+        if verdict == FATIGUE:
+            return tr("Yes — MDF falls {pct:.0f} % in {s:.0f} s (p {p}, R²={r2:.2f})").format(
+                pct=-(tend.change_pct or 0.0), s=carga.seconds, p=p, r2=tend.r2)
+        if verdict == NO_FATIGUE:
+            return tr("No — MDF changes {pct:+.0f} % (p {p}): less than a 10 % fall").format(
+                pct=tend.change_pct or 0.0, p=p)
+        return tr("Not conclusive — the MDF's fall is not significant (p {p}). "
+                  "Fatigue needs a load held long enough for the trend to show.").format(p=p)
     if verdict == FATIGUE:
         return tr(
             "Yes — MDF falls {slope:+.2f} Hz/s "
@@ -588,68 +602,56 @@ def _seccion_gradacion(story: list, result: Mapping[str, Any], h2, normal) -> No
 
 
 def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -> None:
-    """The fatigue sessions, when the recording is one of them.
+    """The fixed load held, when the recording is one.
 
-    Sustained: where the MDF and the RMS began and ended, how long each took
-    to fall 10 and 20 %, and panels 6 and 7 of the effort. Intermittent: the
-    RMS and MDF of each contraction, as bars and as a table.
+    The MDF and MNF against time with the RMS in grey, and a table with the
+    straight line through each measure: where it began and ended, its slope,
+    R² and p, and when the MDF had fallen 10 %. A rest that was too high
+    before the effort is said, since it makes the electrodes suspect.
     """
-    hold = result.get("hold")
-    reps = result.get("reps") or []
-    if hold is None and not reps:
+    carga = result.get("load")
+    if carga is None:
         return
-    if hold is not None:
-        story.append(Paragraph(tr("Guided session: fatigue by sustained contraction"), h2))
-        for idx in (5, 6):
-            try:
-                story.append(Image(_render_one_panel_figure(result, idx),
-                                   width=16 * cm, height=6.44 * cm))
-            except Exception:  # pragma: no cover — a panel must never sink the report
-                pass
-
-        def num(x, fmt):
-            return "" if x is None else format(x, fmt)
-
-        def cuando(t):
-            return tr("not reached") if t is None else f"{t:.0f} s"
-
-        rows = [[tr("Measure"), tr("Start"), tr("End"), tr("Change"),
-                 tr("−10 % at"), tr("−20 % at")],  # noqa: RUF001
-                [tr("MDF (Hz)"), num(hold.mdf_start_hz, ".0f"), num(hold.mdf_end_hz, ".0f"),
-                 num(hold.mdf_change_pct, "+.0f") + " %", cuando(hold.t_mdf_10),
-                 cuando(hold.t_mdf_20)],
-                [tr("RMS (mV)"), num(hold.rms_start_mv, ".3f"), num(hold.rms_end_mv, ".3f"),
-                 num(hold.rms_change_pct, "+.0f") + " %", cuando(hold.t_rms_10),
-                 cuando(hold.t_rms_20)]]
-        story.append(_styled_table(rows, [2.6, 2.6, 2.6, 2.4, 2.8, 2.8]))
+    story.append(Paragraph(tr("Guided session: fatigue with a fixed load"), h2))
+    try:
+        story.append(Image(_render_chart(draw_load_chart, carga),
+                           width=16 * cm, height=6 * cm))
         story.append(Spacer(1, 0.15 * cm))
+    except Exception:  # pragma: no cover — a chart must never sink the report
+        pass
+
+    def fila(nombre, tend, fmt, unidad):
+        if tend is None:
+            return [nombre, "", "", "", "", "", ""]
+        return [nombre, format(tend.start, fmt), format(tend.end, fmt),
+                format(tend.change_pct or 0.0, "+.0f") + " %",
+                format(tend.slope * 60.0, "+.2f" if unidad == "mV" else "+.1f"),
+                f"{tend.r2:.2f}", "< 0.001" if tend.p < 0.001 else f"{tend.p:.3f}"]
+
+    rows = [[tr("Measure"), tr("Start"), tr("End"), tr("Change"), tr("Slope per minute"),
+             tr("R²"), tr("p")],
+            fila(tr("MDF (Hz)"), carga.mdf_trend, ".0f", "Hz"),
+            fila(tr("MNF (Hz)"), carga.mnf_trend, ".0f", "Hz"),
+            fila(tr("RMS (mV)"), carga.rms_trend, ".3f", "mV")]
+    story.append(_styled_table(rows, [2.6, 2.0, 2.0, 2.0, 3.0, 1.6, 1.8]))
+    story.append(Spacer(1, 0.15 * cm))
+    t10 = (tr("MDF −10 % at {t:.0f} s").format(t=carga.t_mdf_10)  # noqa: RUF001
+           if carga.t_mdf_10 is not None else tr("MDF never fell 10 %"))
+    story.append(Paragraph(tr(
+        "Held {s:.0f} s, from 2 s after the activity began to when it fell. MDF and MNF "
+        "of each 1 s window every 0.5 s; the line is fitted to all of them, and the "
+        "chart draws their means over 5 s. Start and end are the line's.").format(
+            s=carga.seconds) + " " + t10 + ".", normal))
+    story.append(Paragraph(tr(
+        "Fatigue moves the spectrum down: the conduction velocity of the fibres falls "
+        "and the units fire more in step, so MDF and MNF fall. The amplitude may hold "
+        "or even rise, as more motor units are recruited to keep the same load. It "
+        "counts as fatigue when the MDF's slope is significant (p < 0.01) and its "
+        "line falls at least 10 %."), normal))
+    reposo = result.get("rest_mv")
+    if reposo is not None and reposo > REST_WARN_MV:
         story.append(Paragraph(tr(
-            "Start and end: the median of the one-second windows of the first and "
-            "the last quarter of the contraction (at most 5 s) in which the muscle "
-            "was working; a fall counts once three windows in a row are below "
-            "the line."), normal))
-    if reps:
-        story.append(Paragraph(tr("Guided session: fatigue by intermittent contractions"), h2))
-        try:
-            story.append(Image(_render_chart(draw_reps_chart, reps),
-                               width=16 * cm, height=6 * cm))
-            story.append(Spacer(1, 0.15 * cm))
-        except Exception:  # pragma: no cover — a chart must never sink the report
-            pass
-        primero = reps[0].rms_mv
-        rows = [[tr("Contraction"), tr("RMS (mV)"), tr("RMS (% of the first)"), tr("MDF (Hz)")]]
-        for r in reps:
-            rows.append([str(r.n), f"{r.rms_mv:.3f}",
-                         f"{100.0 * r.rms_mv / primero:.0f}" if primero else "",
-                         "" if r.mdf_hz is None else f"{r.mdf_hz:.0f}"])
-        story.append(_styled_table(rows, [3.2, 3.6, 4.6, 3.6]))
-        tendencia = reps_trend_pct(reps)
-        story.append(Spacer(1, 0.15 * cm))
-        story.append(Paragraph(tr(
-            "RMS over the plateau of each contraction, after its first second, not its peak: "
-            "the peak is the start of each contraction and does not fall.")
-            + ("" if tendencia is None else " " + tr(
-                "Trend: {pct:+.1f} % of the first per contraction.").format(pct=tendencia)),
+            "High rest ({mv:.3f} mV): check the electrodes' contact.").format(mv=reposo),
             normal))
     story.append(Spacer(1, 0.4 * cm))
 

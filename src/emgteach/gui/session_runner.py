@@ -70,6 +70,8 @@ class SessionRunner(QObject):
         self._t0 = 0.0
         self._index = -1
         self._running = False
+        #: The running phase was ended early: its end mark is written.
+        self._cerrada = False
         self._timer = QTimer(self)
         self._timer.setInterval(int(tick_ms))
         self._timer.timeout.connect(self._on_tick)
@@ -104,6 +106,26 @@ class SessionRunner(QObject):
         if self._running:
             self._timer.start()
 
+    def end_early(self) -> bool:
+        """End the running effort now, if it may be ended early.
+
+        The student cannot go on (``SessionPhase.early_stop``): the phase's
+        end mark is written now, saying ``early``, and the session goes on
+        to the next phase as if the effort had lasted until this instant —
+        every later phase keeps its own length. ``False`` when the running
+        phase is not one that may end early.
+        """
+        fase = self.current_phase
+        if fase is None or not fase.early_stop:
+            return False
+        ahora = self._clock() - self._t0
+        self._t0 -= max(0.0, fase.end - ahora)
+        if fase.closes:
+            self.marker.emit(f"{fase.closes} early")
+        self._cerrada = True
+        self._advance_to(self._clock() - self._t0)
+        return True
+
     def cancel(self) -> None:
         """Stop before the end: the session's end mark says «stopped».
 
@@ -133,8 +155,9 @@ class SessionRunner(QObject):
                 actual = self._phases[self._index]
                 if elapsed < actual.end:
                     break
-                if actual.closes:
+                if actual.closes and not self._cerrada:
                     self.marker.emit(actual.closes)
+            self._cerrada = False
             self._index += 1
             if self._index >= len(self._phases):
                 self._stop()
