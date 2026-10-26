@@ -890,14 +890,16 @@ Analizadas con el código de `main` (el exe #133) y con el de la rama:
   `main`, **30** con la rama; la última, a 10.36 s del aviso (la franja dura
   10 s). Ritmo 2.9/s; suelo entre contracciones un 9-10 % del pico, lo mismo
   que deja la medida sola: relajación completa.
-- **Gradaciones** (`m_graduales_2026-10-26_10-25-29.edf` y `_10-31-36.edf`):
-  **el sujeto no relaja entre escalones** desde el primero. Entre las franjas
-  la envolvente se queda en 0.10-0.20 mV (el reposo verdadero, antes de la
-  sesión, es de 0.004 mV), así que los «escalones» no se distinguen de los
-  descansos y el nivel no sube: con la rama, mantenido 33/29/34/23/18 % y
-  43/40/39/40/28 % de la CVM. Ninguno de los dos da los 17/27/42/60/69 del
-  informe del banco. La regla de los tramos funciona —cada escalón empieza
-  0.9 s después de su aviso en el primer archivo—, pero sin reposo entre
-  ellos la contracción llega hasta el final del margen. Conviene repetir la
-  gradación soltando del todo en cada descanso; el panel dice «Suelte y
-  descanse».
+- **Las dos grabaciones con la sesión de gradación**
+  (`m_graduales_2026-10-26_10-25-29.edf` y `_10-31-36.edf`) **no son
+  gradaciones, sino dos de las pruebas de fatiga** hechas con su barra (lo
+  aclara la conversación del banco): un máximo sostenido de unos 47 s (la
+  envolvente cae de 0.3 a 0.1 mV desde el primer escalón hasta el final) y un
+  ~45 % de la CVM mantenido unos 36 s (estable en 0.17-0.20 mV entre los 47 y
+  los 83 s, MDF plana). Por eso entre las franjas no hay reposo y el nivel no
+  sube. **La gradación del informe del banco (17/27/42/60/69 % mantenido;
+  33/60/68/81/127 % de pico) no está entre estos archivos**: hace falta su EDF
+  para comprobar los puntos 1 y 3 con datos reales. Lo que sí muestran: con la
+  rama, la regla de los tramos sigue la actividad (en la primera, el primer
+  escalón empieza 0.9 s después de su aviso), y el registro afinado de la
+  segunda a sus cinco contracciones se reabre con la sesión entera.
