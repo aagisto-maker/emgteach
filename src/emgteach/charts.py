@@ -594,16 +594,13 @@ def draw_coactivation_chart(
               columnspacing=0.9, borderaxespad=0.0, handletextpad=0.4)
 
 
-def draw_steps_chart(fig, steps: Sequence[Any], *, small: bool = False,
-                     reference: str | None = None) -> None:
+def draw_steps_chart(fig, steps: Sequence[Any], *, small: bool = False) -> None:
     """The gradation: one bar per step, the level held against the one asked.
 
     ``steps`` are :class:`emgteach.guided.StepResult`. The bar is the level
-    held (the mean of the envelope over the contraction's plateau, in % of
-    the reference, or in mV when there is none); the black tick over it is
-    the target. The number over each bar is the level held, so the table is
-    not needed to read it. *reference* says what the percentages are of
-    (:func:`emgteach.guided.gradation_reference_text`), under the axis.
+    held (the mean of the envelope after the reach, in % MVC, or in mV when
+    there is no reference); the black tick over it is the target. The number
+    over each bar is the level held, so the table is not needed to read it.
     """
     fig.clear()
     fs = 7 if small else 8
@@ -629,8 +626,7 @@ def draw_steps_chart(fig, steps: Sequence[Any], *, small: bool = False,
     ax.set_xticklabels([
         tr("max") if s.target_pct >= 100 else f"{s.target_pct:g} %" for s in steps],
         fontsize=fs - 1)
-    ax.set_xlabel(tr("Step asked (% MVC)") + (f"\n{reference}" if reference else ""),
-                  fontsize=fs - 1)
+    ax.set_xlabel(tr("Step asked (% MVC)"), fontsize=fs - 1)
     ax.set_ylabel(tr("Level held (% MVC)") if use_pct else tr("Level held (mV)"),
                   fontsize=fs)
     ax.set_ylim(0, tope * 1.18)

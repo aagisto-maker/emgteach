@@ -264,10 +264,9 @@ CAL_REPS = [(2.0, 5.0), (8.0, 11.0), (14.0, 17.0)]
 REC_S = 22.0
 
 
-def _gradacion_edf(path: Path, *, maximo: float = 1.0) -> str:
+def _gradacion_edf(path: Path) -> str:
     """A one-muscle session: three maximal efforts at amplitude 1, the
-    countdown, and the gradation at 20…100 % of it — its maximal step at
-    *maximo*."""
+    countdown, and the gradation at 20…100 % of it."""
     n = int((REC_S + 60.0) * FS)
     t = np.arange(n) / FS
     amp = np.full(n, 0.01)
@@ -275,9 +274,7 @@ def _gradacion_edf(path: Path, *, maximo: float = 1.0) -> str:
         amp[int(a * FS): int(b * FS)] = 1.0
     sesion = _sesion_sintetica(t0=REC_S)
     for tramo in sesion.spans:
-        pct = tramo.number("pct") or 0
-        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = (
-            maximo if pct >= 100 else pct / 100)
+        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = (tramo.number("pct") or 0) / 100
     senal = np.sin(2 * np.pi * 80 * t) * amp
     with BufferedEdfWriter(str(path), channels=[
             ChannelInfo("FCR", dimension="mV", sample_frequency=FS)]) as w:
@@ -482,53 +479,3 @@ def test_a_tuned_gradation_keeps_its_steps_and_their_view(qapp, tmp_path: Path) 
     otra = tmp_path / "grad_tuned_2.edf"
     build_tuned_edf(afinado, otra)
     assert parse_session_markers(read_edf_markers(otra)).spans == sesion.spans
-
-
-# ── The gradation's reference ──────────────────────────────────────────────
-
-
-def test_the_reference_is_the_larger_of_the_mvc_and_the_session() -> None:
-    from emgteach.guided import (
-        GRAD_REF_MVC,
-        GRAD_REF_SESSION,
-        gradation_reference,
-        with_reference,
-    )
-
-    niveles = [0.2, 0.4, 0.6, 0.8, 1.27]
-    env, filt = _senales(niveles)
-    pasos = gradation_steps(_sesion_sintetica(), [(0.0, 60.0, 0.0)], fs=FS,
-                            emg_filtered=filt, envelope=env, mvc_ref=1.0)
-    assert pasos[-1].held_pct == pytest.approx(127.0, abs=0.5)
-    ref, fuente = gradation_reference(pasos, env, FS, 1.0)
-    assert fuente == GRAD_REF_SESSION and ref == pytest.approx(1.27)
-    escalados = with_reference(pasos, ref)
-    assert max(p.held_pct for p in escalados) == pytest.approx(100.0, abs=0.5)
-    # Under the MVC, the MVC stays.
-    assert gradation_reference(pasos, env, FS, 2.0) == (2.0, GRAD_REF_MVC)
-    assert gradation_reference(pasos, env, FS, None) == (None, GRAD_REF_MVC)
-
-
-@pytest.mark.gui
-def test_a_step_above_the_mvc_makes_the_session_the_reference(
-    qapp, tmp_path: Path
-) -> None:
-    """Ángel's bench, 26 October 2026: the maximal step at 127 % of the MVC.
-    The gradation's percentages are of the session's maximum, then: no step,
-    no row and no task maximum above 100 %, and the view and the report say
-    which reference it is. The MVC itself does not move."""
-    from emgteach.guided import GRAD_REF_SESSION
-    from emgteach.reports import build_session_report
-    from tests.test_informes_y_csv import _pdf_text
-
-    r = _analizar(qapp, _gradacion_edf(tmp_path / "grad127.edf", maximo=1.27))
-    assert r["grad_ref_source"] == GRAD_REF_SESSION
-    assert r["grad_ref"] == pytest.approx(1.27 * r["mvc_ref"], rel=0.03)
-    assert max(p.held_pct for p in r["grad_steps"]) <= 100.5
-    assert max(f.peak_pct for f in r["contractions"]) <= 100.5
-    assert max(r["task_peak_pct"].values()) <= 100.5
-    assert "mvc_implausible" not in r
-    assert [round(p.held_pct / 10) for p in r["grad_steps"][:4]] == [2, 3, 5, 6]
-    pdf = tmp_path / "grad127.pdf"
-    build_session_report(pdf, r, meta={})
-    assert "Reference: the session's maximum" in _pdf_text(pdf).replace("\n", " ")

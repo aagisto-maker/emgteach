@@ -444,13 +444,7 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   sesión: cerrar el puño con una contracción. En Análisis cada escalón es la
   contracción que empieza tras su aviso, seguida hasta 1.5 s más allá de su final
   —se empieza y se suelta con unas décimas de retraso—, y su nivel es la media de
-  la envolvente en la meseta de esa contracción. **La referencia es la mayor
-  entre la CVM y el máximo de la propia sesión**, medido como la CVM: las
-  contracciones de la calibración son breves y un escalón dura cuatro segundos,
-  así que el escalón máximo puede pasar de la CVM (127 % en el banco); entonces
-  los porcentajes son del máximo de la sesión, ningún escalón pasa de 100 %, y la
-  vista «Escalones» y el informe dicen qué referencia es. La calibración y las
-  demás prácticas conservan la CVM.
+  la envolvente en la meseta de esa contracción.
 - **Fatiga por contracción mantenida** (28 s; la calibración es opcional): 5 s de
   reposo, una cuenta atrás de 3 s, **10 s de contracción máxima** isométrica contra
   la mesa y 10 s de reposo. El texto pide respirar normalmente. En Análisis, el tramo analizado es la contracción y los paneles 6 y 7

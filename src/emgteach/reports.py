@@ -59,12 +59,7 @@ from emgteach.figures import (
     draw_raw_panel,
     draw_rms_panel,
 )
-from emgteach.guided import (
-    gradation_reference_text,
-    is_monotonic,
-    mdf_trend_applies,
-    reps_trend_pct,
-)
+from emgteach.guided import is_monotonic, mdf_trend_applies, reps_trend_pct
 from emgteach.i18n import tr
 from emgteach.modes import protocol_label
 from emgteach.mvc import (
@@ -558,8 +553,7 @@ def _seccion_gradacion(story: list, result: Mapping[str, Any], h2, normal) -> No
         return
     story.append(Paragraph(tr("Guided session: graded contractions"), h2))
     try:
-        story.append(Image(_render_chart(draw_steps_chart, pasos,
-                                         reference=gradation_reference_text(result)),
+        story.append(Image(_render_chart(draw_steps_chart, pasos),
                            width=16 * cm, height=6 * cm))
         story.append(Spacer(1, 0.15 * cm))
     except Exception:  # pragma: no cover — a chart must never sink the report
@@ -577,9 +571,7 @@ def _seccion_gradacion(story: list, result: Mapping[str, Any], h2, normal) -> No
     story.append(Spacer(1, 0.15 * cm))
     story.append(Paragraph(
         (tr("Each step held more than the one before.") if is_monotonic(pasos)
-         else tr("Not every step held more than the one before.")) + " "
-        + ((gradation_reference_text(result) or "") + ". " if result.get("grad_ref") else "")
-        + tr(
+         else tr("Not every step held more than the one before.")) + " " + tr(
             "Held: the mean of the envelope over the plateau of each step's "
             "contraction, after its first second (the reach) and before its "
             "letting go. Each step is the contraction begun after its cue and "

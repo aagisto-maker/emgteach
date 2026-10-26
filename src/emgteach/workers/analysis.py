@@ -8,8 +8,6 @@ all plots.
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 import numpy as np
 from PySide6.QtCore import QThread, Signal
 from scipy.integrate import trapezoid
@@ -42,15 +40,12 @@ from emgteach.force_velocity import (
     windows_from_markers,
 )
 from emgteach.guided import (
-    GRAD_REF_SESSION,
     MARGIN_S,
-    gradation_reference,
     gradation_steps,
     hold_result,
     intermittent_reps,
     measured_windows,
     rapid_train,
-    with_reference,
 )
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -405,33 +400,6 @@ class AnalysisWorker(QThread):
         if sesion.end_s is not None:
             fin = min(fin, sesion.end_s)
         return (max(0.0, trenes[-1].start_s - 3.0), max(trenes[-1].end_s, fin))
-
-    def _referencia_de_la_gradacion(self, result: dict, envelope, fs: float) -> None:
-        """In a gradation, the percentages are of the larger of the MVC and
-        the session's own maximum (guided.gradation_reference): its steps,
-        its rows and its task maximum. The calibration keeps the MVC, and so
-        does every other practical."""
-        cvm = result.get("mvc_ref")
-        ref, fuente = gradation_reference(
-            result["grad_steps"], envelope, fs, cvm,
-            window_s=self._profile.mvc_peak_window_s)
-        result["grad_ref"], result["grad_ref_source"] = ref, fuente
-        if fuente != GRAD_REF_SESSION or not cvm or not ref:
-            return
-        escala = float(cvm) / float(ref)
-        result["grad_steps"] = with_reference(result["grad_steps"], ref)
-        result["contractions"] = [
-            replace(f, peak_pct=None if f.peak_pct is None else f.peak_pct * escala)
-            for f in result.get("contractions") or []]
-        picos = result.get("task_peak_pct") or {}
-        if self._channel_name in picos:
-            picos[self._channel_name] *= escala
-            if picos[self._channel_name] <= self._profile.mvc_implausible_pct:
-                result.pop("mvc_implausible", None)
-        self.log.emit(tr(
-            "Graded contractions: a step went above the MVC, so the reference "
-            "is the session's maximum, {ref:.3f} mV (MVC {mvc:.3f} mV)."
-        ).format(ref=ref, mvc=cvm))
 
     @staticmethod
     def _tramos_de_sesion(sesion, piezas) -> list[Segment] | None:
@@ -1355,7 +1323,6 @@ class AnalysisWorker(QThread):
                 if result["grad_steps"]:
                     self.log.emit(tr("Graded contractions: {n} steps measured.").format(
                         n=len(result["grad_steps"])))
-                    self._referencia_de_la_gradacion(result, proc["emg_envelope"], fs)
                 result["train"] = rapid_train(
                     sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
                 result["reps"] = intermittent_reps(

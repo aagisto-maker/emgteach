@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -42,8 +42,6 @@ from emgteach.sessions import GuidedSession, MeasuredSpan
 
 __all__ = [
     "EDGE_S",
-    "GRAD_REF_MVC",
-    "GRAD_REF_SESSION",
     "MARGIN_S",
     "RELEASE_S",
     "SETTLE_S",
@@ -53,8 +51,6 @@ __all__ = [
     "StepResult",
     "TrainResult",
     "change_pct",
-    "gradation_reference",
-    "gradation_reference_text",
     "gradation_steps",
     "hold_result",
     "intermittent_reps",
@@ -66,7 +62,6 @@ __all__ = [
     "reps_trend_pct",
     "spans_in_analysis_time",
     "time_to_decline",
-    "with_reference",
 ]
 
 #: Seconds at the start of each step left out of its level: the reach.
@@ -249,66 +244,6 @@ def gradation_steps(
             rms_mv=rms, mdf_hz=mdf,
         ))
     return pasos
-
-
-#: Where the gradation's reference came from: the calibration's maximum, or
-#: the session's own when a step went above it.
-GRAD_REF_MVC = "mvc"
-GRAD_REF_SESSION = "session"
-
-
-def gradation_reference(
-    steps: Sequence[StepResult],
-    envelope,
-    fs: float,
-    mvc_ref: float | None,
-    *,
-    window_s: float = 0.0,
-) -> tuple[float | None, str]:
-    """The gradation's reference, and where it came from.
-
-    **The larger of the MVC and the highest the session reached**, measured
-    as the MVC is — the envelope's peak, or its highest *window_s* mean —
-    over each step's contraction (Ángel's decision, 26 October 2026: on the
-    bench the maximal step came out at 127 % of the MVC, the calibration's
-    contractions being brief and the step four seconds long). So no step
-    passes 100 %. The calibration and the other practicals keep the MVC.
-    """
-    from emgteach.mvc import mvc_peak_hold
-
-    if not mvc_ref or fs <= 0:
-        return mvc_ref, GRAD_REF_MVC
-    env = np.asarray(envelope, dtype=np.float64)
-    ventana = max(1, round(float(window_s) * fs))
-    maximo = 0.0
-    for s in steps:
-        i0 = max(0, min(round(s.start_s * fs), env.size))
-        i1 = max(i0, min(round(s.end_s * fs), env.size))
-        if i1 > i0:
-            maximo = max(maximo, float(mvc_peak_hold(env[i0:i1], ventana)))
-    if maximo > float(mvc_ref):
-        return maximo, GRAD_REF_SESSION
-    return float(mvc_ref), GRAD_REF_MVC
-
-
-def with_reference(steps: Sequence[StepResult], ref: float | None) -> list[StepResult]:
-    """The steps with their level held in per cent of *ref*."""
-    return [replace(s, held_pct=(100.0 * s.held_mv / ref) if ref else None)
-            for s in steps]
-
-
-def gradation_reference_text(result) -> str | None:
-    """What the gradation's percentages are of, for the view and the report;
-    ``None`` without a gradation measured in per cent."""
-    from emgteach.i18n import tr
-
-    ref = result.get("grad_ref")
-    if not result.get("grad_steps") or not ref:
-        return None
-    if result.get("grad_ref_source") == GRAD_REF_SESSION:
-        return tr("Reference: the session's maximum ({ref:.3f} mV), above the "
-                  "MVC ({mvc:.3f} mV)").format(ref=ref, mvc=result.get("mvc_ref") or 0.0)
-    return tr("Reference: the MVC ({mvc:.3f} mV)").format(mvc=ref)
 
 
 def is_monotonic(steps: Sequence[StepResult]) -> bool:
