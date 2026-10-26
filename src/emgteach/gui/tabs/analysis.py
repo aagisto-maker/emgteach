@@ -1460,6 +1460,9 @@ class AnalysisTab(QWidget):
                 # whatever the detector found: a lift before the first cue
                 # or after the last one is not one the study asked for.
                 lifts=self._levantamientos_marcados(path),
+                # A fixed load is proposed as the one window its analysis
+                # reads, not as the detector's pieces (the final bench, B3).
+                held=(self._last_result or {}).get("load_span"),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only

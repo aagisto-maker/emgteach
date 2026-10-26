@@ -1063,5 +1063,13 @@ Detectada (MDF −27.4 %)», del ajuste general sobre los trozos pegados
 (reproducido: −13.8 Hz/s con seis trozos de 0.8 s). La ficha, el informe y los
 móviles dan ahora «No se mide (…)», como en el tren (`guided.fatigue_unmeasured`).
 
-**B3, punto 6: los fragmentos por defecto de la carga.** Propuesta a Ángel,
-pendiente de su respuesta.
+**B3, punto 6: los fragmentos por defecto de la carga.** El umbral del
+detector sigue al pico de coger el peso y queda por encima de la meseta: la
+carga salía en una docena de trozos de 0.3-1 s. Decisión de Ángel: «Seleccionar
+fragmentos» propone una sola fila, la ventana que lee el análisis (de 2 s tras
+empezar la actividad a su caída, `guided.load_span`); «Empezar de nuevo» vuelve
+a ella; lo que encuentra el detector sigue a mano y los deslizadores lo piden.
+
+**B2, punto 5: «Músculo:» en vez de «Etiquetas:»** en la práctica de un
+músculo (decisión de Ángel), para que el nombre del músculo no se escriba en el
+identificador.

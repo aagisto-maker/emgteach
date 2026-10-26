@@ -1358,6 +1358,9 @@ class AnalysisWorker(QThread):
                 result["load"] = None
                 result["load_piece"] = None
                 result["load_note"] = None
+                # The window the load is read in, in file time: what the
+                # fragment editor proposes for it.
+                result["load_span"] = tramo_carga
                 if tramo_carga and not self._roi_segments:
                     result["load"] = load_fatigue(
                         proc["emg_filtered"], fs, f_low=self._f_low, f_high=self._f_high)
@@ -1411,6 +1414,7 @@ class AnalysisWorker(QThread):
                 result["load_piece"] = None
                 result["load_note"] = None
                 result["load_ratio"] = None
+                result["load_span"] = None
                 result["rest_mv"] = None
                 result["train"] = None
                 self.log.emit(

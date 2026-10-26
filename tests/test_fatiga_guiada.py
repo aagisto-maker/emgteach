@@ -533,6 +533,47 @@ def test_the_load_chosen_in_two_pieces_is_read_on_the_longer(qapp, tmp_path: Pat
 
 
 @pytest.mark.gui
+def test_the_fragment_editor_proposes_the_load_as_one_row(qapp, tmp_path: Path) -> None:
+    """The final bench, B3 point 6: the detector's threshold followed the
+    peak of picking up the weight, stood above the load's plateau, and cut
+    the load into a dozen pieces of under a second. The editor now opens on
+    the one window the analysis reads, and «Start over» goes back to it."""
+    from emgteach.gui.widgets.fragment_selection import FragmentSelectionDialog
+
+    r = _analizar(qapp, _carga_edf(tmp_path / "e.edf"))
+    ventana = r["load_span"]
+    assert ventana is not None
+    assert ventana[0] == pytest.approx(REC_S + 8.0 + 0.5 + LOAD_SKIP_S, abs=0.2)
+
+    # A pick-up peak four times the plateau, and a plateau that wavers.
+    n = 80 * FS
+    t = np.arange(n) / FS
+    rng = np.random.default_rng(6)
+    amp = np.where((t >= 10.0) & (t < 70.0), 0.25 * (1 + 0.3 * np.sin(2 * np.pi * 0.7 * t)),
+                   0.01)
+    amp[(t >= 10.0) & (t < 10.6)] = 1.0
+    raw = rng.normal(0.0, 1.0, n) * amp
+    filtros = {"f_low": 20.0, "f_high": 450.0, "f_notch": 50.0, "f_env": 5.0}
+    dlg = FragmentSelectionDialog(raw, FS, filtros, naming=False, held=(12.6, 70.0))
+    assert dlg.selected_segments() == [pytest.approx((12.6, 70.0))]
+    dlg._set_rows([])
+    dlg._proponer()                                 # «Start over»
+    assert dlg.selected_segments() == [pytest.approx((12.6, 70.0))]
+    dlg.deleteLater()
+
+
+@pytest.mark.gui
+def test_one_muscle_names_its_box_muscle(tab) -> None:  # noqa: F811
+    """«Labels:» left a student writing the muscle in the test identifier,
+    and the channel kept the previous recording's name (the final bench)."""
+    assert tab._lbl_labels.text() == tr("Muscle:")
+    tab.apply_mode("pair", False)
+    assert tab._lbl_labels.text() == tr("Labels:")
+    tab.apply_mode("single", False)
+    assert tab._lbl_labels.text() == tr("Muscle:")
+
+
+@pytest.mark.gui
 def test_a_weak_load_is_warned_in_the_analysis(qapp, tmp_path: Path) -> None:
     """A load whose envelope barely rises over the rest, as the bench's bad
     biceps: the summary line, the report and the phones say it."""

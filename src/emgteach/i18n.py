@@ -997,6 +997,7 @@ _ES = {
     "1 (single sensor)": "1 (un sensor)",
     "2 (agonist / antagonist)": "2 (agonista / antagonista)",
     "Labels:": "Etiquetas:",
+    "Muscle:": "Músculo:",
     "Name of this channel's muscle/sensor (max. 16 characters; "
     "used as the channel label in the EDF file).":
         "Nombre del músculo/sensor de este canal (máx. 16 caracteres; "

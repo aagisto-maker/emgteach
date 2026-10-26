@@ -1213,7 +1213,11 @@ class AcquisitionTab(QWidget):
         self._box_labels = QWidget()
         labels_row = QHBoxLayout(self._box_labels)
         labels_row.setContentsMargins(0, 0, 0, 0)
-        labels_row.addWidget(QLabel(tr("Labels:")))
+        # «Muscle:» with one muscle (apply_mode): «Labels:» left a student
+        # writing the muscle in the test identifier, on the next row, and
+        # the channel kept the previous recording's name (the final bench).
+        self._lbl_labels = QLabel(tr("Labels:"))
+        labels_row.addWidget(self._lbl_labels)
         self._edit_labels: list[QLineEdit] = []
         for i in range(MAX_CHANNELS):
             edit = QLineEdit()
@@ -6046,6 +6050,8 @@ class AcquisitionTab(QWidget):
         self._edit_labels[0].setPlaceholderText(
             tr("Muscle — e.g. biceps") if mode_channels(mode) == 1
             else pair_hint(self._par, 0))
+        self._lbl_labels.setText(
+            tr("Muscle:") if mode_channels(mode) == 1 else tr("Labels:"))
         # Which pair is a question only the pair practical asks.
         for w in (self._lbl_par, self._combo_par):
             w.setVisible(self._mode == MODE_PAIR)

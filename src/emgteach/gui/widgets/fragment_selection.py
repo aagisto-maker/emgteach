@@ -215,6 +215,7 @@ class FragmentSelectionDialog(QDialog):
         default_k: float | None = None,
         expected: Sequence[int] | None = None,
         lifts: Sequence[tuple[float, float]] | None = None,
+        held: tuple[float, float] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -286,6 +287,9 @@ class FragmentSelectionDialog(QDialog):
         self._esperadas_iniciales = tuple(int(n) for n in (expected or ()))
         #: The wizard's lift windows, when the recording has them.
         self._lifts = [(float(a), float(b)) for a, b in (lifts or ())]
+        #: The fixed load the fatigue session held, as its analysis reads it
+        #: (guided.load_span), when the recording is one: the proposal.
+        self._held = (float(held[0]), float(held[1])) if held else None
 
         # Envelope for the preview (downsampled when drawing).
         self._env = self._envolvente(self._raw)
@@ -317,7 +321,26 @@ class FragmentSelectionDialog(QDialog):
                 for i, (a, b) in enumerate(segments)
             ])
         else:
+            self._proponer()
+
+    def _proponer(self) -> None:
+        """What the dialog opens on, and what «Start over» goes back to.
+
+        A fixed load is one row, the window its analysis reads: from 2 s
+        after the activity begins to where it falls (guided.load_span). The
+        detector, whose threshold follows the highest peak, put it above
+        the load's plateau — lifted by the picking up of the weight — and
+        cut the load into a dozen pieces of under a second, none of which
+        could be read (the final bench, B3). What it finds is still there to
+        promote, and moving a slider still asks it.
+        """
+        if self._held is None:
             self._auto_suggest()
+            return
+        self._timer.stop()
+        self._revisadas.clear()
+        self._buscar_candidatos()
+        self._set_rows([Segment(self._held[0], self._held[1], reason="session")])
 
     def _envolvente(self, raw: np.ndarray | None):
         """The envelope of a channel, or None when there is no channel."""
@@ -387,6 +410,7 @@ class FragmentSelectionDialog(QDialog):
         default_k: float | None = None,
         expected: Sequence[int] | None = None,
         lifts: Sequence[tuple[float, float]] | None = None,
+        held: tuple[float, float] | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
@@ -408,6 +432,7 @@ class FragmentSelectionDialog(QDialog):
             default_k=default_k,
             expected=expected,
             lifts=lifts,
+            held=held,
             parent=parent,
         )
 
@@ -497,7 +522,7 @@ class FragmentSelectionDialog(QDialog):
         self._btn_auto.setToolTip(
             tr("Discard the changes and go back to what the app proposed.")
         )
-        self._btn_auto.clicked.connect(self._auto_suggest)
+        self._btn_auto.clicked.connect(self._proponer)
         btn_row.addWidget(self._btn_auto)
         self._btn_add = QPushButton(tr("Add fragment"))
         self._btn_add.setToolTip(
