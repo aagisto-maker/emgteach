@@ -134,9 +134,10 @@ def _resumen_movil_carga(carga, relacion: float | None = None) -> dict | None:
             "ratio": redondo(relacion, 1)}
 
 
-def _resumen_tren(tren) -> str:
+def _resumen_tren(tren, trozo: tuple[float, float] | None = None) -> str:
     """The quick contractions in one line: how many, the peaks, the floor,
-    and how much of the floor the measure itself leaves at that rate."""
+    and how much of the floor the measure itself leaves at that rate; and
+    the stretch they were read on, when fragments were chosen."""
     partes = [tr("{n} contractions, {rate:.1f}/s").format(n=tren.n, rate=tren.rate_hz)]
     if tren.peak_change_pct is not None:
         partes.append(tr("peaks {pct:+.0f} %").format(pct=tren.peak_change_pct))
@@ -145,6 +146,9 @@ def _resumen_tren(tren) -> str:
             a=tren.floor_start_pct, b=tren.floor_end_pct))
     partes.append(tr("the measure alone leaves {pct:.0f} %").format(
         pct=tren.processing_floor_pct))
+    if trozo is not None:
+        partes.append(tr("from the first to the last fragment, {a:.1f}–{b:.1f} s").format(
+            a=trozo[0], b=trozo[1]))
     return tr("Quick contractions") + "  ·  " + "  ·  ".join(partes)
 
 
@@ -1165,8 +1169,10 @@ class AnalysisTab(QWidget):
         self._carga = None
         self._carga_trozo: tuple[float, float] | None = None
         self._carga_nota: str | None = None
-        #: The quick contractions' train, when it is one.
+        #: The quick contractions' train, when it is one; why there is none
+        #: when the chosen fragments do not cover it.
         self._tren = None
+        self._tren_nota: str | None = None
         #: Where the view choice is kept: one key for recordings with loads
         #: (the kinematics practical), another for the rest.
         self._clave_vista = "analysis/contr_view"
@@ -1460,9 +1466,11 @@ class AnalysisTab(QWidget):
                 # whatever the detector found: a lift before the first cue
                 # or after the last one is not one the study asked for.
                 lifts=self._levantamientos_marcados(path),
-                # A fixed load is proposed as the one window its analysis
-                # reads, not as the detector's pieces (the final bench, B3).
-                held=(self._last_result or {}).get("load_span"),
+                # A fixed load or a train is proposed as the one window its
+                # analysis reads, not as the detector's pieces (the final
+                # bench, B3; the bench with exe #139, B2).
+                session_window=((self._last_result or {}).get("load_span")
+                                or (self._last_result or {}).get("train_span")),
                 parent=self,
             )
         except Exception as exc:  # pragma: no cover — GUI feedback only
@@ -2049,8 +2057,10 @@ class AnalysisTab(QWidget):
         hay_carga = carga is not None or self._carga_nota is not None
         tren = result.get("train")
         self._tren = tren
+        self._tren_nota = result.get("train_note")
+        hay_tren = tren is not None or self._tren_nota is not None
         vistas = (["steps"] if pasos else ["mdf_time"] if hay_carga
-                  else ["train"] if tren is not None else [])
+                  else ["train"] if hay_tren else [])
         vistas.append("relation")
         if dos:
             vistas += ["category", "dominance"]
@@ -2068,7 +2078,7 @@ class AnalysisTab(QWidget):
             self._clave_vista, defecto = "analysis/contr_view_grad", "steps"
         elif hay_carga:
             self._clave_vista, defecto = "analysis/contr_view_load", "mdf_time"
-        elif tren is not None:
+        elif hay_tren:
             self._clave_vista, defecto = "analysis/contr_view_train", "train"
         elif con_cargas:
             self._clave_vista, defecto = "analysis/contr_view_kin", "load"
@@ -2087,7 +2097,9 @@ class AnalysisTab(QWidget):
         elif self._carga_nota:
             resumen = self._carga_nota
         if tren is not None:
-            resumen = _resumen_tren(tren)
+            resumen = _resumen_tren(tren, result.get("train_piece"))
+        elif self._tren_nota:
+            resumen = self._tren_nota
         emd = result.get("emd_ms_mean")
         if emd is not None:
             resumen += "  ·  " + tr("mean electromechanical delay {ms:.0f} ms").format(ms=emd)
@@ -2123,7 +2135,8 @@ class AnalysisTab(QWidget):
                 draw_load_chart(self._fig_contr, self._carga, small=True,
                                 piece=self._carga_trozo, note=self._carga_nota)
             else:
-                draw_train_chart(self._fig_contr, self._tren, small=True)
+                draw_train_chart(self._fig_contr, self._tren, small=True,
+                                 note=self._tren_nota)
             self._pedir_espacio(self._canvas_contr)
             self._canvas_contr.draw_idle()
             return

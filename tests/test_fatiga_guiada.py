@@ -554,7 +554,8 @@ def test_the_fragment_editor_proposes_the_load_as_one_row(qapp, tmp_path: Path) 
     amp[(t >= 10.0) & (t < 10.6)] = 1.0
     raw = rng.normal(0.0, 1.0, n) * amp
     filtros = {"f_low": 20.0, "f_high": 450.0, "f_notch": 50.0, "f_env": 5.0}
-    dlg = FragmentSelectionDialog(raw, FS, filtros, naming=False, held=(12.6, 70.0))
+    dlg = FragmentSelectionDialog(raw, FS, filtros, naming=False,
+                                  session_window=(12.6, 70.0))
     assert dlg.selected_segments() == [pytest.approx((12.6, 70.0))]
     dlg._set_rows([])
     dlg._proponer()                                 # «Start over»

@@ -79,6 +79,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QFontMetrics
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -141,6 +142,16 @@ _COUNT_OFF = "#B9770E"
 #: the muscle's colour, with white text.
 _PULSADO_MANTENER = ("#E3F1E6", "#1B5E20", "#2E7D32")
 _PULSADO_ELIMINAR = ("#ECEFF1", "#37474F", "#607D8B")
+
+
+def _ancho_en_negrita(boton: QPushButton) -> None:
+    """Room for the text in bold: a pressed button turns bold, and sized
+    for the regular text it cut the first letter of «Descartar» (the
+    bench with exe #139)."""
+    negrita = boton.font()
+    negrita.setBold(True)
+    # The padding of _estilo_boton (12 px each side), its border, and a margin.
+    boton.setMinimumWidth(QFontMetrics(negrita).horizontalAdvance(boton.text()) + 2 * 12 + 2 + 8)
 
 
 def _estilo_boton(pulsado: tuple[str, str, str] | None = None) -> str:
@@ -215,7 +226,7 @@ class FragmentSelectionDialog(QDialog):
         default_k: float | None = None,
         expected: Sequence[int] | None = None,
         lifts: Sequence[tuple[float, float]] | None = None,
-        held: tuple[float, float] | None = None,
+        session_window: tuple[float, float] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -287,9 +298,11 @@ class FragmentSelectionDialog(QDialog):
         self._esperadas_iniciales = tuple(int(n) for n in (expected or ()))
         #: The wizard's lift windows, when the recording has them.
         self._lifts = [(float(a), float(b)) for a, b in (lifts or ())]
-        #: The fixed load the fatigue session held, as its analysis reads it
-        #: (guided.load_span), when the recording is one: the proposal.
-        self._held = (float(held[0]), float(held[1])) if held else None
+        #: The window a guided session's view reads, when one is the whole
+        #: of it: the fixed load (guided.load_span) or the train of quick
+        #: contractions (guided.train_span). The proposal is that one row.
+        self._ventana_sesion = ((float(session_window[0]), float(session_window[1]))
+                                if session_window else None)
 
         # Envelope for the preview (downsampled when drawing).
         self._env = self._envolvente(self._raw)
@@ -331,16 +344,20 @@ class FragmentSelectionDialog(QDialog):
         detector, whose threshold follows the highest peak, put it above
         the load's plateau — lifted by the picking up of the weight — and
         cut the load into a dozen pieces of under a second, none of which
-        could be read (the final bench, B3). What it finds is still there to
-        promote, and moving a slider still asks it.
+        could be read (the final bench, B3). A train of quick contractions
+        is one row too, from its first contraction to its last
+        (guided.train_span): the detector made one row per contraction
+        (the bench with exe #139). What it finds is still there to promote,
+        and moving a slider still asks it.
         """
-        if self._held is None:
+        if self._ventana_sesion is None:
             self._auto_suggest()
             return
         self._timer.stop()
         self._revisadas.clear()
         self._buscar_candidatos()
-        self._set_rows([Segment(self._held[0], self._held[1], reason="session")])
+        a, b = self._ventana_sesion
+        self._set_rows([Segment(a, b, reason="session")])
 
     def _envolvente(self, raw: np.ndarray | None):
         """The envelope of a channel, or None when there is no channel."""
@@ -410,7 +427,7 @@ class FragmentSelectionDialog(QDialog):
         default_k: float | None = None,
         expected: Sequence[int] | None = None,
         lifts: Sequence[tuple[float, float]] | None = None,
-        held: tuple[float, float] | None = None,
+        session_window: tuple[float, float] | None = None,
         parent: QWidget | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
@@ -432,7 +449,7 @@ class FragmentSelectionDialog(QDialog):
             default_k=default_k,
             expected=expected,
             lifts=lifts,
-            held=held,
+            session_window=session_window,
             parent=parent,
         )
 
@@ -720,6 +737,7 @@ class FragmentSelectionDialog(QDialog):
             tr("Keep this contraction in the analysis and go on to the next.")
         )
         self._btn_mantener.clicked.connect(self._mantener)
+        _ancho_en_negrita(self._btn_mantener)
         nav.addWidget(self._btn_mantener)
         self._btn_eliminar = QPushButton(tr("Drop it"))
         self._btn_eliminar.setCheckable(True)
@@ -729,6 +747,7 @@ class FragmentSelectionDialog(QDialog):
             "It stays on the plot, hatched, and «Keep it» brings it back."
         ))
         self._btn_eliminar.clicked.connect(self._eliminar)
+        _ancho_en_negrita(self._btn_eliminar)
         nav.addWidget(self._btn_eliminar)
         self._btn_dividir = QPushButton(tr("Split it"))
         self._btn_dividir.setStyleSheet(_estilo_boton())
@@ -751,6 +770,7 @@ class FragmentSelectionDialog(QDialog):
                 b.setStyleSheet(_estilo_boton((color, "#FFFFFF", color)))
                 b.setToolTip(tr("Name this contraction and go on to the next."))
                 b.clicked.connect(lambda _c=False, n=nombre: self._etiquetar(n))
+                _ancho_en_negrita(b)
                 nav.addWidget(b)
                 self._btns_nombre[nombre] = b
         nav.addStretch()

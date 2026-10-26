@@ -2578,6 +2578,10 @@ _ES = {
         'Señal débil: el esfuerzo apenas supera el reposo (×{x:.1f}). Revise el contacto de los electrodos o use un peso mayor.',
     'Not measured (the chosen fragments keep less than 3 s of the held load)':
         'No se mide (los fragmentos elegidos conservan menos de 3 s de la carga sostenida)',
+    'The chosen fragments do not cover the train: choose them from its first contraction to its last, or the whole recording, to see it.':
+        'Los fragmentos elegidos no cubren el tren: elíjalos de su primera contracción a la última, o el registro entero, para verlo.',
+    'from the first to the last fragment, {a:.1f}–{b:.1f} s':
+        'del primer al último fragmento, {a:.1f}–{b:.1f} s',
     'MDF over time':
         'MDF en el tiempo',
     'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %, R² {r2:.2f})':

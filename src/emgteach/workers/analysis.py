@@ -44,6 +44,7 @@ from emgteach.force_velocity import (
 from emgteach.guided import (
     MARGIN_S,
     effort_ratio,
+    fragments_hull,
     gradation_steps,
     load_fatigue,
     load_piece,
@@ -51,6 +52,7 @@ from emgteach.guided import (
     measured_windows,
     rapid_train,
     rest_level,
+    train_span,
 )
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -381,9 +383,13 @@ class AnalysisWorker(QThread):
         analysis takes by default, so its windows, its MDF line and its
         verdict are the held contraction's (guided.load_span) and not the
         rests' around it, nor the picking up of the weight. One extra pass of
-        the DSP over the whole file, only for that session."""
-        if (sesion is None or sesion.family != "HOLD"
-                or sesion.params.get("mode") != "load"):
+        the DSP over the whole file, only for that session and for the quick
+        contractions, whose train is read on it when fragments are chosen
+        (guided.fragments_hull) and proposed as one fragment (guided.train_span)."""
+        carga = (sesion is not None and sesion.family == "HOLD"
+                 and sesion.params.get("mode") == "load")
+        tren = sesion is not None and sesion.family == "FAST"
+        if not (carga or tren):
             return None
         todo = process_offline(
             emg_raw, fs, f_low=self._f_low, f_high=self._f_high,
@@ -395,6 +401,9 @@ class AnalysisWorker(QThread):
         # they keep, out of the whole file's filtered signal (no cut edges).
         self._filtrado_sesion: np.ndarray | None = todo["emg_filtered"]
         self._envolvente_sesion: np.ndarray | None = env
+        if tren:
+            self._tramo_tren: tuple[float, float] | None = train_span(sesion, env, fs)
+            return None
         self._reposo_sesion = rest_level(sesion, env, fs)
         return load_span(sesion, env, fs)
 
@@ -551,6 +560,7 @@ class AnalysisWorker(QThread):
             self._reposo_sesion = None
             self._filtrado_sesion = None
             self._envolvente_sesion = None
+            self._tramo_tren = None
             tramo_carga = self._carga_sostenida(sesion, emg_raw, fs)
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
@@ -1348,8 +1358,30 @@ class AnalysisWorker(QThread):
                 if result["grad_steps"]:
                     self.log.emit(tr("Graded contractions: {n} steps measured.").format(
                         n=len(result["grad_steps"])))
-                result["train"] = rapid_train(
-                    sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
+                # The train, and the window the fragment editor proposes for
+                # it. With fragments chosen, from the first to the last of
+                # them inside it, read on the whole file: glued, fragments
+                # chosen one per contraction keep no rest between them, and
+                # the floor and the rate are measured there.
+                result["train_span"] = self._tramo_tren
+                result["train_piece"] = None
+                result["train_note"] = None
+                tramo_tren = (fragments_hull(sesion, [(b[2], b[3]) for b in bounds], "train")
+                              if self._roi_segments and self._filtrado_sesion is not None
+                              else None)
+                if tramo_tren is not None and self._filtrado_sesion is not None:
+                    result["train"] = rapid_train(
+                        sesion, [(tramo_tren[0], tramo_tren[1], tramo_tren[0])], fs=fs,
+                        emg_filtered=self._filtrado_sesion)
+                    result["train_piece"] = tramo_tren
+                else:
+                    result["train"] = rapid_train(
+                        sesion, piezas, fs=fs, emg_filtered=proc["emg_filtered"])
+                if (result["train"] is None and self._roi_segments
+                        and sesion is not None and sesion.family == "FAST"):
+                    result["train_note"] = tr(
+                        "The chosen fragments do not cover the train: choose them from its "
+                        "first contraction to its last, or the whole recording, to see it.")
                 # The held load is the analysed span itself (_carga_sostenida):
                 # its spectrum window by window, its lines and its verdict,
                 # which is the summary's too. With fragments chosen, the
@@ -1415,6 +1447,9 @@ class AnalysisWorker(QThread):
                 result["load_note"] = None
                 result["load_ratio"] = None
                 result["load_span"] = None
+                result["train_span"] = None
+                result["train_piece"] = None
+                result["train_note"] = None
                 result["rest_mv"] = None
                 result["train"] = None
                 self.log.emit(

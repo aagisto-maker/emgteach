@@ -1073,3 +1073,30 @@ a ella; lo que encuentra el detector sigue a mano y los deslizadores lo piden.
 **B2, punto 5: «Músculo:» en vez de «Etiquetas:»** en la práctica de un
 músculo (decisión de Ángel), para que el nombre del músculo no se escriba en el
 identificador.
+
+## 14. Banco con el exe #139 (abee80a)
+
+M1, B1 (cinco escalones con y sin fragmentos, 17/25/37/63/71 %) y B3 (una fila,
+16.1-103.7 s; vista y ficha coinciden), bien.
+
+**B2: con fragmentos, la vista «Tren» seguía desapareciendo.** Con el tren de
+las 19:38 (`antebrazo_id_rapidas_2026-10-26_19-38-30.edf`, abierto con permiso
+de Ángel), «Seleccionar fragmentos» proponía 20 filas, una por contracción, casi
+pegadas; ninguna llegaba al 60 % de la franja y el tren se descartaba. Arreglo,
+como en la carga: el editor propone una fila con la ventana del tren
+(`guided.train_span`: 14.11-25.13 s), y con fragmentos elegidos el tren se mide
+del primero al último dentro de la franja (`guided.fragments_hull`), sobre la
+señal del archivo y no sobre los trozos pegados, que pierden el reposo entre
+contracciones. Con la propuesta, con los 20 trocitos o con los 16 del tren: 22
+contracciones a 1.9/s, 11.0 s, suelo 8 %, como sin fragmentos. Si cubren menos
+del 60 %, la vista lo avisa en lugar de desaparecer.
+
+Menor: los botones del editor que se pulsan pasan a negrita, y «Descartar»
+perdía la primera letra; ahora miden lo que pide el texto en negrita.
+
+**Para la 3.10.1** (Ángel, no ahora):
+- gradación con pico de arranque: texto «Suba despacio hasta la marca (1-2 s) y
+  manténgala», objetivo en rampa en la barra y nivel medido desde +1.5 s;
+- fatiga: la línea dice «MDF −10 % a los 74 s» con el veredicto «bajó menos de
+  un 10 %»: marcar el −10 % solo si lo alcanza la recta o se mantiene;
+- guion 1c: un peso que no se pueda sostener más de 60-90 s.

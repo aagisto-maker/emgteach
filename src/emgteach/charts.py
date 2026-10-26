@@ -711,22 +711,25 @@ def _p_texto(p: float) -> str:
     return "< 0.001" if p < 0.001 else f"= {p:.3f}"
 
 
-def draw_train_chart(fig, train: Any, *, small: bool = False) -> None:
+def draw_train_chart(fig, train: Any, *, small: bool = False,
+                     note: str | None = None) -> None:
     """The quick contractions: the 50 ms RMS, its peaks and its floor.
 
     ``train`` is :class:`emgteach.guided.TrainResult`. The trace over the
     train, a dot on each peak and a line through the floors between them,
     and the rest level before the train as a dashed line. The title says how
     much the peaks rose and how far above rest the floor stayed, and how much
-    of that floor the measure itself leaves at this rate.
+    of that floor the measure itself leaves at this rate. With no train,
+    *note* says why.
     """
     fig.clear()
     fs = 7 if small else 8
     ax = fig.add_subplot(111)
     if train is None or not train.peaks_mv:
         ax.set_axis_off()
-        ax.text(0.5, 0.5, tr("No contractions"), ha="center", va="center",
-                fontsize=fs, color="#888888", transform=ax.transAxes)
+        ax.text(0.5, 0.5, note or tr("No contractions"), ha="center", va="center",
+                fontsize=fs, color="#8A5A00" if note else "#888888",
+                transform=ax.transAxes, wrap=True)
         return
     ax.plot(train.t, train.rms, color=COLOUR_1, lw=0.7, zorder=2)
     ax.plot(train.peak_times, train.peaks_mv, "o", color=COLOUR_1, ms=3, zorder=3,
