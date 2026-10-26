@@ -977,8 +977,29 @@ Correcciones de Ángel sobre la #146 (26 de octubre, tarde): la colocación del
 bíceps dice desde qué extremo (1/3 desde la fosa del codo, SENIAM), y **con
 fragmentos elegidos la vista de la carga sigue** (el punto 7 de §11.2): se lee
 en el trozo más largo de la carga que conservan los fragmentos, y si ninguno
-conserva 3 s, la vista y el informe lo avisan. El umbral del aviso de reposo
-queda pendiente de su decisión, con las cifras de los dos registros del bíceps.
+conserva 3 s, la vista y el informe lo avisan.
+
+**El aviso de mala señal**, medido en los dos registros del bíceps (el bueno,
+`biceps_2026-10-26_12-21-27.edf`, y el malo, `_12-13-27.edf`, abiertos con
+permiso de Ángel):
+
+| | bueno | malo |
+|---|---|---|
+| reposo (mediana de la envolvente) | 0.019 mV | 0.022 mV |
+| 50 Hz en reposo | 0.0075 mV | 0.0081 mV |
+| pico de 50 Hz / mediana del espectro, registro entero | 38× | 83× |
+| pico de 50 Hz / mediana, solo el reposo | 126× | 44× |
+| esfuerzo / reposo, tramo de la carga | 3.7 | 1.5 |
+| esfuerzo / reposo, segundos 2 a 5 (en vivo) | 4.1 | 1.1 |
+| fatiga | MDF −17 %, p 4·10⁻¹⁷ | MDF −1 %, p 0.54 |
+
+El 50 Hz es el mismo en los dos: el pico del malo es mayor solo porque su EMG
+es débil, y en el reposo la proporción se invierte. Lo que los separa es la
+relación esfuerzo/reposo. Decisión de Ángel: **aviso de señal débil por debajo
+de ×2** («Señal débil: el esfuerzo apenas supera el reposo (×1.5). Revise el
+contacto de los electrodos o use un peso mayor.»), en vivo a los 5 s y en el
+análisis; **reposo alto a 0.03 mV**, solo como comprobación gruesa; el pico de
+50 Hz, fuera.
 
 De §11.2 sigue abierto el 8 (el detector parte una contracción larga en trozos si el
 reposo es corto; el tramo de la carga no depende de él, la tabla sí) y el 9.

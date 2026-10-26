@@ -40,6 +40,9 @@ from emgteach.selection import Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
 
 __all__ = [
+    "LOAD_MIN_RATIO",
+    "LOAD_RATIO_AT_S",
+    "LOAD_RATIO_FROM_S",
     "LOAD_SKIP_S",
     "MARGIN_S",
     "RELEASE_S",
@@ -51,6 +54,7 @@ __all__ = [
     "TrainResult",
     "Trend",
     "change_pct",
+    "effort_ratio",
     "gradation_reference_text",
     "gradation_steps",
     "is_monotonic",
@@ -65,6 +69,7 @@ __all__ = [
     "rest_level",
     "spans_in_analysis_time",
     "time_to_decline",
+    "weak_signal_warning",
 ]
 
 #: Seconds at the start of each step left out of its level: the reach.
@@ -292,9 +297,21 @@ LOAD_BLOCK_S = 5.0
 #: and an R² of 0.3 — a real fall under a spectrum's own scatter.
 LOAD_MAX_P = 0.01
 LOAD_MIN_FALL_PCT = 10.0
-#: A rest above this before the effort, mV, says the electrodes' contact is
-#: poor (the bench's biceps rested at 0.028 mV).
-REST_WARN_MV = 0.01
+#: A rest above this before the effort, mV, says an electrode is loose. A
+#: coarse check only (Ángel, 26 October 2026): the bench's two biceps rested
+#: at 0.019 and 0.022 mV (envelope medians), the good one and the bad one
+#: alike; what told them apart is the next.
+REST_WARN_MV = 0.03
+#: The held load's envelope over the rest's, below which the signal is too
+#: weak to read fatigue in: the bench's good biceps held at 3.7 times its
+#: rest (4.1 in the effort's seconds 2 to 5, what is checked live), the bad
+#: one at 1.5 (1.1), with the same mains in both. Not the 50 Hz peak against
+#: the spectrum: it was the same mains, and the bad one's ratio was higher
+#: only because its EMG was weak.
+LOAD_MIN_RATIO = 2.0
+#: The live check: the envelope from this second of the effort to the next.
+LOAD_RATIO_FROM_S = 2.0
+LOAD_RATIO_AT_S = 5.0
 
 
 def time_to_decline(t, values, pct: float, *, base_n: int = 3,
@@ -481,6 +498,28 @@ def load_piece(span: tuple[float, float] | None,
     cruces = [(max(a, span[0]), min(b, span[1])) for a, b in pieces]
     cruces = [(a, b) for a, b in cruces if b - a >= 3 * LOAD_WIN_S]
     return max(cruces, key=lambda c: c[1] - c[0]) if cruces else None
+
+
+def effort_ratio(effort_envelope, rest_mv: float | None) -> float | None:
+    """How many times the rest the held effort's envelope is (its median)."""
+    env = np.asarray(effort_envelope, dtype=np.float64)
+    if rest_mv is None or rest_mv <= 0 or env.size == 0:
+        return None
+    return float(np.median(env)) / float(rest_mv)
+
+
+def weak_signal_warning(ratio: float | None) -> str | None:
+    """The warning for an effort that barely rises above the rest, or ``None``.
+
+    Two causes, and the student can tell which: a poor contact, or a weight
+    too light for the muscle to work at a level the electrodes see.
+    """
+    from emgteach.i18n import tr
+
+    if ratio is None or ratio >= LOAD_MIN_RATIO:
+        return None
+    return tr("Weak signal: the effort barely exceeds the rest (×{x:.1f}). Check the "  # noqa: RUF001
+              "electrodes' contact or use a heavier weight.").format(x=ratio)
 
 
 def rest_level(session: GuidedSession | None, envelope, fs: float) -> float | None:

@@ -461,8 +461,12 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   alcanzar): el panel da los segundos que quedan. El texto pide respirar
   normalmente. **La barra espaciadora, o el botón «No puedo más (Espacio)», termina
   el esfuerzo antes de tiempo**; la marca de su final lo dice y la sesión pasa al
-  último reposo. Si el reposo del principio supera 0.01 mV, el panel y el registro
-  de eventos avisan de que el contacto de los electrodos es malo.
+  último reposo. Dos avisos, en el panel y en el registro de eventos, que no paran
+  nada: si la envolvente de la carga, de su segundo 2 al 5, no llega al **doble
+  del reposo** medido antes, «Señal débil: el esfuerzo apenas supera el reposo
+  (×1.5). Revise el contacto de los electrodos o use un peso mayor.» (también en
+  la línea de resumen, el informe y los móviles); y si el reposo supera 0.03 mV,
+  que un electrodo está suelto.
   En Análisis, el tramo analizado empieza **2 s después de que empiece la
   actividad** (coger el peso no es la contracción que fatiga) y acaba donde la
   actividad cae o termina la marca del esfuerzo. Se calculan la MDF y la MNF en

@@ -116,6 +116,9 @@ const M = {
   mLoadR2:           ["MDF line, R²",                      "Recta de la MDF, R²"],
   mLoadRms:          ["RMS, start → end of its line",      "RMS, inicio → final de su recta"],
   mLoadT10:          ["MDF −10 % at",                      "MDF −10 % a los"],
+  mLoadRatio:        ["Effort / rest",                     "Esfuerzo / reposo"],
+  mLoadWeak:         ["weak signal: check the contact or use a heavier weight",
+                      "señal débil: revise el contacto o use un peso mayor"],
   mNever:            ["not reached",                       "no se alcanza"],
   mTrain:            ["Quick contractions",                "Contracciones rápidas"],
   mTrainPeaks:       ["Peaks, first → last third",         "Picos, primer → último tercio"],
@@ -323,6 +326,11 @@ function showResults(m) {
     if (m.load.r2 != null) items.push([t("mLoadR2"), m.load.r2]);
     items.push([t("mLoadRms"), signo(m.load.rms)],
                [t("mLoadT10"), m.load.t10 == null ? t("mNever") : m.load.t10 + " s"]);
+    if (m.load.ratio != null) {
+      const debil = m.load.ratio < 2;
+      items.push([t("mLoadRatio"), (debil ? `<b style="color:var(--dang)">` : "") + "×" + m.load.ratio
+                  + (debil ? ` <small>(${t("mLoadWeak")})</small></b>` : "")]);
+    }
   }
   if (m.train) {
     const tr_ = m.train;

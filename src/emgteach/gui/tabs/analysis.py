@@ -84,10 +84,12 @@ def _en_dos_lineas(texto: str) -> str:
 
 
 def _resumen_carga(carga, reposo_mv: float | None,
-                   trozo: tuple[float, float] | None = None) -> str:
+                   trozo: tuple[float, float] | None = None,
+                   relacion: float | None = None) -> str:
     """The fixed load in one line: the MDF's line, the RMS's, and when the
     MDF had fallen 10 %; the fragment it was read on, when fragments were
-    chosen; and a warning when the rest before was high."""
+    chosen; and a warning when the rest before was high, or when the effort
+    barely rose above it."""
     partes = []
     tend = carga.mdf_trend
     if tend is not None:
@@ -108,10 +110,13 @@ def _resumen_carga(carga, reposo_mv: float | None,
     if reposo_mv is not None and reposo_mv > REST_WARN_MV:
         texto += "  ·  " + tr("High rest ({mv:.3f} mV): check the electrodes' contact.").format(
             mv=reposo_mv)
+    debil = weak_signal_warning(relacion)
+    if debil:
+        texto += "  ·  " + debil
     return texto
 
 
-def _resumen_movil_carga(carga) -> dict | None:
+def _resumen_movil_carga(carga, relacion: float | None = None) -> dict | None:
     """A fixed load for the phones: seconds, changes in %, the −10 % time."""
     if carga is None:
         return None
@@ -124,7 +129,9 @@ def _resumen_movil_carga(carga) -> dict | None:
 
     return {"secs": redondo(carga.seconds), "mdf": cambio(carga.mdf_trend),
             "rms": cambio(carga.rms_trend), "t10": redondo(carga.t_mdf_10),
-            "r2": None if carga.mdf_trend is None else redondo(carga.mdf_trend.r2, 2)}
+            "r2": None if carga.mdf_trend is None else redondo(carga.mdf_trend.r2, 2),
+            # The held effort over the rest; the phones warn below 2.
+            "ratio": redondo(relacion, 1)}
 
 
 def _resumen_tren(tren) -> str:
@@ -292,6 +299,7 @@ from emgteach.guided import (
     gradation_reference_text,
     is_monotonic,
     mdf_trend_applies,
+    weak_signal_warning,
 )
 from emgteach.i18n import tr
 from emgteach.io import (
@@ -2071,7 +2079,8 @@ class AnalysisTab(QWidget):
                 tr("each step above the last") if is_monotonic(pasos)
                 else tr("not every step above the last"))
         if carga is not None:
-            resumen = _resumen_carga(carga, result.get("rest_mv"), self._carga_trozo)
+            resumen = _resumen_carga(carga, result.get("rest_mv"), self._carga_trozo,
+                                     result.get("load_ratio"))
         elif self._carga_nota:
             resumen = self._carga_nota
         if tren is not None:
@@ -2271,7 +2280,7 @@ class AnalysisTab(QWidget):
             "steps": [[round(p.target_pct), round(p.held_pct)]
                       for p in (r.get("grad_steps") or []) if p.held_pct is not None],
             # The fixed load held: where MDF and RMS went, and when.
-            "load": _resumen_movil_carga(r.get("load")),
+            "load": _resumen_movil_carga(r.get("load"), r.get("load_ratio")),
             "train": _resumen_movil_tren(r.get("train")),
         })
 

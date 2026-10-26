@@ -43,6 +43,7 @@ from emgteach.force_velocity import (
 )
 from emgteach.guided import (
     MARGIN_S,
+    effort_ratio,
     gradation_steps,
     load_fatigue,
     load_piece,
@@ -393,6 +394,7 @@ class AnalysisWorker(QThread):
         # Kept for chosen fragments: the load is then read on the piece of it
         # they keep, out of the whole file's filtered signal (no cut edges).
         self._filtrado_sesion: np.ndarray | None = todo["emg_filtered"]
+        self._envolvente_sesion: np.ndarray | None = env
         self._reposo_sesion = rest_level(sesion, env, fs)
         return load_span(sesion, env, fs)
 
@@ -548,6 +550,7 @@ class AnalysisWorker(QThread):
             full_duration = float(times[-1])
             self._reposo_sesion = None
             self._filtrado_sesion = None
+            self._envolvente_sesion = None
             tramo_carga = self._carga_sostenida(sesion, emg_raw, fs)
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
@@ -1372,6 +1375,16 @@ class AnalysisWorker(QThread):
                             f_low=self._f_low, f_high=self._f_high)
                         result["load_piece"] = trozo
                 result["rest_mv"] = self._reposo_sesion
+                # How far the held effort rose above that rest, over the
+                # stretch the load was read on: below guided.LOAD_MIN_RATIO
+                # the signal is too weak to read fatigue in.
+                result["load_ratio"] = None
+                leida = result["load_piece"] or (
+                    tramo_carga if result["load"] is not None else None)
+                if leida is not None and self._envolvente_sesion is not None:
+                    result["load_ratio"] = effort_ratio(
+                        self._envolvente_sesion[round(leida[0] * fs):round(leida[1] * fs)],
+                        self._reposo_sesion)
                 carga = result["load"]
                 if carga is not None and carga.mdf_trend is not None:
                     # The summary card and the report read the held load's
@@ -1397,6 +1410,7 @@ class AnalysisWorker(QThread):
                 result["load"] = None
                 result["load_piece"] = None
                 result["load_note"] = None
+                result["load_ratio"] = None
                 result["rest_mv"] = None
                 result["train"] = None
                 self.log.emit(

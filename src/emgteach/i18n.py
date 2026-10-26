@@ -2573,6 +2573,8 @@ _ES = {
         'en el fragmento {a:.1f}–{b:.1f} s',
     'Fragments were chosen: the load is read on the longest piece of it they keep, {a:.1f}–{b:.1f} s of the recording.':
         'Se eligieron fragmentos: la carga se lee en el trozo más largo de ella que conservan, {a:.1f}–{b:.1f} s del registro.',
+    "Weak signal: the effort barely exceeds the rest (×{x:.1f}). Check the electrodes' contact or use a heavier weight.":
+        'Señal débil: el esfuerzo apenas supera el reposo (×{x:.1f}). Revise el contacto de los electrodos o use un peso mayor.',
     'MDF over time':
         'MDF en el tiempo',
     'MDF {a:.0f} → {b:.0f} Hz ({pct:+.0f} %, R² {r2:.2f})':

@@ -89,7 +89,13 @@ from emgteach.gui.widgets.manual_marker import (
     hand_the_m_over,
 )
 from emgteach.gui.widgets.mvc_overlay import MvcOverlay
-from emgteach.guided import REST_WARN_MV
+from emgteach.guided import (
+    LOAD_RATIO_AT_S,
+    LOAD_RATIO_FROM_S,
+    REST_WARN_MV,
+    effort_ratio,
+    weak_signal_warning,
+)
 from emgteach.i18n import tr
 from emgteach.io import (
     RecordingMetadata,
@@ -778,6 +784,12 @@ class AcquisitionTab(QWidget):
         self._sesion_hechas = 0
         self._sesion_en_esfuerzo = False
         self._sesion_reposo: list[float] = []
+        #: The rest the session measured (mV), the held effort's envelope
+        #: from its second 2 to 5, and the weak-signal warning once checked.
+        self._sesion_reposo_mv: float | None = None
+        self._sesion_esfuerzo_env: list[float] = []
+        self._senal_revisada = False
+        self._aviso_senal: str | None = None
         #: Why the running session is being stopped: «esc» or «stop».
         self._session_motivo = ""
         #: Blocks of data seen while the flow was armed and could not start.
@@ -4261,6 +4273,10 @@ class AcquisitionTab(QWidget):
             [_CHANNEL_COLORS[0]] * sum(1 for f in script.phases
                                        if f.kind == EFFORT and f.opens))
         self._sesion_reposo = []
+        self._sesion_reposo_mv = None
+        self._sesion_esfuerzo_env = []
+        self._senal_revisada = False
+        self._aviso_senal = None
         cue.set_tone_report(self._tono_informado.emit)
         self._btn_cancelar_guia.setVisible(True)
         self._log(tr("Guided session started: {title}. Esc stops it.").format(
@@ -4298,10 +4314,31 @@ class AcquisitionTab(QWidget):
         if not muestras:
             return
         nivel = float(np.median(muestras))
+        self._sesion_reposo_mv = nivel
         if nivel > REST_WARN_MV:
             aviso = tr("High rest ({mv:.3f} mV): check the electrodes' contact.").format(
                 mv=nivel)
             self._mvc_info(aviso)
+            self._log("⚠ " + aviso)
+
+    def _revisar_senal(self, transcurrido: float) -> None:
+        """Does the held load rise above the rest the session measured?
+
+        The envelope from the effort's second 2 to 5 (picking the weight up
+        is before) against that rest; below guided.LOAD_MIN_RATIO the signal
+        is too weak to read fatigue in: a poor contact, or a weight too light.
+        Said once, on the panel for the rest of the effort and in the log.
+        """
+        if self._senal_revisada or transcurrido < LOAD_RATIO_FROM_S:
+            return
+        if transcurrido < LOAD_RATIO_AT_S:
+            self._sesion_esfuerzo_env.append(self._env_inst[0])
+            return
+        self._senal_revisada = True
+        aviso = weak_signal_warning(
+            effort_ratio(self._sesion_esfuerzo_env, self._sesion_reposo_mv))
+        if aviso:
+            self._aviso_senal = aviso
             self._log("⚠ " + aviso)
 
     def _no_puedo_mas(self) -> None:
@@ -4330,6 +4367,9 @@ class AcquisitionTab(QWidget):
             self._bcast_calib(True, "ready", titulo, texto, count=cuenta)
         elif fase.kind == EFFORT and not fase.bar:
             # A fixed load: nothing on a bar to follow, only the time.
+            self._revisar_senal(fase.seconds - restante)
+            if self._aviso_senal:
+                texto = f"{texto}\n⚠ {self._aviso_senal}" if texto else f"⚠ {self._aviso_senal}"
             self._mvc_overlay.show_phase(f"{titulo} · {cuenta} s", texto, running=hecho)
             self._bcast_calib(True, "contract", titulo, texto, secs=restante,
                               progress=hecho)
