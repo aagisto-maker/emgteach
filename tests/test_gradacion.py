@@ -18,6 +18,7 @@ import pytest
 
 from emgteach.charts import draw_steps_chart
 from emgteach.guided import (
+    MARGIN_S,
     SETTLE_S,
     StepResult,
     gradation_steps,
@@ -379,24 +380,29 @@ def test_a_gradation_recorded_with_the_simulated_board_is_analysed_by_steps(
     qapp, request, tmp_path: Path, monkeypatch
 ) -> None:
     """The whole way: the chooser, the countdown, the five steps asked of the
-    simulated subject, the automatic stop, the analysis. Shortened (0.8 s a
-    phase, 1.6 s a step) and without the calibration, which has its own
-    tests: so the level is in millivolts, and each step above the last.
+    simulated subject, the automatic stop, the analysis. Shortened (0.8 s
+    the countdown and the edges, 1.6 s a step and a rest) and without the
+    calibration, which has its own tests: so the level is in millivolts, and
+    each step above the last.
 
-    The steps are twice the rest because the mark is written at the samples
-    the worker has received and the subject changes at the ones the board
-    has made: on a loaded runner the change lands up to some tenths of a
-    second after its mark (CI, Windows, 25 Oct 2026: step 3 below step 2
-    with 0.8 s steps). The level is held from half the step on, so 1.6 s
-    leaves 0.8 s for that lag."""
+    The mark is written at the samples the worker has received and the
+    subject changes at the ones the board has made: on a loaded runner the
+    change lands up to some tenths of a second after its mark. With 0.8 s
+    steps the level was held over the lag (CI, Windows, 25 Oct 2026: step 3
+    below step 2); with 0.8 s rests, now that a step is its contraction run
+    on past its end, a step and the next merged across a rest the lag had
+    eaten (26 Oct 2026: step 5 below step 4). 1.6 s each leaves room for it."""
     from emgteach.gui.tabs import acquisition as acq_mod
     from tests.test_marcas_manuales import _until
     from tests.test_sesion_guiada_en_la_pestana import _choose, _record
 
     pestana = request.getfixturevalue("tab")
     corta = dataclasses.replace(gradation_script().with_seconds(0.8), needs_mvc=False)
+    # The steps and the rests between them; the edges and the countdown stay short.
+    entre = {f.key for f in corta.phases if f.kind == EFFORT} | {
+        f.key for f in corta.phases[1:-1] if f.key.startswith("rest_")}
     corta = dataclasses.replace(corta, phases=tuple(
-        dataclasses.replace(f, seconds=1.6) if f.kind == EFFORT else f for f in corta.phases))
+        dataclasses.replace(f, seconds=1.6) if f.key in entre else f for f in corta.phases))
     monkeypatch.setitem(acq_mod.GUIDED_SESSIONS, "gradacion", lambda: corta)
     pestana._rellenar_sesiones()
     _choose(pestana, "gradacion")
@@ -445,9 +451,10 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
         inicio = p.start_s + r["roi_start_s"] - marca.start_s
         fin = p.end_s + r["roi_start_s"] - marca.end_s
         # Begun after its cue, and run on past its end: the 0.4 and 0.8 s
-        # of the subject, plus whatever the board and the worker add.
-        assert 0.2 < inicio < 1.2, inicio
-        assert 0.4 < fin < 1.5, fin
+        # of the subject, plus whatever the board and the worker add — on a
+        # loaded runner up to the margin itself (CI, Windows, 26 Oct 2026).
+        assert 0.2 < inicio < 1.5, inicio
+        assert 0.4 < fin <= MARGIN_S + 1e-6, fin
         assert fila.start_s == pytest.approx(p.start_s, abs=0.15)
         assert fila.end_s == pytest.approx(p.end_s, abs=0.15)
 
