@@ -55,6 +55,7 @@ __all__ = [
     "gradation_steps",
     "is_monotonic",
     "load_fatigue",
+    "load_piece",
     "load_span",
     "load_verdict",
     "mdf_trend_applies",
@@ -463,6 +464,23 @@ def load_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float
     on, off = _contraccion(env - reposo, fs, a0, esfuerzo.end_s)
     a, b = on + LOAD_SKIP_S, min(off, esfuerzo.end_s)
     return (a, b) if b - a >= 3 * LOAD_WIN_S else None
+
+
+def load_piece(span: tuple[float, float] | None,
+               pieces: Sequence[tuple[float, float]]) -> tuple[float, float] | None:
+    """The part of the held load the chosen fragments keep, in file time.
+
+    A student who chose fragments still reads the load in one piece: the
+    longest stretch where a fragment and the load's *span* overlap, if it
+    lasts at least three windows. ``None`` when no fragment covers that much
+    of the load. Not the fragments glued together: a line through windows
+    from both sides of a cut would join two moments of the fatigue.
+    """
+    if span is None:
+        return None
+    cruces = [(max(a, span[0]), min(b, span[1])) for a, b in pieces]
+    cruces = [(a, b) for a, b in cruces if b - a >= 3 * LOAD_WIN_S]
+    return max(cruces, key=lambda c: c[1] - c[0]) if cruces else None
 
 
 def rest_level(session: GuidedSession | None, envelope, fs: float) -> float | None:

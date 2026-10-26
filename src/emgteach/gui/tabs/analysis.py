@@ -83,9 +83,11 @@ def _en_dos_lineas(texto: str) -> str:
     return texto.replace(" (", "\n(", 1)
 
 
-def _resumen_carga(carga, reposo_mv: float | None) -> str:
+def _resumen_carga(carga, reposo_mv: float | None,
+                   trozo: tuple[float, float] | None = None) -> str:
     """The fixed load in one line: the MDF's line, the RMS's, and when the
-    MDF had fallen 10 %; and a warning when the rest before was high."""
+    MDF had fallen 10 %; the fragment it was read on, when fragments were
+    chosen; and a warning when the rest before was high."""
     partes = []
     tend = carga.mdf_trend
     if tend is not None:
@@ -100,6 +102,9 @@ def _resumen_carga(carga, reposo_mv: float | None) -> str:
         else tr("MDF never fell 10 %"))
     texto = (tr("Fixed load held {s:.0f} s").format(s=carga.seconds) + "  ·  "
              + "  ·  ".join(partes))
+    if trozo is not None:
+        texto += "  ·  " + tr("in the fragment {a:.1f}–{b:.1f} s").format(
+            a=trozo[0], b=trozo[1])
     if reposo_mv is not None and reposo_mv > REST_WARN_MV:
         texto += "  ·  " + tr("High rest ({mv:.3f} mV): check the electrodes' contact.").format(
             mv=reposo_mv)
@@ -1147,8 +1152,11 @@ class AnalysisTab(QWidget):
         self._cargas_contr: list[float | None] = []
         #: The gradation's steps, when the recording is one (emgteach.guided).
         self._pasos_grad: list = []
-        #: The fixed load held, when the recording is one.
+        #: The fixed load held, when the recording is one; the fragment it
+        #: was read on when fragments were chosen, or why there is none.
         self._carga = None
+        self._carga_trozo: tuple[float, float] | None = None
+        self._carga_nota: str | None = None
         #: The quick contractions' train, when it is one.
         self._tren = None
         #: Where the view choice is kept: one key for recordings with loads
@@ -2025,9 +2033,12 @@ class AnalysisTab(QWidget):
         self._ref_grad = gradation_reference_text(result)
         carga = result.get("load")
         self._carga = carga
+        self._carga_trozo = result.get("load_piece")
+        self._carga_nota = result.get("load_note")
+        hay_carga = carga is not None or self._carga_nota is not None
         tren = result.get("train")
         self._tren = tren
-        vistas = (["steps"] if pasos else ["mdf_time"] if carga is not None
+        vistas = (["steps"] if pasos else ["mdf_time"] if hay_carga
                   else ["train"] if tren is not None else [])
         vistas.append("relation")
         if dos:
@@ -2044,7 +2055,7 @@ class AnalysisTab(QWidget):
         # A gradation opens on its steps, and remembers its choice apart too.
         if pasos:
             self._clave_vista, defecto = "analysis/contr_view_grad", "steps"
-        elif carga is not None:
+        elif hay_carga:
             self._clave_vista, defecto = "analysis/contr_view_load", "mdf_time"
         elif tren is not None:
             self._clave_vista, defecto = "analysis/contr_view_train", "train"
@@ -2060,7 +2071,9 @@ class AnalysisTab(QWidget):
                 tr("each step above the last") if is_monotonic(pasos)
                 else tr("not every step above the last"))
         if carga is not None:
-            resumen = _resumen_carga(carga, result.get("rest_mv"))
+            resumen = _resumen_carga(carga, result.get("rest_mv"), self._carga_trozo)
+        elif self._carga_nota:
+            resumen = self._carga_nota
         if tren is not None:
             resumen = _resumen_tren(tren)
         emd = result.get("emd_ms_mean")
@@ -2095,7 +2108,8 @@ class AnalysisTab(QWidget):
                 draw_steps_chart(self._fig_contr, self._pasos_grad, small=True,
                                  reference=getattr(self, "_ref_grad", None))
             elif vista == "mdf_time":
-                draw_load_chart(self._fig_contr, self._carga, small=True)
+                draw_load_chart(self._fig_contr, self._carga, small=True,
+                                piece=self._carga_trozo, note=self._carga_nota)
             else:
                 draw_train_chart(self._fig_contr, self._tren, small=True)
             self._pedir_espacio(self._canvas_contr)

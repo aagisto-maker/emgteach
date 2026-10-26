@@ -610,11 +610,17 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
     before the effort is said, since it makes the electrodes suspect.
     """
     carga = result.get("load")
-    if carga is None:
+    nota = result.get("load_note")
+    if carga is None and not nota:
         return
     story.append(Paragraph(tr("Guided session: fatigue with a fixed load"), h2))
+    if carga is None:
+        story.append(Paragraph(nota, normal))
+        story.append(Spacer(1, 0.4 * cm))
+        return
+    trozo = result.get("load_piece")
     try:
-        story.append(Image(_render_chart(draw_load_chart, carga),
+        story.append(Image(_render_chart(draw_load_chart, carga, piece=trozo),
                            width=16 * cm, height=6 * cm))
         story.append(Spacer(1, 0.15 * cm))
     except Exception:  # pragma: no cover — a chart must never sink the report
@@ -641,7 +647,11 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
         "Held {s:.0f} s, from 2 s after the activity began to when it fell. MDF and MNF "
         "of each 1 s window every 0.5 s; the line is fitted to all of them, and the "
         "chart draws their means over 5 s. Start and end are the line's.").format(
-            s=carga.seconds) + " " + t10 + ".", normal))
+            s=carga.seconds) + " " + t10 + "."
+        + ("" if trozo is None else " " + tr(
+            "Fragments were chosen: the load is read on the longest piece of it they "
+            "keep, {a:.1f}–{b:.1f} s of the recording.").format(a=trozo[0], b=trozo[1])),  # noqa: RUF001
+        normal))
     story.append(Paragraph(tr(
         "Fatigue moves the spectrum down: the conduction velocity of the fibres falls "
         "and the units fire more in step, so MDF and MNF fall. The amplitude may hold "

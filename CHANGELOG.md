@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **What shows it**:
     - a view «MDF over time»: the windows, their means over 5 s, the MDF's line, the −10 % time and the RMS in grey;
     - panels 6 and 7, offered and ticked;
+    - with fragments chosen, the view stays: the load is read on the longest piece of it they keep (at least 3 s, never two pieces glued), said under the axis, in the summary line and the report; when no fragment keeps that much, the view and the report say so instead of vanishing;
     - the summary line;
     - a section of the report with the chart and a table (start, end, change, slope per minute, R² and p of MDF, MNF and RMS);
     - the phones.

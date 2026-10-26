@@ -472,7 +472,10 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   dispersión propia (en el banco, el bíceps bajó la MDF un 16-20 % en 90 s con un R²
   de solo 0.3, mientras el RMS se mantenía o subía). Vista **«MDF en el tiempo»**:
   las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que cayó un 10 %
-  y el RMS en gris. Los paneles 6 y 7 aparecen marcados.
+  y el RMS en gris. Los paneles 6 y 7 aparecen marcados. Si se eligen fragmentos,
+  la vista sigue: la carga se lee en el trozo más largo de ella que conservan (al
+  menos 3 s; nunca dos trozos pegados), y la vista lo dice; si ninguno conserva
+  tanto, lo avisa.
 - **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
   atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
   las contracciones y su ritmo —hasta 1.5 s después de la marca del final, porque
