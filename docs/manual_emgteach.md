@@ -365,8 +365,11 @@ session.
   calibration's own intensity it read 85-87 %). Its calibration, its live bar and
   its analysis measure it so; the other practicals keep the peak. A maximal step
   above the calibration is said in the «Steps» view and the report.
-- **Fatigue: biceps with a fixed load** (103 s at most; no calibration): 5 s of
-  rest with the arm relaxed along the body, a 3 s countdown to pick up the
+- **Fatigue: biceps with a fixed load** (103 s at most; no calibration).
+  Electrodes over the biceps brachii, on the line between the medial acromion
+  and the cubital fossa, at 1/3 from the cubital fossa (SENIAM), aligned with
+  the fibres and about 2 cm apart; reference over bone (olecranon or wrist).
+  5 s of rest with the arm relaxed along the body, a 3 s countdown to pick up the
   weight, **the weight held with the elbow at 90° for 90 s** and 5 s to put it
   down. There is no bar during the effort (the load is fixed, not a level to
   reach): the panel gives the seconds left. The text asks to breathe normally.

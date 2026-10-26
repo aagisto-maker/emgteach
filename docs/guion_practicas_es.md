@@ -353,9 +353,10 @@ ya no quedan unidades que sumar y el RMS **baja**. La prueba específica de la
 fatiga es la caída de la MDF, no la de la amplitud.
 
 **Procedimiento.** Con la sesión guiada **«Fatiga: bíceps con carga fija»**.
-Electrodos sobre el vientre del **bíceps braquial**, en la línea que va del
-acromion a la fosa del codo, a un tercio de la distancia desde la fosa; la
-referencia, sobre el olécranon o la clavícula. Un peso fijo que pueda sostener
+Electrodos sobre el **bíceps braquial**, en la línea entre el acromion medial y
+la fosa del codo, **a 1/3 de esa línea desde la fosa del codo** (criterio
+SENIAM), alineados en el sentido de las fibras y a unos 2 cm uno de otro; la
+referencia, sobre hueso (olécranon o muñeca). Un peso fijo que pueda sostener
 entre uno y dos minutos (una mancuerna, una botella llena).
 1. Elegir la sesión en el desplegable de la línea de «Calibrar CVM» y pulsar
    **Iniciar grabación**; no hace falta calibrar. Tras 5 s de preparación,

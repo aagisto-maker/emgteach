@@ -451,8 +451,11 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   lo miden su calibración, su barra en vivo y su análisis; las demás prácticas
   siguen con el pico. Si el escalón máximo pasa de la calibración, la vista
   «Escalones» y el informe lo dicen.
-- **Fatiga: bíceps con carga fija** (103 s como mucho; sin calibración): 5 s de
-  reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
+- **Fatiga: bíceps con carga fija** (103 s como mucho; sin calibración).
+  Electrodos sobre el bíceps braquial, en la línea entre el acromion medial y la
+  fosa del codo, a 1/3 desde la fosa del codo (SENIAM), en el sentido de las
+  fibras y a unos 2 cm uno de otro; referencia sobre hueso (olécranon o muñeca).
+  5 s de reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
   coger el peso, **el peso sostenido con el codo a 90° durante 90 s** y 5 s para
   dejarlo. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
   alcanzar): el panel da los segundos que quedan. El texto pide respirar
