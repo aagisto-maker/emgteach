@@ -375,11 +375,12 @@ one to two minutes (a dumbbell, a full bottle).
 1. Choose the session in the chooser on the line of «Calibrate MVC» and press
    **Start recording**; no calibration is needed. After 5 s of preparation,
    **5 s of rest** with the arm relaxed along the body and without the weight
-   (the application warns if that rest comes out high: the electrodes' contact
-   is poor), a 3 s countdown to **pick up the weight** and hold it **with the
+   (if it comes out high, the application warns that an electrode is loose), a
+   3 s countdown to **pick up the weight** and hold it **with the
    elbow at 90°**, the arm against the body, for **90 s**. There is no bar
-   during the effort: the load is fixed. **Breathe normally during the
-   effort.**
+   during the effort: the load is fixed. If «Weak signal» shows after 5 s,
+   the effort barely exceeds the rest: check the electrodes' contact or use a
+   heavier weight, and repeat. **Breathe normally during the effort.**
 2. **If you cannot go on, press the space bar** (or «I can't go on
    (Space)»): the effort ends there and the session goes on to putting the
    weight down. The recording **stops by itself**.

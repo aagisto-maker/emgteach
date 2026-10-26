@@ -28,12 +28,14 @@ from emgteach.guided import (
     REST_WARN_MV,
     Trend,
     change_pct,
+    effort_ratio,
     load_fatigue,
     load_piece,
     load_span,
     load_verdict,
     rest_level,
     time_to_decline,
+    weak_signal_warning,
 )
 from emgteach.i18n import _ES, tr
 from emgteach.io import BufferedEdfWriter, ChannelInfo
@@ -267,6 +269,22 @@ def test_with_fragments_the_load_is_their_longest_piece_of_it() -> None:
     assert load_piece(None, [(0.0, 90.0)]) is None
 
 
+def test_the_effort_over_the_rest_and_its_warning() -> None:
+    """The bench: the good biceps held at 3.7 times its rest, the bad one at
+    1.5. The warning names both causes and the ratio."""
+    assert effort_ratio(np.full(100, 0.072), 0.019) == pytest.approx(3.79, abs=0.01)
+    assert effort_ratio(np.full(100, 0.07), None) is None
+    assert effort_ratio([], 0.02) is None
+    assert weak_signal_warning(3.7) is None and weak_signal_warning(None) is None
+    aviso = weak_signal_warning(1.5)
+    assert aviso is not None and "×1.5" in aviso  # noqa: RUF001
+    assert "contact" in aviso and "heavier weight" in aviso
+    assert _ES[tr("Weak signal: the effort barely exceeds the rest (×{x:.1f}). Check the "  # noqa: RUF001
+                  "electrodes' contact or use a heavier weight.")].format(x=1.5) == (
+        "Señal débil: el esfuerzo apenas supera el reposo (×1.5). Revise el contacto "  # noqa: RUF001
+        "de los electrodos o use un peso mayor.")
+
+
 def test_the_chart_draws() -> None:
     from matplotlib.figure import Figure
 
@@ -358,7 +376,7 @@ def _edf(path: Path, marcas, senal: np.ndarray) -> str:
     return str(path)
 
 
-def _carga_edf(path: Path, *, reposo_mv: float = 0.004) -> str:
+def _carga_edf(path: Path, *, reposo_mv: float = 0.004, fuerza: float = 0.3) -> str:
     """Rest, 40 s of a weight picked up 0.5 s after the cue whose spectrum
     slides down at a constant amplitude, let go 3 s before the mark, and rest."""
     g, marcas = _marcas(REC_S, 40.0)
@@ -369,7 +387,7 @@ def _carga_edf(path: Path, *, reposo_mv: float = 0.004) -> str:
     dentro = (t >= a) & (t < b)
     frac = np.clip((t - a) / (b - a), 0, 1)
     alta, baja = _bandas(n, 8)
-    activo = 0.3 * (np.sqrt(1 - 0.6 * frac) * alta + np.sqrt(0.6 * frac) * baja)
+    activo = fuerza * (np.sqrt(1 - 0.6 * frac) * alta + np.sqrt(0.6 * frac) * baja)
     rng = np.random.default_rng(2)
     senal = np.where(dentro, activo, rng.normal(0, reposo_mv * 1.25, n))
     return _edf(path, marcas, senal)
@@ -394,6 +412,7 @@ def test_the_load_is_analysed_on_the_held_contraction(qapp, tmp_path: Path) -> N
     assert r["fat_r_squared"] == pytest.approx(carga.mdf_trend.r2)
     assert r["fat_pct_decline"] == pytest.approx(-carga.mdf_trend.change_pct)
     assert r["rest_mv"] is not None and r["rest_mv"] < REST_WARN_MV
+    assert r["load_ratio"] is not None and r["load_ratio"] > 10
     assert r["grad_steps"] == []
 
 
@@ -452,13 +471,43 @@ def test_fragments_outside_the_load_leave_a_note(qapp, tmp_path: Path) -> None:
 
 
 @pytest.mark.gui
+def test_a_weak_load_is_warned_in_the_analysis(qapp, tmp_path: Path) -> None:
+    """A load whose envelope barely rises over the rest, as the bench's bad
+    biceps: the summary line, the report and the phones say it."""
+    from emgteach.gui.tabs.analysis import AnalysisTab, _resumen_carga
+    from emgteach.reports import build_session_report
+    from tests.test_informes_y_csv import _pdf_text
+    from tests.test_manejo_en_aula import _Difusion
+
+    r = _analizar(qapp, _carga_edf(tmp_path / "d.edf", reposo_mv=0.02, fuerza=0.035))
+    assert r["load"] is not None
+    assert r["load_ratio"] is not None and r["load_ratio"] < 2.0
+    aviso = weak_signal_warning(r["load_ratio"])
+    assert aviso and aviso in _resumen_carga(r["load"], r["rest_mv"], None, r["load_ratio"])
+    pdf = tmp_path / "d.pdf"
+    build_session_report(pdf, r, meta={})
+    assert "Weak signal" in _pdf_text(pdf).replace("\n", " ")
+
+    dif = _Difusion()
+
+    class _Tab:
+        _broadcast = dif
+
+        def _broadcast_on(self) -> bool:
+            return True
+
+    AnalysisTab._bcast_results(_Tab(), r)       # type: ignore[arg-type]
+    assert dif.mensajes[-1]["load"]["ratio"] < 2.0
+
+
+@pytest.mark.gui
 def test_the_report_and_the_phones_carry_the_load(qapp, tmp_path: Path) -> None:
     from emgteach.gui.tabs.analysis import AnalysisTab
     from emgteach.reports import build_session_report
     from tests.test_informes_y_csv import _pdf_text
     from tests.test_manejo_en_aula import _Difusion
 
-    r = _analizar(qapp, _carga_edf(tmp_path / "c.edf", reposo_mv=0.03))
+    r = _analizar(qapp, _carga_edf(tmp_path / "c.edf", reposo_mv=0.06))
     pdf = tmp_path / "c.pdf"
     build_session_report(pdf, r, meta={})
     texto = _pdf_text(pdf)
@@ -588,11 +637,36 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
 def test_a_high_rest_is_warned(tab) -> None:  # noqa: F811
     logs: list[str] = []
     tab._log = logs.append
-    tab._sesion_reposo = [0.03, 0.028, 0.031]
+    tab._sesion_reposo = [0.05, 0.048, 0.051]
     tab._revisar_reposo()
     assert any(tr("High rest ({mv:.3f} mV): check the electrodes' contact.")
-               .format(mv=0.03) in m for m in logs)
+               .format(mv=0.05) in m for m in logs)
     logs.clear()
-    tab._sesion_reposo = [0.004, 0.005]
-    tab._revisar_reposo()
+    # The bench's two biceps rested at 0.019 and 0.022 mV: neither warns.
+    for reposo in (0.019, 0.022):
+        tab._sesion_reposo = [reposo] * 3
+        tab._revisar_reposo()
     assert not logs
+    assert REST_WARN_MV == 0.03
+
+
+@pytest.mark.gui
+@pytest.mark.parametrize(("esfuerzo", "avisa"), [(0.078, False), (0.025, True)])
+def test_a_weak_load_is_warned_live(tab, esfuerzo, avisa) -> None:  # noqa: F811
+    """From the effort's second 2 to 5, against the rest measured before:
+    the bench's good biceps rose to about 4 times its rest, the bad one to
+    1.1 (0.022 mV of rest, 0.025 of load). Said once, on the panel and in
+    the log, with the two causes the student can tell apart."""
+    logs: list[str] = []
+    tab._log = logs.append
+    tab._sesion_reposo = [0.019]
+    tab._revisar_reposo()
+    for t in (0.5, 1.5):                            # picking the weight up: not read
+        tab._env_inst[0] = 0.5
+        tab._revisar_senal(t)
+    tab._env_inst[0] = esfuerzo
+    for t in (2.2, 3.0, 4.0, 4.8, 5.1, 6.0):
+        tab._revisar_senal(t)
+    assert tab._senal_revisada
+    assert (tab._aviso_senal is not None) == avisa
+    assert sum("Weak signal" in m for m in logs) == (1 if avisa else 0)

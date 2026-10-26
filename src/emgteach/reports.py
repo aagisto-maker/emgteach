@@ -64,6 +64,7 @@ from emgteach.guided import (
     gradation_reference_text,
     is_monotonic,
     mdf_trend_applies,
+    weak_signal_warning,
 )
 from emgteach.i18n import tr
 from emgteach.modes import protocol_label
@@ -663,6 +664,9 @@ def _seccion_fatiga_guiada(story: list, result: Mapping[str, Any], h2, normal) -
         story.append(Paragraph(tr(
             "High rest ({mv:.3f} mV): check the electrodes' contact.").format(mv=reposo),
             normal))
+    debil = weak_signal_warning(result.get("load_ratio"))
+    if debil:
+        story.append(Paragraph(debil, normal))
     story.append(Spacer(1, 0.4 * cm))
 
 

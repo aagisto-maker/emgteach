@@ -361,10 +361,12 @@ entre uno y dos minutos (una mancuerna, una botella llena).
 1. Elegir la sesión en el desplegable de la línea de «Calibrar CVM» y pulsar
    **Iniciar grabación**; no hace falta calibrar. Tras 5 s de preparación,
    **5 s de reposo** con el brazo relajado a lo largo del cuerpo y sin el peso
-   (la aplicación avisa si ese reposo sale alto: el contacto de los electrodos
-   es malo), una cuenta atrás de 3 s para **coger el peso** y sostenerlo **con
+   (si sale alto, la aplicación avisa de que un electrodo está suelto), una
+   cuenta atrás de 3 s para **coger el peso** y sostenerlo **con
    el codo a 90°**, el brazo pegado al cuerpo, durante **90 s**. Durante el
-   esfuerzo no hay barra: la carga es fija.
+   esfuerzo no hay barra: la carga es fija. Si a los 5 s sale «Señal débil»,
+   el esfuerzo apenas supera el reposo: revise el contacto de los electrodos o
+   use un peso mayor, y repita.
    **Respire normalmente durante el esfuerzo.**
 2. **Si no puede más, pulse la barra espaciadora** (o «No puedo más
    (Espacio)»): el esfuerzo termina en ese momento y la sesión pasa a dejar el

@@ -375,8 +375,12 @@ session.
   reach): the panel gives the seconds left. The text asks to breathe normally.
   **The space bar, or the button «I can't go on (Space)», ends the effort
   early**; the mark of its end says so and the session goes on to its last rest.
-  If the rest at the start is above 0.01 mV, the panel and the event log warn
-  that the electrodes' contact is poor.
+  Two warnings, on the panel and in the event log, that stop nothing: if the
+  load's envelope from its second 2 to 5 is less than **twice the rest**
+  measured before it, «Weak signal: the effort barely exceeds the rest (×1.5).
+  Check the electrodes' contact or use a heavier weight.» (also in the summary
+  line, the report and the phones); and if the rest is above 0.03 mV, that an
+  electrode is loose.
   In Analysis the analysed span begins **2 s after the activity begins**
   (picking up the weight is not the contraction that tires) and ends where the
   activity falls or the effort's mark ends. MDF and MNF are computed in 1 s

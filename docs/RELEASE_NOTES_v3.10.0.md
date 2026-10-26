@@ -27,8 +27,10 @@ made with 3.9.1 and earlier open and read as before.
   - **Fatigue: biceps with a fixed load** (103 s at most; no calibration):
     a measured rest, a countdown to pick up the weight, and the weight held
     with the elbow at 90° for 90 s. There is no bar during the effort, and
-    **the space bar ends it early** when the student cannot go on. A rest
-    above 0.01 mV is warned: the electrodes' contact is poor. The analysis
+    **the space bar ends it early** when the student cannot go on. An effort
+    that does not reach twice the rest is warned as a weak signal (a poor
+    contact or a weight too light), and a rest above 0.03 mV as a loose
+    electrode. The analysis
     reads the contraction from 2 s after it begins to its fall, follows the
     MDF and MNF in 1 s windows and fits a line through them. **Fatigue is
     the MDF falling significantly (p < 0.01) by at least 10 %**: on the
@@ -86,7 +88,7 @@ made with 3.9.1 and earlier open and read as before.
 
 ## How it was tested
 
-**By the automated suite**, 1670 tests, among them: each session's script,
+**By the automated suite**, 1674 tests, among them: each session's script,
 its marks and its Spanish; the clock that crosses every phase even when a
 tick is late; each session recorded with the simulated board, whose subject
 does what each phase asks, and analysed by its spans; the levels held by the
