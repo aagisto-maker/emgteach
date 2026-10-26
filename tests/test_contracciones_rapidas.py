@@ -316,6 +316,12 @@ def test_a_late_subject_on_the_simulated_board_keeps_its_last_contractions(
     tren = _analizar(qapp, str(path))["train"]
     assert tren is not None
     # Four a second from 0.4 s after the cue to 0.8 s after the end: about
-    # ten, three of them after the end mark.
-    assert tren.n >= 9, tren.n
+    # ten, three of them after the end mark, on an idle machine. The marks
+    # are written at the samples the worker has received and the subject
+    # changes at the ones the board has made, so on a loaded runner the
+    # whole train lands later and the 1.5 s margin cuts its tail (CI,
+    # Windows, Python 3.10, 26 October 2026: 7 counted). What this test is
+    # for holds whatever the delay: contractions after the end mark are
+    # counted. The exact count is test_a_late_subject_s_last_contractions_are_counted's.
+    assert tren.n >= 5, tren.n
     assert tren.peak_times[-1] > tramo.duration_s
