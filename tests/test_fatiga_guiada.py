@@ -65,8 +65,13 @@ def test_the_load_is_held_ninety_seconds_and_never_more_than_180() -> None:
     assert esfuerzo[0].opens == "HOLD effort start secs=90"
     assert esfuerzo[0].closes == "HOLD effort end"
     assert g.header == "HOLD start mode=load secs=90 v=1"
-    assert not g.needs_mvc and g.family == "HOLD" and g.slug == "fatiga_biceps"
-    assert _ES[g.title] == "Fatiga: bíceps con carga fija"
+    assert not g.needs_mvc and g.family == "HOLD" and g.slug == "fatiga"
+    # One session for the forearm and the biceps: its texts name neither
+    # (Ángel, 27 October 2026).
+    assert _ES[g.title] == "Fatiga con carga fija"
+    textos = " ".join([_ES[x] for f in g.phases for x in (f.title, f.text)]
+                      + [_ES[g.summary], _ES[g.gesture]])
+    assert "bíceps" not in textos and "codo" not in textos
     assert load_script(LOAD_MAX_S).total_seconds == g.total_seconds + 90.0
     with pytest.raises(ValueError):
         load_script(LOAD_MAX_S + 1)

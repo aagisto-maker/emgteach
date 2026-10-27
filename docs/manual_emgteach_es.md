@@ -452,14 +452,19 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   lo miden su calibración, su barra en vivo y su análisis; las demás prácticas
   siguen con el pico. Si el escalón máximo pasa de la calibración, la vista
   «Escalones» y el informe lo dicen.
-- **Fatiga: bíceps con carga fija** (103 s como mucho; sin calibración).
-  Electrodos sobre el bíceps braquial, en la línea entre el acromion medial y la
-  fosa del codo, a 1/3 desde la fosa del codo (SENIAM), en el sentido de las
-  fibras y a unos 2 cm uno de otro; referencia sobre hueso (olécranon o muñeca).
-  5 s de reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
-  coger el peso, **el peso sostenido con el codo a 90° durante 90 s** y 5 s para
-  dejarlo. El peso, uno que no se pueda sostener más de 60-90 s, para que la
-  fatiga llegue dentro de la sesión. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
+- **Fatiga con carga fija** (103 s como mucho; sin calibración). En la práctica,
+  sobre el **flexor del antebrazo**, con los electrodos de la gradación y el tren:
+  el antebrazo apoyado en la mesa y la mano fuera del borde. 5 s de reposo sin el
+  peso, una cuenta atrás de 3 s para cogerlo, **el peso sostenido colgando de la
+  mano, sin apretar más de lo necesario, durante 90 s** y 5 s para dejarlo. El
+  peso, uno que no se pueda sostener más de 60-90 s (3-5 kg), para que la fatiga
+  llegue dentro de la sesión. **Variante, el bíceps**: electrodos sobre el bíceps
+  braquial, en la línea entre el acromion medial y la fosa del codo, a 1/3 desde
+  la fosa del codo (SENIAM), en el sentido de las fibras y a unos 2 cm uno de
+  otro, referencia sobre hueso (olécranon o muñeca); el reposo con el brazo
+  relajado a lo largo del cuerpo y el peso con el codo a 90°. Los textos de la
+  sesión no nombran ninguna postura: la misma sesión vale para las dos, y el
+  análisis es el mismo. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
   alcanzar): el panel da los segundos que quedan. El texto pide respirar
   normalmente. **La barra espaciadora, o el botón «No puedo más (Espacio)», termina
   el esfuerzo antes de tiempo**; la marca de su final lo dice y la sesión pasa al
@@ -475,7 +480,8 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   ventanas de 1 s cada 0.5 s y el RMS, con una recta por cada una (pendiente, R²,
   p y cambio). **Hay fatiga cuando la MDF cae de forma significativa (p < 0.01) y su
   recta baja al menos un 10 %**; el R² no se exige, porque el espectro tiene mucha
-  dispersión propia (en el banco, el bíceps bajó la MDF un 16-20 % en 90 s con un R²
+  dispersión propia (en el banco, el antebrazo bajó la MDF un 26 % en 66 s con un
+  R² de 0.39, y el bíceps un 16-20 % en 90 s con un R²
   de solo 0.3, mientras el RMS se mantenía o subía). Vista **«MDF en el tiempo»**:
   las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que esa recta ha
   caído un 10 %, si lo hace dentro de lo sostenido (la marca y el veredicto
@@ -864,7 +870,7 @@ disminuyen con el tiempo**.
   - **No concluyente**: la recta no ajusta (R² < 0.30), o hay menos de cuatro
     ventanas. Es lo normal en una serie de contracciones breves: el registro no
     responde a la pregunta, lo cual no es lo mismo que responder «no».
-  - En la sesión guiada **«Fatiga: bíceps con carga fija»** (§4.3) el criterio es
+  - En la sesión guiada **«Fatiga con carga fija»** (§4.3) el criterio es
     otro: una caída **significativa** de la MDF (p < 0.01) de al menos un 10 %,
     sin exigir R². Con una carga fija sostenida un minuto o más, la caída es real
     aunque la dispersión del espectro deje el R² bajo.
@@ -1108,7 +1114,7 @@ el acelerómetro y las medidas que se ofrecen después.
    desplegable de la línea de «Calibrar CVM» (§4.3): *Iniciar grabación* calibra,
    cuenta 5 s, dirige los cinco escalones y se detiene sola. Para lo demás,
    **«Grabación libre»** y *Iniciar grabación*; para la fatiga, la sesión
-   **«Fatiga: bíceps con carga fija»**. Si el
+   **«Fatiga con carga fija»**. Si el
    ejercicio necesita % CVM (carga), pulsar **«Calibrar CVM»** de inmediato: el asistente pide el
    calentamiento y las tres contracciones máximas, breves e intensas (para el
    flexor del antebrazo, con el puño cerrado).

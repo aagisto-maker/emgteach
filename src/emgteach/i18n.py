@@ -2529,26 +2529,26 @@ _ES = {
         'Dos o tres contracciones suaves.',
     'Close your fist: a brief, intense contraction.':
         'Cierre el puño: una contracción breve e intensa.',
-    'Fatigue: biceps with a fixed load':
-        'Fatiga: bíceps con carga fija',
-    'Arm relaxed along the body, without the weight.':
-        'Brazo relajado a lo largo del cuerpo, sin el peso.',
+    'Fatigue with a fixed load':
+        'Fatiga con carga fija',
+    'Arm relaxed, without the weight.':
+        'Brazo relajado, sin el peso.',
     'Pick up the weight at 0':
         'Coja el peso al llegar a 0',
-    'Elbow at 90°, the arm against the body.':
-        'Codo a 90°, el brazo pegado al cuerpo.',
+    'Hold it without gripping harder than you need.':
+        'Sujételo sin apretar más de lo necesario.',
     'Hold the weight':
         'Mantenga el peso',
-    'Keep the elbow at 90°. Breathe normally. Space, when you cannot go on.':
-        'Mantenga el codo a 90°. Respire normalmente. Pulse Espacio cuando no pueda más.',
+    'Keep the weight still. Breathe normally. Space, when you cannot go on.':
+        'Mantenga el peso quieto. Respire normalmente. Pulse Espacio cuando no pueda más.',
     'Put the weight down':
         'Deje el peso',
     'The recording stops on its own.':
         'La grabación se detiene sola.',
-    'A fixed weight held with the elbow at 90° for {secs:g} s, or until you cannot go on. Fatigue lowers the frequency of the signal; its amplitude may hold or rise.':
-        'Un peso fijo sostenido con el codo a 90° durante {secs:g} s, o hasta que no pueda más. La fatiga baja la frecuencia de la señal; su amplitud puede mantenerse o subir.',
-    'Elbow at 90°, a fixed weight in the hand.':
-        'Codo a 90°, un peso fijo en la mano.',
+    'A fixed weight held for {secs:g} s, or until you cannot go on. Fatigue lowers the frequency of the signal; its amplitude may hold or rise.':
+        'Un peso fijo sostenido durante {secs:g} s, o hasta que no pueda más. La fatiga baja la frecuencia de la señal; su amplitud puede mantenerse o subir.',
+    'A fixed weight in the hand.':
+        'Un peso fijo en la mano.',
     "I can't go on (Space)":
         'No puedo más (Espacio)',
     'End the held effort now; the session goes on to its last rest.':

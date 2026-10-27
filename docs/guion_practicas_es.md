@@ -355,19 +355,17 @@ reclutan más unidades para sostener el mismo peso; en una contracción **máxim
 ya no quedan unidades que sumar y el RMS **baja**. La prueba específica de la
 fatiga es la caída de la MDF, no la de la amplitud.
 
-**Procedimiento.** Con la sesión guiada **«Fatiga: bíceps con carga fija»**.
-Electrodos sobre el **bíceps braquial**, en la línea entre el acromion medial y
-la fosa del codo, **a 1/3 de esa línea desde la fosa del codo** (criterio
-SENIAM), alineados en el sentido de las fibras y a unos 2 cm uno de otro; la
-referencia, sobre hueso (olécranon o muñeca). Un peso fijo que no pueda sostener
-más de 60-90 s (una mancuerna, una botella llena), para que la fatiga llegue
-dentro de la sesión.
+**Procedimiento.** Con la sesión guiada **«Fatiga con carga fija»**, sobre el
+**flexor del antebrazo**: los electrodos ya están ahí de los ejercicios 1a y 1b.
+**Antebrazo apoyado en la mesa, con la mano fuera del borde**, y un peso fijo que
+no pueda sostener más de 60-90 s (3-5 kg, una mancuerna), para que la fatiga
+llegue dentro de la sesión.
 1. Elegir la sesión en el desplegable de la línea de «Calibrar CVM» y pulsar
    **Iniciar grabación**; no hace falta calibrar. Tras 5 s de preparación,
-   **5 s de reposo** con el brazo relajado a lo largo del cuerpo y sin el peso
+   **5 s de reposo** con el antebrazo apoyado, la mano relajada y sin el peso
    (si sale alto, la aplicación avisa de que un electrodo está suelto), una
-   cuenta atrás de 3 s para **coger el peso** y sostenerlo **con
-   el codo a 90°**, el brazo pegado al cuerpo, durante **90 s**. Durante el
+   cuenta atrás de 3 s para **coger el peso** y sostenerlo **colgando de la
+   mano, sin apretar más de lo necesario**, durante **90 s**. Durante el
    esfuerzo no hay barra: la carga es fija. Si a los 5 s sale «Señal débil»,
    el esfuerzo apenas supera el reposo: revise el contacto de los electrodos o
    use un peso mayor, y repita.
@@ -381,14 +379,22 @@ dentro de la sesión.
    tiempo»**, y los paneles **6. RMS/ventana** y **7. MDF/tiempo** aparecen
    marcados.
 
+**Variante · El bíceps.** La misma sesión, con los electrodos sobre el **bíceps
+braquial**, en la línea entre el acromion medial y la fosa del codo, **a 1/3 de
+esa línea desde la fosa del codo** (criterio SENIAM), alineados en el sentido de
+las fibras y a unos 2 cm uno de otro; la referencia, sobre hueso (olécranon o
+muñeca). El reposo, con el brazo relajado a lo largo del cuerpo; el peso,
+sostenido **con el codo a 90°** y el brazo pegado al cuerpo. El análisis es el
+mismo.
+
 **Cómo decide la aplicación.** Calcula la MDF y la MNF en ventanas de 1 s cada
 0.5 s y ajusta una recta a cada una frente al tiempo. Dice **«Fatiga
 detectada»** si la recta de la MDF baja de forma **significativa** (p < 0.01) y
 al menos un **10 %**; **«No detectada»** si es significativa pero baja menos o
 sube; y **«No concluyente»** si no es significativa o el esfuerzo fue demasiado
 corto. No se exige un R² mínimo: el espectro de cada ventana tiene mucha
-dispersión propia, y en el banco el bíceps bajó la MDF un 16-20 % en 90 s con un
-R² de solo 0.3.
+dispersión propia: en el banco, el antebrazo bajó la MDF un 26 % en 66 s con un
+R² de 0.39, y el bíceps un 16-20 % en 90 s con un R² de solo 0.3.
 
 **Datos a recoger.** De la línea de resumen de la caja de contracciones y de la
 tabla del informe:
@@ -412,7 +418,7 @@ Tiempo sostenido: ____ s. MDF −10 % a los ____ s. Veredicto: ______________.
   ¿Está fatigado o no? ¿Qué le falta al registro?
 
 **Después: contracciones rápidas repetidas** (sesión **«Contracciones rápidas
-repetidas»**), con los electrodos de nuevo en el flexor del antebrazo: 10 s de
+repetidas»**), con los electrodos en el flexor del antebrazo: 10 s de
 contracciones del puño, cerrándolo y relajándolo lo más rápido posible. En la vista **«Tren»**: el ritmo conseguido, cuánto suben los picos
 del primer al último tercio, y el suelo entre contracciones en % del pico, junto al
 que dejaría la medida sola a ese ritmo.

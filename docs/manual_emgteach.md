@@ -366,14 +366,19 @@ session.
   calibration's own intensity it read 85-87 %). Its calibration, its live bar and
   its analysis measure it so; the other practicals keep the peak. A maximal step
   above the calibration is said in the «Steps» view and the report.
-- **Fatigue: biceps with a fixed load** (103 s at most; no calibration).
-  Electrodes over the biceps brachii, on the line between the medial acromion
+- **Fatigue with a fixed load** (103 s at most; no calibration). In the
+  practical, on the **forearm flexor**, with the gradation's and the train's
+  electrodes: the forearm resting on the table, the hand over its edge. 5 s of
+  rest without the weight, a 3 s countdown to pick it up, **the weight held
+  hanging from the hand, gripping no harder than needed, for 90 s** and 5 s to
+  put it down. The weight, one that cannot be held for more than 60-90 s
+  (3-5 kg), so that fatigue comes within the session. **Variant, the biceps**:
+  electrodes over the biceps brachii, on the line between the medial acromion
   and the cubital fossa, at 1/3 from the cubital fossa (SENIAM), aligned with
-  the fibres and about 2 cm apart; reference over bone (olecranon or wrist).
-  5 s of rest with the arm relaxed along the body, a 3 s countdown to pick up the
-  weight, **the weight held with the elbow at 90° for 90 s** and 5 s to put it
-  down. The weight, one that cannot be held for more than 60-90 s, so that
-  fatigue comes within the session. There is no bar during the effort (the load is fixed, not a level to
+  the fibres and about 2 cm apart, reference over bone (olecranon or wrist); the
+  rest with the arm relaxed along the body and the weight with the elbow at 90°.
+  The session's texts name no posture: the one session serves both, and the
+  analysis is the same. There is no bar during the effort (the load is fixed, not a level to
   reach): the panel gives the seconds left. The text asks to breathe normally.
   **The space bar, or the button «I can't go on (Space)», ends the effort
   early**; the mark of its end says so and the session goes on to its last rest.
@@ -389,8 +394,8 @@ session.
   windows every 0.5 s, with the RMS, and a line through each (slope, R², p and
   change). **There is fatigue when the MDF falls significantly (p < 0.01) and
   its line drops at least 10 %**; no R² is required, since the spectrum has a
-  large scatter of its own (on the bench the biceps' MDF fell 16-20 % in 90 s
-  with an R² of only 0.3, while the RMS held or rose). View **«MDF over
+  large scatter of its own (on the bench the forearm's MDF fell 26 % in 66 s
+  with an R² of 0.39, and the biceps' 16-20 % in 90 s with an R² of only 0.3, while the RMS held or rose). View **«MDF over
   time»**: the windows, their means over 5 s, the MDF's line, where that line
   has fallen 10 %, if it does within what was held (the mark and the verdict
   come from the same line) and the RMS in grey. Panels 6 and 7 come ticked. With fragments
@@ -676,7 +681,7 @@ spectrum shifts towards lower frequencies: **MNF and MDF decrease over time**.
   - **Not conclusive**: the line does not fit (R² < 0.30), or fewer than four
     windows. The norm in a series of brief contractions: the recording does not
     answer the question, which is not the same as answering "no".
-  - In the guided session **«Fatigue: biceps with a fixed load»** (§4.3) the
+  - In the guided session **«Fatigue with a fixed load»** (§4.3) the
     criterion is another: a **significant** fall of the MDF (p < 0.01) of at
     least 10 %, with no R² required. With a fixed load held for a minute or
     more, the fall is real even when the spectrum's scatter leaves R² low.
@@ -870,7 +875,7 @@ Each begins by **choosing the practical** in the top-right selector.
    guided session **«Graded contractions»** first, in the chooser on the line of «Calibrate
    MVC» (§4.3): *Start recording* calibrates, counts 5 s, directs the five steps
    and stops by itself. For the rest, **«Free recording»** and *Start recording*;
-   for fatigue, the session **«Fatigue: biceps with a fixed load»**. If the exercise needs % MVC (load), press **«Calibrate
+   for fatigue, the session **«Fatigue with a fixed load»**. If the exercise needs % MVC (load), press **«Calibrate
    MVC»** at once: warm-up
    and three brief, intense maximal contractions (for the forearm flexor, fist
    clenched). Then the task; onsets

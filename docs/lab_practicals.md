@@ -368,19 +368,17 @@ keep the same weight up; in a **maximal** contraction there are no units left
 to add and the RMS **falls**. The specific proof of fatigue is the fall of the
 MDF, not of the amplitude.
 
-**Procedure.** With the guided session **«Fatigue: biceps with a fixed load»**.
-Electrodes over the **biceps brachii**, on the line between the medial acromion
-and the cubital fossa, **at 1/3 of that line from the cubital fossa** (SENIAM),
-aligned with the fibres and about 2 cm apart; the reference over bone
-(olecranon or wrist). A fixed weight you cannot hold for
-more than 60-90 s (a dumbbell, a full bottle), so that fatigue comes within the
-session.
+**Procedure.** With the guided session **«Fatigue with a fixed load»**, on the
+**forearm flexor**: the electrodes are already there from exercises 1a and 1b.
+**The forearm resting on the table, the hand over its edge**, and a fixed weight
+you cannot hold for more than 60-90 s (3-5 kg, a dumbbell), so that fatigue comes
+within the session.
 1. Choose the session in the chooser on the line of «Calibrate MVC» and press
    **Start recording**; no calibration is needed. After 5 s of preparation,
-   **5 s of rest** with the arm relaxed along the body and without the weight
-   (if it comes out high, the application warns that an electrode is loose), a
-   3 s countdown to **pick up the weight** and hold it **with the
-   elbow at 90°**, the arm against the body, for **90 s**. There is no bar
+   **5 s of rest** with the forearm resting, the hand relaxed and without the
+   weight (if it comes out high, the application warns that an electrode is
+   loose), a 3 s countdown to **pick up the weight** and hold it **hanging from
+   the hand, gripping no harder than you need**, for **90 s**. There is no bar
    during the effort: the load is fixed. If «Weak signal» shows after 5 s,
    the effort barely exceeds the rest: check the electrodes' contact or use a
    heavier weight, and repeat. **Breathe normally during the effort.**
@@ -392,13 +390,21 @@ session.
    activity falls. The contractions box opens on the **«MDF over time»** view,
    and panels **6. RMS/window** and **7. MDF/time** come ticked.
 
+**Variant · The biceps.** The same session, with the electrodes over the
+**biceps brachii**, on the line between the medial acromion and the cubital
+fossa, **at 1/3 of that line from the cubital fossa** (SENIAM), aligned with the
+fibres and about 2 cm apart; the reference over bone (olecranon or wrist). The
+rest with the arm relaxed along the body; the weight held **with the elbow at
+90°**, the arm against the body. The analysis is the same.
+
 **How the application decides.** It computes the MDF and the MNF in 1 s
 windows every 0.5 s and fits a line to each against time. It says **«Fatigue
 detected»** if the MDF's line falls **significantly** (p < 0.01) and by at least
 **10 %**; **«Not detected»** if it is significant but falls less or rises; and
 **«Not conclusive»** if it is not significant or the effort was too short. No
-minimum R² is required: each window's spectrum has a large scatter of its own,
-and on the bench the biceps' MDF fell 16-20 % in 90 s with an R² of only 0.3.
+minimum R² is required: each window's spectrum has a large scatter of its own:
+on the bench the forearm's MDF fell 26 % in 66 s with an R² of 0.39, and the
+biceps' 16-20 % in 90 s with an R² of only 0.3.
 
 **Data to record.** From the summary line of the contractions box and from the
 report's table:
@@ -422,7 +428,7 @@ Time held: ____ s. MDF −10 % at ____ s. Verdict: ______________.
   or not? What is the recording missing?
 
 **Then: quick repeated contractions** (session **«Quick repeated contractions»**),
-with the electrodes back on the forearm flexor: 10 s of clenching and releasing
+with the electrodes on the forearm flexor: 10 s of clenching and releasing
 the fist as fast as possible. In the **«Train»** view: the rate achieved, how much the peaks rise from
 the first to the last third, and the floor between contractions in % of the peak,
 beside the one the measure alone would leave at that rate.
