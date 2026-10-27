@@ -99,10 +99,50 @@ def test_the_load_s_row_is_the_whole_contraction_and_its_reading_stays() -> None
     fila, lectura = load_row(sesion, env, FS), load_span(sesion, env, FS)
     assert fila is not None and lectura is not None
     assert fila[0] == pytest.approx(a - ROW_LEAD_S, abs=0.02)
-    assert fila[1] == lectura[1]
+    assert fila[1] == pytest.approx(lectura[1], abs=0.02)
     # Never into the rest the session measured.
     assert fila[0] >= sesion.spans_named("rest")[-1].end_s
     assert load_row(None, env, FS) is None
+
+
+def _carga_que_sigue(tras: float, *, destello: bool = False, hasta_el_final: bool = False):
+    """A load session whose weight is still held *tras* seconds after the
+    effort's end mark, as the bench's forearm (the space bar at 79.8 s, the
+    activity on to 81.5 and back at rest at 83); with *destello*, a flicker
+    of 50 ms in the rest after it; with *hasta_el_final*, held to the
+    session's end."""
+    g, marcas = _marcas(0.0, 30.0)
+    sesion = parse_session_markers(marcas)
+    assert sesion is not None
+    esfuerzo = sesion.spans_named("effort")[-1]
+    env = np.full(int((g.total_seconds + 1) * FS), 0.004)
+    a = esfuerzo.start_s + 0.6
+    b = (sesion.end_s or g.total_seconds) + 1.0 if hasta_el_final else esfuerzo.end_s + tras
+    env[int(a * FS): int(b * FS)] = 0.15
+    if destello:
+        c = esfuerzo.end_s + tras + 0.5
+        env[int(c * FS): int((c + 0.05) * FS)] = 0.15
+    return sesion, env, esfuerzo, b
+
+
+def test_the_load_s_row_runs_to_where_the_weight_is_put_down() -> None:
+    """The bench with exe #145: the row ended at the effort's end mark,
+    79.8 s, and the forearm held the weight on to 81.5 s. The row now ends
+    where the activity is back at rest, as every row; the load is still
+    read to the effort's end."""
+    sesion, env, esfuerzo, fin = _carga_que_sigue(1.7)
+    fila, lectura = load_row(sesion, env, FS), load_span(sesion, env, FS)
+    assert fila is not None and lectura is not None
+    assert fila[1] == pytest.approx(fin, abs=0.02)
+    assert lectura[1] == pytest.approx(esfuerzo.end_s)
+    # A flicker of the noise in the rest after it does not hold it open.
+    sesion, env, _e, fin = _carga_que_sigue(1.7, destello=True)
+    fila = load_row(sesion, env, FS)
+    assert fila is not None and fila[1] == pytest.approx(fin, abs=0.02)
+    # Held to the end of the session: the row ends with the session.
+    sesion, env, _e, _f = _carga_que_sigue(0.0, hasta_el_final=True)
+    fila = load_row(sesion, env, FS)
+    assert fila is not None and fila[1] == pytest.approx(sesion.end_s, abs=0.02)
 
 
 def _con_jorobas(rate: float = 1.75, *, jorobas=(6, 7, 9), valle: float = 0.65):
@@ -158,4 +198,4 @@ def test_the_editor_opens_on_the_load_s_row(qapp, tmp_path: Path) -> None:
     fila, lectura = r["load_row"], r["load_span"]
     assert fila is not None and lectura is not None
     assert fila[0] == pytest.approx(lectura[0] - 2.0 - ROW_LEAD_S, abs=0.2)
-    assert fila[1] == lectura[1]
+    assert fila[1] == pytest.approx(lectura[1], abs=0.2)

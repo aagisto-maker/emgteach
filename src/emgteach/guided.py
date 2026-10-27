@@ -38,7 +38,7 @@ import numpy as np
 from emgteach.coactivation import resting_level
 from emgteach.contractions import _MOVE_ONSET_FRACTION, trim_to_effort
 from emgteach.dsp import compute_psd_mnf_mdf
-from emgteach.selection import REST_FRACTION, ROW_LEAD_S, Segment
+from emgteach.selection import REST_FRACTION, REST_MIN_S, ROW_LEAD_S, Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
 
 __all__ = [
@@ -112,6 +112,10 @@ _MIN_KEPT = 0.6
 #: rows are rounded to hundredths, and a contraction cut in two by hand or by
 #: the detector leaves 0.01 s between its halves (Ángel, 3.10.1).
 _CONTIGUOS_S = 0.05
+
+#: A run above rest shorter than this is a flicker of the noise, not activity
+#: that holds a row open (as emgteach.selection._FLICKER_S).
+_FLICKER_S = 0.1
 
 #: Shorter than this, a stretch has too few cycles of anything for an MDF.
 _MIN_S_FOR_MDF = 0.25
@@ -317,6 +321,33 @@ def _inicio_de_fila(actividad: np.ndarray, fs: float, a: float, b: float,
     sobre = np.flatnonzero(tramo > REST_FRACTION * float(tramo.max()))
     arranque = (i0 + int(sobre[0])) / fs if sobre.size else a
     return max(desde, arranque - ROW_LEAD_S)
+
+
+def _fin_de_fila(actividad: np.ndarray, fs: float, desde: float, hasta: float,
+                 nivel: float) -> float:
+    """Where a row ends that reaches past *desde*: at the last of the activity
+    above *nivel* that no :data:`emgteach.selection.REST_MIN_S` at or below
+    it separates from *desde*, as a fragment of the one-muscle practical
+    ends (:func:`emgteach.selection._split_at_rest`, its flickers of under
+    0.1 s left out too); never past *hasta*."""
+    i0, i1 = max(0, round(desde * fs)), min(actividad.size, round(hasta * fs))
+    if i1 <= i0:
+        return desde
+    quieto = max(1, round(REST_MIN_S * fs))
+    destello = max(1, round(_FLICKER_S * fs))
+    fin = 0
+    for a, b in _runs(actividad[i0:i1] > nivel):
+        if a - fin >= quieto:
+            break
+        if b - a >= destello or a == 0:
+            fin = b
+    return (i0 + fin) / fs
+
+
+def _runs(activo: np.ndarray) -> list[tuple[int, int]]:
+    """The runs of *activo*, as ``(start, end)`` with *end* past the last."""
+    bordes = np.flatnonzero(np.diff(np.r_[0, activo.astype(np.int8), 0]))
+    return [(int(a), int(b)) for a, b in zip(bordes[::2], bordes[1::2], strict=True)]
 
 
 def _meseta(on: float, off: float, settle_s: float) -> tuple[float, float]:
@@ -646,18 +677,26 @@ def _actividad_de_carga(session: GuidedSession, envelope, fs: float) -> tuple[np
 def load_row(session: GuidedSession | None, envelope, fs: float) -> tuple[float, float] | None:
     """What the fragment editor proposes for a load session, as one row, in
     file time: from a little before the activity leaves rest
-    (:func:`_inicio_de_fila`) to where the analysed load ends
-    (:func:`load_span`). The load is still read from 2 s after the
-    activity begins, inside it (:func:`load_piece`): the row is the whole
-    contraction, as every row of the one-muscle practical is (the bench
-    with exe #143)."""
+    (:func:`_inicio_de_fila`) to where it is back at rest — the baseline
+    plus 5 % of its peak, for a second — as every row of the one-muscle
+    practical ends (:func:`_fin_de_fila`), never past the session's end.
+    Not at the effort's end mark: the weight is still held after the space
+    bar or the 90 s, and on the bench the forearm's activity went on to
+    81.5 s and was back at rest at 83 s, the row cut at 79.8 (the bench
+    with exe #145). The load is still read from 2 s after the activity
+    begins to the effort's end (:func:`load_span`), inside the row
+    (:func:`load_piece`)."""
     tramo = load_span(session, envelope, fs)
     if tramo is None or session is None:
         return None
     actividad, a0 = _actividad_de_carga(session, envelope, fs)
     reposos = session.spans_named("rest")
     desde = reposos[-1].end_s if reposos else (session.start_s or 0.0)
-    return _inicio_de_fila(actividad, fs, a0, tramo[1], desde), tramo[1]
+    i0, i1 = max(0, round(a0 * fs)), min(actividad.size, round(tramo[1] * fs))
+    nivel = REST_FRACTION * float(actividad[i0:i1].max()) if i1 > i0 else 0.0
+    tope = actividad.size / fs if session.end_s is None else min(actividad.size / fs, session.end_s)
+    return (_inicio_de_fila(actividad, fs, a0, tramo[1], desde),
+            _fin_de_fila(actividad, fs, tramo[1], tope, nivel))
 
 
 def load_piece(span: tuple[float, float] | None,
