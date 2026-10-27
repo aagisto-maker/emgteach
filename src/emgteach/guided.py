@@ -23,6 +23,8 @@ subject begins some tenths of a second after the one that opens a stretch
 and lets go up to a second after the one that closes it (Ángel's bench with
 the board, 26 October 2026). Measured on the marks alone, each step took rest
 at its start and lost its end, and the train lost its last two contractions.
+The margin says where a contraction of the train may **begin**: the last one
+that begins inside it is the train's whole, to where it ends (3.10.1).
 """
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from emgteach.coactivation import resting_level
-from emgteach.contractions import trim_to_effort
+from emgteach.contractions import _MOVE_ONSET_FRACTION, trim_to_effort
 from emgteach.dsp import compute_psd_mnf_mdf
 from emgteach.selection import Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
@@ -222,6 +224,51 @@ def _contraccion(actividad: np.ndarray, fs: float, a: float, b: float) -> tuple[
     of its peak activity to the last, as in the contraction table."""
     seg = trim_to_effort(Segment(a, b), fs, actividad)
     return seg.start_s, seg.end_s
+
+
+def _hasta_que_acaba(actividad: np.ndarray, fs: float, a: float, b: float,
+                     limite: float) -> float:
+    """Where the contraction under way at *b* ends, never past *limite*; *b*
+    if none is.
+
+    The window of a train, its marks run on by :data:`MARGIN_S`, says where
+    its contractions may begin: the last one that begins inside it is the
+    train's to its end. Cut at the margin, it was left in two (Ángel, the
+    final bench of 3.10.0; plan §15). Under way is above a fifth of the
+    window's peak activity, the rule of the contraction table; it ends there,
+    or at the trough before the next contraction (:func:`_peaks_and_floors`'
+    peaks) if that one begins after *b*: at four or five a second the trace
+    does not fall to a fifth between contractions, and a late subject's
+    next ones are not the train's.
+    """
+    i0, i1 = max(0, round(a * fs)), min(actividad.size, round(b * fs))
+    il = min(actividad.size, round(limite * fs))
+    if i1 <= i0 or il <= i1:
+        return b
+    umbral = _MOVE_ONSET_FRACTION * float(np.max(actividad[i0:i1]))
+    if umbral <= 0.0 or actividad[i1 - 1] <= umbral:
+        return b
+    bajo = np.flatnonzero(actividad[i1:il] <= umbral)
+    fin = i1 + int(bajo[0]) if bajo.size else il
+    picos, _alturas, _suelos = _peaks_and_floors(actividad[i0:fin], fs)
+    for p, q in itertools.pairwise(i0 + picos):
+        valle = p + int(np.argmin(actividad[p:q]))
+        if valle >= i1:
+            fin = min(fin, valle)
+            break
+    return fin / fs
+
+
+def _limite_del_tren(session: GuidedSession,
+                     kept: Sequence[tuple[float, float, float]], a: float) -> float:
+    """How far past its window a train's last contraction may run, in the
+    analysed signal's time: to the end of the piece kept that holds the
+    window's start, and never past the session's end."""
+    for x, y, offset in kept:
+        if offset - 1e-9 <= a < offset + (y - x):
+            hasta = y if session.end_s is None else min(y, max(x, session.end_s))
+            return offset + hasta - x
+    return a
 
 
 def _meseta(on: float, off: float, settle_s: float) -> tuple[float, float]:
@@ -582,7 +629,9 @@ def weak_signal_warning(ratio: float | None) -> str | None:
 
 def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float, float] | None:
     """The train of quick contractions in file time: from its first
-    contraction to its last, inside its marks run on by :data:`MARGIN_S`.
+    contraction to the end of its last, the last that begins inside its
+    marks run on by :data:`MARGIN_S` — to where it ends, even past the
+    margin, but never past the session's end.
 
     What the fragment editor proposes for it, as one row. Its detector made
     one row per contraction, and the train glued out of them had lost the
@@ -598,7 +647,9 @@ def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[floa
     env = np.asarray(envelope, dtype=np.float64)
     r0, r1 = max(0, round((tramo.start_s - 3.0) * fs)), max(0, round(tramo.start_s * fs))
     reposo = float(np.median(env[r0:r1])) if r1 - r0 > 10 else resting_level(env)
-    on, off = _contraccion(env - reposo, fs, a, b)
+    actividad = env - reposo
+    limite = env.size / fs if session.end_s is None else min(env.size / fs, session.end_s)
+    on, off = _contraccion(actividad, fs, a, _hasta_que_acaba(actividad, fs, a, b, limite))
     return (on, off) if off > on else None
 
 
@@ -609,12 +660,16 @@ def fragments_hull(session: GuidedSession | None, pieces: Sequence[tuple[float, 
 
     A train is measured over that stretch of the recording, not over the
     fragments glued: chosen one per contraction they keep no rest between
-    them, and the floor and the rate are what is measured there.
+    them, and the floor and the rate are what is measured there. A fragment
+    that begins inside the window is kept to its end, up to the session's:
+    the train's last contraction may end past the margin.
     """
     if session is None:
         return None
     for tramo, a, b in measured_windows(session, [(0.0, float("inf"), 0.0)], (name,)):
-        dentro = [(max(a, x), min(b, y)) for x, y in pieces if min(b, y) > max(a, x)]
+        tope = float("inf") if session.end_s is None else session.end_s
+        dentro = [(max(a, x), min(max(b, tope), y)) for x, y in pieces
+                  if min(b, y) > max(a, x)]
         if not dentro:
             return None
         ini, fin = min(x for x, _ in dentro), max(y for _, y in dentro)
@@ -750,8 +805,9 @@ def rapid_train(
     (:func:`measured_windows`): the subject stops some tenths of a second
     after the cue, and the contractions made meanwhile are the train's —
     measured between the marks, the bench of 26 October 2026 counted 28 of
-    its 30. Its duration is the activity's, from its first contraction to
-    its last.
+    its 30. The last contraction that begins in that window is measured to
+    its end, even past it, inside the piece kept and the session. Its
+    duration is the activity's, from its first contraction to its last.
     """
     if session is None or session.family != "FAST" or fs <= 0:
         return None
@@ -762,12 +818,13 @@ def rapid_train(
     filt = np.asarray(emg_filtered, dtype=np.float64)
     s_todo = _moving_rms(filt, fs, window_ms)
     i0 = max(0, min(round(a * fs), s_todo.size))
+    r0 = max(0, i0 - round(rest_s * fs))
+    reposo = float(np.median(s_todo[r0:i0])) if i0 - r0 > 10 else None
+    b = _hasta_que_acaba(s_todo - (reposo or 0.0), fs, a, b, _limite_del_tren(session, kept, a))
     i1 = max(i0, min(round(b * fs), s_todo.size))
     if i1 - i0 < round(0.5 * fs):
         return None
     s = s_todo[i0:i1]
-    r0 = max(0, i0 - round(rest_s * fs))
-    reposo = float(np.median(s_todo[r0:i0])) if i0 - r0 > 10 else None
     picos, alturas, suelos = _peaks_and_floors(s, fs)
     activo = trim_to_effort(Segment(0.0, s.size / fs), fs, s - (reposo or 0.0))
     dur = activo.end_s - activo.start_s
