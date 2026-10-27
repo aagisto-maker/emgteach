@@ -552,7 +552,12 @@ qué pide, y el «?» del cuadro los repite.
    desde que la envolvente deja el reposo —la línea de puntos «reposo», donde pondría
    el umbral la mitad de la sensibilidad— hasta que vuelve a él, con un margen pequeño y
    sin pisar la fila siguiente; en cinemática, además, dentro de la ventana del
-   levantamiento.
+   levantamiento. **En la práctica de un músculo, una fila solo termina cuando
+   el músculo vuelve al reposo**: la envolvente baja a la línea base más un 5 %
+   de la altura de su pico y se queda ahí al menos 1 s («Un fragmento termina
+   tras un reposo de (s)», en el ajuste fino). Un escalón de la gradación, con
+   su pico breve al arrancar, es una fila; en el par, cuyas seis contracciones
+   seguidas descansan menos de un segundo, se corta por los valles entre ellas.
 2. **Cada contracción por turno**, con ◀ ▶ o pulsándola en el gráfico; se
    resalta sin que los ejes se muevan. **Mantener**, **Eliminar** (queda rayada
    y se recupera con Mantener) y **Dividir**, que solo se ofrece cuando la fila

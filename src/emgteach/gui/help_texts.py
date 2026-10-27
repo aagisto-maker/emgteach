@@ -181,6 +181,10 @@ _TEXTS = {
             "practical there is no fixed number: write it in «expected» if "
             "you know it. The dashed line over the envelope is the threshold "
             "it sets."
+        ) + " " + tr(
+            "In the single-muscle practical a contraction ends only where the "
+            "muscle is back at rest for a second: a step with a brief peak at "
+            "its start is one row."
         ) + "</p><p><b>" + tr("2 · Each contraction in turn") + "</b><br>" + tr(
             "▶ takes you to the next one; a click on the plot selects the one "
             "under it. «Keep it» if it is right. «Drop it» if it should not "

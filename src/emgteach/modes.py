@@ -47,6 +47,7 @@ __all__ = [
     "mode_label",
     "mode_protocol",
     "mode_requires_calibration",
+    "mode_rest_fraction",
     "mode_shows_fine_controls",
     "mode_uses_acc",
     "normalise_mode",
@@ -83,6 +84,14 @@ _USES_ACC = {MODE_SINGLE: False, MODE_PAIR: False, MODE_KINEMATICS: True}
 #: tried on. It is where the editor starts, not a limit: the slider still
 #: moves, and whatever it is left on travels into the report and the CSV.
 _DETECTION_K = {MODE_SINGLE: 3.0, MODE_PAIR: 4.4, MODE_KINEMATICS: 3.0}
+
+#: Where a fragment ends at rest, the share of its peak's height above the
+#: baseline that counts as rest (emgteach.selection._split_at_rest). Only the
+#: one-muscle practical, Ángel's decision of 27 October 2026: its steps came
+#: in two or three rows each. Not the pair, whose six efforts in a row rest
+#: less than a second between them and are cut at the valleys; nor
+#: kinematics, which proposes one row per lift.
+_REST_FRACTION = {MODE_SINGLE: 0.05}
 
 #: How many contractions the practical's protocol asks for, in the order the
 #: fragment editor counts them — led by the first muscle, by the second, by
@@ -233,6 +242,12 @@ def mode_uses_acc(mode: str) -> bool:
 def mode_detection_k(mode: str) -> float:
     """The detection sensitivity the fragment editor opens on in this practical."""
     return _DETECTION_K.get(normalise_mode(mode), 3.0)
+
+
+def mode_rest_fraction(mode: str) -> float:
+    """Where fragments end only at rest, the share of the peak that is rest;
+    0 where they are cut at the valleys between contractions."""
+    return _REST_FRACTION.get(normalise_mode(mode), 0.0)
 
 
 def mode_expected_contractions(mode: str) -> tuple[int, ...]:

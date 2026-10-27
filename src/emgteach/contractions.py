@@ -257,11 +257,12 @@ def contraction_table(
     merge_gap_s: float = 0.3,
     prominence: float = 0.25,
     both_ratio: float = 0.5,
+    rest_fraction: float = 0.0,
 ) -> list[Contraction]:
     """The contractions of the analysed span, one row each.
 
-    ``k``, ``min_duration_s``, ``merge_gap_s`` and ``prominence`` are the
-    detection settings of :func:`suggest_significant_segments`, and
+    ``k``, ``min_duration_s``, ``merge_gap_s``, ``prominence`` and
+    ``rest_fraction`` are the detection settings of :func:`suggest_significant_segments`, and
     ``both_ratio`` the co-activation rule of :func:`dominant_muscle`: the
     same numbers the fragment editor lets the student move, so the rows here
     are the rows they saw there.
@@ -291,7 +292,7 @@ def contraction_table(
     filtros: dict[str, Any] = dict(
         f_low=f_low, f_high=f_high, f_notch=f_notch, f_env=f_env,
         k=k, min_duration_s=min_duration_s, merge_gap_s=merge_gap_s,
-        prominence=prominence,
+        prominence=prominence, rest_fraction=rest_fraction,
     )
 
     dos = emg_raw_2 is not None and envelope_2 is not None

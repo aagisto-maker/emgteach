@@ -460,7 +460,13 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    report and the CSV. Each proposed row holds the whole contraction, from
    where the envelope leaves rest — the dotted «rest» line, drawn where half the
    sensitivity would put the threshold — to where it returns to it, with a small margin and never over the
-   next row; in kinematics, still inside the lift's window.
+   next row; in kinematics, still inside the lift's window. **In the
+   single-muscle practical a row ends only where the muscle is back at rest**:
+   the envelope down to the baseline plus 5 % of its peak's height, and there
+   for at least 1 s («A fragment ends after a rest of (s)», in the fine
+   adjustment). A gradation's step, with its brief peak at the start, is one
+   row; in the pair, whose six contractions in a row rest less than a second
+   between them, the cut is at the valleys between them.
 2. **Each contraction in turn**, with ◀ ▶ or by clicking it on the plot; it is
    highlighted without the axes moving. **Keep it**, **Drop it** (it stays
    hatched and Keep it brings it back) and **Split it**, offered only when the
