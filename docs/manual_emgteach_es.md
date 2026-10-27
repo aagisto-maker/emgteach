@@ -491,7 +491,9 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   acaba—, y se siguen **los picos y el suelo entre ellas**
   sobre un RMS móvil de 50 ms, no sobre la envolvente (a cuatro o cinco por
   segundo, su filtro de 5 Hz mantiene él solo el suelo entre un quinto y un tercio
-  del pico). La línea de resumen y el informe dan, además, **el suelo que deja la
+  del pico). Dos picos son dos contracciones si entre ellos el trazado baja del
+  40 % del menor o están a 0.25 s o más; si no, son una contracción con dos
+  jorobas, con su pico mayor, y entre ellas no se toma suelo. La línea de resumen y el informe dan, además, **el suelo que deja la
   medida sola** a ese ritmo con una relajación perfecta: lo que quede por encima es
   del sujeto. Vista «Tren». Véase la nota al margen del §7.1.
 - La casilla **«Tono»**, en todas las prácticas, anuncia con un tono breve cada

@@ -792,9 +792,12 @@ def _peaks_and_floors(s, fs: float):
 
     A contraction is a peak of *s* standing out by a third of the train's
     range, at least 0.12 s from the next (more than eight a second is not a
-    voluntary rhythm). The floor is the lowest fifth of the trace between
-    two peaks: not its minimum, which on a noisy trace is a sample, not a
-    level.
+    voluntary rhythm). Two such peaks are one contraction, with the higher
+    of them, unless the trace between them falls below
+    :data:`_HUMP_VALLEY` of the lower one or they are
+    :data:`_HUMP_GAP_S` apart (:func:`_one_per_contraction`). The floor is
+    the lowest fifth of the trace between two contractions: not its
+    minimum, which on a noisy trace is a sample, not a level.
     """
     from scipy.signal import find_peaks
 
@@ -804,9 +807,42 @@ def _peaks_and_floors(s, fs: float):
     rango = float(np.percentile(s, 95) - np.percentile(s, 5))
     picos, _ = find_peaks(s, distance=max(1, round(0.12 * fs)),
                           prominence=max(1e-12, rango / 3.0))
+    picos = _one_per_contraction(s, picos, fs)
     suelos = np.array([float(np.percentile(s[a:b], 20))
                        for a, b in itertools.pairwise(picos) if b > a + 1])
     return picos, s[picos], suelos
+
+
+#: Two peaks of a train are two contractions if the trace between them falls
+#: below this share of the lower one... (the bench with exe #143: three
+#: contractions with two humps, 0.13-0.2 s apart and a «floor» between them
+#: at 60-75 % of the lower, counted twice and the floor jumping to half the
+#: peak). What the measure itself leaves between contractions with a full
+#: relaxation stays well under it up to seven a second (26 %,
+#: processing_floor_pct).
+_HUMP_VALLEY = 0.4
+#: ...or if they are this far apart: more than four a second, the distance
+#: alone does not part them.
+_HUMP_GAP_S = 0.25
+
+
+def _one_per_contraction(s: np.ndarray, picos: np.ndarray, fs: float) -> np.ndarray:
+    """The peaks of *s*, one per contraction: a peak not parted from the one
+    before by a valley below :data:`_HUMP_VALLEY` of the lower of the two,
+    nor by :data:`_HUMP_GAP_S`, is the same contraction's second hump, and
+    the contraction keeps the higher of them."""
+    juntos: list[int] = []
+    for q in (int(x) for x in picos):
+        if juntos:
+            p = juntos[-1]
+            valle = float(np.min(s[p:q + 1]))
+            if (valle > _HUMP_VALLEY * min(float(s[p]), float(s[q]))
+                    and (q - p) / fs < _HUMP_GAP_S):
+                if s[q] > s[p]:
+                    juntos[-1] = q
+                continue
+        juntos.append(q)
+    return np.asarray(juntos, dtype=int)
 
 
 def processing_floor_pct(rate_hz: float, fs: float = 1000.0,
