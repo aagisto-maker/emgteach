@@ -147,6 +147,30 @@ def test_fatigue_is_a_significant_fall_of_at_least_a_tenth(inicio, final, p, n, 
     assert load_verdict(None, 170) == INCONCLUSIVE
 
 
+def test_the_ten_per_cent_mark_is_read_on_the_line() -> None:
+    """Ángel, 3.10.1: the summary line said «MDF -10 % at 74 s» (a 5 s
+    running median) beside the verdict «fell less than 10 %» (the line).
+    The mark is now where the line falls 10 %, if it does within what was
+    held: the mark, the line and the verdict come from the same measure."""
+    from emgteach.guided import line_decline_s
+
+    t = np.arange(0.5, 90.0, 0.5)
+    # 80 Hz falling to 68 (-15 %) in 90 s: the line is 72 Hz at 60 s.
+    cae = Trend(slope=-12.0 / 89.5, start=80.0, end=68.0, r2=0.3, p=1e-8)
+    assert line_decline_s(cae, t) == pytest.approx(8.0 / (12.0 / 89.5), rel=1e-6)
+    # -6 %: the running median could dip 10 % somewhere; the line does not.
+    poco = Trend(slope=-4.8 / 89.5, start=80.0, end=75.2, r2=0.2, p=1e-6)
+    assert line_decline_s(poco, t) is None
+    # Nor a rise; and a held time too short for the line to get there.
+    assert line_decline_s(Trend(0.1, 80.0, 89.0, 0.3, 1e-6), t) is None
+    assert line_decline_s(cae, t[t < 50.0]) is None
+    assert line_decline_s(None, t) is None
+    # With a significant slope, the mark is there exactly when the verdict
+    # is fatigue.
+    for tend in (cae, poco):
+        assert (line_decline_s(tend, t) is not None) == (load_verdict(tend, t.size) == FATIGUE)
+
+
 def test_a_low_r2_does_not_hide_the_fall() -> None:
     """The bench's R² was 0.3: a real fall under a spectrum's own scatter."""
     tend = Trend(slope=-0.15, start=90.0, end=76.5, r2=0.25, p=1e-6)

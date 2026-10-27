@@ -2211,6 +2211,11 @@ _ES = {
     'Join gaps shorter than (s)': 'Unir huecos menores de (s)',
     'Split between contractions': 'Separación entre contracciones',
     'lower splits a series more readily; higher keeps it together': 'más baja separa una serie con más facilidad; más alta la mantiene unida',
+    'A fragment ends after a rest of (s)': 'Un fragmento termina tras un reposo de (s)',
+    'In the single-muscle practical a contraction ends only where the muscle is back at rest for a second: a step with a brief peak at its start is one row.':
+        'En la práctica de un músculo, una contracción solo termina cuando el músculo vuelve al reposo durante un segundo: un escalón con un pico breve al arrancar es una fila.',
+    'In this practical a fragment ends only where the muscle is back at rest.':
+        'En esta práctica, un fragmento solo termina cuando el músculo vuelve al reposo.',
     'Reset': 'Restablecer',
     'Moving a setting rebuilds the proposal; rows edited by hand are replaced.': 'Al mover un ajuste se rehace la propuesta; las filas editadas a mano se sustituyen.',
     'Click a stretch to select it, or drag it onto other activity; click a dotted one to add it.': 'Pulse un tramo para seleccionarlo, o arrástrelo sobre otra actividad; pulse uno punteado para añadirlo.',
@@ -2636,10 +2641,10 @@ _ES = {
         'Escalón {k} de {n}: máximo',
     'Step {k} of {n}: {pct} %':
         'Escalón {k} de {n}: {pct} %',
-    'Close your fist with a maximal contraction and hold it.':
-        'Cierre el puño con la máxima contracción y manténgala.',
-    'Close your fist with a contraction up to {pct} % of the bar and hold it there.':
-        'Cierre el puño con una contracción hasta el {pct} % de la barra y manténgala ahí.',
+    'Close your fist: rise slowly to your maximum (1-2 s) and hold it.':
+        'Cierre el puño: suba despacio hasta el máximo (1-2 s) y manténgalo.',
+    'Close your fist: rise slowly to the mark (1-2 s) and hold it there.':
+        'Cierre el puño: suba despacio hasta la marca (1-2 s) y manténgala.',
     'Let go and rest.':
         'Suelte y descanse.',
     'Let go. That was the last one: the recording stops on its own.':

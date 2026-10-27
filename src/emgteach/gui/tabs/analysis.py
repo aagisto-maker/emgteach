@@ -323,6 +323,7 @@ from emgteach.modes import (
     MODE_SINGLE,
     mode_detection_k,
     mode_expected_contractions,
+    mode_rest_fraction,
     mode_uses_acc,
 )
 from emgteach.mvc import mark_excess_over_100, overlay_curves
@@ -1460,6 +1461,9 @@ class AnalysisTab(QWidget):
                 # on k = 4.4 and counts against six, six and one; kinematics
                 # against the lifts its guided wizard marked in the file.
                 default_k=mode_detection_k(self._mode),
+                # In the one-muscle practical a fragment ends at rest, not at
+                # a valley: a step came in two or three rows (Ángel, 3.10.1).
+                default_rest_fraction=mode_rest_fraction(self._mode),
                 expected=(self._esperadas
                           or self._esperadas_de_la_sesion(path)),
                 # One row per lift the guided wizard marked, instead of
@@ -1631,7 +1635,8 @@ class AnalysisTab(QWidget):
         """The detection settings when the fragment editor was never opened:
         the practical's own sensitivity, so the contraction table and the
         report use the k the editor would have opened on."""
-        return default_detection(mode_detection_k(self._mode))
+        return default_detection(mode_detection_k(self._mode),
+                                 mode_rest_fraction(self._mode))
 
     def _hay_segundo_canal(self) -> bool:
         """Whether this analysis has an antagonist, and so a co-activation

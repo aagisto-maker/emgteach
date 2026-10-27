@@ -22,6 +22,7 @@ from emgteach.dsp import process_offline
 from emgteach.force_velocity import marker_owners
 from emgteach.selection import (
     DEFAULT_DETECTION,
+    REST_MIN_S,
     Segment,
     activity_threshold,
     normalise_segments,
@@ -60,16 +61,22 @@ _UNION_S = 0.1
 _BORDE_MARGEN_S = 0.05
 
 
-def default_detection(k: float | None = None) -> dict[str, float]:
+def default_detection(k: float | None = None,
+                      rest_fraction: float = 0.0) -> dict[str, float]:
     """The detection settings the editor opens on, co-activation rule included.
 
     ``k`` is the practical's own sensitivity (see
     :func:`emgteach.modes.mode_detection_k`); without it, the core default.
+    With a ``rest_fraction`` (:func:`emgteach.modes.mode_rest_fraction`), a
+    fragment ends only after :data:`emgteach.selection.REST_MIN_S` at rest.
     """
     d = dict(DEFAULT_DETECTION)
     d["both_ratio"] = float(_DOMINANCE)
     if k is not None:
         d["k"] = float(k)
+    if rest_fraction > 0.0:
+        d["rest_fraction"] = float(rest_fraction)
+        d["merge_gap_s"] = REST_MIN_S
     return d
 
 
@@ -177,6 +184,7 @@ def detect(
             min_duration_s=detection["min_duration_s"],
             merge_gap_s=detection["merge_gap_s"],
             prominence=detection["prominence"],
+            rest_fraction=detection.get("rest_fraction", 0.0),
         )
 
     # Back into the file's own clock: the worker crops by these numbers.
@@ -370,6 +378,7 @@ def suggest_fragments(
     detection: Mapping[str, float] | None = None,
     default_k: float | None = None,
     lifts: Sequence[tuple[float, float]] | None = None,
+    rest_fraction: float = 0.0,
 ) -> list[Segment]:
     """The fragments the editor proposes when it opens, without its names.
 
@@ -380,7 +389,7 @@ def suggest_fragments(
     raw = np.asarray(raw, dtype=np.float64).ravel()
     raw_2 = None if raw_2 is None else np.asarray(raw_2, dtype=np.float64).ravel()
     tramo = span_within(span, len(raw) / fs)
-    det = default_detection(default_k)
+    det = default_detection(default_k, rest_fraction)
     if detection:
         det.update({k: float(v) for k, v in detection.items() if k in det})
     envs = [e for e in (envelope(raw, fs, filter_kwargs),

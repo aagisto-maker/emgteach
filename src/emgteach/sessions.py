@@ -44,6 +44,7 @@ __all__ = [
     "FAMILIES",
     "GRADATION_STEPS_PCT",
     "GRAD_MVC_WINDOW_S",
+    "GRAD_RAMP_S",
     "LOAD_DEFAULT_S",
     "LOAD_MAX_S",
     "READY",
@@ -168,6 +169,10 @@ class SessionPhase:
     #: A rest whose level is checked: above guided.REST_WARN_MV the panel
     #: says the electrodes' contact is poor.
     check_rest: bool = False
+    #: Seconds over which the band of ``target_pct`` rises from zero on the
+    #: live bar: the target the student follows up, rather than a mark to
+    #: jump to.
+    ramp_s: float = 0.0
     #: Start of this phase within the session, filled in by
     #: :meth:`SessionScript.timed`.
     start: float = 0.0
@@ -267,6 +272,10 @@ GRAD_MVC_WINDOW_S = 0.5
 GRADATION_STEP_S = 4.0
 GRADATION_REST_S = 6.0
 GRADATION_EDGE_S = 5.0
+#: Seconds over which each step's band rises on the bar (Ángel, the final
+#: bench of 3.10.0: every step began with a brief peak above the one asked,
+#: the subject jumping to the mark).
+GRAD_RAMP_S = 1.5
 #: Half the width of the band each step aims at, % MVC.
 _GRADATION_BAND = 5.0
 
@@ -288,9 +297,10 @@ def gradation_script() -> SessionScript:
         fases.append(SessionPhase(
             f"step_{k}", EFFORT, GRADATION_STEP_S,
             "Step {k} of {n}: maximum" if maximo else "Step {k} of {n}: {pct} %",
-            ("Close your fist with a maximal contraction and hold it."
-             if maximo else "Close your fist with a contraction up to {pct} % of the bar and hold it there."),
+            ("Close your fist: rise slowly to your maximum (1-2 s) and hold it."
+             if maximo else "Close your fist: rise slowly to the mark (1-2 s) and hold it there."),
             level=pct / 100.0,
+            ramp_s=GRAD_RAMP_S,
             target_pct=(100.0 - 2 * _GRADATION_BAND, 100.0) if maximo
             else (pct - _GRADATION_BAND, pct + _GRADATION_BAND),
             opens=span_start_marker("GRAD", "step", k=k, pct=pct),

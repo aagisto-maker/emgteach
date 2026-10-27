@@ -202,6 +202,69 @@ def test_the_train_s_window_is_from_its_first_contraction_to_its_last() -> None:
     assert train_span(None, env, FS) is None
 
 
+def _con_una_larga_al_final(t0: float = 0.0):
+    """The bench's late subject (begun 0.4 s after the cue, stopped 0.5 s
+    after its end), and two contractions more: one of 0.6 s begun 1.2 s
+    after the end mark, inside the margin, that ends past it; and one begun
+    2.2 s after the mark, past the margin, which is not the train's."""
+    sesion, senal, marcas = _tren_sintetico(t0, tarde=(0.4, 0.5), rate=3.0)
+    fin = sesion.spans_named("train")[0].end_s
+    rng = np.random.default_rng(7)
+    for ini, dur in ((fin + 1.2, 0.6), (fin + 2.2, 0.3)):
+        i0, i1 = round(ini * FS), round((ini + dur) * FS)
+        senal[i0:i1] = rng.normal(0, 0.3, i1 - i0)
+    return sesion, senal, fin, marcas
+
+
+def test_the_last_contraction_begun_in_the_margin_is_the_trains_whole() -> None:
+    """Ángel, 3.10.1 (plan §15): the margin of 1.5 s says where a contraction
+    of the train may begin; the proposed row and the measure end where the
+    last one that begins inside it ends — cut at the margin, it was left in
+    two. One begun past the margin is not the train's."""
+    from emgteach.guided import fragments_hull, train_span
+
+    sesion, senal, fin, _m = _con_una_larga_al_final()
+    ventana = train_span(sesion, process_offline(senal, FS)["emg_envelope"], FS)
+    assert ventana is not None
+    assert ventana[1] == pytest.approx(fin + 1.8, abs=0.2)
+    assert ventana[1] < fin + 2.2
+    filt = process_offline(senal, FS)["emg_filtered"]
+    tren = rapid_train(sesion, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=filt)
+    assert tren is not None
+    inicio = sesion.spans_named("train")[0].start_s + 0.4
+    # 31 contractions at three a second, and the long one; not the one after.
+    assert tren.n == 32
+    assert tren.seconds == pytest.approx(fin + 1.8 - inicio, abs=0.15)
+    assert tren.peak_times[-1] < fin + 2.2 - (inicio - 0.4)      # from the window start
+    # With fragments, one round each: the hull keeps the long one to its
+    # end and leaves the one after the margin out.
+    trozos = ([(inicio + k / 3.0 - 0.05, inicio + k / 3.0 + 0.25) for k in range(31)]
+              + [(fin + 1.15, fin + 1.85), (fin + 2.15, fin + 2.55)])
+    casco = fragments_hull(sesion, trozos, "train")
+    assert casco is not None and casco[1] == pytest.approx(fin + 1.85)
+    tren = rapid_train(sesion, [(casco[0], casco[1], casco[0])], fs=FS, emg_filtered=filt)
+    assert tren is not None and tren.n == 32
+
+
+def test_a_subject_who_goes_on_past_the_margin_is_cut_between_contractions() -> None:
+    """At four a second the trace does not fall to a fifth of the peak
+    between contractions: the train ends at the trough before the first
+    contraction begun past the margin, not where the subject stopped."""
+    from emgteach.guided import MARGIN_S, train_span
+
+    sesion, senal, _m = _tren_sintetico(tarde=(0.0, 3.0), rate=4.0, suelo=0.3)
+    tramo = sesion.spans_named("train")[0]
+    hasta = tramo.end_s + MARGIN_S + 0.25 + 0.15        # one period, and the trough
+    ventana = train_span(sesion, process_offline(senal, FS)["emg_envelope"], FS)
+    assert ventana is not None and tramo.end_s + MARGIN_S - 0.1 < ventana[1] < hasta
+    filt = process_offline(senal, FS)["emg_filtered"]
+    tren = rapid_train(sesion, [(0.0, 1e9, 0.0)], fs=FS, emg_filtered=filt)
+    assert tren is not None
+    # 11.5 s at four a second: 46 contractions begun before the margin's end.
+    assert tren.n == pytest.approx(46, abs=1)
+    assert tren.seconds < hasta - tramo.start_s
+
+
 def test_fragments_chosen_one_per_contraction_keep_the_train() -> None:
     """The bench with exe #139, B2: «Select fragments» proposed one fragment
     per contraction, no one of them 60 % of the train, and the «Train» view
@@ -334,6 +397,20 @@ def test_with_the_fragment_round_the_train_the_view_stays(qapp, tmp_path: Path) 
     assert salida
     tren = salida[0]["train"]
     assert tren is not None and tren.n == pytest.approx(31, abs=1)
+
+
+@pytest.mark.gui
+def test_the_analysed_span_reaches_the_end_of_the_last_contraction(qapp, tmp_path: Path) -> None:
+    """Without fragments the analysed span ended at the margin too: it now
+    runs to the end of the train's last contraction."""
+    from tests.test_fatiga_guiada import _edf
+    from tests.test_gradacion import _analizar
+
+    _s, senal, fin, marcas = _con_una_larga_al_final(t0=REC_S)
+    r = _analizar(qapp, _edf(tmp_path / "rapidas.edf", marcas, senal))
+    assert r["roi_end_s"] == pytest.approx(fin + 1.8, abs=0.2)
+    assert r["train"] is not None and r["train"].n == 32
+    assert r["train_span"][1] == pytest.approx(fin + 1.8, abs=0.2)
 
 
 @pytest.mark.gui

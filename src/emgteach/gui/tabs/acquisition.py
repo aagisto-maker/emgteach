@@ -4379,6 +4379,11 @@ class AcquisitionTab(QWidget):
                               progress=hecho)
         elif fase.kind == EFFORT and fase.target_pct is not None:
             lo, hi = fase.target_pct
+            if fase.ramp_s > 0:
+                # The band rises from zero over its ramp: a target to follow
+                # up slowly, not a mark to jump to (sessions.GRAD_RAMP_S).
+                subida = min(1.0, max(0.0, (fase.seconds - restante) / fase.ramp_s))
+                lo, hi = lo * subida, hi * subida
             self._mvc_overlay.show_phase(
                 f"{titulo} · {cuenta} s", texto, running=hecho,
                 loads=[(carga, _CHANNEL_COLORS[0])],

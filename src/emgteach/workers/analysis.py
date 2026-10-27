@@ -407,19 +407,20 @@ class AnalysisWorker(QThread):
         self._reposo_sesion = rest_level(sesion, env, fs)
         return load_span(sesion, env, fs)
 
-    @staticmethod
-    def _tren_rapido(sesion) -> tuple[float, float] | None:
+    def _tren_rapido(self, sesion) -> tuple[float, float] | None:
         """The train of quick contractions and the three seconds of rest
         before it, in file time: the rest is what the floor is compared with.
         Run on past its end mark (guided.measured_windows), where the
         subject is still making the contractions the cue to stop was late
-        for."""
+        for, and to the end of the last of them (guided.train_span)."""
         if sesion is None or sesion.family != "FAST":
             return None
         trenes = sesion.spans_named("train")
         if not trenes:
             return None
         fin = trenes[-1].end_s + MARGIN_S
+        if self._tramo_tren is not None:
+            fin = max(fin, self._tramo_tren[1])
         if sesion.end_s is not None:
             fin = min(fin, sesion.end_s)
         return (max(0.0, trenes[-1].start_s - 3.0), max(trenes[-1].end_s, fin))

@@ -167,6 +167,46 @@ def test_the_level_held_is_the_envelope_after_the_reach() -> None:
     assert is_monotonic(pasos)
 
 
+def test_a_start_peak_of_more_than_a_second_is_left_out() -> None:
+    """The final bench of 3.10.0: each step began with a brief peak above the
+    level asked, longer than the one second left out until then. Since 3.10.1
+    the step is asked to be reached slowly and its level read from +1.5 s."""
+    assert SETTLE_S == 1.5
+    niveles = [0.2, 0.4, 0.6, 0.8, 1.0]
+    env, filt = _senales(niveles, alcance=1.3)
+    pasos = gradation_steps(_sesion_sintetica(), [(0.0, 60.0, 0.0)], fs=FS,
+                            emg_filtered=filt, envelope=env, mvc_ref=1.0)
+    for p, nivel in zip(pasos, niveles, strict=True):
+        assert p.held_mv == pytest.approx(nivel, rel=1e-6)
+
+
+def test_each_step_is_reached_slowly_with_a_rising_band() -> None:
+    """Ángel, 3.10.1: «Suba despacio hasta la marca (1-2 s) y manténgala», and
+    the band on the bar rises to the mark over 1.5 s."""
+    from emgteach.sessions import GRAD_RAMP_S
+
+    pasos = [f for f in gradation_script().phases if f.kind == EFFORT]
+    assert GRAD_RAMP_S == 1.5 and all(f.ramp_s == GRAD_RAMP_S for f in pasos)
+    assert _ES[pasos[0].text] == "Cierre el puño: suba despacio hasta la marca (1-2 s) y manténgala."
+    assert _ES[pasos[-1].text] == "Cierre el puño: suba despacio hasta el máximo (1-2 s) y manténgalo."
+    assert not any(f.ramp_s for f in gradation_script().phases if f.kind != EFFORT)
+
+
+@pytest.mark.gui
+def test_the_band_on_the_bar_rises_over_its_ramp(tab, monkeypatch) -> None:  # noqa: F811
+    zonas: list[tuple[float, float]] = []
+    monkeypatch.setattr(tab._mvc_overlay, "show_phase",
+                        lambda *a, zone=None, **k: zonas.append(zone))
+    paso = next(f for f in gradation_script().phases if f.kind == EFFORT and f.level == 0.4)
+    lo, hi = paso.target_pct
+    for transcurrido in (0.0, 0.75, 1.5, 3.0):
+        tab._sesion_tick(paso, paso.seconds - transcurrido, transcurrido / paso.seconds)
+    assert zonas[0] == pytest.approx((0.0, 0.0))
+    assert zonas[1] == pytest.approx((lo / 200, hi / 200))
+    assert zonas[2] == pytest.approx((lo / 100, hi / 100))
+    assert zonas[3] == pytest.approx((lo / 100, hi / 100))
+
+
 def test_without_a_reference_the_level_is_in_millivolts() -> None:
     env, filt = _senales([0.2, 0.4, 0.6, 0.8, 1.0])
     pasos = gradation_steps(_sesion_sintetica(), [(0.0, 60.0, 0.0)], fs=FS,
@@ -297,11 +337,14 @@ CAL_REPS = [(2.0, 5.0), (8.0, 11.0), (14.0, 17.0)]
 REC_S = 22.0
 
 
-def _gradacion_edf(path: Path, *, ruido: bool = False, maximo: float = 1.0) -> str:
+def _gradacion_edf(path: Path, *, ruido: bool = False, maximo: float = 1.0,
+                   arranque: bool = False) -> str:
     """A one-muscle session: three maximal efforts at amplitude 1, the
     countdown, and the gradation at 20…100 % of it — its maximal step at
     *maximo*. With *ruido*, the signal is noise and not a sine: an envelope
-    with the ripple of a real one, whose peak stands above its mean."""
+    with the ripple of a real one, whose peak stands above its mean. With
+    *arranque*, each step as the bench's (26 October 2026): a brief peak
+    at its start, 1.6 times its level, and a dip before its plateau."""
     n = int((REC_S + 60.0) * FS)
     t = np.arange(n) / FS
     amp = np.full(n, 0.01)
@@ -310,8 +353,12 @@ def _gradacion_edf(path: Path, *, ruido: bool = False, maximo: float = 1.0) -> s
     sesion = _sesion_sintetica(t0=REC_S)
     for tramo in sesion.spans:
         pct = tramo.number("pct") or 0
-        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = (
-            maximo if pct >= 100 else pct / 100)
+        nivel = maximo if pct >= 100 else pct / 100
+        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = nivel
+        if arranque:
+            a = tramo.start_s
+            amp[int(a * FS): int((a + 0.8) * FS)] = 1.6 * nivel
+            amp[int((a + 0.8) * FS): int((a + 1.2) * FS)] = 0.4 * nivel
     portadora = (np.random.default_rng(8).normal(0.0, 0.35, n) if ruido
                  else np.sin(2 * np.pi * 80 * t))
     senal = portadora * amp
@@ -456,7 +503,15 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
     """Ángel's bench with the board (26 October 2026), rehearsed: a subject
     who begins 0.4 s after each cue and lets go 0.8 s after its end. Each
     step, and each row of the table, is the whole contraction — begun after
-    its mark and run on past its end — and not the stretch between the cues."""
+    its mark and run on past its end — and not the stretch between the cues.
+
+    The mark is written at the samples the worker has received and the
+    subject is told at the ones the board has made: on a loaded runner the
+    board is ahead, by 3 s once (CI, Windows, the PR of the DOI of 3.10.0:
+    a step begun 3.47 s after its mark, against a bound of 1.5). So each
+    step is checked against when the subject was told, in the board's time,
+    which is the file's: what the analysis must find is the subject's
+    contraction, wherever the lag put it."""
     from emgteach.devices.bitalino_sim import _SyntheticSubject
     from emgteach.gui.tabs import acquisition as acq_mod
     from tests.test_marcas_manuales import _until
@@ -464,6 +519,16 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
 
     monkeypatch.setattr(_SyntheticSubject, "reaction_s", 0.4)
     monkeypatch.setattr(_SyntheticSubject, "release_s", 0.8)
+    # When the subject was told each level, in the signal's time.
+    dichos: list[tuple[float | None, float]] = []
+    instruir = _SyntheticSubject.instruct
+
+    def instruct(self, channel_index, level, *, repeat_s=None, at_s=None):
+        if at_s is not None:
+            dichos.append((level, at_s))
+        instruir(self, channel_index, level, repeat_s=repeat_s, at_s=at_s)
+
+    monkeypatch.setattr(_SyntheticSubject, "instruct", instruct)
     pestana = request.getfixturevalue("tab")
     corta = dataclasses.replace(gradation_script().with_seconds(2.0), needs_mvc=False)
     monkeypatch.setitem(acq_mod.GUIDED_SESSIONS, "gradacion", lambda: corta)
@@ -479,14 +544,20 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
     assert len(pasos) == 5 and len(filas) == 5
     assert is_monotonic(pasos), [p.held_mv for p in pasos]
     marcas = r["guided_session"].spans_named("step")
-    for p, fila, marca in zip(pasos, filas, marcas, strict=True):
+    # Each step's level, and the rest told after it.
+    sube = [i for i, (nivel, _t) in enumerate(dichos) if nivel]
+    assert len(sube) == 5 and sube[-1] + 1 < len(dichos)
+    for p, fila, marca, i in zip(pasos, filas, marcas, sube, strict=True):
         inicio = p.start_s + r["roi_start_s"] - marca.start_s
         fin = p.end_s + r["roi_start_s"] - marca.end_s
-        # Begun after its cue, and run on past its end: the 0.4 and 0.8 s
-        # of the subject, plus whatever the board and the worker add — on a
-        # loaded runner up to the margin itself (CI, Windows, 26 Oct 2026).
-        assert 0.2 < inicio < 1.5, inicio
+        # The board's lead on the worker, at the cue and at its end.
+        ida, vuelta = dichos[i][1] - marca.start_s, dichos[i + 1][1] - marca.end_s
+        # Begun after its cue, when the subject began it; run on past its
+        # end, to where the subject let go or the margin ends the window.
+        assert inicio > 0.2, inicio
+        assert inicio == pytest.approx(ida + 0.4, abs=0.3), (inicio, ida)
         assert 0.4 < fin <= MARGIN_S + 1e-6, fin
+        assert fin == pytest.approx(min(vuelta + 0.8, MARGIN_S), abs=0.3), (fin, vuelta)
         assert fila.start_s == pytest.approx(p.start_s, abs=0.15)
         assert fila.end_s == pytest.approx(p.end_s, abs=0.15)
 

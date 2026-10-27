@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DEFAULT_DETECTION",
+    "REST_MIN_S",
     "Segment",
     "activity_threshold",
     "normalise_segments",
@@ -114,6 +115,20 @@ _PROMINENCE_FRACTION = 0.25
 _ONSET_FRACTION = 0.10
 
 
+#: A run above the threshold shorter than this is a flicker of the resting
+#: noise, not a contraction, when a fragment ends only at rest
+#: (:func:`_split_at_rest`): joined over the gaps a rest must outlast, the
+#: flickers of a quiet second made a row of their own (Ángel's gradation of
+#: 26 October 2026, 0.005 mV against steps of 0.35).
+_FLICKER_S = 0.1
+
+
+#: How long the envelope must stay back at rest for a fragment to end there,
+#: where fragments end only at rest (the default ``merge_gap_s`` then):
+#: Ángel's second (27 October 2026).
+REST_MIN_S = 1.0
+
+
 #: The detection settings the fragment editor lets the student move, with the
 #: values the proposal uses when nobody has touched them. One dictionary so the
 #: editor, the analysis worker and the contraction table read the same keys.
@@ -122,6 +137,10 @@ DEFAULT_DETECTION: dict[str, float] = {
     "min_duration_s": 0.5,
     "merge_gap_s": 0.3,
     "prominence": _PROMINENCE_FRACTION,
+    # Off (0) cuts at the valleys between contractions (_separate_contractions);
+    # on, a fragment ends only where the envelope returns to rest
+    # (_split_at_rest). Per practical: see emgteach.modes.mode_rest_fraction.
+    "rest_fraction": 0.0,
 }
 
 
@@ -330,6 +349,46 @@ def split_fragment(
     )
 
 
+def _split_at_rest(
+    env: np.ndarray, runs: list[tuple[int, int]], base: float, threshold: float,
+    rest_n: int, fraction: float, min_len: int, flicker_n: int,
+) -> list[tuple[int, int, int, int]]:
+    """The contractions of the active *runs*, ending only where the envelope
+    is back at rest: at or below the baseline plus *fraction* of the peak's
+    height above it, for at least *rest_n* samples.
+
+    Ángel's rule (27 October 2026): cut at the valleys between peaks, a
+    gradation's step came in two or three rows — its brief peak at the start
+    and the ripples of its plateau stood out a quarter of the tallest — and
+    each was measured on the piece that kept most of it. A contraction ends
+    when the muscle rests, not when it eases. The peak is each run's own, so
+    a light contraction is not judged against a maximal one; a run shorter
+    than *flicker_n* samples is noise, and so is a row that is not above the
+    threshold for *min_len* samples in all.
+    """
+    largos = [(a, b) for a, b in runs if b - a + 1 >= flicker_n]
+    juntos: list[tuple[int, int]] = []
+    for a, b in largos:
+        if juntos and a - juntos[-1][1] - 1 < rest_n:
+            juntos[-1] = (juntos[-1][0], b)
+        else:
+            juntos.append((a, b))
+    salida = []
+    for a, b in juntos:
+        tramo = env[a:b + 1]
+        nivel = base + fraction * (float(tramo.max()) - base)
+        trozos: list[tuple[int, int]] = []
+        for x, y in _find_runs(tramo > nivel):
+            if trozos and x - trozos[-1][1] - 1 < rest_n:
+                trozos[-1] = (trozos[-1][0], y)
+            else:
+                trozos.append((x, y))
+        for x, y in trozos:
+            if int(np.count_nonzero(tramo[x:y + 1] > threshold)) >= min_len:
+                salida.append((a + x, a + y, a + x, a + y))
+    return salida
+
+
 def suggest_significant_segments(
     emg_raw: FloatArray | np.ndarray,
     fs: float,
@@ -343,6 +402,7 @@ def suggest_significant_segments(
     merge_gap_s: float = 0.3,
     max_segments: int | None = None,
     prominence: float = _PROMINENCE_FRACTION,
+    rest_fraction: float = 0.0,
 ) -> list[Segment]:
     """Propose the informative fragments (active periods) of a recording.
 
@@ -389,6 +449,12 @@ def suggest_significant_segments(
         How far a peak must stand out of its run, as a fraction of the run's
         tallest peak, to count as a contraction of its own (default 0.25).
         Lower splits a series more readily; higher keeps it together.
+    rest_fraction : float, optional
+        With a value above 0, a fragment ends only where the envelope is
+        back at rest: at or below the baseline plus this fraction of the
+        peak's height above it, for at least ``merge_gap_s``
+        (:func:`_split_at_rest`); ``prominence`` then plays no part. 0, the
+        default, cuts at the valleys between contractions.
 
     Returns
     -------
@@ -416,8 +482,22 @@ def suggest_significant_segments(
     active = env > threshold
     runs = _find_runs(active)
 
-    # Merge runs whose inter-gap is shorter than merge_gap_s.
-    merge_gap = round(merge_gap_s * fs)
+    min_len = round(min_duration_s * fs)
+    if rest_fraction > 0.0:
+        split = _split_at_rest(env, runs, base, threshold,
+                               max(1, round(merge_gap_s * fs)), float(rest_fraction),
+                               min_len, max(1, round(_FLICKER_S * fs)))
+    else:
+        split = _valleys(env, runs, base, round(merge_gap_s * fs), prominence)
+    return _as_segments(env, fs, split, min_len, total_s, max_segments)
+
+
+def _valleys(
+    env: np.ndarray, runs: list[tuple[int, int]], base: float, merge_gap: int,
+    prominence: float,
+) -> list[tuple[int, int, int, int]]:
+    """The active *runs* joined over gaps of up to *merge_gap* samples, and
+    cut at the valleys between their contractions (_separate_contractions)."""
     merged: list[tuple[int, int]] = []
     for start, end in runs:
         if merged and start - merged[-1][1] <= merge_gap:
@@ -429,8 +509,14 @@ def suggest_significant_segments(
     split: list[tuple[int, int, int, int]] = []
     for start, end in merged:
         split.extend(_separate_contractions(env, start, end, base, prominence))
+    return split
 
-    min_len = round(min_duration_s * fs)
+
+def _as_segments(
+    env: np.ndarray, fs: float, split: list[tuple[int, int, int, int]],
+    min_len: int, total_s: float, max_segments: int | None,
+) -> list[Segment]:
+    """The detected contractions as the proposal's segments."""
     segments: list[Segment] = []
     dt = 1.0 / fs
     for start, end, span_start, span_end in split:

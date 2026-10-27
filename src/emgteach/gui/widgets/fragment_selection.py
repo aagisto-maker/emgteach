@@ -197,6 +197,10 @@ class FragmentSelectionDialog(QDialog):
     default_k : float, optional
         The sensitivity this practical opens on, and the one «Reset» goes
         back to. ``detection`` wins over it when both are given.
+    default_rest_fraction : float, optional
+        Above 0, a fragment ends only where the envelope is back at rest
+        (:func:`emgteach.modes.mode_rest_fraction`), and «Reset» goes back to
+        that too.
     expected : sequence of int, optional
         How many contractions the protocol asks for: led by the first
         muscle, by the second and by both — or one total, with one muscle.
@@ -228,6 +232,7 @@ class FragmentSelectionDialog(QDialog):
         lifts: Sequence[tuple[float, float]] | None = None,
         session_window: tuple[float, float] | None = None,
         parent: QWidget | None = None,
+        default_rest_fraction: float = 0.0,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Select analysis fragments"))
@@ -278,8 +283,9 @@ class FragmentSelectionDialog(QDialog):
             float(default_k) if default_k is not None
             else float(DEFAULT_DETECTION["k"])
         )
+        self._reposo_defecto = float(default_rest_fraction)
         #: The detection settings, as the sliders have them.
-        self._det = default_detection(self._k_defecto)
+        self._det = default_detection(self._k_defecto, self._reposo_defecto)
         if detection:
             self._det.update({k: float(v) for k, v in detection.items()
                               if k in self._det})
@@ -429,6 +435,7 @@ class FragmentSelectionDialog(QDialog):
         lifts: Sequence[tuple[float, float]] | None = None,
         session_window: tuple[float, float] | None = None,
         parent: QWidget | None = None,
+        default_rest_fraction: float = 0.0,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
         raw, fs, raw_2 = fragments.read_channels(edf_path, channel_name, channel_name_2)
@@ -451,6 +458,7 @@ class FragmentSelectionDialog(QDialog):
             lifts=lifts,
             session_window=session_window,
             parent=parent,
+            default_rest_fraction=default_rest_fraction,
         )
 
     def _build_ui(self) -> None:
@@ -676,7 +684,10 @@ class FragmentSelectionDialog(QDialog):
         self._spin_min.setValue(self._det["min_duration_s"])
         self._spin_min.valueChanged.connect(self._on_fine)
         fino.addWidget(self._spin_min, 0, 1)
-        fino.addWidget(QLabel(tr("Join gaps shorter than (s)")), 0, 2)
+        al_reposo = self._det.get("rest_fraction", 0.0) > 0.0
+        # Where a fragment ends only at rest, the gap is the rest that ends it.
+        fino.addWidget(QLabel(tr("A fragment ends after a rest of (s)") if al_reposo
+                              else tr("Join gaps shorter than (s)")), 0, 2)
         self._spin_gap = DecimalSpinBox()
         self._spin_gap.setRange(0.0, 2.0)
         self._spin_gap.setSingleStep(0.1)
@@ -699,6 +710,11 @@ class FragmentSelectionDialog(QDialog):
         pista_p = QLabel(tr("lower splits a series more readily; higher keeps it together"))
         pista_p.setStyleSheet("color:#6B7580; font-size:10px;")
         fino.addWidget(pista_p, 1, 3)
+        if al_reposo:
+            # Nothing is cut at a valley here: a fragment ends at rest.
+            pista_p.setText(tr("In this practical a fragment ends only where the "
+                               "muscle is back at rest."))
+            self._sld_prom.setEnabled(False)
         self._box_fino.setVisible(False)
         lay.addWidget(self._box_fino, 4, 0, 1, 4)
         lay.setColumnStretch(1, 1)
@@ -809,7 +825,7 @@ class FragmentSelectionDialog(QDialog):
         self._btn_fino.setText(("▾ " if on else "▸ ") + tr("Fine adjustment"))
 
     def _reset_detection(self) -> None:
-        self._det = default_detection(self._k_defecto)
+        self._det = default_detection(self._k_defecto, self._reposo_defecto)
         for w in (self._sld_k, self._sld_ratio, self._sld_prom,
                   self._spin_min, self._spin_gap):
             w.blockSignals(True)

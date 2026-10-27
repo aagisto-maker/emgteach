@@ -393,7 +393,13 @@ class TestTheWarningDoesNotFreezeTheWindow:
         viejo = tab._worker
         t0 = time.monotonic()
         tab._tras_aviso_conexion(QMessageBox.StandardButton.Retry)
-        assert time.monotonic() - t0 < 0.5, "Retry froze the window"
+        # Frozen, the window would wait for a port that is let go only after
+        # this call returns: for ever. What is checked is that it came back
+        # with the old attempt still holding it. The ceiling is only for a
+        # wait with a time limit, and a loaded runner is not one: 0.5 s
+        # measured 0.64 once (CI, Windows, Python 3.12, the tag of 3.10.0).
+        assert viejo.isRunning(), "Retry waited for the old attempt to end"
+        assert time.monotonic() - t0 < 3.0, "Retry froze the window"
         assert tab._worker is viejo, "no second connection while the port is taken"
         assert tab._lbl_estado.text() == tr(
             "Status: waiting for Windows to release the port…")

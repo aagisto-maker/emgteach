@@ -440,11 +440,12 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
 - **Contracciones graduales** (54 s más la calibración, que hace siempre antes):
   cinco contracciones de 4 s de fuerza creciente, al **20, 40, 60 y 80 % de la barra
   y al máximo**, con 6 s de reposo entre ellas. El panel muestra la barra del músculo
-  con la franja del escalón pedido. La calibración pide el mismo gesto que la
+  con la franja del escalón pedido, que sube hasta su nivel en 1.5 s: el texto pide
+  «Suba despacio hasta la marca (1-2 s) y manténgala». La calibración pide el mismo gesto que la
   sesión: cerrar el puño con una contracción. En Análisis cada escalón es la
   contracción que empieza tras su aviso, seguida hasta 1.5 s más allá de su final
   —se empieza y se suelta con unas décimas de retraso—, y su nivel es la media de
-  la envolvente en la meseta de esa contracción. **El máximo de la gradación es
+  la envolvente en la meseta de esa contracción, desde 1.5 s después de su inicio. **El máximo de la gradación es
   la mayor media en medio segundo**, no el pico de la envolvente: el nivel
   mantenido es una media, y una media no llega nunca al pico de la misma
   envolvente (mantenida la intensidad de la calibración, se leía un 85-87 %). Así
@@ -457,7 +458,8 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   fibras y a unos 2 cm uno de otro; referencia sobre hueso (olécranon o muñeca).
   5 s de reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
   coger el peso, **el peso sostenido con el codo a 90° durante 90 s** y 5 s para
-  dejarlo. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
+  dejarlo. El peso, uno que no se pueda sostener más de 60-90 s, para que la
+  fatiga llegue dentro de la sesión. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
   alcanzar): el panel da los segundos que quedan. El texto pide respirar
   normalmente. **La barra espaciadora, o el botón «No puedo más (Espacio)», termina
   el esfuerzo antes de tiempo**; la marca de su final lo dice y la sesión pasa al
@@ -475,16 +477,18 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   recta baja al menos un 10 %**; el R² no se exige, porque el espectro tiene mucha
   dispersión propia (en el banco, el bíceps bajó la MDF un 16-20 % en 90 s con un R²
   de solo 0.3, mientras el RMS se mantenía o subía). Vista **«MDF en el tiempo»**:
-  las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que cayó un 10 %
-  y el RMS en gris. Los paneles 6 y 7 aparecen marcados. Si se eligen fragmentos,
+  las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que esa recta ha
+  caído un 10 %, si lo hace dentro de lo sostenido (la marca y el veredicto
+  salen de la misma recta) y el RMS en gris. Los paneles 6 y 7 aparecen marcados. Si se eligen fragmentos,
   la vista sigue: la carga se lee en el trozo más largo de ella que conservan (al
   menos 3 s; nunca dos trozos pegados), y la vista lo dice; si ninguno conserva
   tanto, lo avisa, y la ficha de resumen no da veredicto. «Seleccionar
   fragmentos» propone como fragmento la ventana de la carga que se analiza.
 - **Contracciones rápidas repetidas** (28 s): tras 5 s de reposo y la cuenta
   atrás, **10 s de contracciones del puño, cerrándolo y relajándolo lo más rápido posible**. Se cuentan
-  las contracciones y su ritmo —hasta 1.5 s después de la marca del final, porque
-  se para unas décimas después del aviso—, y se siguen **los picos y el suelo entre ellas**
+  las contracciones y su ritmo —las que empiezan hasta 1.5 s después de la marca del
+  final, porque se para unas décimas después del aviso, la última hasta donde
+  acaba—, y se siguen **los picos y el suelo entre ellas**
   sobre un RMS móvil de 50 ms, no sobre la envolvente (a cuatro o cinco por
   segundo, su filtro de 5 Hz mantiene él solo el suelo entre un quinto y un tercio
   del pico). La línea de resumen y el informe dan, además, **el suelo que deja la
@@ -548,7 +552,12 @@ qué pide, y el «?» del cuadro los repite.
    desde que la envolvente deja el reposo —la línea de puntos «reposo», donde pondría
    el umbral la mitad de la sensibilidad— hasta que vuelve a él, con un margen pequeño y
    sin pisar la fila siguiente; en cinemática, además, dentro de la ventana del
-   levantamiento.
+   levantamiento. **En la práctica de un músculo, una fila solo termina cuando
+   el músculo vuelve al reposo**: la envolvente baja a la línea base más un 5 %
+   de la altura de su pico y se queda ahí al menos 1 s («Un fragmento termina
+   tras un reposo de (s)», en el ajuste fino). Un escalón de la gradación, con
+   su pico breve al arrancar, es una fila; en el par, cuyas seis contracciones
+   seguidas descansan menos de un segundo, se corta por los valles entre ellas.
 2. **Cada contracción por turno**, con ◀ ▶ o pulsándola en el gráfico; se
    resalta sin que los ejes se muevan. **Mantener**, **Eliminar** (queda rayada
    y se recupera con Mantener) y **Dividir**, que solo se ofrece cuando la fila

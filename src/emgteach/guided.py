@@ -23,6 +23,8 @@ subject begins some tenths of a second after the one that opens a stretch
 and lets go up to a second after the one that closes it (Ángel's bench with
 the board, 26 October 2026). Measured on the marks alone, each step took rest
 at its start and lost its end, and the train lost its last two contractions.
+The margin says where a contraction of the train may **begin**: the last one
+that begins inside it is the train's whole, to where it ends (3.10.1).
 """
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from emgteach.coactivation import resting_level
-from emgteach.contractions import trim_to_effort
+from emgteach.contractions import _MOVE_ONSET_FRACTION, trim_to_effort
 from emgteach.dsp import compute_psd_mnf_mdf
 from emgteach.selection import Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
@@ -54,12 +56,14 @@ __all__ = [
     "TrainResult",
     "Trend",
     "change_pct",
+    "contiguous_pieces",
     "effort_ratio",
     "fatigue_unmeasured",
     "fragments_hull",
     "gradation_reference_text",
     "gradation_steps",
     "is_monotonic",
+    "line_decline_s",
     "load_fatigue",
     "load_piece",
     "load_span",
@@ -75,8 +79,10 @@ __all__ = [
     "weak_signal_warning",
 ]
 
-#: Seconds at the start of each step left out of its level: the reach.
-SETTLE_S = 1.0
+#: Seconds at the start of each step left out of its level: the reach. One
+#: second until 3.10.0; 1.5 since each step is asked to be reached slowly, in
+#: 1-2 s, and the bench's steps began with a brief peak (Ángel, 3.10.1).
+SETTLE_S = 1.5
 
 #: Seconds after the mark that closes a step, a contraction or the train that
 #: still belong to it: the subject lets go after the cue, not on it. Never
@@ -101,8 +107,35 @@ _CON_MARGEN = frozenset({"step", "train"})
 #: contraction keeps nearly all of it, one cut across it about half.
 _MIN_KEPT = 0.6
 
+#: Fragments this close in the file are one piece of signal: the editor's
+#: rows are rounded to hundredths, and a contraction cut in two by hand or by
+#: the detector leaves 0.01 s between its halves (Ángel, 3.10.1).
+_CONTIGUOS_S = 0.05
+
 #: Shorter than this, a stretch has too few cycles of anything for an MDF.
 _MIN_S_FOR_MDF = 0.25
+
+
+def contiguous_pieces(
+    kept: Sequence[tuple[float, float, float]],
+) -> list[tuple[float, float, float]]:
+    """The kept pieces, those that touch in the file joined into one.
+
+    Two fragments with less than :data:`_CONTIGUOS_S` between them are the
+    same stretch of signal, and the analysed signal has them side by side:
+    a step chosen in two rows was measured on the larger half alone, and
+    a step none of whose halves kept 60 % of it was lost (Ángel's gradation
+    of 26 October 2026, in two or three rows a step: four steps of five, the
+    80 % below the 60 %). Joined, each lands in the analysed signal where
+    its first part does, off by the gap left out, a few hundredths at most.
+    """
+    out: list[tuple[float, float, float]] = []
+    for x, y, offset in sorted(kept):
+        if out and x - out[-1][1] < _CONTIGUOS_S:
+            out[-1] = (out[-1][0], max(out[-1][1], y), out[-1][2])
+        else:
+            out.append((x, y, offset))
+    return out
 
 
 def spans_in_analysis_time(
@@ -154,6 +187,7 @@ def measured_windows(
     tramos = sorted(session.spans, key=lambda t: t.start_s)
     nombres = None if names is None else set(names)
     fin = session.end_s
+    kept = contiguous_pieces(kept)
     out = []
     for i, t in enumerate(tramos):
         if nombres is not None and t.name not in nombres:
@@ -219,6 +253,51 @@ def _contraccion(actividad: np.ndarray, fs: float, a: float, b: float) -> tuple[
     of its peak activity to the last, as in the contraction table."""
     seg = trim_to_effort(Segment(a, b), fs, actividad)
     return seg.start_s, seg.end_s
+
+
+def _hasta_que_acaba(actividad: np.ndarray, fs: float, a: float, b: float,
+                     limite: float) -> float:
+    """Where the contraction under way at *b* ends, never past *limite*; *b*
+    if none is.
+
+    The window of a train, its marks run on by :data:`MARGIN_S`, says where
+    its contractions may begin: the last one that begins inside it is the
+    train's to its end. Cut at the margin, it was left in two (Ángel, the
+    final bench of 3.10.0; plan §15). Under way is above a fifth of the
+    window's peak activity, the rule of the contraction table; it ends there,
+    or at the trough before the next contraction (:func:`_peaks_and_floors`'
+    peaks) if that one begins after *b*: at four or five a second the trace
+    does not fall to a fifth between contractions, and a late subject's
+    next ones are not the train's.
+    """
+    i0, i1 = max(0, round(a * fs)), min(actividad.size, round(b * fs))
+    il = min(actividad.size, round(limite * fs))
+    if i1 <= i0 or il <= i1:
+        return b
+    umbral = _MOVE_ONSET_FRACTION * float(np.max(actividad[i0:i1]))
+    if umbral <= 0.0 or actividad[i1 - 1] <= umbral:
+        return b
+    bajo = np.flatnonzero(actividad[i1:il] <= umbral)
+    fin = i1 + int(bajo[0]) if bajo.size else il
+    picos, _alturas, _suelos = _peaks_and_floors(actividad[i0:fin], fs)
+    for p, q in itertools.pairwise(i0 + picos):
+        valle = p + int(np.argmin(actividad[p:q]))
+        if valle >= i1:
+            fin = min(fin, valle)
+            break
+    return fin / fs
+
+
+def _limite_del_tren(session: GuidedSession,
+                     kept: Sequence[tuple[float, float, float]], a: float) -> float:
+    """How far past its window a train's last contraction may run, in the
+    analysed signal's time: to the end of the piece kept that holds the
+    window's start, and never past the session's end."""
+    for x, y, offset in kept:
+        if offset - 1e-9 <= a < offset + (y - x):
+            hasta = y if session.end_s is None else min(y, max(x, session.end_s))
+            return offset + hasta - x
+    return a
 
 
 def _meseta(on: float, off: float, settle_s: float) -> tuple[float, float]:
@@ -431,11 +510,28 @@ class LoadResult:
     mdf_trend: Trend | None
     mnf_trend: Trend | None
     rms_trend: Trend | None
-    #: Seconds until the MDF had fallen 10 % (a 5 s running median against
-    #: its first 5 s); ``None`` if it did not.
+    #: Seconds until the MDF's line had fallen 10 % (:func:`line_decline_s`);
+    #: ``None`` if it did not within what was held.
     t_mdf_10: float | None
     #: emgteach.fatigue's FATIGUE, NO_FATIGUE or INCONCLUSIVE.
     verdict: str
+
+
+def line_decline_s(trend: Trend | None, t, pct: float = LOAD_MIN_FALL_PCT) -> float | None:
+    """When the MDF's line had fallen *pct* per cent of where it begins, in
+    seconds from the first window; ``None`` if it does not within *t*.
+
+    Read on the line, as the verdict is (:func:`load_verdict`), so the mark
+    of the view, the summary line and the verdict say the same: until 3.10.0
+    a 5 s running median could say «MDF -10 % at 74 s» beside «fell less
+    than 10 %» (Ángel, the final bench; plan §15).
+    """
+    tt = np.asarray(t, dtype=np.float64)
+    if (trend is None or tt.size < 2 or trend.slope >= 0 or trend.start <= 0
+            or not np.isfinite(trend.slope)):
+        return None
+    dt = -(pct / 100.0) * trend.start / trend.slope
+    return float(dt) if dt <= float(tt[-1] - tt[0]) + 1e-9 else None
 
 
 def load_verdict(trend: Trend | None, n: int) -> str:
@@ -479,7 +575,6 @@ def load_fatigue(emg_filtered, fs: float, *, f_low: float = 20.0,
     tt = np.array(t)
     bloque = max(1, round(LOAD_BLOCK_S / LOAD_STEP_S))
     bloques = range(0, tt.size - bloque + 1, bloque)
-    por_tramo = round(LOAD_BLOCK_S / LOAD_STEP_S)
     tendencia = _trend(tt, mdf)
     return LoadResult(
         seconds=x.size / fs,
@@ -488,7 +583,7 @@ def load_fatigue(emg_filtered, fs: float, *, f_low: float = 20.0,
         block_mdf=tuple(float(np.mean(mdf[i:i + bloque])) for i in bloques),
         block_mnf=tuple(float(np.mean(mnf[i:i + bloque])) for i in bloques),
         mdf_trend=tendencia, mnf_trend=_trend(tt, mnf), rms_trend=_trend(tt, rms),
-        t_mdf_10=time_to_decline(tt, mdf, 10.0, base_n=por_tramo, span=por_tramo),
+        t_mdf_10=line_decline_s(tendencia, tt),
         verdict=load_verdict(tendencia, tt.size),
     )
 
@@ -528,13 +623,15 @@ def load_piece(span: tuple[float, float] | None,
 
     A student who chose fragments still reads the load in one piece: the
     longest stretch where a fragment and the load's *span* overlap, if it
-    lasts at least three windows. ``None`` when no fragment covers that much
+    lasts at least three windows; fragments that touch are one
+    (:func:`contiguous_pieces`). ``None`` when no fragment covers that much
     of the load. Not the fragments glued together: a line through windows
     from both sides of a cut would join two moments of the fatigue.
     """
     if span is None:
         return None
-    cruces = [(max(a, span[0]), min(b, span[1])) for a, b in pieces]
+    juntas = [(x, y) for x, y, _o in contiguous_pieces([(a, b, 0.0) for a, b in pieces])]
+    cruces = [(max(a, span[0]), min(b, span[1])) for a, b in juntas]
     cruces = [(a, b) for a, b in cruces if b - a >= 3 * LOAD_WIN_S]
     return max(cruces, key=lambda c: c[1] - c[0]) if cruces else None
 
@@ -563,7 +660,9 @@ def weak_signal_warning(ratio: float | None) -> str | None:
 
 def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float, float] | None:
     """The train of quick contractions in file time: from its first
-    contraction to its last, inside its marks run on by :data:`MARGIN_S`.
+    contraction to the end of its last, the last that begins inside its
+    marks run on by :data:`MARGIN_S` — to where it ends, even past the
+    margin, but never past the session's end.
 
     What the fragment editor proposes for it, as one row. Its detector made
     one row per contraction, and the train glued out of them had lost the
@@ -579,7 +678,9 @@ def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[floa
     env = np.asarray(envelope, dtype=np.float64)
     r0, r1 = max(0, round((tramo.start_s - 3.0) * fs)), max(0, round(tramo.start_s * fs))
     reposo = float(np.median(env[r0:r1])) if r1 - r0 > 10 else resting_level(env)
-    on, off = _contraccion(env - reposo, fs, a, b)
+    actividad = env - reposo
+    limite = env.size / fs if session.end_s is None else min(env.size / fs, session.end_s)
+    on, off = _contraccion(actividad, fs, a, _hasta_que_acaba(actividad, fs, a, b, limite))
     return (on, off) if off > on else None
 
 
@@ -590,12 +691,16 @@ def fragments_hull(session: GuidedSession | None, pieces: Sequence[tuple[float, 
 
     A train is measured over that stretch of the recording, not over the
     fragments glued: chosen one per contraction they keep no rest between
-    them, and the floor and the rate are what is measured there.
+    them, and the floor and the rate are what is measured there. A fragment
+    that begins inside the window is kept to its end, up to the session's:
+    the train's last contraction may end past the margin.
     """
     if session is None:
         return None
     for tramo, a, b in measured_windows(session, [(0.0, float("inf"), 0.0)], (name,)):
-        dentro = [(max(a, x), min(b, y)) for x, y in pieces if min(b, y) > max(a, x)]
+        tope = float("inf") if session.end_s is None else session.end_s
+        dentro = [(max(a, x), min(max(b, tope), y)) for x, y in pieces
+                  if min(b, y) > max(a, x)]
         if not dentro:
             return None
         ini, fin = min(x for x, _ in dentro), max(y for _, y in dentro)
@@ -731,8 +836,9 @@ def rapid_train(
     (:func:`measured_windows`): the subject stops some tenths of a second
     after the cue, and the contractions made meanwhile are the train's —
     measured between the marks, the bench of 26 October 2026 counted 28 of
-    its 30. Its duration is the activity's, from its first contraction to
-    its last.
+    its 30. The last contraction that begins in that window is measured to
+    its end, even past it, inside the piece kept and the session. Its
+    duration is the activity's, from its first contraction to its last.
     """
     if session is None or session.family != "FAST" or fs <= 0:
         return None
@@ -743,12 +849,13 @@ def rapid_train(
     filt = np.asarray(emg_filtered, dtype=np.float64)
     s_todo = _moving_rms(filt, fs, window_ms)
     i0 = max(0, min(round(a * fs), s_todo.size))
+    r0 = max(0, i0 - round(rest_s * fs))
+    reposo = float(np.median(s_todo[r0:i0])) if i0 - r0 > 10 else None
+    b = _hasta_que_acaba(s_todo - (reposo or 0.0), fs, a, b, _limite_del_tren(session, kept, a))
     i1 = max(i0, min(round(b * fs), s_todo.size))
     if i1 - i0 < round(0.5 * fs):
         return None
     s = s_todo[i0:i1]
-    r0 = max(0, i0 - round(rest_s * fs))
-    reposo = float(np.median(s_todo[r0:i0])) if i0 - r0 > 10 else None
     picos, alturas, suelos = _peaks_and_floors(s, fs)
     activo = trim_to_effort(Segment(0.0, s.size / fs), fs, s - (reposo or 0.0))
     dur = activo.end_s - activo.start_s
