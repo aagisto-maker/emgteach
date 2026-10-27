@@ -337,11 +337,14 @@ CAL_REPS = [(2.0, 5.0), (8.0, 11.0), (14.0, 17.0)]
 REC_S = 22.0
 
 
-def _gradacion_edf(path: Path, *, ruido: bool = False, maximo: float = 1.0) -> str:
+def _gradacion_edf(path: Path, *, ruido: bool = False, maximo: float = 1.0,
+                   arranque: bool = False) -> str:
     """A one-muscle session: three maximal efforts at amplitude 1, the
     countdown, and the gradation at 20…100 % of it — its maximal step at
     *maximo*. With *ruido*, the signal is noise and not a sine: an envelope
-    with the ripple of a real one, whose peak stands above its mean."""
+    with the ripple of a real one, whose peak stands above its mean. With
+    *arranque*, each step as the bench's (26 October 2026): a brief peak
+    at its start, 1.6 times its level, and a dip before its plateau."""
     n = int((REC_S + 60.0) * FS)
     t = np.arange(n) / FS
     amp = np.full(n, 0.01)
@@ -350,8 +353,12 @@ def _gradacion_edf(path: Path, *, ruido: bool = False, maximo: float = 1.0) -> s
     sesion = _sesion_sintetica(t0=REC_S)
     for tramo in sesion.spans:
         pct = tramo.number("pct") or 0
-        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = (
-            maximo if pct >= 100 else pct / 100)
+        nivel = maximo if pct >= 100 else pct / 100
+        amp[int(tramo.start_s * FS): int(tramo.end_s * FS)] = nivel
+        if arranque:
+            a = tramo.start_s
+            amp[int(a * FS): int((a + 0.8) * FS)] = 1.6 * nivel
+            amp[int((a + 0.8) * FS): int((a + 1.2) * FS)] = 0.4 * nivel
     portadora = (np.random.default_rng(8).normal(0.0, 0.35, n) if ruido
                  else np.sin(2 * np.pi * 80 * t))
     senal = portadora * amp

@@ -56,6 +56,7 @@ __all__ = [
     "TrainResult",
     "Trend",
     "change_pct",
+    "contiguous_pieces",
     "effort_ratio",
     "fatigue_unmeasured",
     "fragments_hull",
@@ -106,8 +107,35 @@ _CON_MARGEN = frozenset({"step", "train"})
 #: contraction keeps nearly all of it, one cut across it about half.
 _MIN_KEPT = 0.6
 
+#: Fragments this close in the file are one piece of signal: the editor's
+#: rows are rounded to hundredths, and a contraction cut in two by hand or by
+#: the detector leaves 0.01 s between its halves (Ángel, 3.10.1).
+_CONTIGUOS_S = 0.05
+
 #: Shorter than this, a stretch has too few cycles of anything for an MDF.
 _MIN_S_FOR_MDF = 0.25
+
+
+def contiguous_pieces(
+    kept: Sequence[tuple[float, float, float]],
+) -> list[tuple[float, float, float]]:
+    """The kept pieces, those that touch in the file joined into one.
+
+    Two fragments with less than :data:`_CONTIGUOS_S` between them are the
+    same stretch of signal, and the analysed signal has them side by side:
+    a step chosen in two rows was measured on the larger half alone, and
+    a step none of whose halves kept 60 % of it was lost (Ángel's gradation
+    of 26 October 2026, in two or three rows a step: four steps of five, the
+    80 % below the 60 %). Joined, each lands in the analysed signal where
+    its first part does, off by the gap left out, a few hundredths at most.
+    """
+    out: list[tuple[float, float, float]] = []
+    for x, y, offset in sorted(kept):
+        if out and x - out[-1][1] < _CONTIGUOS_S:
+            out[-1] = (out[-1][0], max(out[-1][1], y), out[-1][2])
+        else:
+            out.append((x, y, offset))
+    return out
 
 
 def spans_in_analysis_time(
@@ -159,6 +187,7 @@ def measured_windows(
     tramos = sorted(session.spans, key=lambda t: t.start_s)
     nombres = None if names is None else set(names)
     fin = session.end_s
+    kept = contiguous_pieces(kept)
     out = []
     for i, t in enumerate(tramos):
         if nombres is not None and t.name not in nombres:
@@ -594,13 +623,15 @@ def load_piece(span: tuple[float, float] | None,
 
     A student who chose fragments still reads the load in one piece: the
     longest stretch where a fragment and the load's *span* overlap, if it
-    lasts at least three windows. ``None`` when no fragment covers that much
+    lasts at least three windows; fragments that touch are one
+    (:func:`contiguous_pieces`). ``None`` when no fragment covers that much
     of the load. Not the fragments glued together: a line through windows
     from both sides of a cut would join two moments of the fatigue.
     """
     if span is None:
         return None
-    cruces = [(max(a, span[0]), min(b, span[1])) for a, b in pieces]
+    juntas = [(x, y) for x, y, _o in contiguous_pieces([(a, b, 0.0) for a, b in pieces])]
+    cruces = [(max(a, span[0]), min(b, span[1])) for a, b in juntas]
     cruces = [(a, b) for a, b in cruces if b - a >= 3 * LOAD_WIN_S]
     return max(cruces, key=lambda c: c[1] - c[0]) if cruces else None
 
