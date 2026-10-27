@@ -496,7 +496,15 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
     """Ángel's bench with the board (26 October 2026), rehearsed: a subject
     who begins 0.4 s after each cue and lets go 0.8 s after its end. Each
     step, and each row of the table, is the whole contraction — begun after
-    its mark and run on past its end — and not the stretch between the cues."""
+    its mark and run on past its end — and not the stretch between the cues.
+
+    The mark is written at the samples the worker has received and the
+    subject is told at the ones the board has made: on a loaded runner the
+    board is ahead, by 3 s once (CI, Windows, the PR of the DOI of 3.10.0:
+    a step begun 3.47 s after its mark, against a bound of 1.5). So each
+    step is checked against when the subject was told, in the board's time,
+    which is the file's: what the analysis must find is the subject's
+    contraction, wherever the lag put it."""
     from emgteach.devices.bitalino_sim import _SyntheticSubject
     from emgteach.gui.tabs import acquisition as acq_mod
     from tests.test_marcas_manuales import _until
@@ -504,6 +512,16 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
 
     monkeypatch.setattr(_SyntheticSubject, "reaction_s", 0.4)
     monkeypatch.setattr(_SyntheticSubject, "release_s", 0.8)
+    # When the subject was told each level, in the signal's time.
+    dichos: list[tuple[float | None, float]] = []
+    instruir = _SyntheticSubject.instruct
+
+    def instruct(self, channel_index, level, *, repeat_s=None, at_s=None):
+        if at_s is not None:
+            dichos.append((level, at_s))
+        instruir(self, channel_index, level, repeat_s=repeat_s, at_s=at_s)
+
+    monkeypatch.setattr(_SyntheticSubject, "instruct", instruct)
     pestana = request.getfixturevalue("tab")
     corta = dataclasses.replace(gradation_script().with_seconds(2.0), needs_mvc=False)
     monkeypatch.setitem(acq_mod.GUIDED_SESSIONS, "gradacion", lambda: corta)
@@ -519,14 +537,20 @@ def test_a_late_subject_on_the_simulated_board_gives_whole_steps(
     assert len(pasos) == 5 and len(filas) == 5
     assert is_monotonic(pasos), [p.held_mv for p in pasos]
     marcas = r["guided_session"].spans_named("step")
-    for p, fila, marca in zip(pasos, filas, marcas, strict=True):
+    # Each step's level, and the rest told after it.
+    sube = [i for i, (nivel, _t) in enumerate(dichos) if nivel]
+    assert len(sube) == 5 and sube[-1] + 1 < len(dichos)
+    for p, fila, marca, i in zip(pasos, filas, marcas, sube, strict=True):
         inicio = p.start_s + r["roi_start_s"] - marca.start_s
         fin = p.end_s + r["roi_start_s"] - marca.end_s
-        # Begun after its cue, and run on past its end: the 0.4 and 0.8 s
-        # of the subject, plus whatever the board and the worker add — on a
-        # loaded runner up to the margin itself (CI, Windows, 26 Oct 2026).
-        assert 0.2 < inicio < 1.5, inicio
+        # The board's lead on the worker, at the cue and at its end.
+        ida, vuelta = dichos[i][1] - marca.start_s, dichos[i + 1][1] - marca.end_s
+        # Begun after its cue, when the subject began it; run on past its
+        # end, to where the subject let go or the margin ends the window.
+        assert inicio > 0.2, inicio
+        assert inicio == pytest.approx(ida + 0.4, abs=0.3), (inicio, ida)
         assert 0.4 < fin <= MARGIN_S + 1e-6, fin
+        assert fin == pytest.approx(min(vuelta + 0.8, MARGIN_S), abs=0.3), (fin, vuelta)
         assert fila.start_s == pytest.approx(p.start_s, abs=0.15)
         assert fila.end_s == pytest.approx(p.end_s, abs=0.15)
 
