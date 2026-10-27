@@ -6,7 +6,7 @@ septiembre, y a la **3.2.0**, a la **3.3.0** y a la **3.4.0** el 14 de septiembr
 **3.5.0** el 18 de septiembre, a la **3.6.0** el 19 y a la **3.7.0** el 26, y a la **3.7.1** el 27,
 una corrección que no cambia la versión que describe el artículo. El 14 de octubre, tras publicar la
 **3.8.0**, se añaden la **3.7.2** y la 3.8.0, que tampoco la cambian, el 15 de octubre la
-**3.9.0** y el 23 de octubre la **3.9.1**, que tampoco.
+**3.9.0**, el 23 de octubre la **3.9.1** y el 26 de octubre la **3.10.0**, que tampoco.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
 Los textos de pantalla están **copiados literalmente** de
@@ -27,7 +27,7 @@ Donde algo no está hecho o no lo sé, lo dice.
 | Rama | `main` |
 | **Versión que describe el artículo** | `v3.7.0`, publicada el 26 de septiembre de 2026 |
 | DOI de esa versión | 10.5281/zenodo.22976106 |
-| Versiones siguientes | `v3.9.1`, publicada el 23 de octubre de 2026 (10.5281/zenodo.23587320, etiqueta en `772ac08`, 1492 pruebas): la vista en vivo sigue a la señal tras un zoom con la rueda, cerrar mientras «Reintentar» espera el puerto ya no arranca una grabación y «% CVM» en español; no cambia ningún cálculo (apartado 1.0) · `v3.9.0`, publicada el 15 de octubre de 2026 (10.5281/zenodo.23399825, etiqueta en `fe2ba33`, 1478 pruebas): vuelve el marcado a mano durante la grabación, opcional; no cambia ningún cálculo (apartado 1.1) · `v3.8.0`, publicada el 14 de octubre de 2026 (10.5281/zenodo.23361729, etiqueta en `a055ec3`, 1442 pruebas): los arreglos que encontraron ecgteach y eegteach en código que emgteach comparte; no cambia ningún cálculo (apartado 1.2) · `v3.7.2`, publicada el 2 de octubre de 2026 (10.5281/zenodo.23103390, etiqueta en `1400e83`, 1419 pruebas): los puertos de la difusión a los móviles; no cambia ningún cálculo (apartado 1.3) · `v3.7.1`, publicada el 27 de septiembre de 2026 (10.5281/zenodo.22999304, etiqueta en `dcb1ecd`, 1395 pruebas): corrección de un fallo para las prácticas de noviembre; no cambia ningún cálculo (apartado 1.4) |
+| Versiones siguientes | `v3.10.0`, publicada el 26 de octubre de 2026 (10.5281/zenodo.23675472, etiqueta en `464e64a`, 1689 pruebas): tres sesiones guiadas en la práctica de un músculo (contracciones graduales, fatiga del bíceps con carga fija y contracciones rápidas repetidas), un tono opcional en cada cambio de fase y los textos de las instrucciones; no cambia ningún cálculo de una grabación libre (apartado 1.0) · `v3.9.1`, publicada el 23 de octubre de 2026 (10.5281/zenodo.23587320, etiqueta en `772ac08`, 1492 pruebas): la vista en vivo sigue a la señal tras un zoom con la rueda, cerrar mientras «Reintentar» espera el puerto ya no arranca una grabación y «% CVM» en español; no cambia ningún cálculo (apartado 1.1) · `v3.9.0`, publicada el 15 de octubre de 2026 (10.5281/zenodo.23399825, etiqueta en `fe2ba33`, 1478 pruebas): vuelve el marcado a mano durante la grabación, opcional; no cambia ningún cálculo (apartado 1.2) · `v3.8.0`, publicada el 14 de octubre de 2026 (10.5281/zenodo.23361729, etiqueta en `a055ec3`, 1442 pruebas): los arreglos que encontraron ecgteach y eegteach en código que emgteach comparte; no cambia ningún cálculo (apartado 1.3) · `v3.7.2`, publicada el 2 de octubre de 2026 (10.5281/zenodo.23103390, etiqueta en `1400e83`, 1419 pruebas): los puertos de la difusión a los móviles; no cambia ningún cálculo (apartado 1.4) · `v3.7.1`, publicada el 27 de septiembre de 2026 (10.5281/zenodo.22999304, etiqueta en `dcb1ecd`, 1395 pruebas): corrección de un fallo para las prácticas de noviembre; no cambia ningún cálculo (apartado 1.5) |
 | DOI de concepto | 10.5281/zenodo.21002297 |
 | Commit de la etiqueta | `34294b4` |
 | Pruebas en la etiqueta | **1376 recogidas, 1375 pasan y 1 se salta** |
@@ -37,27 +37,33 @@ Donde algo no está hecho o no lo sé, lo dice.
 Los bloques generados de este informe (apartados 4, 6 y 5.1, y el recorrido
 guiado) se leyeron del **código de la etiqueta `v3.7.0`**, la versión que
 describe el artículo, y **no se han regenerado para la 3.7.1, la 3.7.2, la 3.8.0,
-la 3.9.0 ni la 3.9.1**: lo que dicen es lo que hace la versión que describe el artículo. La
-3.7.1 cambia en `src/` los textos que lista el apartado 1.4 y desplaza números
+la 3.9.0, la 3.9.1 ni la 3.10.0**: lo que dicen es lo que hace la versión que describe el artículo. La
+3.7.1 cambia en `src/` los textos que lista el apartado 1.5 y desplaza números
 de línea de `devices/bitalino.py`, `diagnostics.py`, `workers/acquisition.py` e
-`i18n.py`. La 3.7.2 añade los textos de los puertos que lista el apartado 1.3 y
+`i18n.py`. La 3.7.2 añade los textos de los puertos que lista el apartado 1.4 y
 desplaza números de línea de `broadcast.py`, `gui/app.py`,
 `gui/tabs/acquisition.py` e `i18n.py`. La 3.8.0 cambia los textos que lista el
-apartado 1.2 y desplaza números de línea de `broadcast.py`, `io.py`,
+apartado 1.3 y desplaza números de línea de `broadcast.py`, `io.py`,
 `gui/tabs/acquisition.py`, `workers/acquisition.py` e `i18n.py`. La 3.9.0 cambia
 la ayuda del recuadro de marcas y añade los textos del marcado a mano que lista el
-apartado 1.1, y desplaza números de línea de `i18n.py`, `gui/help_texts.py`,
+apartado 1.2, y desplaza números de línea de `i18n.py`, `gui/help_texts.py`,
 `gui/tabs/acquisition.py`, `gui/tabs/analysis.py` y
 `gui/widgets/fragment_selection.py`, entre otros. La 3.9.1 no cambia ningún texto del
-catálogo: la unidad «% CVM» que lista el apartado 1.0 ya estaba en él y ahora llega a la
+catálogo: la unidad «% CVM» que lista el apartado 1.1 ya estaba en él y ahora llega a la
 pantalla; desplaza números de línea de `gui/tabs/acquisition.py`, `gui/tabs/mvc.py`,
-`gui/widgets/load_bar.py` y `reports.py`. Nada más de lo que recogen los
-bloques. Lo que cambia de la 3.9.0 a la 3.9.1 está en el apartado 1.0, de la 3.8.0
-a la 3.9.0 en el 1.1, de la 3.7.2 a la 3.8.0 en el 1.2, de la 3.7.1 a la 3.7.2 en el 1.3, de la 3.7.0 a la 3.7.1 en el
-1.4, de la 3.6.0 a la 3.7.0 en el 1.5, de la 3.5.0 a la 3.6.0 en el 1.6, de la
-3.4.0 a la 3.5.0 en el 1.7, de la 3.3.0 a la 3.4.0 en el 1.8, de la 3.2.0 a la
-3.3.0 en el 1.9, de la 3.1.2 a la 3.2.0 en el 1.10, de la 3.1.1 a la 3.1.2 en el
-1.11, de la 3.1.0 a la 3.1.1 en el 1.12, y de la 3.0.0 a la 3.1.0 en el 1.13.
+`gui/widgets/load_bar.py` y `reports.py`. La 3.10.0 añade los textos de las sesiones
+guiadas, del tono y de las vistas de sesión, cambia los de las instrucciones
+(«contracción», «intensa», «respire normalmente», «Calentamiento previo») y la
+etiqueta «Músculo:» de la práctica de un músculo, y desplaza números de línea de
+casi todo `src/`, sobre todo `i18n.py`, `gui/tabs/acquisition.py`,
+`gui/tabs/analysis.py`, `workers/analysis.py` y `reports.py`; añade `sessions.py`,
+`guided.py`, `cue.py` y `gui/session_runner.py`. Nada más de lo que recogen los
+bloques. Lo que cambia de la 3.9.1 a la 3.10.0 está en el apartado 1.0, de la 3.9.0 a la 3.9.1 en el 1.1, de la 3.8.0
+a la 3.9.0 en el 1.2, de la 3.7.2 a la 3.8.0 en el 1.3, de la 3.7.1 a la 3.7.2 en el 1.4, de la 3.7.0 a la 3.7.1 en el
+1.5, de la 3.6.0 a la 3.7.0 en el 1.6, de la 3.5.0 a la 3.6.0 en el 1.7, de la
+3.4.0 a la 3.5.0 en el 1.8, de la 3.3.0 a la 3.4.0 en el 1.9, de la 3.2.0 a la
+3.3.0 en el 1.10, de la 3.1.2 a la 3.2.0 en el 1.11, de la 3.1.1 a la 3.1.2 en el
+1.12, de la 3.1.0 a la 3.1.1 en el 1.13, y de la 3.0.0 a la 3.1.0 en el 1.14.
 
 La prueba que se salta es `tests/test_gui_mvc_overlay.py:163`: con la
 tipografía de la plataforma de prueba el mensaje mide menos que el suelo del
@@ -67,12 +73,70 @@ La versión etiquetada para el depósito es **3.7.0**, y es la que describe el
 artículo. **Su publicación de GitHub lleva el ejecutable de Windows**,
 `emgteach-v3.7.0-windows-x64.exe`, compilado por GitHub Actions desde la
 etiqueta, con atestación de procedencia y su SHA-256 en las notas (apartado
-1.17). No está firmado. Hasta la 3.6.0 las publicaciones llevaban solo el
+1.18). No está firmado. Hasta la 3.6.0 las publicaciones llevaban solo el
 código fuente; la regla se mantenía hasta tener una versión estable, y esa es la
 3.7.0. El registro de Zenodo archiva el código fuente de la etiqueta, no el
-ejecutable. La 3.7.1, la 3.7.2, la 3.8.0, la 3.9.0 y la 3.9.1 llevan también el suyo.
+ejecutable. La 3.7.1, la 3.7.2, la 3.8.0, la 3.9.0, la 3.9.1 y la 3.10.0 llevan también el suyo.
 
-### 1.0 De la 3.9.0 a la 3.9.1
+### 1.0 De la 3.9.1 a la 3.10.0
+
+**Publicada el 26 de octubre de 2026** (PR #135 a #151; etiqueta en `464e64a`, DOI
+10.5281/zenodo.23675472; la publicación lleva `emgteach-v3.10.0-windows-x64.exe`, atestiguado, con
+SHA-256 `223f58d0b3e02a60a8374d10bc9c12c73c554b0ec0f6dfb8a905701bc642c163`). **La versión que
+describe el artículo sigue siendo la 3.7.0.** No cambia ningún cálculo de una grabación libre ni el
+formato del archivo: las sesiones añaden sus propias marcas ASCII, que las versiones anteriores leen
+como anotaciones corrientes. Los registros hechos con la 3.9.1 y anteriores se abren y se leen como
+antes. Las figuras del artículo no se han regenerado.
+
+**Tres sesiones guiadas en la práctica de un músculo**, elegidas en el desplegable junto a «Calibrar
+CVM»; «Grabación libre» sigue siendo lo habitual. Con una sesión elegida, «Iniciar grabación» la
+lleva entera: la calibración si la necesita, la cuenta atrás de 5 s, cada fase anunciada en el panel
+sobre las gráficas y en los móviles, con casillas que se llenan, y la grabación se detiene sola.
+- **Contracciones graduales**: cinco contracciones isométricas de 4 s al 20, 40, 60 y 80 % de la
+  barra y al máximo, tras calibrar. En Análisis los escalones son las filas de la tabla, con lo
+  pedido y lo mantenido, y la vista «Escalones». El máximo de la gradación es la mayor media en
+  medio segundo, no el pico de la envolvente, porque el nivel mantenido es una media.
+- **Fatiga: bíceps con carga fija**: un reposo medido, una cuenta atrás para coger el peso y el peso
+  sostenido con el codo a 90° durante 90 s; la barra espaciadora termina el esfuerzo antes de
+  tiempo. Se lee la MDF en ventanas de 1 s y se ajusta una recta: hay fatiga si su pendiente es
+  significativa (p < 0.01) y cae al menos un 10 %. Avisa de una señal débil (el esfuerzo por debajo
+  del doble del reposo) y de un reposo alto (más de 0.03 mV). Vista «MDF en el tiempo».
+- **Contracciones rápidas repetidas**: 10 s cerrando y relajando el puño lo más rápido posible; se
+  cuentan las contracciones, su ritmo, los picos y el suelo entre ellas sobre un RMS móvil de 50 ms,
+  con el suelo que deja la medida sola a ese ritmo. Vista «Tren».
+
+Cada sesión tiene su sección en el informe y su resumen en los móviles, y los manuales y los dos
+guiones las recogen (ejercicios 1b y 1c). Con fragmentos elegidos, las tres vistas se mantienen: el
+escalón o el tren se miden en lo que conservan los fragmentos, la carga en el trozo más largo, y
+«Seleccionar fragmentos» propone para la carga y el tren su ventana como una sola fila. Si la vista
+no puede medir, la ficha de resumen no da veredicto de fatiga.
+
+**Un tono opcional en cada cambio de fase de todos los asistentes** (calibración, cuenta atrás,
+tarea guiada del par, cargas de fuerza-velocidad y sesiones), con la casilla «Tono».
+
+**Los textos de las instrucciones.** «Contracción» donde decía «sacudida» o «apretar», «intensa»
+donde decía «explosiva» o «fuerte» («Cierre el puño: una contracción breve e intensa.»),
+«Calentamiento previo» y, en el esfuerzo mantenido, solo «Respire normalmente». En la práctica de un
+músculo la casilla del nombre dice «Músculo:» y no «Etiquetas:».
+
+**Comprobación.** La suite automática (1689 pruebas en la etiqueta en Linux: 1677 pasan y 12 se
+saltan) comprueba el guion, las marcas y el español de cada sesión, el reloj que cruza las fases,
+cada sesión grabada con la placa simulada (cuyo sujeto hace lo que pide cada fase y se fatiga al
+sostener) y analizada por sus tramos, los niveles de los escalones, la recta de la MDF y su veredicto
+sobre un espectro sintético, el final con la barra espaciadora, los avisos, el tren sobre trenes
+sintéticos y las vistas con fragmentos. Con la placa simulada, las ejecuciones manuales #119 a #130
+(24 y 25 de octubre). Con la placa real, el 26 de octubre: la #133 (calibración, gradación y tren,
+cuyos hallazgos corrigió la #145), dos registros del bíceps con carga fija que fijaron el criterio de
+fatiga y el aviso de señal débil, y el banco final con el ejecutable publicado (ejecución manual #140
+sobre `464e64a`): el autotest; el diagnóstico de la placa (999 Hz, sin errores de CRC, sin tramas
+perdidas); la gradación, con cinco escalones con y sin fragmentos; el tren, con la vista «Tren»
+también con fragmentos; y la fatiga del bíceps detectada (MDF −17 %, p < 0.001) y no detectada con
+una carga más llevadera (−6 %), con la vista y la ficha de acuerdo. Ese mismo archivo es el
+publicado: la ejecución de la etiqueta no compila, verifica la atestación del de la #140 y lo adjunta.
+En VirusTotal, 3 de 64 motores lo marcan (Bkav Pro, McAfee y SecureAge), los falsos positivos
+habituales de un ejecutable PyInstaller sin firmar.
+
+### 1.1 De la 3.9.0 a la 3.9.1
 
 **Publicada el 23 de octubre de 2026** (PR #126 a #134; etiqueta en `772ac08`, DOI
 10.5281/zenodo.23587320; la publicación lleva `emgteach-v3.9.1-windows-x64.exe`, atestiguado, con
@@ -119,7 +183,7 @@ leído entero; la vista en vivo tras la rueda y «A»; y «% CVM» en la barra t
 archivo es el publicado: la ejecución de la etiqueta (#116) no compila, verifica la atestación del de
 la #115 y lo adjunta.
 
-### 1.1 De la 3.8.0 a la 3.9.0
+### 1.2 De la 3.8.0 a la 3.9.0
 
 **Publicada el 15 de octubre de 2026** (PR #117 a #125; etiqueta en `fe2ba33`, DOI
 10.5281/zenodo.23399825; la publicación lleva `emgteach-v3.9.0-windows-x64.exe`, atestiguado, con
@@ -200,7 +264,7 @@ manual 38755451153 (#112, sobre `fe2ba33`, SHA-256
 marcado a mano, sin nada que bloquease. Ese mismo archivo es el publicado: la ejecución de la
 etiqueta (38761280952) no compila, verifica la atestación del de la #112 y lo adjunta.
 
-### 1.2 De la 3.7.2 a la 3.8.0
+### 1.3 De la 3.7.2 a la 3.8.0
 
 **Publicada el 14 de octubre de 2026** (PR #110 y #111; etiqueta en `a055ec3`, DOI
 10.5281/zenodo.23361729; la publicación lleva `emgteach-v3.8.0-windows-x64.exe`, atestiguado, con
@@ -298,7 +362,7 @@ con el ejecutable del borrador de la release, que es el publicado (ejecución 38
 PyInstaller no reproduce el archivo byte a byte. La lista de banco de la 3.8.0 no está en el
 repositorio.
 
-### 1.3 De la 3.7.1 a la 3.7.2
+### 1.4 De la 3.7.1 a la 3.7.2
 
 **Publicada el 2 de octubre de 2026** (PR #106 y #107; etiqueta en `1400e83`, DOI
 10.5281/zenodo.23103390; la publicación lleva `emgteach-v3.7.2-windows-x64.exe`, atestiguado). Es un
@@ -347,9 +411,9 @@ de la aplicación quedaron sin respuesta, una vez con el error 1168 de Windows.
 puerto ocupado por otro programa nombrado por el servidor, y los avisos. **En la Wi-Fi de la
 universidad**, el 1 de octubre de 2026 con la placa simulada, un móvil de esa red siguió la sesión con
 la página en el 8080 y los datos en el 8443. **La 3.7.2 publicada tiene el fallo del informe para el
-móvil que entra tarde** que corrige la 3.8.0 (apartado 1.2).
+móvil que entra tarde** que corrige la 3.8.0 (apartado 1.3).
 
-### 1.4 De la 3.7.0 a la 3.7.1
+### 1.5 De la 3.7.0 a la 3.7.1
 
 **Publicada el 27 de septiembre de 2026** (PR #103 y #104; etiqueta en `dcb1ecd`, DOI
 10.5281/zenodo.22999304; la publicación lleva `emgteach-v3.7.1-windows-x64.exe`, atestiguado). Es la corrección de un fallo y tiene que llegar a las
@@ -417,7 +481,7 @@ Bluetooth a más de 4 m, así que **la resincronización y la marca de tramas pe
 la suite y no con la placa real**. El aviso del registro afinado se añadió tras `CRC02` y se comprobó
 con el kit reconstruido: sobre `CRC02` sale el aviso y no «Error inesperado».
 
-### 1.5 De la 3.6.0 a la 3.7.0
+### 1.6 De la 3.6.0 a la 3.7.0
 
 La versión del artículo y la de las prácticas de noviembre (PR #70 a #101). Se ensayó de punta a
 punta con la placa simulada y se comprobó en el banco con el BITalino antes de etiquetarla
@@ -474,7 +538,7 @@ completas solo cambia esa franja de la barra, y los recortes de las figuras 4 y 
 En el ejemplo de CSV y de PDF solo cambian la versión, el pie y la línea «Protocol», que ahora se
 lee en el idioma del lector.
 
-### 1.6 De la 3.5.0 a la 3.6.0
+### 1.7 De la 3.5.0 a la 3.6.0
 
 Una versión menor con una sola cosa dentro (PR #67): **la placa simulada obedece a la
 calibración**. Ningún cálculo cambia y ningún registro hecho con la placa se lee distinto; lo
@@ -521,7 +585,7 @@ versión publicada.
 captura**: esta versión no toca ni un texto de pantalla. Solo se mueven el pie del PDF de
 ejemplo y la línea de versión del CSV.
 
-### 1.7 De la 3.4.0 a la 3.5.0
+### 1.8 De la 3.4.0 a la 3.5.0
 
 Una versión menor (PR #45 a #62). Añade lo que una práctica necesita alrededor
 de la medida y repara los dos documentos que se lleva el alumnado. **Las
@@ -627,7 +691,7 @@ registro sin recortar sigue pasando; y el registro de cinemática vuelve a dar
 contracciones, retraso electromecánico mediano de 42 ms y máximo de la tarea del
 123 % CVM.
 
-### 1.8 De la 3.3.0 a la 3.4.0
+### 1.9 De la 3.3.0 a la 3.4.0
 
 Una versión menor (PR #39 a #43): cambia lo que enseña la pestaña de análisis
 y cómo numera sus paneles. Ningún cálculo cambia.
@@ -706,7 +770,7 @@ Los paneles dibujan lo que calcula el análisis; ninguno calcula nada. Donde sí
 cambian las figuras del artículo es en las capturas de la pestaña de análisis
 (apartado 10).
 
-### 1.9 De la 3.2.0 a la 3.3.0
+### 1.10 De la 3.2.0 a la 3.3.0
 
 Una versión menor (PR #35 a #37): una cifra que enseña el programa puede
 cambiar, y un panel se dibuja de otra manera. Ningún otro cálculo cambia.
@@ -742,11 +806,11 @@ cambiar, y un panel se dibuja de otra manera. Ningún otro cálculo cambia.
 
 **Lo que el §5 del artículo cita no cambia con la 3.3.0**: las referencias,
 los máximos de tarea, la tabla A, la figura 6, «lo que no hay que hacer», la
-sensibilidad y el borde son los de la tabla del apartado 1.10, medidos sobre la
+sensibilidad y el borde son los de la tabla del apartado 1.11, medidos sobre la
 etiqueta `v3.2.0` y comprobados sobre la `v3.3.0`. Ninguna figura del artículo
 enseña el panel 3.
 
-### 1.10 De la 3.1.2 a la 3.2.0
+### 1.11 De la 3.1.2 a la 3.2.0
 
 Una versión menor, no un parche, porque cambia los números que el programa
 produce para la misma señal (PR #29 a #32). **Un registro reanalizado con la
@@ -817,7 +881,7 @@ registro de las tres maniobras (`tests/test_coactivation_sin_recortar.py`)
 pasa con los valores nuevos, y el comando de la figura 6 da la figura
 regenerada que hay en `docs/articulo-advances/` (apartado 10).
 
-### 1.11 De la 3.1.1 a la 3.1.2
+### 1.12 De la 3.1.1 a la 3.1.2
 
 Un parche de lo que la calibración pide y de cómo se describe (PR #24 a #26).
 No cambia ningún cálculo, umbral ni valor por defecto.
@@ -835,7 +899,7 @@ No cambia ningún cálculo, umbral ni valor por defecto.
   máximo de la media móvil de 0.2 s de la envolvente, tal cual, sin restar
   reposo, y la mejor de las repeticiones. El manual decía que se restaba el
   reposo de la ventana.
-- **Las publicaciones llevan solo el código fuente** (apartado 1.17).
+- **Las publicaciones llevan solo el código fuente** (apartado 1.18).
 
 Ninguna figura del artículo enseña los textos de la calibración, y las cifras
 del apartado 8 no dependen de estos cambios. Comprobado sobre la etiqueta: la
@@ -843,7 +907,7 @@ prueba de aceptación que fija las cifras del registro de las tres maniobras
 (`tests/test_coactivation_sin_recortar.py`) pasa, y el comando de la figura 6
 da la misma figura, píxel a píxel.
 
-### 1.12 De la 3.1.0 a la 3.1.1
+### 1.13 De la 3.1.0 a la 3.1.1
 
 Un parche de una sola medida (PR #21). **La coactivación de una ventana con
 nombre se lee sobre la fase de registro sin recortar.** Hasta la 3.1.0, elegir
@@ -882,7 +946,7 @@ fragmentos concatenados (apartado 9, punto 11). El EDF afinado es una
 concatenación en disco y se lee como tal. Ninguna figura ni ningún control de
 la interfaz cambia.
 
-### 1.13 De la 3.0.0 a la 3.1.0
+### 1.14 De la 3.0.0 a la 3.1.0
 
 Son **39 commits** (29 sin contar las fusiones). La 3.1.0 no cambia el formato
 del archivo ni los cálculos: los módulos que calculan (`coactivation.py`,
@@ -942,7 +1006,7 @@ puede mover resultados es la propuesta de filas del editor de fragmentos**:
   constantes del asistente, y las guías ya no hablan de esfuerzos mantenidos
   de cuatro segundos.
 
-### 1.14 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
+### 1.15 Lo que trajo la 3.0.0 (desde el commit `7234b02`)
 
 Son **97 commits**. Lo que cambió de cara al artículo:
 
@@ -973,7 +1037,7 @@ Son **97 commits**. Lo que cambió de cara al artículo:
   la excursión completa es ±1.635 mV, no ±1.65 mV. Nada expresado como
   cociente cambia.
 
-### 1.15 Dependencias
+### 1.16 Dependencias
 
 Declaradas en `pyproject.toml` y comprobadas en el entorno con el que se
 generó este informe:
@@ -992,14 +1056,14 @@ generó este informe:
 | reportlab | `>=4.0` | 4.5.1 |
 | segno | `>=1.6` | 1.6.6 |
 
-### 1.16 Plataformas probadas
+### 1.17 Plataformas probadas
 
 La integración continua ejecuta la suite en **Ubuntu y Windows**, con
 **Python 3.10, 3.11 y 3.12**: seis combinaciones, todas en verde para
 `v3.1.2`. macOS no se prueba de forma automática. El hardware se ha probado
 solo en Windows 11.
 
-### 1.17 Instalación y arranque
+### 1.18 Instalación y arranque
 
 Desde el código fuente:
 
@@ -1205,7 +1269,7 @@ Igual que la anterior salvo en estos puntos:
   hay que acordarse de pulsar «Calibrar CVM». El flujo es calibración →
   preparación (5 s) → registro, sin detener la adquisición.
 - El asistente calibra **primero un músculo y después el otro**.
-- **La sesión guiada sigue hasta la tarea** (apartado 1.5): seis maniobras
+- **La sesión guiada sigue hasta la tarea** (apartado 1.6): seis maniobras
   libres de cada músculo con su fila de casillas, que pasan solas, y una presa
   de 8 s apretando una pelota, con las barras de carga dentro del cuadro.
 - El editor de fragmentos abre con **k = 4.4** en vez de 3.0, y espera
@@ -1430,7 +1494,7 @@ coactivación que imprime el informe.
 punto decimal en inglés, punto y coma de separador y coma decimal en español, que
 es lo que esperan Excel o LibreOffice configurados en español —con la otra
 combinación abren el archivo entero en una sola columna y leen 0.05 como texto—.
-Es la excepción declarada a la marca decimal única de la 3.5.0 (apartado 1.7), y
+Es la excepción declarada a la marca decimal única de la 3.5.0 (apartado 1.8), y
 la primera línea del archivo dice cuál de las dos parejas lleva.
 
 ### 5.6 Índice de coactivación
@@ -1837,9 +1901,9 @@ adjunto está en `docs/informe-sourcebook/` y lo produce
 `tools/informe_material.py`.
 
 **Todas las cifras de este apartado están medidas con la 3.2.0** sobre su
-etiqueta y **no cambian con la 3.3.0 ni con la 3.4.0** (apartados 1.9 y 1.8);
+etiqueta y **no cambian con la 3.3.0 ni con la 3.4.0** (apartados 1.10 y 1.9);
 las que cambiaron respecto de la 3.1.2, y cuánto, están en la tabla del
-apartado 1.10. Las del 8.3 no pasan por la coactivación.
+apartado 1.11. Las del 8.3 no pasan por la coactivación.
 
 ### 8.1 Registro de ejemplo: el par flexor / extensor
 
@@ -1895,8 +1959,8 @@ porcentajes de abajo significan lo que dicen.
 | Presa | 88.0–97.0 s | **79 %** (78.6) | 11.4 / 7.7 % CVM |
 
 Medido con la 3.2.0: cada maniobra es una máscara sobre la fase de registro sin
-recortar, el reposo que se resta es el de la fase entera (apartados 1.12 y
-5.6) y la referencia es el pico de la envolvente (apartado 1.10). Con la 3.1.2
+recortar, el reposo que se resta es el de la fase entera (apartados 1.13 y
+5.6) y la referencia es el pico de la envolvente (apartado 1.11). Con la 3.1.2
 —referencia de 0.2 s y suelo del 5 %— la tabla era 28.3 / no reportada / 75.7 %
 con medias 14.1 / 5.8 · 4.2 / 6.2 · 14.5 / 9.1; con el pico y el suelo del 5 %
 la flexión se quedaba sin número (el extensor, en 4.9 %), y es la razón del
@@ -1957,7 +2021,7 @@ para no medir. Para esta práctica, la ventana es la maniobra entera.
    con su curso temporal, reposos incluidos; concatenar las contracciones mide
    otra cosa. **Las cifras publicables son las del registro sin recortar.**
    Desde la 3.1.1, elegir los fragmentos en la pestaña sobre el original ya
-   no concatena para la coactivación (apartado 1.12); el aviso vale para el
+   no concatena para la coactivación (apartado 1.13); el aviso vale para el
    archivo afinado.
 2. **El borde de la ventana: el reposo que entra ya no mueve el índice.** Con
    la 3.0.0, estrechar la presa 0.8 s por delante la llevaba de 76 % a 70 %,
@@ -2076,32 +2140,32 @@ la tarea, 123 % CVM.
 9. Del §13 de la especificación sigue vigente el aviso de que **este era el
    último cambio de arquitectura antes de la publicación**. La 3.1.0 lo
    respeta: cambia el manejo en el puesto y no el formato del archivo ni los
-   cálculos (apartado 1.13). La 3.1.1 cambia una sola medida, la coactivación
-   con fragmentos elegidos (apartado 1.12), y la 3.1.2 solo lo que la
-   calibración pide y cómo se describe (apartado 1.11). La 3.2.0 cambia el
+   cálculos (apartado 1.14). La 3.1.1 cambia una sola medida, la coactivación
+   con fragmentos elegidos (apartado 1.13), y la 3.1.2 solo lo que la
+   calibración pide y cómo se describe (apartado 1.12). La 3.2.0 cambia el
    estadístico de la referencia, el suelo del índice y la MDF de los
-   segmentos (apartado 1.10); la 3.3.0 lee el máximo de la tarea sobre la fase
-   entera y dibuja el panel 3 en relativo (apartado 1.9); la 3.4.0 cambia lo
+   segmentos (apartado 1.11); la 3.3.0 lee el máximo de la tarea sobre la fase
+   entera y dibuja el panel 3 en relativo (apartado 1.10); la 3.4.0 cambia lo
    que enseña la pestaña de análisis y cómo numera sus paneles, sin tocar
-   ningún cálculo (apartado 1.8). La 3.5.0 añade lo que rodea a la medida —la
+   ningún cálculo (apartado 1.9). La 3.5.0 añade lo que rodea a la medida —la
    placa simulada, el diagnóstico, el registro de eventos y la recuperación—,
    repara el informe y el CSV y deja una sola marca decimal, y las tres cosas
    que mueven números son faltas que se reparan, declaradas una por una
-   (apartado 1.7). La 3.6.0 no cambia ningún cálculo: hace que la placa
+   (apartado 1.8). La 3.6.0 no cambia ningún cálculo: hace que la placa
    simulada obedezca a la calibración, de modo que un ensayo sin hardware
-   enseñe lo que enseña la práctica (apartado 1.6). La 3.7.0 lleva la sesión
+   enseñe lo que enseña la práctica (apartado 1.7). La 3.7.0 lleva la sesión
    guiada hasta la tarea y propone las filas del editor hasta el reposo, sin
-   cambiar ningún cálculo para un conjunto dado de fragmentos (apartado 1.5);
+   cambiar ningún cálculo para un conjunto dado de fragmentos (apartado 1.6);
    es la que describe el artículo, y lo que venga después irá a versiones
    posteriores sin cambiar lo que describe. La 3.7.1 lo cumple: corrige que
    una trama corrupta cortara la grabación y marca las tramas perdidas, sin
-   cambiar ningún cálculo (apartado 1.4). La 3.7.2 cambia los puertos de la
-   difusión a los móviles (apartado 1.3), la 3.8.0 trae los arreglos que
+   cambiar ningún cálculo (apartado 1.5). La 3.7.2 cambia los puertos de la
+   difusión a los móviles (apartado 1.4), la 3.8.0 trae los arreglos que
    encontraron ecgteach y eegteach en código compartido, sin cambiar ningún
-   cálculo (apartado 1.2), la 3.9.0 devuelve el marcado a mano durante la
-   grabación, opcional, sin cambiar ningún cálculo (apartado 1.1), y la 3.9.1
+   cálculo (apartado 1.3), la 3.9.0 devuelve el marcado a mano durante la
+   grabación, opcional, sin cambiar ningún cálculo (apartado 1.2), y la 3.9.1
    corrige la vista en vivo tras la rueda, el cierre durante «Reintentar» y la
-   unidad en español, sin cambiar ningún cálculo (apartado 1.0).
+   unidad en español, sin cambiar ningún cálculo (apartado 1.1).
 10. **La k = 4.4 del par es empírica**: es el valor que dio una fila por
     maniobra en los registros en que se probó. Con otra piel, otro montaje u
     otra forma de hacer las maniobras puede proponer de más o de menos; por
