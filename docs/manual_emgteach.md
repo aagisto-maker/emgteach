@@ -372,7 +372,8 @@ session.
   the fibres and about 2 cm apart; reference over bone (olecranon or wrist).
   5 s of rest with the arm relaxed along the body, a 3 s countdown to pick up the
   weight, **the weight held with the elbow at 90° for 90 s** and 5 s to put it
-  down. There is no bar during the effort (the load is fixed, not a level to
+  down. The weight, one that cannot be held for more than 60-90 s, so that
+  fatigue comes within the session. There is no bar during the effort (the load is fixed, not a level to
   reach): the panel gives the seconds left. The text asks to breathe normally.
   **The space bar, or the button «I can't go on (Space)», ends the effort
   early**; the mark of its end says so and the session goes on to its last rest.

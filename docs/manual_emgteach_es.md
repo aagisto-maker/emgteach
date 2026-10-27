@@ -458,7 +458,8 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   fibras y a unos 2 cm uno de otro; referencia sobre hueso (olécranon o muñeca).
   5 s de reposo con el brazo relajado a lo largo del cuerpo, una cuenta atrás de 3 s para
   coger el peso, **el peso sostenido con el codo a 90° durante 90 s** y 5 s para
-  dejarlo. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
+  dejarlo. El peso, uno que no se pueda sostener más de 60-90 s, para que la
+  fatiga llegue dentro de la sesión. Durante el esfuerzo no hay barra (la carga es fija, no un nivel que
   alcanzar): el panel da los segundos que quedan. El texto pide respirar
   normalmente. **La barra espaciadora, o el botón «No puedo más (Espacio)», termina
   el esfuerzo antes de tiempo**; la marca de su final lo dice y la sesión pasa al

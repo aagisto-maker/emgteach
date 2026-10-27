@@ -372,8 +372,9 @@ MDF, not of the amplitude.
 Electrodes over the **biceps brachii**, on the line between the medial acromion
 and the cubital fossa, **at 1/3 of that line from the cubital fossa** (SENIAM),
 aligned with the fibres and about 2 cm apart; the reference over bone
-(olecranon or wrist). A fixed weight you can hold for
-one to two minutes (a dumbbell, a full bottle).
+(olecranon or wrist). A fixed weight you cannot hold for
+more than 60-90 s (a dumbbell, a full bottle), so that fatigue comes within the
+session.
 1. Choose the session in the chooser on the line of «Calibrate MVC» and press
    **Start recording**; no calibration is needed. After 5 s of preparation,
    **5 s of rest** with the arm relaxed along the body and without the weight
