@@ -476,8 +476,9 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
   recta baja al menos un 10 %**; el R² no se exige, porque el espectro tiene mucha
   dispersión propia (en el banco, el bíceps bajó la MDF un 16-20 % en 90 s con un R²
   de solo 0.3, mientras el RMS se mantenía o subía). Vista **«MDF en el tiempo»**:
-  las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que cayó un 10 %
-  y el RMS en gris. Los paneles 6 y 7 aparecen marcados. Si se eligen fragmentos,
+  las ventanas, sus medias en 5 s, la recta de la MDF, el momento en que esa recta ha
+  caído un 10 %, si lo hace dentro de lo sostenido (la marca y el veredicto
+  salen de la misma recta) y el RMS en gris. Los paneles 6 y 7 aparecen marcados. Si se eligen fragmentos,
   la vista sigue: la carga se lee en el trozo más largo de ella que conservan (al
   menos 3 s; nunca dos trozos pegados), y la vista lo dice; si ninguno conserva
   tanto, lo avisa, y la ficha de resumen no da veredicto. «Seleccionar

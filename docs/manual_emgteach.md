@@ -390,8 +390,9 @@ session.
   its line drops at least 10 %**; no R² is required, since the spectrum has a
   large scatter of its own (on the bench the biceps' MDF fell 16-20 % in 90 s
   with an R² of only 0.3, while the RMS held or rose). View **«MDF over
-  time»**: the windows, their means over 5 s, the MDF's line, when it had
-  fallen 10 % and the RMS in grey. Panels 6 and 7 come ticked. With fragments
+  time»**: the windows, their means over 5 s, the MDF's line, where that line
+  has fallen 10 %, if it does within what was held (the mark and the verdict
+  come from the same line) and the RMS in grey. Panels 6 and 7 come ticked. With fragments
   chosen the view stays: the load is read on the longest piece of it they keep
   (at least 3 s; never two pieces glued), and the view says so; if none keeps
   that much, it says that instead, and the summary card gives no verdict.

@@ -12,6 +12,7 @@ What the final bench of 3.10.0 left for a patch (Ángel's decisions of 27 Octobe
 ### Changed
 
 - **Graded contractions: each step is reached slowly.** At the final bench every step began with a brief peak above the level asked, the subject jumping to the mark. Each step now says «Close your fist: rise slowly to the mark (1-2 s) and hold it there.» («…to your maximum…» at the last), its band on the live bar rises from zero to the mark over 1.5 s (`sessions.GRAD_RAMP_S`, `SessionPhase.ramp_s`), and its level is read from 1.5 s after the contraction begins instead of one second (`guided.SETTLE_S`). The manuals and exercise 1b of both guides with it.
+- **Fatigue: the −10 % is read on the line.** At the final bench the summary line said «MDF −10 % at 74 s» beside the verdict «Not detected (MDF fell less than 10 %)»: the time came from the 5 s running median, which the scatter can dip 10 %, and the verdict from the line. The time is now where the MDF's line falls to 90 % of its start (`guided.line_decline_s`), if it does within what was held; if not, «MDF never fell 10 %». The mark of the view «MDF over time», the summary line, the report, the phones and the verdict come from the same measure. The manuals with it.
 
 ## [3.10.0] — 2026-10-25
 

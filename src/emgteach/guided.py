@@ -60,6 +60,7 @@ __all__ = [
     "gradation_reference_text",
     "gradation_steps",
     "is_monotonic",
+    "line_decline_s",
     "load_fatigue",
     "load_piece",
     "load_span",
@@ -433,11 +434,28 @@ class LoadResult:
     mdf_trend: Trend | None
     mnf_trend: Trend | None
     rms_trend: Trend | None
-    #: Seconds until the MDF had fallen 10 % (a 5 s running median against
-    #: its first 5 s); ``None`` if it did not.
+    #: Seconds until the MDF's line had fallen 10 % (:func:`line_decline_s`);
+    #: ``None`` if it did not within what was held.
     t_mdf_10: float | None
     #: emgteach.fatigue's FATIGUE, NO_FATIGUE or INCONCLUSIVE.
     verdict: str
+
+
+def line_decline_s(trend: Trend | None, t, pct: float = LOAD_MIN_FALL_PCT) -> float | None:
+    """When the MDF's line had fallen *pct* per cent of where it begins, in
+    seconds from the first window; ``None`` if it does not within *t*.
+
+    Read on the line, as the verdict is (:func:`load_verdict`), so the mark
+    of the view, the summary line and the verdict say the same: until 3.10.0
+    a 5 s running median could say «MDF -10 % at 74 s» beside «fell less
+    than 10 %» (Ángel, the final bench; plan §15).
+    """
+    tt = np.asarray(t, dtype=np.float64)
+    if (trend is None or tt.size < 2 or trend.slope >= 0 or trend.start <= 0
+            or not np.isfinite(trend.slope)):
+        return None
+    dt = -(pct / 100.0) * trend.start / trend.slope
+    return float(dt) if dt <= float(tt[-1] - tt[0]) + 1e-9 else None
 
 
 def load_verdict(trend: Trend | None, n: int) -> str:
@@ -481,7 +499,6 @@ def load_fatigue(emg_filtered, fs: float, *, f_low: float = 20.0,
     tt = np.array(t)
     bloque = max(1, round(LOAD_BLOCK_S / LOAD_STEP_S))
     bloques = range(0, tt.size - bloque + 1, bloque)
-    por_tramo = round(LOAD_BLOCK_S / LOAD_STEP_S)
     tendencia = _trend(tt, mdf)
     return LoadResult(
         seconds=x.size / fs,
@@ -490,7 +507,7 @@ def load_fatigue(emg_filtered, fs: float, *, f_low: float = 20.0,
         block_mdf=tuple(float(np.mean(mdf[i:i + bloque])) for i in bloques),
         block_mnf=tuple(float(np.mean(mnf[i:i + bloque])) for i in bloques),
         mdf_trend=tendencia, mnf_trend=_trend(tt, mnf), rms_trend=_trend(tt, rms),
-        t_mdf_10=time_to_decline(tt, mdf, 10.0, base_n=por_tramo, span=por_tramo),
+        t_mdf_10=line_decline_s(tendencia, tt),
         verdict=load_verdict(tendencia, tt.size),
     )
 
