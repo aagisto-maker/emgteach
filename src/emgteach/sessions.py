@@ -338,10 +338,13 @@ _LOAD_LEVEL = 0.4
 
 
 def load_script(seconds: float = LOAD_DEFAULT_S) -> SessionScript:
-    """A fixed weight held with the biceps until it tires, or for *seconds*.
+    """A fixed weight held until the muscle tires, or for *seconds*.
 
-    Elbow at 90°, the arm against the body, a weight the student can hold for
-    a minute and a half. No calibration: the weight fixes the force, and the
+    In the practical, the forearm: resting on the table, the hand over its
+    edge, holding a hanging weight it cannot hold for more than 60-90 s; the
+    biceps, with the elbow at 90°, is its variant (Ángel, 27 October 2026).
+    The texts name neither posture, so the one session serves both; the
+    guides give them. No calibration: the weight fixes the force, and the
     fatigue is read in the spectrum, not against a maximum. The rest before
     it is measured (a high rest says the contact is poor); the space bar, or
     the panel's button, ends the effort early when the student cannot go on.
@@ -351,13 +354,13 @@ def load_script(seconds: float = LOAD_DEFAULT_S) -> SessionScript:
         raise ValueError(f"A held load lasts at most {LOAD_MAX_S:g} s, not {secs:g}.")
     fases = (
         SessionPhase("rest_0", REST, _LOAD_REST_S, "Rest",
-                     "Arm relaxed along the body, without the weight.",
+                     "Arm relaxed, without the weight.",
                      opens=span_start_marker("HOLD", "rest"),
                      closes=span_end_marker("HOLD", "rest"), check_rest=True),
         SessionPhase("ready", READY, _LOAD_COUNT_S, "Pick up the weight at 0",
-                     "Elbow at 90°, the arm against the body."),
+                     "Hold it without gripping harder than you need."),
         SessionPhase("effort", EFFORT, secs, "Hold the weight",
-                     "Keep the elbow at 90°. Breathe normally. Space, when you "
+                     "Keep the weight still. Breathe normally. Space, when you "
                      "cannot go on.", level=_LOAD_LEVEL,
                      opens=span_start_marker("HOLD", "effort", secs=secs),
                      closes=span_end_marker("HOLD", "effort"),
@@ -366,14 +369,14 @@ def load_script(seconds: float = LOAD_DEFAULT_S) -> SessionScript:
                      "The recording stops on its own."),
     )
     return SessionScript(
-        key="fatiga", family="HOLD", title="Fatigue: biceps with a fixed load",
-        slug="fatiga_biceps",
+        key="fatiga", family="HOLD", title="Fatigue with a fixed load",
+        slug="fatiga",
         header=header_marker("HOLD", mode="load", secs=secs), phases=fases,
-        summary="A fixed weight held with the elbow at 90° for {secs:g} s, or "
+        summary="A fixed weight held for {secs:g} s, or "
                 "until you cannot go on. Fatigue lowers the frequency of the "
                 "signal; its amplitude may hold or rise.",
         fmt=(("secs", secs),),
-        gesture="Elbow at 90°, a fixed weight in the hand.",
+        gesture="A fixed weight in the hand.",
     )
 
 
