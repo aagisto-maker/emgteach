@@ -30,6 +30,7 @@ carries the fine controls and the other two do not.
 from __future__ import annotations
 
 from emgteach.i18n import tr
+from emgteach.selection import REST_FRACTION
 
 __all__ = [
     "DEFAULT_MODE",
@@ -91,7 +92,7 @@ _DETECTION_K = {MODE_SINGLE: 3.0, MODE_PAIR: 4.4, MODE_KINEMATICS: 3.0}
 #: in two or three rows each. Not the pair, whose six efforts in a row rest
 #: less than a second between them and are cut at the valleys; nor
 #: kinematics, which proposes one row per lift.
-_REST_FRACTION = {MODE_SINGLE: 0.05}
+_REST_FRACTION = {MODE_SINGLE: REST_FRACTION}
 
 #: How many contractions the practical's protocol asks for, in the order the
 #: fragment editor counts them — led by the first muscle, by the second, by

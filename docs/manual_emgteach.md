@@ -466,7 +466,11 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    for at least 1 s («A fragment ends after a rest of (s)», in the fine
    adjustment). A gradation's step, with its brief peak at the start, is one
    row; in the pair, whose six contractions in a row rest less than a second
-   between them, the cut is at the valleys between them.
+   between them, the cut is at the valleys between them. Every row **starts
+   0.5 s before** its contraction leaves that rest, the same lead for all and
+   never over the row before; so do the row proposed for the train and the
+   load's, which holds the whole contraction though the load is still read
+   from 2 s after it begins.
 2. **Each contraction in turn**, with ◀ ▶ or by clicking it on the plot; it is
    highlighted without the axes moving. **Keep it**, **Drop it** (it stays
    hatched and Keep it brings it back) and **Split it**, offered only when the

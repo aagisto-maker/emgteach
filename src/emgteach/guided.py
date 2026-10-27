@@ -38,7 +38,7 @@ import numpy as np
 from emgteach.coactivation import resting_level
 from emgteach.contractions import _MOVE_ONSET_FRACTION, trim_to_effort
 from emgteach.dsp import compute_psd_mnf_mdf
-from emgteach.selection import Segment
+from emgteach.selection import REST_FRACTION, ROW_LEAD_S, Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
 
 __all__ = [
@@ -66,6 +66,7 @@ __all__ = [
     "line_decline_s",
     "load_fatigue",
     "load_piece",
+    "load_row",
     "load_span",
     "load_verdict",
     "mdf_trend_applies",
@@ -298,6 +299,24 @@ def _limite_del_tren(session: GuidedSession,
             hasta = y if session.end_s is None else min(y, max(x, session.end_s))
             return offset + hasta - x
     return a
+
+
+def _inicio_de_fila(actividad: np.ndarray, fs: float, a: float, b: float,
+                    desde: float) -> float:
+    """Where the row the fragment editor proposes for a session's window
+    starts: :data:`emgteach.selection.ROW_LEAD_S` before the activity inside
+    ``[a, b]`` first rises above :data:`emgteach.selection.REST_FRACTION` of
+    its peak — the rule a fragment of the one-muscle practical ends by —
+    and never before *desde*. Started where it passed a fifth of the peak,
+    the train's row cut the beginning of its first contraction (the bench
+    with exe #143)."""
+    i0, i1 = max(0, round(a * fs)), min(actividad.size, round(b * fs))
+    if i1 <= i0:
+        return max(desde, a)
+    tramo = actividad[i0:i1]
+    sobre = np.flatnonzero(tramo > REST_FRACTION * float(tramo.max()))
+    arranque = (i0 + int(sobre[0])) / fs if sobre.size else a
+    return max(desde, arranque - ROW_LEAD_S)
 
 
 def _meseta(on: float, off: float, settle_s: float) -> tuple[float, float]:
@@ -603,6 +622,16 @@ def load_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float
     if not esfuerzos or fs <= 0:
         return None
     esfuerzo = esfuerzos[-1]
+    actividad, a0 = _actividad_de_carga(session, envelope, fs)
+    on, off = _contraccion(actividad, fs, a0, esfuerzo.end_s)
+    a, b = on + LOAD_SKIP_S, min(off, esfuerzo.end_s)
+    return (a, b) if b - a >= 3 * LOAD_WIN_S else None
+
+
+def _actividad_de_carga(session: GuidedSession, envelope, fs: float) -> tuple[np.ndarray, float]:
+    """The envelope above the rest the load session measured before its
+    effort, and where its effort may begin: the countdown, when one picks
+    the weight up early."""
     env = np.asarray(envelope, dtype=np.float64)
     reposos = session.spans_named("rest")
     if reposos:
@@ -611,10 +640,24 @@ def load_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float
         reposo = float(np.median(env[r0:r1])) if r1 > r0 else resting_level(env)
     else:
         reposo = resting_level(env)
-    a0 = max(0.0, esfuerzo.start_s - 3.0)          # the countdown, when one picks it up early
-    on, off = _contraccion(env - reposo, fs, a0, esfuerzo.end_s)
-    a, b = on + LOAD_SKIP_S, min(off, esfuerzo.end_s)
-    return (a, b) if b - a >= 3 * LOAD_WIN_S else None
+    return env - reposo, max(0.0, session.spans_named("effort")[-1].start_s - 3.0)
+
+
+def load_row(session: GuidedSession | None, envelope, fs: float) -> tuple[float, float] | None:
+    """What the fragment editor proposes for a load session, as one row, in
+    file time: from a little before the activity leaves rest
+    (:func:`_inicio_de_fila`) to where the analysed load ends
+    (:func:`load_span`). The load is still read from 2 s after the
+    activity begins, inside it (:func:`load_piece`): the row is the whole
+    contraction, as every row of the one-muscle practical is (the bench
+    with exe #143)."""
+    tramo = load_span(session, envelope, fs)
+    if tramo is None or session is None:
+        return None
+    actividad, a0 = _actividad_de_carga(session, envelope, fs)
+    reposos = session.spans_named("rest")
+    desde = reposos[-1].end_s if reposos else (session.start_s or 0.0)
+    return _inicio_de_fila(actividad, fs, a0, tramo[1], desde), tramo[1]
 
 
 def load_piece(span: tuple[float, float] | None,
@@ -667,7 +710,9 @@ def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[floa
     What the fragment editor proposes for it, as one row. Its detector made
     one row per contraction, and the train glued out of them had lost the
     rests between them — its floor and its rate (the bench with exe #139).
-    The activity is found above the rest of the 3 s before the cue.
+    The activity is found above the rest of the 3 s before the cue, and the
+    row starts as every row of the one-muscle practical does, a little
+    before its first contraction leaves rest (:func:`_inicio_de_fila`).
     """
     if session is None or session.family != "FAST" or fs <= 0:
         return None
@@ -681,7 +726,9 @@ def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[floa
     actividad = env - reposo
     limite = env.size / fs if session.end_s is None else min(env.size / fs, session.end_s)
     on, off = _contraccion(actividad, fs, a, _hasta_que_acaba(actividad, fs, a, b, limite))
-    return (on, off) if off > on else None
+    if off <= on:
+        return None
+    return _inicio_de_fila(actividad, fs, a, off, session.start_s or 0.0), off
 
 
 def fragments_hull(session: GuidedSession | None, pieces: Sequence[tuple[float, float]],

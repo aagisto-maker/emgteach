@@ -1473,7 +1473,7 @@ class AnalysisTab(QWidget):
                 # A fixed load or a train is proposed as the one window its
                 # analysis reads, not as the detector's pieces (the final
                 # bench, B3; the bench with exe #139, B2).
-                session_window=((self._last_result or {}).get("load_span")
+                session_window=((self._last_result or {}).get("load_row")
                                 or (self._last_result or {}).get("train_span")),
                 parent=self,
             )

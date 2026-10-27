@@ -558,6 +558,10 @@ qué pide, y el «?» del cuadro los repite.
    tras un reposo de (s)», en el ajuste fino). Un escalón de la gradación, con
    su pico breve al arrancar, es una fila; en el par, cuyas seis contracciones
    seguidas descansan menos de un segundo, se corta por los valles entre ellas.
+   Cada fila **empieza 0.5 s antes** de que su contracción deje ese reposo, la
+   misma ventaja en todas y sin pisar la fila anterior; también la fila que se
+   propone para el tren y la de la carga, que abarca la contracción entera
+   aunque la carga se siga leyendo desde 2 s después de su inicio.
 2. **Cada contracción por turno**, con ◀ ▶ o pulsándola en el gráfico; se
    resalta sin que los ejes se muevan. **Mantener**, **Eliminar** (queda rayada
    y se recupera con Mantener) y **Dividir**, que solo se ofrece cuando la fila

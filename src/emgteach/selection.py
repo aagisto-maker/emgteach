@@ -35,7 +35,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DEFAULT_DETECTION",
+    "REST_FRACTION",
     "REST_MIN_S",
+    "ROW_LEAD_S",
     "Segment",
     "activity_threshold",
     "normalise_segments",
@@ -127,6 +129,16 @@ _FLICKER_S = 0.1
 #: where fragments end only at rest (the default ``merge_gap_s`` then):
 #: Ángel's second (27 October 2026).
 REST_MIN_S = 1.0
+
+#: Where fragments end only at rest, the share of the peak's height above the
+#: baseline that is still rest (Ángel, 27 October 2026).
+REST_FRACTION = 0.05
+
+#: How long before the point where its contraction leaves rest a row starts,
+#: where fragments end only at rest: the same lead for every row, so none
+#: begins on the flank and none half a second before it (the bench with exe
+#: #143: steps 1, 4 and 5 began 0.5 s early, 2 and 3 on the flank).
+ROW_LEAD_S = 0.5
 
 
 #: The detection settings the fragment editor lets the student move, with the
