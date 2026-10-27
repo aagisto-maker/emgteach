@@ -38,7 +38,7 @@ import numpy as np
 from emgteach.coactivation import resting_level
 from emgteach.contractions import _MOVE_ONSET_FRACTION, trim_to_effort
 from emgteach.dsp import compute_psd_mnf_mdf
-from emgteach.selection import Segment
+from emgteach.selection import REST_FRACTION, ROW_LEAD_S, Segment
 from emgteach.sessions import GuidedSession, MeasuredSpan
 
 __all__ = [
@@ -66,6 +66,7 @@ __all__ = [
     "line_decline_s",
     "load_fatigue",
     "load_piece",
+    "load_row",
     "load_span",
     "load_verdict",
     "mdf_trend_applies",
@@ -298,6 +299,24 @@ def _limite_del_tren(session: GuidedSession,
             hasta = y if session.end_s is None else min(y, max(x, session.end_s))
             return offset + hasta - x
     return a
+
+
+def _inicio_de_fila(actividad: np.ndarray, fs: float, a: float, b: float,
+                    desde: float) -> float:
+    """Where the row the fragment editor proposes for a session's window
+    starts: :data:`emgteach.selection.ROW_LEAD_S` before the activity inside
+    ``[a, b]`` first rises above :data:`emgteach.selection.REST_FRACTION` of
+    its peak — the rule a fragment of the one-muscle practical ends by —
+    and never before *desde*. Started where it passed a fifth of the peak,
+    the train's row cut the beginning of its first contraction (the bench
+    with exe #143)."""
+    i0, i1 = max(0, round(a * fs)), min(actividad.size, round(b * fs))
+    if i1 <= i0:
+        return max(desde, a)
+    tramo = actividad[i0:i1]
+    sobre = np.flatnonzero(tramo > REST_FRACTION * float(tramo.max()))
+    arranque = (i0 + int(sobre[0])) / fs if sobre.size else a
+    return max(desde, arranque - ROW_LEAD_S)
 
 
 def _meseta(on: float, off: float, settle_s: float) -> tuple[float, float]:
@@ -603,6 +622,16 @@ def load_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float
     if not esfuerzos or fs <= 0:
         return None
     esfuerzo = esfuerzos[-1]
+    actividad, a0 = _actividad_de_carga(session, envelope, fs)
+    on, off = _contraccion(actividad, fs, a0, esfuerzo.end_s)
+    a, b = on + LOAD_SKIP_S, min(off, esfuerzo.end_s)
+    return (a, b) if b - a >= 3 * LOAD_WIN_S else None
+
+
+def _actividad_de_carga(session: GuidedSession, envelope, fs: float) -> tuple[np.ndarray, float]:
+    """The envelope above the rest the load session measured before its
+    effort, and where its effort may begin: the countdown, when one picks
+    the weight up early."""
     env = np.asarray(envelope, dtype=np.float64)
     reposos = session.spans_named("rest")
     if reposos:
@@ -611,10 +640,24 @@ def load_span(session: GuidedSession | None, envelope, fs: float) -> tuple[float
         reposo = float(np.median(env[r0:r1])) if r1 > r0 else resting_level(env)
     else:
         reposo = resting_level(env)
-    a0 = max(0.0, esfuerzo.start_s - 3.0)          # the countdown, when one picks it up early
-    on, off = _contraccion(env - reposo, fs, a0, esfuerzo.end_s)
-    a, b = on + LOAD_SKIP_S, min(off, esfuerzo.end_s)
-    return (a, b) if b - a >= 3 * LOAD_WIN_S else None
+    return env - reposo, max(0.0, session.spans_named("effort")[-1].start_s - 3.0)
+
+
+def load_row(session: GuidedSession | None, envelope, fs: float) -> tuple[float, float] | None:
+    """What the fragment editor proposes for a load session, as one row, in
+    file time: from a little before the activity leaves rest
+    (:func:`_inicio_de_fila`) to where the analysed load ends
+    (:func:`load_span`). The load is still read from 2 s after the
+    activity begins, inside it (:func:`load_piece`): the row is the whole
+    contraction, as every row of the one-muscle practical is (the bench
+    with exe #143)."""
+    tramo = load_span(session, envelope, fs)
+    if tramo is None or session is None:
+        return None
+    actividad, a0 = _actividad_de_carga(session, envelope, fs)
+    reposos = session.spans_named("rest")
+    desde = reposos[-1].end_s if reposos else (session.start_s or 0.0)
+    return _inicio_de_fila(actividad, fs, a0, tramo[1], desde), tramo[1]
 
 
 def load_piece(span: tuple[float, float] | None,
@@ -667,7 +710,9 @@ def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[floa
     What the fragment editor proposes for it, as one row. Its detector made
     one row per contraction, and the train glued out of them had lost the
     rests between them — its floor and its rate (the bench with exe #139).
-    The activity is found above the rest of the 3 s before the cue.
+    The activity is found above the rest of the 3 s before the cue, and the
+    row starts as every row of the one-muscle practical does, a little
+    before its first contraction leaves rest (:func:`_inicio_de_fila`).
     """
     if session is None or session.family != "FAST" or fs <= 0:
         return None
@@ -681,7 +726,9 @@ def train_span(session: GuidedSession | None, envelope, fs: float) -> tuple[floa
     actividad = env - reposo
     limite = env.size / fs if session.end_s is None else min(env.size / fs, session.end_s)
     on, off = _contraccion(actividad, fs, a, _hasta_que_acaba(actividad, fs, a, b, limite))
-    return (on, off) if off > on else None
+    if off <= on:
+        return None
+    return _inicio_de_fila(actividad, fs, a, off, session.start_s or 0.0), off
 
 
 def fragments_hull(session: GuidedSession | None, pieces: Sequence[tuple[float, float]],
@@ -745,9 +792,12 @@ def _peaks_and_floors(s, fs: float):
 
     A contraction is a peak of *s* standing out by a third of the train's
     range, at least 0.12 s from the next (more than eight a second is not a
-    voluntary rhythm). The floor is the lowest fifth of the trace between
-    two peaks: not its minimum, which on a noisy trace is a sample, not a
-    level.
+    voluntary rhythm). Two such peaks are one contraction, with the higher
+    of them, unless the trace between them falls below
+    :data:`_HUMP_VALLEY` of the lower one or they are
+    :data:`_HUMP_GAP_S` apart (:func:`_one_per_contraction`). The floor is
+    the lowest fifth of the trace between two contractions: not its
+    minimum, which on a noisy trace is a sample, not a level.
     """
     from scipy.signal import find_peaks
 
@@ -757,9 +807,42 @@ def _peaks_and_floors(s, fs: float):
     rango = float(np.percentile(s, 95) - np.percentile(s, 5))
     picos, _ = find_peaks(s, distance=max(1, round(0.12 * fs)),
                           prominence=max(1e-12, rango / 3.0))
+    picos = _one_per_contraction(s, picos, fs)
     suelos = np.array([float(np.percentile(s[a:b], 20))
                        for a, b in itertools.pairwise(picos) if b > a + 1])
     return picos, s[picos], suelos
+
+
+#: Two peaks of a train are two contractions if the trace between them falls
+#: below this share of the lower one... (the bench with exe #143: three
+#: contractions with two humps, 0.13-0.2 s apart and a «floor» between them
+#: at 60-75 % of the lower, counted twice and the floor jumping to half the
+#: peak). What the measure itself leaves between contractions with a full
+#: relaxation stays well under it up to seven a second (26 %,
+#: processing_floor_pct).
+_HUMP_VALLEY = 0.4
+#: ...or if they are this far apart: more than four a second, the distance
+#: alone does not part them.
+_HUMP_GAP_S = 0.25
+
+
+def _one_per_contraction(s: np.ndarray, picos: np.ndarray, fs: float) -> np.ndarray:
+    """The peaks of *s*, one per contraction: a peak not parted from the one
+    before by a valley below :data:`_HUMP_VALLEY` of the lower of the two,
+    nor by :data:`_HUMP_GAP_S`, is the same contraction's second hump, and
+    the contraction keeps the higher of them."""
+    juntos: list[int] = []
+    for q in (int(x) for x in picos):
+        if juntos:
+            p = juntos[-1]
+            valle = float(np.min(s[p:q + 1]))
+            if (valle > _HUMP_VALLEY * min(float(s[p]), float(s[q]))
+                    and (q - p) / fs < _HUMP_GAP_S):
+                if s[q] > s[p]:
+                    juntos[-1] = q
+                continue
+        juntos.append(q)
+    return np.asarray(juntos, dtype=int)
 
 
 def processing_floor_pct(rate_hz: float, fs: float = 1000.0,

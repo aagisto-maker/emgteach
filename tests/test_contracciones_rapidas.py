@@ -197,7 +197,8 @@ def test_the_train_s_window_is_from_its_first_contraction_to_its_last() -> None:
     tramo = sesion.spans_named("train")[0]
     ventana = train_span(sesion, env, FS)
     assert ventana is not None
-    assert ventana[0] == pytest.approx(tramo.start_s + 0.4, abs=0.3)
+    # Half a second before its first contraction (the bench with exe #143).
+    assert ventana[0] == pytest.approx(tramo.start_s + 0.4 - 0.5, abs=0.3)
     assert ventana[1] == pytest.approx(tramo.end_s + 0.5, abs=0.3)
     assert train_span(None, env, FS) is None
 
@@ -445,7 +446,7 @@ def test_fragments_one_per_contraction_in_the_worker(qapp, tmp_path: Path) -> No
     r = analizar(trocitos)
     assert r["train"] is not None and r["train"].n == pytest.approx(30, abs=1)
     assert r["train_piece"] is not None and r["train_note"] is None
-    assert r["train_span"][0] == pytest.approx(t0, abs=0.3)
+    assert r["train_span"][0] == pytest.approx(t0 - 0.5, abs=0.3)
 
     r = analizar(trocitos[:12])
     assert r["train"] is None and r["train_note"]

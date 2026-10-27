@@ -404,6 +404,10 @@ session.
   since one stops some tenths of a second after the cue, the last to where it ends —, and **the peaks and the floor between
   them** are followed on a 50 ms moving RMS, not on the envelope (at four or five a
   second its 5 Hz filter alone keeps the floor at a fifth to a third of the peak).
+  Two peaks are two contractions if the trace between them falls below 40 % of
+  the lower one or they are 0.25 s or more apart; if not, they are one
+  contraction with two humps, with its higher peak, and no floor is taken
+  between them.
   The summary line and the report also give **the floor the measure alone leaves**
   at that rate with a perfect relaxation: what is above it is the subject's. View
   «Train». See the note in §7.1.
@@ -466,7 +470,11 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    for at least 1 s («A fragment ends after a rest of (s)», in the fine
    adjustment). A gradation's step, with its brief peak at the start, is one
    row; in the pair, whose six contractions in a row rest less than a second
-   between them, the cut is at the valleys between them.
+   between them, the cut is at the valleys between them. Every row **starts
+   0.5 s before** its contraction leaves that rest, the same lead for all and
+   never over the row before; so do the row proposed for the train and the
+   load's, which holds the whole contraction though the load is still read
+   from 2 s after it begins.
 2. **Each contraction in turn**, with ◀ ▶ or by clicking it on the plot; it is
    highlighted without the axes moving. **Keep it**, **Drop it** (it stays
    hatched and Keep it brings it back) and **Split it**, offered only when the

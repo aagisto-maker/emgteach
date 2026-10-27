@@ -48,6 +48,7 @@ from emgteach.guided import (
     gradation_steps,
     load_fatigue,
     load_piece,
+    load_row,
     load_span,
     measured_windows,
     rapid_train,
@@ -405,6 +406,7 @@ class AnalysisWorker(QThread):
             self._tramo_tren: tuple[float, float] | None = train_span(sesion, env, fs)
             return None
         self._reposo_sesion = rest_level(sesion, env, fs)
+        self._fila_carga: tuple[float, float] | None = load_row(sesion, env, fs)
         return load_span(sesion, env, fs)
 
     def _tren_rapido(self, sesion) -> tuple[float, float] | None:
@@ -562,6 +564,7 @@ class AnalysisWorker(QThread):
             self._filtrado_sesion = None
             self._envolvente_sesion = None
             self._tramo_tren = None
+            self._fila_carga = None
             tramo_carga = self._carga_sostenida(sesion, emg_raw, fs)
             bounds = self._resolve_segments(
                 len(emg_raw), fs, full_duration,
@@ -1391,9 +1394,10 @@ class AnalysisWorker(QThread):
                 result["load"] = None
                 result["load_piece"] = None
                 result["load_note"] = None
-                # The window the load is read in, in file time: what the
-                # fragment editor proposes for it.
+                # The window the load is read in, in file time; and the row
+                # the fragment editor proposes for it, the whole contraction.
                 result["load_span"] = tramo_carga
+                result["load_row"] = self._fila_carga
                 if tramo_carga and not self._roi_segments:
                     result["load"] = load_fatigue(
                         proc["emg_filtered"], fs, f_low=self._f_low, f_high=self._f_high)
@@ -1448,6 +1452,7 @@ class AnalysisWorker(QThread):
                 result["load_note"] = None
                 result["load_ratio"] = None
                 result["load_span"] = None
+                result["load_row"] = None
                 result["train_span"] = None
                 result["train_piece"] = None
                 result["train_note"] = None

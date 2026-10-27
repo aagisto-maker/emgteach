@@ -23,6 +23,7 @@ from emgteach.force_velocity import marker_owners
 from emgteach.selection import (
     DEFAULT_DETECTION,
     REST_MIN_S,
+    ROW_LEAD_S,
     Segment,
     activity_threshold,
     normalise_segments,
@@ -240,18 +241,27 @@ def fit_to_envelope(
     Walking from the peak, a row that held a contraction and the tail
     of something else keeps the contraction; which is what a lift that
     the detector had run into the next second needed.
+
+    Where fragments end only at rest (``detection["rest_fraction"]``, the
+    one-muscle practical), rest is that rule's: the baseline plus that
+    share of the row's peak above it, the line its end was found at. And
+    the row starts :data:`emgteach.selection.ROW_LEAD_S` before its
+    contraction leaves it, the same for every row: on the noise of a
+    lower line, a step began half a second before its flank and the next
+    on it (the bench with exe #143).
     """
     if not filas:
         return filas
     a0, b0 = span
     i0, i1 = round(a0 * fs), round(b0 * fs)
     k = detection["k"]
+    fraccion = float(detection.get("rest_fraction", 0.0))
     minimo = max(1, round(detection["min_duration_s"] * fs))
     canales = []
     for env in envs:
         tramo = np.asarray(env[i0:i1], dtype=np.float64)
-        _base, umbral = activity_threshold(tramo, k)
-        canales.append((env, umbral, rest_level(env, fs, span, k)))
+        base, umbral = activity_threshold(tramo, k)
+        canales.append((env, base, umbral, rest_level(env, fs, span, k)))
     orden = sorted(filas, key=lambda f: f.start_s)
     salida: list[Segment] = []
     for n, f in enumerate(orden):
@@ -263,7 +273,7 @@ def fit_to_envelope(
         ini = fin = None
         # A lift's window proposed because nothing was detected in it
         # has no contraction to fit, and is there to be looked at.
-        for env, umbral, reposo in ([] if f.reason == "marker" else canales):
+        for env, base, umbral, reposo in ([] if f.reason == "marker" else canales):
             if j1 <= j0:
                 break
             pico = j0 + int(np.argmax(env[j0:j1]))
@@ -278,6 +288,8 @@ def fit_to_envelope(
                 sobre_d += 1
             if sobre_d - sobre_i + 1 < minimo:
                 continue
+            if fraccion > 0.0:
+                reposo = base + fraccion * (float(env[pico]) - base)
             izq = pico
             while izq > lo and env[izq - 1] > reposo:
                 izq -= 1
@@ -289,7 +301,7 @@ def fit_to_envelope(
         if ini is None or fin is None:
             salida.append(f)
             continue
-        a = max(antes, ini / fs - _BORDE_MARGEN_S)
+        a = max(antes, ini / fs - (ROW_LEAD_S if fraccion > 0.0 else _BORDE_MARGEN_S))
         b = min(despues, (fin + 1) / fs + _BORDE_MARGEN_S)
         salida.append(Segment(a, b, f.score, f.reason, f.label) if b > a else f)
     return to_hundredths(salida)
