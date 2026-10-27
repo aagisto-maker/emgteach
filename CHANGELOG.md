@@ -5,6 +5,14 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — 3.10.1
+
+What the final bench of 3.10.0 left for a patch (Ángel's decisions of 27 October 2026, plan §15).
+
+### Changed
+
+- **Graded contractions: each step is reached slowly.** At the final bench every step began with a brief peak above the level asked, the subject jumping to the mark. Each step now says «Close your fist: rise slowly to the mark (1-2 s) and hold it there.» («…to your maximum…» at the last), its band on the live bar rises from zero to the mark over 1.5 s (`sessions.GRAD_RAMP_S`, `SessionPhase.ramp_s`), and its level is read from 1.5 s after the contraction begins instead of one second (`guided.SETTLE_S`). The manuals and exercise 1b of both guides with it.
+
 ## [3.10.0] — 2026-10-25
 
 **Guided sessions in the one-muscle practical.** Graded contractions, fatigue with a fixed load on the biceps, and quick repeated contractions: chosen beside «Calibrate MVC», timed by the application, marked in the file and analysed by their own spans, with a view of their own, a section of the report and the phones. An optional tone announces every phase change of every guided flow, and every text says «contraction» and «intense». Nothing computed changes for a free recording; **3.7.0 stays the version the article describes.**

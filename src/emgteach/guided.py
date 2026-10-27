@@ -75,8 +75,10 @@ __all__ = [
     "weak_signal_warning",
 ]
 
-#: Seconds at the start of each step left out of its level: the reach.
-SETTLE_S = 1.0
+#: Seconds at the start of each step left out of its level: the reach. One
+#: second until 3.10.0; 1.5 since each step is asked to be reached slowly, in
+#: 1-2 s, and the bench's steps began with a brief peak (Ángel, 3.10.1).
+SETTLE_S = 1.5
 
 #: Seconds after the mark that closes a step, a contraction or the train that
 #: still belong to it: the subject lets go after the cue, not on it. Never

@@ -167,6 +167,46 @@ def test_the_level_held_is_the_envelope_after_the_reach() -> None:
     assert is_monotonic(pasos)
 
 
+def test_a_start_peak_of_more_than_a_second_is_left_out() -> None:
+    """The final bench of 3.10.0: each step began with a brief peak above the
+    level asked, longer than the one second left out until then. Since 3.10.1
+    the step is asked to be reached slowly and its level read from +1.5 s."""
+    assert SETTLE_S == 1.5
+    niveles = [0.2, 0.4, 0.6, 0.8, 1.0]
+    env, filt = _senales(niveles, alcance=1.3)
+    pasos = gradation_steps(_sesion_sintetica(), [(0.0, 60.0, 0.0)], fs=FS,
+                            emg_filtered=filt, envelope=env, mvc_ref=1.0)
+    for p, nivel in zip(pasos, niveles, strict=True):
+        assert p.held_mv == pytest.approx(nivel, rel=1e-6)
+
+
+def test_each_step_is_reached_slowly_with_a_rising_band() -> None:
+    """Ángel, 3.10.1: «Suba despacio hasta la marca (1-2 s) y manténgala», and
+    the band on the bar rises to the mark over 1.5 s."""
+    from emgteach.sessions import GRAD_RAMP_S
+
+    pasos = [f for f in gradation_script().phases if f.kind == EFFORT]
+    assert GRAD_RAMP_S == 1.5 and all(f.ramp_s == GRAD_RAMP_S for f in pasos)
+    assert _ES[pasos[0].text] == "Cierre el puño: suba despacio hasta la marca (1-2 s) y manténgala."
+    assert _ES[pasos[-1].text] == "Cierre el puño: suba despacio hasta el máximo (1-2 s) y manténgalo."
+    assert not any(f.ramp_s for f in gradation_script().phases if f.kind != EFFORT)
+
+
+@pytest.mark.gui
+def test_the_band_on_the_bar_rises_over_its_ramp(tab, monkeypatch) -> None:  # noqa: F811
+    zonas: list[tuple[float, float]] = []
+    monkeypatch.setattr(tab._mvc_overlay, "show_phase",
+                        lambda *a, zone=None, **k: zonas.append(zone))
+    paso = next(f for f in gradation_script().phases if f.kind == EFFORT and f.level == 0.4)
+    lo, hi = paso.target_pct
+    for transcurrido in (0.0, 0.75, 1.5, 3.0):
+        tab._sesion_tick(paso, paso.seconds - transcurrido, transcurrido / paso.seconds)
+    assert zonas[0] == pytest.approx((0.0, 0.0))
+    assert zonas[1] == pytest.approx((lo / 200, hi / 200))
+    assert zonas[2] == pytest.approx((lo / 100, hi / 100))
+    assert zonas[3] == pytest.approx((lo / 100, hi / 100))
+
+
 def test_without_a_reference_the_level_is_in_millivolts() -> None:
     env, filt = _senales([0.2, 0.4, 0.6, 0.8, 1.0])
     pasos = gradation_steps(_sesion_sintetica(), [(0.0, 60.0, 0.0)], fs=FS,

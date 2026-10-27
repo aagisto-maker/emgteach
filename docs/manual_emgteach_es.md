@@ -440,11 +440,12 @@ no se puede cambiar, y el nombre de fichero propuesto lleva la sesión.
 - **Contracciones graduales** (54 s más la calibración, que hace siempre antes):
   cinco contracciones de 4 s de fuerza creciente, al **20, 40, 60 y 80 % de la barra
   y al máximo**, con 6 s de reposo entre ellas. El panel muestra la barra del músculo
-  con la franja del escalón pedido. La calibración pide el mismo gesto que la
+  con la franja del escalón pedido, que sube hasta su nivel en 1.5 s: el texto pide
+  «Suba despacio hasta la marca (1-2 s) y manténgala». La calibración pide el mismo gesto que la
   sesión: cerrar el puño con una contracción. En Análisis cada escalón es la
   contracción que empieza tras su aviso, seguida hasta 1.5 s más allá de su final
   —se empieza y se suelta con unas décimas de retraso—, y su nivel es la media de
-  la envolvente en la meseta de esa contracción. **El máximo de la gradación es
+  la envolvente en la meseta de esa contracción, desde 1.5 s después de su inicio. **El máximo de la gradación es
   la mayor media en medio segundo**, no el pico de la envolvente: el nivel
   mantenido es una media, y una media no llega nunca al pico de la misma
   envolvente (mantenida la intensidad de la calibración, se leía un 85-87 %). Así

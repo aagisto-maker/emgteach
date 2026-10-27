@@ -305,7 +305,9 @@ pero **no lineal**, y ver para qué sirve normalizar.
    los escalones: cinco contracciones isométricas de 4 s contra la mesa, al
    **20, 40, 60 y 80 % de la barra y al máximo**, con 6 s de reposo entre ellas.
    Cada cambio de fase se anuncia con un tono (casilla «Tono»); el panel muestra la
-   barra con la franja del escalón pedido.
+   barra con la franja del escalón pedido, que sube hasta su nivel en 1.5 s.
+   **Suba despacio hasta la marca (1-2 s) y manténgala**: un salto al nivel deja
+   un pico al empezar que no es lo que se pide.
 2. La grabación se **detiene sola** al terminar. En Análisis, revisar las
    repeticiones de la calibración; los cinco escalones ya son las cinco filas de
    la tabla, sin elegir fragmentos.
@@ -321,7 +323,8 @@ pero **no lineal**, y ver para qué sirve normalizar.
 | máximo | | | |
 
 «Mantenido» es la media de la envolvente en la meseta de la contracción de cada
-escalón, tras su primer segundo (el de llegar al nivel) y antes de soltar. Cada
+escalón, desde 1.5 s después de su inicio (lo que se tarda en llegar al nivel)
+y antes de soltar. Cada
 escalón es la contracción que empieza tras su aviso, seguida hasta 1.5 s más allá
 de su final: se empieza y se suelta con unas décimas de retraso. La CVM de la
 gradación es la mayor media en medio segundo de la calibración, no su pico,

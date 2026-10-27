@@ -355,11 +355,12 @@ session.
 - **Graded contractions** (54 s plus the calibration, which it always runs
   first): five 4 s contractions of growing strength, at **20, 40, 60 and 80 % of the
   bar and at the maximum**, with 6 s of rest between them. The panel shows the
-  muscle's bar with the band of the step asked for. The calibration asks for the
+  muscle's bar with the band of the step asked for, which rises to its level over
+  1.5 s: the text asks to «rise slowly to the mark (1-2 s) and hold it there». The calibration asks for the
   session's own gesture: clenching the fist. In Analysis each step is the
   contraction begun after its cue and followed up to 1.5 s past its end — one
   begins and lets go some tenths of a second late —, and its level is the mean
-  of the envelope over that contraction's plateau. **The gradation's maximum is
+  of the envelope over that contraction's plateau, from 1.5 s after its start. **The gradation's maximum is
   the highest mean over half a second**, not the envelope's peak: the level held
   is a mean, and a mean never reaches a peak of the same envelope (held at the
   calibration's own intensity it read 85-87 %). Its calibration, its live bar and

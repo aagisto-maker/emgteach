@@ -2636,10 +2636,10 @@ _ES = {
         'Escalón {k} de {n}: máximo',
     'Step {k} of {n}: {pct} %':
         'Escalón {k} de {n}: {pct} %',
-    'Close your fist with a maximal contraction and hold it.':
-        'Cierre el puño con la máxima contracción y manténgala.',
-    'Close your fist with a contraction up to {pct} % of the bar and hold it there.':
-        'Cierre el puño con una contracción hasta el {pct} % de la barra y manténgala ahí.',
+    'Close your fist: rise slowly to your maximum (1-2 s) and hold it.':
+        'Cierre el puño: suba despacio hasta el máximo (1-2 s) y manténgalo.',
+    'Close your fist: rise slowly to the mark (1-2 s) and hold it there.':
+        'Cierre el puño: suba despacio hasta la marca (1-2 s) y manténgala.',
     'Let go and rest.':
         'Suelte y descanse.',
     'Let go. That was the last one: the recording stops on its own.':

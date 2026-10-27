@@ -319,7 +319,9 @@ signal.
    the steps: five 4 s isometric contractions against the table, at **20, 40, 60
    and 80 % of the bar and at the maximum**, with 6 s of rest between them. Every
    phase change is announced with a tone («Tone» box); the panel shows the bar
-   with the band of the step asked for.
+   with the band of the step asked for, which rises to its level over 1.5 s.
+   **Rise slowly to the mark (1-2 s) and hold it there**: a jump to the level
+   leaves a peak at the start that is not what is asked for.
 2. The recording **stops by itself** at the end. In Analysis, review the
    calibration repetitions; the five steps are already the five rows of the
    table, with no fragments to choose.
@@ -335,7 +337,7 @@ signal.
 | maximum | | | |
 
 «Held» is the mean of the envelope over the plateau of each step's contraction,
-after its first second (the reach) and before its letting go. Each step is the
+from 1.5 s after its start (the reach) and before its letting go. Each step is the
 contraction begun after its cue and followed up to 1.5 s past its end: one
 begins and lets go some tenths of a second late. The gradation's MVC is the
 highest half-second mean of the calibration, not its peak, as the level held is
