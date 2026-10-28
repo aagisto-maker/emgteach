@@ -92,8 +92,11 @@ the line, «Detected», the view and the summary card agreeing. Manual run
 #145: the gradation and the train reopened, with every row half a second
 before its flank and a contraction with two humps counted once; and the
 load's row, which still ended at the effort's end mark. With the real board,
-the executable released: _(manual run, date and findings, added after the
-bench)_.
+the executable released (manual run #147, 28 October 2026): the self-test
+(exit 0); «About» saying 3.10.1; the board connecting and acquiring at
+998 Hz, with no CRC errors and no frame lost; and, the forearm's recording of
+27 October reopened, the load's row running to where the weight is put
+down, at about 84 s, while the fatigue is still read to the effort's end.
 
 ## The Windows executable
 
@@ -112,8 +115,17 @@ attests where it was built.
   print the same value.
 - **To check where it was built**:
   `gh attestation verify emgteach-v3.10.1-windows-x64.exe --repo aagisto-maker/emgteach`.
-- **VirusTotal**: _(link to the analysis, added when the draft is published)_.
+- **VirusTotal:** [scan of the executable](https://www.virustotal.com/gui/file/789720f0e394ad60b9d4e03cecf5ea8690ee3c85479a4c940d618328ceae50d6): 2/66. The two detections (Bkav Pro and McAfee's cloud reputation) are the usual false positives for unsigned PyInstaller executables.
 
 The Zenodo record archives the source code of the tag, not the executable.
 
 See [`CHANGELOG.md`](../CHANGELOG.md) for every change.
+
+## SHA-256 of the executable
+
+```
+789720f0e394ad60b9d4e03cecf5ea8690ee3c85479a4c940d618328ceae50d6  emgteach-v3.10.1-windows-x64.exe
+```
+
+Built and attested by run [40674637174](https://github.com/aagisto-maker/emgteach/actions/runs/40674637174) of *Build Windows exe*
+on `979eb6e4978fd97068d96f8eb4f35e85c4f51266`: the executable tried before the tag, not a new build.
