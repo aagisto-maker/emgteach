@@ -87,8 +87,8 @@ class TestLiftWindows:
         assert ventanas[0] == pytest.approx((48.2, 54.2))   # six seconds
         assert ventanas[-1] == pytest.approx((81.6, 87.6))
         # Half a second shy of a cue that comes sooner than six seconds.
-        assert lift_windows_s([(0.0, 1.0), (4.0, 2.0)], 20.0) == pytest.approx(
-            [(0.0, 3.5), (4.0, 10.0)])
+        assert lift_windows_s([(0.0, 1.0), (4.0, 2.0)], 20.0) == [
+            pytest.approx((0.0, 3.5)), pytest.approx((4.0, 10.0))]
 
 
 FS = 1000
@@ -131,7 +131,8 @@ class TestTheEditorProposesOneRowPerLift:
         dlg = FragmentSelectionDialog(_senal([]), FS, FILTROS, naming=False,
                                       lifts=ventanas)
         filas = [(f.start_s, f.end_s) for f in dlg._por_levantamiento([])]
-        assert filas == pytest.approx(ventanas, abs=0.01)
+        # One approx per window: pytest 9.2 refuses one over a list of tuples.
+        assert filas == [pytest.approx(v, abs=0.01) for v in ventanas]
         dlg.deleteLater()
 
     def test_a_lift_split_at_a_dip_is_joined_again(self, qapp) -> None:
