@@ -478,8 +478,9 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    between them, the cut is at the valleys between them. Every row **starts
    0.5 s before** its contraction leaves that rest, the same lead for all and
    never over the row before; so do the row proposed for the train and the
-   load's, which holds the whole contraction though the load is still read
-   from 2 s after it begins.
+   load's, which holds the whole contraction, to where the envelope is back
+   at rest after the weight is put down, though the load is still read from
+   2 s after it begins to the effort's end (the space bar or the 90 s).
 2. **Each contraction in turn**, with ◀ ▶ or by clicking it on the plot; it is
    highlighted without the axes moving. **Keep it**, **Drop it** (it stays
    hatched and Keep it brings it back) and **Split it**, offered only when the

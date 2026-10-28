@@ -568,8 +568,10 @@ qué pide, y el «?» del cuadro los repite.
    seguidas descansan menos de un segundo, se corta por los valles entre ellas.
    Cada fila **empieza 0.5 s antes** de que su contracción deje ese reposo, la
    misma ventaja en todas y sin pisar la fila anterior; también la fila que se
-   propone para el tren y la de la carga, que abarca la contracción entera
-   aunque la carga se siga leyendo desde 2 s después de su inicio.
+   propone para el tren y la de la carga, que abarca la contracción entera,
+   hasta que la envolvente vuelve al reposo tras dejar el peso, aunque la carga
+   se siga leyendo desde 2 s después de su inicio hasta el final del esfuerzo
+   (la barra espaciadora o los 90 s).
 2. **Cada contracción por turno**, con ◀ ▶ o pulsándola en el gráfico; se
    resalta sin que los ejes se muevan. **Mantener**, **Eliminar** (queda rayada
    y se recupera con Mantener) y **Dividir**, que solo se ofrece cuando la fila
