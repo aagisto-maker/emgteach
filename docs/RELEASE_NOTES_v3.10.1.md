@@ -61,8 +61,7 @@ than a second apart are now one. The other practicals compute as before.
     to the effort's end.
   - **Fragments that touch are measured as one** in the guided sessions'
     measures: a step chosen in two touching rows was measured on the larger
-    half alone, and the bench's gradation gave four steps of five, the 80 %
-    below the 60 %.
+    half alone.
 
 ## Behind the scenes
 
@@ -91,9 +90,8 @@ at the effort's end; and the fatigue session's texts naming no posture.
 its MDF from 118 to 87 Hz (−26 %, R² 0.39, p < 0.001), its −10 % at 24 s on
 the line, «Detected», the view and the summary card agreeing. Manual run
 #145: the gradation and the train reopened, with every row half a second
-before its flank and the train's seventeen contractions; and the load's row,
-which still ended at the effort's end mark (manual run #146 runs it to where
-the weight is put down). With the real board,
+before its flank and a contraction with two humps counted once; and the
+load's row, which still ended at the effort's end mark. With the real board,
 the executable released: _(manual run, date and findings, added after the
 bench)_.
 

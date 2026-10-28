@@ -122,8 +122,7 @@ arranque salía en dos o tres filas: doce para cinco escalones en el banco. Cada
 antes de que su contracción deje ese reposo, sin pisar la anterior; también la del tren y la de la
 carga, que llega hasta que se deja el peso, aunque la carga se siga leyendo desde 2 s después de su
 inicio hasta el final del esfuerzo. Los fragmentos que se tocan en el archivo se miden como uno en
-las sesiones guiadas: un escalón en dos filas pegadas se medía en la mitad mayor, y la gradación del
-banco daba cuatro escalones de cinco, el de 80 % por debajo del de 60 %. El par sigue cortando por
+las sesiones guiadas: un escalón en dos filas pegadas se medía en la mitad mayor. El par sigue cortando por
 los valles, porque sus seis contracciones seguidas descansan menos de un segundo, y cinemática
 propone una fila por levantamiento.
 
@@ -140,8 +139,8 @@ carga del runner. Con la placa real, el 27 de octubre: la ejecución manual #143
 diagnóstico a 999 Hz, la gradación con sus cinco filas sin editar y cinco escalones de
 19/34/45/52/75 %, su afinado, y la fatiga con el antebrazo: MDF −26 %, R² 0.39, p < 0.001, el −10 %
 a los 24 s, «Detectada», con la vista y la ficha de acuerdo) y la #145 (la gradación y el tren
-reabiertos, cada fila 0.5 s antes de su flanco y diecisiete contracciones; la fila de la carga aún
-acababa en la marca del final del esfuerzo, lo que corrige la #146). _(El banco con el ejecutable
+reabiertos, cada fila 0.5 s antes de su flanco y una contracción con dos jorobas contada una vez; la
+fila de la carga aún acababa en la marca del final del esfuerzo). _(El banco con el ejecutable
 publicado se añade tras él.)_
 
 ### 1.1 De la 3.9.1 a la 3.10.0
