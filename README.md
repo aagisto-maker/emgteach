@@ -24,7 +24,17 @@ to introduce hands-on biopotential acquisition into their teaching.
 
 ## Status
 
-`emgteach` v3.10.0 guides three sessions of the one-muscle practical, chosen
+`emgteach` v3.10.1 is a patch of v3.10.0, the guided sessions after the
+bench: each step of the gradation is **reached slowly**, its band rising on
+the bar over 1.5 s; the fatigue's 10 % fall is **read on the MDF's line**, as
+its verdict is; the train **ends where its last contraction does**, and a
+contraction with two humps is one; the fatigue with a fixed load is done **on
+the forearm**, the biceps a variant; and in the one-muscle practical a
+fragment **ends where the muscle is back at rest** for a second and starts
+half a second before it leaves it. 3.7.0 remains the version the article
+describes. See [`docs/RELEASE_NOTES_v3.10.1.md`](docs/RELEASE_NOTES_v3.10.1.md).
+
+v3.10.0 guides three sessions of the one-muscle practical, chosen
 beside «Calibrate MVC»: **graded contractions** (five steps from 20 to 100 %
 of the bar, after a calibration), **fatigue with a fixed load** (a weight
 held with the biceps, elbow at 90°, for 90 s or until the space bar ends it,
@@ -242,10 +252,10 @@ second build.
   («Windows protegió su PC»): choose *More info → Run anyway* («Más
   información → Ejecutar de todos modos»).
 - **Check it is the published file**: the release notes give its SHA-256. In
-  PowerShell, `Get-FileHash .\emgteach-v3.10.0-windows-x64.exe -Algorithm SHA256`
+  PowerShell, `Get-FileHash .\emgteach-v3.10.1-windows-x64.exe -Algorithm SHA256`
   has to print the same value.
 - **Check where it was built**: with the GitHub CLI,
-  `gh attestation verify emgteach-v3.10.0-windows-x64.exe --repo aagisto-maker/emgteach`
+  `gh attestation verify emgteach-v3.10.1-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that version's
   commit.
 

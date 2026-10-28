@@ -78,14 +78,18 @@ abstract: >-
   keeps the live view following the signal after a wheel zoom, starts no
   recording when the window is closed while «Retry» waits for the port, and
   writes «% CVM» in Spanish; nothing computed changes. Version 3.10.0
-  guides four sessions of the one-muscle practical — graded contractions,
-  fatigue by a sustained and by intermittent contractions, and quick
-  repeated contractions — timed, marked in the file and analysed by their
-  own spans, with an optional tone at every phase change of every guided
-  flow; nothing computed changes for a free recording.
+  guides three sessions of the one-muscle practical — graded contractions,
+  fatigue with a fixed load and quick repeated contractions — timed, marked
+  in the file and analysed by their own spans, with an optional tone at every
+  phase change of every guided flow; nothing computed changes for a free
+  recording. Patch 3.10.1 has each step of the gradation reached slowly,
+  reads the fatigue's 10 % fall on the MDF's line, ends the train where its
+  last contraction does and counts a contraction with two humps as one, does
+  the fatigue with a fixed load on the forearm, and in the one-muscle
+  practical ends a fragment where the muscle is back at rest.
 type: software
-version: 3.10.0
-date-released: "2026-10-25"
+version: 3.10.1
+date-released: "2026-10-28"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
