@@ -111,7 +111,15 @@ October 2026) set the fatigue session's criterion. With the
 real board, manual run #133 (26 October 2026): the self-test; the board's
 diagnosis (999 Hz, no CRC errors, no frame lost); «About» saying 3.10.0; the
 calibration, the gradation and the quick contractions, whose findings are the
-first item above. _(The bench of the executable released is added after it.)_
+first item above.
+
+**With the real board, the executable released** (run #140, the final bench,
+26 October 2026): the self-test exits 0; the board's diagnosis, 999 Hz with
+no CRC error and no frame lost; the gradation, five steps with and without
+fragments chosen; the quick contractions, with the «Train» view also with
+fragments chosen; and the biceps holding a fixed load, fatigue detected (MDF
+−17 %, p < 0.001) and, with a lighter load, not detected (−6 %), the view and
+the summary card agreeing.
 
 ## The Windows executable
 
@@ -130,8 +138,16 @@ attests where it was built.
   print the same value.
 - **To check where it was built**:
   `gh attestation verify emgteach-v3.10.0-windows-x64.exe --repo aagisto-maker/emgteach`.
-- **VirusTotal**: _(link to the analysis, added when the draft is published)_.
-
+- **VirusTotal:** [scan of the executable](https://www.virustotal.com/gui/file/223f58d0b3e02a60a8374d10bc9c12c73c554b0ec0f6dfb8a905701bc642c163): 3/64. The three detections (Bkav Pro, McAfee's cloud reputation and SecureAge) are the usual false positives for unsigned PyInstaller executables.
 The Zenodo record archives the source code of the tag, not the executable.
 
 See [`CHANGELOG.md`](../CHANGELOG.md) for every change.
+
+## SHA-256 of the executable
+
+```
+223f58d0b3e02a60a8374d10bc9c12c73c554b0ec0f6dfb8a905701bc642c163  emgteach-v3.10.0-windows-x64.exe
+```
+
+Built and attested by run [40385381163](https://github.com/aagisto-maker/emgteach/actions/runs/40385381163) of *Build Windows exe*
+on `464e64aed9e8ab7bdd60344e2bdfbaedfeb361ff`: the executable tried before the tag, not a new build.
