@@ -307,6 +307,33 @@ def message_boxes_not_shown(monkeypatch):
     return shown
 
 
+@pytest.fixture
+def marks_as_written(monkeypatch):
+    """Every annotation the acquisition worker is asked to write, as it is asked.
+
+    Each entry is ``(label, clock_s, file_s)``: the monotonic clock at the
+    moment the application wrote it, and where it lands in the file (the
+    samples the worker has received). A guided session decides its phases by
+    the clock and the countdown by its ticks, so a phase's length is the
+    application's in ``clock_s``; in ``file_s`` it also carries the worker's
+    delay, which on a loaded runner is what moved the marks of a sound
+    session past a tight margin.
+    """
+    import time
+
+    from emgteach.workers import acquisition as wmod
+
+    written: list[tuple[str, float, float]] = []
+    original = wmod.AcquisitionWorker.add_marker
+
+    def add_marker(self, label: str) -> None:
+        written.append((label, time.monotonic(), self._n_samples_total / self._device.fs))
+        original(self, label)
+
+    monkeypatch.setattr(wmod.AcquisitionWorker, "add_marker", add_marker)
+    return written
+
+
 def pytest_terminal_summary(terminalreporter) -> None:
     """Name the tests that left windows open, closed for them by the fixture."""
     if not _WINDOWS_LEFT:

@@ -184,7 +184,7 @@ def test_the_tone_is_on_by_default_and_remembered(qapp, tab, tonos) -> None:
 
 
 def test_a_session_runs_marks_its_phases_and_stops_the_recording(
-    qapp, tab, tmp_path: Path, tonos
+    qapp, tab, tmp_path: Path, tonos, marks_as_written
 ) -> None:
     path = tmp_path / "sesion.edf"
     _choose(tab, "prueba")
@@ -207,22 +207,47 @@ def test_a_session_runs_marks_its_phases_and_stops_the_recording(
     textos = [m for _t, m in marcas]
     assert "PREP start" in textos and "REC start" in textos
     rec = next(t for t, m in marcas if m == "REC start")
-    prep = next(t for t, m in marcas if m == "PREP start")
-    assert rec - prep == pytest.approx(CUENTA_S, abs=0.25)
 
     sesion = parse_session_markers(marcas)
     assert sesion is not None and sesion.completed and sesion.family == "GRAD"
     assert sesion.start_s == pytest.approx(rec, abs=0.15)
-    # Each step opens where the script puts it, counted from the session's
-    # start, and lasts its phase — within a tick or two of the runner.
-    esperado = [(1 * FASE_S, 2 * FASE_S), (3 * FASE_S, 4 * FASE_S)]
     assert len(sesion.spans) == 2
-    for tramo, (a, b), k in zip(sesion.spans, esperado, (1, 2), strict=True):
+    for tramo, k in zip(sesion.spans, (1, 2), strict=True):
         assert tramo.number("k") == k and tramo.number("pct") == 20 * k
-        assert tramo.start_s - sesion.start_s == pytest.approx(a, abs=0.35)
-        assert tramo.end_s - sesion.start_s == pytest.approx(b, abs=0.35)
-    assert sesion.end_s is not None
-    assert sesion.end_s - sesion.start_s == pytest.approx(5 * FASE_S, abs=0.3)
+
+    # Every mark, in the order the script gives it: a phase skipped or put
+    # out of its place fails here, whatever the times. The file holds them
+    # in that order too.
+    guion = _script()
+    fases = guion.timed()
+    esperadas = ["PREP start", "REC start", guion.header]
+    for fase in fases:
+        esperadas += [m for m in (fase.opens, fase.closes) if m]
+    esperadas.append(end_marker(guion.family))
+    escritas = [m for m, _reloj, _archivo in marks_as_written]
+    assert escritas == esperadas
+    assert [m for _t, m in marcas if m in esperadas] == esperadas
+
+    # Their times, in the clock the application decides by. The countdown
+    # counts its ticks and the session reads the clock at each tick, so a
+    # phase changes when its time has come and at most a tick or two later,
+    # never sooner (a timer may fire a few milliseconds early). The file puts
+    # each mark at the samples the worker has received, and on a loaded
+    # runner that delay moved the marks of a sound session past a tight
+    # margin; in the clock it is not there. 0.05 s early and 0.3 s late
+    # leave a phase skipped or lasting twice its 0.6 s outside, either way.
+    reloj = {m: r for m, r, _archivo in marks_as_written}
+
+    def dentro(medido: float, previsto: float, que: str) -> None:
+        assert previsto - 0.05 <= medido <= previsto + 0.3, (que, medido, previsto)
+
+    dentro(reloj["REC start"] - reloj["PREP start"], CUENTA_S, "the countdown")
+    inicio = reloj[guion.header]
+    for fase in fases:
+        if fase.opens and fase.closes:
+            dentro(reloj[fase.opens] - inicio, fase.start, fase.opens)
+            dentro(reloj[fase.closes] - inicio, fase.end, fase.closes)
+    dentro(reloj[end_marker(guion.family)] - inicio, 5 * FASE_S, "the session")
 
     # A tone at the countdown, at the four announced phases (the last rest
     # only continues), then the end.
