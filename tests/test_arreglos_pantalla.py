@@ -179,7 +179,7 @@ class TestTheRawRangeIsTheDevices:
         win = _ventana(qapp, "single")
         try:
             adq = win._tab_adq
-            adq._combo_device_type.setCurrentIndex(0)
+            adq._conexion._combo_device_type.setCurrentIndex(0)
             qapp.processEvents()
             esperado = BitalinoDevice.full_scale_mv()
             assert adq._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)
@@ -193,7 +193,7 @@ class TestTheRawRangeIsTheDevices:
         win = _ventana(qapp, "single")
         try:
             adq = win._tab_adq
-            adq._combo_device_type.setCurrentIndex(1)
+            adq._conexion._combo_device_type.setCurrentIndex(1)
             qapp.processEvents()
             esperado = ArduinoDevice.full_scale_mv()
             assert adq._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)

@@ -265,8 +265,8 @@ def test_fv_parameters_button_never_needs_the_hardware(qapp) -> None:
     tab._update_fv_button()
     assert tab._btn_fv_guided.isEnabled()
 
-    tab._combo_device_type.setCurrentIndex(0)
-    tab._btn_conectar.setChecked(True)
+    tab._conexion._combo_device_type.setCurrentIndex(0)
+    tab._conexion.connect_button.setChecked(True)
     tab._update_fv_button()
     assert tab._btn_fv_guided.isEnabled()
 

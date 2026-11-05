@@ -59,12 +59,10 @@ def tab(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     settings.setValue("adquisicion/save_dir", str(tmp_path))
     tab = AcquisitionTab(LoggerWidget(), settings)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("simulada")
     tab.next_path = tmp_path / "a.edf"
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName",
                         staticmethod(lambda *a, **k: (str(tab.next_path), "")))
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("simulada")
     yield tab
     tab.cleanup()
     _pump(qapp, 100)

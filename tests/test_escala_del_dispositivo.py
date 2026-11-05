@@ -194,8 +194,8 @@ class TestTheRawPanelIsDrawnToTheSameScale:
         win = _ventana(qapp, "single")
         try:
             adq = win._tab_adq
-            adq._combo_device_type.setCurrentIndex(1)
-            adq._combo_device_type.setCurrentIndex(0)
+            adq._conexion._combo_device_type.setCurrentIndex(1)
+            adq._conexion._combo_device_type.setCurrentIndex(0)
             qapp.processEvents()
             assert adq._y_ranges_init[0] == (-_BITALINO_MV, _BITALINO_MV)
         finally:
@@ -207,7 +207,7 @@ class TestTheRawPanelIsDrawnToTheSameScale:
         win = _ventana(qapp, "single")
         try:
             adq = win._tab_adq
-            adq._combo_device_type.setCurrentIndex(1)
+            adq._conexion._combo_device_type.setCurrentIndex(1)
             qapp.processEvents()
             assert adq._y_ranges_init[0] == (-_ARDUINO_MV, _ARDUINO_MV)
         finally:

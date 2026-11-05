@@ -46,7 +46,7 @@ def adq(qapp):
     t._mvc_timer.stop()
     t._fv_timer.stop()
     t._load_timer.stop()
-    t._watchdog_timer.stop()
+    t._conexion._watchdog_timer.stop()
     t.close()
 
 
@@ -125,7 +125,7 @@ class TestTheStepsFloatOverTheirControl:
 
     def test_with_no_plan_it_points_at_the_parameters(self, adq) -> None:
         pasos = self._pasos(adq)
-        adq._btn_conectar.setChecked(True)
+        adq._conexion.connect_button.setChecked(True)
         adq._actualizar_paso_guiado()
         assert len(pasos) == 1
         titulo, cuerpo, control = pasos[0]
@@ -136,13 +136,13 @@ class TestTheStepsFloatOverTheirControl:
     def test_with_a_plan_it_points_at_the_record_button(self, adq) -> None:
         pasos = self._pasos(adq)
         adq._settings.setValue("adquisicion/fv_loads", "2, 4")
-        adq._btn_conectar.setChecked(True)
+        adq._conexion.connect_button.setChecked(True)
         adq._actualizar_paso_guiado()
         assert pasos and pasos[-1][2] is adq._btn_grabar
 
     def test_it_says_nothing_twice(self, adq) -> None:
         pasos = self._pasos(adq)
-        adq._btn_conectar.setChecked(True)
+        adq._conexion.connect_button.setChecked(True)
         for _ in range(4):
             adq._actualizar_paso_guiado()
         assert len(pasos) == 1
@@ -157,7 +157,7 @@ class TestTheStepsFloatOverTheirControl:
     def test_nothing_in_the_other_practicals(self, adq) -> None:
         pasos = self._pasos(adq)
         adq.apply_mode(MODE_SINGLE, False)
-        adq._btn_conectar.setChecked(True)
+        adq._conexion.connect_button.setChecked(True)
         adq._actualizar_paso_guiado()
         assert pasos == []
 

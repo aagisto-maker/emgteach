@@ -45,11 +45,11 @@ def test_closing_while_retry_waits_for_the_port_starts_no_recording(
 
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName", staticmethod(save_as))
     _grabar(tab)
-    _esperar(lambda: tab._aviso_conexion is not None, "the warning that the board did not answer")
+    _esperar(lambda: tab._conexion._aviso_conexion is not None, "the warning that the board did not answer")
     # «Retry» pressed in the box itself: it closes, and its finished signal
     # is what starts the retry. Called straight, the box stayed open, and a
     # modal box left behind swallows the shortcuts of the tests after this.
-    tab._aviso_conexion.done(int(QMessageBox.StandardButton.Retry))
+    tab._conexion._aviso_conexion.done(int(QMessageBox.StandardButton.Retry))
     _esperar(lambda: tab._esperando_puerto, "the retry to wait for the port")
     assert QApplication.activeModalWidget() is None, "the warning box is still open"
     old = tab._worker

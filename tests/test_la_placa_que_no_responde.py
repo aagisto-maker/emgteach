@@ -126,15 +126,13 @@ def pestana(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
                         staticmethod(lambda *a, **k: (str(tmp_path / "a.edf"), "")))
     tab = AcquisitionTab(LoggerWidget(), settings)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("98:D3:91:FE:44:E4")
-    tab._conexion_timer.setInterval(300)
+    tab._conexion._conexion_timer.setInterval(300)
     tab.placa = placa
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("98:D3:91:FE:44:E4")
     yield tab
     placa.soltar.set()
-    if tab._aviso_conexion is not None:
-        tab._aviso_conexion.close()
+    if tab._conexion._aviso_conexion is not None:
+        tab._conexion._aviso_conexion.close()
     tab.cleanup()
     if tab._worker is not None:
         tab._worker.wait(5000)
@@ -148,14 +146,14 @@ def _grabar(tab) -> None:
 @pytest.mark.gui
 class TestTheTabSaysWhatIsHappening:
     def test_it_says_connecting_until_the_first_block(self, qapp, pestana) -> None:
-        from emgteach.gui.tabs.acquisition import CONEXION_MAX_S
+        from emgteach.gui.acquisition.connection import CONEXION_MAX_S
 
         # The fixture's 300 ms limit is for the test of the limit, below. Here
         # the board answers, and on a slow runner the lines written to the
         # event log before the first block (each one synced to disk since
         # 3.8.0) took longer than that once (Windows, Python 3.10, 11 Oct
         # 2026): the limit fired first. The application waits CONEXION_MAX_S.
-        pestana._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
+        pestana._conexion._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         _grabar(pestana)
         assert pestana._lbl_estado.text() == tr("Status: connecting to the board…")
         pestana.placa.soltar.set()
@@ -165,7 +163,7 @@ class TestTheTabSaysWhatIsHappening:
         self, qapp, pestana
     ) -> None:
         _grabar(pestana)
-        assert _hasta(lambda: pestana._aviso_conexion is not None, 3.0)
+        assert _hasta(lambda: pestana._conexion._aviso_conexion is not None, 3.0)
         assert pestana._lbl_estado.text() == tr("Status: the board did not answer")
         assert not pestana._btn_grabar.isChecked()
         assert pestana._btn_grabar.text() == tr("Start recording")
@@ -321,11 +319,9 @@ def pestana_que_tarda(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
                         staticmethod(lambda *a, **k: (str(tmp_path / "a.edf"), "")))
     tab = AcquisitionTab(LoggerWidget(), settings)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("98:D3:91:FE:44:E4")
-    tab._conexion_timer.setInterval(300)
+    tab._conexion._conexion_timer.setInterval(300)
     tab.primera, tab.rapida = primera, rapida
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("98:D3:91:FE:44:E4")
     yield tab
     # No recording may start from here on. «Retry» wires the old thread's
     # end to _puerto_liberado, which starts the recording asked for; a test
@@ -377,7 +373,7 @@ class TestTheWarningDoesNotFreezeTheWindow:
         tab = pestana_que_tarda
         t0 = time.monotonic()
         _grabar(tab)
-        assert _hasta(lambda: tab._aviso_conexion is not None, 3.0), \
+        assert _hasta(lambda: tab._conexion._aviso_conexion is not None, 3.0), \
             "the warning waited for the port"
         assert time.monotonic() - t0 < 2.0
         assert tab.primera.dentro.is_set() and not tab.primera.soltar.is_set()
@@ -388,11 +384,11 @@ class TestTheWarningDoesNotFreezeTheWindow:
     ) -> None:
         tab = pestana_que_tarda
         _grabar(tab)
-        _esperar(lambda: tab._aviso_conexion is not None,
+        _esperar(lambda: tab._conexion._aviso_conexion is not None,
                  "the warning that the board did not answer")
         viejo = tab._worker
         t0 = time.monotonic()
-        tab._tras_aviso_conexion(QMessageBox.StandardButton.Retry)
+        tab._conexion._tras_aviso_conexion(QMessageBox.StandardButton.Retry)
         # Frozen, the window would wait for a port that is let go only after
         # this call returns: for ever. What is checked is that it came back
         # with the old attempt still holding it. The ceiling is only for a
@@ -406,9 +402,9 @@ class TestTheWarningDoesNotFreezeTheWindow:
         assert not tab._btn_grabar.isEnabled()
         # The second board answers: the 300 ms limit the first one needed is
         # not what this checks (see test_it_says_connecting_until_the_first_block).
-        from emgteach.gui.tabs.acquisition import CONEXION_MAX_S
+        from emgteach.gui.acquisition.connection import CONEXION_MAX_S
 
-        tab._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
+        tab._conexion._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
         tab.primera.soltar.set()                  # Windows lets go
         # Each wait says which step did not come, and waits for the step
         # itself: it returns as soon as the application gets there, so the

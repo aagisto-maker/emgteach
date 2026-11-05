@@ -62,7 +62,6 @@ def tab(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     settings.setValue("adquisicion/save_dir", str(tmp_path))
     tab = AcquisitionTab(LoggerWidget(), settings)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("simulada")
     tab.lines: list[tuple[str, str]] = []
     log, err = tab._log, tab._err
     monkeypatch.setattr(tab, "_log", lambda m: (tab.lines.append(("log", m)), log(m)))
@@ -72,8 +71,7 @@ def tab(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     tab.next_path = tmp_path / "a.edf"
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName",
                         staticmethod(lambda *a, **k: (str(tab.next_path), "")))
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("simulada")
     yield tab
     tab.cleanup()
     _pump(qapp, 100)
@@ -126,11 +124,11 @@ def test_stopping_and_starting_again_at_once_keeps_the_new_recording_live(qapp, 
 def test_a_disconnection_in_mid_recording_says_disconnected(qapp, tab, tmp_path):
     _start(tab, tmp_path / "cut.edf")
     _wait_streaming(qapp, tab)
-    tab._btn_conectar.setChecked(False)
+    tab._conexion.connect_button.setChecked(False)
     tab._toggle_conexion()
     _until(qapp, lambda: not tab.is_recording(), 5.0, "the thread to end")
     _pump(qapp, 400)                               # its «finished» is delivered
-    assert not tab._btn_conectar.isChecked()
+    assert not tab._conexion.connect_button.isChecked()
     assert tab._lbl_estado.text() == tr("Status: disconnected")
     assert tab._btn_grabar.text() == tr("Start recording")
 

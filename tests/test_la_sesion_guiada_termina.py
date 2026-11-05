@@ -58,9 +58,7 @@ def grabando(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request):
     tab.apply_mode(modo, False)
     tab.resize(1200, 760)
     tab.show()
-    tab._edit_mac.setText("simulada")
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("simulada")
     tab._btn_grabar.setChecked(True)
     tab._toggle_grabacion()
     assert _hasta(lambda: tab._total_samples > 300, 8.0), "the simulated board did not start"

@@ -85,7 +85,7 @@ def make_tab(qapp, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 def test_the_tab_starts_with_the_file_s_address(make_tab, tmp_path: Path) -> None:
     _write(tmp_path, "# station 3\nAA:BB:CC:DD:EE:FF\n")
     tab, logger = make_tab(saved_port="COM5")
-    assert tab._edit_mac.text() == "AA:BB:CC:DD:EE:FF"
+    assert tab._conexion._edit_mac.text() == "AA:BB:CC:DD:EE:FF"
     # And says where it came from, where the operator reads.
     assert station.ADDRESS_FILE in logger.toPlainText()
 
@@ -93,16 +93,16 @@ def test_the_tab_starts_with_the_file_s_address(make_tab, tmp_path: Path) -> Non
 @pytest.mark.gui
 def test_without_the_file_the_saved_address(make_tab) -> None:
     tab, _ = make_tab(saved_port="COM5")
-    assert tab._edit_mac.text() == "COM5"
+    assert tab._conexion._edit_mac.text() == "COM5"
 
 
 @pytest.mark.gui
 def test_default_returns_to_the_file_s_address(make_tab, tmp_path: Path) -> None:
     _write(tmp_path, "simulada\n")
     tab, _ = make_tab()
-    tab._edit_mac.setText("COM9")
-    tab._reset_mac()
-    assert tab._edit_mac.text() == "simulada"
+    tab._conexion._edit_mac.setText("COM9")
+    tab._conexion._reset_mac()
+    assert tab._conexion._edit_mac.text() == "simulada"
 
 
 @pytest.mark.gui
@@ -113,7 +113,7 @@ def test_a_station_with_the_file_is_set_up(make_tab, tmp_path: Path) -> None:
     _write(tmp_path, "98:D3:91:FE:44:E4\n")
     tab, _ = make_tab()
     tab.apply_mode(MODE_SINGLE, False)
-    assert tab._lbl_first_setup.isHidden()
+    assert tab._conexion._lbl_first_setup.isHidden()
 
 
 @pytest.mark.gui
@@ -122,4 +122,4 @@ def test_without_file_or_saved_address_it_is_a_first_setup(make_tab) -> None:
 
     tab, _ = make_tab()
     tab.apply_mode(MODE_SINGLE, False)
-    assert not tab._lbl_first_setup.isHidden()
+    assert not tab._conexion._lbl_first_setup.isHidden()

@@ -25,7 +25,7 @@ def tab(qapp):
     widget = AcquisitionTab(LoggerWidget(), QSettings("emgteach-test", "eje-tiempo"))
     widget._n_channels = 1
     yield widget
-    widget._watchdog_timer.stop()
+    widget._conexion._watchdog_timer.stop()
     widget._mvc_timer.stop()
     widget._prep_timer.stop()
     widget._load_timer.stop()

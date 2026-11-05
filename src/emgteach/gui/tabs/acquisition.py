@@ -74,10 +74,9 @@ from emgteach.devices import (
     create_device,
     device_class,
 )
-from emgteach.devices.bitalino_sim import is_simulated_address
 from emgteach.difusion import PORTS_FILE
 from emgteach.dsp import LiveQualityMonitor, process_offline
-from emgteach.gui.acquisition import ClassroomBox
+from emgteach.gui.acquisition import ClassroomBox, ConnectionBox
 from emgteach.gui.imagenes import imagen
 from emgteach.gui.session_runner import SessionRunner
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
@@ -155,7 +154,6 @@ from emgteach.sessions import (
     parse_session_markers,
     rapid_script,
 )
-from emgteach.station import ADDRESS_FILE, read_station_address
 from emgteach.workers import AcquisitionWorker
 from emgteach.workers.acquisition import mensaje_fallo_guardado
 
@@ -403,12 +401,6 @@ FV_REPS_DEF = 3
 FV_PREP_DEF_S = 6.0
 FV_LIFT_DEF_S = 1.0
 
-#: Seconds a recording waits for the board's first block before it stops
-#: and says so. Reaching the board takes two or three seconds on the bench;
-#: finding it among the Bluetooth ports, a few more. Past this the status
-#: line was saying «recording…» over empty plots, and nothing was recorded.
-CONEXION_MAX_S = 20.0
-
 # Headroom applied to the live plots when they auto-scale after calibration:
 # the envelope top is this multiple of the MVC reference (so >100 %MVC phasic
 # bursts stay visible), the raw plot spans ±(peak × factor).
@@ -456,11 +448,6 @@ _ACC_INPUT = 1
 # signal). Real signal mV per stacking plot (0=raw); the envelope (1) never
 # stacks.
 _CALIB_MV = {0: 1.0}
-
-# Default BITalino address (editable in the field). The lab's MAC is stable
-# across PCs; BitalinoDevice resolves it to the local virtual COM port. The
-# field also accepts an explicit COMx, or empty for autodetection.
-DEFAULT_BITALINO_ADDR = "98:D3:91:FE:44:E4"
 
 #: Longest prefix taken from the test identifier for a file name. Long enough
 #: for a subject code or «bench 3, attempt 2», short enough that the date and
@@ -540,10 +527,6 @@ def aviso_puertos_no_validos(linea: str, pagina: int, datos: int) -> str:
         "The line «{line}» of {file} is not valid; the broadcast uses ports "
         "{page} and {data}."
     ).format(line=linea, file=PORTS_FILE, page=pagina, data=datos)
-
-# Interval (ms) after the last received data beyond which there is considered
-# to be no traffic (the LED goes from green to yellow).
-LED_IDLE_MS = 500
 
 # Available time-zoom factors (denominator: how many times the visible window
 # fits in the total buffer). Factor ×1 → see the whole buffer.
@@ -852,27 +835,8 @@ class AcquisitionTab(QWidget):
         self._render_timer.setInterval(33)
         self._render_timer.timeout.connect(self._refresh_plots)
 
-        # Watchdog: fires every 1 s during recording and checks that the
-        # worker keeps receiving samples. If no data arrives within 3 s, it
-        # forces a disconnection to unblock a read() hung by a lost BT link.
-        self._watchdog_timer = QTimer(self)
-        self._watchdog_timer.setInterval(1000)
-        self._watchdog_timer.timeout.connect(self._check_watchdog)
-        self._watchdog_umbral_s = 3.0
-
-        # The watchdog only watches once samples flow. Before the first one
-        # the board is being reached, and that can hang with nothing to say
-        # so: this one waits for the first block and gives up after
-        # CONEXION_MAX_S (see _conexion_sin_datos).
-        self._conexion_timer = QTimer(self)
-        self._conexion_timer.setSingleShot(True)
-        self._conexion_timer.setInterval(int(CONEXION_MAX_S * 1000))
-        self._conexion_timer.timeout.connect(self._conexion_sin_datos)
-        self._aviso_conexion: QMessageBox | None = None
         #: The box that says a file could not be written mid-recording.
         self._aviso_guardado: QMessageBox | None = None
-        #: The last recording ended before the board sent anything.
-        self._sin_respuesta = False
         #: A new recording was asked for while the previous attempt was
         #: still inside the port's opening; it starts when that ends.
         self._esperando_puerto = False
@@ -888,9 +852,6 @@ class AcquisitionTab(QWidget):
         self._eventos: list[str] | None = None
         self._eventos_ruta = ""
         self._eventos_archivo: TextIO | None = None
-        #: The real BITalino sent data in the last recording: the next one
-        #: needs it switched off and on (see _estado_en_reposo).
-        self._placa_reiniciar = False
         #: The recording is being stopped because the guided session ended:
         #: the cancels it runs leave the «Task recorded» panel and its map
         #: on screen for their five seconds (see _parar_al_terminar_sesion).
@@ -1022,97 +983,17 @@ class AcquisitionTab(QWidget):
         cfg_outer.setSpacing(3)
 
         # Row 1: device type + connection (COM port for both backends).
-        # Wrapped in a named container so the basic UI level can hide the whole
-        # row at once — hiding the individual widgets would leave their labels.
-        self._box_device = QWidget()
-        cfg_row1 = QHBoxLayout(self._box_device)
-        cfg_row1.setContentsMargins(0, 0, 0, 0)
-        cfg_row1.setSpacing(6)
-
-        # Device-type combo. Both interchangeable backends are offered — the
-        # BITalino (Bluetooth) and the Arduino + MyoWare 2.0 (USB) — matching
-        # the documented, published feature set. BITalino is the default.
-        self._combo_device_type = QComboBox()
-        self._combo_device_type.addItem("BITalino (Bluetooth)")
-        self._combo_device_type.addItem("Arduino + MyoWare 2.0 (USB)")
-        saved_type = int(cast("int | str", self._settings.value("adquisicion/device_type", 0)))
-        self._combo_device_type.setCurrentIndex(saved_type)
-        self._combo_device_type.currentIndexChanged.connect(self._on_device_type_changed)
-        # In the practicals that can only be done with the BITalino the
-        # selector is hidden and this caption stands in for it, so the
-        # address field beside it does not sit there unnamed.
-        self._lbl_device_fixed = QLabel(tr("Device: BITalino"))
-        self._lbl_device_fixed.setVisible(False)
-        cfg_row1.addWidget(self._lbl_device_fixed)
-        cfg_row1.addWidget(self._combo_device_type, stretch=1)
-
-        # Conditional central area: COM port (BITalino) or COM selector (Arduino)
-        # Wrapped in a QWidget so the content can change without rebuilding the layout
-        self._widget_mac = QWidget()
-        mac_inner = QHBoxLayout(self._widget_mac)
-        mac_inner.setContentsMargins(0, 0, 0, 0)
-        mac_inner.setSpacing(4)
-        self._edit_mac = QLineEdit()
-        self._edit_mac.setPlaceholderText("98:D3:91:FE:44:E4   ·   COM5   ·   (auto)")
-        self._edit_mac.setToolTip(
-            tr(
-                "BITalino MAC address (recommended — stable on every PC), or an "
-                "explicit COM port (e.g. COM5), or leave empty to autodetect. Pair "
-                "the BITalino in Windows Bluetooth settings first. No PyBluez is used. "
-                "Write «simulada» to try the application without the board. It starts "
-                "from the address written in bitalino.txt next to the application, "
-                "when there is one."
-            )
-        )
-        # The station's address, when it is written in bitalino.txt next to
-        # the application, is the one the tab starts with: typed once there,
-        # never again at that station, whatever account or copy of the
-        # application is used (see emgteach.station).
-        self._station_address = read_station_address()
-        self._edit_mac.setText(
-            self._station_address if self._station_address is not None
-            else cast(str, self._settings.value("adquisicion/port", DEFAULT_BITALINO_ADDR))
-        )
-        if self._station_address is not None:
-            # Said once the tab is up, where the operator reads.
-            QTimer.singleShot(0, self._log_station_address)
-        mac_inner.addWidget(self._edit_mac)
-        btn_reset_mac = QPushButton(tr("Default"))
-        btn_reset_mac.setFixedWidth(84)
-        btn_reset_mac.setToolTip(
-            tr("Restore default address ({addr})").format(
-                addr=self._default_address() or tr("autodetect")
-            )
-        )
-        btn_reset_mac.clicked.connect(self._reset_mac)
-        mac_inner.addWidget(btn_reset_mac)
-
-        self._widget_arduino = QWidget()
-        ard_inner = QHBoxLayout(self._widget_arduino)
-        ard_inner.setContentsMargins(0, 0, 0, 0)
-        ard_inner.setSpacing(4)
-        self._combo_port = QComboBox()
-        ard_inner.addWidget(self._combo_port)
-        btn_refresh_ports = QPushButton(tr("Refresh"))
-        btn_refresh_ports.setFixedWidth(84)
-        btn_refresh_ports.setToolTip(tr("Refresh the list of available serial ports"))
-        btn_refresh_ports.clicked.connect(self._refresh_ports)
-        ard_inner.addWidget(btn_refresh_ports)
-
-        # Container that switches between _widget_mac and _widget_arduino
-        self._stack_conn = QWidget()
-        stack_layout = QHBoxLayout(self._stack_conn)
-        stack_layout.setContentsMargins(0, 0, 0, 0)
-        stack_layout.addWidget(self._widget_mac)
-        stack_layout.addWidget(self._widget_arduino)
-        cfg_row1.addWidget(self._stack_conn, stretch=2)
-        # Shown only when the basic level reveals this row because no port has
-        # been saved yet, so a first-time user knows it is a one-off step.
-        self._lbl_first_setup = QLabel(tr("One-off setup"))
-        self._lbl_first_setup.setStyleSheet("font-size: 9px; color: #1F4E79;")
-        self._lbl_first_setup.setVisible(False)
-        cfg_row1.addWidget(self._lbl_first_setup)
-        cfg_outer.addWidget(self._box_device)
+        # The device row, the Connect button and the LED, and the watch on the
+        # link while a recording runs (gui/acquisition/connection.py). The
+        # button and the LED go in the control row below.
+        self._conexion = ConnectionBox(self._settings, worker=lambda: self._worker)
+        self._conexion.logged.connect(self._log)
+        self._conexion.warned.connect(self._err)
+        self._conexion.device_type_changed.connect(self._ajustar_rango_bruto_al_dispositivo)
+        self._conexion.link_lost.connect(self._desconectar)
+        self._conexion.no_answer.connect(self._detener_grabacion)
+        self._conexion.retry_requested.connect(self._reintentar_tras_aviso)
+        cfg_outer.addWidget(self._conexion)
 
         # Row 2: destination folder + Browse
         cfg_row2 = QHBoxLayout()
@@ -1131,11 +1012,6 @@ class AcquisitionTab(QWidget):
         btn_dir.clicked.connect(self._seleccionar_directorio)
         cfg_row2.addWidget(btn_dir)
         cfg_outer.addLayout(cfg_row2)
-
-        # Initial visibility of the connection area
-        self._widget_mac.setVisible(saved_type == 0)
-        self._widget_arduino.setVisible(saved_type == 1)
-        self._refresh_ports()
 
         # Row 3: number of channels and per-channel labels
         ch_row = QHBoxLayout()
@@ -1364,10 +1240,8 @@ class AcquisitionTab(QWidget):
         ctrl_layout.setContentsMargins(6, 3, 6, 3)
         ctrl_layout.setSpacing(6)
 
-        self._btn_conectar = QPushButton(tr("Connect"))
-        self._btn_conectar.setCheckable(True)
-        self._btn_conectar.clicked.connect(self._toggle_conexion)
-        ctrl_layout.addWidget(self._btn_conectar)
+        self._conexion.connect_button.clicked.connect(self._toggle_conexion)
+        ctrl_layout.addWidget(self._conexion.connect_button)
 
         self._btn_grabar = QPushButton(tr("Start recording"))
         self._btn_grabar.setCheckable(True)
@@ -1411,10 +1285,7 @@ class AcquisitionTab(QWidget):
         atajo_esc.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         atajo_esc.activated.connect(self._cancelar_guiado)
 
-        self._led = QLabel()
-        self._led.setFixedSize(16, 16)
-        self._led.setToolTip(tr("Device communication status"))
-        ctrl_layout.addWidget(self._led)
+        ctrl_layout.addWidget(self._conexion.led)
         self._lbl_estado = QLabel(tr("Status: disconnected"))
         ctrl_layout.addWidget(self._lbl_estado)
         ctrl_layout.addStretch()
@@ -1432,13 +1303,6 @@ class AcquisitionTab(QWidget):
 
         # — Muscle load (live MVC), between Control and Markers —
         row_actions.addWidget(self._build_load_panel(), stretch=2)
-
-        # LED idle timer
-        self._led_idle_timer = QTimer(self)
-        self._led_idle_timer.setSingleShot(True)
-        self._led_idle_timer.setInterval(LED_IDLE_MS)
-        self._led_idle_timer.timeout.connect(lambda: self._set_led("idle"))
-        self._set_led("off")
 
         # — Event markers —
         #
@@ -1822,9 +1686,7 @@ class AcquisitionTab(QWidget):
         # Configure the plot mode (overlaid or stacked) according to the
         # persisted number of channels — with the raw range set to the saved
         # device's full scale first, which applies the stacking on its way.
-        self._ajustar_rango_bruto_al_dispositivo(
-            self._combo_device_type.currentIndex()
-        )
+        self._ajustar_rango_bruto_al_dispositivo(self._conexion.device_index())
         # Apply the ACC-placement channel-count constraint to the initial state
         # (MMG placement forces a single muscle).
         self._apply_acc_placement_constraints()
@@ -1843,39 +1705,12 @@ class AcquisitionTab(QWidget):
             self._edit_dir.setText(directorio)
             self._settings.setValue("adquisicion/save_dir", directorio)
 
-    def _default_address(self) -> str:
-        """The station's address from bitalino.txt; the lab's MAC without it."""
-        if self._station_address is not None:
-            return self._station_address
-        return DEFAULT_BITALINO_ADDR
-
     def report_ports_problem(self, line: str) -> None:
         """Say once, where the operator reads, that difusion.txt has a bad line."""
         pagina, datos = self._broadcast.ports()
         QTimer.singleShot(
             0, lambda: self._err(aviso_puertos_no_validos(line, pagina, datos))
         )
-
-    def _log_station_address(self) -> None:
-        self._log(
-            tr("BITalino address taken from {file}: {addr}").format(
-                file=ADDRESS_FILE, addr=self._station_address or tr("autodetect")
-            )
-        )
-
-    @Slot()
-    def _reset_mac(self) -> None:
-        """Restore the default BITalino address: the station's, or the lab's MAC."""
-        addr = self._default_address()
-        self._edit_mac.setText(addr)
-        self._settings.setValue("adquisicion/port", addr)
-
-    @Slot(int)
-    def _on_device_type_changed(self, index: int) -> None:
-        """Show the COM-port field (BITalino) or the COM-port selector (Arduino)."""
-        self._widget_mac.setVisible(index == 0)
-        self._widget_arduino.setVisible(index == 1)
-        self._ajustar_rango_bruto_al_dispositivo(index)
 
     def _ajustar_rango_bruto_al_dispositivo(self, index: int) -> None:
         """Draw the raw plot to the device's own full scale.
@@ -2107,7 +1942,7 @@ class AcquisitionTab(QWidget):
             edit.setEnabled(enabled)
         # ACC is only available on the BITalino backend and is fixed for the
         # duration of a recording.
-        is_bitalino = self._combo_device_type.currentIndex() == 0
+        is_bitalino = self._conexion.device_index() == 0
         self._chk_acc.setEnabled(enabled and is_bitalino)
         self._combo_acc_place.setEnabled(
             enabled and is_bitalino and self._acc_enabled
@@ -2202,81 +2037,46 @@ class AcquisitionTab(QWidget):
         self._spin_k.setEnabled(enabled and self._chk_auto.isChecked())
 
     @Slot()
-    def _refresh_ports(self) -> None:
-        """Repopulate the COM-port combo with those available on the system."""
-        ports = device_class(BACKEND_ARDUINO).list_ports()
-        saved_port = self._settings.value("adquisicion/port", "")
-        self._combo_port.blockSignals(True)
-        self._combo_port.clear()
-        for p in ports:
-            self._combo_port.addItem(p)
-        if saved_port in ports:
-            self._combo_port.setCurrentText(saved_port)
-        elif ports:
-            self._combo_port.setCurrentIndex(0)
-        self._combo_port.blockSignals(False)
-
-    @Slot()
     def _toggle_conexion(self) -> None:
-        if self._btn_conectar.isChecked():
+        if self._conexion.is_connected():
             self._conectar()
         else:
             self._desconectar()
 
-    def _conectar(self) -> None:
-        device_idx = self._combo_device_type.currentIndex()
-        if device_idx == 0:  # BITalino
-            # Empty is allowed: BitalinoDevice autodetects the device. A MAC or
-            # an explicit COM port are also accepted and resolved on open().
-            desc = self._edit_mac.text().strip()
-            self._settings.setValue("adquisicion/port", desc)
-        else:  # Arduino
-            desc = self._combo_port.currentText().strip()
-            if not desc:
-                self._err(
-                    tr("Select a COM port for the Arduino before connecting.")
-                )
-                self._btn_conectar.setChecked(False)
-                return
-            self._settings.setValue("adquisicion/port", desc)
-        self._settings.setValue("adquisicion/device_type", device_idx)
+    def connect_to(self, address: str) -> None:
+        """Connect to the BITalino at ``address``, as the operator would:
+        choose the BITalino, write the address, press Connect.
+        ``"simulada"`` is the simulated board."""
+        self._conexion.select_bitalino(address)
+        self._conexion.connect_button.setChecked(True)
+        self._toggle_conexion()
 
-        self._btn_conectar.setText(tr("Disconnect"))
+    def _conectar(self) -> None:
+        desc = self._conexion.connect_device()
+        if desc is None:
+            return
         self._btn_grabar.setEnabled(True)
-        self._combo_device_type.setEnabled(False)
-        self._widget_mac.setEnabled(False)
-        self._widget_arduino.setEnabled(False)
         self._edit_dir.setEnabled(False)
         self._set_channel_controls_enabled(False)
-        self._placa_reiniciar = False
         self._lbl_estado.setToolTip("")
         self._lbl_estado.setText(tr("Status: connected (ready to record)"))
-        self._set_led("idle")
         self._update_fv_button()
         self._log(tr("Device configured: {desc}. Press 'Start recording'.").format(desc=desc))
         self._actualizar_paso_guiado()
 
     def _desconectar(self) -> None:
-        self._watchdog_timer.stop()
+        self._conexion.stop_watchdog()
         if self._worker and self._worker.isRunning():
             self._detener_grabacion()
-        self._btn_conectar.setText(tr("Connect"))
-        self._btn_conectar.setChecked(False)
+        self._conexion.disconnect_device()
         self._btn_grabar.setEnabled(False)
         self._btn_grabar.setChecked(False)
         self._btn_grabar.setText(tr("Start recording"))
-        self._combo_device_type.setEnabled(True)
-        self._widget_mac.setEnabled(True)
-        self._widget_arduino.setEnabled(True)
         self._edit_dir.setEnabled(True)
         self._set_channel_controls_enabled(True)
-        self._sin_respuesta = False
         self._esperando_puerto = False
-        self._placa_reiniciar = False
         self._lbl_estado.setToolTip("")
         self._lbl_estado.setText(tr("Status: disconnected"))
-        self._set_led("off")
-        self._led_idle_timer.stop()
         self._update_fv_button()
         self._log(tr("Device disconnected."))
 
@@ -2290,7 +2090,7 @@ class AcquisitionTab(QWidget):
     def _iniciar_grabacion(self) -> None:
         if self._esperar_al_puerto():
             return
-        self._placa_reiniciar = False
+        self._conexion.recording_requested()
         self._conservar_panel = False
         self._lbl_estado.setToolTip("")
         # The kinematics session needs its plan before it starts: the record
@@ -2385,7 +2185,7 @@ class AcquisitionTab(QWidget):
 
         # The accelerometer is BITalino-only; when on, the device appends an ACC
         # channel and the worker needs a matching trailing "ACC" label.
-        use_acc = self._acc_enabled and self._combo_device_type.currentIndex() == 0
+        use_acc = self._acc_enabled and self._conexion.device_index() == 0
         # Encode the placement in the ACC channel label (ASCII, ≤16 chars) so
         # the Analysis tab can pick the right ACC analysis on load.
         acc_label = (
@@ -2395,7 +2195,7 @@ class AcquisitionTab(QWidget):
         )
         worker_labels = [*labels, acc_label] if use_acc else list(labels)
 
-        if self._combo_device_type.currentIndex() == 0:
+        if self._conexion.device_index() == 0:
             # The EMG channels take the first analogue inputs, skipping the one
             # the accelerometer is on (they must not collide). So with the ACC
             # on A1, a single EMG channel lands on A2, etc.
@@ -2411,7 +2211,7 @@ class AcquisitionTab(QWidget):
                 ).format(emg=emg_ports, acc=acc_ch + 1))
             device = create_device(
                 BACKEND_BITALINO,
-                port=self._edit_mac.text().strip(),
+                port=self._conexion.address(),
                 fs=FS,
                 channels=emg_channels,
                 acc=use_acc,
@@ -2420,7 +2220,7 @@ class AcquisitionTab(QWidget):
         else:
             device = create_device(
                 BACKEND_ARDUINO,
-                port=self._combo_port.currentText().strip(),
+                port=self._conexion.serial_port(),
                 fs=FS,
                 n_channels=n,
             )
@@ -2466,13 +2266,11 @@ class AcquisitionTab(QWidget):
         # not here, so it does not fire during device.open() (can take ~3 s).
 
         self._btn_grabar.setText(tr("Stop recording"))
-        self._btn_conectar.setEnabled(False)
         # «recording…» comes with the first block (_on_data_ready): until
         # then nothing is being recorded, and a student who reads it
         # believes otherwise.
         self._lbl_estado.setText(tr("Status: connecting to the board…"))
-        self._sin_respuesta = False
-        self._conexion_timer.start()
+        self._conexion.recording_started()
         self._aula.status(True)
         self._set_auto_controls_enabled(False)
         # Live muscle-load monitor: ready to calibrate while recording.
@@ -2550,8 +2348,8 @@ class AcquisitionTab(QWidget):
         # the recording rather than being left wherever the flow put it.
         self._btn_calibrar.setEnabled(False)
         self._prep_timer.stop()
-        self._watchdog_timer.stop()
-        self._marcar_si_no_respondio()
+        self._conexion.stop_watchdog()
+        self._conexion.mark_if_no_answer()
         self._render_timer.stop()
         self._stop_load_monitor()
         self._aula.status(False)
@@ -2559,47 +2357,17 @@ class AcquisitionTab(QWidget):
             self._worker.stop()
         self._btn_grabar.setText(tr("Start recording"))
         self._btn_grabar.setChecked(False)
-        self._btn_conectar.setEnabled(True)
+        self._conexion.recording_finished()
         self._lbl_estado.setText(self._estado_en_reposo())
         self._set_auto_controls_enabled(True)
 
-    def _marcar_si_no_respondio(self) -> None:
-        """A recording that ends before its first block: the board never
-        answered, and the status must not come back saying «connected»."""
-        if self._conexion_timer.isActive():
-            self._conexion_timer.stop()
-            # A file that could not be created is not a board that did not
-            # answer: the board answered, and the next recording can start
-            # (3.8.0, from ecgteach 9a33ef3).
-            worker = self._worker
-            if worker is None or not worker.placa_respondio():
-                self._sin_respuesta = True
-                self._set_led("off")
-
     def _estado_en_reposo(self) -> str:
-        """What the status line says when nothing is being recorded.
-
-        Derived from the Connect button, not written by whoever stopped the
-        recording: a disconnection in the middle of one used to end, a second
-        later, with «connected (ready to record)» under an unticked button.
-        """
-        self._lbl_estado.setToolTip("")
-        if self._btn_conectar.isChecked():
-            if self._sin_respuesta:
-                return tr("Status: the board did not answer")
-            if self._placa_reiniciar:
-                # 3.8.0, from ecgteach 0.4.0 (bench of 5 Oct 2026): after a
-                # recording with the real BITalino, the next one did not
-                # connect (Windows errors 1168 and 121) until the board was
-                # switched off and on. Not investigated, by Ángel's decision:
-                # said, where the operator looks — short on screen, whole in
-                # the tooltip.
-                self._lbl_estado.setToolTip(tr(
-                    "Status: for the next recording, switch the BITalino board off and on, "
-                    "wait about 20 s and press «Start recording»"))
-                return tr("Status: switch the board off and on, wait about 20 s and press Start")
-            return tr("Status: connected (ready to record)")
-        return tr("Status: disconnected")
+        """What the status line says when nothing is being recorded; its
+        tooltip goes on the line. The connection decides it
+        (ConnectionBox.idle_status)."""
+        texto, ayuda = self._conexion.idle_status()
+        self._lbl_estado.setToolTip(ayuda)
+        return texto
 
     # ------------------------------------------------------------------
     # Worker slots
@@ -2609,24 +2377,13 @@ class AcquisitionTab(QWidget):
     def _on_data_ready(self, data: dict) -> None:
         # The first block: the board answered, and from here the recording
         # is one.
-        if self._conexion_timer.isActive():
-            self._conexion_timer.stop()
+        # The connection stops waiting for the board, and starts the watchdog.
+        if self._conexion.block_arrived():
             self._lbl_estado.setText(tr("Status: recording…"))
             # Marking by hand from the first block, not from the button:
             # before it there is no recording for a mark to be in.
             self._marcador.set_recording(True)
             self._log(tr("Press M to mark quickly with the selected label."))
-            # The real BITalino answered: the next recording needs it switched
-            # off and on. Not the simulated board, and not the Arduino (USB
-            # cable, no Bluetooth link; the bench saw it only on the BITalino).
-            self._placa_reiniciar = (
-                self._combo_device_type.currentIndex() == 0
-                and not is_simulated_address(self._edit_mac.text().strip())
-            )
-        # Start the watchdog on the first received sample (not before, so it
-        # does not fire during device.open(), which can take up to 3 s on Arduino).
-        if not self._watchdog_timer.isActive():
-            self._watchdog_timer.start()
         # Samples are flowing, so the session's opening phase can begin. Armed
         # in _iniciar_grabacion; fired here so the wizard's first countdown has
         # a real resting level to measure.
@@ -2705,10 +2462,8 @@ class AcquisitionTab(QWidget):
         # Re-broadcast to classroom followers, with the load they show.
         if self._aula.is_running():
             self._aula.live(env, self._n_channels, self._carga_para_el_aula())
-        # Green LED: there is traffic. The timer will set it back to yellow if
-        # no new block arrives within LED_IDLE_MS ms.
-        self._set_led("ok")
-        self._led_idle_timer.start()
+        # Green LED: there is traffic.
+        self._conexion.traffic()
 
     def _update_quality(self, raw: list) -> None:
         """Show the worst per-channel quality status of the latest block."""
@@ -4790,7 +4545,7 @@ class AcquisitionTab(QWidget):
         if self._mode != MODE_KINEMATICS or self.is_recording():
             self._paso_mostrado = ""
             return
-        if not self._btn_conectar.isChecked():
+        if not self._conexion.is_connected():
             # Before the device is connected there is nothing to sequence:
             # the parameters can be set at any time and the tour has just
             # offered itself. Nagging here would be the third panel in a row.
@@ -5380,11 +5135,11 @@ class AcquisitionTab(QWidget):
             self._guardar_eventos()
 
     def _restaurar_controles(self) -> None:
-        self._marcar_si_no_respondio()
+        self._conexion.mark_if_no_answer()
         self._marcador.set_recording(False)
         self._btn_grabar.setChecked(False)
         self._btn_grabar.setText(tr("Start recording"))
-        self._btn_conectar.setEnabled(True)
+        self._conexion.recording_finished()
         self._lbl_estado.setText(self._estado_en_reposo())
         self._set_auto_controls_enabled(True)
         self._stop_load_monitor()
@@ -5602,67 +5357,8 @@ class AcquisitionTab(QWidget):
         self._update_ventana_label()
 
     # ------------------------------------------------------------------
-    # Communication-status LED
+    # The port held by an attempt that did not answer
     # ------------------------------------------------------------------
-
-    def _set_led(self, state: str) -> None:
-        """
-        Set the communication LED.
-        state: 'off'  → red    (disconnected)
-               'idle' → yellow (connected, no traffic)
-               'ok'   → green  (receiving data)
-        """
-        colors = {
-            "off":  ("#C0392B", "#7B241C"),   # red
-            "idle": ("#F1C40F", "#B7950B"),   # yellow
-            "ok":   ("#27AE60", "#196F3D"),   # green
-        }
-        fill, border = colors.get(state, colors["off"])
-        self._led.setStyleSheet(
-            f"background-color: {fill};"
-            f"border: 1px solid {border};"
-            "border-radius: 8px;"
-        )
-
-    # ------------------------------------------------------------------
-    # BITalino connection watchdog
-    # ------------------------------------------------------------------
-
-    @Slot()
-    def _conexion_sin_datos(self) -> None:
-        """No block from the board within CONEXION_MAX_S: stop, and say so.
-
-        On the bench the connection hung without a word — the log stopped at
-        «Connecting to BITalino…», the status said «recording…» and then,
-        once stopped, «connected (ready to record)», and no file was
-        written. A student believes the status line. So the recording stops
-        here, the status says the board did not answer, and a box says what
-        to do and offers to try again. The thread is asked to stop and to
-        release the port; if it is stuck where nothing can reach it, it
-        closes the board and records nothing once it comes back.
-        """
-        worker = self._worker
-        if worker is None or not worker.isRunning() or worker.is_streaming():
-            return
-        worker.stop_forced()
-        self._sin_respuesta = True
-        self._set_led("off")
-        self._detener_grabacion()      # the status says the board did not answer
-        texto = tr(
-            "No data arrived from the board in {s:.0f} s, so nothing is being "
-            "recorded. Check that the BITalino is switched on, switch it off "
-            "and on again, and try again. If it happens again, close emgteach "
-            "and open it again."
-        ).format(s=CONEXION_MAX_S)
-        self._err(texto)
-        caja = QMessageBox(
-            QMessageBox.Icon.Warning, tr("The board did not answer"), texto,
-            QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Close,
-            self)
-        caja.setDefaultButton(QMessageBox.StandardButton.Retry)
-        caja.finished.connect(self._tras_aviso_conexion)
-        self._aviso_conexion = caja
-        caja.open()
 
     def _esperar_al_puerto(self) -> bool:
         """Hold a new recording until the previous attempt lets go of the port.
@@ -5696,49 +5392,28 @@ class AcquisitionTab(QWidget):
         if not self._esperando_puerto:
             return
         self._esperando_puerto = False
-        conectado = self._btn_conectar.isChecked()
+        conectado = self._conexion.is_connected()
         self._btn_grabar.setEnabled(conectado)
         self._lbl_estado.setText(self._estado_en_reposo())
         if conectado and not self.is_recording():
             self._btn_grabar.setChecked(True)
             self._toggle_grabacion()
 
-    def _tras_aviso_conexion(self, respuesta: int) -> None:
-        """«Retry» starts the recording again, as the button would.
+    @Slot()
+    def _reintentar_tras_aviso(self) -> None:
+        """«Retry» on the box that said the board did not answer: start the
+        recording again, as the button would.
 
         The attempt that did not answer is usually still running, inside
         the port's opening: that is not a recording in the way, it is the
         port the retry has to wait for (_esperar_al_puerto).
         """
-        self._aviso_conexion = None
-        if respuesta != QMessageBox.StandardButton.Retry or not self._btn_grabar.isEnabled():
+        if not self._btn_grabar.isEnabled():
             return
         abriendo = self._worker is not None and self._worker.is_opening()
         if abriendo or not self.is_recording():
             self._btn_grabar.setChecked(True)
             self._toggle_grabacion()
-
-    @Slot()
-    def _check_watchdog(self) -> None:
-        """Check every 1 s that the worker keeps receiving samples."""
-        if self._worker is None or not self._worker.isRunning():
-            return
-        # Only monitor once the worker is in its reading phase
-        if not self._worker.is_streaming():
-            return
-        silencio = self._worker.time_since_last_sample()
-        if silencio > self._watchdog_umbral_s:
-            if silencio == float("inf") or silencio > 999:
-                msg = tr("No data from the device — connection not established.")
-            else:
-                msg = tr(
-                    "No data from the device for {s:.1f} s — forcing disconnection."
-                ).format(s=silencio)
-            self._err(msg)
-            self._watchdog_timer.stop()
-            self._worker.stop_forced()
-            self._worker.wait(2000)
-            self._desconectar()
 
     # ------------------------------------------------------------------
     # New-session reset (clear the live view for a new student)
@@ -5803,26 +5478,9 @@ class AcquisitionTab(QWidget):
         self._mode = normalise_mode(mode)
         self._apply_mode_channels(mode)
 
-        # Which device, and where it is plugged in, is offered in every
-        # practical. It used to be a fine control, on the reasoning that a
-        # laboratory is set up once — but the practicals are where the app is
-        # actually used, and sending someone to a different mode to change a
-        # COM port is sending them away from the exercise to fix the tool.
-        port = str(self._settings.value("adquisicion/port", "") or "").strip()
-        # A station with bitalino.txt is set up, whatever the settings say.
-        first_setup = not port and self._station_address is None
-        self._box_device.setVisible(True)
-        self._lbl_first_setup.setVisible(first_setup)
-        # Only the single-muscle practical can be done with the Arduino +
-        # MyoWare board; the other two need the BITalino (two channels, the
-        # accelerometer). So the device choice is offered there and nowhere
-        # else, and a practical that needs the BITalino gets it — the port
-        # or address stays editable, since that differs from board to board.
-        solo_un_musculo = self._mode == MODE_SINGLE
-        self._combo_device_type.setVisible(solo_un_musculo)
-        self._lbl_device_fixed.setVisible(not solo_un_musculo)
-        if not solo_un_musculo and self._combo_device_type.currentIndex() != 0:
-            self._combo_device_type.setCurrentIndex(0)
+        # The device row, in every practical; the choice of device only in
+        # the single-muscle one (ConnectionBox.set_practical).
+        self._conexion.set_practical(single_muscle=self._mode == MODE_SINGLE)
 
         # Channel names the practical imposes: the row goes, and the names
         # come from _active_labels(). The boxes are left exactly as the
@@ -5926,8 +5584,7 @@ class AcquisitionTab(QWidget):
         Stops timers, stops the worker (forced if necessary) and waits for it
         to finish to ensure the EDF is closed correctly.
         """
-        self._watchdog_timer.stop()
-        self._conexion_timer.stop()
+        self._conexion.stop()
         self._render_timer.stop()
         self._load_timer.stop()
         self._broadcast.stop()

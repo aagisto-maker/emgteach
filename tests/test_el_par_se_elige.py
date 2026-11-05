@@ -42,7 +42,7 @@ def tab(qapp):
     widget = AcquisitionTab(LoggerWidget(), ajustes)
     widget.apply_mode(MODE_PAIR, False)
     yield widget
-    widget._watchdog_timer.stop()
+    widget._conexion._watchdog_timer.stop()
     widget._mvc_timer.stop()
     widget._prep_timer.stop()
     widget._load_timer.stop()

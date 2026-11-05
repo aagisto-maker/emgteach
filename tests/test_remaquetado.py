@@ -56,19 +56,19 @@ class TestTheDeviceChoiceBelongsToOnePractical:
     def test_only_the_single_muscle_practical_offers_it(self, main_window, qapp) -> None:
         adq = main_window._tab_adq
         _set_mode(main_window, qapp, MODE_SINGLE)
-        assert adq._combo_device_type.isVisibleTo(adq)
+        assert adq._conexion._combo_device_type.isVisibleTo(adq)
         for mode in (MODE_PAIR, MODE_KINEMATICS):
             _set_mode(main_window, qapp, mode)
-            assert not adq._combo_device_type.isVisibleTo(adq), mode
+            assert not adq._conexion._combo_device_type.isVisibleTo(adq), mode
             # The port or address stays editable: it differs from board to board.
-            assert adq._box_device.isVisibleTo(adq)
+            assert adq._conexion.isVisibleTo(adq)
 
     def test_the_other_practicals_get_the_bitalino(self, main_window, qapp) -> None:
         adq = main_window._tab_adq
         _set_mode(main_window, qapp, MODE_SINGLE)
-        adq._combo_device_type.setCurrentIndex(1)      # Arduino + MyoWare
+        adq._conexion._combo_device_type.setCurrentIndex(1)      # Arduino + MyoWare
         _set_mode(main_window, qapp, MODE_PAIR)
-        assert adq._combo_device_type.currentIndex() == 0
+        assert adq._conexion._combo_device_type.currentIndex() == 0
 
 
 class TestTheConfigurationBoxSaysWhatItAsks:
