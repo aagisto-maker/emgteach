@@ -67,7 +67,7 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName",
                         staticmethod(lambda *a, **k: (str(tab.next_path), "")))
     try:
-        tab._on_toggle_broadcast(True)
+        tab._aula._on_toggle(True)
         assert srv.is_running()
         tab._btn_conectar.setChecked(True)
         tab._toggle_conexion()
