@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import dataclasses
 import math
-import time
 from pathlib import Path
 
 import numpy as np
@@ -731,7 +730,16 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
 ) -> None:
     """The effort would last 30 s; the student cannot go on after about one.
     The button shows during the effort only; the end mark says «early», and
-    the last rest still comes before the recording stops."""
+    the last rest still comes before the recording stops.
+
+    What is checked of the effort's length is that the space bar cut it: at
+    least the second held and nowhere near the 30 s planned. It used to be
+    1.0 ± 0.5 s, the test's clock against the file's, and on a loaded runner
+    the file had 1.6 s (CI, Windows, Python 3.11, 5 November 2026): the test
+    starts counting when it notices the effort, not when the effort began,
+    and the marks are written at the samples the worker has received. The
+    second is now held in the file's own time, so it is there whatever the
+    load."""
     from emgteach.io import read_edf_markers
     from tests.test_marcas_manuales import _until
 
@@ -746,8 +754,14 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
 
     _until(qapp, en_el_esfuerzo, 10.0, "the effort")
     assert not pestana._btn_no_puedo.isHidden()
-    fin = time.monotonic() + 1.0                    # held for a second
-    _until(qapp, lambda: time.monotonic() > fin, 3.0, "a second of effort")
+    # Held for a second of the file's time: the worker writes a mark at the
+    # samples it has received, so its count now is at or past the effort's
+    # start mark, and a second's worth of samples more puts the end mark at
+    # least a second after it.
+    hilo = pestana._worker
+    fs = hilo._device.fs
+    desde = hilo._n_samples_total
+    _until(qapp, lambda: hilo._n_samples_total - desde >= fs, 5.0, "a second of effort")
     pestana._paso_siguiente()                       # what the space bar calls
     _until(qapp, lambda: not pestana.is_recording(), 10.0, "the session to end")
     _until(qapp, lambda: pestana._eventos is None, 5.0, "the event log")
@@ -757,7 +771,8 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
     sesion = parse_session_markers(read_edf_markers(path))
     assert sesion is not None and sesion.completed
     esfuerzo = sesion.spans_named("effort")[-1]
-    assert esfuerzo.end_s - esfuerzo.start_s == pytest.approx(1.0, abs=0.5)
+    # Cut by the space bar: the second held, and far short of the 30 s planned.
+    assert 1.0 <= esfuerzo.end_s - esfuerzo.start_s <= 10.0
     # The last rest still comes: at least its length after the early end. Not
     # much more is asked, since the marks are written at the samples the
     # worker has received and on a loaded runner they land late (CI, Windows,
