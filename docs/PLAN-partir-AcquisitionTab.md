@@ -2,7 +2,7 @@
 
 Sobre `main` en `99355fc` (3.10.1 publicada). Solo plan: sin rama, sin commits, sin editar nada.
 
-**Estado.** Paso 0 fusionado el 5 de noviembre (#161). Paso 1, el aula, en su PR (`gui/acquisition/broadcast.py`, `ClassroomBox`): 221 líneas fuera de la pestaña (6168 → 5947).
+**Estado.** Paso 0 fusionado el 5 de noviembre (#161). Paso 1, el aula, fusionado el 5 de noviembre (#162; `gui/acquisition/broadcast.py`, `ClassroomBox`): 221 líneas fuera de la pestaña (6168 → 5947). Paso 2, la conexión, en su PR (`gui/acquisition/connection.py`, `ConnectionBox`): 343 líneas fuera (5947 → 5604). Se quedan en la pestaña, a diferencia de lo que decía §2.2: la espera del puerto (`_esperar_al_puerto`, `_puerto_liberado`), porque retiene y arranca la grabación; `_ajustar_rango_bruto_al_dispositivo`, que es del trazado (paso 3); y `report_ports_problem`, que es del aula. `tab.connect_to(dirección)` sustituye el arranque de diez archivos de prueba.
 
 ## 1. Lo que hay hoy
 
