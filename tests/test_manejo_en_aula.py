@@ -296,61 +296,64 @@ class TestTheTeacherIsNotLeftGuessing:
             servidor, "follower_url", lambda: "http://10.0.0.5:8080/?k=abc"
         )
         errores: list[str] = []
+        # The tab's own warnings (a bad line of difusion.txt) and the
+        # classroom box's (no network, nobody following, a port in use),
+        # which reach the tab's _err through the box's `warned` signal.
         monkeypatch.setattr(adq, "_err", errores.append)
         adq._errores_prueba = errores
         return adq
 
     def test_with_no_network_it_says_so_at_once(self, adq, monkeypatch) -> None:
-        import emgteach.gui.tabs.acquisition as mod
+        import emgteach.gui.acquisition.broadcast as mod
 
         monkeypatch.setattr(mod, "hay_red_utilizable", lambda: False)
-        adq._on_toggle_broadcast(True)
+        adq._aula._on_toggle(True)
         assert adq._errores_prueba == [mod.aviso_sin_red()]
 
     def test_with_a_network_it_waits_for_someone_to_join(
         self, adq, monkeypatch
     ) -> None:
-        import emgteach.gui.tabs.acquisition as mod
+        import emgteach.gui.acquisition.broadcast as mod
 
         monkeypatch.setattr(mod, "hay_red_utilizable", lambda: True)
-        adq._on_toggle_broadcast(True)
-        assert adq._timer_sin_seguidores.isActive()
-        assert adq._timer_sin_seguidores.interval() == mod.ESPERA_SEGUIDORES_MS
+        adq._aula._on_toggle(True)
+        assert adq._aula._timer_sin_seguidores.isActive()
+        assert adq._aula._timer_sin_seguidores.interval() == mod.ESPERA_SEGUIDORES_MS
         assert adq._errores_prueba == []
 
         monkeypatch.setattr(adq._broadcast, "is_running", lambda: True)
         monkeypatch.setattr(adq._broadcast, "client_count", lambda: 0)
-        adq._avisar_sin_seguidores()
+        adq._aula._avisar_sin_seguidores()
         assert adq._errores_prueba == [mod.aviso_sin_seguidores()]
 
     def test_the_first_follower_disarms_the_warning(self, adq, monkeypatch) -> None:
-        import emgteach.gui.tabs.acquisition as mod
+        import emgteach.gui.acquisition.broadcast as mod
 
         monkeypatch.setattr(mod, "hay_red_utilizable", lambda: True)
-        adq._on_toggle_broadcast(True)
-        adq._on_broadcast_clients(1)
-        assert not adq._timer_sin_seguidores.isActive()
+        adq._aula._on_toggle(True)
+        adq._aula._on_clients(1)
+        assert not adq._aula._timer_sin_seguidores.isActive()
 
     def test_stopping_the_broadcast_disarms_it(self, adq, monkeypatch) -> None:
-        import emgteach.gui.tabs.acquisition as mod
+        import emgteach.gui.acquisition.broadcast as mod
 
         monkeypatch.setattr(mod, "hay_red_utilizable", lambda: True)
-        adq._on_toggle_broadcast(True)
-        adq._on_toggle_broadcast(False)
-        assert not adq._timer_sin_seguidores.isActive()
+        adq._aula._on_toggle(True)
+        adq._aula._on_toggle(False)
+        assert not adq._aula._timer_sin_seguidores.isActive()
 
     def test_a_busy_port_is_named_with_the_file_to_change_it(
         self, adq, monkeypatch
     ) -> None:
-        import emgteach.gui.tabs.acquisition as mod
+        import emgteach.gui.acquisition.broadcast as mod
 
         monkeypatch.setattr(adq._broadcast, "start", lambda: False)
         monkeypatch.setattr(adq._broadcast, "failed_port", 8080)
-        adq._on_toggle_broadcast(True)
+        adq._aula._on_toggle(True)
         assert adq._errores_prueba == [mod.aviso_puerto_ocupado(8080)]
         assert "8080" in adq._errores_prueba[0]
         assert "difusion.txt" in adq._errores_prueba[0]
-        assert not adq._chk_aula.isChecked()
+        assert not adq._aula._chk.isChecked()
 
     def test_a_bad_line_of_difusion_txt_is_said_once(self, adq, qapp) -> None:
         adq.report_ports_problem("datos = x")
@@ -360,7 +363,7 @@ class TestTheTeacherIsNotLeftGuessing:
         assert "8080" in adq._errores_prueba[0] and "8443" in adq._errores_prueba[0]
 
     def test_nobody_joined_names_the_ports_file(self) -> None:
-        from emgteach.gui.tabs.acquisition import aviso_sin_seguidores
+        from emgteach.gui.acquisition.broadcast import aviso_sin_seguidores
         from emgteach.i18n import get_language, set_language
 
         anterior = get_language()
@@ -372,7 +375,7 @@ class TestTheTeacherIsNotLeftGuessing:
             set_language(anterior)
 
     def test_both_warnings_name_the_way_that_always_works(self) -> None:
-        from emgteach.gui.tabs.acquisition import aviso_sin_red, aviso_sin_seguidores
+        from emgteach.gui.acquisition.broadcast import aviso_sin_red, aviso_sin_seguidores
         from emgteach.i18n import get_language, set_language
 
         anterior = get_language()

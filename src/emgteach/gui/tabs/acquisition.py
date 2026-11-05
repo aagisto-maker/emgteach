@@ -42,7 +42,7 @@ from typing import ClassVar, TextIO, cast
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QSettings, QStandardPaths, Qt, QTimer, Signal, Slot
-from PySide6.QtGui import QGuiApplication, QKeySequence, QPixmap, QShortcut, QStandardItemModel
+from PySide6.QtGui import QKeySequence, QShortcut, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -66,7 +66,7 @@ from PySide6.QtWidgets import (
 
 from emgteach import __version__, cue
 from emgteach.apda import OnlineLoad
-from emgteach.broadcast import BroadcastServer, hay_red_utilizable
+from emgteach.broadcast import BroadcastServer
 from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.devices import (
     BACKEND_ARDUINO,
@@ -77,6 +77,7 @@ from emgteach.devices import (
 from emgteach.devices.bitalino_sim import is_simulated_address
 from emgteach.difusion import PORTS_FILE
 from emgteach.dsp import LiveQualityMonitor, process_offline
+from emgteach.gui.acquisition import ClassroomBox
 from emgteach.gui.imagenes import imagen
 from emgteach.gui.session_runner import SessionRunner
 from emgteach.gui.widgets.decimal_spin import DecimalSpinBox
@@ -421,11 +422,6 @@ AUTOSCALE_RAW_FACTOR = 1.25
 ENV_SIGUE_MARGEN = 1.15
 ENV_SIGUE_CAIDA = 0.97
 
-#: How long the classroom broadcast waits for its first follower before saying
-#: that the phones may not be reaching this computer. Long enough to scan a
-#: QR code and open a page; short enough to still be useful in the session.
-ESPERA_SEGUIDORES_MS = 90_000
-
 # Style per live signal-quality status code (green ok / red saturation /
 # amber flat-disconnected).
 _QUALITY_STYLES = {
@@ -536,47 +532,6 @@ def preparar_carpeta(ruta: str) -> str | None:
     except OSError as exc:
         return mensaje_fallo_guardado(ruta, exc)
     return None
-
-
-def aviso_sin_red() -> str:
-    """Said when the broadcast starts on a computer with no network at all."""
-    return tr(
-        "This computer is not connected to any network, so the phones cannot "
-        "reach it. Connect it to the network the phones use, or share this "
-        "computer's own connection (Windows: Settings › Network & internet › "
-        "Mobile hotspot) and connect the phones to that."
-    )
-
-
-def aviso_sin_seguidores() -> str:
-    """Said once when nobody has joined a while after the broadcast started.
-
-    The two usual causes in a university cannot be seen or fixed from here:
-    the wired computers and the Wi-Fi on separate networks that do not route
-    to each other, or a Wi-Fi that keeps its clients from seeing one another.
-    A third can be fixed at the laboratory: a network that blocks the
-    broadcast's ports, which are changed in difusion.txt. What can be said
-    besides is the one arrangement that always works.
-    """
-    return tr(
-        "Nobody has joined the broadcast yet. If the phones do not load the "
-        "page, this computer and the Wi-Fi may be on separate networks, or the "
-        "Wi-Fi may keep devices from seeing each other — both are common in "
-        "universities, and neither can be fixed from here. What always works: "
-        "share this computer's own connection (Windows: Settings › Network & "
-        "internet › Mobile hotspot) and connect the phones to that."
-    ) + " " + tr(
-        "The network may also block the broadcast's ports; they are changed "
-        "in {file}, next to the application."
-    ).format(file=PORTS_FILE)
-
-
-def aviso_puerto_ocupado(puerto: int) -> str:
-    """Said when the broadcast cannot open one of its ports."""
-    return tr(
-        "Could not start classroom mode: port {port} is in use by another "
-        "program. Other ports can be written in {file}, next to the application."
-    ).format(port=puerto, file=PORTS_FILE)
 
 
 def aviso_puertos_no_validos(linea: str, pagina: int, datos: int) -> str:
@@ -945,7 +900,6 @@ class AcquisitionTab(QWidget):
         # over the local network (the operator PC owns the single BITalino link).
         # Shared with the Analysis tab when given by MainWindow.
         self._broadcast = broadcast if broadcast is not None else BroadcastServer(parent=self)
-        self._broadcast.clients_changed.connect(self._on_broadcast_clients)
 
         self._build_ui()
         # Out of a text field and back to the M: Enter, Esc or a click
@@ -1378,40 +1332,11 @@ class AcquisitionTab(QWidget):
         aula_row.addWidget(QLabel(tr("Test identifier:")))
         aula_row.addWidget(self._edit_student_code)
         aula_row.addSpacing(14)
-        self._chk_aula = QCheckBox(tr("Broadcast to phones (in the laboratory)"))
-        self._chk_aula.setToolTip(
-            tr(
-                "Serve a read-only live view over the local network so students "
-                "can follow on their phone/tablet browser (no install). One "
-                "device drives the BITalino; the others just watch."
-            )
-        )
-        self._chk_aula.toggled.connect(self._on_toggle_broadcast)
-        aula_row.addWidget(self._chk_aula)
-        self._btn_copy_url = QPushButton(tr("Copy link"))
-        self._btn_copy_url.setToolTip(
-            tr(
-                "Copy the follower link to the clipboard, e.g. to email it to "
-                "the students. The link only works for this session: stopping "
-                "the broadcast invalidates it."
-            )
-        )
-        self._btn_copy_url.setVisible(False)
-        self._btn_copy_url.clicked.connect(self._copy_broadcast_url)
-        aula_row.addWidget(self._btn_copy_url)
-        self._btn_aula_qr = QPushButton(tr("QR"))
-        self._btn_aula_qr.setToolTip(
-            tr("Show a QR code students can scan to open the follower page.")
-        )
-        self._btn_aula_qr.clicked.connect(self._on_aula_qr)
-        self._btn_aula_qr.setEnabled(False)
-        aula_row.addWidget(self._btn_aula_qr)
-        self._lbl_aula = QLabel("")
-        self._lbl_aula.setStyleSheet("font-size: 11px; color: #1F4E79; font-weight: bold;")
-        self._lbl_aula.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
-        aula_row.addWidget(self._lbl_aula, stretch=1)
+        self._aula = ClassroomBox(self._broadcast)
+        self._aula.logged.connect(self._log)
+        self._aula.warned.connect(self._err)
+        self._aula.started.connect(self._aula_configurar)
+        aula_row.addWidget(self._aula, stretch=1)
         cfg_outer.addWidget(self._box_aula)
 
         row_top.addWidget(grp_config, stretch=1)
@@ -1987,7 +1912,7 @@ class AcquisitionTab(QWidget):
         # and resets the stacking gain.
         self._y_gain = [1.0, 1.0]
         self._apply_stacking_mode()
-        self._bcast_config()
+        self._aula_configurar()
 
     @Slot()
     def _protocolo(self) -> str:
@@ -2038,7 +1963,7 @@ class AcquisitionTab(QWidget):
             labels = self._active_labels()
             for c in range(self._n_channels):
                 self._load_name_labels[c].setText(labels[c])
-        self._bcast_config()
+        self._aula_configurar()
 
     def _active_labels(self) -> list[str]:
         """Names of the active channels: the practical's, or the operator's.
@@ -2548,7 +2473,7 @@ class AcquisitionTab(QWidget):
         self._lbl_estado.setText(tr("Status: connecting to the board…"))
         self._sin_respuesta = False
         self._conexion_timer.start()
-        self._bcast_status(True)
+        self._aula.status(True)
         self._set_auto_controls_enabled(False)
         # Live muscle-load monitor: ready to calibrate while recording.
         self._reset_load_monitor()
@@ -2629,7 +2554,7 @@ class AcquisitionTab(QWidget):
         self._marcar_si_no_respondio()
         self._render_timer.stop()
         self._stop_load_monitor()
-        self._bcast_status(False)
+        self._aula.status(False)
         if self._worker:
             self._worker.stop()
         self._btn_grabar.setText(tr("Start recording"))
@@ -2777,8 +2702,9 @@ class AcquisitionTab(QWidget):
         self._process_load(env)
         # And the map of the free manoeuvres, if one is being asked for.
         self._guia_detecta(env)
-        # Re-broadcast to classroom followers (no-op if not running).
-        self._bcast_live(env)
+        # Re-broadcast to classroom followers, with the load they show.
+        if self._aula.is_running():
+            self._aula.live(env, self._n_channels, self._carga_para_el_aula())
         # Green LED: there is traffic. The timer will set it back to yellow if
         # no new block arrives within LED_IDLE_MS ms.
         self._set_led("ok")
@@ -3172,147 +3098,19 @@ class AcquisitionTab(QWidget):
     # Classroom broadcast (followers watch on their phone browser)
     # ------------------------------------------------------------------
 
-    @Slot(bool)
-    def _on_toggle_broadcast(self, checked: bool) -> None:
-        if checked:
-            if self._broadcast.start():
-                url = self._broadcast.follower_url()
-                self._lbl_aula.setText(tr("Students open:  {url}").format(url=url))
-                self._btn_copy_url.setVisible(True)
-                self._log(
-                    tr("Classroom mode on — students can follow at {url}").format(url=url)
-                )
-                self._btn_aula_qr.setEnabled(True)
-                self._bcast_config()
-                # A panel that stays empty on twenty phones with nothing to say
-                # why is the worst thing this can do in front of a class.
-                if not hay_red_utilizable():
-                    self._err(aviso_sin_red())
-                    self._lbl_aula.setText(
-                        tr("No network: the phones cannot reach this computer.")
-                    )
-                else:
-                    self._vigilar_seguidores(True)
-            else:
-                self._chk_aula.setChecked(False)
-                puerto = self._broadcast.failed_port
-                self._err(
-                    aviso_puerto_ocupado(puerto) if puerto is not None
-                    else tr("Could not start classroom mode (port busy?).")
-                )
-        else:
-            self._vigilar_seguidores(False)
-            self._broadcast.stop()
-            self._lbl_aula.setText("")
-            self._btn_copy_url.setVisible(False)
-            self._btn_aula_qr.setEnabled(False)
-            self._log(tr("Classroom mode off — previous follower links are now invalid."))
-
-    def _vigilar_seguidores(self, activo: bool) -> None:
-        """Arm or disarm the «nobody has joined yet» warning."""
-        reloj = getattr(self, "_timer_sin_seguidores", None)
-        if reloj is None:
-            reloj = QTimer(self)
-            reloj.setSingleShot(True)
-            reloj.setInterval(ESPERA_SEGUIDORES_MS)
-            reloj.timeout.connect(self._avisar_sin_seguidores)
-            self._timer_sin_seguidores = reloj
-        if activo:
-            reloj.start()
-        else:
-            reloj.stop()
-
     @Slot()
-    def _avisar_sin_seguidores(self) -> None:
-        if self._broadcast.is_running() and self._broadcast.client_count() == 0:
-            self._err(aviso_sin_seguidores())
+    def _aula_configurar(self) -> None:
+        """What the followers are told of the recording — the channels, their
+        names and whether a recording is on —, which only the tab knows: on
+        the broadcast's start and whenever the channels or their names
+        change."""
+        self._aula.config(self._n_channels, self._active_labels(), self.is_recording())
 
-    @Slot()
-    def _copy_broadcast_url(self) -> None:
-        if not self._broadcast.is_running():
-            return
-        QGuiApplication.clipboard().setText(self._broadcast.follower_url())
-        self._log(tr("Follower link copied to the clipboard."))
-        self._btn_copy_url.setText(tr("Copied ✓"))
-        QTimer.singleShot(
-            1500, lambda: self._btn_copy_url.setText(tr("Copy link"))
-        )
-
-    @Slot()
-    def _on_aula_qr(self) -> None:
-        """Show a scannable QR code of the follower URL in a small dialog."""
-        if not self._broadcast.is_running():
-            return
-        url = self._broadcast.follower_url()
-        pix = self._make_qr_pixmap(url)
-        if pix is None:
-            self._err(tr("QR code unavailable (the 'segno' library is missing)."))
-            return
-        dlg = QDialog(self)
-        dlg.setWindowTitle(tr("Scan to follow the session"))
-        lay = QVBoxLayout(dlg)
-        img = QLabel()
-        img.setPixmap(pix)
-        img.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lay.addWidget(img)
-        cap = QLabel(url)
-        cap.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        cap.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        cap.setStyleSheet("font-weight: bold; color: #1F4E79;")
-        lay.addWidget(cap)
-        hint = QLabel(tr("Point the phone camera at the code (same Wi-Fi network)."))
-        hint.setWordWrap(True)
-        hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lay.addWidget(hint)
-        dlg.exec()
-
-    @staticmethod
-    def _make_qr_pixmap(url: str, scale: int = 8) -> QPixmap | None:
-        """Render *url* as a QR-code QPixmap, or None if segno is unavailable."""
-        try:
-            import io
-
-            import segno
-        except ImportError:
-            return None
-        buf = io.BytesIO()
-        segno.make(url, error="m").save(buf, kind="png", scale=scale, border=2)
-        pix = QPixmap()
-        pix.loadFromData(buf.getvalue())  # the format is read from the data
-        return pix
-
-    @Slot(int)
-    def _on_broadcast_clients(self, n: int) -> None:
-        if n > 0:
-            self._vigilar_seguidores(False)
-        if self._broadcast.is_running():
-            url = self._broadcast.follower_url()
-            self._lbl_aula.setText(
-                tr("Students open:  {url}   ·   {n} following").format(url=url, n=n)
-            )
-
-    def _bcast_config(self) -> None:
-        self._broadcast.broadcast({
-            "t": "config", "n": self._n_channels,
-            "labels": self._active_labels(), "recording": self.is_recording(),
-        })
-
-    def _bcast_status(self, recording: bool) -> None:
-        self._broadcast.broadcast({"t": "status", "recording": recording})
-
-    def _bcast_live(self, env: list) -> None:
-        """Push a downsampled envelope + the live %MVC load to followers."""
-        if not self._broadcast.is_running():
-            return
-        env_out: list[list[float]] = []
-        for c in range(self._n_channels):
-            a = env[c] if c < len(env) else None
-            if a is None or not len(a):
-                env_out.append([])
-                continue
-            step = max(1, len(a) // 8)
-            env_out.append([round(float(x), 4) for x in a[::step][:8]])
-        self._broadcast.broadcast({"t": "data", "env": env_out})
+    def _carga_para_el_aula(self) -> dict:
+        """The live load of each muscle as the followers' page shows it: the
+        thresholds and, per channel, the % MVC now and the P10/P50/P90 of the
+        recording so far, measured only once that muscle has an MVC
+        reference."""
         ch = []
         for c in range(self._n_channels):
             ol = self._online[c]
@@ -3323,21 +3121,7 @@ class AcquisitionTab(QWidget):
                 "static": round(ol.static, 0), "median": round(ol.median, 0),
                 "peak": round(ol.peak, 0), "zone": ol.status,
             })
-        self._broadcast.broadcast({
-            "t": "load", "warn": self._load_warning,
-            "danger": self._load_danger, "ch": ch,
-        })
-
-    def _bcast_calib(self, active: bool, phase: str = "", title: str = "",
-                     sub: str = "", count=None, secs=None,
-                     progress=None, effort=None) -> None:
-        if not self._broadcast.is_running():
-            return
-        self._broadcast.broadcast({
-            "t": "calib", "active": active, "phase": phase, "title": title,
-            "sub": sub, "count": count, "secs": secs,
-            "progress": progress, "effort": effort,
-        })
+        return {"warn": self._load_warning, "danger": self._load_danger, "ch": ch}
 
     def _build_load_panel(self) -> QGroupBox:
         """Live muscle-load box (sits between Control and Markers in the actions
@@ -3806,7 +3590,7 @@ class AcquisitionTab(QWidget):
                 titulo, cuenta, detalle, imagen("sacudida"),
                 waiting=min(1.0, self._mvc_elapsed / max(total, 1e-9)))
             self._mvc_info(tr("Warming up: {n}").format(n=cuenta))
-            self._bcast_calib(True, "warmup", titulo, detalle, count=cuenta)
+            self._aula.calib(True, "warmup", titulo, detalle, count=cuenta)
             if self._mvc_elapsed >= total:
                 self._mvc_enter_ready()
             return
@@ -3837,7 +3621,7 @@ class AcquisitionTab(QWidget):
             self._mvc_info(
                 tr("Get ready — {label}{rep}: {n}").format(label=label, rep=rep, n=count)
             )
-            self._bcast_calib(
+            self._aula.calib(
                 True, "ready",
                 tr("Get ready — {label}{rep}").format(label=label, rep=rep),
                 detalle, count=count,
@@ -3878,7 +3662,7 @@ class AcquisitionTab(QWidget):
                     "peak {pk:.2f} mV"
                 ).format(label=label, s=secs_left, pk=self._mvc_peak)
             )
-            self._bcast_calib(
+            self._aula.calib(
                 True, "contract", titulo,
                 secs=secs_left, progress=progress, effort=effort,
             )
@@ -3892,7 +3676,7 @@ class AcquisitionTab(QWidget):
             )
             self._mvc_overlay.show_relax(sub)
             self._mvc_info(tr("Relax…"))
-            self._bcast_calib(True, "rest", tr("Relax"), sub)
+            self._aula.calib(True, "rest", tr("Relax"), sub)
             if self._mvc_elapsed >= MVC_REST_S:
                 self._mvc_enter_ready()
 
@@ -4119,7 +3903,7 @@ class AcquisitionTab(QWidget):
                 "start, so this file has no recording phase marked."
             ))
             self._mvc_overlay.hide_overlay()
-            self._bcast_calib(False)
+            self._aula.calib(False)
             return
         self._worker.add_marker(prep_start_marker())
         self._tono()
@@ -4140,7 +3924,7 @@ class AcquisitionTab(QWidget):
             titulo, cuenta, detalle,
             waiting=min(1.0, self._prep_elapsed / max(total, 1e-9)))
         self._mvc_info(tr("Get ready to record: {n}").format(n=cuenta))
-        self._bcast_calib(True, "prep", titulo, detalle, count=cuenta)
+        self._aula.calib(True, "prep", titulo, detalle, count=cuenta)
         if self._prep_elapsed < total:
             return
 
@@ -4159,7 +3943,7 @@ class AcquisitionTab(QWidget):
             self._online[c].reset()
         self._update_load_readout()
         self._mvc_overlay.hide_overlay()
-        self._bcast_calib(False)
+        self._aula.calib(False)
         self._mvc_info(tr("Recording — the calibration is behind you."))
         # And the session goes on. Until now the wizard stopped here and
         # left the student alone in the part that produces the data.
@@ -4366,14 +4150,14 @@ class AcquisitionTab(QWidget):
             self._sesion_reposo.append(self._env_inst[0])
         if fase.kind == READY:
             self._mvc_overlay.show_ready(titulo, cuenta, texto, waiting=hecho)
-            self._bcast_calib(True, "ready", titulo, texto, count=cuenta)
+            self._aula.calib(True, "ready", titulo, texto, count=cuenta)
         elif fase.kind == EFFORT and not fase.bar:
             # A fixed load: nothing on a bar to follow, only the time.
             self._revisar_senal(fase.seconds - restante)
             if self._aviso_senal:
                 texto = f"{texto}\n⚠ {self._aviso_senal}" if texto else f"⚠ {self._aviso_senal}"
             self._mvc_overlay.show_phase(f"{titulo} · {cuenta} s", texto, running=hecho)
-            self._bcast_calib(True, "contract", titulo, texto, secs=restante,
+            self._aula.calib(True, "contract", titulo, texto, secs=restante,
                               progress=hecho)
         elif fase.kind == EFFORT and fase.target_pct is not None:
             lo, hi = fase.target_pct
@@ -4386,16 +4170,16 @@ class AcquisitionTab(QWidget):
                 f"{titulo} · {cuenta} s", texto, running=hecho,
                 loads=[(carga, _CHANNEL_COLORS[0])],
                 zone=(lo / 100.0, hi / 100.0))
-            self._bcast_calib(True, "contract", titulo, texto, secs=restante,
+            self._aula.calib(True, "contract", titulo, texto, secs=restante,
                               progress=hecho, effort=min(1.0, carga))
         elif fase.kind == EFFORT:
             self._mvc_overlay.show_contract(titulo, cuenta, hecho, carga,
                                             subtitle=texto)
-            self._bcast_calib(True, "contract", titulo, texto, secs=restante,
+            self._aula.calib(True, "contract", titulo, texto, secs=restante,
                               progress=hecho, effort=min(1.0, carga))
         else:
             self._mvc_overlay.show_relax(texto)
-            self._bcast_calib(True, "rest", titulo, texto)
+            self._aula.calib(True, "rest", titulo, texto)
         self._reposition_mvc_overlay()
 
     @Slot(bool)
@@ -4418,7 +4202,7 @@ class AcquisitionTab(QWidget):
                          "phases are marked in the file.")
             self._mvc_overlay.show_done(hecho, detalle)
             self._reposition_mvc_overlay()
-            self._bcast_calib(True, "done", hecho, detalle)
+            self._aula.calib(True, "done", hecho, detalle)
             self._log(tr("Guided session finished: {title}.").format(title=titulo))
             QTimer.singleShot(5000, self._sesion_cerrar_panel)
             self._parar_al_terminar_sesion()
@@ -4426,7 +4210,7 @@ class AcquisitionTab(QWidget):
         if not self._conservar_panel:
             self._mvc_overlay.set_steps([])
             self._mvc_overlay.hide_overlay()
-            self._bcast_calib(False)
+            self._aula.calib(False)
         self._mvc_info("")
         if self._session_motivo == "esc":
             self._log(tr("Guided session stopped; the recording goes on."))
@@ -4506,7 +4290,7 @@ class AcquisitionTab(QWidget):
             .format(n=MANIOBRAS_POR_MUSCULO, button=tr("Done — next")))
         self._reposition_mvc_overlay()
         self._mvc_info(titulo)
-        self._bcast_calib(True, "task", titulo, "")
+        self._aula.calib(True, "task", titulo, "")
 
     def _rearmar_conteo_guiado(self) -> None:
         """Start a muscle's turn with nothing counted and nothing in hand."""
@@ -4665,7 +4449,7 @@ class AcquisitionTab(QWidget):
             self._mvc_overlay.show_ready(
                 titulo, cuenta, pista,
                 waiting=min(1.0, self._coact_elapsed / MVC_READY_S))
-            self._bcast_calib(True, "ready", titulo, pista, count=cuenta)
+            self._aula.calib(True, "ready", titulo, pista, count=cuenta)
             if self._coact_elapsed >= MVC_READY_S:
                 if self._coact_rep == 0:
                     self._guia_mapa("coact")   # the hold is what fills it
@@ -4689,7 +4473,7 @@ class AcquisitionTab(QWidget):
                 loads=[(self._carga_inst[c] / 100.0, _CHANNEL_COLORS[c])
                        for c in range(min(2, self._n_channels))],
                 zone=COACT_ZONA)
-            self._bcast_calib(True, "contract", titulo, pista, progress=frac)
+            self._aula.calib(True, "contract", titulo, pista, progress=frac)
             if self._coact_elapsed >= COACT_HOLD_S:
                 self._pedir_al_sujeto({})
                 self._mvc_overlay.mark_step(self._coact_rep)
@@ -4725,7 +4509,7 @@ class AcquisitionTab(QWidget):
             tr("The recording has stopped."))
         self._log(tr("The guided task is finished."))
         QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
-        QTimer.singleShot(5000, lambda: self._bcast_calib(False))
+        QTimer.singleShot(5000, lambda: self._aula.calib(False))
         self._parar_al_terminar_sesion()
 
     def _guia_cancelar(self) -> None:
@@ -4740,7 +4524,7 @@ class AcquisitionTab(QWidget):
         if not self._conservar_panel:
             self._mvc_overlay.set_steps([])
             self._mvc_overlay.hide_overlay()
-            self._bcast_calib(False)
+            self._aula.calib(False)
 
     def _write_mvc_ref_marker(self, c: int) -> None:
         """Carry this channel's MVC reference into the EDF as an annotation.
@@ -4840,7 +4624,7 @@ class AcquisitionTab(QWidget):
                 ).format(muscles=" · ".join(weak))
                 self._prep_aviso = warning
                 self._mvc_overlay.show_done(tr("Calibration too weak"), warning)
-                self._bcast_calib(
+                self._aula.calib(
                     True, "done", tr("Calibration too weak"), warning
                 )
             elif juntos:
@@ -4855,7 +4639,7 @@ class AcquisitionTab(QWidget):
                 ).format(pairs=" · ".join(juntos))
                 self._prep_aviso = warning
                 self._mvc_overlay.show_done(tr("Channels not separated"), warning)
-                self._bcast_calib(
+                self._aula.calib(
                     True, "done", tr("Channels not separated"), warning
                 )
             else:
@@ -4864,13 +4648,13 @@ class AcquisitionTab(QWidget):
                     tr("{summary}\nYou can start recording.").format(
                         summary=summary),
                 )
-                self._bcast_calib(True, "done", tr("MVC ready"), summary)
+                self._aula.calib(True, "done", tr("MVC ready"), summary)
         else:
             self._mvc_info(tr("Calibration failed (no signal)."))
             self._mvc_overlay.show_done(
                 tr("Calibration failed"), tr("No signal — check the electrodes.")
             )
-            self._bcast_calib(
+            self._aula.calib(
                 True, "done", tr("Calibration failed"),
                 tr("No signal — check the electrodes."),
             )
@@ -4887,7 +4671,7 @@ class AcquisitionTab(QWidget):
             return
 
         QTimer.singleShot(5000, self._mvc_overlay.hide_overlay)
-        QTimer.singleShot(5000, lambda: self._bcast_calib(False))
+        QTimer.singleShot(5000, lambda: self._aula.calib(False))
 
     def _mvc_cancel(self) -> None:
         """Abort the wizard (e.g. on stop/disconnect)."""
@@ -4901,7 +4685,7 @@ class AcquisitionTab(QWidget):
         self._mvc_phase = ""
         if not self._conservar_panel:
             self._mvc_overlay.hide_overlay()
-            self._bcast_calib(False)
+            self._aula.calib(False)
         self._btn_cancelar_guia.setVisible(False)
         self._update_fv_button()
 
@@ -5436,7 +5220,7 @@ class AcquisitionTab(QWidget):
             return
         self._conservar_panel = False
         if not self.is_recording():
-            self._bcast_calib(False)
+            self._aula.calib(False)
 
     def _fv_cerrar_mapa(self) -> None:
         """Drop the map and hide the panel, once the finished study is seen."""
@@ -5545,10 +5329,7 @@ class AcquisitionTab(QWidget):
         self._log(tr("Marker added: t={t:.1f} s — {label}").format(t=tiempo, label=etiqueta))
         # Record the event to draw it live over the plots.
         self._marker_events.append((tiempo, etiqueta))
-        if self._broadcast.is_running():
-            self._broadcast.broadcast(
-                {"t": "marker", "time": round(tiempo, 1), "label": etiqueta}
-            )
+        self._aula.marker(tiempo, etiqueta)
         # Add it to the editable marker list (data carries the exact key).
         item = QListWidgetItem(f"t={tiempo:.1f} s — {etiqueta}")
         item.setData(Qt.ItemDataRole.UserRole, (float(tiempo), etiqueta))
