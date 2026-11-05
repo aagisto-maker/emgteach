@@ -54,20 +54,41 @@ class AcquisitionDevice(ABC):
         """
         return 1
 
+    @classmethod
+    def full_scale_mv(cls, sensor_gain: float | None = None) -> float:
+        """Half the input span referred to the electrodes, in mV: a signal
+        of this backend lies in ``±full_scale_mv()``.
+
+        A backend overrides it from its reference voltage and front-end
+        gain, so the EDF header (:attr:`physical_min`/:attr:`physical_max`
+        delegate here) and the raw panel of the acquisition tab are drawn
+        from one number; the generic default is a conservative 3.3 mV. A
+        class method, not a property, because the tab scales its panel when
+        the board type is chosen, before any device is opened. *sensor_gain*
+        lets a signal profile supply the gain of the sensor it describes;
+        without it, the backend's own default.
+        """
+        return 3.3
+
     @property
     def physical_min(self) -> float:
-        """Lower signal bound in physical units (mV) for the EDF header.
-
-        Backends override this with their true full-scale so the EDF digital
-        range maps to the signal without clipping and without wasting ADC
-        resolution. The generic default is a conservative ±3.3 mV.
-        """
-        return -3.3
+        """Lower signal bound in physical units (mV) for the EDF header:
+        ``-full_scale_mv()``."""
+        return -self.full_scale_mv()
 
     @property
     def physical_max(self) -> float:
-        """Upper signal bound in physical units (mV) for the EDF header."""
-        return 3.3
+        """Upper signal bound in physical units (mV) for the EDF header:
+        ``full_scale_mv()``."""
+        return self.full_scale_mv()
+
+    @staticmethod
+    def list_ports() -> list[str]:
+        """The serial ports a backend of this kind could be on, by device
+        name; empty for a backend that is not found that way (the BITalino
+        goes by its Bluetooth address). The acquisition tab fills its port
+        list from here without naming a backend class."""
+        return []
 
     # -- optional per-channel metadata ---------------------------------------
     # Backends that mix signal modalities (e.g. a BITalino recording EMG *and*

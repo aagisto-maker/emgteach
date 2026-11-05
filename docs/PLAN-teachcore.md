@@ -149,9 +149,14 @@ tendría que cambiar.
 
 **Lo que emgteach usa de su API propia y habría que adaptar:**
 
-- `acquisition.py:1863`: `getattr(clase, "_GAIN_EMG", None) or clase._GAIN`
+- `acquisition.py`: leía `getattr(clase, "_GAIN_EMG", None) or clase._GAIN`
   para la escala del panel. La revisión del 13 de octubre (encargo E) ya
-  proponía un método público tipo `full_scale_mv()`.
+  proponía un método público tipo `full_scale_mv()`. **Hecho el 5 de
+  noviembre de 2026** (paso 0 de `PLAN-partir-AcquisitionTab.md`):
+  `AcquisitionDevice.full_scale_mv(sensor_gain=None)`, de clase, en el que
+  delegan `physical_min`/`physical_max`, y `device_class(backend_id)` en la
+  fábrica; la firma admite la ganancia del perfil, que es como la tienen
+  ecg/eeg, así que vale para el `base.py` común.
 - `test_arreglos_pantalla.py`, que lee `BitalinoDevice._GAIN_EMG`.
 - `raw_to_mv`, que ya se quitó de ecg/eeg y que en emgteach solo usan sus
   pruebas.

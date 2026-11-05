@@ -102,15 +102,11 @@ class ArduinoDevice(AcquisitionDevice):
     def n_channels(self) -> int:
         return self._n_channels
 
-    @property
-    def physical_min(self) -> float:
+    @classmethod
+    def full_scale_mv(cls, sensor_gain: float | None = None) -> float:
         # MyoWare RAW spans ±(V_ref/2)·1000/gain mV (see _raw_to_mv): ±12.5 mV
         # at 5 V / gain 200. The BITalino default ±3.3 mV would clip this.
-        return -self._V_REF / 2.0 * 1000.0 / self._GAIN
-
-    @property
-    def physical_max(self) -> float:
-        return self._V_REF / 2.0 * 1000.0 / self._GAIN
+        return cls._V_REF / 2.0 * 1000.0 / (sensor_gain or cls._GAIN)
 
     # -- AcquisitionDevice interface -----------------------------------------
 
