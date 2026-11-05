@@ -2,6 +2,8 @@
 
 Sobre `main` en `99355fc` (3.10.1 publicada). Solo plan: sin rama, sin commits, sin editar nada.
 
+**Estado.** Paso 0 fusionado el 5 de noviembre (#161). Paso 1, el aula, en su PR (`gui/acquisition/broadcast.py`, `ClassroomBox`): 221 líneas fuera de la pestaña (6168 → 5947).
+
 ## 1. Lo que hay hoy
 
 `src/emgteach/gui/tabs/acquisition.py`: **6168 líneas**, una clase con **178 métodos** (5520 líneas de métodos; las 632 primeras del archivo son el docstring, las importaciones, dos funciones del registro de eventos y unas 470 líneas de constantes con sus comentarios). Los dos métodos mayores son `_build_ui` (862 líneas) e `__init__` (312, con 109 atributos de estado); después, `_iniciar_grabacion` (247), `_mostrar_registro` (148), `_fv_tick` (115), `apply_mode` (115) y `_mvc_tick` (114).
