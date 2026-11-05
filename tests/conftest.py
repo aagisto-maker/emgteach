@@ -249,6 +249,34 @@ def no_window_outlives_its_test(request):
         )
 
 
+@pytest.fixture
+def message_boxes_not_shown(monkeypatch):
+    """The acquisition tab's message boxes, built for real but never put on screen.
+
+    A box like «The recording cannot be saved» is shown non-modal and left for
+    the operator to close; in a test nobody closes it, and it stayed on screen
+    to the end of the suite. Here the tab builds the same box — its title,
+    text, buttons and modality are the real ones a test can check — and
+    showing or opening it only records that it was shown. Returns the boxes
+    shown, in order.
+    """
+    from PySide6.QtWidgets import QMessageBox
+
+    from emgteach.gui.tabs import acquisition as acq_mod
+
+    shown: list[QMessageBox] = []
+
+    class _BoxNotShown(QMessageBox):
+        def show(self) -> None:
+            shown.append(self)
+
+        def open(self) -> None:
+            shown.append(self)
+
+    monkeypatch.setattr(acq_mod, "QMessageBox", _BoxNotShown)
+    return shown
+
+
 def pytest_terminal_summary(terminalreporter) -> None:
     """Name the tests that left windows open, closed for them by the fixture."""
     if not _WINDOWS_LEFT:
