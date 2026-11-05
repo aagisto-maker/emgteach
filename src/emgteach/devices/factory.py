@@ -26,6 +26,7 @@ __all__ = [
     "BACKEND_BITALINO",
     "available_backends",
     "create_device",
+    "device_class",
     "register_device",
 ]
 
@@ -87,6 +88,36 @@ def create_device(backend_id: str, **kwargs: object) -> AcquisitionDevice:
             f"Available backends: {available_backends()}."
         ) from None
     return builder(**kwargs)
+
+
+def device_class(backend_id: str) -> type[AcquisitionDevice]:
+    """The device class registered under *backend_id*, for what is asked of
+    a backend before any device exists: its full scale
+    (:meth:`AcquisitionDevice.full_scale_mv`) when the acquisition tab
+    scales its raw panel to the board type chosen, or its serial ports
+    (:meth:`AcquisitionDevice.list_ports`). The GUI gets at the class
+    through here, so it names no backend.
+
+    Raises
+    ------
+    KeyError
+        If *backend_id* is not registered.
+    TypeError
+        If what is registered is a builder function, not a class.
+    """
+    try:
+        builder = _REGISTRY[backend_id]
+    except KeyError:
+        raise KeyError(
+            f"Unknown device backend {backend_id!r}. "
+            f"Available backends: {available_backends()}."
+        ) from None
+    if not (isinstance(builder, type) and issubclass(builder, AcquisitionDevice)):
+        raise TypeError(
+            f"Backend {backend_id!r} is registered as a builder function, not a "
+            f"device class; it has no class-level full scale or port list."
+        )
+    return builder
 
 
 # -- Built-in backends -------------------------------------------------------

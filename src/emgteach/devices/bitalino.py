@@ -293,15 +293,11 @@ class BitalinoDevice(AcquisitionDevice):
         """Bytes discarded while resynchronising after a corrupted frame."""
         return self._crc_errors
 
-    @property
-    def physical_min(self) -> float:
+    @classmethod
+    def full_scale_mv(cls, sensor_gain: float | None = None) -> float:
         # ±1.635 mV referred to the electrodes (see _raw_to_mv). This goes
         # into the EDF header, so it has to be the same scale as the samples.
-        return -self._V_REF / 2.0 * 1000.0 / self._GAIN_EMG
-
-    @property
-    def physical_max(self) -> float:
-        return self._V_REF / 2.0 * 1000.0 / self._GAIN_EMG
+        return cls._V_REF / 2.0 * 1000.0 / (sensor_gain or cls._GAIN_EMG)
 
     # -- per-channel metadata (EMG in mV, ACC in normalised g) ---------------
 

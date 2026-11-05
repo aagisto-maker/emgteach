@@ -5,6 +5,12 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **The device's full scale is a public method** (step 0 of the plan to split `AcquisitionTab`, `docs/PLAN-partir-AcquisitionTab.md`; Ángel, 5 November 2026). The acquisition tab drew its raw panel to the board's scale by importing `BitalinoDevice` and `ArduinoDevice` and reading their private `_V_REF` and `_GAIN_EMG`/`_GAIN`. `AcquisitionDevice.full_scale_mv()` now gives half the input span referred to the electrodes, in mV — 1.635 for the BITalino, 12.5 for the Arduino, 3.3 for a backend that says nothing — as a class method, because the panel is scaled when the board type is chosen, before any device is opened, and with an optional `sensor_gain` for a profile that supplies its sensor's gain. `physical_min`/`physical_max` delegate to it, so the EDF header and the panel come from one number. `device_class(backend_id)` in the factory gives the class behind a backend id, and `list_ports()` is part of the device interface, so the tab names no device class. Nothing recorded or shown changes: a regression test pins, for every board and channel, the physical range, the fields written into the EDF header and the panel's scale, exactly as they were.
+
 ## [3.10.1] — 2026-10-28
 
 **The guided sessions after the bench.** What the final bench of 3.10.0 left for a patch (Ángel's decisions of 27 October 2026, plan §15), and what the benches with the executables of 3.10.1 found: each step of the gradation is reached slowly; the fatigue's −10 % is read on the MDF's line; the train ends where its last contraction does and a contraction with two humps is one; in the one-muscle practical a fragment ends where the muscle is back at rest and starts half a second before it leaves it; and the fatigue with a fixed load is done on the forearm, the biceps a variant. **3.7.0 remains the version the article describes.** No EDF format changes. What changes in what is computed is listed below: the guided sessions' measures, and the fragments the editor proposes in the one-muscle practical — and with them the rows of a free recording's contraction table there, where two contractions less than a second apart are now one.

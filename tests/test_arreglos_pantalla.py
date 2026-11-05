@@ -181,7 +181,7 @@ class TestTheRawRangeIsTheDevices:
             adq = win._tab_adq
             adq._combo_device_type.setCurrentIndex(0)
             qapp.processEvents()
-            esperado = BitalinoDevice._V_REF / 2.0 * 1000.0 / BitalinoDevice._GAIN_EMG
+            esperado = BitalinoDevice.full_scale_mv()
             assert adq._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)
             assert adq._y_ranges_init[0][1] < 2.0   # and not the old 3.3
         finally:
@@ -195,7 +195,7 @@ class TestTheRawRangeIsTheDevices:
             adq = win._tab_adq
             adq._combo_device_type.setCurrentIndex(1)
             qapp.processEvents()
-            esperado = ArduinoDevice._V_REF / 2.0 * 1000.0 / ArduinoDevice._GAIN
+            esperado = ArduinoDevice.full_scale_mv()
             assert adq._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)
             assert adq._y_ranges_init[0][1] > 10.0
         finally:

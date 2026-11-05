@@ -37,7 +37,7 @@ from collections import deque
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, ClassVar, TextIO, cast
+from typing import ClassVar, TextIO, cast
 
 import numpy as np
 import pyqtgraph as pg
@@ -71,8 +71,8 @@ from emgteach.charts import COLOUR_1, COLOUR_2
 from emgteach.devices import (
     BACKEND_ARDUINO,
     BACKEND_BITALINO,
-    ArduinoDevice,
     create_device,
+    device_class,
 )
 from emgteach.devices.bitalino_sim import is_simulated_address
 from emgteach.difusion import PORTS_FILE
@@ -1959,17 +1959,15 @@ class AcquisitionTab(QWidget):
         exceed ±1.635 mV, so the trace lived in the middle half of the panel
         with dead space above and below it; the Arduino front end reaches
         ±12.5 mV and was clipped by the same number. The full scale is a
-        property of the device, so it is read off the device class rather
-        than kept as a second copy here.
+        property of the device, so it is asked of the device class
+        (``full_scale_mv``, the same number the EDF header carries) rather
+        than kept as a second copy here; and of the class, not an instance,
+        because no device exists yet when the type is chosen.
         """
-        from emgteach.devices.arduino import ArduinoDevice
-        from emgteach.devices.bitalino import BitalinoDevice
-
-        clase: type[Any] = BitalinoDevice if index == 0 else ArduinoDevice
+        backend = BACKEND_BITALINO if index == 0 else BACKEND_ARDUINO
         try:
-            gain = getattr(clase, "_GAIN_EMG", None) or clase._GAIN
-            amp = clase._V_REF / 2.0 * 1000.0 / gain
-        except Exception:  # pragma: no cover — a backend without the constants
+            amp = device_class(backend).full_scale_mv()
+        except Exception:  # pragma: no cover — a backend registered as a function
             amp = self._profile.ylim_raw[1]
         self._y_ranges_init[0] = (-amp, amp)
         if not (self._worker and self._worker.isRunning()):
@@ -2281,7 +2279,7 @@ class AcquisitionTab(QWidget):
     @Slot()
     def _refresh_ports(self) -> None:
         """Repopulate the COM-port combo with those available on the system."""
-        ports = ArduinoDevice.list_ports()
+        ports = device_class(BACKEND_ARDUINO).list_ports()
         saved_port = self._settings.value("adquisicion/port", "")
         self._combo_port.blockSignals(True)
         self._combo_port.clear()

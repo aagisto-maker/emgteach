@@ -20,6 +20,7 @@ from emgteach.devices.factory import (
     BACKEND_BITALINO,
     available_backends,
     create_device,
+    device_class,
     register_device,
 )
 
@@ -31,5 +32,6 @@ __all__ = [
     "BitalinoDevice",
     "available_backends",
     "create_device",
+    "device_class",
     "register_device",
 ]
