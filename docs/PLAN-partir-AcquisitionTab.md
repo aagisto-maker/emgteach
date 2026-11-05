@@ -2,7 +2,7 @@
 
 Sobre `main` en `99355fc` (3.10.1 publicada). Solo plan: sin rama, sin commits, sin editar nada.
 
-**Estado.** Paso 0 fusionado el 5 de noviembre (#161). Paso 1, el aula, fusionado el 5 de noviembre (#162; `gui/acquisition/broadcast.py`, `ClassroomBox`): 221 líneas fuera de la pestaña (6168 → 5947). Paso 2, la conexión, en su PR (`gui/acquisition/connection.py`, `ConnectionBox`): 343 líneas fuera (5947 → 5604). Se quedan en la pestaña, a diferencia de lo que decía §2.2: la espera del puerto (`_esperar_al_puerto`, `_puerto_liberado`), porque retiene y arranca la grabación; `_ajustar_rango_bruto_al_dispositivo`, que es del trazado (paso 3); y `report_ports_problem`, que es del aula. `tab.connect_to(dirección)` sustituye el arranque de diez archivos de prueba.
+**Estado.** Paso 0 fusionado el 5 de noviembre (#161). Paso 1, el aula, fusionado (#162; `gui/acquisition/broadcast.py`, `ClassroomBox`): 221 líneas fuera de la pestaña (6168 → 5947). Paso 2, la conexión, fusionado (#163; `gui/acquisition/connection.py`, `ConnectionBox`): 343 líneas fuera (5947 → 5604); se quedaron en la pestaña la espera del puerto, la escala del panel bruto y el aviso de difusion.txt. Paso 3, el trazado, en su PR (`gui/acquisition/plots.py`, `LivePlots`): 1058 líneas fuera (5604 → 4546), con la escala del panel bruto que el paso 2 dejó (`follow_device`). La pieza recibe una función que da los nombres de los canales en vez de una copia, como recibe el hilo la conexión: el trazado los leía en cada dibujo, y así sigue. `FS`, `MAX_CHANNELS` y los colores de los canales siguen en la pestaña, que los usa en todas partes, y se dan a la pieza al construirla.
 
 ## 1. Lo que hay hoy
 
