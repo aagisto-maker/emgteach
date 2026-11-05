@@ -90,9 +90,7 @@ def test_after_a_recording_with_the_board_it_says_to_restart_it(
     tab = AcquisitionTab(LoggerWidget(), settings)
     try:
         tab.apply_mode("single", False)
-        tab._edit_mac.setText(direccion)
-        tab._btn_conectar.setChecked(True)
-        tab._toggle_conexion()
+        tab.connect_to(direccion)
         tab._btn_grabar.setChecked(True)
         tab._toggle_grabacion()
         assert _hasta(lambda: tab._lbl_estado.text() == tr("Status: recording…"), 8.0)
@@ -103,10 +101,9 @@ def test_after_a_recording_with_the_board_it_says_to_restart_it(
         assert (tab._lbl_estado.text() == tr(_CORTA)) is lo_dice, tab._lbl_estado.text()
         assert (tr(_LARGA) in tab._lbl_estado.toolTip()) is lo_dice
         # The next recording, or a new connection, clears it.
-        tab._btn_conectar.setChecked(False)
+        tab._conexion.connect_button.setChecked(False)
         tab._toggle_conexion()
-        tab._btn_conectar.setChecked(True)
-        tab._toggle_conexion()
+        tab.connect_to(direccion)
         assert tab._lbl_estado.text() == tr("Status: connected (ready to record)")
         assert tab._lbl_estado.toolTip() == ""
     finally:
@@ -130,8 +127,8 @@ def test_the_restart_status_is_short_and_the_tooltip_says_it_all(qapp) -> None:
     set_language("es")
     tab = AcquisitionTab(LoggerWidget(), settings)
     try:
-        tab._btn_conectar.setChecked(True)
-        tab._placa_reiniciar = True
+        tab._conexion.connect_button.setChecked(True)
+        tab._conexion._placa_reiniciar = True
         tab._lbl_estado.setText(tab._estado_en_reposo())
         assert tab._lbl_estado.text() == (
             "Estado: apague y encienda la placa, espere unos 20 s y pulse Iniciar")

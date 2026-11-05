@@ -248,7 +248,7 @@ def adquisicion(qapp):
     tab._n_channels = 1
     tab._worker = _WorkerDeMentira()
     yield tab
-    tab._watchdog_timer.stop()
+    tab._conexion._watchdog_timer.stop()
     tab._mvc_timer.stop()
     tab._prep_timer.stop()
     tab._load_timer.stop()

@@ -10,5 +10,6 @@ methods and connects to its signals, and passes it what it needs to know.
 from __future__ import annotations
 
 from emgteach.gui.acquisition.broadcast import ClassroomBox
+from emgteach.gui.acquisition.connection import ConnectionBox
 
-__all__ = ["ClassroomBox"]
+__all__ = ["ClassroomBox", "ConnectionBox"]

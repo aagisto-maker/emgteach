@@ -108,7 +108,7 @@ def adq(qapp):
     widget._n_channels = 1
     widget._worker = _FakeWorker()
     yield widget
-    widget._watchdog_timer.stop()
+    widget._conexion._watchdog_timer.stop()
     widget._mvc_timer.stop()
     widget._prep_timer.stop()
     widget._load_timer.stop()

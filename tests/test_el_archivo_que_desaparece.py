@@ -116,9 +116,7 @@ def pestana(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
                         staticmethod(lambda *a, **k: (str(carpeta / "a.edf"), "")))
     tab = AcquisitionTab(LoggerWidget(), settings)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("simulada")
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("simulada")
     tab.carpeta = carpeta
     yield tab
     if tab._worker is not None:

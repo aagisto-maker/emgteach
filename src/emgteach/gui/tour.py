@@ -119,7 +119,7 @@ def build_tour(win: MainWindow) -> list[CoachStep]:
             "the negative go on the midline of the muscle, the reference on a "
             "neutral point, over a bone if possible."
         ) + " " + nombres + _aviso_del_par(adq, mode),
-        lambda: adq._btn_conectar,
+        lambda: adq._conexion.connect_button,
         tab=TAB_ACQ,
         image=(lambda: adq.imagen_del_par("electrodos")) if mode == MODE_PAIR else None,
     ))

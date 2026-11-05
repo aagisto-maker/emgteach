@@ -63,14 +63,12 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
     ana = AnalysisTab(log, settings, broadcast=srv)
     tab.recording_saved.connect(ana.adopt_recording)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("simulada")
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName",
                         staticmethod(lambda *a, **k: (str(tab.next_path), "")))
     try:
         tab._aula._on_toggle(True)
         assert srv.is_running()
-        tab._btn_conectar.setChecked(True)
-        tab._toggle_conexion()
+        tab.connect_to("simulada")
 
         # First recording, its analysis and its report (M8).
         _record(qapp, tab, tmp_path / "a.edf", 3.0)

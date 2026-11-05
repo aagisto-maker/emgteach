@@ -41,9 +41,7 @@ _CHILD = textwrap.dedent(r'''
     settings.setValue("adquisicion/port", "simulada")
     tab = acq.AcquisitionTab(LoggerWidget(), settings)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("simulada")
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("simulada")
     tab._btn_grabar.setChecked(True)
     tab._toggle_grabacion()
     end = time.monotonic() + 20

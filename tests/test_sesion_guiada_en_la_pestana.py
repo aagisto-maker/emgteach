@@ -84,7 +84,6 @@ def tab(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tonos):
     tab = AcquisitionTab(LoggerWidget(), settings)
     tab._profile = dataclasses.replace(tab._profile, prep_countdown_s=CUENTA_S)
     tab.apply_mode("single", False)
-    tab._edit_mac.setText("simulada")
     tab.next_path = tmp_path / "a.edf"
     tab.pedido_nombre = ""
 
@@ -93,8 +92,7 @@ def tab(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tonos):
         return (str(tab.next_path), "")
 
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName", staticmethod(guardar))
-    tab._btn_conectar.setChecked(True)
-    tab._toggle_conexion()
+    tab.connect_to("simulada")
     yield tab
     tab.cleanup()
     _pump(qapp, 100)

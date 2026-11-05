@@ -60,7 +60,7 @@ def tab(qapp):
     yield widget
     # Feeding a block starts the watchdog, and the timers outlive the widget in
     # the shared QApplication: left running they raise in *other* tests' teardown.
-    widget._watchdog_timer.stop()
+    widget._conexion._watchdog_timer.stop()
     widget._mvc_timer.stop()
     widget._prep_timer.stop()
     widget._load_timer.stop()
