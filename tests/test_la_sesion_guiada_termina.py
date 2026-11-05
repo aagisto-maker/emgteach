@@ -54,7 +54,8 @@ def grabando(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request):
     destino = tmp_path / "sesion.edf"
     monkeypatch.setattr(acq_mod.QFileDialog, "getSaveFileName",
                         staticmethod(lambda *a, **k: (str(destino), "")))
-    tab = AcquisitionTab(LoggerWidget(), settings)
+    logger = LoggerWidget()
+    tab = AcquisitionTab(logger, settings)
     tab.apply_mode(modo, False)
     tab.resize(1200, 760)
     tab.show()
@@ -70,6 +71,10 @@ def grabando(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request):
         tab._worker.stop()
         tab._worker.wait(5000)
     tab.cleanup()
+    tab.close()
+    tab.deleteLater()
+    logger.deleteLater()
+    qapp.processEvents()
     settings.clear()
 
 
