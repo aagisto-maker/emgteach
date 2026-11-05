@@ -80,6 +80,7 @@ def caja(qapp, monkeypatch, tmp_path: Path):
     box.retry_requested.connect(lambda: box.senales.append("reintentar"))
     yield box, ajustes, hilo
     box.stop()
+    box.close()
     box.deleteLater()
     qapp.processEvents()
 
@@ -236,14 +237,21 @@ def test_the_station_s_address_is_the_default_and_is_said(qapp, monkeypatch, tmp
     ajustes = QSettings("emgteach-test", "conexion-puesto")
     ajustes.clear()
     box = ConnectionBox(ajustes, worker=lambda: None)
-    registro: list[str] = []
-    box.logged.connect(registro.append)
-    qapp.processEvents()
-    assert box.address() == "AA:BB:CC:DD:EE:FF"
-    assert len(registro) == 1 and station.ADDRESS_FILE in registro[0]
-    box.set_practical(single_muscle=True)
-    assert box._lbl_first_setup.isHidden()          # a station with the file is set up
-    box.deleteLater()
+    try:
+        registro: list[str] = []
+        box.logged.connect(registro.append)
+        qapp.processEvents()
+        assert box.address() == "AA:BB:CC:DD:EE:FF"
+        assert len(registro) == 1 and station.ADDRESS_FILE in registro[0]
+        box.set_practical(single_muscle=True)
+        assert box._lbl_first_setup.isHidden()      # a station with the file is set up
+    finally:
+        # set_practical shows the row; with no tab around it, that is a
+        # window of its own, and a window left open takes the activation
+        # the keyboard tests after this one need.
+        box.close()
+        box.deleteLater()
+        qapp.processEvents()
 
 
 def test_the_tab_lays_it_out_where_it_was(qapp) -> None:
