@@ -726,7 +726,7 @@ def test_the_load_session_recorded_with_the_simulated_board(
 
 @pytest.mark.gui
 def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
-    qapp, request, tmp_path: Path, monkeypatch
+    qapp, request, tmp_path: Path, monkeypatch, marks_as_written
 ) -> None:
     """The effort would last 30 s; the student cannot go on after about one.
     The button shows during the effort only; the end mark says «early», and
@@ -773,12 +773,22 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
     esfuerzo = sesion.spans_named("effort")[-1]
     # Cut by the space bar: the second held, and far short of the 30 s planned.
     assert 1.0 <= esfuerzo.end_s - esfuerzo.start_s <= 10.0
-    # The last rest still comes: at least its length after the early end. Not
-    # much more is asked, since the marks are written at the samples the
-    # worker has received and on a loaded runner they land late (CI, Windows,
-    # Python 3.10, 26 October 2026: 0.7 s for a rest of 0.4).
+    # The last rest still comes, after the early end and for its length.
+    # Measured in the clock the session decides by, at the moments the two
+    # marks were written: in the file they sit at the samples the worker has
+    # received, and on a loaded runner that delay stretched a rest of 0.4 s
+    # to 0.7 (CI, Windows, Python 3.10, 26 October 2026), so the file was
+    # given 1.5 s of room, room for a rest twice as long. In the clock the
+    # rest ends when its time has come and at most a tick or two later:
+    # 0.05 s early and 0.3 s late leave a rest skipped or doubled outside.
+    escritas = [m for m, _reloj, _archivo in marks_as_written]
+    fin = end_marker("HOLD")
+    assert escritas.index("HOLD effort end early") < escritas.index(fin)
+    assert sesion.end_s > esfuerzo.end_s                    # in the file too
+    reloj = {m: r for m, r, _archivo in marks_as_written}
     reposo = corta.phases[-1].seconds
-    assert reposo - 0.15 <= sesion.end_s - esfuerzo.end_s <= reposo + 1.5
+    ultimo = reloj[fin] - reloj["HOLD effort end early"]
+    assert reposo - 0.05 <= ultimo <= reposo + 0.3, ultimo
 
 
 @pytest.mark.gui
