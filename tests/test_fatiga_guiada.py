@@ -726,7 +726,7 @@ def test_the_load_session_recorded_with_the_simulated_board(
 
 @pytest.mark.gui
 def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
-    qapp, request, tmp_path: Path, monkeypatch, marks_as_written
+    qapp, request, tmp_path: Path, monkeypatch, marks_as_written, session_ticks
 ) -> None:
     """The effort would last 30 s; the student cannot go on after about one.
     The button shows during the effort only; the end mark says «early», and
@@ -773,22 +773,26 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
     esfuerzo = sesion.spans_named("effort")[-1]
     # Cut by the space bar: the second held, and far short of the 30 s planned.
     assert 1.0 <= esfuerzo.end_s - esfuerzo.start_s <= 10.0
-    # The last rest still comes, after the early end and for its length.
-    # Measured in the clock the session decides by, at the moments the two
-    # marks were written: in the file they sit at the samples the worker has
-    # received, and on a loaded runner that delay stretched a rest of 0.4 s
-    # to 0.7 (CI, Windows, Python 3.10, 26 October 2026), so the file was
-    # given 1.5 s of room, room for a rest twice as long. In the clock the
-    # rest ends when its time has come and at most a tick or two later:
-    # 0.05 s early and 0.3 s late leave a rest skipped or doubled outside.
+    # The last rest still comes, after the early end and for its length, in
+    # the clock the session decides by. Never shorter: the end is not written
+    # before its time. Never longer: the runner reports every tick with the
+    # phase it is in, and a rest that ran on would leave ticks after its 0.4 s.
+    # How late the end mark was written says nothing either way — on CI it
+    # came 2.3 s after the early end (Windows, Python 3.10, 5 November 2026),
+    # a machine that did not run the interface for two seconds, with no tick
+    # of the rest in between — and before it the file was given 1.5 s of
+    # room, room for a rest twice as long.
     escritas = [m for m, _reloj, _archivo in marks_as_written]
     fin = end_marker("HOLD")
     assert escritas.index("HOLD effort end early") < escritas.index(fin)
     assert sesion.end_s > esfuerzo.end_s                    # in the file too
     reloj = {m: r for m, r, _archivo in marks_as_written}
-    reposo = corta.phases[-1].seconds
-    ultimo = reloj[fin] - reloj["HOLD effort end early"]
-    assert reposo - 0.05 <= ultimo <= reposo + 0.3, ultimo
+    temprana = reloj["HOLD effort end early"]
+    reposo = corta.phases[-1]
+    assert reloj[fin] - temprana >= reposo.seconds - 0.05, reloj[fin] - temprana
+    de_mas = [round(t - temprana, 3) for t, clave in session_ticks
+              if clave == reposo.key and t - temprana > reposo.seconds + 0.1]
+    assert not de_mas, de_mas
 
 
 @pytest.mark.gui
