@@ -163,17 +163,25 @@ def _shown_windows(app) -> dict[int, object]:
     CI with a segmentation fault inside that call (Python 3.11 on Ubuntu,
     5 November 2026). The widget behind a window is looked up only for what
     is left over (:func:`_widget_of`).
+
+    A window whose Python wrapper says its C++ object is already deleted is
+    passed over: Qt can hand back an address it has reused while shiboken
+    still holds the wrapper of what used to live there, and in CI one such
+    window, met while a test was being set up, failed it (Python 3.10 on
+    Ubuntu, 5 November 2026). What cannot be read is not on screen for this
+    purpose; the next look sees it as what it now is.
     """
     import shiboken6
     from PySide6.QtGui import QGuiApplication
 
     shown = {}
-    for window in QGuiApplication.topLevelWindows():
-        if window.isVisible():
-            shown[shiboken6.getCppPointer(window)[0]] = window
     modal = QGuiApplication.modalWindow()
-    if modal is not None:
-        shown[shiboken6.getCppPointer(modal)[0]] = modal
+    for window in [*QGuiApplication.topLevelWindows(), *([modal] if modal else [])]:
+        try:
+            if window is modal or window.isVisible():
+                shown[shiboken6.getCppPointer(window)[0]] = window
+        except RuntimeError:        # a wrapper left over from a deleted object
+            continue
     return shown
 
 
@@ -181,7 +189,10 @@ def _widget_of(window):
     """The widget a platform window belongs to; ``None`` for one of its own."""
     from PySide6.QtWidgets import QWidget
 
-    return QWidget.find(window.winId())
+    try:
+        return QWidget.find(window.winId())
+    except RuntimeError:            # deleted since it was listed
+        return None
 
 
 def _describe(widget) -> str:

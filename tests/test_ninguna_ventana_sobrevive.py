@@ -84,3 +84,18 @@ def test_a_window_on_screen_is_traced_back_to_its_widget(qapp) -> None:
         mostrado.deleteLater()
         nunca_mostrado.deleteLater()
         qapp.processEvents()
+
+
+def test_a_window_whose_object_is_gone_is_passed_over(qapp, monkeypatch) -> None:
+    """Qt can list an address shiboken still knows by the wrapper of what was
+    deleted there; reading it raises, and in CI that failed the set-up of an
+    unrelated test. The scan passes it over."""
+    import shiboken6
+    from PySide6.QtGui import QGuiApplication, QWindow
+
+    muerta = QWindow()
+    shiboken6.delete(muerta)               # the wrapper outlives its object
+    assert not shiboken6.isValid(muerta)
+    monkeypatch.setattr(QGuiApplication, "topLevelWindows", staticmethod(lambda: [muerta]))
+    assert _shown_windows(qapp) == {}
+    assert _widget_of(muerta) is None
