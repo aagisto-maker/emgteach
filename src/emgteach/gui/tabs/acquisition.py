@@ -1302,7 +1302,7 @@ class AcquisitionTab(QWidget):
         self._trazado = LivePlots(
             fs=FS, colours=_CHANNEL_COLORS, colour_hex=_CHANNEL_COLOR_HEX,
             ylim_raw=self._profile.ylim_raw, ylim_envelope=self._profile.ylim_envelope,
-            n_channels=self._n_channels, acc_enabled=self._acc_enabled,
+            n_channels=lambda: self._n_channels, acc_enabled=self._acc_enabled,
             labels=self._active_labels,
         )
         self._trazado.logged.connect(self._log)

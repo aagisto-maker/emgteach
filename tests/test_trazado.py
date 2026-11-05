@@ -25,12 +25,15 @@ _HEX = ["#4169E1", "#D62728"]
 @pytest.fixture
 def trazado(qapp):
     nombres = {"lista": ["FCR"]}
+    canales = {"n": 1}
     piece = LivePlots(
         fs=1000, colours=_COLORES, colour_hex=_HEX,
         ylim_raw=(-3.3, 3.3), ylim_envelope=(-0.05, 1.0),
-        n_channels=1, acc_enabled=False, labels=lambda: list(nombres["lista"]),
+        n_channels=lambda: canales["n"], acc_enabled=False,
+        labels=lambda: list(nombres["lista"]),
     )
     piece.nombres = nombres
+    piece.canales = canales
     piece.registro: list[str] = []
     piece.logged.connect(piece.registro.append)
     piece.update_legend()
@@ -58,6 +61,7 @@ def test_it_is_built_with_what_it_is_given(trazado) -> None:
 
 def test_two_channels_get_a_key_and_two_lanes(trazado) -> None:
     trazado.nombres["lista"] = ["FCR", "ECR"]
+    trazado.canales["n"] = 2
     trazado.set_channels(2)
     trazado.update_legend()
     trazado.restack()

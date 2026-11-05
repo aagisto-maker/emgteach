@@ -134,7 +134,7 @@ class LivePlots(QGroupBox):
         colour_hex: list[str],
         ylim_raw: tuple[float, float],
         ylim_envelope: tuple[float, float],
-        n_channels: int,
+        n_channels: Callable[[], int],
         acc_enabled: bool,
         labels: Callable[[], list[str]],
         parent: QWidget | None = None,
@@ -146,7 +146,9 @@ class LivePlots(QGroupBox):
         self._colours = colours
         self._colour_hex = colour_hex
         self._n_max = len(colours)
-        self._n_channels = n_channels
+        #: How many channels are active, asked each time it matters (the
+        #: tab's count, as the plots always read it).
+        self._channel_count = n_channels
         self._acc_enabled = acc_enabled
         #: The names of the active channels, asked for each time they are
         #: drawn (the colour key, the lanes): the practical's, or the boxes'.
@@ -475,9 +477,12 @@ class LivePlots(QGroupBox):
     # What the tab tells the plots
     # ------------------------------------------------------------------
 
+    @property
+    def _n_channels(self) -> int:
+        return self._channel_count()
+
     def set_channels(self, n_channels: int) -> None:
         """How many channels are active: their curves are shown, the rest hidden."""
-        self._n_channels = n_channels
         for c in range(self._n_max):
             visible = c < n_channels
             self._curves_raw[c].setVisible(visible)
