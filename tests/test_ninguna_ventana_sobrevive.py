@@ -13,7 +13,7 @@ import pytest
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QMessageBox
 
-from tests.conftest import _close_for_good, _shown_windows
+from tests.conftest import _close_for_good, _shown_windows, _widget_of
 
 pytestmark = pytest.mark.gui
 
@@ -37,7 +37,7 @@ def test_a_tab_left_on_screen_is_stopped_before_it_is_closed(qapp) -> None:
         limpieza()
 
     tab.cleanup = cleanup
-    assert tab in _shown_windows(qapp).values()
+    assert tab.windowHandle() in _shown_windows(qapp).values()
 
     _close_for_good(tab)
 
@@ -58,9 +58,29 @@ def test_a_dialog_left_open_is_closed_without_an_answer(qapp) -> None:
     caja.finished.connect(respuestas.append)
     caja.open()
     qapp.processEvents()
-    assert caja in _shown_windows(qapp).values()
+    assert caja.windowHandle() in _shown_windows(qapp).values()
 
     _close_for_good(caja)
 
     assert not caja.isVisible()
     assert respuestas == []           # nobody was told it was answered
+
+
+def test_a_window_on_screen_is_traced_back_to_its_widget(qapp) -> None:
+    """Only the windows on screen are looked at; the widget behind one is
+    found for what is left over."""
+    from PySide6.QtWidgets import QWidget
+
+    nunca_mostrado = QWidget()
+    mostrado = QWidget()
+    mostrado.show()
+    qapp.processEvents()
+    try:
+        ventanas = list(_shown_windows(qapp).values())
+        assert nunca_mostrado.windowHandle() is None
+        assert [_widget_of(v) for v in ventanas] == [mostrado]
+    finally:
+        mostrado.close()
+        mostrado.deleteLater()
+        nunca_mostrado.deleteLater()
+        qapp.processEvents()

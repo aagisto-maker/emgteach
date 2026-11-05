@@ -153,20 +153,35 @@ _WINDOWS_LEFT: list[tuple[str, list[str]]] = []
 
 
 def _shown_windows(app) -> dict[int, object]:
-    """The visible top-level windows and the active modal dialog, by address."""
+    """The visible windows on screen and the modal one, by address.
+
+    Asked of the platform windows (``QWindow``), not of the widgets. A widget
+    gets a ``QWindow`` only once shown, so this touches what is on screen and
+    nothing else; ``QApplication.topLevelWidgets()`` hands Python every
+    top-level widget Qt still holds, the hidden ones, the popups and tooltips
+    included, and asked twice per test across the suite it crashed once in
+    CI with a segmentation fault inside that call (Python 3.11 on Ubuntu,
+    5 November 2026). The widget behind a window is looked up only for what
+    is left over (:func:`_widget_of`).
+    """
     import shiboken6
+    from PySide6.QtGui import QGuiApplication
 
     shown = {}
-    for widget in app.topLevelWidgets():
-        try:
-            if widget.isVisible():
-                shown[shiboken6.getCppPointer(widget)[0]] = widget
-        except RuntimeError:        # deleted between the listing and the look
-            continue
-    modal = app.activeModalWidget()
+    for window in QGuiApplication.topLevelWindows():
+        if window.isVisible():
+            shown[shiboken6.getCppPointer(window)[0]] = window
+    modal = QGuiApplication.modalWindow()
     if modal is not None:
         shown[shiboken6.getCppPointer(modal)[0]] = modal
     return shown
+
+
+def _widget_of(window):
+    """The widget a platform window belongs to; ``None`` for one of its own."""
+    from PySide6.QtWidgets import QWidget
+
+    return QWidget.find(window.winId())
 
 
 def _describe(widget) -> str:
@@ -177,13 +192,15 @@ def _describe(widget) -> str:
 def _close_for_good(widget) -> None:
     """Close a window as the application would, and destroy it.
 
+    ``widget`` is a widget, or a bare ``QWindow`` that belongs to none.
+
     A tab is stopped the way MainWindow.closeEvent stops it — its timers, its
     worker, its broadcast server — before it is closed: hidden, it would go on
     ticking and recording into the tests that follow. A dialog is closed with
     its signals blocked, so no «Retry» or «Close» answer runs the
     application's code on its way out.
     """
-    from PySide6.QtWidgets import QDialog
+    from PySide6.QtWidgets import QDialog, QWidget
 
     try:
         if isinstance(widget, QDialog):
@@ -192,7 +209,8 @@ def _close_for_good(widget) -> None:
         if callable(cleanup):
             cleanup()
         widget.close()
-        widget.deleteLater()
+        if isinstance(widget, QWidget):
+            widget.deleteLater()
     except RuntimeError:            # already deleted on the C++ side
         pass
 
@@ -236,6 +254,7 @@ def no_window_outlives_its_test(request):
     left = [w for address, w in _shown_windows(app).items() if address not in before]
     if not left:
         return
+    left = [_widget_of(window) or window for window in left]
     names = [_describe(w) for w in left]
     for widget in left:
         _close_for_good(widget)
