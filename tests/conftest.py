@@ -145,6 +145,119 @@ def qsettings_of_its_own(tmp_path_factory):
     )
 
 
+#: Set to ``1`` to make a test that leaves a window open fail (CI does).
+STRICT_WINDOWS_ENV = "EMGTEACH_STRICT_WINDOWS"
+
+#: (test, windows) for every test that left one open, said at the end.
+_WINDOWS_LEFT: list[tuple[str, list[str]]] = []
+
+
+def _shown_windows(app) -> dict[int, object]:
+    """The visible top-level windows and the active modal dialog, by address."""
+    import shiboken6
+
+    shown = {}
+    for widget in app.topLevelWidgets():
+        try:
+            if widget.isVisible():
+                shown[shiboken6.getCppPointer(widget)[0]] = widget
+        except RuntimeError:        # deleted between the listing and the look
+            continue
+    modal = app.activeModalWidget()
+    if modal is not None:
+        shown[shiboken6.getCppPointer(modal)[0]] = modal
+    return shown
+
+
+def _describe(widget) -> str:
+    title = widget.windowTitle()
+    return f"{type(widget).__name__} «{title}»" if title else type(widget).__name__
+
+
+def _close_for_good(widget) -> None:
+    """Close a window as the application would, and destroy it.
+
+    A tab is stopped the way MainWindow.closeEvent stops it — its timers, its
+    worker, its broadcast server — before it is closed: hidden, it would go on
+    ticking and recording into the tests that follow. A dialog is closed with
+    its signals blocked, so no «Retry» or «Close» answer runs the
+    application's code on its way out.
+    """
+    from PySide6.QtWidgets import QDialog
+
+    try:
+        if isinstance(widget, QDialog):
+            widget.blockSignals(True)
+        cleanup = getattr(widget, "cleanup", None)
+        if callable(cleanup):
+            cleanup()
+        widget.close()
+        widget.deleteLater()
+    except RuntimeError:            # already deleted on the C++ side
+        pass
+
+
+@pytest.fixture(autouse=True)
+def no_window_outlives_its_test(request):
+    """Close what a test leaves on screen, and say which test left it.
+
+    In the full suite fourteen tests left windows behind — nine acquisition
+    tabs and five «The recording cannot be saved» boxes — none closed until
+    the process ended. A test after them ran with up to fourteen windows on
+    screen; one of them, a widget shown on its own in tests/test_conexion.py,
+    took the keyboard focus from the manual-marks tests and failed seven of
+    them in the full run only, every one passing alone.
+
+    Only what appeared during this test is touched: a window that was already
+    up belongs to someone else. This fixture is autouse, so it is set up
+    before the test's own fixtures and torn down after them; what a fixture
+    closes itself never reaches it.
+
+    By default a window left open is closed and destroyed, and named at the
+    end of the run; the test passes. A window a test forgot is a fault of
+    that test, not of the one after it, and failing it would put a red mark
+    on whatever runs next in a developer's run for a reason that has nothing
+    to do with the code being worked on. With ``EMGTEACH_STRICT_WINDOWS=1``,
+    as CI runs, the test that left it fails, so no new one gets in.
+    """
+    try:
+        from PySide6.QtCore import QEvent
+        from PySide6.QtWidgets import QApplication
+    except Exception:  # pragma: no cover — Qt-free environment, nothing to do
+        yield
+        return
+    app = QApplication.instance()
+    before = set(_shown_windows(app)) if app is not None else set()
+    yield
+    app = QApplication.instance()
+    if app is None:
+        return
+    app.processEvents()
+    left = [w for address, w in _shown_windows(app).items() if address not in before]
+    if not left:
+        return
+    names = [_describe(w) for w in left]
+    for widget in left:
+        _close_for_good(widget)
+    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
+    _WINDOWS_LEFT.append((request.node.nodeid, names))
+    if os.environ.get(STRICT_WINDOWS_ENV) == "1":
+        pytest.fail(
+            f"the test left {len(names)} window(s) open: {', '.join(names)}",
+            pytrace=False,
+        )
+
+
+def pytest_terminal_summary(terminalreporter) -> None:
+    """Name the tests that left windows open, closed for them by the fixture."""
+    if not _WINDOWS_LEFT:
+        return
+    terminalreporter.section("windows left open (closed by no_window_outlives_its_test)")
+    for test, names in _WINDOWS_LEFT:
+        terminalreporter.write_line(f"{test}: {', '.join(names)}")
+
+
 @pytest.fixture(scope="session")
 def qapp():
     """Session-wide QApplication shared by the GUI and worker tests.
