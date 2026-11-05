@@ -134,7 +134,7 @@ def test_a_disconnection_in_mid_recording_says_disconnected(qapp, tab, tmp_path)
 
 
 def test_a_block_the_edf_cannot_take_stops_the_recording_with_an_error(
-    qapp, tab, tmp_path, monkeypatch
+    qapp, tab, tmp_path, monkeypatch, message_boxes_not_shown
 ):
     from emgteach.workers import acquisition as wmod
 
@@ -160,6 +160,8 @@ def test_a_block_the_edf_cannot_take_stops_the_recording_with_an_error(
     assert path.exists(), "what was written before the failure stays on disk"
     assert any("incomplete" in m or "incompleto" in m for _k, m in tab.lines)
     assert calls["n"] == 6, "the worker stops at the first failed block"
+    assert [c.windowTitle() for c in message_boxes_not_shown] == [
+        tr("The recording cannot be saved")]
 
 
 def test_a_second_recording_does_not_inherit_the_references_of_the_first(qapp, tab, tmp_path):

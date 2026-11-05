@@ -405,7 +405,8 @@ class TestTheTimeWindowControls:
 
         ajustes = QSettings("emgteach-test", "ventana-tiempo")
         ajustes.clear()
-        widget = AcquisitionTab(LoggerWidget(), ajustes)
+        logger = LoggerWidget()
+        widget = AcquisitionTab(logger, ajustes)
         widget.show()
         # With something recorded, which is the situation the complaint came
         # from: the plots hold a trace and pressing ◀▶ does not move it. An
@@ -417,6 +418,10 @@ class TestTheTimeWindowControls:
         qapp.processEvents()
         yield widget
         widget.cleanup()
+        widget.close()
+        widget.deleteLater()
+        logger.deleteLater()
+        qapp.processEvents()
 
     @staticmethod
     def _span(tab) -> float:
@@ -473,7 +478,8 @@ def test_the_colour_key_is_offered_only_with_two_channels(qapp) -> None:
 
     ajustes = QSettings("emgteach-test", "leyenda")
     ajustes.clear()
-    tab = AcquisitionTab(LoggerWidget(), ajustes)
+    logger = LoggerWidget()
+    tab = AcquisitionTab(logger, ajustes)
     tab.show()
     qapp.processEvents()
     try:
@@ -483,3 +489,7 @@ def test_the_colour_key_is_offered_only_with_two_channels(qapp) -> None:
         assert not tab._lbl_legend.isHidden()
     finally:
         tab.cleanup()
+        tab.close()
+        tab.deleteLater()
+        logger.deleteLater()
+        qapp.processEvents()

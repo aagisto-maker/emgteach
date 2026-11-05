@@ -107,7 +107,9 @@ def test_a_recording_leaves_its_event_log_beside_it(qapp, tab, tmp_path) -> None
     assert tr("Event log saved: {path}").format(path=log) in said
 
 
-def test_a_recording_that_fails_leaves_its_event_log_too(qapp, tab, tmp_path, monkeypatch) -> None:
+def test_a_recording_that_fails_leaves_its_event_log_too(
+    qapp, tab, tmp_path, monkeypatch, message_boxes_not_shown
+) -> None:
     from emgteach.workers import acquisition as wmod
 
     original = wmod.BufferedEdfWriter.add_samples
@@ -129,6 +131,8 @@ def test_a_recording_that_fails_leaves_its_event_log_too(qapp, tab, tmp_path, mo
     text = events_path(path).read_text(encoding="utf-8")
     assert tr("Error:") in text and "No space left on device" in text
     assert "incomplete" in text or "incompleto" in text
+    assert [c.windowTitle() for c in message_boxes_not_shown] == [
+        tr("The recording cannot be saved")]
 
 
 def test_each_recording_keeps_only_its_own_lines(qapp, tab, tmp_path) -> None:

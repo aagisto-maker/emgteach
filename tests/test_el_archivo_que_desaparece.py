@@ -100,7 +100,7 @@ def test_a_file_that_vanishes_mid_recording_stops_it_at_once(qapp, tmp_path, mon
 
 
 @pytest.fixture
-def pestana(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def pestana(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, message_boxes_not_shown):
     from emgteach.gui.tabs import acquisition as acq_mod
     from emgteach.gui.tabs.acquisition import AcquisitionTab
     from emgteach.gui.widgets.logger import LoggerWidget
@@ -118,6 +118,7 @@ def pestana(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     tab.apply_mode("single", False)
     tab.connect_to("simulada")
     tab.carpeta = carpeta
+    tab.cajas = message_boxes_not_shown
     yield tab
     if tab._worker is not None:
         tab._worker.stop()
@@ -127,8 +128,9 @@ def pestana(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def _caja(tab) -> str | None:
+    """The text of the box that said the file could not be saved, once shown."""
     caja = getattr(tab, "_aviso_guardado", None)
-    return caja.text() if caja is not None else None
+    return caja.text() if caja is not None and caja in tab.cajas else None
 
 
 def test_the_tab_says_it_in_a_box_and_is_ready_again(pestana, monkeypatch) -> None:

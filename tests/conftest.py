@@ -145,6 +145,177 @@ def qsettings_of_its_own(tmp_path_factory):
     )
 
 
+#: Set to ``1`` to make a test that leaves a window open fail (CI does).
+STRICT_WINDOWS_ENV = "EMGTEACH_STRICT_WINDOWS"
+
+#: (test, windows) for every test that left one open, said at the end.
+_WINDOWS_LEFT: list[tuple[str, list[str]]] = []
+
+
+def _shown_windows(app) -> dict[int, object]:
+    """The visible windows on screen and the modal one, by address.
+
+    Asked of the platform windows (``QWindow``), not of the widgets. A widget
+    gets a ``QWindow`` only once shown, so this touches what is on screen and
+    nothing else; ``QApplication.topLevelWidgets()`` hands Python every
+    top-level widget Qt still holds, the hidden ones, the popups and tooltips
+    included, and asked twice per test across the suite it crashed once in
+    CI with a segmentation fault inside that call (Python 3.11 on Ubuntu,
+    5 November 2026). The widget behind a window is looked up only for what
+    is left over (:func:`_widget_of`).
+
+    A window whose Python wrapper says its C++ object is already deleted is
+    passed over: Qt can hand back an address it has reused while shiboken
+    still holds the wrapper of what used to live there, and in CI one such
+    window, met while a test was being set up, failed it (Python 3.10 on
+    Ubuntu, 5 November 2026). What cannot be read is not on screen for this
+    purpose; the next look sees it as what it now is.
+    """
+    import shiboken6
+    from PySide6.QtGui import QGuiApplication
+
+    shown = {}
+    modal = QGuiApplication.modalWindow()
+    for window in [*QGuiApplication.topLevelWindows(), *([modal] if modal else [])]:
+        try:
+            if window is modal or window.isVisible():
+                shown[shiboken6.getCppPointer(window)[0]] = window
+        except RuntimeError:        # a wrapper left over from a deleted object
+            continue
+    return shown
+
+
+def _widget_of(window):
+    """The widget a platform window belongs to; ``None`` for one of its own."""
+    from PySide6.QtWidgets import QWidget
+
+    try:
+        return QWidget.find(window.winId())
+    except RuntimeError:            # deleted since it was listed
+        return None
+
+
+def _describe(widget) -> str:
+    title = widget.windowTitle()
+    return f"{type(widget).__name__} «{title}»" if title else type(widget).__name__
+
+
+def _close_for_good(widget) -> None:
+    """Close a window as the application would, and destroy it.
+
+    ``widget`` is a widget, or a bare ``QWindow`` that belongs to none.
+
+    A tab is stopped the way MainWindow.closeEvent stops it — its timers, its
+    worker, its broadcast server — before it is closed: hidden, it would go on
+    ticking and recording into the tests that follow. A dialog is closed with
+    its signals blocked, so no «Retry» or «Close» answer runs the
+    application's code on its way out.
+    """
+    from PySide6.QtWidgets import QDialog, QWidget
+
+    try:
+        if isinstance(widget, QDialog):
+            widget.blockSignals(True)
+        cleanup = getattr(widget, "cleanup", None)
+        if callable(cleanup):
+            cleanup()
+        widget.close()
+        if isinstance(widget, QWidget):
+            widget.deleteLater()
+    except RuntimeError:            # already deleted on the C++ side
+        pass
+
+
+@pytest.fixture(autouse=True)
+def no_window_outlives_its_test(request):
+    """Close what a test leaves on screen, and say which test left it.
+
+    In the full suite fourteen tests left windows behind — nine acquisition
+    tabs and five «The recording cannot be saved» boxes — none closed until
+    the process ended. A test after them ran with up to fourteen windows on
+    screen; one of them, a widget shown on its own in tests/test_conexion.py,
+    took the keyboard focus from the manual-marks tests and failed seven of
+    them in the full run only, every one passing alone.
+
+    Only what appeared during this test is touched: a window that was already
+    up belongs to someone else. This fixture is autouse, so it is set up
+    before the test's own fixtures and torn down after them; what a fixture
+    closes itself never reaches it.
+
+    By default a window left open is closed and destroyed, and named at the
+    end of the run; the test passes. A window a test forgot is a fault of
+    that test, not of the one after it, and failing it would put a red mark
+    on whatever runs next in a developer's run for a reason that has nothing
+    to do with the code being worked on. With ``EMGTEACH_STRICT_WINDOWS=1``,
+    as CI runs, the test that left it fails, so no new one gets in.
+    """
+    try:
+        from PySide6.QtCore import QEvent
+        from PySide6.QtWidgets import QApplication
+    except Exception:  # pragma: no cover — Qt-free environment, nothing to do
+        yield
+        return
+    app = QApplication.instance()
+    before = set(_shown_windows(app)) if app is not None else set()
+    yield
+    app = QApplication.instance()
+    if app is None:
+        return
+    app.processEvents()
+    left = [w for address, w in _shown_windows(app).items() if address not in before]
+    if not left:
+        return
+    left = [_widget_of(window) or window for window in left]
+    names = [_describe(w) for w in left]
+    for widget in left:
+        _close_for_good(widget)
+    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
+    _WINDOWS_LEFT.append((request.node.nodeid, names))
+    if os.environ.get(STRICT_WINDOWS_ENV) == "1":
+        pytest.fail(
+            f"the test left {len(names)} window(s) open: {', '.join(names)}",
+            pytrace=False,
+        )
+
+
+@pytest.fixture
+def message_boxes_not_shown(monkeypatch):
+    """The acquisition tab's message boxes, built for real but never put on screen.
+
+    A box like «The recording cannot be saved» is shown non-modal and left for
+    the operator to close; in a test nobody closes it, and it stayed on screen
+    to the end of the suite. Here the tab builds the same box — its title,
+    text, buttons and modality are the real ones a test can check — and
+    showing or opening it only records that it was shown. Returns the boxes
+    shown, in order.
+    """
+    from PySide6.QtWidgets import QMessageBox
+
+    from emgteach.gui.tabs import acquisition as acq_mod
+
+    shown: list[QMessageBox] = []
+
+    class _BoxNotShown(QMessageBox):
+        def show(self) -> None:
+            shown.append(self)
+
+        def open(self) -> None:
+            shown.append(self)
+
+    monkeypatch.setattr(acq_mod, "QMessageBox", _BoxNotShown)
+    return shown
+
+
+def pytest_terminal_summary(terminalreporter) -> None:
+    """Name the tests that left windows open, closed for them by the fixture."""
+    if not _WINDOWS_LEFT:
+        return
+    terminalreporter.section("windows left open (closed by no_window_outlives_its_test)")
+    for test, names in _WINDOWS_LEFT:
+        terminalreporter.write_line(f"{test}: {', '.join(names)}")
+
+
 @pytest.fixture(scope="session")
 def qapp():
     """Session-wide QApplication shared by the GUI and worker tests.
