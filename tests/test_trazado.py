@@ -24,16 +24,19 @@ _HEX = ["#4169E1", "#D62728"]
 
 @pytest.fixture
 def trazado(qapp):
+    from types import SimpleNamespace
+
     nombres = {"lista": ["FCR"]}
     canales = {"n": 1}
+    acc = {"on": False}
+    perfil = {"p": SimpleNamespace(ylim_raw=(-3.3, 3.3), ylim_envelope=(-0.05, 1.0))}
     piece = LivePlots(
         fs=1000, colours=_COLORES, colour_hex=_HEX,
-        ylim_raw=(-3.3, 3.3), ylim_envelope=(-0.05, 1.0),
-        n_channels=lambda: canales["n"], acc_enabled=False,
+        profile=lambda: perfil["p"],
+        n_channels=lambda: canales["n"], acc_enabled=lambda: acc["on"],
         labels=lambda: list(nombres["lista"]),
     )
-    piece.nombres = nombres
-    piece.canales = canales
+    piece.nombres, piece.canales, piece.acc, piece.perfil = nombres, canales, acc, perfil
     piece.registro: list[str] = []
     piece.logged.connect(piece.registro.append)
     piece.update_legend()
@@ -88,15 +91,19 @@ def test_blocks_fill_the_buffers_and_the_axis_counts_seconds(trazado) -> None:
 
 
 def test_the_accelerometer_column_goes_to_its_own_buffer(trazado) -> None:
-    trazado.set_acc_enabled(True)
+    trazado.acc["on"] = True
+    trazado.show_accelerometer(True)
     assert not trazado._plot_acc.isHidden() and not trazado._acc_sidebar_slot.isHidden()
     raw, env = _bloque(1, 0.2)
     raw.append(np.full(100, 0.9))                       # the trailing ACC column
     trazado.append(raw, env)
     assert list(trazado._buf_acc)[-1] == pytest.approx(0.9)
     assert list(trazado._buf_raw[0])[-1] == pytest.approx(0.2)
-    trazado.set_acc_enabled(False)
+    trazado.acc["on"] = False
+    trazado.show_accelerometer(False)
     assert trazado._plot_acc.isHidden() and trazado._acc_sidebar_slot.isHidden()
+    trazado.append(raw, env)                            # off: the column is not taken
+    assert sum(1 for v in trazado._buf_acc if v == pytest.approx(0.9)) == 100
 
 
 def test_markers_are_drawn_where_they_happened_and_cleared(trazado) -> None:
@@ -130,6 +137,12 @@ def test_a_calibration_scales_the_plots_never_below_the_profile(trazado) -> None
     trazado.autoscale([0.1], [0.5])                     # a weak calibration
     assert trazado._y_ranges_init[1] == pytest.approx((-0.05, 1.0))   # the profile's
     assert trazado._y_ranges_init[0] == pytest.approx((-3.3, 3.3))
+    # The floor is the profile the tab has now, not the one it had.
+    from types import SimpleNamespace
+    trazado.perfil["p"] = SimpleNamespace(ylim_raw=(-2.0, 2.0), ylim_envelope=(-0.05, 0.5))
+    trazado.autoscale([0.1], [0.5])
+    assert trazado._y_ranges_init[1] == pytest.approx((-0.025, 0.5))
+    assert trazado._y_ranges_init[0] == pytest.approx((-2.0, 2.0))
 
 
 def test_a_review_that_cannot_be_read_is_said_and_changes_nothing(trazado, monkeypatch) -> None:
@@ -177,3 +190,63 @@ def test_the_tab_lays_it_out_where_the_box_was(qapp) -> None:
         assert adq._trazado._sidebar.isHidden()
     finally:
         _cierra(qapp, win)
+
+
+def test_what_the_tab_changes_reaches_the_plots(qapp) -> None:
+    """Everything the tab can change after the plots are built: what the
+    piece asks for when it draws (channels, names, accelerometer, profile)
+    and what the tab tells it when it changes (device type, practical)."""
+    from dataclasses import replace
+
+    from PySide6.QtCore import QSettings
+
+    from emgteach.gui.tabs.acquisition import AcquisitionTab
+    from emgteach.gui.widgets.logger import LoggerWidget
+    from emgteach.modes import MODE_PAIR, MODE_SINGLE
+
+    ajustes = QSettings("emgteach-test", "trazado-sigue")
+    ajustes.clear()
+    log = LoggerWidget()
+    tab = AcquisitionTab(log, ajustes)
+    try:
+        piece = tab._trazado
+        # Channels: through the selector, and written straight onto the tab.
+        tab._combo_n_channels.setCurrentIndex(1)
+        assert piece._n_channels == 2 and piece._is_stacked(0)
+        tab._n_channels = 1
+        assert piece._n_channels == 1 and not piece._is_stacked(0)
+        tab._combo_n_channels.setCurrentIndex(0)
+        tab._combo_n_channels.setCurrentIndex(1)
+        assert piece._n_channels == 2
+        # Names: a box typed in is the lane's name.
+        tab._edit_labels[0].setText("FDS")
+        tab._on_label_changed()
+        assert piece._lane_labels[0][0].toPlainText().strip() == "FDS"
+        assert "FDS" in piece._lbl_legend.text()
+        # The accelerometer: ticked, it is drawn and fed.
+        tab._on_acc_toggled(True)
+        assert piece._acc_enabled and not piece._plot_acc.isHidden()
+        tab._on_acc_toggled(False)
+        assert not piece._acc_enabled and piece._plot_acc.isHidden()
+        # The device type: the raw plot's full scale follows it.
+        tab._conexion._combo_device_type.setCurrentIndex(1)            # Arduino
+        assert piece._y_ranges_init[0] == (-12.5, 12.5)
+        tab._conexion._combo_device_type.setCurrentIndex(0)            # BITalino
+        assert piece._y_ranges_init[0][1] == pytest.approx(1.635282457879088)
+        # The practical: its names and its fine controls.
+        tab.apply_mode(MODE_SINGLE, True)
+        assert not piece._sidebar.isHidden() and not piece._btn_reset_escala.isHidden()
+        tab.apply_mode(MODE_PAIR, False)
+        assert piece._sidebar.isHidden() and piece._btn_reset_escala.isHidden()
+        assert piece._n_channels == 2
+        assert [t.toPlainText().strip() for t in piece._lane_labels[0][:2]] == tab._active_labels()
+        # The profile: the floor of a calibrated scale is the tab's profile now.
+        tab._profile = replace(tab._profile, ylim_envelope=(-0.05, 0.25))
+        tab._mvc_ref[0] = 0.1                           # a weak calibration
+        tab._escalar_a_la_calibracion([0])
+        assert piece._y_ranges_init[1] == pytest.approx((-0.0125, 0.25))
+    finally:
+        tab.cleanup()
+        tab.deleteLater()
+        log.deleteLater()
+        qapp.processEvents()

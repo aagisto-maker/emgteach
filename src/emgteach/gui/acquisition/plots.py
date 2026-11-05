@@ -53,6 +53,7 @@ from emgteach.phases import (
     parse_phase_markers,
     phase_spans,
 )
+from emgteach.profiles import SignalProfile
 from emgteach.sessions import MeasuredSpan, parse_session_markers
 
 __all__ = [
@@ -132,10 +133,9 @@ class LivePlots(QGroupBox):
         fs: int,
         colours: list[tuple[int, int, int]],
         colour_hex: list[str],
-        ylim_raw: tuple[float, float],
-        ylim_envelope: tuple[float, float],
+        profile: Callable[[], SignalProfile],
         n_channels: Callable[[], int],
-        acc_enabled: bool,
+        acc_enabled: Callable[[], bool],
         labels: Callable[[], list[str]],
         parent: QWidget | None = None,
     ) -> None:
@@ -149,14 +149,14 @@ class LivePlots(QGroupBox):
         #: How many channels are active, asked each time it matters (the
         #: tab's count, as the plots always read it).
         self._channel_count = n_channels
-        self._acc_enabled = acc_enabled
+        #: Whether the accelerometer is on, asked each time it matters.
+        self._acc_on = acc_enabled
         #: The names of the active channels, asked for each time they are
         #: drawn (the colour key, the lanes): the practical's, or the boxes'.
         self._labels = labels
-        #: The profile's ranges: the starting scales, and the floor a
-        #: calibrated scale never shrinks below.
-        self._ylim_raw = ylim_raw
-        self._ylim_envelope = ylim_envelope
+        #: The signal profile: its ranges are the starting scales, and the
+        #: floor a calibrated scale never shrinks below (read when used).
+        self._profile = profile
 
         # Per-channel ring buffers for the three signals (30 s at 1000 Hz).
         # Every channel the interface offers is allocated; only the active
@@ -189,8 +189,8 @@ class LivePlots(QGroupBox):
         # Initial Y ranges taken from the signal profile (restored in
         # reset_y_scales).
         self._y_ranges_init: list[tuple[float, float]] = [
-            ylim_raw,       # raw
-            ylim_envelope,  # envelope
+            profile().ylim_raw,       # raw
+            profile().ylim_envelope,  # envelope
         ]
         self._y_accum: list[float] = [1.0, 1.0]  # accumulated factor per plot
         # Per-plot data gain, used ONLY in stacked mode (2 channels) on the raw
@@ -481,6 +481,10 @@ class LivePlots(QGroupBox):
     def _n_channels(self) -> int:
         return self._channel_count()
 
+    @property
+    def _acc_enabled(self) -> bool:
+        return bool(self._acc_on())
+
     def set_channels(self, n_channels: int) -> None:
         """How many channels are active: their curves are shown, the rest hidden."""
         for c in range(self._n_max):
@@ -493,15 +497,15 @@ class LivePlots(QGroupBox):
         self._y_gain = [1.0, 1.0]
         self._apply_stacking_mode()
 
-    def set_acc_enabled(self, enabled: bool) -> None:
+    def show_accelerometer(self, visible: bool) -> None:
         """Show or hide the accelerometer's plot with its ▲▼ slot.
 
         The slot follows its plot so the raw/envelope buttons stay aligned
-        with their own plots.
+        with their own plots. Whether the accelerometer is drawn and fed is
+        asked of the tab each time; this is only what is on screen.
         """
-        self._acc_enabled = bool(enabled)
-        self._plot_acc.setVisible(self._acc_enabled)
-        self._acc_sidebar_slot.setVisible(self._acc_enabled)
+        self._plot_acc.setVisible(bool(visible))
+        self._acc_sidebar_slot.setVisible(bool(visible))
 
     def set_scale_controls_visible(self, visible: bool) -> None:
         """The ▲▼ sidebar and «Reset scales»: the fine controls of the tab."""
@@ -570,7 +574,7 @@ class LivePlots(QGroupBox):
         try:
             amp = device_class(backend).full_scale_mv()
         except Exception:  # pragma: no cover — a backend registered as a function
-            amp = self._ylim_raw[1]
+            amp = self._profile().ylim_raw[1]
         self._y_ranges_init[0] = (-amp, amp)
         if not recording:
             self._apply_stacking_mode()
@@ -1143,14 +1147,14 @@ class LivePlots(QGroupBox):
         # Envelope (plot 1): 0-based, with headroom above and a little below.
         if refs:
             top = max(refs) * AUTOSCALE_ENV_FACTOR
-            top = max(top, self._ylim_envelope[1])   # never shrink
+            top = max(top, self._profile().ylim_envelope[1])   # never shrink
             self._y_ranges_init[1] = (-0.05 * top, top)
 
         # Raw (plot 0): symmetric around 0. In stacked mode this half becomes
         # each lane's half-height (see _apply_stacking_mode).
         if raw_peaks:
             amp = max(raw_peaks) * AUTOSCALE_RAW_FACTOR
-            amp = max(amp, self._ylim_raw[1])        # never shrink
+            amp = max(amp, self._profile().ylim_raw[1])        # never shrink
             self._y_ranges_init[0] = (-amp, amp)
 
         self.reset_y_scales()

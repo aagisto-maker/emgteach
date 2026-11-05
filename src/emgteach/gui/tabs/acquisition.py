@@ -1301,8 +1301,9 @@ class AcquisitionTab(QWidget):
         # ── Plots + scale controls (gui/acquisition/plots.py) ──
         self._trazado = LivePlots(
             fs=FS, colours=_CHANNEL_COLORS, colour_hex=_CHANNEL_COLOR_HEX,
-            ylim_raw=self._profile.ylim_raw, ylim_envelope=self._profile.ylim_envelope,
-            n_channels=lambda: self._n_channels, acc_enabled=self._acc_enabled,
+            profile=lambda: self._profile,
+            n_channels=lambda: self._n_channels,
+            acc_enabled=lambda: self._acc_enabled,
             labels=self._active_labels,
         )
         self._trazado.logged.connect(self._log)
@@ -1468,7 +1469,7 @@ class AcquisitionTab(QWidget):
         """Show/hide the accelerometer plot and remember the choice."""
         self._acc_enabled = bool(checked)
         self._settings.setValue("adquisicion/acc", self._acc_enabled)
-        self._trazado.set_acc_enabled(self._acc_enabled)
+        self._trazado.show_accelerometer(self._acc_enabled)
         self._combo_acc_place.setEnabled(self._acc_enabled)
         self._combo_acc_channel.setEnabled(self._acc_enabled)
         self._apply_acc_placement_constraints()
