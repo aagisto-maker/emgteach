@@ -90,7 +90,7 @@ def _stop(tab) -> None:
 
 def _wait_streaming(qapp, tab) -> None:
     _until(qapp, lambda: tab._worker is not None and tab._worker.is_streaming()
-           and tab._total_samples > 300, 8.0, "the simulated signal")
+           and tab._trazado._total_samples > 300, 8.0, "the simulated signal")
 
 
 def test_stopping_and_starting_again_at_once_keeps_the_new_recording_live(qapp, tab, tmp_path):
@@ -109,11 +109,11 @@ def test_stopping_and_starting_again_at_once_keeps_the_new_recording_live(qapp, 
     # (11 Oct 2026), the event log's lines being synced to disk since 3.8.0.
     _until(qapp, lambda: tab._lbl_estado.text() == tr("Status: recording…"), 8.0,
            "the second recording's first block")
-    assert not tab._revisando, "the plots follow the new recording, not the old file"
-    assert tab._render_timer.isActive() and tab._load_timer.isActive()
-    n = tab._total_samples
+    assert not tab._trazado._revisando, "the plots follow the new recording, not the old file"
+    assert tab._trazado._render_timer.isActive() and tab._load_timer.isActive()
+    n = tab._trazado._total_samples
     _pump(qapp, 400)
-    assert tab._total_samples > n
+    assert tab._trazado._total_samples > n
     assert tab.saved == [str(tmp_path / "first.edf")], "the first file still goes to the analysis"
     _stop(tab)
     _until(qapp, lambda: not tab.is_recording(), 5.0, "the second recording to end")

@@ -155,7 +155,7 @@ class TestTheAxesSayMillivolts:
         win = _ventana(qapp, "single")
         try:
             adq = win._tab_adq
-            for nombre, pw in (("raw", adq._plot_raw), ("env", adq._plot_env)):
+            for nombre, pw in (("raw", adq._trazado._plot_raw), ("env", adq._trazado._plot_env)):
                 eje = pw.getAxis("left")
                 assert eje.autoSIPrefixScale == 1.0, (
                     f"el eje {nombre} multiplica por {eje.autoSIPrefixScale}"
@@ -182,8 +182,8 @@ class TestTheRawRangeIsTheDevices:
             adq._conexion._combo_device_type.setCurrentIndex(0)
             qapp.processEvents()
             esperado = BitalinoDevice.full_scale_mv()
-            assert adq._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)
-            assert adq._y_ranges_init[0][1] < 2.0   # and not the old 3.3
+            assert adq._trazado._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)
+            assert adq._trazado._y_ranges_init[0][1] < 2.0   # and not the old 3.3
         finally:
             _cierra(qapp, win)
 
@@ -196,8 +196,8 @@ class TestTheRawRangeIsTheDevices:
             adq._conexion._combo_device_type.setCurrentIndex(1)
             qapp.processEvents()
             esperado = ArduinoDevice.full_scale_mv()
-            assert adq._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)
-            assert adq._y_ranges_init[0][1] > 10.0
+            assert adq._trazado._y_ranges_init[0][1] == pytest.approx(esperado, rel=1e-6)
+            assert adq._trazado._y_ranges_init[0][1] > 10.0
         finally:
             _cierra(qapp, win)
 
@@ -312,14 +312,14 @@ class TestTheReviewNamesTheLanesAfterTheFile:
         win = _ventana(qapp, "pair")
         try:
             adq = win._tab_adq
-            adq._mostrar_registro(_registro_par(tmp_path / "par.edf"))
+            adq._trazado.show_recording(_registro_par(tmp_path / "par.edf"), adq._etiqueta_tramo)
             qapp.processEvents()
-            nombres = [adq._lane_labels[0][c].toPlainText().strip() for c in range(2)]
+            nombres = [adq._trazado._lane_labels[0][c].toPlainText().strip() for c in range(2)]
             assert nombres == ["FCR", "ECR"], nombres
-            adq._salir_revision()
+            adq._trazado.leave_review()
             qapp.processEvents()
             # And back to the boxes' names on the way out.
-            assert adq._lane_labels[0][0].toPlainText().strip() != "FCR"
+            assert adq._trazado._lane_labels[0][0].toPlainText().strip() != "FCR"
         finally:
             _cierra(qapp, win)
 

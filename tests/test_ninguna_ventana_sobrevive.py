@@ -26,7 +26,7 @@ def test_a_tab_left_on_screen_is_stopped_before_it_is_closed(qapp) -> None:
     tab = AcquisitionTab(logger, QSettings("emgteach-test", "ninguna-ventana"))
     tab.show()
     qapp.processEvents()
-    tab._render_timer.start()
+    tab._trazado._render_timer.start()
     tab._conexion._watchdog_timer.start()
     tab._conexion._conexion_timer.start()
     llamadas: list[str] = []
@@ -42,7 +42,7 @@ def test_a_tab_left_on_screen_is_stopped_before_it_is_closed(qapp) -> None:
     _close_for_good(tab)
 
     assert llamadas == ["cleanup"]
-    assert not tab._render_timer.isActive()
+    assert not tab._trazado._render_timer.isActive()
     assert not tab._conexion._watchdog_timer.isActive()
     assert not tab._conexion._conexion_timer.isActive()
     assert not tab.isVisible()

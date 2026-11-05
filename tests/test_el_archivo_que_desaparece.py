@@ -157,7 +157,7 @@ def test_the_real_writer_with_its_folder_deleted(pestana) -> None:
     tab = pestana
     tab._btn_grabar.setChecked(True)
     tab._toggle_grabacion()
-    assert _hasta(lambda: tab._total_samples > 1500, 8.0)
+    assert _hasta(lambda: tab._trazado._total_samples > 1500, 8.0)
     shutil.rmtree(tab.carpeta)
     t0 = time.monotonic()
     assert _hasta(lambda: not tab.is_recording(), 5.0), "the recording went on"

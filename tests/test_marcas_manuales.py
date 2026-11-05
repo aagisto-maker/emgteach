@@ -195,7 +195,7 @@ def _start(qapp, tab, path: Path) -> None:
     tab._btn_grabar.setChecked(True)
     tab._toggle_grabacion()
     _until(qapp, lambda: tab._worker is not None and tab._worker.is_streaming()
-           and tab._total_samples > 300, 8.0, "the simulated signal")
+           and tab._trazado._total_samples > 300, 8.0, "the simulated signal")
 
 
 def _stop(qapp, tab) -> None:
@@ -223,9 +223,9 @@ def test_a_mark_reaches_the_edf_the_mirror_and_the_log_at_its_time(
     before = worker._n_samples_total / fs
     tab._marcador.button.click()
     after = worker._n_samples_total / fs
-    _until(qapp, lambda: any(lbl == tr("Fatigue") for _t, lbl in tab._marker_events),
+    _until(qapp, lambda: any(lbl == tr("Fatigue") for _t, lbl in tab._trazado._marker_events),
            2.0, "the mark to come back from the worker")
-    t_mark = next(t for t, lbl in tab._marker_events if lbl == tr("Fatigue"))
+    t_mark = next(t for t, lbl in tab._trazado._marker_events if lbl == tr("Fatigue"))
     assert before <= t_mark <= after, (before, t_mark, after)
 
     # The mirror has it while the recording runs: it is what survives a crash.
@@ -353,7 +353,7 @@ def test_enter_or_esc_in_a_field_gives_the_m_back(qapp, shown_tab, way_out) -> N
 def _plots_box(tab):
     from PySide6.QtWidgets import QGroupBox
 
-    box = tab._plot_raw.parentWidget()
+    box = tab._trazado._plot_raw.parentWidget()
     while not isinstance(box, QGroupBox):
         box = box.parentWidget()
     return box
@@ -369,7 +369,7 @@ def test_a_click_in_the_live_plots_gives_the_m_back(qapp, shown_tab, where) -> N
     """
     _type_in_the_identifier(qapp, shown_tab)
     if where == "plot":
-        target = shown_tab._plot_raw.viewport()
+        target = shown_tab._trazado._plot_raw.viewport()
         pos = target.rect().center()
     else:
         target = _plots_box(shown_tab)
@@ -432,7 +432,7 @@ def recording(qapp, tab, tmp_path: Path):
 
 
 def _manual_marks(tab) -> list[str]:
-    return [lbl for _t, lbl in tab._marker_events if is_manual_mark(lbl)]
+    return [lbl for _t, lbl in tab._trazado._marker_events if is_manual_mark(lbl)]
 
 
 def test_a_click_inside_the_live_plot_while_recording_leaves_the_m_to_mark(
@@ -445,7 +445,7 @@ def test_a_click_inside_the_live_plot_while_recording_leaves_the_m_to_mark(
     no longer keeps it, the tab takes it."""
     tab = recording
     _type_in_the_identifier(qapp, tab)
-    plot = tab._plot_raw
+    plot = tab._trazado._plot_raw
     QTest.mouseClick(plot.viewport(), Qt.MouseButton.LeftButton,
                      pos=plot.viewport().rect().center())
     _until(qapp, lambda: not tab._edit_student_code.hasFocus(), 2.0,
@@ -469,7 +469,7 @@ def test_an_m_that_reaches_the_live_plot_marks(qapp, recording) -> None:
     tab._marcador.shortcut.setEnabled(False)
     press = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_M,
                       Qt.KeyboardModifier.NoModifier, "m")
-    QApplication.sendEvent(tab._plot_env.viewport(), press)
+    QApplication.sendEvent(tab._trazado._plot_env.viewport(), press)
     _until(qapp, lambda: len(_manual_marks(tab)) == 1, 2.0, "the mark")
     assert press.isAccepted()
 
@@ -478,7 +478,7 @@ def test_the_live_plots_still_zoom_with_the_wheel(qapp, shown_tab) -> None:
     from PySide6.QtCore import QPoint, QPointF
     from PySide6.QtGui import QWheelEvent
 
-    for plot in (shown_tab._plot_raw, shown_tab._plot_env):
+    for plot in (shown_tab._trazado._plot_raw, shown_tab._trazado._plot_env):
         assert plot.focusPolicy() == Qt.FocusPolicy.NoFocus
         box = plot.getViewBox()
         before = [list(r) for r in box.viewRange()]

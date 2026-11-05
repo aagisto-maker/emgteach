@@ -11,5 +11,6 @@ from __future__ import annotations
 
 from emgteach.gui.acquisition.broadcast import ClassroomBox
 from emgteach.gui.acquisition.connection import ConnectionBox
+from emgteach.gui.acquisition.plots import LivePlots
 
-__all__ = ["ClassroomBox", "ConnectionBox"]
+__all__ = ["ClassroomBox", "ConnectionBox", "LivePlots"]

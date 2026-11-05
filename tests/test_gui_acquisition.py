@@ -175,27 +175,27 @@ def test_acc_plot_fixed_range_zoom_and_aligned_sidebar(qapp) -> None:
 
     # The ACC sidebar slot tracks the ACC plot's visibility.
     tab._chk_acc.setChecked(True)
-    assert tab._acc_sidebar_slot.isVisibleTo(tab)
+    assert tab._trazado._acc_sidebar_slot.isVisibleTo(tab)
     tab._chk_acc.setChecked(False)
-    assert not tab._acc_sidebar_slot.isVisibleTo(tab)
+    assert not tab._trazado._acc_sidebar_slot.isVisibleTo(tab)
     tab._chk_acc.setChecked(True)
 
     # Default range is the full ±1 g, and it does not change with the data
     # (no auto-range): a fresh recording resets it to ±1 g.
-    tab._reset_buffers()
-    lo, hi = tab._plot_acc.getViewBox().viewRange()[1]
+    tab._trazado._reset_buffers()
+    lo, hi = tab._trazado._plot_acc.getViewBox().viewRange()[1]
     assert lo == pytest.approx(-1.0, abs=1e-6) and hi == pytest.approx(1.0, abs=1e-6)
 
     # Zoom in with ▲ magnifies (smaller visible span); zoom out returns toward ±1 g.
-    tab._acc_zoom_step(zoom_in=True)
-    assert tab._acc_zoom > 1.0
-    lo2, hi2 = tab._plot_acc.getViewBox().viewRange()[1]
+    tab._trazado._acc_zoom_step(zoom_in=True)
+    assert tab._trazado._acc_zoom > 1.0
+    lo2, hi2 = tab._trazado._plot_acc.getViewBox().viewRange()[1]
     assert (hi2 - lo2) < 2.0                     # narrower than the full ±1 g
 
     # Reset scales returns the ACC plot to ±1 g and zoom 1.
-    tab._reset_y_scales()
-    assert tab._acc_zoom == 1.0
-    lo3, hi3 = tab._plot_acc.getViewBox().viewRange()[1]
+    tab._trazado.reset_y_scales()
+    assert tab._trazado._acc_zoom == 1.0
+    lo3, hi3 = tab._trazado._plot_acc.getViewBox().viewRange()[1]
     assert lo3 == pytest.approx(-1.0, abs=1e-6) and hi3 == pytest.approx(1.0, abs=1e-6)
 
     settings.clear()
@@ -314,7 +314,7 @@ def test_reset_clears_acquisition_view(qapp) -> None:
     tab._worker = _FakeWorker()
 
     _drive_calibration(tab, 0.5)
-    tab._marker_events.append((1.0, "x"))
+    tab._trazado._marker_events.append((1.0, "x"))
     assert tab._mvc_ref[0] is not None
 
     # reset() is a no-op while recording…
@@ -326,8 +326,8 @@ def test_reset_clears_acquisition_view(qapp) -> None:
     tab._worker = None
     tab.reset()
     assert tab._mvc_ref[0] is None
-    assert tab._marker_events == []
-    assert tab._total_samples == 0
+    assert tab._trazado._marker_events == []
+    assert tab._trazado._total_samples == 0
     assert not tab._spin_warning.isEnabled()
     tab.cleanup()
 
@@ -354,15 +354,15 @@ def test_a_new_session_leaves_the_plots_empty(qapp) -> None:
     tab._apply_channel_visibility()
 
     # Some signal on the plots, as after a recording.
-    tab._total_samples = 5 * 1000
-    tab._new_data = True
-    tab._refresh_plots(force=True)
+    tab._trazado._total_samples = 5 * 1000
+    tab._trazado._new_data = True
+    tab._trazado._refresh_plots(force=True)
     assert any(c.getData()[0] is not None and len(c.getData()[0])
-               for c in tab._curves_env[:2])
+               for c in tab._trazado._curves_env[:2])
 
     tab.reset()
 
-    for nombre, curvas in (("raw", tab._curves_raw), ("env", tab._curves_env)):
+    for nombre, curvas in (("raw", tab._trazado._curves_raw), ("env", tab._trazado._curves_env)):
         for i, curva in enumerate(curvas):
             x, _y = curva.getData()
             assert x is None or len(x) == 0, (
@@ -370,14 +370,14 @@ def test_a_new_session_leaves_the_plots_empty(qapp) -> None:
             )
 
     # The axis is the live window, not whatever was there before…
-    izq, der = tab._plot_raw.getViewBox().viewRange()[0]
-    assert der - izq == pytest.approx(tab._n_visible / 1000, abs=0.6)
+    izq, der = tab._trazado._plot_raw.getViewBox().viewRange()[0]
+    assert der - izq == pytest.approx(tab._trazado._n_visible / 1000, abs=0.6)
 
     # …and it can still follow the next recording. Setting an explicit range
     # turns pyqtgraph's auto-range off, and an axis stuck at five seconds while
     # the window is widened is the same "advancing over an empty canvas" the
     # session review already had to fix once.
-    for pw in (tab._plot_raw, tab._plot_env):
+    for pw in (tab._trazado._plot_raw, tab._trazado._plot_env):
         assert pw.getViewBox().autoRangeEnabled()[0], (
             "el auto-rango del eje X se ha quedado apagado"
         )
@@ -414,7 +414,7 @@ class TestTheTimeWindowControls:
         # zeros rather than emptied, and drawing those put phantom lines across
         # a fresh session — so measuring the drawn extent there would measure
         # the absence of a bug that used to be one.
-        widget._total_samples = 30 * 1000
+        widget._trazado._total_samples = 30 * 1000
         qapp.processEvents()
         yield widget
         widget.cleanup()
@@ -431,27 +431,27 @@ class TestTheTimeWindowControls:
         seconds of the recording, so the right edge is where the recording is,
         the same however wide the window.
         """
-        x, _y = tab._curves_raw[0].getData()
+        x, _y = tab._trazado._curves_raw[0].getData()
         return 0.0 if x is None or not len(x) else float(x[-1] - x[0])
 
     def test_widening_moves_the_axis_with_nothing_recording(self, tab, qapp):
-        tab._refresh_plots(force=True)
+        tab._trazado._refresh_plots(force=True)
         antes = self._span(tab)
-        tab._on_tiempo_ampliar()
+        tab._trazado._on_tiempo_ampliar()
         qapp.processEvents()
         assert self._span(tab) > antes
 
     def test_narrowing_moves_it_back(self, tab, qapp):
-        tab._refresh_plots(force=True)
+        tab._trazado._refresh_plots(force=True)
         antes = self._span(tab)
-        tab._on_tiempo_reducir()
+        tab._trazado._on_tiempo_reducir()
         qapp.processEvents()
         assert self._span(tab) < antes
 
     def test_the_combo_moves_it_too(self, tab, qapp):
-        tab._refresh_plots(force=True)
+        tab._trazado._refresh_plots(force=True)
         antes = self._span(tab)
-        tab._on_combo_zoom_changed(0)      # the whole buffer
+        tab._trazado._on_combo_zoom_changed(0)      # the whole buffer
         qapp.processEvents()
         assert self._span(tab) > antes
 
@@ -459,9 +459,9 @@ class TestTheTimeWindowControls:
         """It opened claiming "30 s visible" over a five-second window, so the
         first press of ◀▶ looked like it shrank the window: the caption fell
         from 30 to 10 while the window doubled."""
-        assert tab._lbl_ventana_info.text().startswith("5")
-        tab._on_tiempo_ampliar()
-        assert tab._lbl_ventana_info.text().startswith("10")
+        assert tab._trazado._lbl_ventana_info.text().startswith("5")
+        tab._trazado._on_tiempo_ampliar()
+        assert tab._trazado._lbl_ventana_info.text().startswith("10")
 
 
 @pytest.mark.gui
@@ -484,9 +484,9 @@ def test_the_colour_key_is_offered_only_with_two_channels(qapp) -> None:
     qapp.processEvents()
     try:
         tab.apply_mode(MODE_SINGLE, False)
-        assert tab._lbl_legend.isHidden()
+        assert tab._trazado._lbl_legend.isHidden()
         tab.apply_mode(MODE_PAIR, False)
-        assert not tab._lbl_legend.isHidden()
+        assert not tab._trazado._lbl_legend.isHidden()
     finally:
         tab.cleanup()
         tab.close()

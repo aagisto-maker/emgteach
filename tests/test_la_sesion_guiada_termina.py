@@ -62,7 +62,7 @@ def grabando(qapp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request):
     tab.connect_to("simulada")
     tab._btn_grabar.setChecked(True)
     tab._toggle_grabacion()
-    assert _hasta(lambda: tab._total_samples > 300, 8.0), "the simulated board did not start"
+    assert _hasta(lambda: tab._trazado._total_samples > 300, 8.0), "the simulated board did not start"
     # The session's own flow (calibration first) is not what is tested here.
     tab._mvc_cancel()
     tab.destino = destino

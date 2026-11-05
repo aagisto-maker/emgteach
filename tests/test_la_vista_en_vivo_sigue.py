@@ -15,7 +15,8 @@ from PySide6.QtCore import QPoint, QPointF, Qt
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QApplication
 
-from emgteach.gui.tabs.acquisition import FS, MAX_POINTS
+from emgteach.gui.acquisition.plots import MAX_POINTS
+from emgteach.gui.tabs.acquisition import FS
 from tests.test_marcas_manuales import _until, recording, tab  # noqa: F401
 
 
@@ -33,7 +34,7 @@ def _wheel(plot, steps: int = 1) -> None:
 
 
 def _last_second(acq) -> float:
-    return (acq._total_samples - 1) / FS
+    return (acq._trazado._total_samples - 1) / FS
 
 
 def _x_range(plot) -> tuple[float, float]:
@@ -45,19 +46,19 @@ def _x_range(plot) -> tuple[float, float]:
 def live(qapp, request):
     """The tab recording the simulated board, with a second of signal drawn."""
     acq = request.getfixturevalue("recording")
-    _until(qapp, lambda: acq._total_samples > FS, 5.0, "a second of signal")
-    _until(qapp, lambda: _x_range(acq._plot_raw)[1] > 0.5, 5.0, "the plot to follow")
+    _until(qapp, lambda: acq._trazado._total_samples > FS, 5.0, "a second of signal")
+    _until(qapp, lambda: _x_range(acq._trazado._plot_raw)[1] > 0.5, 5.0, "the plot to follow")
     return acq
 
 
 @pytest.mark.gui
 def test_the_zoomed_live_view_keeps_the_width_and_follows_the_signal(qapp, live) -> None:
-    plot = live._plot_raw
+    plot = live._trazado._plot_raw
     _wheel(plot, steps=3)
     assert not plot.getViewBox().autoRangeEnabled()[0], "the wheel left auto-range on"
     x0, x1 = _x_range(plot)
     width = x1 - x0
-    assert 0 < width < 0.9 * min(live._n_visible, MAX_POINTS) / FS, "the wheel did not zoom in"
+    assert 0 < width < 0.9 * min(live._trazado._n_visible, MAX_POINTS) / FS, "the wheel did not zoom in"
 
     # A second later the window has moved on with the signal…
     then = _last_second(live)
@@ -74,7 +75,7 @@ def test_the_zoomed_live_view_keeps_the_width_and_follows_the_signal(qapp, live)
 
 @pytest.mark.gui
 def test_the_envelope_follows_too(qapp, live) -> None:
-    plot = live._plot_env
+    plot = live._trazado._plot_env
     _wheel(plot, steps=2)
     x0, x1 = _x_range(plot)
     width = x1 - x0
@@ -87,10 +88,10 @@ def test_the_envelope_follows_too(qapp, live) -> None:
 
 @pytest.mark.gui
 def test_the_a_button_gives_the_whole_window_back(qapp, live) -> None:
-    plot = live._plot_raw
+    plot = live._trazado._plot_raw
     _wheel(plot, steps=3)
     x0, x1 = _x_range(plot)
-    window = min(live._n_visible, MAX_POINTS) / FS
+    window = min(live._trazado._n_visible, MAX_POINTS) / FS
     assert x1 - x0 < 0.9 * window
     # What the «A» button in the plot's corner does.
     plot.getPlotItem().autoBtnClicked()

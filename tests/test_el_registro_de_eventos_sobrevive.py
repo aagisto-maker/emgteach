@@ -45,7 +45,7 @@ _CHILD = textwrap.dedent(r'''
     tab._btn_grabar.setChecked(True)
     tab._toggle_grabacion()
     end = time.monotonic() + 20
-    while time.monotonic() < end and tab._total_samples < 500:
+    while time.monotonic() < end and tab._trazado._total_samples < 500:
         app.processEvents(); time.sleep(0.01)
     tab._log("the last line before the crash 7f3a")
     print("READY", flush=True)

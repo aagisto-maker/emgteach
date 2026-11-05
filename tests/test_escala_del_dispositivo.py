@@ -185,7 +185,7 @@ def test_the_edf_header_carries_exactly_the_same_fields(
 @pytest.mark.gui
 class TestTheRawPanelIsDrawnToTheSameScale:
     """The raw panel's range when a board type is chosen, before any device
-    is opened (AcquisitionTab._ajustar_rango_bruto_al_dispositivo): the
+    is opened (LivePlots.follow_device): the
     BITalino's ±1.635 mV and the Arduino's ±12.5 mV, exactly."""
 
     def test_bitalino(self, qapp) -> None:
@@ -197,7 +197,7 @@ class TestTheRawPanelIsDrawnToTheSameScale:
             adq._conexion._combo_device_type.setCurrentIndex(1)
             adq._conexion._combo_device_type.setCurrentIndex(0)
             qapp.processEvents()
-            assert adq._y_ranges_init[0] == (-_BITALINO_MV, _BITALINO_MV)
+            assert adq._trazado._y_ranges_init[0] == (-_BITALINO_MV, _BITALINO_MV)
         finally:
             _cierra(qapp, win)
 
@@ -209,6 +209,6 @@ class TestTheRawPanelIsDrawnToTheSameScale:
             adq = win._tab_adq
             adq._conexion._combo_device_type.setCurrentIndex(1)
             qapp.processEvents()
-            assert adq._y_ranges_init[0] == (-_ARDUINO_MV, _ARDUINO_MV)
+            assert adq._trazado._y_ranges_init[0] == (-_ARDUINO_MV, _ARDUINO_MV)
         finally:
             _cierra(qapp, win)

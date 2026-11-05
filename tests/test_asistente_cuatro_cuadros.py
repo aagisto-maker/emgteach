@@ -673,4 +673,4 @@ class TestTheGripBoxDoesNotHideWhatItTellsYouToWatch:
                          adq._guia_coactivacion):
             arranque()
             ov = adq._mvc_overlay
-            assert ov.y() >= adq._grp_plots.geometry().top(), adq._guia_fase
+            assert ov.y() >= adq._trazado.geometry().top(), adq._guia_fase
