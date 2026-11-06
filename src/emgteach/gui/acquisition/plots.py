@@ -21,7 +21,7 @@ it is given, how to name each stretch a guided session marked.
 from __future__ import annotations
 
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import ClassVar, cast
 
 import numpy as np
@@ -119,6 +119,11 @@ _COMBO_ST = (
 
 #: A stretch a guided session marked, as the review shades it.
 GUIDED = "guided"
+
+#: The bar the review draws under each contraction, as a share of the
+#: plot's height, and its colour.
+_BARRA_ALTO = 0.07
+_BARRA_COLOR = (0, 137, 123, 170)
 
 
 class LivePlots(QGroupBox):
@@ -807,8 +812,17 @@ class LivePlots(QGroupBox):
     }
 
     def show_recording(self, edf_path: str,
-                       label_for: Callable[[MeasuredSpan], str]) -> None:
+                       label_for: Callable[[MeasuredSpan], str],
+                       contractions: Sequence[tuple[float, float]] = ()) -> None:
         """Put the recording that has just finished on the plots, whole.
+
+        *contractions* are drawn as a bar along the bottom of both plots,
+        each from where it starts to where the muscle is back at rest:
+        the rows the fragment editor will propose
+        (:func:`emgteach.fragments.recording_proposal`). The shading behind
+        is the session's phases, what the application asked; the bar is
+        what the muscle did, the letting go after the cue included
+        (Ángel's gradation of 6 November 2026).
 
         After stopping, the operator can scroll back over what was just
         recorded without leaving the tab. The live plots
@@ -947,12 +961,28 @@ class LivePlots(QGroupBox):
             self._plot_env.addItem(etiqueta, ignoreBounds=True)
             self._revision_items.append((self._plot_env, etiqueta))
 
+        for a, b in contractions:
+            for pw in (self._plot_raw, self._plot_env):
+                barra = pg.LinearRegionItem(
+                    values=(float(a), float(b)), movable=False,
+                    span=(0.0, _BARRA_ALTO), brush=pg.mkBrush(*_BARRA_COLOR),
+                    pen=pg.mkPen(None),
+                )
+                barra.setZValue(-5)        # over the phases, behind the trace
+                pw.addItem(barra, ignoreBounds=True)
+                self._revision_items.append((pw, barra))
+
         self._plot_raw.setTitle(tr("Recording just finished (review)"))
         self._plot_env.setTitle(tr("Envelope of the recording (review)"))
         self.logged.emit(tr(
             "Reviewing the recording: {dur:.1f} s. Drag to scroll, wheel to "
             "zoom. It goes back to live on the next recording."
         ).format(dur=duracion))
+        if contractions:
+            self.logged.emit(tr(
+                "The bar under the traces marks each contraction the fragment "
+                "editor will propose, from where it starts to where the muscle "
+                "is back at rest."))
 
     def _px_por_segundo(self, duracion: float) -> float:
         """Pixels one second of the review takes on screen, as first drawn.

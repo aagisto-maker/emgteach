@@ -377,6 +377,14 @@ con un desplegable de zoom y botones ◀▶ (también con la rueda del ratón). 
 rueda sobre una gráfica fija cuántos segundos se ven, y la vista sigue avanzando
 con la señal; el botón **A** de la esquina devuelve la ventana entera.
 
+Al terminar una grabación, las gráficas muestran el **registro entero para
+revisarlo**: las fases de la sesión, sombreadas, son lo que pidió la aplicación;
+debajo de las señales, una **barra verde azulada** marca cada contracción que
+propondrá el editor de fragmentos, desde que empieza hasta que el músculo vuelve
+al reposo, con la relajación tras el tono y sus colitas. Se calcula con la misma
+regla que el editor, también en registros libres: lo que se ve aquí es lo que el
+editor propondrá al abrirlo.
+
 **Marcadores de eventos**
 - **Detección automática de inicio de contracción** (*Auto-inicio*), a la vista en
   las tres prácticas: se marca el comienzo de una contracción cuando la envolvente
@@ -554,8 +562,8 @@ qué pide, y el «?» del cuadro los repite.
 1. **Sensibilidad** (k), encima del gráfico, con un **contador** al lado:
    marcadas / esperadas de cada tipo. Lo esperado sale de la práctica —6
    flexiones, 6 extensiones y 1 presa en el par; en cinemática, una por
-   levantamiento marcado por el asistente; en la de un músculo, ninguno— y se
-   puede editar. El par abre en k = 4.4 y las demás en 3.0; la k usada queda en
+   levantamiento marcado por el asistente; en la gradación, una por escalón; en
+   la de un músculo, ninguno— y se puede editar. El par abre en k = 4.4 y las demás en 3.0; la k usada queda en
    el informe y en el CSV. Cada fila propuesta abarca la contracción entera,
    desde que la envolvente deja el reposo —la línea de puntos «reposo», donde pondría
    el umbral la mitad de la sensibilidad— hasta que vuelve a él, con un margen pequeño y
@@ -563,8 +571,16 @@ qué pide, y el «?» del cuadro los repite.
    levantamiento. **En la práctica de un músculo, una fila solo termina cuando
    el músculo vuelve al reposo**: la envolvente baja a la línea base más un 5 %
    de la altura de su pico y se queda ahí al menos 1 s («Un fragmento termina
-   tras un reposo de (s)», en el ajuste fino). Un escalón de la gradación, con
-   su pico breve al arrancar, es una fila; en el par, cuyas seis contracciones
+   tras un reposo de (s)», en el ajuste fino). Ese 5 % separa una contracción
+   de la siguiente, pero la fila no acaba ahí: sigue mientras la envolvente
+   esté sobre la línea de puntos «reposo» y se queda con cada **colita** —un
+   tramo sobre esa línea de al menos 0.5 s, lo que el editor dibujaría
+   punteado— que empiece a menos de 1 s, hasta que la envolvente queda en
+   reposo un segundo. Así entra la relajación tras el tono, que en un escalón
+   fuerte queda muy por debajo del 5 % de su pico. Un escalón de la gradación, con
+   su pico breve al arrancar, es una fila, y la gradación se propone **una fila
+   por escalón**: lo que el músculo haga fuera de los escalones, como una
+   sacudida al empezar el registro, queda punteado, a un clic. En el par, cuyas seis contracciones
    seguidas descansan menos de un segundo, se corta por los valles entre ellas.
    Cada fila **empieza 0.5 s antes** de que su contracción deje ese reposo, la
    misma ventaja en todas y sin pisar la fila anterior; también la fila que se

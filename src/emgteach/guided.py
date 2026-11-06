@@ -75,6 +75,7 @@ __all__ = [
     "rapid_train",
     "rest_level",
     "spans_in_analysis_time",
+    "step_windows",
     "time_to_decline",
     "train_span",
     "weak_signal_warning",
@@ -216,6 +217,21 @@ def measured_windows(
         out.append((MeasuredSpan(t.name, ini, fin_p, t.params),
                     offset + ini - x, offset + fin_p - x))
     return out
+
+
+def step_windows(session: GuidedSession | None) -> list[tuple[float, float]]:
+    """Each step of a gradation in file time, from the mark that opens it to
+    where it may still be letting go: its end mark run on by
+    :data:`MARGIN_S`, never into the next step nor past the session's end
+    (:func:`measured_windows`). Empty when the file has no gradation.
+
+    What the fragment editor proposes one row for
+    (:func:`emgteach.fragments.one_per_step`).
+    """
+    if session is None or session.family != "GRAD":
+        return []
+    return [(a, b) for _t, a, b in measured_windows(
+        session, [(0.0, float("inf"), 0.0)], ("step",)) if b > a]
 
 
 def fatigue_unmeasured(result) -> str | None:

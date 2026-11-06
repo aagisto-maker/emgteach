@@ -304,6 +304,13 @@ channels the raw plot is **stacked**, one lane per muscle, and the envelopes
 over a plot sets how many seconds are shown, and the view goes on following the
 signal; the **A** button in the corner gives the whole window back.
 
+When a recording ends, the plots show **the whole recording for review**: the
+session's phases, shaded, are what the application asked; under the traces, a
+**teal bar** marks each contraction the fragment editor will propose, from where
+it starts to where the muscle is back at rest, the letting go after the tone and
+its tails included. It is worked out with the editor's own rule, free recordings
+too: what is seen here is what the editor will propose when it opens.
+
 **Event markers**
 - **Auto-onset**, visible in all three practicals: a contraction's onset is marked
   when the envelope crosses a **threshold** equal to rest plus *k* times its noise;
@@ -464,7 +471,8 @@ which one you are on and what it asks for, and the box's «?» repeats them.
 1. **Sensitivity** (k), above the plot, with a **counter** beside it: marked /
    expected of each kind. The expected numbers come from the practical — 6
    flexions, 6 extensions and 1 grip in the pair; in kinematics, one per lift
-   the wizard marked; none in the single-muscle practical — and can be edited.
+   the wizard marked; in the gradation, one per step; none in the
+   single-muscle practical — and can be edited.
    The pair opens on k = 4.4 and the others on 3.0; the k used goes into the
    report and the CSV. Each proposed row holds the whole contraction, from
    where the envelope leaves rest — the dotted «rest» line, drawn where half the
@@ -473,8 +481,16 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    single-muscle practical a row ends only where the muscle is back at rest**:
    the envelope down to the baseline plus 5 % of its peak's height, and there
    for at least 1 s («A fragment ends after a rest of (s)», in the fine
-   adjustment). A gradation's step, with its brief peak at the start, is one
-   row; in the pair, whose six contractions in a row rest less than a second
+   adjustment). That 5 % separates one contraction from the next, but the row
+   does not end there: it runs on while the envelope is over the dotted
+   «rest» line and takes every **tail** — a stretch over that line of at
+   least 0.5 s, what the editor would draw dotted — that starts less than
+   1 s after it, to where the envelope is back at rest for a second. So the
+   letting go after the tone is in, which on a strong step is far below 5 %
+   of its peak. A gradation's step, with its brief peak at the start, is one
+   row, and a gradation is proposed **one row per step**: what the muscle
+   does outside the steps, such as a jerk at the start of the recording, is
+   left dotted, a click away. In the pair, whose six contractions in a row rest less than a second
    between them, the cut is at the valleys between them. Every row **starts
    0.5 s before** its contraction leaves that rest, the same lead for all and
    never over the row before; so do the row proposed for the train and the

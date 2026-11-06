@@ -38,7 +38,9 @@ __all__ = [
     "fit_rows",
     "fit_to_envelope",
     "one_per_lift",
+    "one_per_step",
     "read_channels",
+    "recording_proposal",
     "rest_level",
     "span_within",
     "suggest_fragments",
@@ -60,6 +62,12 @@ _UNION_S = 0.1
 #: — «rest» being the dotted line half the sensitivity draws, the one the
 #: candidates are found with. See fit_to_envelope.
 _BORDE_MARGEN_S = 0.05
+#: Where fragments end only at rest, a stretch over the dotted rest line at
+#: least this long, starting less than :data:`emgteach.selection.REST_MIN_S`
+#: after a row's end, is that row's tail: the letting go after the cue, and
+#: what the editor drew dotted beside the row (Ángel's gradation of
+#: 6 November 2026). The shortest stretch the editor draws dotted.
+_COLITA_MIN_S = 0.5
 
 
 def default_detection(k: float | None = None,
@@ -249,6 +257,16 @@ def fit_to_envelope(
     contraction leaves it, the same for every row: on the noise of a
     lower line, a step began half a second before its flank and the next
     on it (the bench with exe #143).
+
+    That share of the peak still separates two contractions, but it is not
+    where the row ends: from there the row runs on while the envelope stays
+    over the dotted rest line, and takes every tail over that line of at
+    least :data:`_COLITA_MIN_S` that starts less than
+    :data:`emgteach.selection.REST_MIN_S` after it — to where the envelope
+    is back at rest for a second (:func:`_hasta_el_reposo`). On a strong
+    step 5 % of the peak is many times the rest: the letting go after the
+    cue and its tail were left out, drawn dotted beside the row (Ángel's
+    gradation of 6 November 2026).
     """
     if not filas:
         return filas
@@ -257,6 +275,8 @@ def fit_to_envelope(
     k = detection["k"]
     fraccion = float(detection.get("rest_fraction", 0.0))
     minimo = max(1, round(detection["min_duration_s"] * fs))
+    colita = max(1, round(_COLITA_MIN_S * fs))
+    quieto = max(1, round(REST_MIN_S * fs))
     canales = []
     for env in envs:
         tramo = np.asarray(env[i0:i1], dtype=np.float64)
@@ -276,6 +296,7 @@ def fit_to_envelope(
         for env, base, umbral, reposo in ([] if f.reason == "marker" else canales):
             if j1 <= j0:
                 break
+            linea = reposo                 # the dotted line, whatever rule ends the row
             pico = j0 + int(np.argmax(env[j0:j1]))
             if env[pico] <= umbral:
                 continue
@@ -296,6 +317,8 @@ def fit_to_envelope(
             der = pico
             while der < hi and env[der + 1] > reposo:
                 der += 1
+            if fraccion > 0.0:
+                der = _hasta_el_reposo(env, der, hi, linea, colita, quieto)
             ini = izq if ini is None else min(ini, izq)
             fin = der if fin is None else max(fin, der)
         if ini is None or fin is None:
@@ -305,6 +328,35 @@ def fit_to_envelope(
         b = min(despues, (fin + 1) / fs + _BORDE_MARGEN_S)
         salida.append(Segment(a, b, f.score, f.reason, f.label) if b > a else f)
     return to_hundredths(salida)
+
+
+def _hasta_el_reposo(env: np.ndarray, der: int, hi: int, linea: float,
+                     colita: int, quieto: int) -> int:
+    """Where a row that ends at sample *der* is back at rest for good, never
+    past *hi*.
+
+    First the fall the row was cut on, for as long as it stays over the
+    dotted rest line *linea*; then every tail — a stretch over that line of
+    at least *colita* samples — that starts less than *quieto* samples after
+    what has been kept so far. The row ends where the last of them falls
+    back, with *quieto* samples at rest after it, or at *hi*.
+    """
+    if der >= hi:
+        return der
+    sobre = np.asarray(env[der + 1:hi + 1]) > linea
+    if not sobre.size:
+        return der
+    bordes = np.flatnonzero(np.diff(np.r_[0, sobre.astype(np.int8), 0]))
+    fin = 0                                # past the last sample kept, from der + 1
+    for a, b in zip(bordes[::2], bordes[1::2], strict=True):
+        if a == 0:                         # the fall, still over the line
+            fin = int(b)
+            continue
+        if a - fin >= quieto:
+            break
+        if b - a >= colita:
+            fin = int(b)
+    return der + fin
 
 
 def one_per_lift(
@@ -365,6 +417,48 @@ def one_per_lift(
     return to_hundredths(filas)
 
 
+def one_per_step(
+    detectadas: list[Segment],
+    steps: Sequence[tuple[float, float]],
+    envs: Sequence[np.ndarray],
+    fs: float,
+    span: tuple[float, float],
+    detection: Mapping[str, float],
+) -> list[Segment]:
+    """One row per step of a gradation, and nothing else.
+
+    *steps* are the steps' windows in file time, from the mark that opens
+    each to where its contraction may still be letting go
+    (:func:`emgteach.guided.step_windows`). A step takes the detected row
+    that overlaps its window — from ``_ANTICIPO_S`` before its mark — the
+    most, with any other row not yet taken that starts inside it; a step
+    the detector found nothing in is proposed as its window, to be looked
+    at. What falls outside every step stays a candidate, a click away: on
+    the bench of 6 November 2026 a jerk at the start of the recording was
+    a sixth row for five steps. Each row is then fitted to its contraction
+    (:func:`fit_to_envelope`), out to rest.
+    """
+    tomadas: set[int] = set()
+    elegidas: list[Segment] = []
+    for a_marca, b in steps:
+        a = a_marca - _ANTICIPO_S
+        solape = [(min(b, f.end_s) - max(a, f.start_s), j)
+                  for j, f in enumerate(detectadas) if j not in tomadas]
+        solape = [(s, j) for s, j in solape if s > 0.0]
+        if not solape:
+            elegidas.append(Segment(a_marca, b, reason="marker"))
+            continue
+        _s, j = max(solape)
+        suyas = [j] + [k for k, f in enumerate(detectadas)
+                       if k not in tomadas and k != j and a <= f.start_s < b]
+        tomadas.update(suyas)
+        f = detectadas[j]
+        elegidas.append(Segment(min(detectadas[k].start_s for k in suyas),
+                                max(detectadas[k].end_s for k in suyas),
+                                f.score, f.reason, f.label))
+    return fit_to_envelope(elegidas, envs, fs, span, detection)
+
+
 def fit_rows(
     detectadas: list[Segment],
     lifts: Sequence[tuple[float, float]],
@@ -372,11 +466,15 @@ def fit_rows(
     fs: float,
     span: tuple[float, float],
     detection: Mapping[str, float],
+    steps: Sequence[tuple[float, float]] = (),
 ) -> list[Segment]:
     """The detector's rows as the editor proposes them: one per lift when the
-    recording has the wizard's lifts, each widened to its contraction when not."""
+    recording has the wizard's lifts, one per step when it has a gradation,
+    each widened to its contraction when neither."""
     if lifts:
         return one_per_lift(detectadas, lifts, envs, fs, span, detection)
+    if steps:
+        return one_per_step(detectadas, steps, envs, fs, span, detection)
     return fit_to_envelope(detectadas, envs, fs, span, detection)
 
 
@@ -391,6 +489,7 @@ def suggest_fragments(
     default_k: float | None = None,
     lifts: Sequence[tuple[float, float]] | None = None,
     rest_fraction: float = 0.0,
+    steps: Sequence[tuple[float, float]] | None = None,
 ) -> list[Segment]:
     """The fragments the editor proposes when it opens, without its names.
 
@@ -408,4 +507,54 @@ def suggest_fragments(
                         envelope(raw_2, fs, filter_kwargs)) if e is not None]
     filas = detect(raw, fs, filter_kwargs, det, det["k"], tramo, raw_2)
     return fit_rows(filas, [(float(a), float(b)) for a, b in (lifts or ())],
-                    envs, fs, tramo, det)
+                    envs, fs, tramo, det,
+                    [(float(a), float(b)) for a, b in (steps or ())])
+
+
+def recording_proposal(
+    edf_path: str,
+    *,
+    k: float | None = None,
+    rest_fraction: float = 0.0,
+    filter_kwargs: Mapping[str, float] | None = None,
+) -> list[Segment]:
+    """What the fragment editor proposes when it opens on *edf_path*, in the
+    file's clock, read from the file alone.
+
+    The same rules the analysis tab hands the editor: the recording phase as
+    the span; a fixed load or a train of quick contractions as the one row
+    its analysis reads (:func:`emgteach.guided.load_row`,
+    :func:`emgteach.guided.train_span`); one row per lift the wizard marked,
+    or per step of a gradation; otherwise what the detector finds, at the
+    practical's ``k`` and ``rest_fraction``. On the file's first two EMG
+    channels. The review of a recording draws these, so what it shows is
+    what the editor will propose (Ángel, 6 November 2026).
+    """
+    from emgteach.force_velocity import lift_windows_s, parse_fv_load_markers
+    from emgteach.guided import load_row, step_windows, train_span
+    from emgteach.io import edf_duration, list_edf_emg_channels, read_edf_markers
+    from emgteach.phases import parse_phase_markers
+    from emgteach.sessions import parse_session_markers
+
+    nombres = list_edf_emg_channels(edf_path)
+    if not nombres:
+        return []
+    marcas = read_edf_markers(edf_path)
+    duracion = edf_duration(edf_path)
+    cargas = parse_fv_load_markers(marcas)
+    span = parse_phase_markers(marcas).rec_span(duracion, cargas)
+    raw, fs, raw_2 = read_channels(edf_path, nombres[0],
+                                   nombres[1] if len(nombres) > 1 else None)
+    filtros = filters(filter_kwargs or {})
+    sesion = parse_session_markers(marcas)
+    if sesion is not None:
+        env = envelope(raw, fs, filtros)
+        ventana = load_row(sesion, env, fs) or train_span(sesion, env, fs)
+        if ventana is not None:
+            return [Segment(float(ventana[0]), float(ventana[1]), reason="session")]
+    filas = suggest_fragments(
+        raw, fs, filtros, span=span, raw_2=raw_2, default_k=k,
+        lifts=lift_windows_s(cargas, duracion) if cargas else None,
+        rest_fraction=rest_fraction, steps=step_windows(sesion),
+    )
+    return [f for f in filas if f.reason != "whole"]

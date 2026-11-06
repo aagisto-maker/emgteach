@@ -303,6 +303,7 @@ from emgteach.guided import (
     fatigue_unmeasured,
     gradation_reference_text,
     is_monotonic,
+    step_windows,
     weak_signal_warning,
 )
 from emgteach.i18n import tr
@@ -342,6 +343,7 @@ from emgteach.phases import (
 )
 from emgteach.profiles import EMG_PROFILE
 from emgteach.reports import build_session_report
+from emgteach.sessions import parse_session_markers
 from emgteach.tuning import DERIVED_PREFIX, build_tuned_edf, tuned_path
 from emgteach.workers import AnalysisWorker
 
@@ -1470,6 +1472,10 @@ class AnalysisTab(QWidget):
                 # whatever the detector found: a lift before the first cue
                 # or after the last one is not one the study asked for.
                 lifts=self._levantamientos_marcados(path),
+                # And one per step of a gradation, so a jerk outside the
+                # steps is not a sixth row for five (the bench of
+                # 6 November 2026).
+                steps=self._escalones_marcados(path),
                 # A fixed load or a train is proposed as the one window its
                 # analysis reads, not as the detector's pieces (the final
                 # bench, B3; the bench with exe #139, B2).
@@ -1605,7 +1611,8 @@ class AnalysisTab(QWidget):
 
     def _esperadas_de_la_sesion(self, path: str) -> tuple[int, ...]:
         """How many contractions the session asked for: the pair's protocol,
-        or in kinematics one per lift the guided wizard marked.
+        in kinematics one per lift the guided wizard marked, and in a
+        gradation one per step.
 
         The wizard's load markers are the record of what was asked, so the
         count comes from the recording, not from a setting that may have
@@ -1618,7 +1625,20 @@ class AnalysisTab(QWidget):
                 cargas = []
             if cargas:
                 return (len(cargas),)
+        escalones = self._escalones_marcados(path)
+        if escalones:
+            return (len(escalones),)
         return mode_expected_contractions(self._mode)
+
+    def _escalones_marcados(self, path: str) -> list[tuple[float, float]]:
+        """A gradation's step windows in the file (guided.step_windows), or none.
+
+        From the annotations alone, like the lifts.
+        """
+        try:
+            return step_windows(parse_session_markers(read_edf_markers(path)))
+        except Exception:
+            return []
 
     def _levantamientos_marcados(self, path: str) -> list[tuple[float, float]]:
         """The guided wizard's lift windows in the file, or none.

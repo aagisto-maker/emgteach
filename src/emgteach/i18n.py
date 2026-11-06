@@ -1811,6 +1811,8 @@ _ES = {
         "flujo guiado, que calibra sin parar el registro.",
     'The recording could not be shown for review: {err}': 'No se pudo mostrar el registro para revisarlo: {err}',
     'Recording just finished (review)': 'Registro recién terminado (revisión)',
+    'The bar under the traces marks each contraction the fragment editor will propose, from where it starts to where the muscle is back at rest.': "La barra bajo las señales marca cada contracción que propondrá el editor "
+        "de fragmentos, desde que empieza hasta que el músculo vuelve al reposo.",
     'Envelope of the recording (review)': 'Envolvente del registro (revisión)',
     'Reviewing the recording: {dur:.1f} s. Drag to scroll, wheel to zoom. It goes back to live on the next recording.': "Revisando el registro: {dur:.1f} s. Arrastre para desplazarse y use "
         "la rueda para acercar. Vuelve a la vista en vivo con el siguiente "
