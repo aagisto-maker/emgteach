@@ -120,7 +120,7 @@ class TestTheCalibrationIsDelimitedInTheFile:
         tab._worker = None
         tab._mvc_muscle = 0
         tab._mvc_rep = 0
-        tab._write_phase_marker("CAL start ch=1 rep=1")   # must not raise
+        tab._escenario.write_phase_marker("CAL start ch=1 rep=1")   # must not raise
 
     def test_the_labels_are_the_ones_the_reader_parses(self, tab) -> None:
         """The whole point. Times are synthesised here — the worker stamps them
