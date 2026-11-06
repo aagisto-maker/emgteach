@@ -32,6 +32,8 @@ from __future__ import annotations
 
 import json
 import secrets
+import socket
+from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import parse_qs
 
@@ -39,7 +41,13 @@ from PySide6.QtCore import QObject, QUrlQuery, Signal
 from PySide6.QtNetwork import QHostAddress, QNetworkInterface, QTcpServer
 from PySide6.QtWebSockets import QWebSocketProtocol, QWebSocketServer
 
-from emgteach.difusion import DEFAULT_DATA_PORT, DEFAULT_PAGE_PORT
+from emgteach.difusion import (
+    DEFAULT_DATA_PORT,
+    DEFAULT_PAGE_PORT,
+    PORTS_FILE,
+    read_broadcast_address,
+)
+from emgteach.i18n import tr
 
 # Default ports for the classroom broadcast (HTTP page + WebSocket data); a
 # laboratory changes them in difusion.txt next to the application.
@@ -57,13 +65,65 @@ def _load_dashboard_html() -> bytes:
         return b"<!doctype html><meta charset=utf-8><p>Dashboard not found.</p>"
 
 
-def lan_ipv4() -> str:
-    """Best-guess LAN IPv4 address of this machine (for the follower URL).
+#: Words in an interface's name that make it a virtual adapter: Hyper-V,
+#: WSL and Docker («vEthernet (…)»), VirtualBox, VMware, the VPN clients and
+#: overlay networks, Npcap and Bluetooth. Such an adapter is up and running
+#: whether or not anything is behind it, and its address is on a network the
+#: phones are not on: on a laboratory PC with WSL installed, the link carried
+#: a 172.x address and no phone could load the page (November 2026).
+_VIRTUAL_WORDS = (
+    "vethernet", "hyper-v", "wsl", "virtualbox", "vmware", "vmnet", "docker",
+    "tap", "tun", "wintun", "wireguard", "vpn", "forti", "anyconnect",
+    "globalprotect", "pangp", "tailscale", "zerotier", "npcap", "bluetooth",
+    "loopback",
+)
 
-    Returns the first non-loopback, non-link-local IPv4 of an up, running
-    interface, or ``127.0.0.1`` when none is found.
+#: The network Windows' mobile hotspot gives the phones it shares this
+#: computer's connection with: what the application itself advises when
+#: there is no network the phones and the computer share.
+HOTSPOT_PREFIX = "192.168.137."
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """An IPv4 address of this computer the phones might reach it by."""
+
+    ip: str
+    interface: str
+    virtual: bool = False
+
+
+@dataclass
+class AddressChoice:
+    """Which address the follower link carries, and why.
+
+    ``reason`` is one of ``"fixed_ip"``, ``"fixed_interface"``, ``"hotspot"``,
+    ``"route"``, ``"first_real"``, ``"virtual"`` or ``"none"``. ``route`` is
+    the address the default route leaves by, when there is one; ``notes``
+    are what the event log must also say (a fixed address or interface that
+    is not on this computer now).
     """
-    best = "127.0.0.1"
+
+    ip: str
+    reason: str
+    candidates: list[Candidate]
+    route: str | None = None
+    notes: list[str] = field(default_factory=list)
+
+
+def _looks_virtual(name: str) -> bool:
+    nombre = name.lower()
+    return any(w in nombre for w in _VIRTUAL_WORDS)
+
+
+def ipv4_candidates() -> list[Candidate]:
+    """Every IPv4 of an up, running, non-loopback interface, in the system's order.
+
+    Loopback (127.x) and link-local (169.254.x) addresses are left out: the
+    first is the phone itself when typed on a phone, the second is what an
+    interface gives itself when no network answered.
+    """
+    out: list[Candidate] = []
     for iface in QNetworkInterface.allInterfaces():
         flags = iface.flags()
         if not (flags & QNetworkInterface.InterfaceFlag.IsUp):
@@ -72,14 +132,148 @@ def lan_ipv4() -> str:
             continue
         if flags & QNetworkInterface.InterfaceFlag.IsLoopBack:
             continue
+        nombre = iface.humanReadableName() or iface.name()
+        virtual = (iface.type() == QNetworkInterface.InterfaceType.Virtual
+                   or _looks_virtual(nombre))
         for entry in iface.addressEntries():
             s = entry.ip().toString()
             if ":" in s:                       # skip IPv6
                 continue
             if s.startswith("127.") or s.startswith("169.254."):
                 continue
-            return s
-    return best
+            out.append(Candidate(s, nombre, virtual))
+    return out
+
+
+def default_route_ipv4() -> str | None:
+    """The address this computer's default route leaves by, or ``None``.
+
+    A UDP socket «connected» to an outside address makes the system pick the
+    route and the local address for it, and nothing is sent: connecting a
+    datagram socket only records where it would send. Without a default
+    route the connect fails, and there is no answer.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 53))
+            ip = s.getsockname()[0]
+    except OSError:
+        return None
+    return ip if ip and not ip.startswith(("0.", "127.")) else None
+
+
+def choose_ipv4(candidates: list[Candidate], route: str | None,
+                fixed_ip: str | None = None,
+                fixed_interface: str | None = None) -> AddressChoice:
+    """Which of *candidates* the follower link should carry.
+
+    In order: the address fixed in difusion.txt, if it is on this computer
+    now; the address of the interface fixed there; the mobile hotspot's,
+    because that is the network the application sends the phones to when
+    there is no other; the one the default route leaves by, unless it is a
+    virtual adapter's (a VPN that takes all the traffic); the first that is
+    not virtual; a virtual one as the last resort; and with none at all,
+    ``127.0.0.1``, which :func:`hay_red_utilizable` reads as no network.
+    """
+    notes: list[str] = []
+    por_ip = {c.ip: c for c in candidates}
+
+    def elige(c: Candidate, reason: str) -> AddressChoice:
+        return AddressChoice(c.ip, reason, list(candidates), route, notes)
+
+    if fixed_ip:
+        if fixed_ip in por_ip:
+            return elige(por_ip[fixed_ip], "fixed_ip")
+        notes.append(tr(
+            "The address {ip} fixed in {file} is not on this computer now; "
+            "another one is chosen.").format(ip=fixed_ip, file=PORTS_FILE))
+    if fixed_interface:
+        de_esa = [c for c in candidates
+                  if c.interface.casefold() == fixed_interface.casefold()]
+        if de_esa:
+            return elige(de_esa[0], "fixed_interface")
+        notes.append(tr(
+            "The interface «{iface}» fixed in {file} has no IPv4 address on "
+            "this computer now; another one is chosen.").format(
+                iface=fixed_interface, file=PORTS_FILE))
+    hotspot = [c for c in candidates if c.ip.startswith(HOTSPOT_PREFIX)]
+    if hotspot:
+        return elige(hotspot[0], "hotspot")
+    if route in por_ip and not por_ip[route].virtual:
+        return elige(por_ip[route], "route")
+    reales = [c for c in candidates if not c.virtual]
+    if reales:
+        return elige(reales[0], "first_real")
+    if candidates:
+        return elige(candidates[0], "virtual")
+    return AddressChoice("127.0.0.1", "none", [], route, notes)
+
+
+def current_address_choice(folder: Path | None = None) -> AddressChoice:
+    """The choice for this computer as it is now, with difusion.txt's say."""
+    fixed_ip, fixed_interface = read_broadcast_address(folder)
+    return choose_ipv4(ipv4_candidates(), default_route_ipv4(),
+                       fixed_ip, fixed_interface)
+
+
+def address_report(choice: AddressChoice) -> list[str]:
+    """The event log's lines: every candidate, and which one and why.
+
+    Written when the broadcast starts, so that a laboratory PC whose phones
+    cannot load the page says, where the operator reads, which addresses it
+    had and which one it gave them.
+    """
+    def nombre(c: Candidate) -> str:
+        return (tr("{iface}, virtual").format(iface=c.interface) if c.virtual
+                else c.interface)
+
+    if not choice.candidates:
+        return [*choice.notes, tr("Broadcast: this computer has no IPv4 address "
+                                  "the phones could reach.")]
+    lista = "; ".join(f"{c.ip} ({nombre(c)})" for c in choice.candidates)
+    lineas = [tr("Broadcast addresses of this computer: {list}.").format(list=lista)]
+    lineas += choice.notes
+    elegida = next(c for c in choice.candidates if c.ip == choice.ip)
+    por_ruta = next((c for c in choice.candidates if c.ip == choice.route), None)
+    if choice.reason == "fixed_ip":
+        lineas.append(tr("Chosen: {ip}, fixed in {file}.").format(
+            ip=choice.ip, file=PORTS_FILE))
+    elif choice.reason == "fixed_interface":
+        lineas.append(tr("Chosen: {ip}, of the interface «{iface}» fixed in {file}.")
+                      .format(ip=choice.ip, iface=elegida.interface, file=PORTS_FILE))
+    elif choice.reason == "hotspot":
+        if por_ruta is not None and por_ruta.ip != choice.ip:
+            ruta = tr("the default route goes through {iface} ({ip})").format(
+                iface=por_ruta.interface, ip=por_ruta.ip)
+        elif choice.route:
+            ruta = tr("the default route goes through {ip}").format(ip=choice.route)
+        else:
+            ruta = tr("there is no default route")
+        lineas.append(tr(
+            "Chosen: the mobile hotspot, {ip}; {route}. If the phones are "
+            "not on the hotspot, fix the address in {file}.").format(
+                ip=choice.ip, route=ruta, file=PORTS_FILE))
+    elif choice.reason == "route":
+        lineas.append(tr("Chosen: {ip} ({iface}), the one the default route "
+                         "goes through.").format(ip=choice.ip, iface=elegida.interface))
+    elif choice.reason == "first_real":
+        lineas.append(tr("Chosen: {ip} ({iface}), the first that is not a "
+                         "virtual adapter.").format(ip=choice.ip, iface=elegida.interface))
+    else:
+        lineas.append(tr("Chosen: {ip} ({iface}); every address is a virtual "
+                         "adapter's, and the phones may not reach it.").format(
+                             ip=choice.ip, iface=elegida.interface))
+    return lineas
+
+
+def lan_ipv4() -> str:
+    """The IPv4 address the follower link carries (see :func:`choose_ipv4`).
+
+    It used to be the first address of the first interface the system
+    listed, and on a PC with a virtual adapter — WSL, VirtualBox, a VPN — that
+    was the adapter's, on a network no phone was on.
+    """
+    return current_address_choice().ip
 
 
 def hay_red_utilizable() -> bool:
@@ -299,6 +493,10 @@ class BroadcastServer(QObject):
 
     def client_count(self) -> int:
         return len(self._clients)
+
+    def address_choice(self) -> AddressChoice:
+        """Which address of this computer the follower link carries, and why."""
+        return current_address_choice()
 
     def follower_url(self) -> str:
         """URL students open in their browser to follow *this* session.

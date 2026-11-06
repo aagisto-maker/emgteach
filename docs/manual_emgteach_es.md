@@ -769,6 +769,20 @@ sirve la práctica, no un ajuste fino.
   `datos = 8443`). Si otro programa ocupa uno, el aviso dice cuál; si la página carga
   en los móviles pero se queda en «conectando…» sin datos, la red deja pasar la página
   y corta los datos, y conviene probar otro puerto de datos en `difusion.txt`.
+- **Qué dirección lleva el enlace.** Un PC suele tener varias direcciones: el cable,
+  la Wi‑Fi, el punto de acceso móvil de Windows y adaptadores virtuales (WSL,
+  VirtualBox, VMware, una VPN) en redes donde no hay ningún móvil. La aplicación
+  elige, por este orden: el **punto de acceso móvil** si está encendido (los móviles
+  se conectan a él); si no, la dirección por la que sale la **ruta por defecto**,
+  salvo que sea de un adaptador virtual; si no, la primera que no sea virtual. Al
+  activar la difusión, el registro de eventos lista todas las direcciones con su
+  interfaz y dice cuál se eligió y por qué; si gana el punto de acceso, dice también
+  por dónde va la ruta por defecto, para notar el caso de un punto de acceso
+  encendido con los móviles en otra red. Si la elegida no es la buena, se fija en el
+  `difusion.txt` de **ese** puesto con `interfaz = Ethernet` (el nombre que da
+  Windows; sirve aunque la IP cambie por DHCP) o con `ip = 192.168.1.20`. Si se dan
+  las dos, manda la IP si está en el PC en ese momento, y si no, la interfaz; si
+  ninguna está, el registro lo dice y se elige como siempre.
 
 **Qué ven los seguidores** (página de solo lectura):
 - La **envolvente** de cada canal en tiempo real y la **barra de % CVM** con sus

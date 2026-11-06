@@ -49,6 +49,12 @@ class _Servidor(QObject):
     def follower_url(self) -> str:
         return "http://10.0.0.5:8080/?k=abc"
 
+    def address_choice(self):
+        from emgteach.broadcast import AddressChoice, Candidate
+
+        return AddressChoice("10.0.0.5", "route",
+                             [Candidate("10.0.0.5", "Ethernet")], route="10.0.0.5")
+
     def client_count(self) -> int:
         return self._clientes
 
@@ -81,6 +87,9 @@ def test_turning_it_on_offers_the_link_and_asks_the_tab_for_the_config(caja) -> 
     assert box._btn_qr.isEnabled()
     assert box.arranques == [True]
     assert any("follow at" in line for line in box.registro)
+    # And every address this computer has, with the one the link carries.
+    assert any("10.0.0.5 (Ethernet)" in line for line in box.registro)
+    assert any("default route" in line for line in box.registro)
     # Nobody has joined: the warning is armed, for a minute and a half.
     assert box._timer_sin_seguidores is not None and box._timer_sin_seguidores.isActive()
     assert box._timer_sin_seguidores.interval() == ESPERA_SEGUIDORES_MS
