@@ -119,19 +119,18 @@ class TestItMatchesTheRealWizard:
                 # bar comes from here, as it does in the tab.
                 self._carga_inst = [0.0, 0.0]
                 self._mvc_overlay = Overlay()
+                # Collaborators the state machine talks to and this test does
+                # not: what the simulated subject is asked for goes to a board
+                # that is not here, and the optional tone at each phase change
+                # (25 Oct 2026) to a sound card that is not here either. They
+                # are the stage's (gui/acquisition/stage.py), which answers
+                # everything with nothing here, as the overlay does.
+                self._escenario = Overlay()
                 self.seen: list[tuple[str, float]] = []
 
             def _fv_info(self, text): pass
 
-            # Collaborators the state machine talks to and this test does
-            # not: what the simulated subject is asked for goes to a board
-            # that is not here.
-            def _pedir_al_sujeto(self, *a, **k): pass
-            def _soltar_al_sujeto(self, *a, **k): pass
             def _fv_compute_mvc(self): pass
-            # The optional tone at each phase change (25 Oct 2026): a sound
-            # card is not here either.
-            def _tono(self, *a, **k): pass
 
             def _fv_begin_contract(self, kg):
                 self._fv_phase = "contract"
