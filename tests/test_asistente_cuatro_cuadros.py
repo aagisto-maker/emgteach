@@ -136,8 +136,8 @@ class TestTheMapIsFilledAsItGoes:
         adq._n_channels = 2
         adq._mvc_reps = 3
         adq._guia_mapa("cal")
-        monkeypatch.setattr(adq, "_write_phase_marker", lambda *_a: None)
-        monkeypatch.setattr(adq, "_instruct_device", lambda *_a, **_k: None)
+        monkeypatch.setattr(adq._escenario, "write_phase_marker", lambda *_a: None)
+        monkeypatch.setattr(adq._escenario, "instruct_device", lambda *_a, **_k: None)
         monkeypatch.setattr(adq, "_mvc_compute_muscle", lambda *_a: None)
         adq._mvc_muscle, adq._mvc_rep = 0, 0
         adq._mvc_cur_buf, adq._mvc_cross_buf = [1.0], {}
@@ -557,8 +557,8 @@ class TestWhatTheRehearsalFound:
             adq._mvc_tick()                       # se acaba el calentamiento
             assert adq._mvc_phase == "ready"
             assert adq._mvc_overlay.steps_done() == [], "la cuenta atrás"
-            monkeypatch.setattr(adq, "_write_phase_marker", lambda *_a: None)
-            monkeypatch.setattr(adq, "_instruct_device", lambda *_a, **_k: None)
+            monkeypatch.setattr(adq._escenario, "write_phase_marker", lambda *_a: None)
+            monkeypatch.setattr(adq._escenario, "instruct_device", lambda *_a, **_k: None)
             monkeypatch.setattr(adq, "_mvc_compute_muscle", lambda *_a: None)
             adq._mvc_muscle, adq._mvc_rep = 0, 0
             adq._mvc_cur_buf, adq._mvc_cross_buf = [1.0], {}
@@ -590,7 +590,7 @@ class TestWhatTheRehearsalFound:
         seis y el segundo los seis: el segundo se había pasado el turno del
         primero en reposo, de modo que su línea base era de verdad."""
         pedidos = []
-        adq._instruct_device = lambda c, lv, **k: pedidos.append(
+        adq._escenario.instruct_device = lambda c, lv, **k: pedidos.append(
             (c, lv, k.get("repeat_s")))
         adq._n_channels = 2
         adq._guia_maniobras(0)
@@ -605,7 +605,7 @@ class TestWhatTheRehearsalFound:
         self, adq
     ) -> None:
         pedidos = []
-        adq._instruct_device = lambda c, lv, **k: pedidos.append((c, lv))
+        adq._escenario.instruct_device = lambda c, lv, **k: pedidos.append((c, lv))
         adq._n_channels = 2
         adq._guia_maniobras(0)
         adq._guia_fase = ""
@@ -618,7 +618,7 @@ class TestWhatTheRehearsalFound:
         músculo, el otro forzado a reposo— no se podía pedir, y un ensayo se
         quedaba sin presa ninguna en el registro."""
         pedidos = []
-        adq._instruct_device = lambda c, lv, **k: pedidos.append((c, lv))
+        adq._escenario.instruct_device = lambda c, lv, **k: pedidos.append((c, lv))
         adq._n_channels = 2
         adq._guia_coactivacion()
         adq._coact_fase = "ready"
