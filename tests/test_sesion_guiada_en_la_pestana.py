@@ -343,16 +343,16 @@ def test_stopping_the_recording_stops_the_session_with_its_mark(
 def test_the_review_shades_what_the_session_measured(qapp, tab, tmp_path: Path) -> None:
     import pyqtgraph as pg
 
-    from emgteach.gui.tabs.acquisition import GUIDED
+    from emgteach.gui.acquisition.plots import GUIDED
 
     _choose(tab, "prueba")
     _record(qapp, tab, tmp_path / "repaso.edf")
     _until(qapp, lambda: not tab.is_recording(), CUENTA_S + 5 * FASE_S + 10.0,
            "the session to end")
-    _until(qapp, lambda: bool(tab._revision_items), 5.0, "the review")
-    color = tab._COLORES_FASE[GUIDED]
-    sombras = [it for pw, it in tab._revision_items
-               if pw is tab._plot_env and isinstance(it, pg.LinearRegionItem)
+    _until(qapp, lambda: bool(tab._trazado._revision_items), 5.0, "the review")
+    color = tab._trazado._COLORES_FASE[GUIDED]
+    sombras = [it for pw, it in tab._trazado._revision_items
+               if pw is tab._trazado._plot_env and isinstance(it, pg.LinearRegionItem)
                and it.brush.color().getRgb() == color]
     assert len(sombras) == 2
 

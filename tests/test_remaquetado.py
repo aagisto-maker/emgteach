@@ -276,8 +276,8 @@ class TestWhatTheSecondBenchSessionShowed:
         adq.apply_mode(MODE_PAIR, advanced=False)
         qapp.processEvents()
         assert adq._active_labels() == ["FCR", "ECR"]
-        assert "FCR" in adq._lbl_legend.text()
-        assert tr("Muscle") not in adq._lbl_legend.text()
+        assert "FCR" in adq._trazado._lbl_legend.text()
+        assert tr("Muscle") not in adq._trazado._lbl_legend.text()
 
     def test_the_next_step_waits_for_the_analysis_tab(self, main_window, qapp) -> None:
         """The recording is analysed as soon as it is opened, which happens

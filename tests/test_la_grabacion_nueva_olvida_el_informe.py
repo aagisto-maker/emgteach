@@ -83,7 +83,7 @@ def test_a_follower_never_gets_the_last_recordings_report(qapp, tmp_path, monkey
         tab.next_path = tmp_path / "b.edf"
         tab._btn_grabar.setChecked(True)
         tab._toggle_grabacion()
-        _until(qapp, lambda: tab._worker is not None and tab._total_samples > 300,
+        _until(qapp, lambda: tab._worker is not None and tab._trazado._total_samples > 300,
                8.0, "the second recording")
         got = _joiner(srv)
         during = list(map(json.loads, got))

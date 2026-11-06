@@ -145,7 +145,7 @@ class TestTheReviewOnTheAcquisitionTab:
         to it. The span is the thing under test anyway — the live window is
         thirty seconds and the session is forty.
         """
-        x, _y = tab._curves_raw[0].getData()
+        x, _y = tab._trazado._curves_raw[0].getData()
         return 0.0 if x is None or not len(x) else float(x[-1])
 
     def test_stopping_puts_the_whole_session_on_the_plots(
@@ -154,7 +154,7 @@ class TestTheReviewOnTheAcquisitionTab:
         pytest.importorskip("mne")
         tab = self._tab(qapp)
         tab._on_finished(_sesion(tmp_path / "sesion.edf"))
-        assert tab._revisando
+        assert tab._trazado._revisando
         assert self._extension(tab) == pytest.approx(DURACION, abs=0.5)
 
     def test_the_live_refresh_does_not_paint_over_it(
@@ -167,15 +167,15 @@ class TestTheReviewOnTheAcquisitionTab:
         tab = self._tab(qapp)
         tab._on_finished(_sesion(tmp_path / "sesion.edf"))
         antes = self._extension(tab)
-        tab._new_data = True
-        tab._refresh_plots(force=True)
+        tab._trazado._new_data = True
+        tab._trazado._refresh_plots(force=True)
         assert self._extension(tab) == pytest.approx(antes)
 
     def test_the_phases_are_shaded(self, qapp, tmp_path: Path) -> None:
         pytest.importorskip("mne")
         tab = self._tab(qapp)
         tab._on_finished(_sesion(tmp_path / "sesion.edf"))
-        assert tab._revision_items
+        assert tab._trazado._revision_items
 
     def test_a_recording_without_phases_is_still_shown(
         self, qapp, tmp_path: Path
@@ -183,7 +183,7 @@ class TestTheReviewOnTheAcquisitionTab:
         pytest.importorskip("mne")
         tab = self._tab(qapp)
         tab._on_finished(_sesion(tmp_path / "vieja.edf", con_fases=False))
-        assert tab._revisando
+        assert tab._trazado._revisando
         assert self._extension(tab) == pytest.approx(DURACION, abs=0.5)
 
     def test_a_new_session_goes_back_to_the_live_view(
@@ -193,8 +193,8 @@ class TestTheReviewOnTheAcquisitionTab:
         tab = self._tab(qapp)
         tab._on_finished(_sesion(tmp_path / "sesion.edf"))
         tab.reset()
-        assert not tab._revisando
-        assert not tab._revision_items
+        assert not tab._trazado._revisando
+        assert not tab._trazado._revision_items
         assert self._extension(tab) != pytest.approx(DURACION, abs=0.5)
 
     def test_the_next_recording_gets_its_own_axis_back(
@@ -217,14 +217,14 @@ class TestTheReviewOnTheAcquisitionTab:
         # including the sample count, which the worker also advances and which
         # is now what tells a cleared tab from one with a signal on it.
         for c in range(2):
-            tab._buf_raw[c].extend(np.zeros(tab._n_visible))
-            tab._buf_env[c].extend(np.zeros(tab._n_visible))
-        tab._total_samples += tab._n_visible
-        tab._new_data = True
-        tab._refresh_plots(force=True)
+            tab._trazado._buf_raw[c].extend(np.zeros(tab._trazado._n_visible))
+            tab._trazado._buf_env[c].extend(np.zeros(tab._trazado._n_visible))
+        tab._trazado._total_samples += tab._trazado._n_visible
+        tab._trazado._new_data = True
+        tab._trazado._refresh_plots(force=True)
         qapp.processEvents()
 
-        izq, der = tab._plot_raw.getViewBox().viewRange()[0]
+        izq, der = tab._trazado._plot_raw.getViewBox().viewRange()[0]
         assert der - izq < DURACION / 2, (
             "the live window is still drawn inside the session's axis")
 
@@ -237,4 +237,4 @@ class TestTheReviewOnTheAcquisitionTab:
         roto.write_bytes(b"not an edf at all")
         tab = self._tab(qapp)
         tab._on_finished(str(roto))
-        assert not tab._revisando
+        assert not tab._trazado._revisando

@@ -20,24 +20,24 @@ pytestmark = pytest.mark.gui
 
 
 def _techo(adq) -> float:
-    return float(adq._plot_env.getViewBox().viewRange()[1][1])
+    return float(adq._trazado._plot_env.getViewBox().viewRange()[1][1])
 
 
 def _al_final(adq, valores) -> None:
     """Los valores al final del búfer: lo último que se ve, a la derecha."""
     for v in valores:
         for c in range(adq._n_channels):
-            adq._buf_env[c].append(float(v))
-    adq._total_samples += len(valores)
-    adq._new_data = True
+            adq._trazado._buf_env[c].append(float(v))
+    adq._trazado._total_samples += len(valores)
+    adq._trazado._new_data = True
 
 
 @pytest.fixture
 def adq_limpia(main_window):
     adq = main_window._tab_adq
-    adq._reset_buffers()
-    adq._reset_y_scales()
-    adq._total_samples = 0
+    adq._trazado._reset_buffers()
+    adq._trazado.reset_y_scales()
+    adq._trazado._total_samples = 0
     return adq
 
 
@@ -50,7 +50,7 @@ class TestTheLiveEnvelopeStaysInsideItsAxes:
         adq = adq_limpia
         base = _techo(adq)
         _al_final(adq, [0.0] * 50 + [base * 4] + [0.0] * 50)
-        adq._refresh_plots(force=True)
+        adq._trazado._refresh_plots(force=True)
         assert _techo(adq) >= base * 4
 
     def test_once_the_peak_has_gone_it_falls_back_to_the_base(
@@ -59,12 +59,12 @@ class TestTheLiveEnvelopeStaysInsideItsAxes:
         adq = adq_limpia
         base = _techo(adq)
         _al_final(adq, [base * 4])
-        adq._refresh_plots(force=True)
+        adq._trazado._refresh_plots(force=True)
         alto = _techo(adq)
         # El pico sale de la ventana visible.
-        _al_final(adq, [0.0] * (adq._n_visible + 10))
+        _al_final(adq, [0.0] * (adq._trazado._n_visible + 10))
         for _ in range(120):
-            adq._refresh_plots(force=True)
+            adq._trazado._refresh_plots(force=True)
         assert _techo(adq) < alto
         assert _techo(adq) == pytest.approx(base, rel=1e-6)
 
@@ -72,16 +72,16 @@ class TestTheLiveEnvelopeStaysInsideItsAxes:
         adq = adq_limpia
         base = _techo(adq)
         _al_final(adq, [base * 0.1])
-        adq._refresh_plots(force=True)
-        adq._y_zoom(1, zoom_in=False)
+        adq._trazado._refresh_plots(force=True)
+        adq._trazado._y_zoom(1, zoom_in=False)
         assert _techo(adq) == pytest.approx(base * 1.5, rel=1e-6)
 
     def test_zooming_in_cannot_cut_the_peak_off(self, adq_limpia) -> None:
         adq = adq_limpia
         base = _techo(adq)
         _al_final(adq, [base * 0.9])
-        adq._refresh_plots(force=True)
-        adq._y_zoom(1, zoom_in=True)
+        adq._trazado._refresh_plots(force=True)
+        adq._trazado._y_zoom(1, zoom_in=True)
         assert _techo(adq) >= base * 0.9
 
 

@@ -73,7 +73,7 @@ def _record(qapp, tab, path: Path, seconds: float = 0.6) -> None:
     tab._btn_grabar.setChecked(True)
     tab._toggle_grabacion()
     _until(qapp, lambda: tab._worker is not None and tab._worker.is_streaming()
-           and tab._total_samples > 300, 8.0, "the simulated signal")
+           and tab._trazado._total_samples > 300, 8.0, "the simulated signal")
     _pump(qapp, int(seconds * 1000))
     tab._btn_grabar.setChecked(False)
     tab._toggle_grabacion()
