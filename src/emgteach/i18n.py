@@ -844,6 +844,30 @@ _ES = {
     "Students open:  {url}": "Los alumnos abren:  {url}",
     "Students open:  {url}   ·   {n} following":
         "Los alumnos abren:  {url}   ·   {n} siguiendo",
+    # The address the follower link carries (broadcast.choose_ipv4).
+    "The address {ip} fixed in {file} is not on this computer now; another one is chosen.":
+        "La dirección {ip} fijada en {file} no está ahora en este PC; se elige otra.",
+    "The interface «{iface}» fixed in {file} has no IPv4 address on this computer now; another one is chosen.":
+        "La interfaz «{iface}» fijada en {file} no tiene ahora dirección IPv4 en este PC; se elige otra.",
+    "{iface}, virtual": "{iface}, virtual",
+    "Broadcast: this computer has no IPv4 address the phones could reach.":
+        "Difusión: este PC no tiene ninguna dirección IPv4 a la que puedan llegar los móviles.",
+    "Broadcast addresses of this computer: {list}.":
+        "Direcciones de este PC para la difusión: {list}.",
+    "Chosen: {ip}, fixed in {file}.": "Se elige {ip}, fijada en {file}.",
+    "Chosen: {ip}, of the interface «{iface}» fixed in {file}.":
+        "Se elige {ip}, de la interfaz «{iface}» fijada en {file}.",
+    "the default route goes through {iface} ({ip})": "la ruta por defecto va por {iface} ({ip})",
+    "the default route goes through {ip}": "la ruta por defecto va por {ip}",
+    "there is no default route": "no hay ruta por defecto",
+    "Chosen: the mobile hotspot, {ip}; {route}. If the phones are not on the hotspot, fix the address in {file}.":
+        "Se elige el punto de acceso móvil, {ip}; {route}. Si los móviles no están en el punto de acceso, fije la dirección en {file}.",
+    "Chosen: {ip} ({iface}), the one the default route goes through.":
+        "Se elige {ip} ({iface}), la de la ruta por defecto.",
+    "Chosen: {ip} ({iface}), the first that is not a virtual adapter.":
+        "Se elige {ip} ({iface}), la primera que no es de un adaptador virtual.",
+    "Chosen: {ip} ({iface}); every address is a virtual adapter's, and the phones may not reach it.":
+        "Se elige {ip} ({iface}); todas las direcciones son de adaptadores virtuales y puede que los móviles no lleguen a ella.",
     "Classroom mode on — students can follow at {url}":
         "Difusión a móviles activada — los alumnos pueden seguir en {url}",
     "Could not start classroom mode (port busy?).":

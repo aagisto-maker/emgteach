@@ -12,7 +12,21 @@ reads them from there::
     datos = 8443
 
 Without the file, the defaults are used (8080 for the page, 8443 for the
-data). The ports are the laboratory's, the same on every station; the board's
+data).
+
+The file can also say which address of the computer the phones' link
+carries, for a station where the one the application chooses is not the
+phones' network::
+
+    ip = 192.168.1.20
+    interfaz = Ethernet
+
+``ip`` fixes the address; ``interfaz`` names the interface whose address is
+used, which survives an address handed out anew by DHCP. With both, the
+address wins when it is on the computer, and the interface after it. These
+two belong to the station, not to the laboratory.
+
+The ports are the laboratory's, the same on every station; the board's
 address, which changes from one station to the next, stays in
 ``bitalino.txt`` (see :mod:`station`).
 
@@ -40,6 +54,9 @@ DEFAULT_DATA_PORT = 8443
 
 _PAGE_KEYS = ("pagina", "página")
 _DATA_KEYS = ("datos",)
+#: The station's address, or the interface to take it from (see the module).
+_IP_KEYS = ("ip",)
+_INTERFACE_KEYS = ("interfaz", "interface")
 
 
 def ports_file(folder: Path | None = None) -> Path:
@@ -76,6 +93,8 @@ def read_broadcast_ports(folder: Path | None = None) -> tuple[int, int, str | No
             continue
         name, sep, value = entry.partition("=")
         name = name.strip().lower()
+        if sep and name in _IP_KEYS + _INTERFACE_KEYS:
+            continue                       # the address's, read_broadcast_address
         port = _port(value) if sep else None
         if port is None or name not in _PAGE_KEYS + _DATA_KEYS:
             return (*defaults, line.strip())
@@ -87,3 +106,27 @@ def read_broadcast_ports(folder: Path | None = None) -> tuple[int, int, str | No
     if page == data:
         return (*defaults, last)
     return page, data, None
+
+
+def read_broadcast_address(folder: Path | None = None) -> tuple[str | None, str | None]:
+    """The address and the interface the station fixes, as written, or ``None``.
+
+    Whether that address or interface is on the computer is the broadcast's
+    to check, when it chooses; a value here is only what the file says.
+    """
+    try:
+        text = ports_file(folder).read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return None, None
+    ip = interface = None
+    for line in text.splitlines():
+        entry = line.split("#", 1)[0].strip()
+        name, sep, value = entry.partition("=")
+        name = name.strip().lower()
+        if not sep or not value.strip():
+            continue
+        if name in _IP_KEYS:
+            ip = value.strip()
+        elif name in _INTERFACE_KEYS:
+            interface = value.strip()
+    return ip, interface
