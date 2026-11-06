@@ -184,7 +184,7 @@ def test_the_tone_is_on_by_default_and_remembered(qapp, tab, tonos) -> None:
 
 
 def test_a_session_runs_marks_its_phases_and_stops_the_recording(
-    qapp, tab, tmp_path: Path, tonos, marks_as_written
+    qapp, tab, tmp_path: Path, tonos, marks_as_written, session_ticks
 ) -> None:
     path = tmp_path / "sesion.edf"
     _choose(tab, "prueba")
@@ -228,26 +228,30 @@ def test_a_session_runs_marks_its_phases_and_stops_the_recording(
     assert escritas == esperadas
     assert [m for _t, m in marcas if m in esperadas] == esperadas
 
-    # Their times, in the clock the application decides by. The countdown
-    # counts its ticks and the session reads the clock at each tick, so a
-    # phase changes when its time has come and at most a tick or two later,
-    # never sooner (a timer may fire a few milliseconds early). The file puts
-    # each mark at the samples the worker has received, and on a loaded
-    # runner that delay moved the marks of a sound session past a tight
-    # margin; in the clock it is not there. 0.05 s early and 0.3 s late
-    # leave a phase skipped or lasting twice its 0.6 s outside, either way.
+    # Their times, in the clock the session decides by. A phase changes when
+    # its time has come, never sooner: no mark is written before its moment
+    # (a timer may fire a few milliseconds early). And no phase runs past its
+    # end: the runner reports every tick with the phase it is in, so a phase
+    # longer than the script leaves ticks after its planned end. A margin on
+    # when the next mark was written could not tell that from a machine that
+    # froze the interface for a while — on CI a rest of 0.4 s ended 2.3 s
+    # after it began (Windows, Python 3.10, 5 November 2026) — which leaves no
+    # ticks at all: the first after the freeze crosses into the next phase.
+    # A phase skipped comes early; one doubled ticks on; out of order, the
+    # marks above say so.
     reloj = {m: r for m, r, _archivo in marks_as_written}
-
-    def dentro(medido: float, previsto: float, que: str) -> None:
-        assert previsto - 0.05 <= medido <= previsto + 0.3, (que, medido, previsto)
-
-    dentro(reloj["REC start"] - reloj["PREP start"], CUENTA_S, "the countdown")
     inicio = reloj[guion.header]
     for fase in fases:
-        if fase.opens and fase.closes:
-            dentro(reloj[fase.opens] - inicio, fase.start, fase.opens)
-            dentro(reloj[fase.closes] - inicio, fase.end, fase.closes)
-    dentro(reloj[end_marker(guion.family)] - inicio, 5 * FASE_S, "the session")
+        for marca, momento in ((fase.opens, fase.start), (fase.closes, fase.end)):
+            if marca:
+                assert reloj[marca] - inicio >= momento - 0.05, (marca, reloj[marca] - inicio)
+        de_mas = [round(t - inicio, 3) for t, clave in session_ticks
+                  if clave == fase.key and t - inicio > fase.end + 0.1]
+        assert not de_mas, (fase.key, fase.end, de_mas)
+    assert reloj[end_marker(guion.family)] - inicio >= 5 * FASE_S - 0.05
+    # The countdown counts its ticks rather than reading the clock: as many
+    # as its seconds, whatever the machine.
+    assert tab._prep_elapsed == pytest.approx(CUENTA_S)
 
     # A tone at the countdown, at the four announced phases (the last rest
     # only continues), then the end.

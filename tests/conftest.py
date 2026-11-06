@@ -334,6 +334,34 @@ def marks_as_written(monkeypatch):
     return written
 
 
+@pytest.fixture
+def session_ticks(monkeypatch):
+    """Every tick of every guided session's runner, as ``(clock_s, phase_key)``.
+
+    The runner reads the clock at each tick and reports the phase it is in;
+    a phase never reports a tick past its own end — that tick crosses into
+    the next one instead. So a phase that ran longer than its script says
+    leaves ticks after its planned end, while a machine that froze the
+    interface for a while only leaves fewer ticks: the first after the
+    freeze already crosses. A margin on when the next mark was written
+    cannot tell the two apart; the ticks can.
+    """
+    import time
+
+    from emgteach.gui.session_runner import SessionRunner
+
+    ticks: list[tuple[float, str]] = []
+    original = SessionRunner.__init__
+
+    def __init__(self, *args, **kwargs) -> None:
+        original(self, *args, **kwargs)
+        self.tick.connect(lambda fase, _restante, _hecho: ticks.append(
+            (time.monotonic(), fase.key)))
+
+    monkeypatch.setattr(SessionRunner, "__init__", __init__)
+    return ticks
+
+
 def pytest_terminal_summary(terminalreporter) -> None:
     """Name the tests that left windows open, closed for them by the fixture."""
     if not _WINDOWS_LEFT:
