@@ -31,7 +31,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from emgteach.broadcast import BroadcastServer, hay_red_utilizable
+from emgteach.broadcast import BroadcastServer, address_report, hay_red_utilizable
 from emgteach.difusion import PORTS_FILE
 from emgteach.i18n import tr
 
@@ -219,6 +219,11 @@ class ClassroomBox(QWidget):
                 self.logged.emit(
                     tr("Classroom mode on — students can follow at {url}").format(url=url)
                 )
+                # Every address this computer has, and which one the link
+                # carries and why: on a laboratory PC whose phones could not
+                # load the page, the link had a virtual adapter's address.
+                for linea in address_report(self._broadcast.address_choice()):
+                    self.logged.emit(linea)
                 self._btn_qr.setEnabled(True)
                 self.started.emit()
                 # A panel that stays empty on twenty phones with nothing to say

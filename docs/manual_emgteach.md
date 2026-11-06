@@ -596,6 +596,20 @@ them, the warning says which; if the page loads on the phones but stays at
 «connecting…» with no data, the network is letting the page through and cutting the
 data, and another data port is worth trying in `difusion.txt`.
 
+A computer often has several addresses: the cable, the Wi‑Fi, the Windows mobile
+hotspot, and virtual adapters (WSL, VirtualBox, VMware, a VPN) on networks no phone
+is on. The application chooses, in this order: the **mobile hotspot** if it is on
+(the phones join it); otherwise the address the **default route** goes out through,
+unless it belongs to a virtual adapter; otherwise the first one that is not virtual.
+When classroom mode is switched on, the event log lists every address with its
+interface and says which was chosen and why; if the hotspot wins, it also says where
+the default route goes, so a hotspot left on with the phones on another network is
+noticed. If the chosen one is wrong, fix it in the `difusion.txt` of **that** station
+with `interfaz = Ethernet` (the name Windows gives it; it holds when DHCP changes
+the address) or `ip = 192.168.1.20`. With both, the address wins if the computer has
+it at that moment, and the interface otherwise; if neither is there, the log says so
+and the choice is made as usual.
+
 ---
 
 ## 5. Physiological concepts and metrics (interpretation guide)
