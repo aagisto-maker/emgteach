@@ -489,7 +489,11 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    strong step is far below 5 % of its peak. What rises after the fall, a
    hump or a twitch, is not the row's: it stays dotted, a click away. A
    series of contractions with less than a second of rest between them is
-   still one row, whole. A gradation's step, with its brief peak at the start, is one
+   still one row, whole: the row runs from the first to the last contraction
+   of the series, and any peak reaching **25 % of the tallest** counts as a
+   contraction (the detector's prominence, «Split between contractions» in the fine
+   adjustment, fixed at 0.25 in this practical); a lower hump after
+   the fall does not. A gradation's step, with its brief peak at the start, is one
    row, and a gradation is proposed **one row per step**: what the muscle
    does outside the steps, such as a jerk at the start of the recording, is
    left dotted, a click away. In the pair, whose six contractions in a row rest less than a second

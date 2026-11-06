@@ -579,7 +579,11 @@ qué pide, y el «?» del cuadro los repite.
    el tono, que en un escalón fuerte queda muy por debajo del 5 % de su pico.
    Lo que sube después de la caída, una joroba o una sacudida, no es de la fila:
    queda punteado, a un clic. Una serie de contracciones con menos de un segundo
-   de reposo entre ellas sigue siendo una sola fila, entera. Un escalón de la gradación, con
+   de reposo entre ellas sigue siendo una sola fila, entera: la fila va de la
+   primera a la última contracción de la serie, y cuenta como contracción todo
+   pico que llegue al **25 % del más alto** (la prominencia del detector, «Separación entre contracciones» en el ajuste
+   fino, fija en 0.25 en esta práctica); una
+   joroba más baja tras la caída no lo es. Un escalón de la gradación, con
    su pico breve al arrancar, es una fila, y la gradación se propone **una fila
    por escalón**: lo que el músculo haga fuera de los escalones, como una
    sacudida al empezar el registro, queda punteado, a un clic. En el par, cuyas seis contracciones
