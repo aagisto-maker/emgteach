@@ -381,7 +381,7 @@ Al terminar una grabación, las gráficas muestran el **registro entero para
 revisarlo**: las fases de la sesión, sombreadas, son lo que pidió la aplicación;
 debajo de las señales, una **barra verde azulada** marca cada contracción que
 propondrá el editor de fragmentos, desde que empieza hasta que el músculo vuelve
-al reposo, con la relajación tras el tono y sus colitas. Se calcula con la misma
+al reposo, con la relajación tras el tono. Se calcula con la misma
 regla que el editor, también en registros libres: lo que se ve aquí es lo que el
 editor propondrá al abrirlo.
 
@@ -572,12 +572,14 @@ qué pide, y el «?» del cuadro los repite.
    el músculo vuelve al reposo**: la envolvente baja a la línea base más un 5 %
    de la altura de su pico y se queda ahí al menos 1 s («Un fragmento termina
    tras un reposo de (s)», en el ajuste fino). Ese 5 % separa una contracción
-   de la siguiente, pero la fila no acaba ahí: sigue mientras la envolvente
-   esté sobre la línea de puntos «reposo» y se queda con cada **colita** —un
-   tramo sobre esa línea de al menos 0.5 s, lo que el editor dibujaría
-   punteado— que empiece a menos de 1 s, hasta que la envolvente queda en
-   reposo un segundo. Así entra la relajación tras el tono, que en un escalón
-   fuerte queda muy por debajo del 5 % de su pico. Un escalón de la gradación, con
+   de la siguiente, pero la fila no acaba ahí: sigue la **caída** hasta el
+   primer punto en que la envolvente vuelve a la línea de puntos «reposo» —o,
+   si antes vuelve a subir, hasta el fondo de la caída—, con 0.1 s de margen
+   para que el ruido no lo adelante ni lo retrase. Así entra la relajación tras
+   el tono, que en un escalón fuerte queda muy por debajo del 5 % de su pico.
+   Lo que sube después de la caída, una joroba o una sacudida, no es de la fila:
+   queda punteado, a un clic. Una serie de contracciones con menos de un segundo
+   de reposo entre ellas sigue siendo una sola fila, entera. Un escalón de la gradación, con
    su pico breve al arrancar, es una fila, y la gradación se propone **una fila
    por escalón**: lo que el músculo haga fuera de los escalones, como una
    sacudida al empezar el registro, queda punteado, a un clic. En el par, cuyas seis contracciones

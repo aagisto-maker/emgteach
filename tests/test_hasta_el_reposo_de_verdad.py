@@ -1,21 +1,23 @@
-"""A fragment reaches the muscle's real rest, tails included (Ángel's
-gradation of 6 November 2026).
+"""A fragment follows its contraction's fall to rest, and nothing after it
+(Ángel's gradation of 6 November 2026, and his correction of the same day).
 
 On the bench the review shaded the session's phases — what the application
 asked — and the signal went on 0.5-1.5 s past them: the subject lets go after
 the tone. In the fragment editor each row ended where the envelope fell below
-5 % of its peak, which on a strong step is many times the rest, and what
-followed — the end of the letting go and a tail drawn dotted beside the row,
-at ~60.5 s and ~90.5 s — was left out. And the gradation came in six rows for
-five steps: a jerk at the start of the recording was one.
+5 % of its peak, which on a strong step is many times the rest. And the
+gradation came in six rows for five steps.
 
-Now, where fragments end only at rest (the one-muscle practical), a row runs
-on over the dotted rest line and takes every tail over it of at least 0.5 s
-that starts less than a second after it, to where the envelope is back at rest
-for a second; a gradation is proposed one row per step, with five expected;
-and the review draws, under both plots, the rows the editor will propose. The
-fixed load and the quick contractions keep the one row their analysis reads,
-and every number of theirs is what it was.
+Now, where fragments end only at rest (the one-muscle practical), a row
+follows the fall that carries on from that 5 % to the first point where the
+envelope is back at the dotted rest line — or, if it rises again before, to
+the bottom of the fall — with 0.1 s for noise either way. Nothing that rises
+after the fall is joined: the humps at ~60.5, ~81.9 and ~90.9 s of the bench
+stay dotted. A series of brisk contractions with less than a second of rest
+between them is still one row, whole (the rule of 27 October). A gradation
+is proposed one row per step, with five expected; and the review draws, under
+both plots, the rows the editor will propose. The fixed load and the quick
+contractions keep the one row their analysis reads, and every number of
+theirs is what it was.
 """
 
 from __future__ import annotations
@@ -27,7 +29,8 @@ import pytest
 
 from emgteach import fragments
 from emgteach.fragments import (
-    _COLITA_MIN_S,
+    _CAIDA_MIN_S,
+    _fin_de_la_caida,
     default_detection,
     one_per_step,
     recording_proposal,
@@ -38,7 +41,7 @@ from emgteach.io import BufferedEdfWriter, ChannelInfo, read_edf_markers
 from emgteach.modes import MODE_SINGLE, mode_detection_k, mode_rest_fraction
 from emgteach.mvc import mvc_ref_marker
 from emgteach.phases import cal_end_marker, cal_start_marker, prep_start_marker, rec_start_marker
-from emgteach.selection import REST_MIN_S, Segment
+from emgteach.selection import Segment
 from emgteach.sessions import (
     GRADATION_STEPS_PCT,
     end_marker,
@@ -99,61 +102,57 @@ def _iguales(a, b, tol: float = 0.011) -> bool:
                                                  np.asarray(b, dtype=float), atol=tol))
 
 
-def _en_reposo_tras(senal, fin: float) -> bool:
-    """Whether, in the second after *fin*, the envelope has no stretch over
-    the dotted rest line as long as a tail."""
-    env = fragments.envelope(senal, FS, FILTROS)
-    linea = fragments.rest_level(env, FS, (0.0, senal.size / FS), 3.0)
-    sobre = env[round(fin * FS):round((fin + REST_MIN_S) * FS)] > linea
-    bordes = np.flatnonzero(np.diff(np.r_[0, sobre.astype(np.int8), 0]))
-    return all(b - a < _COLITA_MIN_S * FS for a, b in zip(bordes[::2], bordes[1::2],
-                                                         strict=True))
-
-
 # ── The edge at rest ──────────────────────────────────────────────────────
 
 
-def test_the_rules_numbers_are_the_ones_agreed() -> None:
-    assert _COLITA_MIN_S == pytest.approx(0.5)
-    assert REST_MIN_S == pytest.approx(1.0)
+def test_the_noise_allowance_is_a_tenth_of_a_second() -> None:
+    assert _CAIDA_MIN_S == pytest.approx(0.1)
 
 
-def test_a_row_takes_the_letting_go_and_a_tail_close_after_it() -> None:
-    """The tail runs from 10.5 to 11.3 s, 0.3 s after the letting go."""
-    senal = _una_contraccion(hueco=0.3, colita=0.8)
-    filas = _filas(senal)
+def test_a_row_follows_the_letting_go_down_to_rest() -> None:
+    """The fall goes from 9.2 s to rest at about 10.2 s; 5 % of the peak,
+    0.03 mV, is crossed at about 9.9 s, where the row used to end."""
+    _a, b = _filas(_una_contraccion(hueco=0.0, colita=0.0))[0]
+    assert 10.1 <= b <= 10.6
+
+
+def test_a_hump_after_the_fall_is_not_the_row_s() -> None:
+    """The hump runs from 10.5 to 11.3 s, 0.3 s after the letting go: it
+    stays out, a click away."""
+    filas = _filas(_una_contraccion(hueco=0.3, colita=0.8))
     assert len(filas) == 1
     a, b = filas[0]
     assert a == pytest.approx(5.0 - 0.5, abs=0.25)     # ROW_LEAD_S before it
-    assert b >= 11.3
-    # And it ends where the envelope is back at rest for a second: on this
-    # noise, a stretch of it over the line of 0.54 s, 0.3 s after the tail,
-    # is one more — the editor draws it dotted too.
-    assert _en_reposo_tras(senal, b - 0.05)
+    assert 10.1 <= b < 10.6
 
 
-def test_without_a_tail_the_row_ends_where_the_letting_go_does() -> None:
-    senal = _una_contraccion(hueco=0.0, colita=0.0)
-    _a, b = _filas(senal)[0]
-    # The fall reaches rest at about 10.2 s; 5 % of the peak, 0.03 mV, is
-    # crossed at about 9.9 s.
-    assert b >= 10.2
-    assert _en_reposo_tras(senal, b - 0.05)
-
-
-def test_a_tail_a_second_or_more_after_is_not_the_row_s() -> None:
-    _a, b = _filas(_una_contraccion(hueco=1.6, colita=0.8))[0]
-    assert b < 11.0                                    # the tail starts at 11.8
-
-
-def test_a_blip_shorter_than_half_a_second_is_not_a_tail() -> None:
-    _a, b = _filas(_una_contraccion(hueco=0.3, colita=0.25))[0]
-    assert b < 10.7                                    # the blip ends at 10.75
+def test_the_fall_ends_at_the_rest_line_or_at_its_bottom() -> None:
+    """On an envelope drawn by hand, 1 kHz, the line at 1.0."""
+    breve = round(_CAIDA_MIN_S * FS)
+    caida = np.r_[np.linspace(10.0, 0.5, 300), np.full(500, 0.5)]
+    # Back at the line: the sample before it.
+    en_linea = int(np.flatnonzero(caida <= 1.0)[0])
+    assert _fin_de_la_caida(caida, 0, caida.size - 1, 1.0, 0.2, breve) == en_linea - 1
+    # A dip under the line shorter than the noise allowance does not end it.
+    con_hueco = np.r_[np.linspace(10.0, 2.0, 200), np.full(50, 0.8),
+                      np.full(100, 2.0), np.linspace(2.0, 0.5, 100), np.full(300, 0.5)]
+    fin = _fin_de_la_caida(con_hueco, 0, con_hueco.size - 1, 1.0, 0.2, breve)
+    assert fin > 350
+    # Rising again before the line: the bottom of the fall.
+    rebota = np.r_[np.linspace(10.0, 1.5, 200), np.linspace(1.5, 6.0, 150),
+                   np.linspace(6.0, 0.5, 150), np.full(300, 0.5)]
+    assert _fin_de_la_caida(rebota, 0, rebota.size - 1, 1.0, 0.2, breve) == 199
+    # A spike of noise shorter than the allowance does not.
+    pincho = np.r_[np.linspace(10.0, 1.5, 200), np.full(30, 4.0),
+                   np.linspace(1.5, 0.5, 100), np.full(300, 0.5)]
+    assert _fin_de_la_caida(pincho, 0, pincho.size - 1, 1.0, 0.2, breve) > 230
+    # And never past the next row.
+    assert _fin_de_la_caida(caida, 0, 120, 1.0, 0.2, breve) == 120
 
 
 def test_a_row_never_runs_into_the_next() -> None:
-    """A second contraction 1.2 s after the first one's letting go: two rows,
-    the first one's tail taken, and the two apart."""
+    """A second contraction 1.2 s after the first one's letting go: two
+    rows, apart, and the hump between them in neither."""
     n = int(25 * FS)
     t = np.arange(n) / FS
     amp = np.full(n, REPOSO)
@@ -164,8 +163,8 @@ def test_a_row_never_runs_into_the_next() -> None:
     _relajacion(amp, t, 15.0, 0.5, 0.6)
     filas = _filas(_ruido(amp))
     assert len(filas) == 2
-    assert filas[0][1] >= 10.55
-    assert filas[0][1] < filas[1][0]
+    assert filas[0][1] < 10.05
+    assert filas[1][0] > 10.6
 
 
 def test_a_series_less_than_a_second_apart_is_one_row_whole() -> None:
@@ -186,7 +185,7 @@ def test_a_series_less_than_a_second_apart_is_one_row_whole() -> None:
 
 
 def test_where_rows_are_cut_at_valleys_nothing_changes() -> None:
-    """The pair practical and kinematics: no tail is taken."""
+    """The pair practical and kinematics: as before, to the dotted line."""
     _a, b = _filas(_una_contraccion(hueco=0.3, colita=0.8), rest_fraction=0.0)[0]
     assert b < 10.5                                    # the tail starts at 10.5
 
@@ -223,9 +222,10 @@ def _gradacion(*, sacudida: bool = True, sin_paso: int | None = None) -> np.ndar
     return _ruido(amp)
 
 
-def _fin_de_colita(k: int) -> float:
-    """Where step *k*'s tail ends (from 1)."""
-    return REC + 9.0 + 10.0 * (k - 1) + 0.2 + float(np.linspace(0.5, 1.5, 5)[k - 1]) + 0.9
+def _suelta(k: int) -> tuple[float, float]:
+    """Where step *k*'s letting go begins and where its hump does (from 1)."""
+    fin = REC + 9.0 + 10.0 * (k - 1) + 0.2
+    return fin, fin + float(np.linspace(0.5, 1.5, 5)[k - 1]) + 0.3
 
 
 def _gradacion_edf(path: Path, senal: np.ndarray) -> str:
@@ -262,7 +262,7 @@ def test_the_step_windows_run_on_past_each_step(tmp_path: Path) -> None:
     assert step_windows(None) == []
 
 
-def test_a_gradation_is_one_row_per_step_and_the_jerk_is_left_out(tmp_path: Path) -> None:
+def test_a_gradation_is_one_row_per_step_and_the_jerk_and_humps_are_left_out(tmp_path: Path) -> None:
     senal = _gradacion()
     ventanas = step_windows(_sesion(_gradacion_edf(tmp_path / "g.edf", senal)))
     span = (REC, REC + 54.0)
@@ -275,8 +275,9 @@ def test_a_gradation_is_one_row_per_step_and_the_jerk_is_left_out(tmp_path: Path
     assert len(filas) == 5
     for k, (f, (a, _b)) in enumerate(zip(filas, ventanas, strict=True), start=1):
         assert a - 0.5 <= f.start_s < a + 1.0
-        # Each to the end of its tail, and not a second further.
-        assert _fin_de_colita(k) - 0.05 <= f.end_s <= _fin_de_colita(k) + 0.4
+        # Each down its letting go, and short of the hump after it.
+        suelta, joroba = _suelta(k)
+        assert suelta + 0.4 <= f.end_s < joroba
 
 
 def test_a_step_the_detector_found_nothing_in_is_its_window(tmp_path: Path) -> None:

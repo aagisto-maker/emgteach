@@ -62,12 +62,12 @@ _UNION_S = 0.1
 #: — «rest» being the dotted line half the sensitivity draws, the one the
 #: candidates are found with. See fit_to_envelope.
 _BORDE_MARGEN_S = 0.05
-#: Where fragments end only at rest, a stretch over the dotted rest line at
-#: least this long, starting less than :data:`emgteach.selection.REST_MIN_S`
-#: after a row's end, is that row's tail: the letting go after the cue, and
-#: what the editor drew dotted beside the row (Ángel's gradation of
-#: 6 November 2026). The shortest stretch the editor draws dotted.
-_COLITA_MIN_S = 0.5
+#: Where fragments end only at rest, the shortest stretch that counts at the
+#: end of a row: the envelope at or under the dotted rest line, or rising
+#: again from the bottom of its fall, for less than this is noise, and
+#: neither ends the row sooner nor holds it open (as
+#: emgteach.selection._FLICKER_S).
+_CAIDA_MIN_S = 0.1
 
 
 def default_detection(k: float | None = None,
@@ -259,14 +259,21 @@ def fit_to_envelope(
     on it (the bench with exe #143).
 
     That share of the peak still separates two contractions, but it is not
-    where the row ends: from there the row runs on while the envelope stays
-    over the dotted rest line, and takes every tail over that line of at
-    least :data:`_COLITA_MIN_S` that starts less than
-    :data:`emgteach.selection.REST_MIN_S` after it — to where the envelope
-    is back at rest for a second (:func:`_hasta_el_reposo`). On a strong
-    step 5 % of the peak is many times the rest: the letting go after the
-    cue and its tail were left out, drawn dotted beside the row (Ángel's
-    gradation of 6 November 2026).
+    where the row ends. The row follows the fall that carries on from it
+    to the first point where the envelope is back at the dotted rest line;
+    or, if it rises again before getting there, to the bottom of the fall
+    (:func:`_fin_de_la_caida`). What rises after that — a hump, a second
+    twitch — is not the row's and stays dotted, a click away. On a strong
+    step 5 % of the peak is many times the rest, and the end of the letting
+    go after the cue was left out (Ángel's gradation of 6 November 2026).
+    And the row runs from the first to the last contraction the detector put
+    in it — a peak at least ``detection["prominence"]`` of the tallest one's
+    height, the share the detector itself asks of a contraction of its own:
+    a series of brisk contractions with less than a second of rest between
+    them is one fragment by the rule of 27 October, and walked from its
+    tallest peak it was cut at the first dip, its other contractions left
+    dotted beside it (the bench's free recording of the same day). A hump
+    after the fall, a seventh or an eighth of the step's height, is not one.
     """
     if not filas:
         return filas
@@ -275,8 +282,7 @@ def fit_to_envelope(
     k = detection["k"]
     fraccion = float(detection.get("rest_fraction", 0.0))
     minimo = max(1, round(detection["min_duration_s"] * fs))
-    colita = max(1, round(_COLITA_MIN_S * fs))
-    quieto = max(1, round(REST_MIN_S * fs))
+    breve = max(1, round(_CAIDA_MIN_S * fs))
     canales = []
     for env in envs:
         tramo = np.asarray(env[i0:i1], dtype=np.float64)
@@ -311,14 +317,21 @@ def fit_to_envelope(
                 continue
             if fraccion > 0.0:
                 reposo = base + fraccion * (float(env[pico]) - base)
-            izq = pico
+            izq = der = pico
+            if fraccion > 0.0:
+                # From the first to the last contraction the detector put in
+                # the row — a peak a share of the tallest high, its own rule
+                # for a contraction — not only the tallest one.
+                alto = base + detection["prominence"] * (float(env[pico]) - base)
+                grandes = j0 + np.flatnonzero(env[j0:j1] > alto)
+                izq, der = int(grandes[0]), int(grandes[-1])
             while izq > lo and env[izq - 1] > reposo:
                 izq -= 1
-            der = pico
             while der < hi and env[der + 1] > reposo:
                 der += 1
             if fraccion > 0.0:
-                der = _hasta_el_reposo(env, der, hi, linea, colita, quieto)
+                der = _fin_de_la_caida(env, der, hi, linea,
+                                       max(linea - base, 0.0), breve)
             ini = izq if ini is None else min(ini, izq)
             fin = der if fin is None else max(fin, der)
         if ini is None or fin is None:
@@ -330,33 +343,32 @@ def fit_to_envelope(
     return to_hundredths(salida)
 
 
-def _hasta_el_reposo(env: np.ndarray, der: int, hi: int, linea: float,
-                     colita: int, quieto: int) -> int:
-    """Where a row that ends at sample *der* is back at rest for good, never
+def _fin_de_la_caida(env: np.ndarray, der: int, hi: int, linea: float,
+                     margen: float, breve: int) -> int:
+    """The last sample of the fall that carries on from sample *der*, never
     past *hi*.
 
-    First the fall the row was cut on, for as long as it stays over the
-    dotted rest line *linea*; then every tail — a stretch over that line of
-    at least *colita* samples — that starts less than *quieto* samples after
-    what has been kept so far. The row ends where the last of them falls
-    back, with *quieto* samples at rest after it, or at *hi*.
+    The fall ends at the first point where the envelope is back at the
+    dotted rest line *linea* — the sample before it — or, if the envelope
+    rises again before getting there, more than *margen* over the lowest
+    point it had reached, at that lowest point: what rises then is not the
+    fall. Either has to hold for *breve* samples, or the end of the row
+    would move with the noise.
     """
-    if der >= hi:
-        return der
-    sobre = np.asarray(env[der + 1:hi + 1]) > linea
-    if not sobre.size:
-        return der
-    bordes = np.flatnonzero(np.diff(np.r_[0, sobre.astype(np.int8), 0]))
-    fin = 0                                # past the last sample kept, from der + 1
-    for a, b in zip(bordes[::2], bordes[1::2], strict=True):
-        if a == 0:                         # the fall, still over the line
-            fin = int(b)
-            continue
-        if a - fin >= quieto:
-            break
-        if b - a >= colita:
-            fin = int(b)
-    return der + fin
+    fondo = der
+    j = der + 1
+    while j <= hi:
+        v = env[j]
+        if v <= linea:
+            if np.all(env[j:min(hi + 1, j + breve)] <= linea):
+                return j - 1
+        elif v > env[fondo] + margen:
+            if np.all(env[j:min(hi + 1, j + breve)] > env[fondo] + margen):
+                return fondo
+        elif v < env[fondo]:
+            fondo = j
+        j += 1
+    return hi
 
 
 def one_per_lift(

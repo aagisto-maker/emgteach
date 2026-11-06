@@ -307,8 +307,8 @@ signal; the **A** button in the corner gives the whole window back.
 When a recording ends, the plots show **the whole recording for review**: the
 session's phases, shaded, are what the application asked; under the traces, a
 **teal bar** marks each contraction the fragment editor will propose, from where
-it starts to where the muscle is back at rest, the letting go after the tone and
-its tails included. It is worked out with the editor's own rule, free recordings
+it starts to where the muscle is back at rest, the letting go after the tone
+included. It is worked out with the editor's own rule, free recordings
 too: what is seen here is what the editor will propose when it opens.
 
 **Event markers**
@@ -482,12 +482,14 @@ which one you are on and what it asks for, and the box's «?» repeats them.
    the envelope down to the baseline plus 5 % of its peak's height, and there
    for at least 1 s («A fragment ends after a rest of (s)», in the fine
    adjustment). That 5 % separates one contraction from the next, but the row
-   does not end there: it runs on while the envelope is over the dotted
-   «rest» line and takes every **tail** — a stretch over that line of at
-   least 0.5 s, what the editor would draw dotted — that starts less than
-   1 s after it, to where the envelope is back at rest for a second. So the
-   letting go after the tone is in, which on a strong step is far below 5 %
-   of its peak. A gradation's step, with its brief peak at the start, is one
+   does not end there: it follows the **fall** to the first point where the
+   envelope is back at the dotted «rest» line — or, if it rises again before,
+   to the bottom of the fall — with 0.1 s so that noise neither moves it
+   earlier nor later. So the letting go after the tone is in, which on a
+   strong step is far below 5 % of its peak. What rises after the fall, a
+   hump or a twitch, is not the row's: it stays dotted, a click away. A
+   series of contractions with less than a second of rest between them is
+   still one row, whole. A gradation's step, with its brief peak at the start, is one
    row, and a gradation is proposed **one row per step**: what the muscle
    does outside the steps, such as a jerk at the start of the recording, is
    left dotted, a click away. In the pair, whose six contractions in a row rest less than a second
