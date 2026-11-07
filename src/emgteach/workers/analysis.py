@@ -1356,6 +1356,9 @@ class AnalysisWorker(QThread):
                     f_low=self._f_low, f_high=self._f_high,
                     f_notch=self._f_notch, f_env=self._f_env,
                     window_s=self._profile.mvc_peak_window_s,
+                    # The fragments the operator accepted are rows however
+                    # weak: they were chosen (7 November 2026).
+                    chosen=bool(self._roi_segments),
                 )
                 result["contractions"] = filas
                 result["grad_steps"] = gradation_steps(

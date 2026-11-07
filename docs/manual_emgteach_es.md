@@ -388,7 +388,12 @@ primer análisis, dentro de cada barra aparece una **franja verde claro con bord
 oscuro**, más alta: el **tramo del que se obtiene el valor medido** —en la gradación, la meseta
 de cada escalón (desde 1.5 s tras su inicio, sin la subida ni la relajación); con
 carga fija, la carga sostenida; en un registro libre, cada fila de la tabla—; en
-las contracciones rápidas no hay franja, porque el tren se mide entero. Si una
+las contracciones rápidas no hay franja, porque el tren se mide entero. Una
+contracción débil entre otras fuertes también es fila de la tabla y tiene su
+franja: solo se deja fuera, como ruido, una ventana que no llega al 10 % del pico
+mayor **y** apenas pasa la línea del detector (menos del doble de lo que esa línea
+se separa del reposo); un fragmento que usted acepta en el editor es siempre una
+fila, por débil que sea. Si una
 grabación termina sin revisión, el registro de eventos dice por qué («Sin revisión
 de …: …»).
 
