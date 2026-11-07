@@ -11,6 +11,8 @@ import faulthandler
 import gc
 import os
 import sys
+import threading
+import time
 
 import pytest
 
@@ -362,8 +364,87 @@ def session_ticks(monkeypatch):
     return ticks
 
 
+# ── What the interface thread waits for, measured (Ángel, 7 November 2026) ──
+#
+# On CI on Windows two guided sessions failed by time: a rest of 0.4 s that
+# ended 2.31 s after the early end (5 November) and two gradation steps whose
+# level came late (7 November). The event log is written with fsync on the
+# interface thread, and a stalled interface thread delays every cue. Nothing
+# here changes the application: every fsync made on the main thread is timed,
+# and so is every call a test makes to processEvents — one that takes longer
+# than _PARON_S is the interface thread busy, in the application's slots,
+# for that long, with the fsyncs it did in the meantime. The summary at the
+# end of the run lists them by test.
+
+#: A processEvents that takes longer than this is a stall of the interface.
+_PARON_S = 0.2
+#: (test, seconds) of each fsync made on the main thread.
+_FSYNC: list[tuple[str, float]] = []
+#: (test, seconds, fsyncs inside, their seconds) of each stall.
+_PARONES: list[tuple[str, float, int, float]] = []
+
+
+@pytest.fixture(autouse=True)
+def mide_la_interfaz(request, monkeypatch):
+    """Time the fsyncs of the main thread and the stalls inside processEvents."""
+    nombre = request.node.nodeid
+    principal = threading.main_thread()
+    original = os.fsync
+    dentro: list[float] = []               # the fsyncs of the current processEvents
+
+    def fsync(fd):
+        t0 = time.perf_counter()
+        try:
+            return original(fd)
+        finally:
+            if threading.current_thread() is principal:
+                dt = time.perf_counter() - t0
+                _FSYNC.append((nombre, dt))
+                dentro.append(dt)
+
+    monkeypatch.setattr(os, "fsync", fsync)
+    if "PySide6.QtCore" in sys.modules or "qapp" in request.fixturenames:
+        from PySide6.QtCore import QCoreApplication
+
+        procesar = QCoreApplication.processEvents
+
+        def processEvents(*args, **kwargs):
+            dentro.clear()
+            t0 = time.perf_counter()
+            try:
+                return procesar(*args, **kwargs)
+            finally:
+                dt = time.perf_counter() - t0
+                if dt > _PARON_S:
+                    _PARONES.append((nombre, dt, len(dentro), sum(dentro)))
+
+        monkeypatch.setattr(QCoreApplication, "processEvents", staticmethod(processEvents))
+    yield
+
+
+def _percentil(valores: list[float], p: float) -> float:
+    orden = sorted(valores)
+    return orden[min(len(orden) - 1, int(p * len(orden)))] if orden else 0.0
+
+
 def pytest_terminal_summary(terminalreporter) -> None:
-    """Name the tests that left windows open, closed for them by the fixture."""
+    """Name the tests that left windows open, closed for them by the fixture;
+    and what the interface thread waited for (mide_la_interfaz)."""
+    if _FSYNC or _PARONES:
+        terminalreporter.section("interface thread: fsync and stalls")
+        tiempos = [dt for _t, dt in _FSYNC]
+        terminalreporter.write_line(
+            f"fsync on the main thread: {len(tiempos)} calls, "
+            f"total {sum(tiempos):.3f} s, median {_percentil(tiempos, 0.5) * 1000:.1f} ms, "
+            f"p95 {_percentil(tiempos, 0.95) * 1000:.1f} ms, "
+            f"max {max(tiempos, default=0.0) * 1000:.1f} ms")
+        for test, dt in sorted(_FSYNC, key=lambda x: -x[1])[:10]:
+            terminalreporter.write_line(f"  fsync {dt * 1000:8.1f} ms  {test}")
+        terminalreporter.write_line(
+            f"stalls over {_PARON_S * 1000:.0f} ms inside processEvents: {len(_PARONES)}")
+        for test, dt, n, en_fsync in sorted(_PARONES, key=lambda x: -x[1])[:25]:
+            terminalreporter.write_line(
+                f"  stall {dt * 1000:8.1f} ms, {n} fsync ({en_fsync * 1000:.1f} ms)  {test}")
     if not _WINDOWS_LEFT:
         return
     terminalreporter.section("windows left open (closed by no_window_outlives_its_test)")
