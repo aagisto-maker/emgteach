@@ -1136,3 +1136,23 @@ Aparte, de la CI de la etiqueta: la prueba de «Reintentar»
 (`tests/test_la_placa_que_no_responde.py`) pidió 0.5 s y midió 0.64 s una vez
 en Windows con Python 3.12; pasó al relanzarla. Propuesta: el mismo margen que
 se dio a las pruebas con la placa simulada.
+
+## 16. Después de la 3.11.0: la MDF de un escalón y las ventanas de Welch
+
+Anotado el 6 de noviembre de 2026, al estudiar el banco de la gradación
+(exe #150); **sin tocar hasta después de la 3.11.0** (Ángel).
+
+La MDF de cada escalón (`guided.gradation_steps`) se calcula sobre su meseta con
+`dsp.compute_psd_mnf_mdf`, que usa Welch con ventanas de 1 s y solape de 0.5 s.
+Una meseta de 2.0 s da tres ventanas; una de 1.97 s, solo dos, y deja fuera su
+último medio segundo. En una gradación sintética la MDF del mismo escalón pasó
+de 207.9 Hz (2.0 s) a 197.3 Hz (1.97 s): unos 10 Hz por unas centésimas de
+duración, que dependen de dónde se corte la contracción. Con mesetas de 4 s de
+escalón menos 1.5 s de alcance y hasta 0.5 s de suelta, los escalones caen justo
+alrededor de los 2 s.
+
+Opciones para estudiar entonces: una ventana que se ajuste a la longitud de la
+meseta (p. ej. el entero de ventanas que caben, con el solape repartido), o un
+mínimo de tres ventanas con la longitud que haga falta; y qué hacer igual en la
+contracción mantenida y en las tablas de contracciones, que usan la misma
+función.

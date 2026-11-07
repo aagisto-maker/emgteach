@@ -208,6 +208,10 @@ class FragmentSelectionDialog(QDialog):
         The guided wizard's lift windows, in the file's clock
         (:func:`emgteach.force_velocity.lift_windows_s`). With them the
         proposal is one row per lift.
+    steps : list of (float, float), optional
+        A gradation's step windows, in the file's clock
+        (:func:`emgteach.guided.step_windows`). With them the proposal is one
+        row per step (:func:`emgteach.fragments.one_per_step`).
     parent : QWidget, optional
         Parent widget.
     """
@@ -233,6 +237,7 @@ class FragmentSelectionDialog(QDialog):
         session_window: tuple[float, float] | None = None,
         parent: QWidget | None = None,
         default_rest_fraction: float = 0.0,
+        steps: Sequence[tuple[float, float]] | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Select analysis fragments"))
@@ -304,6 +309,8 @@ class FragmentSelectionDialog(QDialog):
         self._esperadas_iniciales = tuple(int(n) for n in (expected or ()))
         #: The wizard's lift windows, when the recording has them.
         self._lifts = [(float(a), float(b)) for a, b in (lifts or ())]
+        #: A gradation's step windows, when the recording has them.
+        self._steps = [(float(a), float(b)) for a, b in (steps or ())]
         #: The window a guided session's view reads, when one is the whole
         #: of it: the fixed load (guided.load_span) or the train of quick
         #: contractions (guided.train_span). The proposal is that one row.
@@ -436,6 +443,7 @@ class FragmentSelectionDialog(QDialog):
         session_window: tuple[float, float] | None = None,
         parent: QWidget | None = None,
         default_rest_fraction: float = 0.0,
+        steps: Sequence[tuple[float, float]] | None = None,
     ) -> FragmentSelectionDialog:
         """Build the dialog by loading one or two channels from an EDF."""
         raw, fs, raw_2 = fragments.read_channels(edf_path, channel_name, channel_name_2)
@@ -459,6 +467,7 @@ class FragmentSelectionDialog(QDialog):
             session_window=session_window,
             parent=parent,
             default_rest_fraction=default_rest_fraction,
+            steps=steps,
         )
 
     def _build_ui(self) -> None:
@@ -1042,7 +1051,8 @@ class FragmentSelectionDialog(QDialog):
         self._revisadas.clear()
         self._buscar_candidatos()
         filas = fragments.fit_rows(self._detectar(self._det["k"]), self._lifts,
-                                   self._envs, self._fs, self._span, self._det)
+                                   self._envs, self._fs, self._span, self._det,
+                                   self._steps)
         if self._naming:
             filas = [
                 Segment(f.start_s, f.end_s, f.score, f.reason, nombre)

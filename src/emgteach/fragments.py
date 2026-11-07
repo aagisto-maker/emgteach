@@ -38,7 +38,9 @@ __all__ = [
     "fit_rows",
     "fit_to_envelope",
     "one_per_lift",
+    "one_per_step",
     "read_channels",
+    "recording_proposal",
     "rest_level",
     "span_within",
     "suggest_fragments",
@@ -60,6 +62,12 @@ _UNION_S = 0.1
 #: — «rest» being the dotted line half the sensitivity draws, the one the
 #: candidates are found with. See fit_to_envelope.
 _BORDE_MARGEN_S = 0.05
+#: Where fragments end only at rest, the shortest stretch that counts at the
+#: end of a row: the envelope at or under the dotted rest line, or rising
+#: again from the bottom of its fall, for less than this is noise, and
+#: neither ends the row sooner nor holds it open (as
+#: emgteach.selection._FLICKER_S).
+_CAIDA_MIN_S = 0.1
 
 
 def default_detection(k: float | None = None,
@@ -249,6 +257,23 @@ def fit_to_envelope(
     contraction leaves it, the same for every row: on the noise of a
     lower line, a step began half a second before its flank and the next
     on it (the bench with exe #143).
+
+    That share of the peak still separates two contractions, but it is not
+    where the row ends. The row follows the fall that carries on from it
+    to the first point where the envelope is back at the dotted rest line;
+    or, if it rises again before getting there, to the bottom of the fall
+    (:func:`_fin_de_la_caida`). What rises after that — a hump, a second
+    twitch — is not the row's and stays dotted, a click away. On a strong
+    step 5 % of the peak is many times the rest, and the end of the letting
+    go after the cue was left out (Ángel's gradation of 6 November 2026).
+    And the row runs from the first to the last contraction the detector put
+    in it — a peak at least ``detection["prominence"]`` of the tallest one's
+    height, the share the detector itself asks of a contraction of its own:
+    a series of brisk contractions with less than a second of rest between
+    them is one fragment by the rule of 27 October, and walked from its
+    tallest peak it was cut at the first dip, its other contractions left
+    dotted beside it (the bench's free recording of the same day). A hump
+    after the fall, a seventh or an eighth of the step's height, is not one.
     """
     if not filas:
         return filas
@@ -257,6 +282,7 @@ def fit_to_envelope(
     k = detection["k"]
     fraccion = float(detection.get("rest_fraction", 0.0))
     minimo = max(1, round(detection["min_duration_s"] * fs))
+    breve = max(1, round(_CAIDA_MIN_S * fs))
     canales = []
     for env in envs:
         tramo = np.asarray(env[i0:i1], dtype=np.float64)
@@ -276,6 +302,7 @@ def fit_to_envelope(
         for env, base, umbral, reposo in ([] if f.reason == "marker" else canales):
             if j1 <= j0:
                 break
+            linea = reposo                 # the dotted line, whatever rule ends the row
             pico = j0 + int(np.argmax(env[j0:j1]))
             if env[pico] <= umbral:
                 continue
@@ -290,12 +317,21 @@ def fit_to_envelope(
                 continue
             if fraccion > 0.0:
                 reposo = base + fraccion * (float(env[pico]) - base)
-            izq = pico
+            izq = der = pico
+            if fraccion > 0.0:
+                # From the first to the last contraction the detector put in
+                # the row — a peak a share of the tallest high, its own rule
+                # for a contraction — not only the tallest one.
+                alto = base + detection["prominence"] * (float(env[pico]) - base)
+                grandes = j0 + np.flatnonzero(env[j0:j1] > alto)
+                izq, der = int(grandes[0]), int(grandes[-1])
             while izq > lo and env[izq - 1] > reposo:
                 izq -= 1
-            der = pico
             while der < hi and env[der + 1] > reposo:
                 der += 1
+            if fraccion > 0.0:
+                der = _fin_de_la_caida(env, der, hi, linea,
+                                       max(linea - base, 0.0), breve)
             ini = izq if ini is None else min(ini, izq)
             fin = der if fin is None else max(fin, der)
         if ini is None or fin is None:
@@ -305,6 +341,34 @@ def fit_to_envelope(
         b = min(despues, (fin + 1) / fs + _BORDE_MARGEN_S)
         salida.append(Segment(a, b, f.score, f.reason, f.label) if b > a else f)
     return to_hundredths(salida)
+
+
+def _fin_de_la_caida(env: np.ndarray, der: int, hi: int, linea: float,
+                     margen: float, breve: int) -> int:
+    """The last sample of the fall that carries on from sample *der*, never
+    past *hi*.
+
+    The fall ends at the first point where the envelope is back at the
+    dotted rest line *linea* — the sample before it — or, if the envelope
+    rises again before getting there, more than *margen* over the lowest
+    point it had reached, at that lowest point: what rises then is not the
+    fall. Either has to hold for *breve* samples, or the end of the row
+    would move with the noise.
+    """
+    fondo = der
+    j = der + 1
+    while j <= hi:
+        v = env[j]
+        if v <= linea:
+            if np.all(env[j:min(hi + 1, j + breve)] <= linea):
+                return j - 1
+        elif v > env[fondo] + margen:
+            if np.all(env[j:min(hi + 1, j + breve)] > env[fondo] + margen):
+                return fondo
+        elif v < env[fondo]:
+            fondo = j
+        j += 1
+    return hi
 
 
 def one_per_lift(
@@ -365,6 +429,48 @@ def one_per_lift(
     return to_hundredths(filas)
 
 
+def one_per_step(
+    detectadas: list[Segment],
+    steps: Sequence[tuple[float, float]],
+    envs: Sequence[np.ndarray],
+    fs: float,
+    span: tuple[float, float],
+    detection: Mapping[str, float],
+) -> list[Segment]:
+    """One row per step of a gradation, and nothing else.
+
+    *steps* are the steps' windows in file time, from the mark that opens
+    each to where its contraction may still be letting go
+    (:func:`emgteach.guided.step_windows`). A step takes the detected row
+    that overlaps its window — from ``_ANTICIPO_S`` before its mark — the
+    most, with any other row not yet taken that starts inside it; a step
+    the detector found nothing in is proposed as its window, to be looked
+    at. What falls outside every step stays a candidate, a click away: on
+    the bench of 6 November 2026 a jerk at the start of the recording was
+    a sixth row for five steps. Each row is then fitted to its contraction
+    (:func:`fit_to_envelope`), out to rest.
+    """
+    tomadas: set[int] = set()
+    elegidas: list[Segment] = []
+    for a_marca, b in steps:
+        a = a_marca - _ANTICIPO_S
+        solape = [(min(b, f.end_s) - max(a, f.start_s), j)
+                  for j, f in enumerate(detectadas) if j not in tomadas]
+        solape = [(s, j) for s, j in solape if s > 0.0]
+        if not solape:
+            elegidas.append(Segment(a_marca, b, reason="marker"))
+            continue
+        _s, j = max(solape)
+        suyas = [j] + [k for k, f in enumerate(detectadas)
+                       if k not in tomadas and k != j and a <= f.start_s < b]
+        tomadas.update(suyas)
+        f = detectadas[j]
+        elegidas.append(Segment(min(detectadas[k].start_s for k in suyas),
+                                max(detectadas[k].end_s for k in suyas),
+                                f.score, f.reason, f.label))
+    return fit_to_envelope(elegidas, envs, fs, span, detection)
+
+
 def fit_rows(
     detectadas: list[Segment],
     lifts: Sequence[tuple[float, float]],
@@ -372,11 +478,15 @@ def fit_rows(
     fs: float,
     span: tuple[float, float],
     detection: Mapping[str, float],
+    steps: Sequence[tuple[float, float]] = (),
 ) -> list[Segment]:
     """The detector's rows as the editor proposes them: one per lift when the
-    recording has the wizard's lifts, each widened to its contraction when not."""
+    recording has the wizard's lifts, one per step when it has a gradation,
+    each widened to its contraction when neither."""
     if lifts:
         return one_per_lift(detectadas, lifts, envs, fs, span, detection)
+    if steps:
+        return one_per_step(detectadas, steps, envs, fs, span, detection)
     return fit_to_envelope(detectadas, envs, fs, span, detection)
 
 
@@ -391,6 +501,7 @@ def suggest_fragments(
     default_k: float | None = None,
     lifts: Sequence[tuple[float, float]] | None = None,
     rest_fraction: float = 0.0,
+    steps: Sequence[tuple[float, float]] | None = None,
 ) -> list[Segment]:
     """The fragments the editor proposes when it opens, without its names.
 
@@ -408,4 +519,54 @@ def suggest_fragments(
                         envelope(raw_2, fs, filter_kwargs)) if e is not None]
     filas = detect(raw, fs, filter_kwargs, det, det["k"], tramo, raw_2)
     return fit_rows(filas, [(float(a), float(b)) for a, b in (lifts or ())],
-                    envs, fs, tramo, det)
+                    envs, fs, tramo, det,
+                    [(float(a), float(b)) for a, b in (steps or ())])
+
+
+def recording_proposal(
+    edf_path: str,
+    *,
+    k: float | None = None,
+    rest_fraction: float = 0.0,
+    filter_kwargs: Mapping[str, float] | None = None,
+) -> list[Segment]:
+    """What the fragment editor proposes when it opens on *edf_path*, in the
+    file's clock, read from the file alone.
+
+    The same rules the analysis tab hands the editor: the recording phase as
+    the span; a fixed load or a train of quick contractions as the one row
+    its analysis reads (:func:`emgteach.guided.load_row`,
+    :func:`emgteach.guided.train_span`); one row per lift the wizard marked,
+    or per step of a gradation; otherwise what the detector finds, at the
+    practical's ``k`` and ``rest_fraction``. On the file's first two EMG
+    channels. The review of a recording draws these, so what it shows is
+    what the editor will propose (Ángel, 6 November 2026).
+    """
+    from emgteach.force_velocity import lift_windows_s, parse_fv_load_markers
+    from emgteach.guided import load_row, step_windows, train_span
+    from emgteach.io import edf_duration, list_edf_emg_channels, read_edf_markers
+    from emgteach.phases import parse_phase_markers
+    from emgteach.sessions import parse_session_markers
+
+    nombres = list_edf_emg_channels(edf_path)
+    if not nombres:
+        return []
+    marcas = read_edf_markers(edf_path)
+    duracion = edf_duration(edf_path)
+    cargas = parse_fv_load_markers(marcas)
+    span = parse_phase_markers(marcas).rec_span(duracion, cargas)
+    raw, fs, raw_2 = read_channels(edf_path, nombres[0],
+                                   nombres[1] if len(nombres) > 1 else None)
+    filtros = filters(filter_kwargs or {})
+    sesion = parse_session_markers(marcas)
+    if sesion is not None:
+        env = envelope(raw, fs, filtros)
+        ventana = load_row(sesion, env, fs) or train_span(sesion, env, fs)
+        if ventana is not None:
+            return [Segment(float(ventana[0]), float(ventana[1]), reason="session")]
+    filas = suggest_fragments(
+        raw, fs, filtros, span=span, raw_2=raw_2, default_k=k,
+        lifts=lift_windows_s(cargas, duracion) if cargas else None,
+        rest_fraction=rest_fraction, steps=step_windows(sesion),
+    )
+    return [f for f in filas if f.reason != "whole"]

@@ -72,6 +72,7 @@ from emgteach.devices import (
 )
 from emgteach.difusion import PORTS_FILE
 from emgteach.dsp import LiveQualityMonitor
+from emgteach.fragments import recording_proposal
 from emgteach.gui.acquisition import ClassroomBox, ConnectionBox, FlowStage, LivePlots
 from emgteach.gui.imagenes import imagen
 from emgteach.gui.session_runner import SessionRunner
@@ -102,9 +103,11 @@ from emgteach.modes import (
     MODE_PAIR,
     MODE_SINGLE,
     mode_channels,
+    mode_detection_k,
     mode_fixed_labels,
     mode_protocol,
     mode_requires_calibration,
+    mode_rest_fraction,
     mode_uses_acc,
     normalise_mode,
 )
@@ -4215,9 +4218,22 @@ class AcquisitionTab(QWidget):
             self.recording_saved.emit(edf_path)
             if current:
                 self._ruta_registro = edf_path
-                self._trazado.show_recording(edf_path, self._etiqueta_tramo)
+                self._trazado.show_recording(edf_path, self._etiqueta_tramo,
+                                             self._contracciones_del_registro(edf_path))
         if current:
             self._guardar_eventos()
+
+    def _contracciones_del_registro(self, edf_path: str) -> list[tuple[float, float]]:
+        """The rows the fragment editor will propose for this recording, for
+        the review's bar (fragments.recording_proposal), at this practical's
+        sensitivity and rule. None if they cannot be worked out: the review
+        is still shown, without the bar."""
+        try:
+            return [(f.start_s, f.end_s) for f in recording_proposal(
+                edf_path, k=mode_detection_k(self._mode),
+                rest_fraction=mode_rest_fraction(self._mode))]
+        except Exception:
+            return []
 
     def _restaurar_controles(self) -> None:
         self._conexion.mark_if_no_answer()
