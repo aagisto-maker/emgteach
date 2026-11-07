@@ -146,12 +146,15 @@ def test_a_calibration_scales_the_plots_never_below_the_profile(trazado) -> None
 
 
 def test_a_review_that_cannot_be_read_is_said_and_changes_nothing(trazado, monkeypatch) -> None:
-    """A file with no EMG channel is passed over without a word; one that lists
-    its channels and then cannot be read says so, through ``logged``."""
+    """A file with no EMG channel, or one that lists its channels and then
+    cannot be read, is not reviewed, and the review says why: it returns the
+    reason, which the tab writes in the event log (test_revision_sin_silencio).
+    Until 7 November 2026 the first was passed over without a word."""
     from emgteach.gui.acquisition import plots as mod
 
     monkeypatch.setattr(mod, "list_edf_emg_channels", lambda path: [])
-    trazado.show_recording("vacio.edf", lambda span: "")
+    assert trazado.show_recording("vacio.edf", lambda span: "") == tr(
+        "the file has no EMG channel")
     assert trazado.registro == [] and not trazado._revisando
 
     def no_se_lee(path, channel):
@@ -159,9 +162,9 @@ def test_a_review_that_cannot_be_read_is_said_and_changes_nothing(trazado, monke
 
     monkeypatch.setattr(mod, "list_edf_emg_channels", lambda path: ["FCR"])
     monkeypatch.setattr(mod, "read_edf_mne", no_se_lee)
-    trazado.show_recording("roto.edf", lambda span: "")
-    assert trazado.registro == [tr("The recording could not be shown for review: {err}")
-                                .format(err="the stick was taken out")]
+    assert trazado.show_recording("roto.edf", lambda span: "") == tr(
+        "the file could not be read ({err})").format(err="the stick was taken out")
+    assert trazado.registro == []
     assert not trazado._revisando and trazado._revision_items == []
     trazado.leave_review()
     assert trazado._plot_raw.plotItem.titleLabel.text == tr("Raw EMG signal (mV)")

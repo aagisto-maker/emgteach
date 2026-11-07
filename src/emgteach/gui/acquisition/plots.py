@@ -871,7 +871,7 @@ class LivePlots(QGroupBox):
 
     def show_recording(self, edf_path: str,
                        label_for: Callable[[MeasuredSpan], str],
-                       contractions: Sequence[tuple[float, float]] = ()) -> None:
+                       contractions: Sequence[tuple[float, float]] = ()) -> str | None:
         """Put the recording that has just finished on the plots, whole.
 
         *contractions* are drawn as a bar along the bottom of both plots,
@@ -891,21 +891,39 @@ class LivePlots(QGroupBox):
         could disagree with it.
 
         A failure here loses the review and nothing else: the recording is on
-        disk and the analysis tab is untouched.
+        disk and the analysis tab is untouched. It is not silent: what is
+        returned is ``None`` when the review is on screen, and otherwise why
+        it is not, for the tab to say in the event log. An error nobody
+        expected is written to the error log too, and leaves the plots as
+        they were rather than half drawn (the bench of 6 November 2026: a
+        recording ended, sometimes, with no review and no word why).
         """
         try:
             nombres = list_edf_emg_channels(edf_path)
             if not nombres:
-                return
+                return tr("the file has no EMG channel")
             señales = [read_edf_mne(edf_path, n) for n in nombres[:self._n_max]]
             fs = float(señales[0]["sfreq"])
             if fs <= 0:
-                return
+                return tr("the file has no valid sampling rate")
         except Exception as exc:
-            self.logged.emit(tr("The recording could not be shown for review: {err}")
-                      .format(err=exc))
-            return
+            return tr("the file could not be read ({err})").format(err=exc)
+        try:
+            self._dibujar_revision(edf_path, label_for, contractions, nombres, señales, fs)
+        except Exception as exc:
+            from emgteach.crash import log_path, record_exception
 
+            record_exception(type(exc), exc, exc.__traceback__)
+            self.leave_review()
+            return tr("an unexpected error ({err}); its details are in {path}").format(
+                err=f"{type(exc).__name__}: {exc}", path=log_path())
+        return None
+
+    def _dibujar_revision(self, edf_path: str,
+                          label_for: Callable[[MeasuredSpan], str],
+                          contractions: Sequence[tuple[float, float]],
+                          nombres: list[str], señales: list, fs: float) -> None:
+        """The review itself, once the file is read (show_recording)."""
         self.leave_review()
         self._revisando = True
         self._revision_ruta = edf_path

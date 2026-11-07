@@ -171,6 +171,9 @@ class AcquisitionWorker(QThread):
         self._markers_mutex = QMutex()
         self._last_sample_time: float | None = None
         self._write_failed = False
+        #: Why the recording left no file to open, when it left none: what
+        #: the tab says instead of a review (read after finished_ok).
+        self.motivo_sin_archivo = ""
         #: The device's opening returned: the board answered, whatever
         #: happened after it (a file that cannot be created is not a board
         #: that did not answer).
@@ -398,6 +401,7 @@ class AcquisitionWorker(QThread):
         n_ch = int(device.n_channels)
         labels = self._resolve_sensor_labels(n_ch)
         if labels is None:
+            self.motivo_sin_archivo = tr("the channel names do not match the board's")
             self.finished_ok.emit("")
             return
         # Per-channel signal kind: "EMG" channels get the notch+band-pass+
@@ -671,14 +675,19 @@ class AcquisitionWorker(QThread):
                     self.log.emit(tr(
                         "No samples arrived: the empty file {path} was removed."
                     ).format(path=edf_path))
+                    self.motivo_sin_archivo = tr("no sample arrived from the board")
                 elif self._write_failed:
                     self.log.emit(tr(
                         "The file {path} holds the {seconds:.1f} s written before "
                         "the failure and is incomplete; it is not opened for analysis."
                     ).format(path=edf_path, seconds=self._n_samples_total / fs))
+                    self.motivo_sin_archivo = tr("the file is incomplete after a write failure")
                 else:
                     self.log.emit(tr("EDF file saved: {path}").format(path=edf_path))
                     saved = edf_path
                 self._close_sidecar(keep=bool(self._n_samples_total) and not saved)
+            elif not self.motivo_sin_archivo:
+                self.motivo_sin_archivo = tr(
+                    "the recording ended before any file was written")
 
             self.finished_ok.emit(saved)

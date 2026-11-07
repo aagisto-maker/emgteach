@@ -315,7 +315,8 @@ stretch edged in dark** appears inside each bar: **the stretch the measured valu
 is obtained from** — in a gradation, each step's plateau (from 1.5 s after it begins, without
 its rise or its letting go); with a fixed load, the held load; in a free
 recording, each row of the table; the quick contractions have none, since the
-train is measured whole.
+train is measured whole. If a
+recording ends without its review, the event log says why («No review of …: …»).
 
 **Event markers**
 - **Auto-onset**, visible in all three practicals: a contraction's onset is marked

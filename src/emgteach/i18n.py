@@ -1833,7 +1833,6 @@ _ES = {
     'Muscle load needs a maximum to be a percentage of, and this recording carries no calibration. Record the session again with the guided flow, which calibrates without stopping the recording.': "La carga muscular necesita un máximo del que ser porcentaje, y este "
         "registro no trae calibración. Vuelva a grabar la sesión con el "
         "flujo guiado, que calibra sin parar el registro.",
-    'The recording could not be shown for review: {err}': 'No se pudo mostrar el registro para revisarlo: {err}',
     'Recording just finished (review)': 'Registro recién terminado (revisión)',
     'contraction the fragment editor proposes': 'contracción que propone el editor de fragmentos',
     'stretch the measured value is obtained from': 'tramo del que se obtiene el valor medido',
@@ -1846,6 +1845,18 @@ _ES = {
         "carga fija, la carga sostenida; en un registro libre, cada fila de la tabla de "
         "contracciones. Aparece cuando termina el primer análisis y sigue a los fragmentos "
         "que se elijan después."),
+    "the channel names do not match the board's": 'los nombres de los canales no coinciden con los de la placa',
+    'no sample arrived from the board': 'no llegó ninguna muestra de la placa',
+    'the file is incomplete after a write failure': 'el archivo quedó incompleto tras un fallo de escritura',
+    'the recording ended before any file was written': 'la grabación terminó antes de escribir ningún archivo',
+    'the file has no EMG channel': 'el archivo no tiene ningún canal EMG',
+    'the file has no valid sampling rate': 'el archivo no tiene una frecuencia de muestreo válida',
+    'the file could not be read ({err})': 'no se pudo leer el archivo ({err})',
+    'an unexpected error ({err}); its details are in {path}': 'un error inesperado ({err}); los detalles están en {path}',
+    'another recording had already started': 'ya había empezado otra grabación',
+    'the recording left no file': 'la grabación no dejó archivo',
+    'No review of {file}: {reason}.': 'Sin revisión de {file}: {reason}.',
+    'this recording': 'esta grabación',
     'The bar under the traces marks each contraction the fragment editor will propose, from where it starts to where the muscle is back at rest.': "La barra bajo las señales marca cada contracción que propondrá el editor "
         "de fragmentos, desde que empieza hasta que el músculo vuelve al reposo.",
     'Envelope of the recording (review)': 'Envolvente del registro (revisión)',

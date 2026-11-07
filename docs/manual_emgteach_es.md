@@ -388,7 +388,9 @@ primer análisis, dentro de cada barra aparece una **franja verde claro con bord
 oscuro**, más alta: el **tramo del que se obtiene el valor medido** —en la gradación, la meseta
 de cada escalón (desde 1.5 s tras su inicio, sin la subida ni la relajación); con
 carga fija, la carga sostenida; en un registro libre, cada fila de la tabla—; en
-las contracciones rápidas no hay franja, porque el tren se mide entero.
+las contracciones rápidas no hay franja, porque el tren se mide entero. Si una
+grabación termina sin revisión, el registro de eventos dice por qué («Sin revisión
+de …: …»).
 
 **Marcadores de eventos**
 - **Detección automática de inicio de contracción** (*Auto-inicio*), a la vista en
