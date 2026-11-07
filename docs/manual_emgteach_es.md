@@ -383,7 +383,12 @@ debajo de las señales, una **barra verde azulada** marca cada contracción que
 propondrá el editor de fragmentos, desde que empieza hasta que el músculo vuelve
 al reposo, con la relajación tras el tono. Se calcula con la misma
 regla que el editor, también en registros libres: lo que se ve aquí es lo que el
-editor propondrá al abrirlo.
+editor propondrá al abrirlo. En la práctica de un músculo, cuando termina el
+primer análisis, dentro de cada barra aparece una **franja verde claro con borde
+oscuro**, más alta: el **tramo del que se obtiene el valor medido** —en la gradación, la meseta
+de cada escalón (desde 1.5 s tras su inicio, sin la subida ni la relajación); con
+carga fija, la carga sostenida; en un registro libre, cada fila de la tabla—; en
+las contracciones rápidas no hay franja, porque el tren se mide entero.
 
 **Marcadores de eventos**
 - **Detección automática de inicio de contracción** (*Auto-inicio*), a la vista en

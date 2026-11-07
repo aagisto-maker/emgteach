@@ -772,7 +772,10 @@ def test_the_space_bar_ends_the_effort_and_the_session_goes_on(
     assert sesion is not None and sesion.completed
     esfuerzo = sesion.spans_named("effort")[-1]
     # Cut by the space bar: the second held, and far short of the 30 s planned.
-    assert 1.0 <= esfuerzo.end_s - esfuerzo.start_s <= 10.0
+    # Half a sample of room: the marks fall on the board's blocks, and a
+    # second held to the sample, 1.8 to 2.8 s, is 0.9999999999999998 in
+    # floating point (CI, Windows, Python 3.12, 7 November 2026).
+    assert 1.0 - 0.5 / fs <= esfuerzo.end_s - esfuerzo.start_s <= 10.0
     # The last rest still comes, after the early end and for its length, in
     # the clock the session decides by. Never shorter: the end is not written
     # before its time. Never longer: the runner reports every tick with the

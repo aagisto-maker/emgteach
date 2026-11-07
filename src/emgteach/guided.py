@@ -70,6 +70,7 @@ __all__ = [
     "load_span",
     "load_verdict",
     "mdf_trend_applies",
+    "measured_in_file",
     "measured_windows",
     "processing_floor_pct",
     "rapid_train",
@@ -234,6 +235,58 @@ def step_windows(session: GuidedSession | None) -> list[tuple[float, float]]:
         session, [(0.0, float("inf"), 0.0)], ("step",)) if b > a]
 
 
+def _a_fichero(t: float, piezas: Sequence[tuple[float, float, float]]) -> float | None:
+    """A time of the analysed signal in the file's clock, through the pieces
+    the analysis kept (``(start_s, end_s, offset_s)``, as the worker built
+    them); ``None`` when no piece holds it."""
+    for a, b, offset in piezas:
+        # A millisecond of play: the worker's offsets are counted in
+        # samples, the piece's bounds in seconds.
+        if offset - 1e-3 <= t <= offset + (b - a) + 1e-3:
+            return a + (t - offset)
+    return None
+
+
+def measured_in_file(result) -> list[tuple[float, float]]:
+    """The stretches of the file the analysis read its numbers on, as it read
+    them: what the review draws inside each contraction's bar (Ángel,
+    7 November 2026). Read from the analysis's own result, never worked out
+    again, so what is drawn and what is measured cannot part.
+
+    - A gradation: each step's plateau (:attr:`StepResult.plateau_start_s`),
+      where its level in % MVC, its RMS and its MDF come from.
+    - A fixed load: the stretch its fatigue was read on, the whole held load
+      (``load_span``) or the piece of it the chosen fragments keep
+      (``load_piece``).
+    - Quick contractions: nothing — the train is measured whole, from its
+      mark to the end of its last contraction, which is the bar itself.
+    - Any other recording: each row of the contraction table, the stretch its
+      duration, peak, RMS and MDF come from.
+    """
+    if not result:
+        return []
+    piezas = result.get("kept_pieces") or []
+    sesion = result.get("guided_session")
+
+    def en_fichero(a: float, b: float) -> tuple[float, float] | None:
+        x, y = _a_fichero(a, piezas), _a_fichero(b, piezas)
+        return (x, y) if x is not None and y is not None and y > x else None
+
+    tramos: list[tuple[float, float] | None]
+    if sesion is not None and sesion.family == "GRAD":
+        tramos = [en_fichero(p.plateau_start_s, p.plateau_end_s)
+                  for p in result.get("grad_steps") or []]
+    elif sesion is not None and sesion.family == "HOLD":
+        leida = result.get("load_piece") or (
+            result.get("load_span") if result.get("load") is not None else None)
+        tramos = [(float(leida[0]), float(leida[1]))] if leida else []
+    elif sesion is not None:
+        tramos = []
+    else:
+        tramos = [en_fichero(c.start_s, c.end_s) for c in result.get("contractions") or []]
+    return [t for t in tramos if t is not None]
+
+
 def fatigue_unmeasured(result) -> str | None:
     """Why the summary gives no fatigue verdict for this analysis, or ``None``.
 
@@ -389,6 +442,11 @@ class StepResult:
     #: RMS of the filtered signal over the same stretch, mV.
     rms_mv: float
     mdf_hz: float | None
+    #: The plateau the level, the RMS and the MDF were read on, in the
+    #: analysed signal's time: the stretch the review shows as measured
+    #: (:func:`measured_in_file`), the very samples the numbers come from.
+    plateau_start_s: float = 0.0
+    plateau_end_s: float = 0.0
 
     @property
     def duration_s(self) -> float:
@@ -434,6 +492,7 @@ def gradation_steps(
             start_s=a, end_s=b, held_mv=nivel,
             held_pct=(100.0 * nivel / mvc_ref) if mvc_ref else None,
             rms_mv=rms, mdf_hz=mdf,
+            plateau_start_s=i0 / fs, plateau_end_s=i1 / fs,
         ))
     return pasos
 
