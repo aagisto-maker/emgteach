@@ -1836,7 +1836,7 @@ _ES = {
     'The recording could not be shown for review: {err}': 'No se pudo mostrar el registro para revisarlo: {err}',
     'Recording just finished (review)': 'Registro recién terminado (revisión)',
     'contraction the fragment editor proposes': 'contracción que propone el editor de fragmentos',
-    'stretch measured: the number comes from here': 'tramo medido: de aquí sale la cifra',
+    'stretch the measured value is obtained from': 'tramo del que se obtiene el valor medido',
     'When a recording ends, it is shown whole for review. In the one-muscle practical, the teal bar under the traces marks each contraction the fragment editor will propose; the taller light green stretch inside it, edged in dark, is the part the number the analysis gives was measured on — in a gradation, each step\'s plateau, without its rise or its letting go; with a fixed load, the held load; in a free recording, each row of the contraction table. It appears when the first analysis ends, and follows the fragments chosen afterwards.': (
         "Al terminar una grabación, se muestra entera para revisarla. En la práctica de "
         "un músculo, la barra verde azulada bajo las señales marca cada contracción que "

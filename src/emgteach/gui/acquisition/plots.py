@@ -427,7 +427,7 @@ class LivePlots(QGroupBox):
         fila_leyenda.addSpacing(18)
         self._leyenda_medido = _muestra(_MEDIDO_COLOR, _MEDIDO_BORDE)
         fila_leyenda.addWidget(self._leyenda_medido)
-        self._leyenda_medido_txt = QLabel(tr("stretch measured: the number comes from here"))
+        self._leyenda_medido_txt = QLabel(tr("stretch the measured value is obtained from"))
         fila_leyenda.addWidget(self._leyenda_medido_txt)
         fila_leyenda.addStretch(1)
         self._leyenda.setVisible(False)
