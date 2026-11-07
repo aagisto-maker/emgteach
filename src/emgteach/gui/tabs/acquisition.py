@@ -91,6 +91,7 @@ from emgteach.guided import (
     LOAD_RATIO_FROM_S,
     REST_WARN_MV,
     effort_ratio,
+    measured_in_file,
     weak_signal_warning,
 )
 from emgteach.i18n import tr
@@ -4235,6 +4236,20 @@ class AcquisitionTab(QWidget):
                 reason=motivo))
         if current:
             self._guardar_eventos()
+
+    @Slot(str, object)
+    def show_measured(self, edf_path: str, result: dict) -> None:
+        """An analysis of *edf_path* has finished: if that recording is on
+        review, draw inside its bars the stretches its numbers were read on
+        (guided.measured_in_file). In the one-muscle practical only, for now
+        (Ángel, 7 November 2026)."""
+        if self._mode != MODE_SINGLE or not self._trazado.reviewing(edf_path):
+            return
+        try:
+            tramos = measured_in_file(result)
+        except Exception:                  # the review goes on without them
+            tramos = []
+        self._trazado.show_measured(tramos)
 
     def _contracciones_del_registro(self, edf_path: str) -> list[tuple[float, float]]:
         """The rows the fragment editor will propose for this recording, for

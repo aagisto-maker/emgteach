@@ -309,7 +309,13 @@ session's phases, shaded, are what the application asked; under the traces, a
 **teal bar** marks each contraction the fragment editor will propose, from where
 it starts to where the muscle is back at rest, the letting go after the tone
 included. It is worked out with the editor's own rule, free recordings
-too: what is seen here is what the editor will propose when it opens. If a
+too: what is seen here is what the editor will propose when it opens. In the
+one-muscle practical, once the first analysis ends, a taller **light green
+stretch edged in dark** appears inside each bar: **the stretch the measured value
+is obtained from** — in a gradation, each step's plateau (from 1.5 s after it begins, without
+its rise or its letting go); with a fixed load, the held load; in a free
+recording, each row of the table; the quick contractions have none, since the
+train is measured whole. If a
 recording ends without its review, the event log says why («No review of …: …»).
 
 **Event markers**

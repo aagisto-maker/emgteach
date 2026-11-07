@@ -945,6 +945,10 @@ class AnalysisWorker(QThread):
                 "roi_start_s": roi_start_s,
                 "roi_end_s": roi_end_s,
                 "roi_segments": kept_segments,
+                # Where each kept piece of the file lands in the analysed
+                # signal, as (start_s, end_s, offset_s): what takes a stretch
+                # measured here back to the file (guided.measured_in_file).
+                "kept_pieces": piezas,
                 "full_duration_s": full_duration,
                 "edf_path": self._edf_path,
                 "channel_name": self._channel_name,
