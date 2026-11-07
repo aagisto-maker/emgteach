@@ -364,6 +364,10 @@ class AnalysisTab(QWidget):
     #: window — it dims everything outside the control it explains, which a tab
     #: cannot do to its siblings.
     coach_step = Signal(str, str, object)
+    #: An analysis has finished: its file and its result. The acquisition
+    #: tab's review draws, from it, the stretches the numbers were read on
+    #: (guided.measured_in_file).
+    analysed = Signal(str, object)
 
     def __init__(self, logger: LoggerWidget, settings: QSettings, parent=None,
                  broadcast: BroadcastServer | None = None):
@@ -2225,6 +2229,7 @@ class AnalysisTab(QWidget):
 
     def _on_result(self, result: dict) -> None:
         self._last_result = result
+        self.analysed.emit(str(result.get("edf_path") or ""), result)
         self._pendiente = False
         self._aplicar_paneles_de_sesion(result)
         self._refresh_coactivation(result)

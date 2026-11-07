@@ -103,6 +103,16 @@ _TEXTS = {
             "The lower one is its envelope — the raw signal rectified and "
             "smoothed — which follows how hard the muscle is working and is "
             "what the load bars and the analysis are built on."
+        ) + " " + tr(
+            "When a recording ends, it is shown whole for review. In the "
+            "one-muscle practical, the teal bar under the traces marks each "
+            "contraction the fragment editor will propose; the taller light "
+            "green stretch inside it, edged in dark, is the part the number "
+            "the analysis gives was measured on — in a gradation, each step's "
+            "plateau, without its rise or its letting go; with a fixed load, "
+            "the held load; in a free recording, each row of the contraction "
+            "table. It appears when the first analysis ends, and follows the "
+            "fragments chosen afterwards."
         ),
     ),
     "acq.load": lambda: (

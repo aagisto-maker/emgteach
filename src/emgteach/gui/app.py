@@ -193,6 +193,9 @@ class MainWindow(QMainWindow):
         # both tabs to the acquisition directly made each ask which muscle,
         # so the same question came up twice in a row.
         self._tab_adq.recording_saved.connect(self._tab_ana.adopt_recording)
+        # And its numbers come back to the review, which shows where each
+        # was read.
+        self._tab_ana.analysed.connect(self._tab_adq.show_measured)
         self._tab_ana.file_opened.connect(self._tab_cvm.adopt_recording)
         self._tab_ana.coach_step.connect(self._mostrar_paso_guiado)
         self._tab_adq.coach_step.connect(

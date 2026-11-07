@@ -125,6 +125,41 @@ GUIDED = "guided"
 _BARRA_ALTO = 0.07
 _BARRA_COLOR = (0, 137, 123, 170)
 
+#: The stretch a number was read on, inside its bar (Ángel, 7 November
+#: 2026): light green, taller than the bar, with a fine dark edge, so it
+#: stands out on the light green of the «recording» phase, on a projector
+#: and in black and white.
+_MEDIDO_ALTO = 0.12
+_MEDIDO_COLOR = (190, 235, 160, 240)
+_MEDIDO_BORDE = (20, 70, 30)
+_MEDIDO_FILO = 0.006
+
+
+def _muestra(color: tuple[int, ...], borde: tuple[int, int, int] | None) -> QLabel:
+    """A small swatch of *color* for the legend, with an edge when given."""
+    from PySide6.QtGui import QColor, QPainter, QPen, QPixmap
+
+    mapa = QPixmap(22, 10)
+    mapa.fill(QColor(0, 0, 0, 0))
+    pintor = QPainter(mapa)
+    pintor.setBrush(QColor(*color))
+    pintor.setPen(QPen(QColor(*borde), 1.2) if borde else QPen(QColor(0, 0, 0, 0)))
+    pintor.drawRect(0, 0, 21, 9)
+    pintor.end()
+    etiqueta = QLabel()
+    etiqueta.setPixmap(mapa)
+    return etiqueta
+
+
+def _misma_ruta(a: str, b: str) -> bool:
+    """Whether two paths name the same file."""
+    import os
+
+    def norma(p: str) -> str:
+        return os.path.normcase(os.path.abspath(p))
+
+    return bool(a) and bool(b) and norma(a) == norma(b)
+
 
 class LivePlots(QGroupBox):
     """The «Real-time EMG signal» box: the plots, their scales and the review."""
@@ -184,6 +219,11 @@ class LivePlots(QGroupBox):
         self._revisando = False
         #: The pyqtgraph items the review added, to take back out again.
         self._revision_items: list = []
+        #: The measured stretches drawn now, a subset of _revision_items.
+        self._medidos: list = []
+        #: The recording on review, "" when none, and whether it has bars.
+        self._revision_ruta = ""
+        self._con_barra = False
 
         # Events for drawing live lines: (time_s, label). The total number of
         # acquired samples places each marker within the sliding window.
@@ -374,6 +414,24 @@ class LivePlots(QGroupBox):
         self._plot_acc.setVisible(bool(self._acc_enabled))
         self._plot_acc.setMinimumHeight(70)
         plots_col_vbox.addWidget(self._plot_acc, stretch=1)
+
+        # What the bar and the stretch inside it are, under the plots, in
+        # the review only.
+        self._leyenda = QWidget()
+        fila_leyenda = QHBoxLayout(self._leyenda)
+        fila_leyenda.setContentsMargins(4, 0, 4, 0)
+        self._leyenda_barra = _muestra(_BARRA_COLOR, None)
+        fila_leyenda.addWidget(self._leyenda_barra)
+        self._leyenda_barra_txt = QLabel(tr("contraction the fragment editor proposes"))
+        fila_leyenda.addWidget(self._leyenda_barra_txt)
+        fila_leyenda.addSpacing(18)
+        self._leyenda_medido = _muestra(_MEDIDO_COLOR, _MEDIDO_BORDE)
+        fila_leyenda.addWidget(self._leyenda_medido)
+        self._leyenda_medido_txt = QLabel(tr("stretch measured: the number comes from here"))
+        fila_leyenda.addWidget(self._leyenda_medido_txt)
+        fila_leyenda.addStretch(1)
+        self._leyenda.setVisible(False)
+        plots_col_vbox.addWidget(self._leyenda)
 
         # Reusable pool of vertical lines for the event markers, one collection
         # per plot (repositioned on each refresh according to the sliding
@@ -850,6 +908,7 @@ class LivePlots(QGroupBox):
 
         self.leave_review()
         self._revisando = True
+        self._revision_ruta = edf_path
 
         n = len(señales[0]["emg_raw"])
         t = np.arange(n) / fs
@@ -983,6 +1042,59 @@ class LivePlots(QGroupBox):
                 "The bar under the traces marks each contraction the fragment "
                 "editor will propose, from where it starts to where the muscle "
                 "is back at rest."))
+        self._con_barra = bool(contractions)
+
+    def reviewing(self, edf_path: str) -> bool:
+        """Whether *edf_path* is the recording on review now."""
+        return self._revisando and bool(edf_path) and _misma_ruta(
+            edf_path, self._revision_ruta)
+
+    def show_measured(self, stretches: Sequence[tuple[float, float]]) -> None:
+        """Draw, inside the bars, the stretches the analysis read its numbers
+        on (:func:`emgteach.guided.measured_in_file`), in file time; those of
+        a previous analysis of the same recording go. Nothing outside the
+        review."""
+        if not self._revisando:
+            return
+        for pw, item in self._medidos:
+            try:
+                pw.removeItem(item)
+            except Exception:      # the plot was already torn down
+                pass
+            if (pw, item) in self._revision_items:
+                self._revision_items.remove((pw, item))
+        self._medidos = []
+        for a, b in stretches:
+            for pw in (self._plot_raw, self._plot_env):
+                franja = pg.LinearRegionItem(
+                    values=(float(a), float(b)), movable=False,
+                    span=(0.0, _MEDIDO_ALTO), brush=pg.mkBrush(*_MEDIDO_COLOR),
+                    pen=pg.mkPen(_MEDIDO_BORDE, width=1.2),
+                )
+                franja.setZValue(-4)       # over its bar, behind the trace
+                # The pen draws its sides; its top, a fine dark edge too.
+                filo = pg.LinearRegionItem(
+                    values=(float(a), float(b)), movable=False,
+                    span=(_MEDIDO_ALTO - _MEDIDO_FILO, _MEDIDO_ALTO),
+                    brush=pg.mkBrush(*_MEDIDO_BORDE), pen=pg.mkPen(None),
+                )
+                filo.setZValue(-4)
+                for item in (franja, filo):
+                    pw.addItem(item, ignoreBounds=True)
+                    self._medidos.append((pw, item))
+                    self._revision_items.append((pw, item))
+        self._mostrar_leyenda(self._con_barra, bool(stretches))
+
+    def _mostrar_leyenda(self, barra: bool, medido: bool) -> None:
+        """The line under the plots, with the measured stretches only: the
+        bar, and the stretch inside it. Where nothing measured is drawn —
+        the pair, kinematics, the quick contractions — the review is as it
+        was."""
+        self._leyenda_barra.setVisible(barra)
+        self._leyenda_barra_txt.setVisible(barra)
+        self._leyenda_medido.setVisible(medido)
+        self._leyenda_medido_txt.setVisible(medido)
+        self._leyenda.setVisible(medido)
 
     def _px_por_segundo(self, duracion: float) -> float:
         """Pixels one second of the review takes on screen, as first drawn.
@@ -1019,6 +1131,9 @@ class LivePlots(QGroupBox):
             except Exception:      # the plot was already torn down
                 pass
         self._revision_items.clear()
+        self._medidos = []
+        self._revision_ruta = ""
+        self._leyenda.setVisible(False)
         if not self._revisando:
             return
         self._revisando = False
