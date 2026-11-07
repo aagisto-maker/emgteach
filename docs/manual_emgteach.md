@@ -309,7 +309,8 @@ session's phases, shaded, are what the application asked; under the traces, a
 **teal bar** marks each contraction the fragment editor will propose, from where
 it starts to where the muscle is back at rest, the letting go after the tone
 included. It is worked out with the editor's own rule, free recordings
-too: what is seen here is what the editor will propose when it opens.
+too: what is seen here is what the editor will propose when it opens. If a
+recording ends without its review, the event log says why («No review of …: …»).
 
 **Event markers**
 - **Auto-onset**, visible in all three practicals: a contraction's onset is marked

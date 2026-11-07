@@ -4213,13 +4213,26 @@ class AcquisitionTab(QWidget):
         current = worker is None or worker is self._worker
         if current:
             self._restaurar_controles()
+        motivo = None
         if edf_path:
             self._log(tr("Recording finished. File: {path}").format(path=edf_path))
             self.recording_saved.emit(edf_path)
             if current:
                 self._ruta_registro = edf_path
-                self._trazado.show_recording(edf_path, self._etiqueta_tramo,
-                                             self._contracciones_del_registro(edf_path))
+                motivo = self._trazado.show_recording(
+                    edf_path, self._etiqueta_tramo,
+                    self._contracciones_del_registro(edf_path))
+            else:
+                motivo = tr("another recording had already started")
+        else:
+            motivo = (getattr(worker, "motivo_sin_archivo", "")
+                      or tr("the recording left no file"))
+        # Never in silence: on the bench of 6 November a recording sometimes
+        # ended with no review and nothing in the log to say why.
+        if motivo:
+            self._log(tr("No review of {file}: {reason}.").format(
+                file=Path(edf_path).name if edf_path else tr("this recording"),
+                reason=motivo))
         if current:
             self._guardar_eventos()
 

@@ -383,7 +383,8 @@ debajo de las señales, una **barra verde azulada** marca cada contracción que
 propondrá el editor de fragmentos, desde que empieza hasta que el músculo vuelve
 al reposo, con la relajación tras el tono. Se calcula con la misma
 regla que el editor, también en registros libres: lo que se ve aquí es lo que el
-editor propondrá al abrirlo.
+editor propondrá al abrirlo. Si una grabación termina sin revisión, el registro de
+eventos dice por qué («Sin revisión de …: …»).
 
 **Marcadores de eventos**
 - **Detección automática de inicio de contracción** (*Auto-inicio*), a la vista en
