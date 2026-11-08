@@ -315,7 +315,11 @@ stretch edged in dark** appears inside each bar: **the stretch the measured valu
 is obtained from** — in a gradation, each step's plateau (from 1.5 s after it begins, without
 its rise or its letting go); with a fixed load, the held load; in a free
 recording, each row of the table; the quick contractions have none, since the
-train is measured whole. If a
+train is measured whole. A weak contraction among strong ones is a row of the
+table too, with its stretch: a window is left out as noise only if it is under
+10 % of the strongest peak **and** barely clears the detector's line (by less
+than twice that line's distance from rest); a fragment you accept in the editor
+is always a row, however weak. If a
 recording ends without its review, the event log says why («No review of …: …»).
 
 **Event markers**

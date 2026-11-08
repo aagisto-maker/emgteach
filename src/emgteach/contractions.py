@@ -23,7 +23,12 @@ import numpy as np
 from emgteach.coactivation import dominant_muscle, resting_level
 from emgteach.dsp import compute_psd_mnf_mdf
 from emgteach.force_velocity import marker_owners
-from emgteach.selection import Segment, normalise_segments, suggest_significant_segments
+from emgteach.selection import (
+    Segment,
+    activity_threshold,
+    normalise_segments,
+    suggest_significant_segments,
+)
 
 #: A contraction shorter than this has too few cycles of anything for a
 #: median frequency to mean something; the row still shows its RMS.
@@ -44,9 +49,19 @@ _EMD_RANGE_MS = (5.0, 400.0)
 _MOVE_SEARCH_S = 1.0
 
 #: A proposed window whose peak above rest is below this share of the
-#: recording's strongest peak is noise the detector let through, not a
-#: contraction, and gets no row.
+#: recording's strongest peak, and that barely clears the detector's line
+#: (_NOISE_MARGIN), is noise the detector let through, not a contraction, and
+#: gets no row.
 _NOISE_FRACTION = 0.10
+
+#: How far over its resting baseline a window must rise, in multiples of the
+#: detector's own margin (its threshold minus that baseline), to be a
+#: contraction however small it is beside the strongest one. A weak effort in
+#: a series of strong ones (the simulated board's, 7 November 2026: 9.6 % of
+#: the strongest, some forty noise deviations over rest) was dropped as noise
+#: by the share alone; a window the detector let through on the noise sits
+#: just over its line.
+_NOISE_MARGIN = 2.0
 
 
 @dataclass(frozen=True)
@@ -230,6 +245,14 @@ def load_of_each(
     return out
 
 
+def _noise_line(env: np.ndarray, k: float) -> float:
+    """The level a window must clear to be a contraction beside a much
+    stronger one: the detector's baseline plus ``_NOISE_MARGIN`` times its
+    margin over it (:func:`emgteach.selection.activity_threshold`)."""
+    base, umbral = activity_threshold(env, k)
+    return base + _NOISE_MARGIN * (umbral - base)
+
+
 def contraction_table(
     *,
     fs: float,
@@ -258,6 +281,7 @@ def contraction_table(
     prominence: float = 0.25,
     both_ratio: float = 0.5,
     rest_fraction: float = 0.0,
+    chosen: bool = False,
 ) -> list[Contraction]:
     """The contractions of the analysed span, one row each.
 
@@ -281,6 +305,12 @@ def contraction_table(
     what the editor had called «12». ``velocity`` is the segment's velocity
     from :func:`emgteach.force_velocity.velocity_from_acc`, sampled with the
     signal; each row takes its peak over the contraction.
+
+    ``chosen`` says the ``segments`` are fragments the operator accepted in
+    the editor: each of them is a row, however weak, since the operator
+    chose it. Other windows (the detector's, a guided session's, the lifts')
+    get no row when they look like noise: a peak under ``_NOISE_FRACTION`` of
+    the span's strongest that also barely clears the detector's line.
     """
     raw = np.asarray(emg_raw, dtype=np.float64).ravel()
     filt = np.asarray(emg_filtered, dtype=np.float64).ravel()
@@ -330,15 +360,20 @@ def contraction_table(
                  else None)
 
     # Each muscle's resting level and its strongest peak above it. A proposed
-    # window whose peak is a small fraction of that is the detector reacting
-    # to noise — on a recording with a very quiet rest its threshold sits
-    # just above the floor — and it must not appear here as a row, least of
-    # all as a «co-contraction» of two muscles that were both silent.
+    # window whose peak is a small fraction of that, and that barely clears
+    # the detector's line, is the detector reacting to noise — on a recording
+    # with a very quiet rest its threshold sits just above the floor — and it
+    # must not appear here as a row, least of all as a «co-contraction» of
+    # two muscles that were both silent. A weak contraction well over that
+    # line is a contraction (7 November 2026), and a fragment the operator
+    # chose is a row whatever its height.
     rest1 = resting_level(env)
     rest2 = resting_level(env2) if env2 is not None else 0.0
     pmax1 = float(np.max(env)) - rest1
     pmax2 = (float(np.max(env2)) - rest2) if env2 is not None else 0.0
     suelo = _NOISE_FRACTION * max(pmax1, pmax2)
+    envolventes = [env] + ([env2] if env2 is not None else [])
+    lineas = [_noise_line(e, k) for e in envolventes]
 
     filas: list[Contraction] = []
     for s in segs:
@@ -347,7 +382,9 @@ def contraction_table(
             continue
         p1 = float(np.max(env[i0:i1])) - rest1
         p2 = (float(np.max(env2[i0:i1])) - rest2) if env2 is not None else 0.0
-        if max(p1, p2) < suelo:
+        if not chosen and max(p1, p2) < suelo and all(
+                float(np.max(e[i0:i1])) < linea
+                for e, linea in zip(envolventes, lineas, strict=True)):
             continue
         # Which muscle these numbers belong to.
         canal = 1
