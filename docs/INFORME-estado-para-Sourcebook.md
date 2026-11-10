@@ -150,8 +150,8 @@ decir nada. Ahora cada una acaba en la revisión o en una línea del registro de
 de <archivo>: <motivo>.»; un error que nadie esperaba se escribe también en `emgteach-errores.log` y
 deja las gráficas como estaban.
 
-**El enlace del aula lleva la dirección a la que llegan los móviles.** En los PC del laboratorio que
-no eran el del profesor los móviles no cargaban la página: el enlace llevaba la primera dirección que
+**El enlace del aula lleva la dirección a la que llegan los móviles.** En algunos equipos los móviles
+no cargaban la página: el enlace llevaba la primera dirección que
 listaba el sistema, que podía ser la de un adaptador virtual (WSL, Hyper-V, VirtualBox, VMware, una
 VPN) o la del cable con los móviles en la wifi. La dirección se elige ahora entre las del equipo: la
 fijada en el `difusion.txt` del puesto con `ip = …`; la de la interfaz fijada ahí con
@@ -159,7 +159,9 @@ fijada en el `difusion.txt` del puesto con `ip = …`; la de la interfaz fijada 
 inalámbrica móvil de Windows; aquella por la que sale la ruta por defecto, salvo que sea de un
 adaptador virtual; la primera que no sea virtual. Al marcar la difusión, el registro de eventos lista
 todas las direcciones con su interfaz y dice cuál se eligió y por qué. Los puertos son los de antes,
-8080 para la página y 8443 para los datos en vivo, y se cambian en el mismo archivo.
+8080 para la página y 8443 para los datos en vivo, y se cambian en el mismo archivo. En un equipo con
+el cortafuegos gestionado por su organización, el aula puede no llegar a los móviles: hay que
+permitir las conexiones entrantes de emgteach.
 
 **Entre bastidores.** La pestaña de adquisición, unas 6200 líneas, se parte en piezas propias según
 su plan (`docs/PLAN-partir-AcquisitionTab.md`): la escala del dispositivo (paso 0), la difusión al aula
@@ -183,11 +185,11 @@ la zona con cobertura móvil, una VPN, solo adaptadores virtuales, sin red y cad
 `difusion.txt`. Con la placa real, la ejecución manual #150 de la rama (6 de noviembre): la gradación
 en el antebrazo, con las filas y los valores de arriba, y la grabación libre de contracciones
 enérgicas. Con la placa real en el laboratorio, la ejecución manual #152 sobre `3ce37ac` (10 de
-noviembre): el protocolo del banco salió bien — el enlace del aula desde un PC de alumno, cargado y
-siguiendo en vivo en los móviles; la revisión de la gradación con sus cinco barras y sus cinco
-franjas, y sus cinco filas en el editor; y la grabación libre, con una contracción débil entre dos
-fuertes medida y una grabación parada antes de ninguna muestra diciendo por qué no tiene revisión.
-_(Los detalles del banco del laboratorio, y el banco con el ejecutable publicado, se añaden tras él.)_
+noviembre): la revisión de la gradación con sus cinco barras y sus cinco franjas, y sus cinco filas
+en el editor; y la grabación libre, con una contracción débil entre dos fuertes medida y una
+grabación parada antes de ninguna muestra diciendo por qué no tiene revisión; y la elección de la
+dirección del aula, comprobada con éxito.
+_(El banco con el ejecutable publicado se añade tras él.)_
 
 ### 1.1 De la 3.10.0 a la 3.10.1
 

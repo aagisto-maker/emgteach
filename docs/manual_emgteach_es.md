@@ -787,6 +787,9 @@ sirve la práctica, no un ajuste fino.
   `datos = 8443`). Si otro programa ocupa uno, el aviso dice cuál; si la página carga
   en los móviles pero se queda en «conectando…» sin datos, la red deja pasar la página
   y corta los datos, y conviene probar otro puerto de datos en `difusion.txt`.
+- En equipos con el **cortafuegos gestionado por la organización**, el aula puede no
+  llegar a los móviles: hay que permitir las conexiones entrantes de emgteach (por
+  defecto, TCP 8080 y 8443, configurables en `difusion.txt`).
 - **Qué dirección lleva el enlace.** Un PC suele tener varias direcciones: el cable,
   la Wi‑Fi, el punto de acceso móvil de Windows y adaptadores virtuales (WSL,
   VirtualBox, VMware, una VPN) en redes donde no hay ningún móvil. La aplicación

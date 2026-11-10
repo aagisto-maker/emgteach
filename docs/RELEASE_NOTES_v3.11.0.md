@@ -68,9 +68,9 @@ the pair and kinematics.
   ends in the review or in a line of the event log, «No review of <file>:
   <reason>.»; an error nobody expected is also written to
   `emgteach-errores.log` and leaves the plots as they were.
-- **The classroom link carries the address the phones can reach.** On
-  laboratory PCs other than the teacher's the phones could not load the page:
-  the link carried the first address the system listed, which could be a
+- **The classroom link carries the address the phones can reach.** On some
+  computers the phones could not load the page: the link carried the first
+  address the system listed, which could be a
   virtual adapter's (WSL, Hyper-V, VirtualBox, VMware, a VPN) or the cable's
   with the phones on the Wi‑Fi. The address is now chosen among the
   computer's: the one fixed in this station's `difusion.txt` with
@@ -80,7 +80,9 @@ the pair and kinematics.
   not virtual. When classroom mode is switched on, the event log lists every
   address with its interface and says which was chosen and why. The ports
   are the same as before, 8080 for the page and 8443 for the live data,
-  changed in the same file.
+  changed in the same file. On a computer whose firewall is managed by its
+  organisation the broadcast may not reach the phones: emgteach's incoming
+  connections have to be allowed.
 
 ## Behind the scenes
 
@@ -116,12 +118,11 @@ only virtual adapters, no network, and each line of `difusion.txt`.
 run #150, 6 November 2026): the gradation on the forearm, whose rows and
 numbers are the ones above, and the free recording of brisk contractions.
 With the real board, in the laboratory (manual run #152 on `3ce37ac`, 10
-November 2026), the bench's protocol passed: the classroom link from a
-student PC, loaded and followed live on the phones; the gradation's review,
-with its five bars and five stretches, and its five rows in the editor;
-and the free recording, with a weak contraction between two strong ones
-measured and a recording stopped before any sample saying why it has no
-review. _(Details of the laboratory bench, and the bench with the executable
+November 2026): the gradation's review, with its five bars and five
+stretches, and its five rows in the editor; and the free recording, with a
+weak contraction between two strong ones measured and a recording stopped
+before any sample saying why it has no review; and the choice of the
+classroom address, checked with success. _(The bench with the executable
 released, added after it.)_
 
 ## The Windows executable

@@ -269,6 +269,9 @@ second build.
   `gh attestation verify emgteach-v3.11.0-windows-x64.exe --repo aagisto-maker/emgteach`
   confirms it came out of this repository's workflow, from that version's
   commit.
+- **The classroom broadcast needs incoming connections**: on a computer whose
+  firewall is managed by its organisation, allow emgteach's incoming
+  connections (by default TCP 8080 and 8443, set in `difusion.txt`).
 
 The executable is not part of the Zenodo record, which archives the source
 code of the tag. The recipe to build it yourself is in

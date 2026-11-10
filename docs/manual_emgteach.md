@@ -627,7 +627,10 @@ a text file `difusion.txt` next to it, the same on every station of the laborato
 can change them (`pagina = 8080`, `datos = 8443`). If another program holds one of
 them, the warning says which; if the page loads on the phones but stays at
 «connecting…» with no data, the network is letting the page through and cutting the
-data, and another data port is worth trying in `difusion.txt`.
+data, and another data port is worth trying in `difusion.txt`. On computers whose
+**firewall is managed by the organisation**, the broadcast may not reach the
+phones: emgteach's incoming connections have to be allowed (by default TCP 8080
+and 8443, set in `difusion.txt`).
 
 A computer often has several addresses: the cable, the Wi‑Fi, the Windows mobile
 hotspot, and virtual adapters (WSL, VirtualBox, VMware, a VPN) on networks no phone
