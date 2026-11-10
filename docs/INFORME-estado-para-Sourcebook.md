@@ -6,8 +6,8 @@ septiembre, y a la **3.2.0**, a la **3.3.0** y a la **3.4.0** el 14 de septiembr
 **3.5.0** el 18 de septiembre, a la **3.6.0** el 19 y a la **3.7.0** el 26, y a la **3.7.1** el 27,
 una corrección que no cambia la versión que describe el artículo. El 14 de octubre, tras publicar la
 **3.8.0**, se añaden la **3.7.2** y la 3.8.0, que tampoco la cambian, el 15 de octubre la
-**3.9.0**, el 23 de octubre la **3.9.1**, el 26 de octubre la **3.10.0** y el 28 de octubre la
-**3.10.1**, que tampoco.
+**3.9.0**, el 23 de octubre la **3.9.1**, el 26 de octubre la **3.10.0**, el 28 de octubre la
+**3.10.1** y el 10 de noviembre la **3.11.0**, que tampoco.
 Responde a `PETICION-a-code-informe-Sourcebook.md` sección por sección.
 
 Los textos de pantalla están **copiados literalmente** de
@@ -28,7 +28,7 @@ Donde algo no está hecho o no lo sé, lo dice.
 | Rama | `main` |
 | **Versión que describe el artículo** | `v3.7.0`, publicada el 26 de septiembre de 2026 |
 | DOI de esa versión | 10.5281/zenodo.22976106 |
-| Versiones siguientes | `v3.11.0`, preparada el 10 de noviembre de 2026 (1860 pruebas; la etiqueta, el DOI y el SHA-256 del ejecutable se añaden al publicarla): la revisión enseña lo que se mide — una barra por contracción que propondrá el editor y, en la práctica de un músculo, el tramo del que se obtiene cada valor —, un fragmento sigue la caída de su contracción hasta el reposo, la gradación se propone una fila por escalón, una contracción débil entre otras fuertes se mide, ninguna grabación termina sin revisión en silencio y el enlace del aula lleva la dirección a la que llegan los móviles (apartado 1.0) · `v3.10.1`, publicada el 28 de octubre de 2026 (10.5281/zenodo.23729099, etiqueta en `979eb6e`, 1714 pruebas): las sesiones guiadas tras el banco — cada escalón se sube despacio, el −10 % de la fatiga se lee en la recta, el tren acaba donde acaba su última contracción y cuenta una con dos jorobas como una, la fatiga con carga fija se hace con el antebrazo y, en la práctica de un músculo, un fragmento acaba cuando el músculo vuelve al reposo (apartado 1.1) · `v3.10.0`, publicada el 26 de octubre de 2026 (10.5281/zenodo.23675472, etiqueta en `464e64a`, 1689 pruebas): tres sesiones guiadas en la práctica de un músculo (contracciones graduales, fatiga del bíceps con carga fija y contracciones rápidas repetidas), un tono opcional en cada cambio de fase y los textos de las instrucciones; no cambia ningún cálculo de una grabación libre (apartado 1.2) · `v3.9.1`, publicada el 23 de octubre de 2026 (10.5281/zenodo.23587320, etiqueta en `772ac08`, 1492 pruebas): la vista en vivo sigue a la señal tras un zoom con la rueda, cerrar mientras «Reintentar» espera el puerto ya no arranca una grabación y «% CVM» en español; no cambia ningún cálculo (apartado 1.3) · `v3.9.0`, publicada el 15 de octubre de 2026 (10.5281/zenodo.23399825, etiqueta en `fe2ba33`, 1478 pruebas): vuelve el marcado a mano durante la grabación, opcional; no cambia ningún cálculo (apartado 1.4) · `v3.8.0`, publicada el 14 de octubre de 2026 (10.5281/zenodo.23361729, etiqueta en `a055ec3`, 1442 pruebas): los arreglos que encontraron ecgteach y eegteach en código que emgteach comparte; no cambia ningún cálculo (apartado 1.5) · `v3.7.2`, publicada el 2 de octubre de 2026 (10.5281/zenodo.23103390, etiqueta en `1400e83`, 1419 pruebas): los puertos de la difusión a los móviles; no cambia ningún cálculo (apartado 1.6) · `v3.7.1`, publicada el 27 de septiembre de 2026 (10.5281/zenodo.22999304, etiqueta en `dcb1ecd`, 1395 pruebas): corrección de un fallo para las prácticas de noviembre; no cambia ningún cálculo (apartado 1.7) |
+| Versiones siguientes | `v3.11.0`, publicada el 10 de noviembre de 2026 (10.5281/zenodo.24117162, etiqueta en `fe6caec`, 1860 pruebas): la revisión enseña lo que se mide — una barra por contracción que propondrá el editor y, en la práctica de un músculo, el tramo del que se obtiene cada valor —, un fragmento sigue la caída de su contracción hasta el reposo, la gradación se propone una fila por escalón, una contracción débil entre otras fuertes se mide, ninguna grabación termina sin revisión en silencio y el enlace del aula lleva la dirección a la que llegan los móviles (apartado 1.0) · `v3.10.1`, publicada el 28 de octubre de 2026 (10.5281/zenodo.23729099, etiqueta en `979eb6e`, 1714 pruebas): las sesiones guiadas tras el banco — cada escalón se sube despacio, el −10 % de la fatiga se lee en la recta, el tren acaba donde acaba su última contracción y cuenta una con dos jorobas como una, la fatiga con carga fija se hace con el antebrazo y, en la práctica de un músculo, un fragmento acaba cuando el músculo vuelve al reposo (apartado 1.1) · `v3.10.0`, publicada el 26 de octubre de 2026 (10.5281/zenodo.23675472, etiqueta en `464e64a`, 1689 pruebas): tres sesiones guiadas en la práctica de un músculo (contracciones graduales, fatiga del bíceps con carga fija y contracciones rápidas repetidas), un tono opcional en cada cambio de fase y los textos de las instrucciones; no cambia ningún cálculo de una grabación libre (apartado 1.2) · `v3.9.1`, publicada el 23 de octubre de 2026 (10.5281/zenodo.23587320, etiqueta en `772ac08`, 1492 pruebas): la vista en vivo sigue a la señal tras un zoom con la rueda, cerrar mientras «Reintentar» espera el puerto ya no arranca una grabación y «% CVM» en español; no cambia ningún cálculo (apartado 1.3) · `v3.9.0`, publicada el 15 de octubre de 2026 (10.5281/zenodo.23399825, etiqueta en `fe2ba33`, 1478 pruebas): vuelve el marcado a mano durante la grabación, opcional; no cambia ningún cálculo (apartado 1.4) · `v3.8.0`, publicada el 14 de octubre de 2026 (10.5281/zenodo.23361729, etiqueta en `a055ec3`, 1442 pruebas): los arreglos que encontraron ecgteach y eegteach en código que emgteach comparte; no cambia ningún cálculo (apartado 1.5) · `v3.7.2`, publicada el 2 de octubre de 2026 (10.5281/zenodo.23103390, etiqueta en `1400e83`, 1419 pruebas): los puertos de la difusión a los móviles; no cambia ningún cálculo (apartado 1.6) · `v3.7.1`, publicada el 27 de septiembre de 2026 (10.5281/zenodo.22999304, etiqueta en `dcb1ecd`, 1395 pruebas): corrección de un fallo para las prácticas de noviembre; no cambia ningún cálculo (apartado 1.7) |
 | DOI de concepto | 10.5281/zenodo.21002297 |
 | Commit de la etiqueta | `34294b4` |
 | Pruebas en la etiqueta | **1376 recogidas, 1375 pasan y 1 se salta** |
@@ -93,8 +93,9 @@ ejecutable. La 3.7.1, la 3.7.2, la 3.8.0, la 3.9.0, la 3.9.1, la 3.10.0, la 3.10
 
 ### 1.0 De la 3.10.1 a la 3.11.0
 
-**Preparada el 10 de noviembre de 2026** (PR #161 a #175 y la de su preparación); la etiqueta, el
-DOI y el SHA-256 del ejecutable se añaden al publicarla. **La versión que describe el artículo sigue
+**Publicada el 10 de noviembre de 2026** (PR #161 a #176 y #178; etiqueta en `fe6caec`, DOI
+10.5281/zenodo.24117162; la publicación lleva `emgteach-v3.11.0-windows-x64.exe`, atestiguado, con
+SHA-256 `3e967879b29ec8ceebd092b67612d96b6bce3905ff7aa72316b0b564c847328c`). **La versión que describe el artículo sigue
 siendo la 3.7.0.** No cambia el formato del archivo, y los registros hechos con la 3.10.1 y
 anteriores se abren y se leen como antes. Cambian, en la práctica de un músculo, los fragmentos que
 propone el editor y, con ellos, las filas de la tabla de contracciones y los valores sobre el tramo
@@ -188,8 +189,13 @@ enérgicas. Con la placa real en el laboratorio, la ejecución manual #152 sobre
 noviembre): la revisión de la gradación con sus cinco barras y sus cinco franjas, y sus cinco filas
 en el editor; y la grabación libre, con una contracción débil entre dos fuertes medida y una
 grabación parada antes de ninguna muestra diciendo por qué no tiene revisión; y la elección de la
-dirección del aula, comprobada con éxito.
-_(El banco con el ejecutable publicado se añade tras él.)_
+dirección del aula, comprobada con éxito. Con el ejecutable publicado (ejecución manual #153 sobre
+`fe6caec`, 10 de noviembre): el SHA-256 comprobado; el autotest, «SELFTEST OK: emgteach 3.11.0
+(frozen=True)»; el diagnóstico con la placa real, listo para registrar a 998 Hz, sin tramas con CRC
+fallido ni perdidas; y «Acerca de» con la 3.11.0. Ese mismo archivo es el publicado: la ejecución de
+la etiqueta no compila, verifica la atestación del de la #153 y lo adjunta. En VirusTotal, 1 de 68
+motores lo marca (Bkav Pro, «W32.Malware.A5144AC6»), el falso positivo habitual de un ejecutable
+PyInstaller sin firmar.
 
 ### 1.1 De la 3.10.0 a la 3.10.1
 
