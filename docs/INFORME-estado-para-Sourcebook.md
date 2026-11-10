@@ -188,8 +188,13 @@ enérgicas. Con la placa real en el laboratorio, la ejecución manual #152 sobre
 noviembre): la revisión de la gradación con sus cinco barras y sus cinco franjas, y sus cinco filas
 en el editor; y la grabación libre, con una contracción débil entre dos fuertes medida y una
 grabación parada antes de ninguna muestra diciendo por qué no tiene revisión; y la elección de la
-dirección del aula, comprobada con éxito.
-_(El banco con el ejecutable publicado se añade tras él.)_
+dirección del aula, comprobada con éxito. Con el ejecutable publicado (ejecución manual #153 sobre
+`fe6caec`, 10 de noviembre): el SHA-256 comprobado; el autotest, «SELFTEST OK: emgteach 3.11.0
+(frozen=True)»; el diagnóstico con la placa real, listo para registrar a 998 Hz, sin tramas con CRC
+fallido ni perdidas; y «Acerca de» con la 3.11.0. Ese mismo archivo es el publicado: la ejecución de
+la etiqueta no compila, verifica la atestación del de la #153 y lo adjunta. En VirusTotal, 1 de 68
+motores lo marca (Bkav Pro, «W32.Malware.A5144AC6»), el falso positivo habitual de un ejecutable
+PyInstaller sin firmar.
 
 ### 1.1 De la 3.10.0 a la 3.10.1
 

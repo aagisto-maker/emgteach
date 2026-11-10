@@ -122,8 +122,11 @@ November 2026): the gradation's review, with its five bars and five
 stretches, and its five rows in the editor; and the free recording, with a
 weak contraction between two strong ones measured and a recording stopped
 before any sample saying why it has no review; and the choice of the
-classroom address, checked with success. _(The bench with the executable
-released, added after it.)_
+classroom address, checked with success. With the real board, the executable
+released (manual run #153 on `fe6caec`, 10 November 2026): its SHA-256
+checked; the self-test, «SELFTEST OK: emgteach 3.11.0 (frozen=True)»; the
+board's diagnosis, ready to record at 998 Hz, with no frame failing its CRC
+and none lost; and «About» saying 3.11.0.
 
 ## The Windows executable
 
@@ -142,8 +145,17 @@ GitHub attests where it was built.
   print the same value.
 - **To check where it was built**:
   `gh attestation verify emgteach-v3.11.0-windows-x64.exe --repo aagisto-maker/emgteach`.
-- **VirusTotal**: _(link to the analysis, added when the draft is published)_.
+- **VirusTotal:** [scan of the executable](https://www.virustotal.com/gui/file/3e967879b29ec8ceebd092b67612d96b6bce3905ff7aa72316b0b564c847328c): 1/68. The one detection (Bkav Pro, «W32.Malware.A5144AC6») is the usual false positive for unsigned PyInstaller executables.
 
 The Zenodo record archives the source code of the tag, not the executable.
 
 See [`CHANGELOG.md`](../CHANGELOG.md) for every change.
+
+## SHA-256 of the executable
+
+```
+3e967879b29ec8ceebd092b67612d96b6bce3905ff7aa72316b0b564c847328c  emgteach-v3.11.0-windows-x64.exe
+```
+
+Built and attested by run [42857407184](https://github.com/aagisto-maker/emgteach/actions/runs/42857407184) of *Build Windows exe*
+on `fe6caecd029da71c0ea81c4884710f99abd46810`: the executable tried before the tag, not a new build.
