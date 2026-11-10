@@ -5,7 +5,9 @@ All notable changes to **emgteach** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.11.0] — 2026-11-10
+
+**The review shows what is measured, and the classroom link reaches the phones.** After a recording, the acquisition tab's review draws a teal bar for each contraction the fragment editor will propose and, in the one-muscle practical, once analysed, the light green stretch each number was measured on; a fragment there follows its contraction's fall to rest, and a gradation is proposed one row per step; a weak contraction among strong ones is measured; a recording never ends without its review in silence; and the classroom link carries the address the phones can reach, which a station can fix in `difusion.txt`. Behind the scenes, the acquisition tab is split into pieces of its own (steps 0 to 4 of its plan), with the screen the same to the pixel. Tried at the bench with the real board (6 November 2026, exe #150) and in the laboratory (10 November 2026, exe #152). **3.7.0 remains the version the article describes.** No EDF format changes. What changes in what is computed: in the one-muscle practical, the fragments the editor proposes — a row ends at the end of its contraction's fall, a series of brisk contractions with less than a second of rest is one row, whole, and a gradation has one row per step — and with them the rows of the contraction table and the numbers over the analysed span; a weak contraction among strong ones is now a row of the table, and a fragment accepted in the editor always is. Each step's level, RMS and MDF, the fixed load and the quick contractions compute as before; the pair and kinematics too.
 
 ### Changed
 

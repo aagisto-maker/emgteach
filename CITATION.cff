@@ -86,10 +86,17 @@ abstract: >-
   reads the fatigue's 10 % fall on the MDF's line, ends the train where its
   last contraction does and counts a contraction with two humps as one, does
   the fatigue with a fixed load on the forearm, and in the one-muscle
-  practical ends a fragment where the muscle is back at rest.
+  practical ends a fragment where the muscle is back at rest. Version
+  3.11.0 draws in the review of each recording a bar for each contraction the
+  fragment editor will propose and, in the one-muscle practical, the stretch
+  each number was measured on; a fragment there follows its contraction's
+  fall to rest, a gradation is proposed one row per step, and a weak
+  contraction among strong ones is measured; a recording never ends without
+  its review in silence; and the classroom link carries the address the
+  phones can reach.
 type: software
-version: 3.10.1
-date-released: "2026-10-28"
+version: 3.11.0
+date-released: "2026-11-10"
 authors:
   - family-names: "Agis-Torres"
     given-names: "Ángel"
