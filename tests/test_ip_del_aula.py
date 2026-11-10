@@ -1,9 +1,9 @@
 """Which address of this computer the phones' link carries (broadcast.choose_ipv4).
 
 It used to be the first IPv4 of the first interface the system listed. On
-laboratory PCs other than the teacher's the phones could not load the page:
-the link carried a virtual adapter's address (WSL, VirtualBox, a VPN), on a
-network no phone was on. The address is now chosen, and every candidate is
+some computers the phones could not load the page: the link carried a
+virtual adapter's address (WSL, VirtualBox, a VPN), on a network no phone
+was on. The address is now chosen, and every candidate is
 written to the event log with the choice and its reason.
 """
 
