@@ -69,8 +69,8 @@ def _load_dashboard_html() -> bytes:
 #: WSL and Docker («vEthernet (…)»), VirtualBox, VMware, the VPN clients and
 #: overlay networks, Npcap and Bluetooth. Such an adapter is up and running
 #: whether or not anything is behind it, and its address is on a network the
-#: phones are not on: on a laboratory PC with WSL installed, the link carried
-#: a 172.x address and no phone could load the page (November 2026).
+#: phones are not on: on a computer with WSL installed, the link carried a
+#: 172.x address and no phone could load the page (November 2026).
 _VIRTUAL_WORDS = (
     "vethernet", "hyper-v", "wsl", "virtualbox", "vmware", "vmnet", "docker",
     "tap", "tun", "wintun", "wireguard", "vpn", "forti", "anyconnect",
@@ -219,7 +219,7 @@ def current_address_choice(folder: Path | None = None) -> AddressChoice:
 def address_report(choice: AddressChoice) -> list[str]:
     """The event log's lines: every candidate, and which one and why.
 
-    Written when the broadcast starts, so that a laboratory PC whose phones
+    Written when the broadcast starts, so that a computer whose phones
     cannot load the page says, where the operator reads, which addresses it
     had and which one it gave them.
     """
